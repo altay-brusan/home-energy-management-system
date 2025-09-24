@@ -1,0 +1,72 @@
+using Hems_Backend.Application.Common.Models;
+using Hems_Backend.Application.Devices.Commands.CreateDevice;
+using Hems_Backend.Application.Devices.Commands.DeleteDevice;
+using Hems_Backend.Application.Devices.Commands.UpdateDevice;
+using Hems_Backend.Application.Devices.Queries.GetDeviceById;
+using Hems_Backend.Application.Devices.Queries.GetDevices;
+using Hems_Backend.Domain.Constants;
+using Hems_Backend.Web.Infrastructure;
+using Microsoft.AspNetCore.Authorization;
+
+namespace Hems_Backend.Web.Endpoints;
+
+public class Devices : EndpointGroupBase
+{
+    public override void Map(WebApplication app)
+    {
+        app.MapGroup(this)
+            .RequireAuthorization()
+            .MapGet(GetDevices)
+            .MapGet(GetDevice, "{id}")
+            .MapPost(CreateDevice)
+            .MapPut(UpdateDevice, "{id}")
+            .MapDelete(DeleteDevice, "{id}");
+    }
+
+    [Authorize(Policies.AdminOnly)]
+    public async Task<PaginatedList<DeviceDto>> GetDevices(
+        ISender sender,
+        [AsParameters] GetDevicesQuery query)
+    {
+        return await sender.Send(query);
+    }
+
+    [Authorize(Policies.AdminOnly)]
+    public async Task<DeviceDto?> GetDevice(
+        ISender sender,
+        Guid id)
+    {
+        return await sender.Send(new GetDeviceByIdQuery(id));
+    }
+
+    [Authorize(Policies.AdminOnly)]
+    public async Task<Guid> CreateDevice(
+        ISender sender,
+        CreateDeviceCommand command)
+    {
+        return await sender.Send(command);
+    }
+
+    [Authorize(Policies.AdminOnly)]
+    public async Task<IResult> UpdateDevice(
+        ISender sender,
+        Guid id,
+        UpdateDeviceCommand command)
+    {
+        if (id != command.Id) return Results.BadRequest();
+        await sender.Send(command);
+        return Results.NoContent();
+    }
+
+    [Authorize(Policies.AdminOnly)]
+    public async Task<IResult> DeleteDevice(
+        ISender sender,
+        Guid id)
+    {
+        await sender.Send(new DeleteDeviceCommand(id));
+        return Results.NoContent();
+    }
+}
+
+
+

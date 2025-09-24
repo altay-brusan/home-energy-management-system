@@ -1,0 +1,63 @@
+# Build outputs
+bin/
+obj/
+out/
+
+# Dependencies
+node_modules/
+packages/
+
+# IDE files
+.vs/
+.vscode/
+*.user
+*.suo
+*.cache
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Coverage reports
+coverage/
+*.coverage
+
+# Test results
+TestResults/
+*.trx
+
+# NuGet packages
+*.nupkg
+packages/
+
+# Azure
+.azure/
+
+# Docker
+.dockerignore
+Dockerfile*
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Large files
+*.zip
+*.rar
+*.7z
+*.tar.gz
+
