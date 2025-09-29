@@ -1,18 +1,19 @@
 trigger:
   branches:
     include:
-      - main   # main branch tetiklendiğinde çalışır
+      - main   # main branch'e push olduğunda pipeline çalışacak
 
 pool:
-  vmImage: 'ubuntu-latest'
+  name: 'Default'   # Self-hosted agent pool adı
 
 variables:
   buildConfiguration: 'Release'
   publishDir: '$(Build.ArtifactStagingDirectory)/publish'
-  serviceName: 'myapp'   # Ubuntu’daki systemd servis adı
+  appPath: '/var/www/Hems/api'   # Ubuntu'da publish edilecek dizin
+  serviceName: 'hems-api.service'        # Ubuntu'daki systemd servis adı
 
 steps:
-  # .NET 9 SDK yükle
+  # .NET 9 SDK kullan
   - task: UseDotNet@2
     inputs:
       packageType: 'sdk'
@@ -31,34 +32,15 @@ steps:
   - script: dotnet publish --configuration $(buildConfiguration) -o $(publishDir)
     displayName: 'Publish project'
 
-  # Artifact indir (gerekirse)
-  - task: PublishBuildArtifacts@1
-    inputs:
-      PathtoPublish: '$(publishDir)'
-      ArtifactName: 'drop'
-      publishLocation: 'Container'
-
-  # Build artifact indir
-  - task: DownloadBuildArtifacts@0
-    inputs:
-      buildType: 'current'
-      downloadType: 'single'
-      artifactName: 'drop'
-      downloadPath: '$(System.ArtifactsDirectory)'
-
-  # SSH üzerinden dosyaları kopyala
-  - task: CopyFilesOverSSH@0
-    inputs:
-      sshEndpoint: 'UbuntuServerVPN'   # Azure DevOps'ta tanımladığın Service Connection
-      sourceFolder: '$(System.ArtifactsDirectory)/drop'
-      contents: '**'
-      targetFolder: '/var/www/Hems/api'
+  # Dosyaları hedef Ubuntu dizinine kopyala (self-hosted agent direkt erişebilir)
+  - script: |
+      rm -rf $(appPath)/*
+      mkdir -p $(appPath)
+      cp -r $(publishDir)/* $(appPath)
+    displayName: 'Clean target folder and copy files'
 
   # Servisi restart et
-  - task: SSH@0
-    inputs:
-      sshEndpoint: 'UbuntuServerVPN'
-      commands: |
-        sudo systemctl daemon-reload
-        sudo systemctl restart $(serviceName)
-    displayName: 'Restart service on Ubuntu'
+  - script: |
+      sudo systemctl daemon-reload
+      sudo systemctl restart $(serviceName)
+    displayName: 'Restart systemd service'
