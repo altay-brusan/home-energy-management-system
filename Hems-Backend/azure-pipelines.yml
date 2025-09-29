@@ -1,0 +1,46 @@
+trigger:
+  branches:
+    include:
+      - main   # main branch'e push olduğunda pipeline çalışacak
+
+pool:
+  name: 'Default'   # Self-hosted agent pool adı
+
+variables:
+  buildConfiguration: 'Release'
+  publishDir: '$(Build.ArtifactStagingDirectory)/publish'
+  appPath: '/var/www/Hems/api'   # Ubuntu'da publish edilecek dizin
+  serviceName: 'hems-api.service'        # Ubuntu'daki systemd servis adı
+
+steps:
+  # .NET 9 SDK kullan
+  - task: UseDotNet@2
+    inputs:
+      packageType: 'sdk'
+      version: '9.x'
+      installationPath: $(Agent.ToolsDirectory)/dotnet
+
+  # Restore
+  - script: dotnet restore
+    displayName: 'Restore dependencies'
+
+  # Build
+  - script: dotnet build --configuration $(buildConfiguration)
+    displayName: 'Build project'
+
+  # Publish
+  - script: dotnet publish --configuration $(buildConfiguration) -o $(publishDir)
+    displayName: 'Publish project'
+
+  # Dosyaları hedef Ubuntu dizinine kopyala (self-hosted agent direkt erişebilir)
+  - script: |
+      rm -rf $(appPath)/*
+      mkdir -p $(appPath)
+      cp -r $(publishDir)/* $(appPath)
+    displayName: 'Clean target folder and copy files'
+
+  # Servisi restart et
+  - script: |
+      sudo systemctl daemon-reload
+      sudo systemctl restart $(serviceName)
+    displayName: 'Restart systemd service'
