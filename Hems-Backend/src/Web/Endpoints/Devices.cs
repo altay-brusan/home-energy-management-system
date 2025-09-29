@@ -1,6 +1,7 @@
 using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Application.Devices.Commands.CreateDevice;
 using Hems_Backend.Application.Devices.Commands.DeleteDevice;
+using Hems_Backend.Application.Devices.Commands.RegisterDevice;
 using Hems_Backend.Application.Devices.Commands.UpdateDevice;
 using Hems_Backend.Application.Devices.Queries.GetDeviceById;
 using Hems_Backend.Application.Devices.Queries.GetDevices;
@@ -14,6 +15,11 @@ public class Devices : EndpointGroupBase
 {
     public override void Map(WebApplication app)
     {
+        // Device login endpoint (no authorization required)
+        app.MapGroup(this)
+            .MapPost("login", DeviceLogin);
+
+        // Admin endpoints (require authorization)
         app.MapGroup(this)
             .RequireAuthorization()
             .MapGet(GetDevices)
@@ -21,6 +27,13 @@ public class Devices : EndpointGroupBase
             .MapPost(CreateDevice)
             .MapPut(UpdateDevice, "{id}")
             .MapDelete(DeleteDevice, "{id}");
+    }
+
+    public async Task<DeviceLoginResult> DeviceLogin(
+        ISender sender,
+        DeviceLoginCommand command)
+    {
+        return await sender.Send(command);
     }
 
     [Authorize(Policies.AdminOnly)]

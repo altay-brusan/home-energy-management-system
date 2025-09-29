@@ -104,5 +104,71 @@ public class ApplicationDbContextInitialiser
 
             await _context.SaveChangesAsync();
         }
+
+        // Seed Device data
+        if (!_context.Devices.Any())
+        {
+            // Create a default site first
+            var defaultSite = new Site
+            {
+                UserId = administrator.Id,
+                Name = "Default Site",
+                Country = "Turkey",
+                City = "Istanbul",
+                AddressLine = "Test Address",
+                Latitude = 41.0082m,
+                Longitude = 28.9784m,
+                Timezone = "Europe/Istanbul2",
+                CreatedBy= administrator.Id
+            };
+
+            _context.Sites.Add(defaultSite);
+            await _context.SaveChangesAsync();
+
+            // Create a default setup
+            var defaultSetup = new Setup
+            {
+                SiteId = defaultSite.Id,
+                Name = "Default Setup",
+                CreatedBy = administrator.Id
+            };
+
+            _context.Setups.Add(defaultSetup);
+            await _context.SaveChangesAsync();
+
+            // Create sample device
+            var device = new Device
+            {
+                Manufacturer = "Siemens",
+                ModelNumber = "S7-1200",
+                SerialNumber = "SN123456789",
+                QRCode = "QR123456789",
+                TypeNumber = "6ES7214-1AG40-0XB0",
+                Specifications = System.Text.Json.JsonDocument.Parse("{\"cpu\":\"CPU 1214C\",\"memory\":\"100KB\",\"inputs\":\"14\",\"outputs\":\"10\"}"),
+                InstallationDate = DateTime.UtcNow.AddDays(-30),
+                CalibrationDate = DateTime.UtcNow.AddDays(-15),
+                NextCheckoutDate = DateTime.UtcNow.AddDays(15),
+                WarrantyPeriod = 24,
+                WarrantyUnit = Domain.Enums.WarrantyUnit.Month,
+                WarrantyStartDate = DateTime.UtcNow.AddDays(-30),
+                CreatedBy = administrator.Id
+            };
+
+            _context.Devices.Add(device);
+            await _context.SaveChangesAsync();
+
+            // Create SetupDevice relationship (1:1:1 ilişki)
+            var setupDevice = new SetupDevice
+            {
+                SetupId = defaultSetup.Id,
+                DeviceId = device.Id,
+                CreatedBy = administrator.Id
+            };
+
+            _context.SetupDevices.Add(setupDevice);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Seeded 1 device");
+        }
     }
 }

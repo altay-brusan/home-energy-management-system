@@ -1,9 +1,12 @@
 ﻿using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Security;
 using Hems_Backend.Domain.Constants;
 using Hems_Backend.Infrastructure.Data;
 using Hems_Backend.Infrastructure.Data.Interceptors;
 using Hems_Backend.Infrastructure.Identity;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
@@ -38,7 +41,7 @@ public static class DependencyInjection
         builder.Services.AddAuthorizationBuilder();
 
         builder.Services
-            .AddIdentityCore<ApplicationUser>()
+           .AddIdentityCore<ApplicationUser>()
             .AddRoles<IdentityRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddApiEndpoints();
@@ -46,9 +49,20 @@ public static class DependencyInjection
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddTransient<IIdentityService, IdentityService>();
         builder.Services.AddScoped<IUserService, UserService>();
+        
+        // Device Authorization
+        builder.Services.AddScoped<IAuthorizationHandler, DeviceOnlyAuthorizationHandler>();
+        
+        // Email services
+        builder.Services.AddTransient<IEmailSender, SimpleEmailSender>();
+        builder.Services.AddTransient<IEmailSender<ApplicationUser>, EmailSender>();
 
         builder.Services.AddAuthorization(options =>
         {
+            // Device Only Policy - Sadece device token'ları
+            options.AddPolicy(Policies.DeviceOnly, policy => 
+                policy.Requirements.Add(new DeviceOnlyRequirement()));
+            
             // Admin Only Policies
             options.AddPolicy(Policies.CanPurge, policy => policy.RequireRole(Roles.Administrator));
             options.AddPolicy(Policies.AdminOnly, policy => policy.RequireRole(Roles.Administrator));

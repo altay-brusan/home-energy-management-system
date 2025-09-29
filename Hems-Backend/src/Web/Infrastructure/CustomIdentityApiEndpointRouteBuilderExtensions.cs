@@ -1,17 +1,16 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
 using Hems_Backend.Infrastructure.Data;
+using Hems_Backend.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Extensions.Azure;
 using Microsoft.Extensions.Options;
 
 namespace Hems_Backend.Web.Infrastructure;
@@ -65,9 +64,8 @@ public static class IdentityApiEndpointRouteBuilderExtensions
             var userStore = sp.GetRequiredService<IUserStore<TUser>>();
             var emailStore = (IUserEmailStore<TUser>)userStore;
             var email = registration.Email;
-            var name = registration.Name;
+            var name = registration.FirstName;
             var surname = registration.Surname;
-            var tenantId = registration.TenantId;
             if (string.IsNullOrEmpty(email) || !_emailAddressAttribute.IsValid(email) || string.IsNullOrEmpty(name) || string.IsNullOrEmpty(surname))
             {
                 return CreateValidationProblem(IdentityResult.Failed(userManager.ErrorDescriber.InvalidEmail(email)));
@@ -80,11 +78,8 @@ public static class IdentityApiEndpointRouteBuilderExtensions
             // Yeni alanları burada set edebilirsiniz.
             if (user is ApplicationUser appUser)
             {
-                appUser.Name = name;
+                appUser.FirstName = name;
                 appUser.Surname = surname;
-                appUser.TenantId = tenantId;
-                appUser.Title = registration.Title;
-                appUser.Description = registration.Description;
             }
             var result = await userManager.CreateAsync(user, registration.Password);
 
@@ -98,30 +93,8 @@ public static class IdentityApiEndpointRouteBuilderExtensions
             {
                 throw new InvalidOperationException("User ID cannot be null");
             }
-            var userFirmFacilities = new List<UserFirmFacility>();
-            foreach (var userFirmFacility in registration.UserFirmFacilities)
-            {
-                if (tenantId != null)
-                {
-                    userFirmFacilities.Add(new UserFirmFacility
-                    {
-                        TenantId = (int)tenantId,
-                        UserId = userId,
-                        FirmId = userFirmFacility.FirmId,
-                        FacilityId = userFirmFacility.FacilityId
-                    });
-                }
-            }
-
-            await dbContext.UserFirmFacilities.AddRangeAsync(userFirmFacilities);
+          
             await dbContext.SaveChangesAsync();
-
-            if (result.Succeeded && tenantId != null)
-            {
-                var tenantIdValue = tenantId.ToString();
-                await userManager.AddClaimAsync(user, new System.Security.Claims.Claim("tenant_id", tenantIdValue!));
-            }
-
             await SendConfirmationEmailAsync(user, userManager, context, email);
             return TypedResults.Ok();
         });
@@ -481,25 +454,14 @@ public static class IdentityApiEndpointRouteBuilderExtensions
     {
         public required string Email { get; init; }
 
-        public int? TenantId { get; init; }
-        public required string Name { get; set; }
+        public required string FirstName { get; set; }
         public required string Surname { get; set; }
-        public string? Title { get; set; }
-        public string? Description { get; set; }
         public required string Password { get; init; }
-
-        public List<UserFirmFacilityRequest> UserFirmFacilities { get; set; } = new List<UserFirmFacilityRequest> { };
     }
-    public sealed class UserFirmFacilityRequest
-    {
-        public int? FirmId { get; set; }
-        public int? FacilityId { get; set; }
-    }
-    
+   
     public sealed class UserInfoDTO
     {
         public required string Email { get; init; }
-        public int? TenantId { get; init; }
         public string? Name { get; set; }
         public string? Surname { get; set; }
     }
@@ -549,8 +511,7 @@ public static class IdentityApiEndpointRouteBuilderExtensions
         return new UserInfoDTO
         {
             Email = await userManager.GetEmailAsync(user) ?? throw new NotSupportedException("Users must have an email."),
-            TenantId = appUser.TenantId,
-            Name = appUser.Name,
+            Name = appUser.FirstName,
             Surname = appUser.Surname
         };
     }

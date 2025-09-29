@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using Hems_Backend.Application.Common.Behaviours;
+using Hems_Backend.Application.Common.Services;
 using Microsoft.Extensions.Hosting;
 
 namespace Microsoft.Extensions.DependencyInjection;
@@ -19,5 +20,8 @@ public static class DependencyInjection
             cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehaviour<,>));
             cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(PerformanceBehaviour<,>));
         });
+
+        // Add device JWT service
+        builder.Services.AddScoped<IDeviceJwtService, DeviceJwtService>();
     }
 }

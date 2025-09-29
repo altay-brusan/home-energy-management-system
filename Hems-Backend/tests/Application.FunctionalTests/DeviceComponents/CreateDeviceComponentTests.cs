@@ -30,7 +30,8 @@ public class CreateDeviceComponentTests : BaseTestFixture
             Specifications = JsonDocument.Parse("{\"capacity\": \"100Ah\", \"voltage\": \"12V\"}"),
             WarrantyPeriod = 24,
             WarrantyUnit = WarrantyUnit.Month,
-            WarrantyStartDate = DateTime.UtcNow
+            WarrantyStartDate = DateTime.UtcNow,
+
         };
 
         // Act

@@ -2,44 +2,84 @@ using Hems_Backend.Application.Auth.Queries.GetUserStatus;
 using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Domain.Entities;
+using Hems_Backend.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Moq;
 using NUnit.Framework;
-using System.Text.Json;
+using System.Linq.Expressions;
 
 namespace Hems_Backend.Application.UnitTests.Auth;
 
 public class GetUserStatusQueryTests
 {
-    private Mock<IApplicationDbContext> _context = null!;
-    private Mock<DbSet<Site>> _sitesDbSet = null!;
-    private Mock<DbSet<Setup>> _setupsDbSet = null!;
-    private Mock<DbSet<SetupDevice>> _setupDevicesDbSet = null!;
+    private ApplicationDbContext _context = null!;
     private Mock<IUser> _user = null!;
 
     [SetUp]
     public void Setup()
     {
-        _context = new Mock<IApplicationDbContext>();
-        _sitesDbSet = new Mock<DbSet<Site>>();
-        _setupsDbSet = new Mock<DbSet<Setup>>();
-        _setupDevicesDbSet = new Mock<DbSet<SetupDevice>>();
-        _user = new Mock<IUser>();
+        var configuration = new ConfigurationBuilder()
+            .AddJsonFile("appsettings.json", optional: true)
+            .AddJsonFile("appsettings.Development.json", optional: true)
+            .AddEnvironmentVariables()
+            .Build();
+
+        var connectionString = configuration.GetConnectionString("DefaultConnection") 
+            ?? "Server=localhost;Port=5433;User ID=postgres;Password=***REMOVED***;Database=HEMS;Pooling=true;";
+
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseNpgsql(connectionString)
+            .Options;
+
+        _context = new ApplicationDbContext(options);
+        _context.Database.EnsureCreated();
         
-        _context.Setup(x => x.Sites).Returns(_sitesDbSet.Object);
-        _context.Setup(x => x.Setups).Returns(_setupsDbSet.Object);
-        _context.Setup(x => x.SetupDevices).Returns(_setupDevicesDbSet.Object);
+        _user = new Mock<IUser>();
         _user.Setup(x => x.Id).Returns("test-user-id");
+    }
+
+    [TearDown]
+    public async Task TearDown()
+    {
+        // Sadece bu test class'ının eklediği verileri temizle
+        // Test verilerini unique identifier ile işaretleyelim
+        var testUserId = "test-user-id";
+        
+        // Sadece bu test class'ının eklediği Sites'ları bul
+        var testSites = _context.Sites.Where(s => s.UserId == testUserId).ToList();
+        var testSiteIds = testSites.Select(s => s.Id).ToList();
+        
+        if (testSiteIds.Any())
+        {
+            var testSetups = _context.Setups.Where(s => testSiteIds.Contains(s.SiteId)).ToList();
+            var testSetupIds = testSetups.Select(s => s.Id).ToList();
+            
+            if (testSetupIds.Any())
+            {
+                var testSetupDevices = _context.SetupDevices.Where(sd => testSetupIds.Contains(sd.SetupId)).ToList();
+                var testDeviceIds = testSetupDevices.Select(sd => sd.DeviceId).ToList();
+                
+                // Sırayla sil (foreign key constraint'ler için)
+                _context.SetupDevices.RemoveRange(testSetupDevices);
+                if (testDeviceIds.Any())
+                {
+                    _context.Devices.RemoveRange(_context.Devices.Where(d => testDeviceIds.Contains(d.Id)));
+                }
+                _context.Setups.RemoveRange(testSetups);
+            }
+            _context.Sites.RemoveRange(testSites);
+        }
+        
+        await _context.SaveChangesAsync();
+        _context.Dispose();
     }
 
     [Test]
     public async Task Handle_ShouldReturnNeedsSite_WhenUserHasNoSites()
     {
         // Arrange
-        var sites = new List<Site>().AsQueryable();
-        _sitesDbSet.Setup(x => x.AsQueryable()).Returns(sites);
-
-        var handler = new GetUserStatusQueryHandler(_context.Object, _user.Object);
+        var handler = new GetUserStatusQueryHandler(_context, _user.Object);
 
         // Act
         var result = await handler.Handle(new GetUserStatusQuery(), CancellationToken.None);
@@ -56,23 +96,24 @@ public class GetUserStatusQueryTests
     {
         // Arrange
         var siteId = Guid.NewGuid();
-        var sites = new List<Site>
+        var site = new Site
         {
-            new Site
-            {
-                Id = siteId,
-                UserId = "test-user-id",
-                Name = "Test Site",
-                IsDeleted = false
-            }
-        }.AsQueryable();
+            Id = siteId,
+            UserId = "test-user-id",
+            Name = "Test Site",
+            Country = "Turkey",
+            City = "Istanbul",
+            AddressLine = "Test Address",
+            Latitude = 41.0082m,
+            Longitude = 28.9784m,
+            Timezone = "Europe/Istanbul",
+            IsDeleted = false
+        };
 
-        var setups = new List<Setup>().AsQueryable();
+        _context.Sites.Add(site);
+        await _context.SaveChangesAsync();
 
-        _sitesDbSet.Setup(x => x.AsQueryable()).Returns(sites);
-        _setupsDbSet.Setup(x => x.AsQueryable()).Returns(setups);
-
-        var handler = new GetUserStatusQueryHandler(_context.Object, _user.Object);
+        var handler = new GetUserStatusQueryHandler(_context, _user.Object);
 
         // Act
         var result = await handler.Handle(new GetUserStatusQuery(), CancellationToken.None);
@@ -93,34 +134,32 @@ public class GetUserStatusQueryTests
         var siteId = Guid.NewGuid();
         var setupId = Guid.NewGuid();
         
-        var sites = new List<Site>
+        var site = new Site
         {
-            new Site
-            {
-                Id = siteId,
-                UserId = "test-user-id",
-                Name = "Test Site",
-                IsDeleted = false
-            }
-        }.AsQueryable();
+            Id = siteId,
+            UserId = "test-user-id",
+            Name = "Test Site",
+            Country = "Turkey",
+            City = "Istanbul",
+            AddressLine = "Test Address",
+            Latitude = 41.0082m,
+            Longitude = 28.9784m,
+            Timezone = "Europe/Istanbul",
+            IsDeleted = false
+        };
 
-        var setups = new List<Setup>
+        var setup = new Setup
         {
-            new Setup
-            {
-                Id = setupId,
-                SiteId = siteId,
-                Name = "Test Setup"
-            }
-        }.AsQueryable();
+            Id = setupId,
+            SiteId = siteId,
+            Name = "Test Setup"
+        };
 
-        var setupDevices = new List<SetupDevice>().AsQueryable();
+        _context.Sites.Add(site);
+        _context.Setups.Add(setup);
+        await _context.SaveChangesAsync();
 
-        _sitesDbSet.Setup(x => x.AsQueryable()).Returns(sites);
-        _setupsDbSet.Setup(x => x.AsQueryable()).Returns(setups);
-        _setupDevicesDbSet.Setup(x => x.AsQueryable()).Returns(setupDevices);
-
-        var handler = new GetUserStatusQueryHandler(_context.Object, _user.Object);
+        var handler = new GetUserStatusQueryHandler(_context, _user.Object);
 
         // Act
         var result = await handler.Handle(new GetUserStatusQuery(), CancellationToken.None);
@@ -144,48 +183,59 @@ public class GetUserStatusQueryTests
         var setupId = Guid.NewGuid();
         var deviceId = Guid.NewGuid();
         
-        var sites = new List<Site>
+        var site = new Site
         {
-            new Site
-            {
-                Id = siteId,
-                UserId = "test-user-id",
-                Name = "Test Site",
-                IsDeleted = false
-            }
-        }.AsQueryable();
+            Id = siteId,
+            UserId = "test-user-id",
+            Name = "Test Site",
+            Country = "Turkey",
+            City = "Istanbul",
+            AddressLine = "Test Address",
+            Latitude = 41.0082m,
+            Longitude = 28.9784m,
+            Timezone = "Europe/Istanbul",
+            IsDeleted = false
+        };
 
-        var setups = new List<Setup>
+        var setup = new Setup
         {
-            new Setup
-            {
-                Id = setupId,
-                SiteId = siteId,
-                Name = "Test Setup"
-            }
-        }.AsQueryable();
+            Id = setupId,
+            SiteId = siteId,
+            Name = "Test Setup"
+        };
 
-        var setupDevices = new List<SetupDevice>
+        // Device entity'sini oluştur
+        var device = new Device
         {
-            new SetupDevice
-            {
-                Id = Guid.NewGuid(),
-                SetupId = setupId,
-                DeviceId = deviceId,
-                Device = new Device
-                {
-                    Id = deviceId,
-                    Manufacturer = "Test Manufacturer",
-                    ModelNumber = "TEST-MODEL"
-                }
-            }
-        }.AsQueryable();
+            Id = deviceId,
+            Manufacturer = "Test Manufacturer",
+            ModelNumber = "Test Model",
+            SerialNumber = "TEST123",
+            QRCode = "QR123",
+            TypeNumber = "TYPE123",
+            Specifications = System.Text.Json.JsonDocument.Parse("{\"test\":\"value\"}"),
+            InstallationDate = DateTime.UtcNow.AddDays(-30),
+            CalibrationDate = DateTime.UtcNow.AddDays(-15),
+            NextCheckoutDate = DateTime.UtcNow.AddDays(15),
+            WarrantyPeriod = 24,
+            WarrantyUnit = Domain.Enums.WarrantyUnit.Month,
+            WarrantyStartDate = DateTime.UtcNow.AddDays(-30)
+        };
 
-        _sitesDbSet.Setup(x => x.AsQueryable()).Returns(sites);
-        _setupsDbSet.Setup(x => x.AsQueryable()).Returns(setups);
-        _setupDevicesDbSet.Setup(x => x.AsQueryable()).Returns(setupDevices);
+        var setupDevice = new SetupDevice
+        {
+            Id = Guid.NewGuid(),
+            SetupId = setupId,
+            DeviceId = deviceId
+        };
 
-        var handler = new GetUserStatusQueryHandler(_context.Object, _user.Object);
+        _context.Sites.Add(site);
+        _context.Setups.Add(setup);
+        _context.Devices.Add(device);
+        _context.SetupDevices.Add(setupDevice);
+        await _context.SaveChangesAsync();
+
+        var handler = new GetUserStatusQueryHandler(_context, _user.Object);
 
         // Act
         var result = await handler.Handle(new GetUserStatusQuery(), CancellationToken.None);
@@ -200,6 +250,6 @@ public class GetUserStatusQueryTests
         Assert.That(result.Data.SetupId, Is.EqualTo(setupId));
         Assert.That(result.Data.SetupName, Is.EqualTo("Test Setup"));
         Assert.That(result.Data.DeviceId, Is.EqualTo(deviceId));
-        Assert.That(result.Data.DeviceName, Is.EqualTo("Test Manufacturer TEST-MODEL"));
+        Assert.That(result.Data.DeviceName, Is.EqualTo("Test Manufacturer Test Model"));
     }
 }

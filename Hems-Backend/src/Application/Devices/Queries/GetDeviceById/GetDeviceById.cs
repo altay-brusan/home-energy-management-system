@@ -34,3 +34,12 @@ public class GetDeviceByIdQueryHandler : IRequestHandler<GetDeviceByIdQuery, Dev
 
 
 
+
+
+
+
+
+
+
+
+

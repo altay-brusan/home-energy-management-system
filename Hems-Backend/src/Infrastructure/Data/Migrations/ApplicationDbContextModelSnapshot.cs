@@ -179,6 +179,63 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.ToTable("DeviceComponents");
                 });
 
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceData", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<JsonDocument>("Data")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("DataType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("DeviceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTime>("RequestDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DataType")
+                        .HasDatabaseName("IX_DeviceData_DataType");
+
+                    b.HasIndex("DeviceId")
+                        .HasDatabaseName("IX_DeviceData_DeviceId");
+
+                    b.HasIndex("RequestDate")
+                        .HasDatabaseName("IX_DeviceData_RequestDate");
+
+                    b.HasIndex("DeviceId", "RequestDate")
+                        .HasDatabaseName("IX_DeviceData_DeviceId_RequestDate");
+
+                    b.HasIndex("DeviceId", "DataType", "RequestDate")
+                        .HasDatabaseName("IX_DeviceData_DeviceId_DataType_RequestDate");
+
+                    b.ToTable("DeviceData", (string)null);
+                });
+
             modelBuilder.Entity("Hems_Backend.Domain.Entities.ExternalDevice", b =>
                 {
                     b.Property<Guid>("Id")
@@ -470,6 +527,9 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("FirstName")
+                        .HasColumnType("text");
+
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("boolean");
 
@@ -494,6 +554,9 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<string>("SecurityStamp")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Surname")
                         .HasColumnType("text");
 
                     b.Property<bool>("TwoFactorEnabled")
@@ -651,6 +714,17 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                 {
                     b.HasOne("Hems_Backend.Domain.Entities.Device", "Device")
                         .WithMany("DeviceComponents")
+                        .HasForeignKey("DeviceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Device");
+                });
+
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceData", b =>
+                {
+                    b.HasOne("Hems_Backend.Domain.Entities.Device", "Device")
+                        .WithMany()
                         .HasForeignKey("DeviceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();

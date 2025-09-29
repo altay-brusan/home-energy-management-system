@@ -27,6 +27,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
 
     public DbSet<ExternalDevice> ExternalDevices => Set<ExternalDevice>();
 
+    public DbSet<Hems_Backend.Domain.Entities.DeviceData> DeviceData => Set<Hems_Backend.Domain.Entities.DeviceData>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

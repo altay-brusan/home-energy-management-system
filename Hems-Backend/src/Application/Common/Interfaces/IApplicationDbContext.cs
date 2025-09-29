@@ -20,5 +20,7 @@ public interface IApplicationDbContext
 
     DbSet<ExternalDevice> ExternalDevices { get; }
 
+    DbSet<Hems_Backend.Domain.Entities.DeviceData> DeviceData { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

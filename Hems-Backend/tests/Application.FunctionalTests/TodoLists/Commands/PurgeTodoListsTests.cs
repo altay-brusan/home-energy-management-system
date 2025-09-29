@@ -19,7 +19,7 @@ public class PurgeTodoListsTests : BaseTestFixture
 
         var action = () => SendAsync(command);
 
-        await action.Should().ThrowAsync<UnauthorizedAccessException>();
+        await action.Should().ThrowAsync<ForbiddenAccessException>();
     }
 
     [Test]

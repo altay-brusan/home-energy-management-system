@@ -67,6 +67,10 @@ public class CreateDeviceCommandHandler : IRequestHandler<CreateDeviceCommand, G
             WarrantyPeriod = request.WarrantyPeriod,
             WarrantyUnit = request.WarrantyUnit,
             WarrantyStartDate = request.WarrantyStartDate,
+            CreatedBy = _user.Id,
+            Created = utcNow,
+            LastModifiedBy = _user.Id,
+            LastModified = utcNow
         };
 
         _context.Devices.Add(entity);
@@ -86,6 +90,10 @@ public class CreateDeviceCommandHandler : IRequestHandler<CreateDeviceCommand, G
                 WarrantyPeriod = componentCommand.WarrantyPeriod,
                 WarrantyUnit = componentCommand.WarrantyUnit,
                 WarrantyStartDate = componentCommand.WarrantyStartDate,
+                CreatedBy = _user.Id,
+                Created = utcNow,
+                LastModifiedBy = _user.Id,
+                LastModified = utcNow
             };
             
             entity.DeviceComponents.Add(component);

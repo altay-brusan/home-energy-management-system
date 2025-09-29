@@ -1,0 +1,37 @@
+using Hems_Backend.Application.Common.Interfaces;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+
+namespace Hems_Backend.Application.Devices.Queries.CheckDeviceAccess;
+
+public record CheckDeviceAccessQuery : IRequest<bool>
+{
+    public Guid DeviceId { get; init; }
+}
+
+public class CheckDeviceAccessQueryHandler : IRequestHandler<CheckDeviceAccessQuery, bool>
+{
+    private readonly IApplicationDbContext _context;
+    private readonly IUser _user;
+
+    public CheckDeviceAccessQueryHandler(IApplicationDbContext context, IUser user)
+    {
+        _context = context;
+        _user = user;
+    }
+
+    public async Task<bool> Handle(CheckDeviceAccessQuery request, CancellationToken cancellationToken)
+    {
+        // Kullanıcının bu device'a erişim yetkisi var mı kontrol et
+        // SetupDevice tablosunda kullanıcının device'ı var mı bak
+        
+        var hasAccess = await _context.SetupDevices
+            .AnyAsync(sd => sd.DeviceId == request.DeviceId && 
+                           _context.Setups.Any(s => s.Id == sd.SetupId && 
+                                                  _context.Sites.Any(site => site.Id == s.SiteId && 
+                                                                           site.CreatedBy == _user.Id)), 
+                      cancellationToken);
+
+        return hasAccess;
+    }
+}

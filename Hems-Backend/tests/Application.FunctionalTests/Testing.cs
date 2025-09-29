@@ -16,6 +16,8 @@ public partial class Testing
     private static IServiceScopeFactory _scopeFactory = null!;
     private static string? _userId;
 
+    public static IServiceScopeFactory ScopeFactory => _scopeFactory;
+
     [OneTimeSetUp]
     public async Task RunBeforeAnyTests()
     {
@@ -25,6 +27,7 @@ public partial class Testing
 
         _scopeFactory = _factory.Services.GetRequiredService<IServiceScopeFactory>();
     }
+
 
     public static async Task<TResponse> SendAsync<TResponse>(IRequest<TResponse> request)
     {
@@ -65,6 +68,14 @@ public partial class Testing
 
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
+        // Önce kullanıcının var olup olmadığını kontrol et
+        var existingUser = await userManager.FindByEmailAsync(userName);
+        if (existingUser != null)
+        {
+            _userId = existingUser.Id;
+            return _userId;
+        }
+
         var user = new ApplicationUser { UserName = userName, Email = userName };
 
         var result = await userManager.CreateAsync(user, password);
@@ -75,7 +86,11 @@ public partial class Testing
 
             foreach (var role in roles)
             {
-                await roleManager.CreateAsync(new IdentityRole(role));
+                var existingRole = await roleManager.FindByNameAsync(role);
+                if (existingRole == null)
+                {
+                    await roleManager.CreateAsync(new IdentityRole(role));
+                }
             }
 
             await userManager.AddToRolesAsync(user, roles);
@@ -140,7 +155,17 @@ public partial class Testing
     [OneTimeTearDown]
     public async Task RunAfterAnyTests()
     {
-        await _database.DisposeAsync();
-        await _factory.DisposeAsync();
+        Console.WriteLine("🧹 OneTimeTearDown başladı - Test database siliniyor...");
+        
+        // Test database'i sil
+        if (_database != null)
+        {
+            await _database.DisposeAsync();
+        }
+        
+        // Factory'yi dispose et
+        _factory?.Dispose();
+        
+        Console.WriteLine("🧹 OneTimeTearDown tamamlandı - Test database silindi!");
     }
 }

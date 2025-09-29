@@ -1,7 +1,10 @@
 ﻿using Azure.Identity;
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Security;
+using Hems_Backend.Domain.Constants;
 using Hems_Backend.Infrastructure.Data;
 using Hems_Backend.Web.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using NSwag;
@@ -23,6 +26,16 @@ public static class DependencyInjection
 
         builder.Services.AddExceptionHandler<CustomExceptionHandler>();
 
+        // Add Authorization Policies
+        //builder.Services.AddAuthorization(options =>
+        //{
+        //    options.AddPolicy(Policies.DeviceOnly, policy =>
+        //    {
+        //        policy.Requirements.Add(new DeviceOnlyRequirement());
+        //    });
+        //});
+
+        //builder.Services.AddScoped<IAuthorizationHandler, DeviceOnlyAuthorizationHandler>();
 
         // Customise default API behaviour
         builder.Services.Configure<ApiBehaviorOptions>(options =>

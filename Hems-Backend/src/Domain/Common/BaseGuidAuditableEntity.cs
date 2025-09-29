@@ -22,3 +22,12 @@ public abstract class BaseGuidAuditableEntity : BaseGuidEntity
 
 
 
+
+
+
+
+
+
+
+
+

@@ -18,4 +18,7 @@ public abstract class Policies
     
     // Dashboard Access Policies
     public const string DashboardAccess = nameof(DashboardAccess);
+    
+    // Device Data Policies
+    public const string DeviceOnly = nameof(DeviceOnly);
 }
