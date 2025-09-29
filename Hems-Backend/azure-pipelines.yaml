@@ -1,0 +1,45 @@
+trigger:
+  branches:
+    include:
+      - main   # main branch'e push olduğunda pipeline çalışacak
+
+pool:
+  name: 'Default'   # Self-hosted agent pool adı
+
+variables:
+  buildConfiguration: 'Release'
+  publishDir: '$(Build.ArtifactStagingDirectory)/publish'
+  appPath: '/var/www/Hems/api'
+  serviceName: 'hems-api.service'
+
+steps:
+  # .NET 9 SDK kullan
+  - task: UseDotNet@2
+    inputs:
+      packageType: 'sdk'
+      version: '9.x'
+      installationPath: $(Agent.ToolsDirectory)/dotnet
+
+  # Restore
+  - script: dotnet restore ./Hems-Backend.sln
+    displayName: 'Restore dependencies'
+
+  # Build
+  - script: dotnet build ./Hems-Backend.sln --configuration $(buildConfiguration)
+    displayName: 'Build solution'
+
+  # Publish
+  - script: dotnet publish ./Hems-Backend.sln --configuration $(buildConfiguration) -o $(publishDir)
+    displayName: 'Publish solution'
+
+  # Hedef Ubuntu dizinine kopyala
+  - script: |
+      rm -rf $(appPath)/*
+      cp -r $(publishDir)/* $(appPath)/
+    displayName: 'Copy files to Ubuntu app folder'
+
+  # Servisi restart et
+  - script: |
+      sudo systemctl daemon-reload
+      sudo systemctl restart $(serviceName)
+    displayName: 'Restart systemd service'
