@@ -1,0 +1,33 @@
+trigger:
+  branches:
+    include:
+      - main   # main branch tetiklenince çalışır
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  buildConfiguration: 'Release'
+  publishDir: '$(Build.ArtifactStagingDirectory)/publish'
+
+steps:
+  - task: UseDotNet@2
+    inputs:
+      packageType: 'sdk'
+      version: '9.x'
+      installationPath: $(Agent.ToolsDirectory)/dotnet
+
+  - script: dotnet restore
+    displayName: 'Restore dependencies'
+
+  - script: dotnet build --configuration $(buildConfiguration)
+    displayName: 'Build project'
+
+  - script: dotnet publish --configuration $(buildConfiguration) -o $(publishDir)
+    displayName: 'Publish project'
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      PathtoPublish: '$(publishDir)'
+      ArtifactName: 'drop'
+      publishLocation: 'Container'
