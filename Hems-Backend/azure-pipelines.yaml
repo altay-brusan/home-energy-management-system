@@ -1,18 +1,22 @@
 trigger:
   branches:
     include:
-      - main
+      - main  # main branch’e push olduğunda pipeline tetiklenecek
 
 pool:
-  name: 'Default'   # self-hosted agent pool
+  name: 'Default'  # Self-hosted agent pool adı
 
 variables:
   buildConfiguration: 'Release'
   publishDir: '$(Build.ArtifactStagingDirectory)/publish'
-  appPath: '/var/www/Hems/api'        # publish edilecek dizin
+  appPath: '/var/www/Hems/api'        # Publish edilecek dizin
   serviceName: 'hems-api.service'     # systemd servisi
 
 steps:
+  # Repo’yu checkout et
+  - checkout: self
+
+  # .NET 9 SDK kullan
   - task: UseDotNet@2
     inputs:
       packageType: 'sdk'
@@ -27,9 +31,9 @@ steps:
   - script: dotnet build $(Build.SourcesDirectory)/Hems-Backend.sln --configuration $(buildConfiguration) --no-restore
     displayName: 'Build solution'
 
-  # Publish web/API projeleri (sln üzerinden)
+  # Publish solution
   - script: dotnet publish $(Build.SourcesDirectory)/Hems-Backend.sln --configuration $(buildConfiguration) -o $(publishDir) --no-build
-    displayName: 'Publish web/API projects'
+    displayName: 'Publish solution'
 
   # Hedef klasöre deploy
   - script: |
@@ -42,7 +46,7 @@ steps:
       fi
     displayName: 'Deploy files to target folder'
 
-  # Servisi restart et
+  # Systemd servisini restart et
   - script: |
       sudo systemctl daemon-reload
       sudo systemctl restart $(serviceName)
