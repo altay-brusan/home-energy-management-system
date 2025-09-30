@@ -1,10 +1,10 @@
 trigger:
   branches:
     include:
-      - main  # main branch’e push olduğunda pipeline tetiklenecek
+      - main   # main branch’e push olduğunda pipeline tetiklenecek
 
 pool:
-  name: 'Default'  # Self-hosted agent pool adı
+  name: 'Default'  # Self-hosted agent pool
 
 variables:
   buildConfiguration: 'Release'
@@ -13,41 +13,49 @@ variables:
   serviceName: 'hems-api.service'     # systemd servisi
 
 steps:
-  # Repo’yu checkout et
+  # 1. Repo checkout
   - checkout: self
 
-  # .NET 9 SDK kullan
+  # 2. .NET 9 SDK kullan
   - task: UseDotNet@2
     inputs:
       packageType: 'sdk'
       version: '9.x'
       installationPath: $(Agent.ToolsDirectory)/dotnet
 
-  # Restore solution
-  - script: dotnet restore $(Build.SourcesDirectory)/Hems-Backend.sln
+  # 3. Restore solution
+  - script: |
+      echo "Restoring solution..."
+      dotnet restore "$(Build.SourcesDirectory)/Hems-Backend.sln"
     displayName: 'Restore solution'
 
-  # Build solution
-  - script: dotnet build $(Build.SourcesDirectory)/Hems-Backend.sln --configuration $(buildConfiguration) --no-restore
+  # 4. Build solution
+  - script: |
+      echo "Building solution..."
+      dotnet build "$(Build.SourcesDirectory)/Hems-Backend.sln" --configuration $(buildConfiguration) --no-restore
     displayName: 'Build solution'
 
-  # Publish solution
-  - script: dotnet publish $(Build.SourcesDirectory)/Hems-Backend.sln --configuration $(buildConfiguration) -o $(publishDir) --no-build
+  # 5. Publish solution (tüm web/API projeleri)
+  - script: |
+      echo "Publishing solution..."
+      dotnet publish "$(Build.SourcesDirectory)/Hems-Backend.sln" --configuration $(buildConfiguration) -o "$(publishDir)" --no-build
     displayName: 'Publish solution'
 
-  # Hedef klasöre deploy
+  # 6. Deploy dosyaları hedef Ubuntu dizinine
   - script: |
-      mkdir -p $(appPath)
+      echo "Deploying files to $(appPath)..."
+      mkdir -p "$(appPath)"
       if command -v rsync >/dev/null 2>&1; then
-        rsync -av --delete $(publishDir)/ $(appPath)/
+        rsync -av --delete "$(publishDir)/" "$(appPath)/"
       else
-        rm -rf $(appPath)/*
-        cp -r $(publishDir)/* $(appPath)/
+        rm -rf "$(appPath)/*"
+        cp -r "$(publishDir)/*" "$(appPath)/"
       fi
     displayName: 'Deploy files to target folder'
 
-  # Systemd servisini restart et
+  # 7. Systemd servisini restart et
   - script: |
+      echo "Restarting systemd service $(serviceName)..."
       sudo systemctl daemon-reload
       sudo systemctl restart $(serviceName)
     displayName: 'Restart systemd service'
