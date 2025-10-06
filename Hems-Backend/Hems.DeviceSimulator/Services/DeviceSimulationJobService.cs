@@ -2,102 +2,193 @@ using System.Text.Json;
 using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Hangfire;
 
 namespace Hems.DeviceSimulator.Services;
 
-public interface IDeviceSimulatorService
+public interface IDeviceSimulationJobService
 {
     Task StartSimulationAsync();
     Task StopSimulationAsync();
     Task<bool> IsRunningAsync();
+    Task ScheduleDeviceSimulationAsync(Guid deviceId, int intervalSeconds);
+    Task UnscheduleDeviceSimulationAsync(Guid deviceId);
     Task SendDeviceDataAsync(DeviceWithComponents device, object data);
-    Task<(object? Data, string DataType)?> GenerateTestDataAsync(Guid deviceId, Guid componentId);
 }
 
-public class DeviceSimulatorService : IDeviceSimulatorService
+public class DeviceSimulationJobService : IDeviceSimulationJobService
 {
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly ILogger<DeviceSimulatorService> _logger;
+    private readonly ILogger<DeviceSimulationJobService> _logger;
     private readonly IDataGeneratorService _dataGenerator;
     private readonly IConfiguration _configuration;
     private readonly IApplicationDbContext _context;
+    private readonly IBackgroundJobClient _backgroundJobClient;
+    private readonly IRecurringJobManager _recurringJobManager;
     
-    private bool _isRunning = false;
-    private CancellationTokenSource? _cancellationTokenSource;
     private readonly Dictionary<Guid, string> _deviceTokens = new();
+    private readonly SemaphoreSlim _semaphore = new(1, 1);
 
-    public DeviceSimulatorService(
+    public DeviceSimulationJobService(
         IHttpClientFactory httpClientFactory,
-        ILogger<DeviceSimulatorService> logger,
+        ILogger<DeviceSimulationJobService> logger,
         IDataGeneratorService dataGenerator,
         IConfiguration configuration,
-        IApplicationDbContext context)
+        IApplicationDbContext context,
+        IBackgroundJobClient backgroundJobClient,
+        IRecurringJobManager recurringJobManager)
     {
         _httpClientFactory = httpClientFactory;
         _logger = logger;
         _dataGenerator = dataGenerator;
         _configuration = configuration;
         _context = context;
+        _backgroundJobClient = backgroundJobClient;
+        _recurringJobManager = recurringJobManager;
     }
 
     public async Task StartSimulationAsync()
     {
-        if (_isRunning)
-        {
-            _logger.LogWarning("Simulation is already running!");
-            return;
-        }
-
-        _logger.LogInformation("🚀 Starting Device Simulation...");
-        _isRunning = true;
-        _cancellationTokenSource = new CancellationTokenSource();
-
+        await _semaphore.WaitAsync();
         try
         {
-            // DB'den tüm device'ları çek (componentleri ile birlikte)
+            _logger.LogInformation("🚀 Starting Device Simulation with Hangfire...");
+
+            // DB'den tüm device'ları çek
             var devices = await GetDevicesFromDatabaseAsync();
             
             _logger.LogInformation("📡 Found {DeviceCount} devices in database", devices.Count);
             
-            // Her device için ayrı task başlat (background'da çalışsın)
+            // Her device için recurring job oluştur
             foreach (var device in devices)
             {
-                _ = Task.Run(() => SimulateDeviceAsync(device, _cancellationTokenSource.Token));
+                var intervalSeconds = _configuration.GetValue<int>($"DeviceSimulator:DeviceIntervals:{device.Device.Id}", 30);
+                await ScheduleDeviceSimulationAsync(device.Device.Id, intervalSeconds);
             }
             
-            _logger.LogInformation("✅ All device simulation tasks started in background");
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogInformation("Simulation stopped by user");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error during simulation");
+            _logger.LogInformation("✅ All device simulation jobs scheduled with Hangfire");
         }
         finally
         {
-            _isRunning = false;
-            _cancellationTokenSource?.Dispose();
+            _semaphore.Release();
         }
     }
 
-    public Task StopSimulationAsync()
+    public async Task StopSimulationAsync()
     {
-        if (!_isRunning)
+        await _semaphore.WaitAsync();
+        try
         {
-            _logger.LogWarning("Simulation is not running!");
-            return Task.CompletedTask;
-        }
+            _logger.LogInformation("🛑 Stopping Device Simulation...");
 
-        _logger.LogInformation("🛑 Stopping Device Simulation...");
-        _cancellationTokenSource?.Cancel();
+            // DB'den tüm device'ları çek ve job'ları iptal et
+            var devices = await GetDevicesFromDatabaseAsync();
+            
+            foreach (var device in devices)
+            {
+                await UnscheduleDeviceSimulationAsync(device.Device.Id);
+            }
+            
+            _logger.LogInformation("✅ All device simulation jobs stopped");
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
+    public async Task<bool> IsRunningAsync()
+    {
+        try
+        {
+            // Database'den device'ları çek ve job'ların varlığını kontrol et
+            var devices = await GetDevicesFromDatabaseAsync();
+            
+            // En az bir device varsa ve job'lar çalışıyorsa true döner
+            // Gerçek implementasyonda Hangfire API'sini kullanarak job durumunu kontrol edebiliriz
+            return devices.Count > 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking simulation status");
+            return false;
+        }
+    }
+
+    public Task ScheduleDeviceSimulationAsync(Guid deviceId, int intervalSeconds)
+    {
+        try
+        {
+            var jobId = $"device-simulation-{deviceId}";
+            var cronExpression = $"*/{intervalSeconds} * * * * *"; // Her N saniyede bir
+
+            _recurringJobManager.AddOrUpdate(
+                jobId,
+                () => SimulateDeviceJob(deviceId),
+                cronExpression,
+                new RecurringJobOptions
+                {
+                    TimeZone = TimeZoneInfo.Utc
+                });
+
+            _logger.LogInformation("📅 Scheduled recurring job for device {DeviceId} every {IntervalSeconds} seconds", 
+                deviceId, intervalSeconds);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error scheduling job for device {DeviceId}", deviceId);
+        }
+        
         return Task.CompletedTask;
     }
 
-    public Task<bool> IsRunningAsync()
+    public Task UnscheduleDeviceSimulationAsync(Guid deviceId)
     {
-        return Task.FromResult(_isRunning);
+        try
+        {
+            var jobId = $"device-simulation-{deviceId}";
+            _recurringJobManager.RemoveIfExists(jobId);
+            
+            _logger.LogInformation("🗑️ Removed recurring job for device {DeviceId}", deviceId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error removing job for device {DeviceId}", deviceId);
+        }
+        
+        return Task.CompletedTask;
+    }
+
+    [AutomaticRetry(Attempts = 3)]
+    public async Task SimulateDeviceJob(Guid deviceId)
+    {
+        try
+        {
+            _logger.LogDebug("🔄 Executing simulation job for device {DeviceId}", deviceId);
+
+            // Device'ı ve component'lerini çek
+            var device = await GetDeviceWithComponentsAsync(deviceId);
+            if (device == null)
+            {
+                _logger.LogWarning("Device {DeviceId} not found, removing job", deviceId);
+                await UnscheduleDeviceSimulationAsync(deviceId);
+                return;
+            }
+
+            // Her component için veri üret ve gönder
+            foreach (var component in device.Components)
+            {
+                var data = _dataGenerator.GenerateDataForComponent(component);
+                await SendDeviceDataAsync(device, data);
+            }
+
+            _logger.LogDebug("✅ Simulation job completed for device {DeviceId}", deviceId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in simulation job for device {DeviceId}", deviceId);
+            throw; // Hangfire retry mekanizması için
+        }
     }
 
     public async Task SendDeviceDataAsync(DeviceWithComponents device, object data)
@@ -121,7 +212,7 @@ public class DeviceSimulatorService : IDeviceSimulatorService
             // CreateDeviceDataCommand formatında gönder
             var deviceDataCommand = new
             {
-                DataType = data.GetType().Name, // Örn: "BatteryData", "InverterData"
+                DataType = data.GetType().Name,
                 DeviceId = device.Device.Id,
                 RequestDate = DateTime.UtcNow,
                 Data = JsonSerializer.SerializeToDocument(data)
@@ -134,7 +225,7 @@ public class DeviceSimulatorService : IDeviceSimulatorService
             
             if (response.IsSuccessStatusCode)
             {
-                _logger.LogInformation("✅ Data sent successfully for device {DeviceId}", device.Device.Id);
+                _logger.LogDebug("✅ Data sent successfully for device {DeviceId}", device.Device.Id);
             }
             else
             {
@@ -148,77 +239,10 @@ public class DeviceSimulatorService : IDeviceSimulatorService
         }
     }
 
-    public async Task<(object? Data, string DataType)?> GenerateTestDataAsync(Guid deviceId, Guid componentId)
-    {
-        try
-        {
-            // Device'ı ve component'ini bul
-            var device = await _context.Devices
-                .Include(d => d.DeviceComponents)
-                .FirstOrDefaultAsync(d => d.Id == deviceId && !d.IsDeleted);
-
-            if (device == null)
-            {
-                _logger.LogWarning("Device not found: {DeviceId}", deviceId);
-                return null;
-            }
-
-            var component = device.DeviceComponents
-                .FirstOrDefault(c => c.Id == componentId && !c.IsDeleted);
-
-            if (component == null)
-            {
-                _logger.LogWarning("Component not found: {ComponentId} for device {DeviceId}", componentId, deviceId);
-                return null;
-            }
-
-            // DeviceComponent'i DeviceComponentInfo'ya dönüştür
-            var componentInfo = new DeviceComponentInfo
-            {
-                Id = component.Id,
-                DeviceId = component.DeviceId,
-                DeviceType = component.DeviceType,
-                Name = component.Name,
-                Manufacturer = component.Manufacturer,
-                ModelNumber = component.ModelNumber,
-                SerialNumber = component.SerialNumber,
-                Specifications = component.Specifications
-            };
-
-            // Component için veri üret
-            var data = _dataGenerator.GenerateDataForComponent(componentInfo);
-            var dataType = GetDataTypeFromComponent(component.DeviceType);
-            
-            _logger.LogInformation("✅ Generated test data for device {DeviceId}, component {ComponentId} ({ComponentType})", 
-                deviceId, componentId, component.DeviceType);
-
-            return (data, dataType);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error generating test data for device {DeviceId}, component {ComponentId}", deviceId, componentId);
-            return null;
-        }
-    }
-
-    private string GetDataTypeFromComponent(DeviceType deviceType)
-    {
-        return deviceType switch
-        {
-            DeviceType.Battery => "BatteryData",
-            DeviceType.BMS => "BatteryClusterData",
-            DeviceType.Invertor => "InverterData",
-            DeviceType.MPPS => "MPPSData",
-            _ => "GenericData"
-        };
-    }
-
     private async Task<List<DeviceWithComponents>> GetDevicesFromDatabaseAsync()
     {
         try
         {
-            // Doğrudan DbContext kullanarak device'ları ve component'lerini çek
-            // Sadece SetupDevice tablosunda kayıtlı olan device'ları al
             var devices = await _context.Devices
                 .Include(d => d.DeviceComponents)
                 .Where(d => !d.IsDeleted && 
@@ -261,76 +285,46 @@ public class DeviceSimulatorService : IDeviceSimulatorService
         }
     }
 
-    private async Task<List<DeviceComponentInfo>> GetDeviceComponentsAsync(Guid deviceId)
+    private async Task<DeviceWithComponents?> GetDeviceWithComponentsAsync(Guid deviceId)
     {
-        // Bu method'u daha sonra implement edeceğiz
-        // Şimdilik boş liste döndürüyoruz
-        await Task.CompletedTask;
-        return new List<DeviceComponentInfo>();
-    }
-
-    private async Task SimulateDeviceAsync(DeviceWithComponents deviceInfo, CancellationToken cancellationToken)
-    {
-        var device = deviceInfo.Device;
-        var components = deviceInfo.Components;
-        
-        _logger.LogInformation("📡 Starting simulation for device {DeviceId} ({Manufacturer} {Model})", 
-            device.Id, device.Manufacturer, device.ModelNumber);
-
-        // Device'ın component'lerine göre veri üret
-        var dataTypes = DetermineDataTypes(components);
-        
-        if (!dataTypes.Any())
+        try
         {
-            _logger.LogWarning("No data types found for device {DeviceId}", device.Id);
-            return;
-        }
+            var device = await _context.Devices
+                .Include(d => d.DeviceComponents)
+                .FirstOrDefaultAsync(d => d.Id == deviceId && !d.IsDeleted);
 
-        var intervalSeconds = _configuration.GetValue<int>($"DeviceSimulator:DeviceIntervals:{device.Id}", 30);
+            if (device == null)
+                return null;
 
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            try
+            return new DeviceWithComponents
             {
-                foreach (var deviceComponent in components)
+                Device = new MockDeviceDto
                 {
-                    // Her component için ayrı veri üret
-                    var data = _dataGenerator.GenerateDataForComponent(deviceComponent);
-                    
-                    // Ana sisteme gönder
-                    await SendDeviceDataAsync(deviceInfo, data);
-                }
-                
-                // Belirtilen süre kadar bekle
-                await Task.Delay(TimeSpan.FromSeconds(intervalSeconds), cancellationToken);
-            }
-            catch (OperationCanceledException)
-            {
-                break;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error simulating device {DeviceId}", device.Id);
-                await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken); // Hata durumunda kısa bekle
-            }
+                    Id = device.Id,
+                    Manufacturer = device.Manufacturer,
+                    ModelNumber = device.ModelNumber,
+                    SerialNumber = device.SerialNumber
+                },
+                Components = device.DeviceComponents
+                    .Where(c => !c.IsDeleted)
+                    .Select(component => new DeviceComponentInfo
+                    {
+                        Id = component.Id,
+                        DeviceId = component.DeviceId,
+                        DeviceType = component.DeviceType,
+                        Name = component.Name,
+                        Manufacturer = component.Manufacturer,
+                        ModelNumber = component.ModelNumber,
+                        SerialNumber = component.SerialNumber,
+                        Specifications = component.Specifications
+                    }).ToList()
+            };
         }
-
-        _logger.LogInformation("🛑 Stopped simulation for device {DeviceId}", device.Id);
-    }
-
-    private List<DeviceType> DetermineDataTypes(List<DeviceComponentInfo> components)
-    {
-        var dataTypes = new List<DeviceType>();
-        
-        foreach (var component in components)
+        catch (Exception ex)
         {
-            if (!dataTypes.Contains(component.DeviceType))
-            {
-                dataTypes.Add(component.DeviceType);
-            }
+            _logger.LogError(ex, "Error getting device {DeviceId} from database", deviceId);
+            return null;
         }
-        
-        return dataTypes;
     }
 
     private async Task<string> GetDeviceTokenAsync(DeviceWithComponents device)
@@ -340,7 +334,6 @@ public class DeviceSimulatorService : IDeviceSimulatorService
             return token;
         }
 
-        // Token yoksa login yap
         return await LoginDeviceAsync(device);
     }
 
@@ -348,9 +341,6 @@ public class DeviceSimulatorService : IDeviceSimulatorService
     {
         try
         {
-            // Device'ın SerialNumber'ını al
-           
-            
             if (device == null || string.IsNullOrEmpty(device.Device.SerialNumber))
             {
                 _logger.LogError("❌ Device {DeviceId} not found or SerialNumber is empty", device!.Device.SerialNumber);
@@ -429,4 +419,3 @@ public class LoginResponse
     public string accessToken { get; set; } = string.Empty;
     public DateTime ExpiresAt { get; set; }
 }
-

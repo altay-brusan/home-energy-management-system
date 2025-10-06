@@ -8,14 +8,14 @@ namespace Hems.DeviceSimulator.Controllers;
 [Route("api/[controller]")]
 public class DeviceController : ControllerBase
 {
-    private readonly IDeviceSimulatorService _simulatorService;
+    private readonly IDeviceSimulationJobService _jobService;
     private readonly ILogger<DeviceController> _logger;
 
     public DeviceController(
-        IDeviceSimulatorService simulatorService,
+        IDeviceSimulationJobService jobService,
         ILogger<DeviceController> logger)
     {
-        _simulatorService = simulatorService;
+        _jobService = jobService;
         _logger = logger;
     }
 
@@ -30,8 +30,8 @@ public class DeviceController : ControllerBase
     {
         try
         {
-            await _simulatorService.StartSimulationAsync();
-            return Ok(new { message = "Device simulation started successfully", timestamp = DateTime.UtcNow });
+            await _jobService.StartSimulationAsync();
+            return Ok(new { message = "Device simulation started successfully with Hangfire", timestamp = DateTime.UtcNow });
         }
         catch (Exception ex)
         {
@@ -51,7 +51,7 @@ public class DeviceController : ControllerBase
     {
         try
         {
-            await _simulatorService.StopSimulationAsync();
+            await _jobService.StopSimulationAsync();
             return Ok(new { message = "Device simulation stopped successfully", timestamp = DateTime.UtcNow });
         }
         catch (Exception ex)
@@ -72,12 +72,13 @@ public class DeviceController : ControllerBase
     {
         try
         {
-            var isRunning = await _simulatorService.IsRunningAsync();
+            var isRunning = await _jobService.IsRunningAsync();
             return Ok(new 
             { 
                 isRunning = isRunning,
                 timestamp = DateTime.UtcNow,
-                uptime = isRunning ? "Running" : "Stopped"
+                uptime = isRunning ? "Running with Hangfire" : "Stopped",
+                dashboardUrl = "/hangfire"
             });
         }
         catch (Exception ex)
@@ -87,40 +88,60 @@ public class DeviceController : ControllerBase
         }
     }
 
+
     /// <summary>
-    /// Generates test data for a specific device component
+    /// Schedules a specific device simulation with custom interval
     /// </summary>
     /// <param name="deviceId">The unique identifier of the device</param>
-    /// <param name="componentId">The unique identifier of the component</param>
-    /// <returns>Generated test data for the component</returns>
-    [HttpGet("generate-data/{deviceId:guid}/{componentId:guid}")]
+    /// <param name="intervalSeconds">Interval in seconds between simulations</param>
+    /// <returns>Success message</returns>
+    [HttpPost("schedule/{deviceId:guid}")]
     [ProducesResponseType(typeof(object), 200)]
-    [ProducesResponseType(typeof(object), 404)]
     [ProducesResponseType(typeof(object), 500)]
-    public async Task<IActionResult> GenerateTestData(Guid deviceId, Guid componentId)
+    public async Task<IActionResult> ScheduleDevice(Guid deviceId, [FromQuery] int intervalSeconds = 30)
     {
         try
         {
-            var result = await _simulatorService.GenerateTestDataAsync(deviceId, componentId);
-            
-            if (result == null)
-            {
-                return NotFound(new { error = "Device or component not found", deviceId, componentId });
-            }
-
+            await _jobService.ScheduleDeviceSimulationAsync(deviceId, intervalSeconds);
             return Ok(new 
             { 
-                DeviceId = deviceId,
-                ComponentId = componentId,
-                DataType = result.Value.DataType,
-                Data = result.Value.Data,
-                Timestamp = DateTime.UtcNow
+                message = $"Device {deviceId} scheduled successfully", 
+                deviceId = deviceId,
+                intervalSeconds = intervalSeconds,
+                timestamp = DateTime.UtcNow 
             });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating test data for device {DeviceId}, component {ComponentId}", deviceId, componentId);
-            return StatusCode(500, new { error = "Failed to generate test data", details = ex.Message });
+            _logger.LogError(ex, "Error scheduling device {DeviceId}", deviceId);
+            return StatusCode(500, new { error = "Failed to schedule device", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Unschedules a specific device simulation
+    /// </summary>
+    /// <param name="deviceId">The unique identifier of the device</param>
+    /// <returns>Success message</returns>
+    [HttpPost("unschedule/{deviceId:guid}")]
+    [ProducesResponseType(typeof(object), 200)]
+    [ProducesResponseType(typeof(object), 500)]
+    public async Task<IActionResult> UnscheduleDevice(Guid deviceId)
+    {
+        try
+        {
+            await _jobService.UnscheduleDeviceSimulationAsync(deviceId);
+            return Ok(new 
+            { 
+                message = $"Device {deviceId} unscheduled successfully", 
+                deviceId = deviceId,
+                timestamp = DateTime.UtcNow 
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error unscheduling device {DeviceId}", deviceId);
+            return StatusCode(500, new { error = "Failed to unschedule device", details = ex.Message });
         }
     }
 }

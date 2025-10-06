@@ -44,3 +44,4 @@ public class DeleteDeviceCommandHandler : IRequestHandler<DeleteDeviceCommand>
 
 
 
+
