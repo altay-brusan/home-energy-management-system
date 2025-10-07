@@ -1,0 +1,90 @@
+import { StyleSheet } from 'react-native';
+
+export function getShareButtonStyles (
+    COLORS: Record<string, string>,
+    color: string,
+    backgroundColor: string,
+    top: number,
+    right: number
+) {
+    return StyleSheet.create({
+        button: {
+            position: 'absolute',
+            top,
+            right,
+            zIndex: 10,
+            width: 40,
+            height: 40,
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 8,
+            borderRadius: 20,
+            backgroundColor,
+            shadowColor: COLORS.black,
+            shadowOpacity: 0.08,
+            shadowRadius: 4,
+            shadowOffset: { width: 0, height: 2 },
+            elevation: 2,
+        },
+        overlay: {
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.32)',
+            zIndex: 99,
+            justifyContent: 'flex-end',
+        },
+        sheet: {
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            padding: 24,
+            shadowColor: COLORS.black,
+            shadowOpacity: 0.18,
+            shadowRadius: 18,
+            shadowOffset: { width: 0, height: -4 },
+            elevation: 8,
+            zIndex: 100,
+        },
+        sheetTitle: {
+            fontWeight: '700',
+            fontSize: 18,
+            marginBottom: 16,
+            color,
+            textAlign: 'center',
+        },
+        sheetOption: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingVertical: 14,
+            borderBottomWidth: 1,
+            borderBottomColor: COLORS.border,
+        },
+        sheetIcon: {
+            marginRight: 16,
+        },
+        sheetOptionText: {
+            color,
+            fontSize: 16,
+            fontWeight: '600',
+        },
+        cancelBtn: {
+            marginTop: 18,
+            backgroundColor: COLORS.bgShadeLight,
+            borderRadius: 8,
+            paddingVertical: 12,
+            alignItems: 'center',
+        },
+        cancelText: {
+            color: COLORS.textSoft,
+            fontWeight: '700',
+            fontSize: 16,
+        },
+    });
+}
