@@ -236,6 +236,79 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.ToTable("DeviceData", (string)null);
                 });
 
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceEnergyData", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<double?>("BatteryChargeEnergyKWh")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("BatteryDischargeEnergyKWh")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("DataDateTime")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DataType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("DeviceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<double?>("GeneratorEnergyKWh")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("GridExportEnergyKWh")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("GridImportEnergyKWh")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<double?>("LoadEnergyKWh")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("PvEnergyKWh")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("double precision");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DataDateTime");
+
+                    b.HasIndex("DataType");
+
+                    b.HasIndex("DeviceId");
+
+                    b.HasIndex("DeviceId", "DataDateTime", "DataType")
+                        .IsUnique();
+
+                    b.ToTable("DeviceEnergyData", (string)null);
+                });
+
             modelBuilder.Entity("Hems_Backend.Domain.Entities.ExternalDevice", b =>
                 {
                     b.Property<Guid>("Id")
@@ -722,6 +795,17 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                 });
 
             modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceData", b =>
+                {
+                    b.HasOne("Hems_Backend.Domain.Entities.Device", "Device")
+                        .WithMany()
+                        .HasForeignKey("DeviceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Device");
+                });
+
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceEnergyData", b =>
                 {
                     b.HasOne("Hems_Backend.Domain.Entities.Device", "Device")
                         .WithMany()

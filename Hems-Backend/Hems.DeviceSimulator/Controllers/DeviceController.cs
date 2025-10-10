@@ -9,13 +9,16 @@ namespace Hems.DeviceSimulator.Controllers;
 public class DeviceController : ControllerBase
 {
     private readonly IDeviceSimulationJobService _jobService;
+    private readonly IEnergyDataJobService _energyJobService;
     private readonly ILogger<DeviceController> _logger;
 
     public DeviceController(
         IDeviceSimulationJobService jobService,
+        IEnergyDataJobService energyJobService,
         ILogger<DeviceController> logger)
     {
         _jobService = jobService;
+        _energyJobService = energyJobService;
         _logger = logger;
     }
 
@@ -30,8 +33,16 @@ public class DeviceController : ControllerBase
     {
         try
         {
+            // Hem device simulation hem de energy data collection'ı başlat
             await _jobService.StartSimulationAsync();
-            return Ok(new { message = "Device simulation started successfully with Hangfire", timestamp = DateTime.UtcNow });
+            await _energyJobService.StartEnergyDataCollectionAsync();
+            
+            return Ok(new { 
+                message = "Device simulation and energy data collection started successfully with Hangfire", 
+                deviceSimulation = "Started",
+                energyDataCollection = "Started",
+                timestamp = DateTime.UtcNow 
+            });
         }
         catch (Exception ex)
         {
@@ -51,8 +62,16 @@ public class DeviceController : ControllerBase
     {
         try
         {
+            // Hem device simulation hem de energy data collection'ı durdur
             await _jobService.StopSimulationAsync();
-            return Ok(new { message = "Device simulation stopped successfully", timestamp = DateTime.UtcNow });
+            await _energyJobService.StopEnergyDataCollectionAsync();
+            
+            return Ok(new { 
+                message = "Device simulation and energy data collection stopped successfully", 
+                deviceSimulation = "Stopped",
+                energyDataCollection = "Stopped",
+                timestamp = DateTime.UtcNow 
+            });
         }
         catch (Exception ex)
         {
@@ -142,6 +161,48 @@ public class DeviceController : ControllerBase
         {
             _logger.LogError(ex, "Error unscheduling device {DeviceId}", deviceId);
             return StatusCode(500, new { error = "Failed to unschedule device", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Starts the energy data collection (hourly cumulative + midnight lifetime data)
+    /// </summary>
+    /// <returns>Success message with timestamp</returns>
+    [HttpPost("energy/start")]
+    [ProducesResponseType(typeof(object), 200)]
+    [ProducesResponseType(typeof(object), 500)]
+    public async Task<IActionResult> StartEnergyDataCollection()
+    {
+        try
+        {
+            await _energyJobService.StartEnergyDataCollectionAsync();
+            return Ok(new { message = "Energy data collection started successfully with Hangfire", timestamp = DateTime.UtcNow });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error starting energy data collection");
+            return StatusCode(500, new { error = "Failed to start energy data collection", details = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Stops the energy data collection
+    /// </summary>
+    /// <returns>Success message with timestamp</returns>
+    [HttpPost("energy/stop")]
+    [ProducesResponseType(typeof(object), 200)]
+    [ProducesResponseType(typeof(object), 500)]
+    public async Task<IActionResult> StopEnergyDataCollection()
+    {
+        try
+        {
+            await _energyJobService.StopEnergyDataCollectionAsync();
+            return Ok(new { message = "Energy data collection stopped successfully", timestamp = DateTime.UtcNow });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error stopping energy data collection");
+            return StatusCode(500, new { error = "Failed to stop energy data collection", details = ex.Message });
         }
     }
 }

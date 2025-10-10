@@ -359,6 +359,44 @@
         ]
       }
     },
+    "/api/DeviceData/energy": {
+      "post": {
+        "tags": [
+          "DeviceData"
+        ],
+        "operationId": "CreateDeviceEnergyData",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDeviceEnergyDataCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/DeviceData/bulk": {
       "post": {
         "tags": [
@@ -625,6 +663,312 @@
         "responses": {
           "200": {
             "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/MobileDashboard/graphs/EnergyFlow": {
+      "get": {
+        "tags": [
+          "MobileDashboard"
+        ],
+        "operationId": "EnergyFlow",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "x-position": 2
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "x-position": 3
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnergyDataDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/MobileDashboard/graphs/EnergyProduction": {
+      "get": {
+        "tags": [
+          "MobileDashboard"
+        ],
+        "operationId": "EnergyProduction",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnergyProductionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/MobileDashboard/graphs/EnergyConsumption": {
+      "get": {
+        "tags": [
+          "MobileDashboard"
+        ],
+        "operationId": "EnergyConsumption",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnergyConsumptionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/MobileDashboard/graphs/PowerMetrics": {
+      "get": {
+        "tags": [
+          "MobileDashboard"
+        ],
+        "operationId": "PowerMetrics",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PowerMetricsDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/MobileDashboard/graphs/Battery": {
+      "get": {
+        "tags": [
+          "MobileDashboard"
+        ],
+        "operationId": "Battery",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatteryDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/MobileDashboard/graphs/ChargeDischarge": {
+      "get": {
+        "tags": [
+          "MobileDashboard"
+        ],
+        "operationId": "ChargeDischarge",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChargeDischargeDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/MobileDashboard/graphs/Components/Battery": {
+      "get": {
+        "tags": [
+          "MobileDashboard"
+        ],
+        "operationId": "BatteryComponent",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatteryComponentDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2096,71 +2440,6 @@
           }
         ]
       }
-    },
-    "/api/MobileDashboard/mobile/get-dashboard": {
-      "get": {
-        "tags": [
-          "MobileDashboard"
-        ],
-        "operationId": "GetDashboard",
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MobileDashboardDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/MobileDashboard/mobile/device/{deviceId}/component/{componentId}/data": {
-      "get": {
-        "tags": [
-          "MobileDashboard"
-        ],
-        "operationId": "GetDeviceComponentData",
-        "parameters": [
-          {
-            "name": "deviceId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          },
-          {
-            "name": "componentId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 2
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
     }
   },
   "components": {
@@ -2467,6 +2746,93 @@
           },
           "data": {
             "$ref": "#/components/schemas/JsonDocument"
+          }
+        }
+      },
+      "CreateDeviceEnergyDataCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "dataType": {
+            "type": "string"
+          },
+          "deviceId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "dataDateTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "pvEnergyKWhToday": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "gridImportEnergyKWhToday": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "gridExportEnergyKWhToday": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "generatorEnergyKWhToday": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "batteryDischargeEnergyKWhToday": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "batteryChargeEnergyKWhToday": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "loadEnergyKWhToday": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "pvEnergyKWhTotal": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "gridImportEnergyKWhTotal": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "gridExportEnergyKWhTotal": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "generatorEnergyKWhTotal": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "batteryDischargeEnergyKWhTotal": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "batteryChargeEnergyKWhTotal": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "loadEnergyKWhTotal": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
           }
         }
       },
@@ -3021,6 +3387,312 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          }
+        }
+      },
+      "EnergyDataDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "pvEnergyKWh": {
+            "type": "number",
+            "format": "double"
+          },
+          "gridImportEnergyKWh": {
+            "type": "number",
+            "format": "double"
+          },
+          "gridExportEnergyKWh": {
+            "type": "number",
+            "format": "double"
+          },
+          "generatorEnergyKWh": {
+            "type": "number",
+            "format": "double"
+          },
+          "batteryDischargeEnergyKWh": {
+            "type": "number",
+            "format": "double"
+          },
+          "batteryChargeEnergyKWh": {
+            "type": "number",
+            "format": "double"
+          },
+          "loadEnergyKWh": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalEnergyInput": {
+            "type": "number",
+            "format": "double"
+          },
+          "pvEnergyPercentage": {
+            "type": "number",
+            "format": "double"
+          },
+          "gridImportEnergyPercentage": {
+            "type": "number",
+            "format": "double"
+          },
+          "generatorEnergyPercentage": {
+            "type": "number",
+            "format": "double"
+          },
+          "batteryChargeEnergyPercentage": {
+            "type": "number",
+            "format": "double"
+          },
+          "gridExportEnergyPercentage": {
+            "type": "number",
+            "format": "double"
+          },
+          "batteryDischargeEnergyPercentage": {
+            "type": "number",
+            "format": "double"
+          },
+          "loadEnergyPercentage": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalEnergyOutput": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "EnergyProductionDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "period": {
+            "type": "string"
+          },
+          "dataPoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EnergyProductionDataPoint"
+            }
+          }
+        }
+      },
+      "EnergyProductionDataPoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "dateTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "totalProductionKWh": {
+            "type": "number",
+            "format": "double"
+          },
+          "pvEnergyKWh": {
+            "type": "number",
+            "format": "double"
+          },
+          "generatorEnergyKWh": {
+            "type": "number",
+            "format": "double"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "EnergyConsumptionDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "period": {
+            "type": "string"
+          },
+          "dataPoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EnergyConsumptionDataPoint"
+            }
+          }
+        }
+      },
+      "EnergyConsumptionDataPoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "dateTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "loadEnergyKWh": {
+            "type": "number",
+            "format": "double"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "PowerMetricsDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "period": {
+            "type": "string"
+          },
+          "dataPoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PowerMetricsDataPoint"
+            }
+          }
+        }
+      },
+      "PowerMetricsDataPoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "dateTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "solarPowerKw": {
+            "type": "number",
+            "format": "double"
+          },
+          "gridPowerKw": {
+            "type": "number",
+            "format": "double"
+          },
+          "batteryPowerKw": {
+            "type": "number",
+            "format": "double"
+          },
+          "loadPowerKw": {
+            "type": "number",
+            "format": "double"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "BatteryDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "dataPoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BatteryDataPoint"
+            }
+          },
+          "averageSOC": {
+            "type": "number",
+            "format": "double"
+          },
+          "peakSOC": {
+            "type": "number",
+            "format": "double"
+          },
+          "currentSOC": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "BatteryDataPoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "dateTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "soc": {
+            "type": "number",
+            "format": "double"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "ChargeDischargeDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "dataPoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChargeDischargeDataPoint"
+            }
+          },
+          "averageChargePowerKw": {
+            "type": "number",
+            "format": "double"
+          },
+          "peakChargePowerKw": {
+            "type": "number",
+            "format": "double"
+          },
+          "currentChargePowerKw": {
+            "type": "number",
+            "format": "double"
+          },
+          "averageDischargePowerKw": {
+            "type": "number",
+            "format": "double"
+          },
+          "peakDischargePowerKw": {
+            "type": "number",
+            "format": "double"
+          },
+          "currentDischargePowerKw": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "ChargeDischargeDataPoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "dateTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "chargePowerKw": {
+            "type": "number",
+            "format": "double"
+          },
+          "dischargePowerKw": {
+            "type": "number",
+            "format": "double"
+          },
+          "label": {
+            "type": "string"
+          }
+        }
+      },
+      "BatteryComponentDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "soc": {
+            "type": "number",
+            "format": "double"
+          },
+          "today": {
+            "type": "number",
+            "format": "double"
+          },
+          "total": {
+            "type": "number",
+            "format": "double"
           }
         }
       },
@@ -3882,296 +4554,6 @@
           "summary": {
             "type": "string",
             "nullable": true
-          }
-        }
-      },
-      "MobileDashboardDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "siteId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "siteName": {
-            "type": "string"
-          },
-          "setupId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "setupName": {
-            "type": "string"
-          },
-          "device": {
-            "$ref": "#/components/schemas/DeviceOverviewDto"
-          },
-          "externalDevices": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ExternalDeviceOverviewDto"
-            }
-          },
-          "activeAlerts": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AlertDto"
-            }
-          },
-          "systemStatus": {
-            "$ref": "#/components/schemas/SystemStatusDto"
-          }
-        }
-      },
-      "DeviceOverviewDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
-          "name": {
-            "type": "string"
-          },
-          "manufacturer": {
-            "type": "string"
-          },
-          "modelNumber": {
-            "type": "string"
-          },
-          "serialNumber": {
-            "type": "string"
-          },
-          "qrCode": {
-            "type": "string"
-          },
-          "isOnline": {
-            "type": "boolean"
-          },
-          "lastSeen": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "specifications": {
-            "$ref": "#/components/schemas/JsonDocument"
-          },
-          "components": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DeviceComponentOverviewDto"
-            }
-          },
-          "warranty": {
-            "$ref": "#/components/schemas/WarrantyInfoDto"
-          }
-        }
-      },
-      "DeviceComponentOverviewDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
-          "deviceType": {
-            "$ref": "#/components/schemas/DeviceType"
-          },
-          "name": {
-            "type": "string"
-          },
-          "manufacturer": {
-            "type": "string"
-          },
-          "modelNumber": {
-            "type": "string"
-          },
-          "serialNumber": {
-            "type": "string"
-          },
-          "specifications": {
-            "$ref": "#/components/schemas/JsonDocument"
-          },
-          "isActive": {
-            "type": "boolean"
-          },
-          "warranty": {
-            "$ref": "#/components/schemas/WarrantyInfoDto"
-          }
-        }
-      },
-      "WarrantyInfoDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "warrantyPeriod": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
-          },
-          "warrantyUnit": {
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/WarrantyUnit"
-              }
-            ]
-          },
-          "warrantyStartDate": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "warrantyEndDate": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "daysRemaining": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "isExpired": {
-            "type": "boolean"
-          }
-        }
-      },
-      "ExternalDeviceOverviewDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
-          "name": {
-            "type": "string"
-          },
-          "deviceType": {
-            "type": "string"
-          },
-          "specifications": {
-            "$ref": "#/components/schemas/JsonDocument"
-          },
-          "isActive": {
-            "type": "boolean"
-          },
-          "created": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
-      "AlertDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
-          "title": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
-          },
-          "type": {
-            "$ref": "#/components/schemas/AlertType"
-          },
-          "priority": {
-            "$ref": "#/components/schemas/AlertPriority"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "isRead": {
-            "type": "boolean"
-          }
-        }
-      },
-      "AlertType": {
-        "type": "integer",
-        "description": "",
-        "x-enumNames": [
-          "Info",
-          "Warning",
-          "Error",
-          "Maintenance"
-        ],
-        "enum": [
-          1,
-          2,
-          3,
-          4
-        ]
-      },
-      "AlertPriority": {
-        "type": "integer",
-        "description": "",
-        "x-enumNames": [
-          "Low",
-          "Medium",
-          "High",
-          "Critical"
-        ],
-        "enum": [
-          1,
-          2,
-          3,
-          4
-        ]
-      },
-      "SystemStatusDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "overallStatus": {
-            "type": "string"
-          },
-          "batteryLevel": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "powerGeneration": {
-            "type": "number",
-            "format": "double"
-          },
-          "powerConsumption": {
-            "type": "number",
-            "format": "double"
-          },
-          "gridImport": {
-            "type": "number",
-            "format": "double"
-          },
-          "gridExport": {
-            "type": "number",
-            "format": "double"
-          },
-          "operatingMode": {
-            "type": "string"
-          },
-          "batteryTemperatures": {
-            "type": "array",
-            "items": {
-              "type": "number",
-              "format": "double"
-            }
-          },
-          "ambientTemperature": {
-            "type": "number",
-            "format": "double"
-          },
-          "fanState": {
-            "type": "string"
-          },
-          "lastUpdate": {
-            "type": "string",
-            "format": "date-time"
           }
         }
       }

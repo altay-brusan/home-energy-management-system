@@ -21,6 +21,8 @@ public interface IApplicationDbContext
     DbSet<ExternalDevice> ExternalDevices { get; }
 
     DbSet<Hems_Backend.Domain.Entities.DeviceData> DeviceData { get; }
+    
+    DbSet<DeviceEnergyData> DeviceEnergyData { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }
