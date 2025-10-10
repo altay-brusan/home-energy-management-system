@@ -2413,12 +2413,24 @@
         ]
       }
     },
-    "/api/WeatherForecasts": {
+    "/api/WeatherForecasts/{siteId}": {
       "get": {
         "tags": [
           "WeatherForecasts"
         ],
         "operationId": "GetWeatherForecasts",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
@@ -2429,6 +2441,16 @@
                   "items": {
                     "$ref": "#/components/schemas/WeatherForecast"
                   }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
                 }
               }
             }
@@ -4543,17 +4565,31 @@
             "type": "string",
             "format": "date-time"
           },
-          "temperatureC": {
-            "type": "integer",
-            "format": "int32"
+          "temperature": {
+            "type": "number",
+            "format": "decimal"
           },
-          "temperatureF": {
-            "type": "integer",
-            "format": "int32"
+          "feelsLike": {
+            "type": "number",
+            "format": "decimal"
           },
-          "summary": {
-            "type": "string",
-            "nullable": true
+          "humidity": {
+            "type": "number",
+            "format": "decimal"
+          },
+          "pressure": {
+            "type": "number",
+            "format": "decimal"
+          },
+          "windSpeed": {
+            "type": "number",
+            "format": "decimal"
+          },
+          "description": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
           }
         }
       }

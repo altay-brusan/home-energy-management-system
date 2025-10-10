@@ -27,6 +27,10 @@ public class DeviceEnergyData : BaseAuditableEntity
     public double? BatteryChargeEnergyKWh { get; set; }
     public double? LoadEnergyKWh { get; set; }
     
+    // Hava durumu bilgileri
+    public decimal? WeatherTemperature { get; set; }
+    public string? WeatherTemperatureCondition { get; set; }
+    
     // Navigation Properties
     public Device Device { get; set; } = null!;
 }

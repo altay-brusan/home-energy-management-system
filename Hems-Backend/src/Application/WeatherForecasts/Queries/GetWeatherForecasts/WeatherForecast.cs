@@ -2,11 +2,12 @@
 
 public class WeatherForecast
 {
-    public DateTime Date { get; init; }
-
-    public int TemperatureC { get; init; }
-
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-
-    public string? Summary { get; init; }
+    public DateTime Date { get; set; }
+    public decimal Temperature { get; set; }
+    public decimal FeelsLike { get; set; }
+    public decimal Humidity { get; set; }
+    public decimal Pressure { get; set; }
+    public decimal WindSpeed { get; set; }
+    public string Description { get; set; } = string.Empty;
+    public string Icon { get; set; } = string.Empty;
 }

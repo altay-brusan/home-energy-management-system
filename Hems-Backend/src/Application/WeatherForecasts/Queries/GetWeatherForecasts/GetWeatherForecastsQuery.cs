@@ -1,25 +1,66 @@
-﻿namespace Hems_Backend.Application.WeatherForecasts.Queries.GetWeatherForecasts;
+﻿using Hems_Backend.Application.Common.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
-public record GetWeatherForecastsQuery : IRequest<IEnumerable<WeatherForecast>>;
+namespace Hems_Backend.Application.WeatherForecasts.Queries.GetWeatherForecasts;
+
+public record GetWeatherForecastsQuery(Guid SiteId) : IRequest<IEnumerable<WeatherForecast>>;
 
 public class GetWeatherForecastsQueryHandler : IRequestHandler<GetWeatherForecastsQuery, IEnumerable<WeatherForecast>>
 {
-    private static readonly string[] Summaries = new[]
-    {
-        "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-    };
+    private readonly IApplicationDbContext _context;
+    private readonly IWeatherService _weatherService;
+    private readonly IUser _currentUser;
 
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+    public GetWeatherForecastsQueryHandler(
+        IApplicationDbContext context,
+        IWeatherService weatherService,
+        IUser currentUser)
+    {
+        _context = context;
+        _weatherService = weatherService;
+        _currentUser = currentUser;
+    }
+
     public async Task<IEnumerable<WeatherForecast>> Handle(GetWeatherForecastsQuery request, CancellationToken cancellationToken)
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
     {
-        var rng = new Random();
+        // Site'ı bul ve kullanıcının erişim yetkisini kontrol et
+        var site = await _context.Sites
+            .FirstOrDefaultAsync(s => s.Id == request.SiteId && s.UserId == _currentUser.Id, cancellationToken);
 
-        return Enumerable.Range(1, 5).Select(index => new WeatherForecast
+        if (site == null)
         {
-            Date = DateTime.Now.AddDays(index),
-            TemperatureC = rng.Next(-20, 55),
-            Summary = Summaries[rng.Next(Summaries.Length)]
-        });
+            throw new UnauthorizedAccessException("Site not found or access denied");
+        }
+
+        if (site.Latitude == null || site.Longitude == null)
+        {
+            throw new InvalidOperationException("Site coordinates are not set");
+        }
+
+            // Sadece current weather verilerini al
+            var currentWeather = await _weatherService.GetCurrentWeatherAsync(
+                site.Latitude.Value, 
+                site.Longitude.Value, 
+                cancellationToken);
+
+            if (currentWeather == null)
+            {
+                return Enumerable.Empty<WeatherForecast>();
+            }
+
+            // Current weather'ı döndür
+            var weatherForecast = new WeatherForecast
+            {
+                Date = DateTime.Now.Date,
+                Temperature = currentWeather.Temperature,
+                FeelsLike = currentWeather.FeelsLike,
+                Humidity = currentWeather.Humidity,
+                Pressure = currentWeather.Pressure,
+                WindSpeed = currentWeather.WindSpeed,
+                Description = currentWeather.Description,
+                Icon = currentWeather.Icon
+            };
+
+            return new[] { weatherForecast };
     }
 }

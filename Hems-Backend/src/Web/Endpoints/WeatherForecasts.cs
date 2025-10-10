@@ -9,13 +9,28 @@ public class WeatherForecasts : EndpointGroupBase
     {
         app.MapGroup(this)
             .RequireAuthorization()
-            .MapGet(GetWeatherForecasts);
+            .MapGet(GetWeatherForecasts, "{siteId}");
     }
 
-    public async Task<Ok<IEnumerable<WeatherForecast>>> GetWeatherForecasts(ISender sender)
+    public async Task<Results<Ok<IEnumerable<WeatherForecast>>, BadRequest<string>, UnauthorizedHttpResult>> 
+        GetWeatherForecasts(Guid siteId, ISender sender)
     {
-        var forecasts = await sender.Send(new GetWeatherForecastsQuery());
-        
-        return TypedResults.Ok(forecasts);
+        try
+        {
+            var forecasts = await sender.Send(new GetWeatherForecastsQuery(siteId));
+            return TypedResults.Ok(forecasts);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return TypedResults.Unauthorized();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return TypedResults.BadRequest(ex.Message);
+        }
+        catch (Exception)
+        {
+            return TypedResults.BadRequest("An error occurred while fetching weather data");
+        }
     }
 }

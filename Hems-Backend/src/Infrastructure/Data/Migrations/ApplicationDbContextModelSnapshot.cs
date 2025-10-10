@@ -295,6 +295,12 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .HasPrecision(18, 3)
                         .HasColumnType("double precision");
 
+                    b.Property<decimal?>("WeatherTemperature")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("WeatherTemperatureCondition")
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
                     b.HasIndex("DataDateTime");

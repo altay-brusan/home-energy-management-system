@@ -4,6 +4,7 @@ using Hems_Backend.Domain.Constants;
 using Hems_Backend.Infrastructure.Data;
 using Hems_Backend.Infrastructure.Data.Interceptors;
 using Hems_Backend.Infrastructure.Identity;
+using Hems_Backend.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -49,6 +50,10 @@ public static class DependencyInjection
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddTransient<IIdentityService, IdentityService>();
         builder.Services.AddScoped<IUserService, UserService>();
+        
+        // Weather Service
+        builder.Services.AddHttpClient<IWeatherService, WeatherApiService>();
+        builder.Services.AddScoped<IWeatherService, WeatherApiService>();
         
         // Device Authorization
         builder.Services.AddScoped<IAuthorizationHandler, DeviceOnlyAuthorizationHandler>();

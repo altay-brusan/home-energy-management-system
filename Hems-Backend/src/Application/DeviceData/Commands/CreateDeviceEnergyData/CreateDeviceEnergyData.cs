@@ -32,21 +32,38 @@ public record CreateDeviceEnergyDataCommand : IRequest<int>
 public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDeviceEnergyDataCommand, int>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IWeatherService _weatherService;
 
-    public CreateDeviceEnergyDataCommandHandler(IApplicationDbContext context)
+    public CreateDeviceEnergyDataCommandHandler(IApplicationDbContext context, IWeatherService weatherService)
     {
         _context = context;
+        _weatherService = weatherService;
     }
 
     public async Task<int> Handle(CreateDeviceEnergyDataCommand request, CancellationToken cancellationToken)
     {
-        // Device'ın var olup olmadığını kontrol et
-        var deviceExists = await _context.Devices
-            .AnyAsync(d => d.Id == request.DeviceId && !d.IsDeleted, cancellationToken);
+        // Device'ı ve Site bilgilerini al
+        var device = await _context.Devices
+            .Include(d => d.SetupDevice!)
+            .ThenInclude(sd => sd.Setup!)
+            .ThenInclude(s => s.Site!)
+            .FirstOrDefaultAsync(d => d.Id == request.DeviceId && !d.IsDeleted, cancellationToken);
 
-        if (!deviceExists)
+        if (device == null)
         {
             throw new ArgumentException($"Device with ID {request.DeviceId} not found.");
+        }
+
+        var site = device.SetupDevice?.Setup?.Site;
+        
+        // Hava durumu bilgilerini al
+        WeatherData? currentWeather = null;
+        if (site?.Latitude.HasValue == true && site.Longitude.HasValue == true)
+        {
+            currentWeather = await _weatherService.GetCurrentWeatherAsync(
+                site.Latitude.Value, 
+                site.Longitude.Value, 
+                cancellationToken);
         }
 
         // Aynı device, datetime ve data type için kayıt var mı kontrol et
@@ -68,6 +85,13 @@ public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDevice
             existingRecord.BatteryChargeEnergyKWh = request.DataType == "DailyCumulativeEnergyData" ? request.BatteryChargeEnergyKWhToday : request.BatteryChargeEnergyKWhTotal;
             existingRecord.LoadEnergyKWh = request.DataType == "DailyCumulativeEnergyData" ? request.LoadEnergyKWhToday : request.LoadEnergyKWhTotal;
             
+            // Hava durumu bilgilerini güncelle
+            if (currentWeather != null)
+            {
+                existingRecord.WeatherTemperature = currentWeather.Temperature;
+                existingRecord.WeatherTemperatureCondition = currentWeather.Description;
+            }
+            
             existingRecord.LastModified = DateTime.UtcNow;
             existingRecord.LastModifiedBy = "DeviceSimulator";
         }
@@ -87,6 +111,10 @@ public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDevice
                 BatteryDischargeEnergyKWh = request.DataType == "DailyCumulativeEnergyData" ? request.BatteryDischargeEnergyKWhToday : request.BatteryDischargeEnergyKWhTotal,
                 BatteryChargeEnergyKWh = request.DataType == "DailyCumulativeEnergyData" ? request.BatteryChargeEnergyKWhToday : request.BatteryChargeEnergyKWhTotal,
                 LoadEnergyKWh = request.DataType == "DailyCumulativeEnergyData" ? request.LoadEnergyKWhToday : request.LoadEnergyKWhTotal,
+                
+                // Hava durumu bilgilerini ekle
+                WeatherTemperature = currentWeather?.Temperature,
+                WeatherTemperatureCondition = currentWeather?.Description,
                 
                 Created = DateTime.UtcNow,
                 CreatedBy = "DeviceSimulator"
