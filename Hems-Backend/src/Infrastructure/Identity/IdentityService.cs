@@ -143,4 +143,15 @@ public class IdentityService : IIdentityService
         return roles;
     }
 
+    public async Task<string?> GetUserIdByEmailAsync(string email)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+        return user?.Id;
+    }
+
+    public async Task<string?> GetUserEmailAsync(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        return user?.Email;
+    }
 }

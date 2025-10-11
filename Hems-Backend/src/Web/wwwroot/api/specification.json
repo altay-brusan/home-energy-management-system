@@ -672,6 +672,224 @@
         ]
       }
     },
+    "/api/Invitations/create": {
+      "post": {
+        "tags": [
+          "Invitations"
+        ],
+        "operationId": "CreateInvitation",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInvitationCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "guid"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Invitations/by-site/{siteId}": {
+      "get": {
+        "tags": [
+          "Invitations"
+        ],
+        "operationId": "GetInvitationsBySite",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationsVm"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Invitations/accept": {
+      "post": {
+        "tags": [
+          "Invitations"
+        ],
+        "operationId": "AcceptInvitation",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptInvitationCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Invitations/decline": {
+      "post": {
+        "tags": [
+          "Invitations"
+        ],
+        "operationId": "DeclineInvitation",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeclineInvitationCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Invitations/user-home-sites": {
+      "get": {
+        "tags": [
+          "Invitations"
+        ],
+        "operationId": "GetUserHomeSites",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserHomeSitesVm"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Invitations/notifications": {
+      "get": {
+        "tags": [
+          "Invitations"
+        ],
+        "operationId": "GetUserNotifications",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NotificationDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Invitations/notifications/{notificationId}/mark-read": {
+      "put": {
+        "tags": [
+          "Invitations"
+        ],
+        "operationId": "MarkNotificationAsRead",
+        "parameters": [
+          {
+            "name": "notificationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/MobileDashboard/graphs/EnergyFlow": {
       "get": {
         "tags": [
@@ -3409,6 +3627,193 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          }
+        }
+      },
+      "CreateInvitationCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "siteId": {
+            "type": "string",
+            "format": "guid"
+          }
+        }
+      },
+      "InvitationsVm": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "withUser": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InvitationDto"
+            }
+          },
+          "withoutUser": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InvitationDto"
+            }
+          }
+        }
+      },
+      "InvitationDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "email": {
+            "type": "string"
+          },
+          "invitedUserId": {
+            "type": "string",
+            "nullable": true
+          },
+          "invitedByUserId": {
+            "type": "string"
+          },
+          "invitedByUserName": {
+            "type": "string"
+          },
+          "siteId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "siteName": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/InvitationStatus"
+          },
+          "acceptanceTime": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "InvitationStatus": {
+        "type": "integer",
+        "description": "",
+        "x-enumNames": [
+          "Pending",
+          "Accepted",
+          "Declined",
+          "Cancelled"
+        ],
+        "enum": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "AcceptInvitationCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        }
+      },
+      "DeclineInvitationCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        }
+      },
+      "UserHomeSitesVm": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "myHomes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserSiteDto"
+            }
+          },
+          "sharedHomes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserSiteDto"
+            }
+          }
+        }
+      },
+      "UserSiteDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "siteId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "siteName": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/UserSiteRole"
+          }
+        }
+      },
+      "UserSiteRole": {
+        "type": "integer",
+        "description": "",
+        "x-enumNames": [
+          "Owner",
+          "Guest"
+        ],
+        "enum": [
+          1,
+          2
+        ]
+      },
+      "NotificationDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "message": {
+            "type": "string"
+          },
+          "isRead": {
+            "type": "boolean"
+          },
+          "invitationId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },
