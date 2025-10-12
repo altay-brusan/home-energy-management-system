@@ -21,4 +21,8 @@ public interface IIdentityService
     Task<Result> RemoveRoleFromUserAsync(string userId, string roleName);
     Task<IList<string>> GetUserRolesAsync(string userId);
     Task<IList<string>> GetAllRolesAsync();
+    
+    // Minimal user lookup methods for invitations
+    Task<string?> GetUserIdByEmailAsync(string email);
+    Task<string?> GetUserEmailAsync(string userId);
 }
