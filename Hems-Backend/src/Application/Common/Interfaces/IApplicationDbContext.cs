@@ -24,5 +24,11 @@ public interface IApplicationDbContext
     
     DbSet<DeviceEnergyData> DeviceEnergyData { get; }
 
+    DbSet<Invitation> Invitations { get; }
+
+    DbSet<Notification> Notifications { get; }
+
+    DbSet<UserSite> UserSites { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

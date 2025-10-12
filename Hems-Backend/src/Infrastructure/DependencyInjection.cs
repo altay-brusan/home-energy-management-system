@@ -61,6 +61,7 @@ public static class DependencyInjection
         // Email services
         builder.Services.AddTransient<IEmailSender, SimpleEmailSender>();
         builder.Services.AddTransient<IEmailSender<ApplicationUser>, EmailSender>();
+        builder.Services.AddTransient<IInvitationEmailService, InvitationEmailService>();
 
         builder.Services.AddAuthorization(options =>
         {

@@ -31,6 +31,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     
     public DbSet<DeviceEnergyData> DeviceEnergyData => Set<DeviceEnergyData>();
 
+    public DbSet<Invitation> Invitations => Set<Invitation>();
+
+    public DbSet<Notification> Notifications => Set<Notification>();
+
+    public DbSet<UserSite> UserSites => Set<UserSite>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace Hems_Backend.Web.Infrastructure;
@@ -92,6 +93,27 @@ public static class IdentityApiEndpointRouteBuilderExtensions
             if (userId == null)
             {
                 throw new InvalidOperationException("User ID cannot be null");
+            }
+
+            // AŞAMA 6: User Registration Trigger - Invitation Linking
+            // Kullanıcı oluşturulduğunda, email'i ile eşleşen pending invitation'ları güncelle
+            var pendingInvitations = await dbContext.Invitations
+                .Where(i => i.Email == email && string.IsNullOrEmpty(i.InvitedUserId))
+                .ToListAsync();
+
+            foreach (var invitation in pendingInvitations)
+            {
+                invitation.InvitedUserId = userId;
+            }
+
+            // Kullanıcı email'i ile eşleşen notification'ları güncelle
+            var pendingNotifications = await dbContext.Notifications
+                .Where(n => n.Email == email && string.IsNullOrEmpty(n.UserId))
+                .ToListAsync();
+
+            foreach (var notification in pendingNotifications)
+            {
+                notification.UserId = userId;
             }
           
             await dbContext.SaveChangesAsync();
