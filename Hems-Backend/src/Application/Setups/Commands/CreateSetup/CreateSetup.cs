@@ -31,9 +31,13 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
     {
         var userId = _user.Id ?? throw new UnauthorizedAccessException("User not authenticated");
 
-        // Site yetki kontrolü - Kullanıcı bu site'a sahip mi?
+        // Site yetki kontrolü - Kullanıcı bu site'a sahip mi veya paylaşılan site'da mı?
         var site = await _context.Sites
-            .FirstOrDefaultAsync(s => s.Id == request.SiteId && s.UserId == userId && !s.IsDeleted, cancellationToken);
+            .FirstOrDefaultAsync(s => s.Id == request.SiteId && 
+                                     !s.IsDeleted && 
+                                     (s.UserId == userId || 
+                                      _context.UserSites.Any(us => us.SiteId == s.Id && us.UserId == userId)), 
+                                 cancellationToken);
 
         if (site == null)
         {

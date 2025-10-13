@@ -1,6 +1,7 @@
 using Hems_Backend.Infrastructure.Data;
 using Hems_Backend.Infrastructure.Identity;
 using Hems_Backend.Web.Infrastructure;
+using Hems_Backend.Web.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,6 +46,9 @@ app.UseExceptionHandler(options => { });
 app.Map("/", () => Results.Redirect("/api"));
 
 app.MapEndpoints();
+
+// Map SignalR Hub
+app.MapHub<DeviceNotificationHub>("/deviceNotificationHub");
 
 app.Run();
 

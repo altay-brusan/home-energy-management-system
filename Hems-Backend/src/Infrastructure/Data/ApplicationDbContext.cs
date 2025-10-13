@@ -37,6 +37,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
 
     public DbSet<UserSite> UserSites => Set<UserSite>();
 
+    public DbSet<DeviceNotificationType> DeviceNotificationTypes => Set<DeviceNotificationType>();
+
+    public DbSet<DeviceNotification> DeviceNotifications => Set<DeviceNotification>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

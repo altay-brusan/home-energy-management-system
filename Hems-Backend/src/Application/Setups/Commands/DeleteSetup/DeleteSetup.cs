@@ -24,7 +24,10 @@ public class DeleteSetupCommandHandler : IRequestHandler<DeleteSetupCommand>
 
         var entity = await _context.Setups
             .Include(s => s.Site)
-            .FirstOrDefaultAsync(s => s.Id == request.Id && s.Site.UserId == userId, cancellationToken);
+            .FirstOrDefaultAsync(s => s.Id == request.Id && 
+                                     (s.Site.UserId == userId || 
+                                      _context.UserSites.Any(us => us.SiteId == s.SiteId && us.UserId == userId)), 
+                                 cancellationToken);
 
         Guard.Against.NotFound(request.Id, entity);
 

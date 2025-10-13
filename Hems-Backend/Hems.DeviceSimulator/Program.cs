@@ -60,6 +60,7 @@ builder.Services.AddScoped<IDataGeneratorService, DataGeneratorService>();
 builder.Services.AddScoped<IDeviceSimulationJobService, DeviceSimulationJobService>();
 builder.Services.AddScoped<IEnergyDataGeneratorService, EnergyDataGeneratorService>();
 builder.Services.AddScoped<IEnergyDataJobService, EnergyDataJobService>();
+builder.Services.AddScoped<IDeviceNotificationJobService, DeviceNotificationJobService>();
 
 var app = builder.Build();
 

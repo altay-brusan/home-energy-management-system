@@ -434,6 +434,119 @@
         ]
       }
     },
+    "/api/DeviceNotifications": {
+      "post": {
+        "tags": [
+          "DeviceNotifications"
+        ],
+        "operationId": "CreateDeviceNotification",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDeviceNotificationCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "DeviceNotifications"
+        ],
+        "operationId": "GetDeviceNotifications",
+        "parameters": [
+          {
+            "name": "SiteId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "PageNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 2
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 3
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedListOfDeviceNotificationDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/DeviceNotifications/types": {
+      "get": {
+        "tags": [
+          "DeviceNotifications"
+        ],
+        "operationId": "GetDeviceNotificationTypes",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DeviceNotificationTypeDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/Devices/login": {
       "post": {
         "tags": [
@@ -3191,6 +3304,144 @@
           "createdBy": {
             "type": "string",
             "nullable": true
+          }
+        }
+      },
+      "CreateDeviceNotificationCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "notificationTypeCode": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "additionalData": {
+            "type": "string"
+          }
+        }
+      },
+      "PaginatedListOfDeviceNotificationDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeviceNotificationDto"
+            }
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasPreviousPage": {
+            "type": "boolean"
+          },
+          "hasNextPage": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DeviceNotificationDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "deviceId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "siteId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "setupDeviceId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "deviceNotificationTypeId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "additionalData": {
+            "type": "string"
+          },
+          "isProcessed": {
+            "type": "boolean"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deviceNotificationType": {
+            "$ref": "#/components/schemas/DeviceNotificationTypeDto"
+          },
+          "deviceManufacturer": {
+            "type": "string"
+          },
+          "siteName": {
+            "type": "string"
+          }
+        }
+      },
+      "DeviceNotificationTypeDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "register": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "value": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "category": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
           }
         }
       },

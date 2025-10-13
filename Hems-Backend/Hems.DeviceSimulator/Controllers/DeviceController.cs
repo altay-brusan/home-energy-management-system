@@ -10,15 +10,18 @@ public class DeviceController : ControllerBase
 {
     private readonly IDeviceSimulationJobService _jobService;
     private readonly IEnergyDataJobService _energyJobService;
+    private readonly IDeviceNotificationJobService _notificationJobService;
     private readonly ILogger<DeviceController> _logger;
 
     public DeviceController(
         IDeviceSimulationJobService jobService,
         IEnergyDataJobService energyJobService,
+        IDeviceNotificationJobService notificationJobService,
         ILogger<DeviceController> logger)
     {
         _jobService = jobService;
         _energyJobService = energyJobService;
+        _notificationJobService = notificationJobService;
         _logger = logger;
     }
 
@@ -37,10 +40,14 @@ public class DeviceController : ControllerBase
             await _jobService.StartSimulationAsync();
             await _energyJobService.StartEnergyDataCollectionAsync();
             
+            // Notification simulation'ı da başlat
+            await _notificationJobService.StartDeviceNotificationSimulationAsync();
+            
             return Ok(new { 
-                message = "Device simulation and energy data collection started successfully with Hangfire", 
+                message = "Device simulation, energy data collection and notification simulation started successfully with Hangfire", 
                 deviceSimulation = "Started",
                 energyDataCollection = "Started",
+                notificationSimulation = "Started",
                 timestamp = DateTime.UtcNow 
             });
         }
@@ -66,10 +73,14 @@ public class DeviceController : ControllerBase
             await _jobService.StopSimulationAsync();
             await _energyJobService.StopEnergyDataCollectionAsync();
             
+            // Notification simulation'ı da durdur
+            await _notificationJobService.StopDeviceNotificationSimulationAsync();
+            
             return Ok(new { 
-                message = "Device simulation and energy data collection stopped successfully", 
+                message = "Device simulation, energy data collection and notification simulation stopped successfully", 
                 deviceSimulation = "Stopped",
                 energyDataCollection = "Stopped",
+                notificationSimulation = "Stopped",
                 timestamp = DateTime.UtcNow 
             });
         }
@@ -205,6 +216,7 @@ public class DeviceController : ControllerBase
             return StatusCode(500, new { error = "Failed to stop energy data collection", details = ex.Message });
         }
     }
+
 }
 
 /// <summary>

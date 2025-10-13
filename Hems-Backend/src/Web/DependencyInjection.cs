@@ -4,8 +4,10 @@ using Hems_Backend.Application.Common.Security;
 using Hems_Backend.Domain.Constants;
 using Hems_Backend.Infrastructure.Data;
 using Hems_Backend.Web.Services;
+using Hems_Backend.Web.Hubs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 using NSwag;
 using NSwag.Generation.Processors.Security;
@@ -25,6 +27,12 @@ public static class DependencyInjection
             .AddDbContextCheck<ApplicationDbContext>();
 
         builder.Services.AddExceptionHandler<CustomExceptionHandler>();
+
+        // Add SignalR
+        builder.Services.AddSignalR();
+
+        // Add Device Notification Service
+        builder.Services.AddScoped<IDeviceNotificationService, DeviceNotificationService>();
 
         // Add Authorization Policies
         //builder.Services.AddAuthorization(options =>

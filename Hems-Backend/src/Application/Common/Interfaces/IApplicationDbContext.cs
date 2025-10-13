@@ -30,5 +30,9 @@ public interface IApplicationDbContext
 
     DbSet<UserSite> UserSites { get; }
 
+    DbSet<DeviceNotificationType> DeviceNotificationTypes { get; }
+
+    DbSet<DeviceNotification> DeviceNotifications { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

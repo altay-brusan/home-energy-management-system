@@ -315,6 +315,129 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.ToTable("DeviceEnergyData", (string)null);
                 });
 
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceNotification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AdditionalData")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("DeviceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("DeviceNotificationTypeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsProcessed")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("SetupDeviceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SiteId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeviceId");
+
+                    b.HasIndex("DeviceNotificationTypeId");
+
+                    b.HasIndex("SetupDeviceId");
+
+                    b.HasIndex("SiteId");
+
+                    b.ToTable("DeviceNotifications");
+                });
+
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceNotificationType", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("Register")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Value")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Version")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Category");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("IsActive");
+
+                    b.ToTable("DeviceNotificationTypes");
+                });
+
             modelBuilder.Entity("Hems_Backend.Domain.Entities.ExternalDevice", b =>
                 {
                     b.Property<Guid>("Id")
@@ -981,6 +1104,41 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.Navigation("Device");
                 });
 
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceNotification", b =>
+                {
+                    b.HasOne("Hems_Backend.Domain.Entities.Device", "Device")
+                        .WithMany()
+                        .HasForeignKey("DeviceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Hems_Backend.Domain.Entities.DeviceNotificationType", "DeviceNotificationType")
+                        .WithMany("DeviceNotifications")
+                        .HasForeignKey("DeviceNotificationTypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Hems_Backend.Domain.Entities.SetupDevice", "SetupDevice")
+                        .WithMany()
+                        .HasForeignKey("SetupDeviceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Hems_Backend.Domain.Entities.Site", "Site")
+                        .WithMany()
+                        .HasForeignKey("SiteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Device");
+
+                    b.Navigation("DeviceNotificationType");
+
+                    b.Navigation("SetupDevice");
+
+                    b.Navigation("Site");
+                });
+
             modelBuilder.Entity("Hems_Backend.Domain.Entities.ExternalDevice", b =>
                 {
                     b.HasOne("Hems_Backend.Domain.Entities.SetupDevice", "SetupDevice")
@@ -1145,6 +1303,11 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.Navigation("DeviceComponents");
 
                     b.Navigation("SetupDevice");
+                });
+
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceNotificationType", b =>
+                {
+                    b.Navigation("DeviceNotifications");
                 });
 
             modelBuilder.Entity("Hems_Backend.Domain.Entities.Setup", b =>

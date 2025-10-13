@@ -41,7 +41,11 @@ public class CreateInvitationCommandHandler : IRequestHandler<CreateInvitationCo
 
         // Site'ın var olduğunu ve kullanıcıya ait olduğunu kontrol et
         var site = await _context.Sites
-            .FirstOrDefaultAsync(s => s.Id == request.SiteId && s.UserId == currentUserId && !s.IsDeleted, cancellationToken)
+            .FirstOrDefaultAsync(s => s.Id == request.SiteId && 
+                                     !s.IsDeleted && 
+                                     (s.UserId == currentUserId || 
+                                      _context.UserSites.Any(us => us.SiteId == s.Id && us.UserId == currentUserId)), 
+                                 cancellationToken)
             ?? throw new Common.Exceptions.NotFoundException(nameof(Site), request.SiteId);
 
         // Email ile kullanıcı ara

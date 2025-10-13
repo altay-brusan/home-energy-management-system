@@ -23,7 +23,6 @@ public class DeviceSimulationJobService : IDeviceSimulationJobService
     private readonly IDataGeneratorService _dataGenerator;
     private readonly IConfiguration _configuration;
     private readonly IApplicationDbContext _context;
-    private readonly IBackgroundJobClient _backgroundJobClient;
     private readonly IRecurringJobManager _recurringJobManager;
     
     private readonly Dictionary<Guid, string> _deviceTokens = new();
@@ -35,7 +34,6 @@ public class DeviceSimulationJobService : IDeviceSimulationJobService
         IDataGeneratorService dataGenerator,
         IConfiguration configuration,
         IApplicationDbContext context,
-        IBackgroundJobClient backgroundJobClient,
         IRecurringJobManager recurringJobManager)
     {
         _httpClientFactory = httpClientFactory;
@@ -43,7 +41,6 @@ public class DeviceSimulationJobService : IDeviceSimulationJobService
         _dataGenerator = dataGenerator;
         _configuration = configuration;
         _context = context;
-        _backgroundJobClient = backgroundJobClient;
         _recurringJobManager = recurringJobManager;
     }
 

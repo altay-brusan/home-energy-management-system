@@ -35,6 +35,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Infrastructure.IntegrationT
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hems.DeviceSimulator", "Hems.DeviceSimulator\Hems.DeviceSimulator.csproj", "{DA66C8CD-639B-40C2-9E96-FFABC6E5EFD4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SignalRTester", "SignalRTester\SignalRTester.csproj", "{4328F66B-04DA-45E4-97A9-C4E2AE2A0E7F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -77,6 +79,10 @@ Global
 		{DA66C8CD-639B-40C2-9E96-FFABC6E5EFD4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DA66C8CD-639B-40C2-9E96-FFABC6E5EFD4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DA66C8CD-639B-40C2-9E96-FFABC6E5EFD4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4328F66B-04DA-45E4-97A9-C4E2AE2A0E7F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4328F66B-04DA-45E4-97A9-C4E2AE2A0E7F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4328F66B-04DA-45E4-97A9-C4E2AE2A0E7F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4328F66B-04DA-45E4-97A9-C4E2AE2A0E7F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -91,6 +97,7 @@ Global
 		{EA6127A5-94C9-4C31-AD11-E6811B92B520} = {664D406C-2F83-48F0-BFC3-408D5CB53C65}
 		{01FA6786-921D-4CE8-8C50-4FDA66C9477D} = {664D406C-2F83-48F0-BFC3-408D5CB53C65}
 		{DA66C8CD-639B-40C2-9E96-FFABC6E5EFD4} = {6ED356A7-8B47-4613-AD01-C85CF28491BD}
+		{4328F66B-04DA-45E4-97A9-C4E2AE2A0E7F} = {6ED356A7-8B47-4613-AD01-C85CF28491BD}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {3CB609D9-5D54-4C11-A371-DAAC8B74E430}

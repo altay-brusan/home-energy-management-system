@@ -37,12 +37,13 @@ public class CheckDeviceAccessQueryHandler : IRequestHandler<CheckDeviceAccessQu
             return true;
         }
 
-        // Normal kullanıcılar sadece kendi device'larına erişebilir
+        // Normal kullanıcılar sadece kendi device'larına veya paylaşılan device'lara erişebilir
         var hasAccess = await _context.SetupDevices
             .AnyAsync(sd => sd.DeviceId == request.DeviceId && 
                            _context.Setups.Any(s => s.Id == sd.SetupId && 
                                                   _context.Sites.Any(site => site.Id == s.SiteId && 
-                                                                           site.CreatedBy == _user.Id)), 
+                                                                           (site.CreatedBy == _user.Id || 
+                                                                            _context.UserSites.Any(us => us.SiteId == site.Id && us.UserId == _user.Id)))), 
                       cancellationToken);
 
         return hasAccess;

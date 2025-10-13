@@ -37,7 +37,9 @@ public class GetSetupDevicesByUserQueryHandler : IRequestHandler<GetSetupDevices
         var userId = _user.Id ?? throw new UnauthorizedAccessException("User not authenticated");
 
         return await _context.SetupDevices
-            .Where(sd => sd.Setup.Site.UserId == userId && sd.Setup.SiteId == request.SiteId)
+            .Where(sd => sd.Setup.SiteId == request.SiteId && 
+                        (sd.Setup.Site.UserId == userId || 
+                         _context.UserSites.Any(us => us.SiteId == sd.Setup.SiteId && us.UserId == userId)))
             .Select(sd => new UserSetupDeviceDto
             {
                 SetupDeviceId = sd.Id,
