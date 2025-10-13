@@ -16,7 +16,7 @@ class Program
         var connection = new HubConnectionBuilder()
             .WithUrl(hubUrl, options =>
             {
-                // JWT token ile authentication
+                // JWT token ile authentication 
                 options.AccessTokenProvider = async () =>
                 {
                     // Burada JWT token alman gerekiyor
