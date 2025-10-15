@@ -19,25 +19,32 @@ public class GetSiteByIdQueryHandler : IRequestHandler<GetSiteByIdQuery, SiteDto
 
     public async Task<SiteDto?> Handle(GetSiteByIdQuery request, CancellationToken cancellationToken)
     {
-        return await _context.Sites
+        var site = await _context.Sites
+            .Include(x => x.Setup!)
+                .ThenInclude(s => s.SetupDevice)
             .Where(x => x.Id == request.Id && !x.IsDeleted)
-            .Select(x => new SiteDto
-            {
-                Id = x.Id,
-                UserId = x.UserId,
-                Name = x.Name,
-                Country = x.Country,
-                City = x.City,
-                AddressLine = x.AddressLine,
-                Latitude = x.Latitude,
-                Longitude = x.Longitude,
-                Timezone = x.Timezone,
-                IsDeleted = x.IsDeleted,
-                Created = x.Created.DateTime,
-                CreatedBy = x.CreatedBy,
-                LastModified = x.LastModified.DateTime,
-                LastModifiedBy = x.LastModifiedBy
-            })
             .FirstOrDefaultAsync(cancellationToken);
+
+        if (site == null)
+            return null;
+
+        return new SiteDto
+        {
+            Id = site.Id,
+            UserId = site.UserId,
+            Name = site.Name,
+            Country = site.Country,
+            City = site.City,
+            AddressLine = site.AddressLine,
+            Latitude = site.Latitude,
+            Longitude = site.Longitude,
+            Timezone = site.Timezone,
+            IsDeleted = site.IsDeleted,
+            HasDevice = site.Setup?.SetupDevice != null,
+            Created = site.Created.DateTime,
+            CreatedBy = site.CreatedBy,
+            LastModified = site.LastModified.DateTime,
+            LastModifiedBy = site.LastModifiedBy
+        };
     }
 }

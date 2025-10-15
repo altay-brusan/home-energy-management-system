@@ -21,7 +21,7 @@ public class GetUserStatusQueryHandler : IRequestHandler<GetUserStatusQuery, Use
     public async Task<UserStatusDto> Handle(GetUserStatusQuery request, CancellationToken cancellationToken)
     {
         var userId = _user.Id ?? throw new UnauthorizedAccessException("User not authenticated");
-
+        //TODO : SİTE ID EKLENSİN NULL OLABİLİR.
         // Kullanıcının site'larını kontrol et
         var site = await _context.Sites
             .FirstOrDefaultAsync(s => s.UserId == userId && !s.IsDeleted, cancellationToken);

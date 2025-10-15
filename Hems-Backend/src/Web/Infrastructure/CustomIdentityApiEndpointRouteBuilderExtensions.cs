@@ -382,6 +382,7 @@ public static class IdentityApiEndpointRouteBuilderExtensions
         accountGroup.MapGet("/info", async Task<Results<Ok<InfoResponse>, ValidationProblem, NotFound>>
             (ClaimsPrincipal claimsPrincipal, [FromServices] IServiceProvider sp) =>
         {
+            //TODO Rolüde Dönecek şekilde ayarla 
             var userManager = sp.GetRequiredService<UserManager<TUser>>();
             if (await userManager.GetUserAsync(claimsPrincipal) is not { } user)
             {
@@ -390,7 +391,7 @@ public static class IdentityApiEndpointRouteBuilderExtensions
 
             return TypedResults.Ok(await CreateInfoResponseAsync(user, userManager));
         });
-
+        
         accountGroup.MapPost("/info", async Task<Results<Ok<InfoResponse>, ValidationProblem, NotFound>>
             (ClaimsPrincipal claimsPrincipal, [FromBody] InfoRequest infoRequest, HttpContext context, [FromServices] IServiceProvider sp) =>
         {
@@ -486,6 +487,8 @@ public static class IdentityApiEndpointRouteBuilderExtensions
         public required string Email { get; init; }
         public string? Name { get; set; }
         public string? Surname { get; set; }
+        public string? PhoneNumber { get; set; }
+        public List<string> Roles { get; set; } = new();
     }
     private static ValidationProblem CreateValidationProblem(IdentityResult result)
     {
@@ -530,11 +533,15 @@ public static class IdentityApiEndpointRouteBuilderExtensions
         if (user is not ApplicationUser appUser)
             throw new InvalidOperationException("User type must be AppUser.");
 
+        var roles = await userManager.GetRolesAsync(user);
+
         return new UserInfoDTO
         {
             Email = await userManager.GetEmailAsync(user) ?? throw new NotSupportedException("Users must have an email."),
             Name = appUser.FirstName,
-            Surname = appUser.Surname
+            Surname = appUser.Surname,
+            PhoneNumber = await userManager.GetPhoneNumberAsync(user),
+            Roles = roles.ToList()
         };
     }
     // Wrap RouteGroupBuilder with a non-public type to avoid a potential future behavioral breaking change.

@@ -59,7 +59,8 @@ public static class DependencyInjection
         builder.Services.AddScoped<IAuthorizationHandler, DeviceOnlyAuthorizationHandler>();
         
         // Email services
-        builder.Services.AddTransient<IEmailSender, SimpleEmailSender>();
+        builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
+        builder.Services.AddTransient<IEmailSender, SmtpEmailSender>();
         builder.Services.AddTransient<IEmailSender<ApplicationUser>, EmailSender>();
         builder.Services.AddTransient<IInvitationEmailService, InvitationEmailService>();
 

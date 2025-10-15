@@ -68,7 +68,7 @@ public class DataGeneratorService : IDataGeneratorService
             MinCellTemperature = minTemp,
             DeviceModel = component.ModelNumber ?? "HEMS-BAT-001",
             DeviceSerialNumber = component.SerialNumber ?? $"BAT{_random.Next(100000, 999999)}",
-            FirmwareVersion = $"v1.{_random.Next(0, 9)}.{_random.Next(0, 99)}",
+            FirmwareVersion = $"v1.1",
             DateTime = timestamp.ToString("yyyy-MM-dd HH:mm:ss")
         };
     }
@@ -108,7 +108,7 @@ public class DataGeneratorService : IDataGeneratorService
             Phases = phases,
             InsulationResistance = GenerateRandomValue(1.0, 10.0), // MΩ
             DeviceSerialNumber = component.SerialNumber ?? $"INV{_random.Next(100000, 999999)}",
-            FirmwareVersion = $"v2.{_random.Next(0, 9)}.{_random.Next(0, 99)}"
+            FirmwareVersion = $"v1.1"
         };
     }
 
@@ -124,7 +124,7 @@ public class DataGeneratorService : IDataGeneratorService
             Temperature = GenerateRandomValue(25.0, 60.0), // Sıcaklık
             PowerOutput = GenerateRandomValue(100.0, 5000.0), // Güç çıkışı (W)
             DeviceSerialNumber = component.SerialNumber ?? $"MPPS{_random.Next(100000, 999999)}",
-            FirmwareVersion = $"v3.{_random.Next(0, 9)}.{_random.Next(0, 99)}",
+            FirmwareVersion = $"v1.1",
             DateTime = timestamp.ToString("yyyy-MM-dd HH:mm:ss")
         };
     }

@@ -154,4 +154,29 @@ public class IdentityService : IIdentityService
         var user = await _userManager.FindByIdAsync(userId);
         return user?.Email;
     }
+
+    public async Task<Result> UpdateUserAsync(string userId, string? firstName, string? surname, string? email, string? phoneNumber, CancellationToken cancellationToken = default)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            return Result.Failure(new[] { "User not found." });
+        }
+
+        // Update properties only if they are provided
+        if (firstName != null)
+            user.FirstName = firstName;
+        
+        if (surname != null)
+            user.Surname = surname;
+        
+        if (email != null)
+            user.Email = email;
+        
+        if (phoneNumber != null)
+            user.PhoneNumber = phoneNumber;
+
+        var result = await _userManager.UpdateAsync(user);
+        return result.ToApplicationResult();
+    }
 }

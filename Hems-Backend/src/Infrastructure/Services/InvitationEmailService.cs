@@ -1,15 +1,18 @@
 using Hems_Backend.Application.Common.Interfaces;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.Extensions.Logging;
 
 namespace Hems_Backend.Infrastructure.Services;
 
 public class InvitationEmailService : IInvitationEmailService
 {
     private readonly IEmailSender _emailSender;
+    private readonly ILogger<InvitationEmailService> _logger;
 
-    public InvitationEmailService(IEmailSender emailSender)
+    public InvitationEmailService(IEmailSender emailSender, ILogger<InvitationEmailService> logger)
     {
         _emailSender = emailSender;
+        _logger = logger;
     }
 
     public async Task SendInvitationEmailAsync(
@@ -19,21 +22,35 @@ public class InvitationEmailService : IInvitationEmailService
         string token, 
         CancellationToken cancellationToken = default)
     {
-        var subject = $"{ownerName} size {siteName} evini paylaştı";
-        
-        var htmlMessage = GenerateInvitationEmailTemplate(ownerName, siteName, token);
+        try
+        {
+            _logger.LogInformation("🚀 Starting to send invitation email to {Email} for site {SiteName}", email, siteName);
+            
+            var subject = $"{ownerName} size {siteName} evini paylaştı";
+            
+            var htmlMessage = GenerateInvitationEmailTemplate(ownerName, siteName, token);
 
-        await _emailSender.SendEmailAsync(email, subject, htmlMessage);
+            _logger.LogInformation("📧 Sending email with subject: {Subject}", subject);
+            
+            await _emailSender.SendEmailAsync(email, subject, htmlMessage);
+            
+            _logger.LogInformation("✅ Invitation email sent successfully to {Email}", email);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Failed to send invitation email to {Email}", email);
+            throw; // Re-throw to let caller handle
+        }
     }
 
     private static string GenerateInvitationEmailTemplate(string ownerName, string siteName, string token)
     {
         return $@"
 <!DOCTYPE html>
-<html lang='tr'>
+<html lang=""tr"">
 <head>
-    <meta charset='UTF-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <meta charset=""UTF-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
     <title>Ev Paylaşım Daveti</title>
     <style>
         body {{
@@ -127,18 +144,18 @@ public class InvitationEmailService : IInvitationEmailService
     </style>
 </head>
 <body>
-    <div class='container'>
-        <div class='header'>
+    <div class=""container"">
+        <div class=""header"">
             <h1>🏠 Ev Paylaşım Daveti</h1>
         </div>
-        <div class='content'>
+        <div class=""content"">
             <p>Merhaba,</p>
             <p>
-                <span class='highlight'>{ownerName}</span> sizinle 
-                <span class='highlight'>{siteName}</span> evini paylaştı.
+                <span class=""highlight"">{ownerName}</span> sizinle 
+                <span class=""highlight"">{siteName}</span> evini paylaştı.
             </p>
-            <div class='info-box'>
-                <p style='margin: 0;'>
+            <div class=""info-box"">
+                <p style=""margin: 0;"">
                     Bu paylaşımı kabul ederek eve ait cihazları görüntüleyebilir ve 
                     enerji tüketim verilerine erişebilirsiniz.
                 </p>
@@ -147,21 +164,21 @@ public class InvitationEmailService : IInvitationEmailService
                 Paylaşımı kabul etmek için mobil uygulamaya giriş yapın ve 
                 aşağıdaki <strong>6 haneli kodu</strong> kullanın:
             </p>
-            <div class='token-box'>
-                <div class='token-label'>Davet Kodu</div>
-                <div class='token'>{token}</div>
+            <div class=""token-box"">
+                <div class=""token-label"">Davet Kodu</div>
+                <div class=""token"">{token}</div>
             </div>
-            <p style='color: #666; font-size: 14px;'>
+            <p style=""color: #666; font-size: 14px;"">
                 ⏰ Bu kod 10 dakika içerisinde benzersizdir ve güvenlik amacıyla 
                 her davetiye için farklı bir kod oluşturulmaktadır.
             </p>
-            <div style='text-align: center;'>
-                <a href='#' class='cta-button'>Uygulamaya Git</a>
+            <div style=""text-align: center;"">
+                <a href=""#"" class=""cta-button"">Uygulamaya Git</a>
             </div>
         </div>
-        <div class='footer'>
+        <div class=""footer"">
             <p>Bu daveti kabul etmek istemiyorsanız, bu e-postayı görmezden gelebilirsiniz.</p>
-            <p style='margin-top: 10px;'>© 2025 Residential EMS. Tüm hakları saklıdır.</p>
+            <p style=""margin-top: 10px;"">© 2025 Residential EMS. Tüm hakları saklıdır.</p>
         </div>
     </div>
 </body>

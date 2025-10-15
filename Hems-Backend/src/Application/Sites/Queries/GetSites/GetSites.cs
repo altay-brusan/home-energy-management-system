@@ -30,30 +30,36 @@ public class GetSitesQueryHandler : IRequestHandler<GetSitesQuery, PaginatedList
         {
             query = query.Where(x => x.UserId == request.UserId);
         }
-
+        
         // Only get non-deleted sites
         query = query.Where(x => !x.IsDeleted);
 
-        return await query
+        var sites = await query
+            .Include(x => x.Setup!)
+                .ThenInclude(s => s.SetupDevice)
             .OrderBy(x => x.Name)
-            .Select(x => new SiteDto
-            {
-                Id = x.Id,
-                UserId = x.UserId,
-                Name = x.Name,
-                Country = x.Country,
-                City = x.City,
-                AddressLine = x.AddressLine,
-                Latitude = x.Latitude,
-                Longitude = x.Longitude,
-                Timezone = x.Timezone,
-                IsDeleted = x.IsDeleted,
-                Created = x.Created.DateTime,
-                CreatedBy = x.CreatedBy,
-                LastModified = x.LastModified.DateTime,
-                LastModifiedBy = x.LastModifiedBy
-            })
-            .PaginatedListAsync(request.PageNumber, request.PageSize);
+            .ToListAsync(cancellationToken);
+
+        var siteDtos = sites.Select(x => new SiteDto
+        {
+            Id = x.Id,
+            UserId = x.UserId,
+            Name = x.Name,
+            Country = x.Country,
+            City = x.City,
+            AddressLine = x.AddressLine,
+            Latitude = x.Latitude,
+            Longitude = x.Longitude,
+            Timezone = x.Timezone,
+            IsDeleted = x.IsDeleted,
+            HasDevice = x.Setup?.SetupDevice != null,
+            Created = x.Created.DateTime,
+            CreatedBy = x.CreatedBy,
+            LastModified = x.LastModified.DateTime,
+            LastModifiedBy = x.LastModifiedBy
+        }).ToList();
+
+        return new PaginatedList<SiteDto>(siteDtos, siteDtos.Count, request.PageNumber, request.PageSize);
     }
 }
 

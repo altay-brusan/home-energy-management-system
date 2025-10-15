@@ -22,26 +22,30 @@ public class GetSitesByUserQueryHandler : IRequestHandler<GetSitesByUserQuery, L
     {
         var userId = _user.Id ?? throw new UnauthorizedAccessException("User not authenticated");
 
-        return await _context.Sites
+        var sites = await _context.Sites
+            .Include(x => x.Setup!)
+                .ThenInclude(s => s.SetupDevice)
             .Where(x => x.UserId == userId && !x.IsDeleted)
             .OrderBy(x => x.Name)
-            .Select(x => new SiteDto
-            {
-                Id = x.Id,
-                UserId = x.UserId,
-                Name = x.Name,
-                Country = x.Country,
-                City = x.City,
-                AddressLine = x.AddressLine,
-                Latitude = x.Latitude,
-                Longitude = x.Longitude,
-                Timezone = x.Timezone,
-                IsDeleted = x.IsDeleted,
-                Created = x.Created.DateTime,
-                CreatedBy = x.CreatedBy,
-                LastModified = x.LastModified.DateTime,
-                LastModifiedBy = x.LastModifiedBy
-            })
             .ToListAsync(cancellationToken);
+
+        return sites.Select(x => new SiteDto
+        {
+            Id = x.Id,
+            UserId = x.UserId,
+            Name = x.Name,
+            Country = x.Country,
+            City = x.City,
+            AddressLine = x.AddressLine,
+            Latitude = x.Latitude,
+            Longitude = x.Longitude,
+            Timezone = x.Timezone,
+            IsDeleted = x.IsDeleted,
+            HasDevice = x.Setup?.SetupDevice != null,
+            Created = x.Created.DateTime,
+            CreatedBy = x.CreatedBy,
+            LastModified = x.LastModified.DateTime,
+            LastModifiedBy = x.LastModifiedBy
+        }).ToList();
     }
 }

@@ -25,4 +25,7 @@ public interface IIdentityService
     // Minimal user lookup methods for invitations
     Task<string?> GetUserIdByEmailAsync(string email);
     Task<string?> GetUserEmailAsync(string userId);
+    
+    // User update methods
+    Task<Result> UpdateUserAsync(string userId, string? firstName, string? surname, string? email, string? phoneNumber, CancellationToken cancellationToken = default);
 }

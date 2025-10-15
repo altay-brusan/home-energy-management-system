@@ -12,6 +12,7 @@ public class SiteDto
     public decimal? Longitude { get; set; }
     public string Timezone { get; set; } = string.Empty;
     public bool IsDeleted { get; set; }
+    public bool HasDevice { get; set; }
     public DateTime Created { get; set; }
     public string? CreatedBy { get; set; }
     public DateTime? LastModified { get; set; }

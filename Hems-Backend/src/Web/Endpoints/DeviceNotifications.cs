@@ -34,7 +34,7 @@ public class DeviceNotifications : EndpointGroupBase
         IDeviceNotificationService notificationService)
     {
         var result = await sender.Send(command);
-        
+        //TODO: Notification Localization.
         // SignalR ile canlı bildirim gönder
         await notificationService.SendNotificationToSiteAsync(result.SiteId, result);
         await notificationService.SendNotificationToDeviceAsync(result.DeviceId, result);
