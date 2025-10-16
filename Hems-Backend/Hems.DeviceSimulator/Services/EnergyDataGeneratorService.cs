@@ -1,169 +1,130 @@
 using System.Text.Json;
+using Hems.DeviceSimulator.Models;
 
 namespace Hems.DeviceSimulator.Services;
 
 public interface IEnergyDataGeneratorService
 {
-    DailyCumulativeEnergyData GenerateDailyCumulativeData(Guid deviceId, DeviceEnergyState currentState);
-    LifetimeEnergyData GenerateLifetimeData(Guid deviceId, DeviceEnergyState currentState);
-    DeviceEnergyState InitializeDeviceEnergyState(Guid deviceId);
-    DeviceEnergyState UpdateDeviceEnergyState(DeviceEnergyState currentState, TimeSpan timeElapsed);
+    Task<DailyCumulativeEnergyData> GenerateDailyCumulativeDataAsync(Guid deviceId, DateTime timestamp);
+    Task<LifetimeEnergyData> GenerateLifetimeDataAsync(Guid deviceId, DateTime timestamp);
 }
 
 public class EnergyDataGeneratorService : IEnergyDataGeneratorService
 {
     private readonly Random _random = new();
     private readonly ILogger<EnergyDataGeneratorService> _logger;
+    private readonly IJsonDataService _jsonDataService;
 
-    public EnergyDataGeneratorService(ILogger<EnergyDataGeneratorService> logger)
+    public EnergyDataGeneratorService(ILogger<EnergyDataGeneratorService> logger, IJsonDataService jsonDataService)
     {
         _logger = logger;
+        _jsonDataService = jsonDataService;
     }
 
-    public DailyCumulativeEnergyData GenerateDailyCumulativeData(Guid deviceId, DeviceEnergyState currentState)
+    public async Task<DailyCumulativeEnergyData> GenerateDailyCumulativeDataAsync(Guid deviceId, DateTime timestamp)
     {
-        var now = DateTime.UtcNow;
-        
+        try
+        {
+            // JSON'dan günlük veri al
+            var energyData = await _jsonDataService.GetEnergyDataByTimeAsync(timestamp, false);
+            
+            if (energyData == null)
+            {
+                _logger.LogWarning("No energy data found for timestamp {Timestamp}, using random data", timestamp);
+                return GenerateRandomDailyData(deviceId, timestamp);
+            }
+
+            return new DailyCumulativeEnergyData
+            {
+                DateTime = timestamp,
+                DeviceId = deviceId,
+                PvEnergyKWhToday = energyData.PvEnergyKWhToday,
+                GridImportEnergyKWhToday = energyData.GridImportEnergyKWhToday,
+                GridExportEnergyKWhToday = energyData.GridExportEnergyKWhToday,
+                GeneratorEnergyKWhToday = energyData.GeneratorEnergyKWhToday,
+                BatteryDischargeEnergyKWhToday = energyData.BatteryDischargeEnergyKWhToday,
+                BatteryChargeEnergyKWhToday = energyData.BatteryChargeEnergyKWhToday,
+                LoadEnergyKWhToday = energyData.LoadEnergyKWhToday
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating daily cumulative data for device {DeviceId}", deviceId);
+            return GenerateRandomDailyData(deviceId, timestamp);
+        }
+    }
+
+    public async Task<LifetimeEnergyData> GenerateLifetimeDataAsync(Guid deviceId, DateTime timestamp)
+    {
+        try
+        {
+            // JSON'dan lifetime veri al
+            var energyData = await _jsonDataService.GetEnergyDataByTimeAsync(timestamp, true);
+            
+            if (energyData == null)
+            {
+                _logger.LogWarning("No lifetime energy data found for timestamp {Timestamp}, using random data", timestamp);
+                return GenerateRandomLifetimeData(deviceId, timestamp);
+            }
+
+            return new LifetimeEnergyData
+            {
+                DateTime = timestamp.Date, // Gece yarısı
+                DeviceId = deviceId,
+                PvEnergyKWhTotal = energyData.PvEnergyKWhTotal,
+                GridImportEnergyKWhTotal = energyData.GridImportEnergyKWhTotal,
+                GridExportEnergyKWhTotal = energyData.GridExportEnergyKWhTotal,
+                GeneratorEnergyKWhTotal = energyData.GeneratorEnergyKWhTotal,
+                BatteryDischargeEnergyKWhTotal = energyData.BatteryDischargeEnergyKWhTotal,
+                BatteryChargeEnergyKWhTotal = energyData.BatteryChargeEnergyKWhTotal,
+                LoadEnergyKWhTotal = energyData.LoadEnergyKWhTotal
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating lifetime data for device {DeviceId}", deviceId);
+            return GenerateRandomLifetimeData(deviceId, timestamp);
+        }
+    }
+
+    
+    
+    
+    
+    
+    
+    
+    
+    // Fallback metodları (JSON verisi bulunamazsa)
+    private DailyCumulativeEnergyData GenerateRandomDailyData(Guid deviceId, DateTime timestamp)
+    {
         return new DailyCumulativeEnergyData
         {
-            DateTime = now,
+            DateTime = timestamp,
             DeviceId = deviceId,
-            PvEnergyKWhToday = Math.Round(currentState.PvEnergyKWhToday, 1),
-            GridImportEnergyKWhToday = Math.Round(currentState.GridImportEnergyKWhToday, 1),
-            GridExportEnergyKWhToday = Math.Round(currentState.GridExportEnergyKWhToday, 1),
-            GeneratorEnergyKWhToday = Math.Round(currentState.GeneratorEnergyKWhToday, 1),
-            BatteryDischargeEnergyKWhToday = Math.Round(currentState.BatteryDischargeEnergyKWhToday, 1),
-            BatteryChargeEnergyKWhToday = Math.Round(currentState.BatteryChargeEnergyKWhToday, 1),
-            LoadEnergyKWhToday = Math.Round(currentState.LoadEnergyKWhToday, 1)
+            PvEnergyKWhToday = _random.NextDouble() * 30 + 5,
+            GridImportEnergyKWhToday = _random.NextDouble() * 10 + 2,
+            GridExportEnergyKWhToday = _random.NextDouble() * 5 + 1,
+            GeneratorEnergyKWhToday = _random.NextDouble() * 2 + 0.1,
+            BatteryDischargeEnergyKWhToday = _random.NextDouble() * 8 + 2,
+            BatteryChargeEnergyKWhToday = _random.NextDouble() * 8 + 2,
+            LoadEnergyKWhToday = _random.NextDouble() * 25 + 5
         };
     }
 
-    public LifetimeEnergyData GenerateLifetimeData(Guid deviceId, DeviceEnergyState currentState)
+    private LifetimeEnergyData GenerateRandomLifetimeData(Guid deviceId, DateTime timestamp)
     {
-        var midnight = DateTime.UtcNow.Date;
-        
         return new LifetimeEnergyData
         {
-            DateTime = midnight,
+            DateTime = timestamp.Date,
             DeviceId = deviceId,
-            PvEnergyKWhTotal = Math.Round(currentState.PvEnergyKWhTotal, 1),
-            GridImportEnergyKWhTotal = Math.Round(currentState.GridImportEnergyKWhTotal, 1),
-            GridExportEnergyKWhTotal = Math.Round(currentState.GridExportEnergyKWhTotal, 1),
-            GeneratorEnergyKWhTotal = Math.Round(currentState.GeneratorEnergyKWhTotal, 1),
-            BatteryDischargeEnergyKWhTotal = Math.Round(currentState.BatteryDischargeEnergyKWhTotal, 1),
-            BatteryChargeEnergyKWhTotal = Math.Round(currentState.BatteryChargeEnergyKWhTotal, 1),
-            LoadEnergyKWhTotal = Math.Round(currentState.LoadEnergyKWhTotal, 1)
+            PvEnergyKWhTotal = _random.NextDouble() * 10000 + 5000,
+            GridImportEnergyKWhTotal = _random.NextDouble() * 5000 + 2000,
+            GridExportEnergyKWhTotal = _random.NextDouble() * 3000 + 1000,
+            GeneratorEnergyKWhTotal = _random.NextDouble() * 1000 + 100,
+            BatteryDischargeEnergyKWhTotal = _random.NextDouble() * 4000 + 2000,
+            BatteryChargeEnergyKWhTotal = _random.NextDouble() * 4000 + 2000,
+            LoadEnergyKWhTotal = _random.NextDouble() * 10000 + 5000
         };
-    }
-
-    public DeviceEnergyState InitializeDeviceEnergyState(Guid deviceId)
-    {
-        var now = DateTime.UtcNow;
-        
-        // Ömür boyu değerler için gerçekçi başlangıç değerleri
-        var lifetimePv = _random.NextDouble() * 10000 + 5000; // 5-15 MWh
-        var lifetimeGridImport = _random.NextDouble() * 5000 + 2000; // 2-7 MWh
-        var lifetimeGridExport = _random.NextDouble() * 3000 + 1000; // 1-4 MWh
-        var lifetimeGenerator = _random.NextDouble() * 1000 + 100; // 0.1-1.1 MWh
-        var lifetimeBatteryDischarge = _random.NextDouble() * 4000 + 2000; // 2-6 MWh
-        var lifetimeBatteryCharge = lifetimeBatteryDischarge + _random.NextDouble() * 500; // Biraz daha fazla
-        var lifetimeLoad = lifetimePv + lifetimeGridImport + lifetimeGenerator - lifetimeGridExport - lifetimeBatteryCharge + _random.NextDouble() * 1000;
-
-        return new DeviceEnergyState
-        {
-            DeviceId = deviceId,
-            LastUpdate = now,
-            
-            // Günlük değerler için başlangıç değerleri
-            PvEnergyKWhToday = _random.NextDouble() * 10 + 5, // 5-15 kWh
-            GridImportEnergyKWhToday = _random.NextDouble() * 5 + 2, // 2-7 kWh
-            GridExportEnergyKWhToday = _random.NextDouble() * 3 + 1, // 1-4 kWh
-            GeneratorEnergyKWhToday = _random.NextDouble() * 1 + 0.1, // 0.1-1.1 kWh
-            BatteryDischargeEnergyKWhToday = _random.NextDouble() * 4 + 2, // 2-6 kWh
-            BatteryChargeEnergyKWhToday = _random.NextDouble() * 4 + 2, // 2-6 kWh
-            LoadEnergyKWhToday = _random.NextDouble() * 10 + 5, // 5-15 kWh
-            
-            // Ömür boyu değerler
-            PvEnergyKWhTotal = lifetimePv,
-            GridImportEnergyKWhTotal = lifetimeGridImport,
-            GridExportEnergyKWhTotal = lifetimeGridExport,
-            GeneratorEnergyKWhTotal = lifetimeGenerator,
-            BatteryDischargeEnergyKWhTotal = lifetimeBatteryDischarge,
-            BatteryChargeEnergyKWhTotal = lifetimeBatteryCharge,
-            LoadEnergyKWhTotal = lifetimeLoad,
-            
-            // Güç değerleri (kW)
-            PvPowerKw = GenerateRealisticPower(0, 10), // PV güç
-            GridImportPowerKw = GenerateRealisticPower(0, 5), // Şebeke import
-            GridExportPowerKw = GenerateRealisticPower(0, 8), // Şebeke export
-            GeneratorPowerKw = GenerateRealisticPower(0, 3), // Generator
-            BatteryDischargePowerKw = GenerateRealisticPower(0, 5), // Batarya deşarj
-            BatteryChargePowerKw = GenerateRealisticPower(0, 5), // Batarya şarj
-            LoadPowerKw = GenerateRealisticPower(2, 15) // Yük
-        };
-    }
-
-    public DeviceEnergyState UpdateDeviceEnergyState(DeviceEnergyState currentState, TimeSpan timeElapsed)
-    {
-        var hoursElapsed = timeElapsed.TotalHours;
-        
-        // Debug log
-        Console.WriteLine($"🔄 UpdateDeviceEnergyState - HoursElapsed: {hoursElapsed:F4}, CurrentToday: {currentState.PvEnergyKWhToday:F2}");
-        var updatedState = new DeviceEnergyState
-        {
-            DeviceId = currentState.DeviceId,
-            LastUpdate = DateTime.UtcNow,
-            
-            // Ömür boyu değerler aynı kalır (sadece gece yarısı güncellenir)
-            PvEnergyKWhTotal = currentState.PvEnergyKWhTotal,
-            GridImportEnergyKWhTotal = currentState.GridImportEnergyKWhTotal,
-            GridExportEnergyKWhTotal = currentState.GridExportEnergyKWhTotal,
-            GeneratorEnergyKWhTotal = currentState.GeneratorEnergyKWhTotal,
-            BatteryDischargeEnergyKWhTotal = currentState.BatteryDischargeEnergyKWhTotal,
-            BatteryChargeEnergyKWhTotal = currentState.BatteryChargeEnergyKWhTotal,
-            LoadEnergyKWhTotal = currentState.LoadEnergyKWhTotal
-        };
-
-        // Güç değerlerini güncelle (gerçekçi varyasyonlar)
-        updatedState.PvPowerKw = GenerateRealisticPower(0, 10);
-        updatedState.GridImportPowerKw = GenerateRealisticPower(0, 5);
-        updatedState.GridExportPowerKw = GenerateRealisticPower(0, 8);
-        updatedState.GeneratorPowerKw = GenerateRealisticPower(0, 3);
-        updatedState.BatteryDischargePowerKw = GenerateRealisticPower(0, 5);
-        updatedState.BatteryChargePowerKw = GenerateRealisticPower(0, 5);
-        updatedState.LoadPowerKw = GenerateRealisticPower(2, 15);
-
-        // Günlük birikimli değerleri güncelle
-        updatedState.PvEnergyKWhToday = currentState.PvEnergyKWhToday + (updatedState.PvPowerKw * hoursElapsed);
-        updatedState.GridImportEnergyKWhToday = currentState.GridImportEnergyKWhToday + (updatedState.GridImportPowerKw * hoursElapsed);
-        updatedState.GridExportEnergyKWhToday = currentState.GridExportEnergyKWhToday + (updatedState.GridExportPowerKw * hoursElapsed);
-        updatedState.GeneratorEnergyKWhToday = currentState.GeneratorEnergyKWhToday + (updatedState.GeneratorPowerKw * hoursElapsed);
-        updatedState.BatteryDischargeEnergyKWhToday = currentState.BatteryDischargeEnergyKWhToday + (updatedState.BatteryDischargePowerKw * hoursElapsed);
-        updatedState.BatteryChargeEnergyKWhToday = currentState.BatteryChargeEnergyKWhToday + (updatedState.BatteryChargePowerKw * hoursElapsed);
-        updatedState.LoadEnergyKWhToday = currentState.LoadEnergyKWhToday + (updatedState.LoadPowerKw * hoursElapsed);
-        
-        // Debug log
-        Console.WriteLine($"📊 Updated Today Values - PV: {updatedState.PvEnergyKWhToday:F2}, Power: {updatedState.PvPowerKw:F2}, Hours: {hoursElapsed:F4}");
-
-        return updatedState;
-    }
-
-    private double GenerateRealisticPower(double minKw, double maxKw)
-    {
-        // Gerçekçi güç değerleri için normal dağılım kullan
-        var mean = (minKw + maxKw) / 2;
-        var stdDev = (maxKw - minKw) / 6; // 99.7% değerler aralıkta
-        
-        var value = GenerateNormalDistribution(mean, stdDev);
-        return Math.Max(minKw, Math.Min(maxKw, value));
-    }
-
-    private double GenerateNormalDistribution(double mean, double stdDev)
-    {
-        // Box-Muller transformasyonu
-        var u1 = _random.NextDouble();
-        var u2 = _random.NextDouble();
-        var z0 = Math.Sqrt(-2 * Math.Log(u1)) * Math.Cos(2 * Math.PI * u2);
-        return mean + stdDev * z0;
     }
 }

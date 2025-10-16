@@ -1,3 +1,4 @@
+using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Application.Dashboard.Queries.GetEnergyData;
 using Hems_Backend.Application.Dashboard.Queries.GetEnergyProduction;
 using Hems_Backend.Application.Dashboard.Queries.GetEnergyConsumption;
@@ -5,6 +6,10 @@ using Hems_Backend.Application.Dashboard.Queries.GetPowerMetrics;
 using Hems_Backend.Application.Dashboard.Queries.GetBattery;
 using Hems_Backend.Application.Dashboard.Queries.GetChargeDischarge;
 using Hems_Backend.Application.Dashboard.Queries.GetBatteryComponent;
+using Hems_Backend.Application.Dashboard.Queries.GetHero;
+using Hems_Backend.Application.Dashboard.Queries.GetSOC;
+using Hems_Backend.Application.Devices.Queries.GetDeviceWithData;
+using Hems_Backend.Application.Devices.Queries.GetComponentLiveData;
 using Hems_Backend.Web.Infrastructure;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -18,6 +23,10 @@ public class MobileDashboard : EndpointGroupBase
     {
         app.MapGroup(this)
             .RequireAuthorization()
+            .MapGet(Hero, "hero")
+            .MapGet(SOC, "graphs/SOC")
+            .MapGet(GetDeviceWithData, "device/GetWithData")
+            .MapGet(GetComponentLiveData, "device/component/getComponentLiveData")
             .MapGet(EnergyFlow, "graphs/EnergyFlow")
             .MapGet(EnergyProduction, "graphs/EnergyProduction")
             .MapGet(EnergyConsumption, "graphs/EnergyConsumption")
@@ -28,7 +37,61 @@ public class MobileDashboard : EndpointGroupBase
     }
 
     [Authorize]
-    public async Task<EnergyDataDto> EnergyFlow(
+    public async Task<HeroResponseDto> Hero(
+        ISender sender,
+        [FromQuery] Guid deviceId)
+    {
+        var query = new GetHeroQuery
+        {
+            DeviceId = deviceId
+        };
+
+        return await sender.Send(query);
+    }
+
+    [Authorize]
+    public async Task<SOCResponseDto> SOC(
+        ISender sender,
+        [FromQuery] Guid deviceId)
+    {
+        var query = new GetSOCQuery
+        {
+            DeviceId = deviceId
+        };
+
+        return await sender.Send(query);
+    }
+
+    [Authorize]
+    public async Task<DeviceWithDataResponseDto> GetDeviceWithData(
+        ISender sender,
+        [FromQuery] Guid deviceId)
+    {
+        var query = new GetDeviceWithDataQuery
+        {
+            DeviceId = deviceId
+        };
+
+        return await sender.Send(query);
+    }
+
+    [Authorize]
+    public async Task<GetComponentLiveDataResponse> GetComponentLiveData(
+        ISender sender,
+        [FromQuery] Guid deviceId,
+        [FromQuery] Guid componentId)
+    {
+        var query = new GetComponentLiveDataQuery
+        {
+            DeviceId = deviceId,
+            ComponentId = componentId
+        };
+
+        return await sender.Send(query);
+    }
+
+    [Authorize]
+    public async Task<EnergyFlowResponseDto> EnergyFlow(
         ISender sender,
         [FromQuery] Guid deviceId,
         [FromQuery] DateTime startDate,
@@ -45,7 +108,7 @@ public class MobileDashboard : EndpointGroupBase
     }
 
     [Authorize]
-    public async Task<EnergyProductionDto> EnergyProduction(
+    public async Task<EnergyProductionResponseDto> EnergyProduction(
         ISender sender,
         [FromQuery] Guid deviceId,
         [FromQuery] string period)
@@ -60,7 +123,7 @@ public class MobileDashboard : EndpointGroupBase
     }
 
     [Authorize]
-    public async Task<EnergyConsumptionDto> EnergyConsumption(
+    public async Task<EnergyConsumptionResponseDto> EnergyConsumption(
         ISender sender,
         [FromQuery] Guid deviceId,
         [FromQuery] string period)
@@ -75,7 +138,7 @@ public class MobileDashboard : EndpointGroupBase
     }
 
     [Authorize]
-    public async Task<PowerMetricsDto> PowerMetrics(
+    public async Task<PowerMetricsResponseDto> PowerMetrics(
         ISender sender,
         [FromQuery] Guid deviceId,
         [FromQuery] string period)
@@ -90,7 +153,7 @@ public class MobileDashboard : EndpointGroupBase
     }
 
     [Authorize]
-    public async Task<BatteryDto> Battery(
+    public async Task<BatteryResponseDto> Battery(
         ISender sender,
         [FromQuery] Guid deviceId)
     {
@@ -103,7 +166,7 @@ public class MobileDashboard : EndpointGroupBase
     }
 
     [Authorize]
-    public async Task<ChargeDischargeDto> ChargeDischarge(
+    public async Task<ChargeDischargeResponseDto> ChargeDischarge(
         ISender sender,
         [FromQuery] Guid deviceId)
     {

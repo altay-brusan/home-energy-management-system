@@ -22,6 +22,9 @@ public static class DependencyInjection
 
         builder.Services.AddScoped<IUser, CurrentUser>();
 
+        // Add HttpClient for DeviceSimulator communication
+        builder.Services.AddHttpClient();
+
         builder.Services.AddHttpContextAccessor();
         builder.Services.AddHealthChecks()
             .AddDbContextCheck<ApplicationDbContext>();

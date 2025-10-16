@@ -11,17 +11,20 @@ public class DeviceController : ControllerBase
     private readonly IDeviceSimulationJobService _jobService;
     private readonly IEnergyDataJobService _energyJobService;
     private readonly IDeviceNotificationJobService _notificationJobService;
+    private readonly IDataGeneratorService _dataGeneratorService;
     private readonly ILogger<DeviceController> _logger;
 
     public DeviceController(
         IDeviceSimulationJobService jobService,
         IEnergyDataJobService energyJobService,
         IDeviceNotificationJobService notificationJobService,
+        IDataGeneratorService dataGeneratorService,
         ILogger<DeviceController> logger)
     {
         _jobService = jobService;
         _energyJobService = energyJobService;
         _notificationJobService = notificationJobService;
+        _dataGeneratorService = dataGeneratorService;
         _logger = logger;
     }
 
@@ -217,6 +220,68 @@ public class DeviceController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Generates live data for a specific component
+    /// </summary>
+    /// <param name="request">Component information for live data generation</param>
+    /// <returns>Generated live data</returns>
+    [HttpPost("takeLiveData")]
+    [ProducesResponseType(typeof(object), 200)]
+    [ProducesResponseType(typeof(object), 500)]
+    public async Task<IActionResult> TakeLiveData([FromBody] TakeLiveDataRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("📡 Live data request received for DeviceId: {DeviceId}, ComponentId: {ComponentId}", 
+                request.DeviceId, request.ComponentId);
+
+            // Service layer'da component'i çek ve live data oluştur
+            var liveData = await _dataGeneratorService.GenerateLiveDataForComponentAsync(request.DeviceId, request.ComponentId);
+
+            _logger.LogInformation("✅ Live data generated successfully for ComponentId: {ComponentId}", 
+                request.ComponentId);
+
+            return Ok(liveData);
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning("❌ Component not found: {Message}", ex.Message);
+            return NotFound(new { error = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Error generating live data for DeviceId: {DeviceId}, ComponentId: {ComponentId}", 
+                request.DeviceId, request.ComponentId);
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
+}
+
+/// <summary>
+/// Request model for taking live data from a component
+/// </summary>
+public class TakeLiveDataRequest
+{
+    /// <summary>
+    /// The unique identifier of the device
+    /// </summary>
+    public Guid DeviceId { get; init; }
+    
+    /// <summary>
+    /// The unique identifier of the component
+    /// </summary>
+    public Guid ComponentId { get; init; }
+    
+    /// <summary>
+    /// The type of component (BMS, Battery, Invertor)
+    /// </summary>
+    public string ComponentType { get; init; } = string.Empty;
+    
+    /// <summary>
+    /// Optional serial number of the component
+    /// </summary>
+    public string? SerialNumber { get; init; }
 }
 
 /// <summary>

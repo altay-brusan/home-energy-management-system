@@ -59,7 +59,7 @@ public class DeviceSimulationJobService : IDeviceSimulationJobService
             // Her device için recurring job oluştur
             foreach (var device in devices)
             {
-                var intervalSeconds = _configuration.GetValue<int>($"DeviceSimulator:DeviceIntervals:{device.Device.Id}", 30);
+                var intervalSeconds = _configuration.GetValue<int>("DeviceSimulator:DefaultIntervalSeconds", 300);
                 await ScheduleDeviceSimulationAsync(device.Device.Id, intervalSeconds);
             }
             
@@ -117,7 +117,9 @@ public class DeviceSimulationJobService : IDeviceSimulationJobService
         try
         {
             var jobId = $"device-simulation-{deviceId}";
-            var cronExpression = $"*/{intervalSeconds} * * * * *"; // Her N saniyede bir
+            
+            // Configuration'dan cron expression al
+            var cronExpression = _configuration.GetValue<string>("DeviceSimulator:CronExpression", "0 */5 * * * *");
 
             _recurringJobManager.AddOrUpdate(
                 jobId,
@@ -128,8 +130,8 @@ public class DeviceSimulationJobService : IDeviceSimulationJobService
                     TimeZone = TimeZoneInfo.Utc
                 });
 
-            _logger.LogInformation("📅 Scheduled recurring job for device {DeviceId} every {IntervalSeconds} seconds", 
-                deviceId, intervalSeconds);
+            _logger.LogInformation("📅 Scheduled recurring job for device {DeviceId} every 5 minutes", 
+                deviceId);
         }
         catch (Exception ex)
         {
@@ -175,7 +177,13 @@ public class DeviceSimulationJobService : IDeviceSimulationJobService
             // Her component için veri üret ve gönder
             foreach (var component in device.Components)
             {
-                var data = _dataGenerator.GenerateDataForComponent(component);
+                // Inverter için JSON'dan, diğerleri için random veri üret
+            var data = component.DeviceType switch
+            {
+                DeviceType.Invertor or DeviceType.BMS or DeviceType.Battery => await _dataGenerator.GenerateDataFromJsonAsync(component, DateTime.UtcNow),
+                _ => _dataGenerator.GenerateDataForComponent(component)
+            };
+                    
                 await SendDeviceDataAsync(device, data);
             }
 

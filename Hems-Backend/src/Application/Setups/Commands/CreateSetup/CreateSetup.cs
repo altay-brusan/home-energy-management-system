@@ -53,21 +53,10 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
             throw new InvalidOperationException("Bu site'ın zaten bir setup'ı var. Bir site'ın sadece bir setup'ı olabilir.");
         }
 
-        // Setup oluştur
-        var setup = new Setup
-        {
-            SiteId = request.SiteId,
-            Name = request.Name,
-        };
-
-        _context.Setups.Add(setup);
-        await _context.SaveChangesAsync(cancellationToken);
-
-        // Device bulma ve SetupDevice oluşturma
+        // Device bulma (eğer belirtilmişse)
+        Device? device = null;
         if (!string.IsNullOrEmpty(request.DeviceQRCode) || !string.IsNullOrEmpty(request.DeviceSerialNumber))
         {
-            Device? device = null;
-
             // QR Code ile device bulma
             if (!string.IsNullOrEmpty(request.DeviceQRCode))
             {
@@ -81,20 +70,41 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
                     .FirstOrDefaultAsync(d => d.SerialNumber == request.DeviceSerialNumber && !d.IsDeleted, cancellationToken);
             }
 
-            if (device != null)
+            // Device bulunamazsa hata ver
+            if (device == null)
             {
-                // SetupDevice oluştur
-                var setupDevice = new SetupDevice
-                {
-                    SetupId = setup.Id,
-                    DeviceId = device.Id,
-                };
-
-                _context.SetupDevices.Add(setupDevice);
-                await _context.SaveChangesAsync(cancellationToken);
+                var deviceIdentifier = !string.IsNullOrEmpty(request.DeviceQRCode) 
+                    ? $"QR Code: {request.DeviceQRCode}" 
+                    : $"Serial Number: {request.DeviceSerialNumber}";
+                
+                throw new ArgumentException($"Device not found with {deviceIdentifier}");
             }
         }
 
+        // Setup oluştur
+        var setup = new Setup
+        {
+            SiteId = request.SiteId,
+            Name = request.Name,
+        };
+
+        _context.Setups.Add(setup);
+
+        // Device varsa SetupDevice oluştur
+        if (device != null)
+        {
+            var setupDevice = new SetupDevice
+            {
+                SetupId = setup.Id,
+                DeviceId = device.Id,
+            };
+
+            _context.SetupDevices.Add(setupDevice);
+        }
+
+        // Tek seferde kaydet - EF Core otomatik transaction yapar
+        await _context.SaveChangesAsync(cancellationToken);
+        
         return setup.Id;
     }
 }

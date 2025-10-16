@@ -25,4 +25,10 @@
     <ProjectReference Include="..\src\Infrastructure\Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="DataJsonFiles\Inverter\" />
+    <Folder Include="DataJsonFiles\BMS\" />
+    <Folder Include="DataJsonFiles\Battery\" />
+  </ItemGroup>
+
 </Project>

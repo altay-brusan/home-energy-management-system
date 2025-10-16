@@ -1,4 +1,5 @@
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Application.Devices.Queries.CheckDeviceAccess;
 using Hems_Backend.Domain.Entities;
 using MediatR;
@@ -6,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Hems_Backend.Application.Dashboard.Queries.GetChargeDischarge;
 
-public class GetChargeDischargeQueryHandler : IRequestHandler<GetChargeDischargeQuery, ChargeDischargeDto>
+public class GetChargeDischargeQueryHandler : IRequestHandler<GetChargeDischargeQuery, ChargeDischargeResponseDto>
 {
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
@@ -17,7 +18,7 @@ public class GetChargeDischargeQueryHandler : IRequestHandler<GetChargeDischarge
         _sender = sender;
     }
 
-    public async Task<ChargeDischargeDto> Handle(GetChargeDischargeQuery request, CancellationToken cancellationToken)
+    public async Task<ChargeDischargeResponseDto> Handle(GetChargeDischargeQuery request, CancellationToken cancellationToken)
     {
         // Device access kontrolü
         var hasAccess = await _sender.Send(new CheckDeviceAccessQuery { DeviceId = request.DeviceId }, cancellationToken);
@@ -39,22 +40,27 @@ public class GetChargeDischargeQueryHandler : IRequestHandler<GetChargeDischarge
 
         if (!energyData.Any())
         {
-            return new ChargeDischargeDto
+            return new ChargeDischargeResponseDto
             {
-                DataPoints = new List<ChargeDischargeDataPoint>(),
-                AverageChargePowerKw = 0,
-                PeakChargePowerKw = 0,
-                CurrentChargePowerKw = 0,
-                AverageDischargePowerKw = 0,
-                PeakDischargePowerKw = 0,
-                CurrentDischargePowerKw = 0
+                Range = "Day",
+                Data = new List<Hems_Backend.Application.Common.Models.ChargeDischargeDataPoint>(),
+                Statistics = new ChargeDischargeStatistics
+                {
+                    AverageCharge = 0,
+                    PeakCharge = 0,
+                    CurrentCharge = 0,
+                    AverageDischarge = 0,
+                    PeakDischarge = 0,
+                    CurrentDischarge = 0,
+                    Unit = "kW"
+                }
             };
         }
 
         // Saatlik gruplama ve power hesaplama (son değerleri al)
         var dataPoints = energyData
             .GroupBy(x => x.DataDateTime.Hour)
-            .Select(g => new ChargeDischargeDataPoint
+            .Select(g => new Hems_Backend.Application.Dashboard.Queries.GetChargeDischarge.ChargeDischargeDataPoint
             {
                 DateTime = g.First().DataDateTime,
                 ChargePowerKw = Math.Round(g.OrderByDescending(x => x.DataDateTime).First().BatteryChargeEnergyKWh ?? 0, 3),
@@ -76,15 +82,29 @@ public class GetChargeDischargeQueryHandler : IRequestHandler<GetChargeDischarge
         var peakDischargePowerKw = dischargeValues.Any() ? Math.Round(dischargeValues.Max(), 3) : 0;
         var currentDischargePowerKw = dischargeValues.Any() ? Math.Round(dischargeValues.Last(), 3) : 0;
 
-        return new ChargeDischargeDto
+        // Yeni DTO formatına çevir
+        var newDataPoints = dataPoints.Select(x => new Hems_Backend.Application.Common.Models.ChargeDischargeDataPoint
         {
-            DataPoints = dataPoints,
-            AverageChargePowerKw = averageChargePowerKw,
-            PeakChargePowerKw = peakChargePowerKw,
-            CurrentChargePowerKw = currentChargePowerKw,
-            AverageDischargePowerKw = averageDischargePowerKw,
-            PeakDischargePowerKw = peakDischargePowerKw,
-            CurrentDischargePowerKw = currentDischargePowerKw
+            Timestamp = x.Label,
+            ChargeValue = x.ChargePowerKw,
+            DischargeValue = x.DischargePowerKw,
+            Unit = "kW"
+        }).ToList();
+
+        return new ChargeDischargeResponseDto
+        {
+            Range = "Day",
+            Data = newDataPoints,
+            Statistics = new ChargeDischargeStatistics
+            {
+                AverageCharge = averageChargePowerKw,
+                PeakCharge = peakChargePowerKw,
+                CurrentCharge = currentChargePowerKw,
+                AverageDischarge = averageDischargePowerKw,
+                PeakDischarge = peakDischargePowerKw,
+                CurrentDischarge = currentDischargePowerKw,
+                Unit = "kW"
+            }
         };
     }
 }

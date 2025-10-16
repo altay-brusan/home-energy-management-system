@@ -1,4 +1,5 @@
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Application.Devices.Queries.CheckDeviceAccess;
 using Hems_Backend.Domain.Entities;
 using MediatR;
@@ -6,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Hems_Backend.Application.Dashboard.Queries.GetEnergyConsumption;
 
-public class GetEnergyConsumptionQueryHandler : IRequestHandler<GetEnergyConsumptionQuery, EnergyConsumptionDto>
+public class GetEnergyConsumptionQueryHandler : IRequestHandler<GetEnergyConsumptionQuery, EnergyConsumptionResponseDto>
 {
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
@@ -17,7 +18,7 @@ public class GetEnergyConsumptionQueryHandler : IRequestHandler<GetEnergyConsump
         _sender = sender;
     }
 
-    public async Task<EnergyConsumptionDto> Handle(GetEnergyConsumptionQuery request, CancellationToken cancellationToken)
+    public async Task<EnergyConsumptionResponseDto> Handle(GetEnergyConsumptionQuery request, CancellationToken cancellationToken)
     {
         // Device access kontrolü
         var hasAccess = await _sender.Send(new CheckDeviceAccessQuery { DeviceId = request.DeviceId }, cancellationToken);
@@ -36,7 +37,7 @@ public class GetEnergyConsumptionQueryHandler : IRequestHandler<GetEnergyConsump
         };
     }
 
-    private async Task<EnergyConsumptionDto> GetDailyConsumptionAsync(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<EnergyConsumptionResponseDto> GetDailyConsumptionAsync(Guid deviceId, CancellationToken cancellationToken)
     {
         var today = DateTime.UtcNow.Date;
         var todayUtc = DateTime.SpecifyKind(today, DateTimeKind.Utc);
@@ -50,33 +51,42 @@ public class GetEnergyConsumptionQueryHandler : IRequestHandler<GetEnergyConsump
 
         var dataPoints = dailyData
             .GroupBy(x => x.DataDateTime.Hour)
-            .Select(g => new EnergyConsumptionDataPoint
+            .Select(g => new Hems_Backend.Application.Common.Models.EnergyConsumptionDataPoint
             {
-                DateTime = g.First().DataDateTime,
-                LoadEnergyKWh = Math.Round(g.OrderByDescending(x => x.DataDateTime).First().LoadEnergyKWh ?? 0, 3),
-                Label = $"Hour-{g.Key:00}:00"
+                Timestamp = $"{g.Key:00}:00",
+                Value = Math.Round(g.OrderByDescending(x => x.DataDateTime).First().LoadEnergyKWh ?? 0, 3),
+                Unit = "kWh"
             })
-            .OrderBy(x => x.DateTime)
+            .OrderBy(x => x.Timestamp)
             .ToList();
 
-        // Peak detection ve 12 saat optimizasyonu
-        var optimizedPoints = OptimizeDailyDataPoints(dataPoints);
+        // Statistics hesapla
+        var total = dataPoints.Sum(x => x.Value);
+        var peak = dataPoints.Count > 0 ? dataPoints.Max(x => x.Value) : 0;
+        var average = dataPoints.Count > 0 ? dataPoints.Average(x => x.Value) : 0;
 
-        return new EnergyConsumptionDto
+        return new EnergyConsumptionResponseDto
         {
-            Period = "daily",
-            DataPoints = optimizedPoints
+            Range = "Day",
+            Data = dataPoints,
+            Statistics = new EnergyConsumptionStatistics
+            {
+                Total = Math.Round(total, 3),
+                Peak = Math.Round(peak, 3),
+                Average = Math.Round(average, 3),
+                Unit = "kWh"
+            }
         };
     }
 
-    private async Task<EnergyConsumptionDto> GetWeeklyConsumptionAsync(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<EnergyConsumptionResponseDto> GetWeeklyConsumptionAsync(Guid deviceId, CancellationToken cancellationToken)
     {
-        var today = DateTime.UtcNow.Date;
+        var today = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Turkey Standard Time")).Date;
         var weekStart = today.AddDays(-(int)today.DayOfWeek); // Pazartesi
         var todayUtc = DateTime.SpecifyKind(today, DateTimeKind.Utc);
         var weekStartUtc = DateTime.SpecifyKind(weekStart, DateTimeKind.Utc);
 
-        var dataPoints = new List<EnergyConsumptionDataPoint>();
+        var dataPoints = new List<Hems_Backend.Application.Common.Models.EnergyConsumptionDataPoint>();
 
         // Önceki günler için LifetimeEnergyData
         for (int i = 0; i < (int)today.DayOfWeek; i++)
@@ -104,11 +114,11 @@ public class GetEnergyConsumptionQueryHandler : IRequestHandler<GetEnergyConsump
                     _ => "Unknown"
                 };
                 
-                dataPoints.Add(new EnergyConsumptionDataPoint
+                dataPoints.Add(new Hems_Backend.Application.Common.Models.EnergyConsumptionDataPoint
                 {
-                    DateTime = dayUtc,
-                    LoadEnergyKWh = lifetimeData.LoadEnergyKWh ?? 0,
-                    Label = $"Day-{dayName}"
+                    Timestamp = dayName,
+                    Value = Math.Round(lifetimeData.LoadEnergyKWh ?? 0, 3),
+                    Unit = "kWh"
                 });
             }
         }
@@ -123,29 +133,41 @@ public class GetEnergyConsumptionQueryHandler : IRequestHandler<GetEnergyConsump
 
         if (todayData != null)
         {
-            dataPoints.Add(new EnergyConsumptionDataPoint
+            dataPoints.Add(new Hems_Backend.Application.Common.Models.EnergyConsumptionDataPoint
             {
-                DateTime = todayUtc,
-                LoadEnergyKWh = todayData.LoadEnergyKWh ?? 0,
-                Label = "Day-Today"
+                Timestamp = $"Day {today.Day}",
+                Value = Math.Round(todayData.LoadEnergyKWh ?? 0, 3),
+                Unit = "kWh"
             });
         }
 
-        return new EnergyConsumptionDto
+        // Statistics hesapla
+        var total = dataPoints.Sum(x => x.Value);
+        var peak = dataPoints.Count > 0 ? dataPoints.Max(x => x.Value) : 0;
+        var average = dataPoints.Count > 0 ? dataPoints.Average(x => x.Value) : 0;
+
+        return new EnergyConsumptionResponseDto
         {
-            Period = "weekly",
-            DataPoints = dataPoints.OrderBy(x => x.DateTime).ToList()
+            Range = "Week",
+            Data = dataPoints.OrderBy(x => x.Timestamp).ToList(),
+            Statistics = new EnergyConsumptionStatistics
+            {
+                Total = Math.Round(total, 3),
+                Peak = Math.Round(peak, 3),
+                Average = Math.Round(average, 3),
+                Unit = "kWh"
+            }
         };
     }
 
-    private async Task<EnergyConsumptionDto> GetMonthlyConsumptionAsync(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<EnergyConsumptionResponseDto> GetMonthlyConsumptionAsync(Guid deviceId, CancellationToken cancellationToken)
     {
-        var today = DateTime.UtcNow.Date;
+        var today = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Turkey Standard Time")).Date;
         var monthStart = new DateTime(today.Year, today.Month, 1);
         var todayUtc = DateTime.SpecifyKind(today, DateTimeKind.Utc);
         var monthStartUtc = DateTime.SpecifyKind(monthStart, DateTimeKind.Utc);
 
-        var dataPoints = new List<EnergyConsumptionDataPoint>();
+        var dataPoints = new List<Hems_Backend.Application.Common.Models.EnergyConsumptionDataPoint>();
 
         // Ayın geçen günleri için LifetimeEnergyData
         for (int i = 0; i < today.Day; i++)
@@ -153,31 +175,67 @@ public class GetEnergyConsumptionQueryHandler : IRequestHandler<GetEnergyConsump
             var day = monthStart.AddDays(i);
             var dayUtc = DateTime.SpecifyKind(day, DateTimeKind.Utc);
 
-            var lifetimeData = await _context.DeviceEnergyData
-                .Where(x => x.DeviceId == deviceId && 
-                           x.DataDateTime.Date == dayUtc.Date &&
-                           x.DataType == "LifetimeEnergyData")
-                .FirstOrDefaultAsync(cancellationToken);
-
-            if (lifetimeData != null)
+            if (day.Date == today.Date)
             {
-                dataPoints.Add(new EnergyConsumptionDataPoint
+                // Bugün için DailyCumulativeEnergyData'nın son kaydını al
+                var todayData = await _context.DeviceEnergyData
+                    .Where(x => x.DeviceId == deviceId && 
+                               x.DataDateTime.Date == dayUtc.Date &&
+                               x.DataType == "DailyCumulativeEnergyData")
+                    .OrderByDescending(x => x.DataDateTime)
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                if (todayData != null)
                 {
-                    DateTime = dayUtc,
-                    LoadEnergyKWh = lifetimeData.LoadEnergyKWh ?? 0,
-                    Label = $"Day-{day.Day}"
-                });
+                    dataPoints.Add(new Hems_Backend.Application.Common.Models.EnergyConsumptionDataPoint
+                    {
+                        Timestamp = $"Day {day.Day}",
+                        Value = Math.Round(todayData.LoadEnergyKWh ?? 0, 3),
+                        Unit = "kWh"
+                    });
+                }
+            }
+            else
+            {
+                // Geçmiş günler için LifetimeEnergyData
+                var lifetimeData = await _context.DeviceEnergyData
+                    .Where(x => x.DeviceId == deviceId && 
+                               x.DataDateTime.Date == dayUtc.Date &&
+                               x.DataType == "LifetimeEnergyData")
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                if (lifetimeData != null)
+                {
+                    dataPoints.Add(new Hems_Backend.Application.Common.Models.EnergyConsumptionDataPoint
+                    {
+                        Timestamp = $"Day {day.Day}",
+                        Value = Math.Round(lifetimeData.LoadEnergyKWh ?? 0, 3),
+                        Unit = "kWh"
+                    });
+                }
             }
         }
 
-        return new EnergyConsumptionDto
+        // Statistics hesapla
+        var total = dataPoints.Sum(x => x.Value);
+        var peak = dataPoints.Count > 0 ? dataPoints.Max(x => x.Value) : 0;
+        var average = dataPoints.Count > 0 ? dataPoints.Average(x => x.Value) : 0;
+
+        return new EnergyConsumptionResponseDto
         {
-            Period = "monthly",
-            DataPoints = dataPoints.OrderBy(x => x.DateTime).ToList()
+            Range = "Month",
+            Data = dataPoints.OrderBy(x => x.Timestamp).ToList(),
+            Statistics = new EnergyConsumptionStatistics
+            {
+                Total = Math.Round(total, 3),
+                Peak = Math.Round(peak, 3),
+                Average = Math.Round(average, 3),
+                Unit = "kWh"
+            }
         };
     }
 
-    private async Task<EnergyConsumptionDto> GetYearlyConsumptionAsync(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<EnergyConsumptionResponseDto> GetYearlyConsumptionAsync(Guid deviceId, CancellationToken cancellationToken)
     {
         var today = DateTime.UtcNow.Date;
         var yearStart = new DateTime(today.Year, 1, 1);
@@ -191,52 +249,64 @@ public class GetEnergyConsumptionQueryHandler : IRequestHandler<GetEnergyConsump
 
         var dataPoints = monthlyData
             .GroupBy(x => x.DataDateTime.Month)
-            .Select(g => new EnergyConsumptionDataPoint
+            .Select(g => new Hems_Backend.Application.Common.Models.EnergyConsumptionDataPoint
             {
-                DateTime = DateTime.SpecifyKind(new DateTime(today.Year, g.Key, 1), DateTimeKind.Utc),
-                LoadEnergyKWh = Math.Round(g.OrderByDescending(x => x.DataDateTime).First().LoadEnergyKWh ?? 0, 3),
-                Label = g.Key switch
+                Timestamp = g.Key switch
                 {
-                    1 => "Month-January",
-                    2 => "Month-February",
-                    3 => "Month-March",
-                    4 => "Month-April",
-                    5 => "Month-May",
-                    6 => "Month-June",
-                    7 => "Month-July",
-                    8 => "Month-August",
-                    9 => "Month-September",
-                    10 => "Month-October",
-                    11 => "Month-November",
-                    12 => "Month-December",
-                    _ => $"Month-{g.Key}"
-                }
+                    1 => "January",
+                    2 => "February",
+                    3 => "March",
+                    4 => "April",
+                    5 => "May",
+                    6 => "June",
+                    7 => "July",
+                    8 => "August",
+                    9 => "September",
+                    10 => "October",
+                    11 => "November",
+                    12 => "December",
+                    _ => $"Month {g.Key}"
+                },
+                Value = Math.Round(g.OrderByDescending(x => x.DataDateTime).First().LoadEnergyKWh ?? 0, 3),
+                Unit = "kWh"
             })
-            .OrderBy(x => x.DateTime)
+            .OrderBy(x => x.Timestamp)
             .ToList();
 
-        return new EnergyConsumptionDto
+        // Statistics hesapla
+        var total = dataPoints.Sum(x => x.Value);
+        var peak = dataPoints.Count > 0 ? dataPoints.Max(x => x.Value) : 0;
+        var average = dataPoints.Count > 0 ? dataPoints.Average(x => x.Value) : 0;
+
+        return new EnergyConsumptionResponseDto
         {
-            Period = "yearly",
-            DataPoints = dataPoints
+            Range = "Year",
+            Data = dataPoints,
+            Statistics = new EnergyConsumptionStatistics
+            {
+                Total = Math.Round(total, 3),
+                Peak = Math.Round(peak, 3),
+                Average = Math.Round(average, 3),
+                Unit = "kWh"
+            }
         };
     }
 
-    private static List<EnergyConsumptionDataPoint> OptimizeDailyDataPoints(List<EnergyConsumptionDataPoint> dataPoints)
+    private static List<Hems_Backend.Application.Common.Models.EnergyConsumptionDataPoint> OptimizeDailyDataPoints(List<Hems_Backend.Application.Common.Models.EnergyConsumptionDataPoint> dataPoints)
     {
         if (dataPoints.Count <= 12)
             return dataPoints;
 
         // Peak değerleri bul
         var peaks = dataPoints
-            .OrderByDescending(x => x.LoadEnergyKWh)
+            .OrderByDescending(x => x.Value)
             .Take(6)
             .ToList();
 
         // Kalan saatleri eşit aralıklarla seç
         var remainingHours = dataPoints
-            .Where(x => !peaks.Any(p => p.DateTime.Hour == x.DateTime.Hour))
-            .OrderBy(x => x.DateTime.Hour)
+            .Where(x => !peaks.Any(p => p.Timestamp == x.Timestamp))
+            .OrderBy(x => x.Timestamp)
             .ToList();
 
         var step = Math.Max(1, remainingHours.Count / 6);
@@ -246,7 +316,7 @@ public class GetEnergyConsumptionQueryHandler : IRequestHandler<GetEnergyConsump
             .ToList();
 
         var result = peaks.Concat(selectedRemaining)
-            .OrderBy(x => x.DateTime)
+            .OrderBy(x => x.Timestamp)
             .ToList();
 
         return result;

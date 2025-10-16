@@ -130,8 +130,8 @@ public class DeviceNotificationJobService : IDeviceNotificationJobService
             // Her device için notification job'ını schedule et
             foreach (var device in devices)
             {
-                // Her device için farklı interval (30-120 saniye arası)
-                var intervalSeconds = Random.Shared.Next(30, 121);
+                // Her device için aynı interval (5 dakika)
+                var intervalSeconds = _configuration.GetValue<int>("DeviceSimulator:DefaultIntervalSeconds", 300);
                 await ScheduleDeviceNotificationAsync(device.Device.Id, intervalSeconds);
             }
             
@@ -172,13 +172,16 @@ public class DeviceNotificationJobService : IDeviceNotificationJobService
         {
             var jobId = $"device-notification-{deviceId}";
             
+            // Configuration'dan cron expression al
+            var cronExpression = _configuration.GetValue<string>("DeviceSimulator:CronExpression", "0 */5 * * * *");
+            
             _recurringJobManager.AddOrUpdate(
                 jobId,
                 () => SendDeviceNotificationJob(deviceId),
-                $"*/{intervalSeconds} * * * * *"); // Her intervalSeconds'te bir çalışır
+                cronExpression);
             
-            _logger.LogInformation("📅 Scheduled notification job for device {DeviceId} with interval {IntervalSeconds}s", 
-                deviceId, intervalSeconds);
+            _logger.LogInformation("📅 Scheduled notification job for device {DeviceId} every 5 minutes", 
+                deviceId);
         }
         catch (Exception ex)
         {

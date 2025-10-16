@@ -1,11 +1,17 @@
 using System.Text.Json;
 using Hems_Backend.Domain.Enums;
+using Hems_Backend.Application.Common.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
+using Hems.DeviceSimulator.Models;
 
 namespace Hems.DeviceSimulator.Services;
 
 public interface IDataGeneratorService
 {
     object GenerateDataForComponent(DeviceComponentInfo component);
+    Task<object> GenerateLiveDataForComponentAsync(Guid deviceId, Guid componentId);
+    Task<object> GenerateDataFromJsonAsync(DeviceComponentInfo component, DateTime timestamp);
     T GenerateRandomValue<T>(T min, T max) where T : IComparable<T>;
 }
 
@@ -13,11 +19,55 @@ public class DataGeneratorService : IDataGeneratorService
 {
     private readonly Random _random = new();
     private readonly ILogger<DataGeneratorService> _logger;
+    private readonly IApplicationDbContext _context;
+    private readonly IJsonDataService _jsonDataService;
 
-    public DataGeneratorService(ILogger<DataGeneratorService> logger)
+    public DataGeneratorService(
+        ILogger<DataGeneratorService> logger, 
+        IApplicationDbContext context,
+        IJsonDataService jsonDataService)
     {
         _logger = logger;
+        _context = context;
+        _jsonDataService = jsonDataService;
     }
+
+    public async Task<object> GenerateLiveDataForComponentAsync(Guid deviceId, Guid componentId)
+    {
+        _logger.LogInformation("🔍 Fetching component from database: DeviceId={DeviceId}, ComponentId={ComponentId}", 
+            deviceId, componentId);
+
+        // Component'i database'den çek
+        var component = await _context.DeviceComponents
+            .FirstOrDefaultAsync(dc => dc.Id == componentId && 
+                                      dc.DeviceId == deviceId && 
+                                      !dc.IsDeleted);
+
+        if (component == null)
+        {
+            _logger.LogWarning("❌ Component not found: DeviceId={DeviceId}, ComponentId={ComponentId}", 
+                deviceId, componentId);
+            throw new ArgumentException($"Component not found: DeviceId={deviceId}, ComponentId={componentId}");
+        }
+
+        _logger.LogInformation("✅ Component found: Type={DeviceType}, SerialNumber={SerialNumber}", 
+            component.DeviceType, component.SerialNumber);
+
+        // Component bilgilerini hazırla
+        var componentInfo = new DeviceComponentInfo
+        {
+            DeviceId = deviceId,
+            DeviceType = component.DeviceType,
+            SerialNumber = component.SerialNumber,
+            ModelNumber = component.ModelNumber
+        };
+
+        // Live data oluştur
+        return GenerateDataForComponent(componentInfo);
+    }
+
+
+   
 
     public object GenerateDataForComponent(DeviceComponentInfo component)
     {
@@ -31,6 +81,138 @@ public class DataGeneratorService : IDataGeneratorService
             DeviceType.MPPS => GenerateMPPSData(component, timestamp),
             _ => GenerateGenericData(component.DeviceType, timestamp)
         };
+    }
+
+    public async Task<object> GenerateDataFromJsonAsync(DeviceComponentInfo component, DateTime timestamp)
+    {
+        try
+        {
+            return component.DeviceType switch
+            {
+                DeviceType.Invertor => await GenerateInverterDataFromJsonAsync(component, timestamp),
+                DeviceType.BMS => await GenerateBMSDataFromJsonAsync(component, timestamp),
+                DeviceType.Battery => await GenerateBatteryDataFromJsonAsync(component, timestamp),
+                _ => GenerateDataForComponent(component) // Diğer tipler için random veri
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating data from JSON for component {ComponentId}", component.Id);
+            return GenerateDataForComponent(component);
+        }
+    }
+
+    private async Task<object> GenerateInverterDataFromJsonAsync(DeviceComponentInfo component, DateTime timestamp)
+    {
+        try
+        {
+            // JSON'dan inverter verisi al
+            var jsonInverterData = await _jsonDataService.GetInverterDataByTimeAsync(timestamp);
+            
+            if (jsonInverterData == null)
+            {
+                _logger.LogWarning("No inverter JSON data found for timestamp {Timestamp}, using random data", timestamp);
+                return GenerateInverterData(component, timestamp);
+            }
+
+            // JSON verisini InverterData formatında dönüştür
+            return new InverterData
+            {
+                LastInverterStartupTime = jsonInverterData.LastInverterStartupTime,
+                LastInverterShutdownTime = jsonInverterData.LastInverterShutdownTime,
+                ActivePower = jsonInverterData.ActivePower,
+                ReactivePower = jsonInverterData.ReactivePower,
+                PowerFactor = jsonInverterData.PowerFactor,
+                Phases = jsonInverterData.Phases,
+                InsulationResistance = jsonInverterData.InsulationResistance,
+                DeviceSerialNumber = component.SerialNumber ?? jsonInverterData.DeviceSerialNumber,
+                FirmwareVersion = jsonInverterData.FirmwareVersion,
+                DateTime = timestamp.ToString("yyyy-MM-dd HH:mm:ss")
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating inverter data from JSON for component {ComponentId}", component.Id);
+            return GenerateInverterData(component, timestamp);
+        }
+    }
+
+    private async Task<object> GenerateBMSDataFromJsonAsync(DeviceComponentInfo component, DateTime timestamp)
+    {
+        try
+        {
+            // JSON'dan BMS verisi al
+            var jsonBMSData = await _jsonDataService.GetBMSDataByTimeAsync(timestamp);
+            
+            if (jsonBMSData == null)
+            {
+                _logger.LogWarning("No BMS JSON data found for timestamp {Timestamp}, using random data", timestamp);
+                return GenerateBatteryData(component, timestamp);
+            }
+
+            // JSON verisini BMSData formatında dönüştür
+            return new Models.BatteryClusterData
+            {
+                VoltagePack = jsonBMSData.VoltagePack,
+                CurrentPack = jsonBMSData.CurrentPack,
+                MaxVoltageOfBatteryCluster = jsonBMSData.MaxVoltageOfBatteryCluster,
+                MinVoltageOfBatteryCluster = jsonBMSData.MinVoltageOfBatteryCluster,
+                SOC = jsonBMSData.SOC,
+                TotalChargeCapacity = jsonBMSData.TotalChargeCapacity,
+                TotalDischargeCapacity = jsonBMSData.TotalDischargeCapacity,
+                DateTime = timestamp.ToString("yyyy-MM-dd HH:mm:ss")
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating BMS data from JSON for component {ComponentId}", component.Id);
+            return GenerateBatteryData(component, timestamp);
+        }
+    }
+
+    private async Task<object> GenerateBatteryDataFromJsonAsync(DeviceComponentInfo component, DateTime timestamp)
+    {
+        try
+        {
+            // JSON'dan battery verisi al
+            var jsonBatteryData = await _jsonDataService.GetBatteryDataByTimeAsync(timestamp);
+            
+            if (jsonBatteryData == null)
+            {
+                _logger.LogWarning("No battery JSON data found for timestamp {Timestamp}, using random data", timestamp);
+                return GenerateBatteryData(component, timestamp);
+            }
+
+            // JSON verisini BatteryData formatında dönüştür
+            return new BatteryData
+            {
+                BatteryPackVoltage = jsonBatteryData.BatteryPackVoltage,
+                BatteryCurrent = jsonBatteryData.BatteryCurrent,
+                SOH = jsonBatteryData.SOH.FirstOrDefault(), // İlk SOH değerini al
+                SOCCumulative = jsonBatteryData.SOCCumulative, // SOC Cumulative array'ini direkt al
+                SOC = jsonBatteryData.SOC.Select(cell => new BatteryCell
+                {
+                    CellNumber = cell.CellNumber,
+                    CellVoltage = cell.CellVoltage,
+                    CellTemperature = cell.CellTemperature
+                }).ToList(),
+                TotalChargeCapacity = jsonBatteryData.TotalChargeCapacity,
+                TotalDischargeAmount = jsonBatteryData.TotalDischargeAmount,
+                MaxCellVoltage = jsonBatteryData.MaxCellVoltage,
+                MinCellVoltage = jsonBatteryData.MinCellVoltage,
+                MaxCellTemperature = jsonBatteryData.MaxCellTemperature,
+                MinCellTemperature = jsonBatteryData.MinCellTemperature,
+                DeviceModel = component.ModelNumber ?? jsonBatteryData.DeviceModel,
+                DeviceSerialNumber = component.SerialNumber?? jsonBatteryData.DeviceSerialNumber,
+                FirmwareVersion = jsonBatteryData.FirmwareVersion,
+                DateTime = timestamp.ToString("yyyy-MM-dd HH:mm:ss")
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating battery data from JSON for component {ComponentId}", component.Id);
+            return GenerateBatteryData(component, timestamp);
+        }
     }
 
     private BatteryData GenerateBatteryData(DeviceComponentInfo component, DateTime timestamp)
@@ -168,6 +350,7 @@ public class DataGeneratorService : IDataGeneratorService
 
         throw new NotSupportedException($"Type {typeof(T)} is not supported for random generation");
     }
+
 }
 
 // HEMS Data Models
@@ -176,6 +359,7 @@ public class BatteryData
     public double BatteryPackVoltage { get; set; }
     public double BatteryCurrent { get; set; }
     public double SOH { get; set; }
+    public List<double> SOCCumulative { get; set; } = new();
     public List<BatteryCell> SOC { get; set; } = new();
     public string TotalChargeCapacity { get; set; } = string.Empty;
     public double TotalDischargeAmount { get; set; }
@@ -208,26 +392,6 @@ public class BatteryClusterData
     public string DateTime { get; set; } = string.Empty;
 }
 
-public class InverterData
-{
-    public string LastInverterStartupTime { get; set; } = string.Empty;
-    public string LastInverterShutdownTime { get; set; } = string.Empty;
-    public double ActivePower { get; set; }
-    public double ReactivePower { get; set; }
-    public double PowerFactor { get; set; }
-    public List<InverterPhase> Phases { get; set; } = new();
-    public double InsulationResistance { get; set; }
-    public string DeviceSerialNumber { get; set; } = string.Empty;
-    public string FirmwareVersion { get; set; } = string.Empty;
-}
-
-public class InverterPhase
-{
-    public string PhaseId { get; set; } = string.Empty;
-    public double Voltage { get; set; }
-    public double Current { get; set; }
-}
-
 public class MPPSData
 {
     public double InputVoltage { get; set; }
@@ -249,4 +413,5 @@ public class GenericData
     public DateTime Timestamp { get; set; }
     public string DeviceType { get; set; } = string.Empty;
 }
+
 

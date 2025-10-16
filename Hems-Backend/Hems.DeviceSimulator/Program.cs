@@ -9,7 +9,12 @@ using Hangfire.Dashboard;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = null; // PascalCase kullan
+        options.JsonSerializerOptions.WriteIndented = false;
+    });
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
@@ -57,6 +62,7 @@ builder.Services.AddHangfireServer(options =>
 
 // Add Device Simulator Services
 builder.Services.AddScoped<IDataGeneratorService, DataGeneratorService>();
+builder.Services.AddScoped<IJsonDataService, JsonDataService>();
 builder.Services.AddScoped<IDeviceSimulationJobService, DeviceSimulationJobService>();
 builder.Services.AddScoped<IEnergyDataGeneratorService, EnergyDataGeneratorService>();
 builder.Services.AddScoped<IEnergyDataJobService, EnergyDataJobService>();
@@ -73,16 +79,14 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
 });
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+
+app.MapOpenApi();
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.MapOpenApi();
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "HEMS Device Simulator API v1");
-        c.RoutePrefix = string.Empty; // Swagger UI'ı root'ta göster
-    });
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "HEMS Device Simulator API v1");
+    c.RoutePrefix = string.Empty; // Swagger UI'ı root'ta göster
+});
 
 app.UseHttpsRedirection();
 

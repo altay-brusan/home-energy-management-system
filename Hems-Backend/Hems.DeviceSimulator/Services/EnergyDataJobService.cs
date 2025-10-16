@@ -24,7 +24,6 @@ public class EnergyDataJobService : IEnergyDataJobService
     private readonly IEnergyDataGeneratorService _energyDataGenerator;
     
     private readonly Dictionary<Guid, string> _deviceTokens = new();
-    private readonly Dictionary<Guid, DeviceEnergyState> _deviceEnergyStates = new();
     private readonly SemaphoreSlim _semaphore = new(1, 1);
 
     public EnergyDataJobService(
@@ -55,13 +54,9 @@ public class EnergyDataJobService : IEnergyDataJobService
             
             _logger.LogInformation("📡 Found {DeviceCount} devices for energy data collection", devices.Count);
             
-            // Her device için energy state'i initialize et
+            // Her device için job'ları schedule et
             foreach (var device in devices)
             {
-                var energyState = _energyDataGenerator.InitializeDeviceEnergyState(device.Device.Id);
-                _deviceEnergyStates[device.Device.Id] = energyState;
-                
-                // Saatlik ve gece yarısı job'larını schedule et
                 await ScheduleHourlyEnergyDataAsync(device.Device.Id);
                 await ScheduleMidnightLifetimeDataAsync(device.Device.Id);
             }
@@ -176,28 +171,11 @@ public class EnergyDataJobService : IEnergyDataJobService
         {
             _logger.LogDebug("🔄 Executing hourly energy data job for device {DeviceId}", deviceId);
 
-            // Device'ın energy state'ini güncelle
-            if (_deviceEnergyStates.TryGetValue(deviceId, out var currentState))
-            {
-                var timeElapsed = DateTime.UtcNow - currentState.LastUpdate;
-                var updatedState = _energyDataGenerator.UpdateDeviceEnergyState(currentState, timeElapsed);
-                _deviceEnergyStates[deviceId] = updatedState;
-
-                // Günlük cumulative data oluştur
-                var dailyData = _energyDataGenerator.GenerateDailyCumulativeData(deviceId, updatedState);
-                
-                // Ana sisteme gönder
-                await SendEnergyDataAsync(deviceId, dailyData, "DailyCumulativeEnergyData");
-            }
-            else
-            {
-                _logger.LogWarning("Device {DeviceId} energy state not found, initializing", deviceId);
-                var newState = _energyDataGenerator.InitializeDeviceEnergyState(deviceId);
-                _deviceEnergyStates[deviceId] = newState;
-                
-                var dailyData = _energyDataGenerator.GenerateDailyCumulativeData(deviceId, newState);
-                await SendEnergyDataAsync(deviceId, dailyData, "DailyCumulativeEnergyData");
-            }
+            // JSON'dan günlük veri çek
+            var dailyData = await _energyDataGenerator.GenerateDailyCumulativeDataAsync(deviceId, DateTime.UtcNow);
+            
+            // Ana sisteme gönder
+            await SendEnergyDataAsync(deviceId, dailyData, "DailyCumulativeEnergyData");
 
             _logger.LogDebug("✅ Hourly energy data job completed for device {DeviceId}", deviceId);
         }
@@ -215,50 +193,11 @@ public class EnergyDataJobService : IEnergyDataJobService
         {
             _logger.LogDebug("🔄 Executing midnight lifetime data job for device {DeviceId}", deviceId);
 
-            if (_deviceEnergyStates.TryGetValue(deviceId, out var currentState))
-            {
-                // Ömür boyu değerleri güncelle (günlük değerleri ekle)
-                var updatedState = new DeviceEnergyState
-                {
-                    DeviceId = deviceId,
-                    LastUpdate = DateTime.UtcNow,
-                    
-                    // Günlük değerleri ömür boyu değerlere ekle
-                    PvEnergyKWhTotal = currentState.PvEnergyKWhTotal + currentState.PvEnergyKWhToday,
-                    GridImportEnergyKWhTotal = currentState.GridImportEnergyKWhTotal + currentState.GridImportEnergyKWhToday,
-                    GridExportEnergyKWhTotal = currentState.GridExportEnergyKWhTotal + currentState.GridExportEnergyKWhToday,
-                    GeneratorEnergyKWhTotal = currentState.GeneratorEnergyKWhTotal + currentState.GeneratorEnergyKWhToday,
-                    BatteryDischargeEnergyKWhTotal = currentState.BatteryDischargeEnergyKWhTotal + currentState.BatteryDischargeEnergyKWhToday,
-                    BatteryChargeEnergyKWhTotal = currentState.BatteryChargeEnergyKWhTotal + currentState.BatteryChargeEnergyKWhToday,
-                    LoadEnergyKWhTotal = currentState.LoadEnergyKWhTotal + currentState.LoadEnergyKWhToday,
-                    
-                    // Günlük değerleri sıfırla
-                    PvEnergyKWhToday = 0,
-                    GridImportEnergyKWhToday = 0,
-                    GridExportEnergyKWhToday = 0,
-                    GeneratorEnergyKWhToday = 0,
-                    BatteryDischargeEnergyKWhToday = 0,
-                    BatteryChargeEnergyKWhToday = 0,
-                    LoadEnergyKWhToday = 0,
-                    
-                    // Güç değerleri aynı kalır
-                    PvPowerKw = currentState.PvPowerKw,
-                    GridImportPowerKw = currentState.GridImportPowerKw,
-                    GridExportPowerKw = currentState.GridExportPowerKw,
-                    GeneratorPowerKw = currentState.GeneratorPowerKw,
-                    BatteryDischargePowerKw = currentState.BatteryDischargePowerKw,
-                    BatteryChargePowerKw = currentState.BatteryChargePowerKw,
-                    LoadPowerKw = currentState.LoadPowerKw
-                };
-
-                _deviceEnergyStates[deviceId] = updatedState;
-
-                // Ömür boyu data oluştur
-                var lifetimeData = _energyDataGenerator.GenerateLifetimeData(deviceId, updatedState);
-                
-                // Ana sisteme gönder
-                await SendEnergyDataAsync(deviceId, lifetimeData, "LifetimeEnergyData");
-            }
+            // JSON'dan lifetime veri çek
+            var lifetimeData = await _energyDataGenerator.GenerateLifetimeDataAsync(deviceId, DateTime.UtcNow);
+            
+            // Ana sisteme gönder
+            await SendEnergyDataAsync(deviceId, lifetimeData, "LifetimeEnergyData");
 
             _logger.LogDebug("✅ Midnight lifetime data job completed for device {DeviceId}", deviceId);
         }

@@ -41,7 +41,7 @@ app.UseSwaggerUi(settings =>
 });
 
 
-app.UseExceptionHandler(options => { });
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 app.Map("/", () => Results.Redirect("/api"));
 

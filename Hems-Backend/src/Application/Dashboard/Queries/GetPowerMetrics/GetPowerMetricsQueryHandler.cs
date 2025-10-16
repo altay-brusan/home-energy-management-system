@@ -1,4 +1,5 @@
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Application.Devices.Queries.CheckDeviceAccess;
 using Hems_Backend.Domain.Entities;
 using MediatR;
@@ -6,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Hems_Backend.Application.Dashboard.Queries.GetPowerMetrics;
 
-public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery, PowerMetricsDto>
+public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery, PowerMetricsResponseDto>
 {
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
@@ -17,13 +18,13 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
         _sender = sender;
     }
 
-    public async Task<PowerMetricsDto> Handle(GetPowerMetricsQuery request, CancellationToken cancellationToken)
+    public async Task<PowerMetricsResponseDto> Handle(GetPowerMetricsQuery request, CancellationToken cancellationToken)
     {
         // Device access kontrolü
         var hasAccess = await _sender.Send(new CheckDeviceAccessQuery { DeviceId = request.DeviceId }, cancellationToken);
         if (!hasAccess)
         {
-            throw new UnauthorizedAccessException("Bu cihaza erişim yetkiniz bulunmamaktadır.");
+            throw new UnauthorizedAccessException("Device access denied");
         }
 
         return request.Period.ToLower() switch
@@ -32,54 +33,93 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
             "weekly" => await GetWeeklyPowerMetricsAsync(request.DeviceId, cancellationToken),
             "monthly" => await GetMonthlyPowerMetricsAsync(request.DeviceId, cancellationToken),
             "yearly" => await GetYearlyPowerMetricsAsync(request.DeviceId, cancellationToken),
-            _ => throw new ArgumentException("Geçersiz period. daily, weekly, monthly veya yearly olmalı.")
+            _ => await GetDailyPowerMetricsAsync(request.DeviceId, cancellationToken)
         };
     }
 
-    private async Task<PowerMetricsDto> GetDailyPowerMetricsAsync(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<PowerMetricsResponseDto> GetDailyPowerMetricsAsync(Guid deviceId, CancellationToken cancellationToken)
     {
         var today = DateTime.UtcNow.Date;
         var todayUtc = DateTime.SpecifyKind(today, DateTimeKind.Utc);
 
-        var dailyData = await _context.DeviceEnergyData
+        var energyData = await _context.DeviceEnergyData
             .Where(x => x.DeviceId == deviceId && 
                        x.DataDateTime.Date == todayUtc.Date &&
                        x.DataType == "DailyCumulativeEnergyData")
             .OrderBy(x => x.DataDateTime)
             .ToListAsync(cancellationToken);
 
-        var dataPoints = dailyData
-            .GroupBy(x => x.DataDateTime.Hour)
-            .Select(g => new PowerMetricsDataPoint
+        if (!energyData.Any())
+        {
+            return new PowerMetricsResponseDto
             {
-                DateTime = g.First().DataDateTime,
-                SolarPowerKw = Math.Round(g.OrderByDescending(x => x.DataDateTime).First().PvEnergyKWh ?? 0, 3),
-                GridPowerKw = Math.Round((g.OrderByDescending(x => x.DataDateTime).First().GridImportEnergyKWh ?? 0) - (g.OrderByDescending(x => x.DataDateTime).First().GridExportEnergyKWh ?? 0), 3),
-                BatteryPowerKw = Math.Round((g.OrderByDescending(x => x.DataDateTime).First().BatteryChargeEnergyKWh ?? 0) - (g.OrderByDescending(x => x.DataDateTime).First().BatteryDischargeEnergyKWh ?? 0), 3),
-                LoadPowerKw = Math.Round(-(g.OrderByDescending(x => x.DataDateTime).First().LoadEnergyKWh ?? 0), 3), // Negatif olarak
-                Label = $"Hour-{g.Key:00}:00"
+                Range = "Day",
+                Data = new List<Hems_Backend.Application.Common.Models.PowerMetricsDataPoint>(),
+                Statistics = new PowerMetricsStatistics
+                {
+                    AverageSolarPower = 0,
+                    PeakSolarPower = 0,
+                    AverageGridPower = 0,
+                    PeakGridPower = 0,
+                    AverageBatteryPower = 0,
+                    PeakBatteryPower = 0,
+                    AverageLoadPower = 0,
+                    PeakLoadPower = 0,
+                    Unit = "kW"
+                }
+            };
+        }
+
+        // Saatlik gruplama ve power hesaplama (son değerleri al)
+        var dataPoints = energyData
+            .GroupBy(x => x.DataDateTime.Hour)
+            .Select(g => new Hems_Backend.Application.Common.Models.PowerMetricsDataPoint
+            {
+                Timestamp = $"{g.Key:00}:00",
+                SolarPower = Math.Round(g.OrderByDescending(x => x.DataDateTime).First().PvEnergyKWh ?? 0, 3),
+                GridPower = Math.Round((g.OrderByDescending(x => x.DataDateTime).First().GridImportEnergyKWh ?? 0) - 
+                                      (g.OrderByDescending(x => x.DataDateTime).First().GridExportEnergyKWh ?? 0), 3),
+                BatteryPower = Math.Round((g.OrderByDescending(x => x.DataDateTime).First().BatteryChargeEnergyKWh ?? 0) - 
+                                         (g.OrderByDescending(x => x.DataDateTime).First().BatteryDischargeEnergyKWh ?? 0), 3),
+                LoadPower = Math.Round(g.OrderByDescending(x => x.DataDateTime).First().LoadEnergyKWh ?? 0, 3),
+                Unit = "kW"
             })
-            .OrderBy(x => x.DateTime)
+            .OrderBy(x => x.Timestamp)
             .ToList();
 
-        // Peak detection ve 12 saat optimizasyonu
-        var optimizedPoints = OptimizeDailyDataPoints(dataPoints);
+        // İstatistikleri hesapla
+        var allSolarPowers = dataPoints.Select(x => x.SolarPower).ToList();
+        var allGridPowers = dataPoints.Select(x => x.GridPower).ToList();
+        var allBatteryPowers = dataPoints.Select(x => x.BatteryPower).ToList();
+        var allLoadPowers = dataPoints.Select(x => x.LoadPower).ToList();
 
-        return new PowerMetricsDto
+        return new PowerMetricsResponseDto
         {
-            Period = "daily",
-            DataPoints = optimizedPoints
+            Range = "Day",
+            Data = dataPoints,
+            Statistics = new PowerMetricsStatistics
+            {
+                AverageSolarPower = allSolarPowers.Count > 0 ? Math.Round(allSolarPowers.Average(), 3) : 0,
+                PeakSolarPower = allSolarPowers.Count > 0 ? Math.Round(allSolarPowers.Max(), 3) : 0,
+                AverageGridPower = allGridPowers.Count > 0 ? Math.Round(allGridPowers.Average(), 3) : 0,
+                PeakGridPower = allGridPowers.Count > 0 ? Math.Round(allGridPowers.Max(), 3) : 0,
+                AverageBatteryPower = allBatteryPowers.Count > 0 ? Math.Round(allBatteryPowers.Average(), 3) : 0,
+                PeakBatteryPower = allBatteryPowers.Count > 0 ? Math.Round(allBatteryPowers.Max(), 3) : 0,
+                AverageLoadPower = allLoadPowers.Count > 0 ? Math.Round(allLoadPowers.Average(), 3) : 0,
+                PeakLoadPower = allLoadPowers.Count > 0 ? Math.Round(allLoadPowers.Max(), 3) : 0,
+                Unit = "kW"
+            }
         };
     }
 
-    private async Task<PowerMetricsDto> GetWeeklyPowerMetricsAsync(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<PowerMetricsResponseDto> GetWeeklyPowerMetricsAsync(Guid deviceId, CancellationToken cancellationToken)
     {
         var today = DateTime.UtcNow.Date;
-        var weekStart = today.AddDays(-(int)today.DayOfWeek); // Pazartesi
+        var weekStart = today.AddDays(-(int)today.DayOfWeek);
         var todayUtc = DateTime.SpecifyKind(today, DateTimeKind.Utc);
         var weekStartUtc = DateTime.SpecifyKind(weekStart, DateTimeKind.Utc);
 
-        var dataPoints = new List<PowerMetricsDataPoint>();
+        var dataPoints = new List<Hems_Backend.Application.Common.Models.PowerMetricsDataPoint>();
 
         // Önceki günler için LifetimeEnergyData
         for (int i = 0; i < (int)today.DayOfWeek; i++)
@@ -95,31 +135,19 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
 
             if (lifetimeData != null)
             {
-                var dayName = day.DayOfWeek switch
+                dataPoints.Add(new Hems_Backend.Application.Common.Models.PowerMetricsDataPoint
                 {
-                    DayOfWeek.Monday => "Monday",
-                    DayOfWeek.Tuesday => "Tuesday", 
-                    DayOfWeek.Wednesday => "Wednesday",
-                    DayOfWeek.Thursday => "Thursday",
-                    DayOfWeek.Friday => "Friday",
-                    DayOfWeek.Saturday => "Saturday",
-                    DayOfWeek.Sunday => "Sunday",
-                    _ => "Unknown"
-                };
-                
-                dataPoints.Add(new PowerMetricsDataPoint
-                {
-                    DateTime = dayUtc,
-                    SolarPowerKw = Math.Round(lifetimeData.PvEnergyKWh ?? 0, 3),
-                    GridPowerKw = Math.Round((lifetimeData.GridImportEnergyKWh ?? 0) - (lifetimeData.GridExportEnergyKWh ?? 0), 3),
-                    BatteryPowerKw = Math.Round((lifetimeData.BatteryChargeEnergyKWh ?? 0) - (lifetimeData.BatteryDischargeEnergyKWh ?? 0), 3),
-                    LoadPowerKw = Math.Round(-(lifetimeData.LoadEnergyKWh ?? 0), 3), // Negatif olarak
-                    Label = $"Day-{dayName}"
+                    Timestamp = $"Day {day.Day}",
+                    SolarPower = Math.Round(lifetimeData.PvEnergyKWh ?? 0, 3),
+                    GridPower = Math.Round((lifetimeData.GridImportEnergyKWh ?? 0) - (lifetimeData.GridExportEnergyKWh ?? 0), 3),
+                    BatteryPower = Math.Round((lifetimeData.BatteryChargeEnergyKWh ?? 0) - (lifetimeData.BatteryDischargeEnergyKWh ?? 0), 3),
+                    LoadPower = Math.Round(lifetimeData.LoadEnergyKWh ?? 0, 3),
+                    Unit = "kW"
                 });
             }
         }
 
-        // Bugün için DailyCumulativeEnergyData (son hourly)
+        // Bugün için DailyCumulativeEnergyData
         var todayData = await _context.DeviceEnergyData
             .Where(x => x.DeviceId == deviceId && 
                        x.DataDateTime.Date == todayUtc.Date &&
@@ -129,32 +157,50 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
 
         if (todayData != null)
         {
-            dataPoints.Add(new PowerMetricsDataPoint
+            dataPoints.Add(new Hems_Backend.Application.Common.Models.PowerMetricsDataPoint
             {
-                DateTime = todayUtc,
-                SolarPowerKw = Math.Round(todayData.PvEnergyKWh ?? 0, 3),
-                GridPowerKw = Math.Round((todayData.GridImportEnergyKWh ?? 0) - (todayData.GridExportEnergyKWh ?? 0), 3),
-                BatteryPowerKw = Math.Round((todayData.BatteryChargeEnergyKWh ?? 0) - (todayData.BatteryDischargeEnergyKWh ?? 0), 3),
-                LoadPowerKw = Math.Round(-(todayData.LoadEnergyKWh ?? 0), 3), // Negatif olarak
-                Label = "Day-Today"
+                Timestamp = $"Day {today.Day}",
+                SolarPower = Math.Round(todayData.PvEnergyKWh ?? 0, 3),
+                GridPower = Math.Round((todayData.GridImportEnergyKWh ?? 0) - (todayData.GridExportEnergyKWh ?? 0), 3),
+                BatteryPower = Math.Round((todayData.BatteryChargeEnergyKWh ?? 0) - (todayData.BatteryDischargeEnergyKWh ?? 0), 3),
+                LoadPower = Math.Round(todayData.LoadEnergyKWh ?? 0, 3),
+                Unit = "kW"
             });
         }
 
-        return new PowerMetricsDto
+        // İstatistikleri hesapla
+        var allSolarPowers = dataPoints.Select(x => x.SolarPower).ToList();
+        var allGridPowers = dataPoints.Select(x => x.GridPower).ToList();
+        var allBatteryPowers = dataPoints.Select(x => x.BatteryPower).ToList();
+        var allLoadPowers = dataPoints.Select(x => x.LoadPower).ToList();
+
+        return new PowerMetricsResponseDto
         {
-            Period = "weekly",
-            DataPoints = dataPoints.OrderBy(x => x.DateTime).ToList()
+            Range = "Week",
+            Data = dataPoints.OrderBy(x => x.Timestamp).ToList(),
+            Statistics = new PowerMetricsStatistics
+            {
+                AverageSolarPower = allSolarPowers.Count > 0 ? Math.Round(allSolarPowers.Average(), 3) : 0,
+                PeakSolarPower = allSolarPowers.Count > 0 ? Math.Round(allSolarPowers.Max(), 3) : 0,
+                AverageGridPower = allGridPowers.Count > 0 ? Math.Round(allGridPowers.Average(), 3) : 0,
+                PeakGridPower = allGridPowers.Count > 0 ? Math.Round(allGridPowers.Max(), 3) : 0,
+                AverageBatteryPower = allBatteryPowers.Count > 0 ? Math.Round(allBatteryPowers.Average(), 3) : 0,
+                PeakBatteryPower = allBatteryPowers.Count > 0 ? Math.Round(allBatteryPowers.Max(), 3) : 0,
+                AverageLoadPower = allLoadPowers.Count > 0 ? Math.Round(allLoadPowers.Average(), 3) : 0,
+                PeakLoadPower = allLoadPowers.Count > 0 ? Math.Round(allLoadPowers.Max(), 3) : 0,
+                Unit = "kW"
+            }
         };
     }
 
-    private async Task<PowerMetricsDto> GetMonthlyPowerMetricsAsync(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<PowerMetricsResponseDto> GetMonthlyPowerMetricsAsync(Guid deviceId, CancellationToken cancellationToken)
     {
         var today = DateTime.UtcNow.Date;
         var monthStart = new DateTime(today.Year, today.Month, 1);
         var todayUtc = DateTime.SpecifyKind(today, DateTimeKind.Utc);
         var monthStartUtc = DateTime.SpecifyKind(monthStart, DateTimeKind.Utc);
 
-        var dataPoints = new List<PowerMetricsDataPoint>();
+        var dataPoints = new List<Hems_Backend.Application.Common.Models.PowerMetricsDataPoint>();
 
         // Ayın geçen günleri için LifetimeEnergyData
         for (int i = 0; i < today.Day; i++)
@@ -170,100 +216,100 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
 
             if (lifetimeData != null)
             {
-                dataPoints.Add(new PowerMetricsDataPoint
+                dataPoints.Add(new Hems_Backend.Application.Common.Models.PowerMetricsDataPoint
                 {
-                    DateTime = dayUtc,
-                    SolarPowerKw = Math.Round(lifetimeData.PvEnergyKWh ?? 0, 3),
-                    GridPowerKw = Math.Round((lifetimeData.GridImportEnergyKWh ?? 0) - (lifetimeData.GridExportEnergyKWh ?? 0), 3),
-                    BatteryPowerKw = Math.Round((lifetimeData.BatteryChargeEnergyKWh ?? 0) - (lifetimeData.BatteryDischargeEnergyKWh ?? 0), 3),
-                    LoadPowerKw = Math.Round(-(lifetimeData.LoadEnergyKWh ?? 0), 3), // Negatif olarak
-                    Label = $"Day-{day.Day}"
+                    Timestamp = $"Day {day.Day}",
+                    SolarPower = Math.Round(lifetimeData.PvEnergyKWh ?? 0, 3),
+                    GridPower = Math.Round((lifetimeData.GridImportEnergyKWh ?? 0) - (lifetimeData.GridExportEnergyKWh ?? 0), 3),
+                    BatteryPower = Math.Round((lifetimeData.BatteryChargeEnergyKWh ?? 0) - (lifetimeData.BatteryDischargeEnergyKWh ?? 0), 3),
+                    LoadPower = Math.Round(lifetimeData.LoadEnergyKWh ?? 0, 3),
+                    Unit = "kW"
                 });
             }
         }
 
-        return new PowerMetricsDto
+        // İstatistikleri hesapla
+        var allSolarPowers = dataPoints.Select(x => x.SolarPower).ToList();
+        var allGridPowers = dataPoints.Select(x => x.GridPower).ToList();
+        var allBatteryPowers = dataPoints.Select(x => x.BatteryPower).ToList();
+        var allLoadPowers = dataPoints.Select(x => x.LoadPower).ToList();
+
+        return new PowerMetricsResponseDto
         {
-            Period = "monthly",
-            DataPoints = dataPoints.OrderBy(x => x.DateTime).ToList()
+            Range = "Month",
+            Data = dataPoints.OrderBy(x => x.Timestamp).ToList(),
+            Statistics = new PowerMetricsStatistics
+            {
+                AverageSolarPower = allSolarPowers.Count > 0 ? Math.Round(allSolarPowers.Average(), 3) : 0,
+                PeakSolarPower = allSolarPowers.Count > 0 ? Math.Round(allSolarPowers.Max(), 3) : 0,
+                AverageGridPower = allGridPowers.Count > 0 ? Math.Round(allGridPowers.Average(), 3) : 0,
+                PeakGridPower = allGridPowers.Count > 0 ? Math.Round(allGridPowers.Max(), 3) : 0,
+                AverageBatteryPower = allBatteryPowers.Count > 0 ? Math.Round(allBatteryPowers.Average(), 3) : 0,
+                PeakBatteryPower = allBatteryPowers.Count > 0 ? Math.Round(allBatteryPowers.Max(), 3) : 0,
+                AverageLoadPower = allLoadPowers.Count > 0 ? Math.Round(allLoadPowers.Average(), 3) : 0,
+                PeakLoadPower = allLoadPowers.Count > 0 ? Math.Round(allLoadPowers.Max(), 3) : 0,
+                Unit = "kW"
+            }
         };
     }
 
-    private async Task<PowerMetricsDto> GetYearlyPowerMetricsAsync(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<PowerMetricsResponseDto> GetYearlyPowerMetricsAsync(Guid deviceId, CancellationToken cancellationToken)
     {
         var today = DateTime.UtcNow.Date;
         var yearStart = new DateTime(today.Year, 1, 1);
+        var todayUtc = DateTime.SpecifyKind(today, DateTimeKind.Utc);
         var yearStartUtc = DateTime.SpecifyKind(yearStart, DateTimeKind.Utc);
 
-        var monthlyData = await _context.DeviceEnergyData
-            .Where(x => x.DeviceId == deviceId && 
-                       x.DataDateTime >= yearStartUtc &&
-                       x.DataType == "LifetimeEnergyData")
-            .ToListAsync();
+        var dataPoints = new List<Hems_Backend.Application.Common.Models.PowerMetricsDataPoint>();
 
-        var dataPoints = monthlyData
-            .GroupBy(x => x.DataDateTime.Month)
-            .Select(g => new PowerMetricsDataPoint
-            {
-                DateTime = DateTime.SpecifyKind(new DateTime(today.Year, g.Key, 1), DateTimeKind.Utc),
-                SolarPowerKw = Math.Round(g.OrderByDescending(x => x.DataDateTime).First().PvEnergyKWh ?? 0, 3),
-                GridPowerKw = Math.Round((g.OrderByDescending(x => x.DataDateTime).First().GridImportEnergyKWh ?? 0) - (g.OrderByDescending(x => x.DataDateTime).First().GridExportEnergyKWh ?? 0), 3),
-                BatteryPowerKw = Math.Round((g.OrderByDescending(x => x.DataDateTime).First().BatteryChargeEnergyKWh ?? 0) - (g.OrderByDescending(x => x.DataDateTime).First().BatteryDischargeEnergyKWh ?? 0), 3),
-                LoadPowerKw = Math.Round(-(g.OrderByDescending(x => x.DataDateTime).First().LoadEnergyKWh ?? 0), 3), // Negatif olarak
-                Label = g.Key switch
-                {
-                    1 => "Month-January",
-                    2 => "Month-February",
-                    3 => "Month-March",
-                    4 => "Month-April",
-                    5 => "Month-May",
-                    6 => "Month-June",
-                    7 => "Month-July",
-                    8 => "Month-August",
-                    9 => "Month-September",
-                    10 => "Month-October",
-                    11 => "Month-November",
-                    12 => "Month-December",
-                    _ => $"Month-{g.Key}"
-                }
-            })
-            .OrderBy(x => x.DateTime)
-            .ToList();
-
-        return new PowerMetricsDto
+        // Yılın geçen ayları için LifetimeEnergyData
+        for (int i = 0; i < today.Month; i++)
         {
-            Period = "yearly",
-            DataPoints = dataPoints
+            var month = yearStart.AddMonths(i);
+            var monthUtc = DateTime.SpecifyKind(month, DateTimeKind.Utc);
+
+            var lifetimeData = await _context.DeviceEnergyData
+                .Where(x => x.DeviceId == deviceId && 
+                           x.DataDateTime.Date == monthUtc.Date &&
+                           x.DataType == "LifetimeEnergyData")
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (lifetimeData != null)
+            {
+                dataPoints.Add(new Hems_Backend.Application.Common.Models.PowerMetricsDataPoint
+                {
+                    Timestamp = $"Month {month.Month}",
+                    SolarPower = Math.Round(lifetimeData.PvEnergyKWh ?? 0, 3),
+                    GridPower = Math.Round((lifetimeData.GridImportEnergyKWh ?? 0) - (lifetimeData.GridExportEnergyKWh ?? 0), 3),
+                    BatteryPower = Math.Round((lifetimeData.BatteryChargeEnergyKWh ?? 0) - (lifetimeData.BatteryDischargeEnergyKWh ?? 0), 3),
+                    LoadPower = Math.Round(lifetimeData.LoadEnergyKWh ?? 0, 3),
+                    Unit = "kW"
+                });
+            }
+        }
+
+        // İstatistikleri hesapla
+        var allSolarPowers = dataPoints.Select(x => x.SolarPower).ToList();
+        var allGridPowers = dataPoints.Select(x => x.GridPower).ToList();
+        var allBatteryPowers = dataPoints.Select(x => x.BatteryPower).ToList();
+        var allLoadPowers = dataPoints.Select(x => x.LoadPower).ToList();
+
+        return new PowerMetricsResponseDto
+        {
+            Range = "Year",
+            Data = dataPoints.OrderBy(x => x.Timestamp).ToList(),
+            Statistics = new PowerMetricsStatistics
+            {
+                AverageSolarPower = allSolarPowers.Count > 0 ? Math.Round(allSolarPowers.Average(), 3) : 0,
+                PeakSolarPower = allSolarPowers.Count > 0 ? Math.Round(allSolarPowers.Max(), 3) : 0,
+                AverageGridPower = allGridPowers.Count > 0 ? Math.Round(allGridPowers.Average(), 3) : 0,
+                PeakGridPower = allGridPowers.Count > 0 ? Math.Round(allGridPowers.Max(), 3) : 0,
+                AverageBatteryPower = allBatteryPowers.Count > 0 ? Math.Round(allBatteryPowers.Average(), 3) : 0,
+                PeakBatteryPower = allBatteryPowers.Count > 0 ? Math.Round(allBatteryPowers.Max(), 3) : 0,
+                AverageLoadPower = allLoadPowers.Count > 0 ? Math.Round(allLoadPowers.Average(), 3) : 0,
+                PeakLoadPower = allLoadPowers.Count > 0 ? Math.Round(allLoadPowers.Max(), 3) : 0,
+                Unit = "kW"
+            }
         };
-    }
-
-    private static List<PowerMetricsDataPoint> OptimizeDailyDataPoints(List<PowerMetricsDataPoint> dataPoints)
-    {
-        if (dataPoints.Count <= 12)
-            return dataPoints;
-
-        // Peak değerleri bul (SolarPowerKw'a göre)
-        var peaks = dataPoints
-            .OrderByDescending(x => x.SolarPowerKw)
-            .Take(6)
-            .ToList();
-
-        // Kalan saatleri eşit aralıklarla seç
-        var remainingHours = dataPoints
-            .Where(x => !peaks.Any(p => p.DateTime.Hour == x.DateTime.Hour))
-            .OrderBy(x => x.DateTime.Hour)
-            .ToList();
-
-        var step = Math.Max(1, remainingHours.Count / 6);
-        var selectedRemaining = remainingHours
-            .Where((x, i) => i % step == 0)
-            .Take(6)
-            .ToList();
-
-        var result = peaks.Concat(selectedRemaining)
-            .OrderBy(x => x.DateTime)
-            .ToList();
-
-        return result;
     }
 }
