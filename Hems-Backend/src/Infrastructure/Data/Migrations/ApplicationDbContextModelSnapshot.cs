@@ -600,6 +600,183 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.ToTable("Notifications");
                 });
 
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.Parameter", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DefaultValue")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("ElementType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("ParameterGroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RoleType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Unit")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParameterGroupId")
+                        .HasDatabaseName("IX_Parameters_ParameterGroupId");
+
+                    b.HasIndex("SortOrder")
+                        .HasDatabaseName("IX_Parameters_SortOrder");
+
+                    b.HasIndex("ParameterGroupId", "SortOrder")
+                        .HasDatabaseName("IX_Parameters_ParameterGroupId_SortOrder");
+
+                    b.ToTable("Parameters");
+                });
+
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.ParameterGroup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid?>("ParentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Version")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentId")
+                        .HasDatabaseName("IX_ParameterGroups_ParentId");
+
+                    b.HasIndex("SortOrder")
+                        .HasDatabaseName("IX_ParameterGroups_SortOrder");
+
+                    b.HasIndex("ParentId", "SortOrder")
+                        .HasDatabaseName("IX_ParameterGroups_ParentId_SortOrder");
+
+                    b.ToTable("ParameterGroups");
+                });
+
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.ParameterValueSettingScheme", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ModelNumber")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid?>("ParameterGroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ParameterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ModelNumber")
+                        .HasDatabaseName("IX_ParameterValueSettingSchemes_ModelNumber");
+
+                    b.HasIndex("ParameterGroupId")
+                        .HasDatabaseName("IX_ParameterValueSettingSchemes_ParameterGroupId");
+
+                    b.HasIndex("ParameterId")
+                        .HasDatabaseName("IX_ParameterValueSettingSchemes_ParameterId");
+
+                    b.HasIndex("SortOrder")
+                        .HasDatabaseName("IX_ParameterValueSettingSchemes_SortOrder");
+
+                    b.HasIndex("ModelNumber", "SortOrder")
+                        .HasDatabaseName("IX_ParameterValueSettingSchemes_ModelNumber_SortOrder");
+
+                    b.ToTable("ParameterValueSettingSchemes");
+                });
+
             modelBuilder.Entity("Hems_Backend.Domain.Entities.Setup", b =>
                 {
                     b.Property<Guid>("Id")
@@ -676,6 +853,64 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .HasDatabaseName("IX_SetupDevices_SetupId_DeviceId");
 
                     b.ToTable("SetupDevices");
+                });
+
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.SetupDeviceParameterValue", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ModelNumber")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid?>("ParameterGroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ParameterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SetupDeviceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParameterGroupId")
+                        .HasDatabaseName("IX_SetupDeviceParameterValues_ParameterGroupId");
+
+                    b.HasIndex("ParameterId")
+                        .HasDatabaseName("IX_SetupDeviceParameterValues_ParameterId");
+
+                    b.HasIndex("SetupDeviceId")
+                        .HasDatabaseName("IX_SetupDeviceParameterValues_SetupDeviceId");
+
+                    b.HasIndex("SetupDeviceId", "ParameterId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_SetupDeviceParameterValues_SetupDeviceId_ParameterId");
+
+                    b.ToTable("SetupDeviceParameterValues");
                 });
 
             modelBuilder.Entity("Hems_Backend.Domain.Entities.Site", b =>
@@ -1172,6 +1407,45 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.Navigation("Invitation");
                 });
 
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.Parameter", b =>
+                {
+                    b.HasOne("Hems_Backend.Domain.Entities.ParameterGroup", "ParameterGroup")
+                        .WithMany("Parameters")
+                        .HasForeignKey("ParameterGroupId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("ParameterGroup");
+                });
+
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.ParameterGroup", b =>
+                {
+                    b.HasOne("Hems_Backend.Domain.Entities.ParameterGroup", "Parent")
+                        .WithMany("Children")
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Parent");
+                });
+
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.ParameterValueSettingScheme", b =>
+                {
+                    b.HasOne("Hems_Backend.Domain.Entities.ParameterGroup", "ParameterGroup")
+                        .WithMany()
+                        .HasForeignKey("ParameterGroupId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Hems_Backend.Domain.Entities.Parameter", "Parameter")
+                        .WithMany("ParameterValueSettingSchemes")
+                        .HasForeignKey("ParameterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Parameter");
+
+                    b.Navigation("ParameterGroup");
+                });
+
             modelBuilder.Entity("Hems_Backend.Domain.Entities.Setup", b =>
                 {
                     b.HasOne("Hems_Backend.Domain.Entities.Site", "Site")
@@ -1200,6 +1474,32 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.Navigation("Device");
 
                     b.Navigation("Setup");
+                });
+
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.SetupDeviceParameterValue", b =>
+                {
+                    b.HasOne("Hems_Backend.Domain.Entities.ParameterGroup", "ParameterGroup")
+                        .WithMany()
+                        .HasForeignKey("ParameterGroupId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Hems_Backend.Domain.Entities.Parameter", "Parameter")
+                        .WithMany("SetupDeviceParameterValues")
+                        .HasForeignKey("ParameterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Hems_Backend.Domain.Entities.SetupDevice", "SetupDevice")
+                        .WithMany()
+                        .HasForeignKey("SetupDeviceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Parameter");
+
+                    b.Navigation("ParameterGroup");
+
+                    b.Navigation("SetupDevice");
                 });
 
             modelBuilder.Entity("Hems_Backend.Domain.Entities.TodoItem", b =>
@@ -1308,6 +1608,20 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
             modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceNotificationType", b =>
                 {
                     b.Navigation("DeviceNotifications");
+                });
+
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.Parameter", b =>
+                {
+                    b.Navigation("ParameterValueSettingSchemes");
+
+                    b.Navigation("SetupDeviceParameterValues");
+                });
+
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.ParameterGroup", b =>
+                {
+                    b.Navigation("Children");
+
+                    b.Navigation("Parameters");
                 });
 
             modelBuilder.Entity("Hems_Backend.Domain.Entities.Setup", b =>

@@ -41,6 +41,14 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
 
     public DbSet<DeviceNotification> DeviceNotifications => Set<DeviceNotification>();
 
+    public DbSet<ParameterGroup> ParameterGroups => Set<ParameterGroup>();
+
+    public DbSet<Parameter> Parameters => Set<Parameter>();
+
+    public DbSet<SetupDeviceParameterValue> SetupDeviceParameterValues => Set<SetupDeviceParameterValue>();
+
+    public DbSet<ParameterValueSettingScheme> ParameterValueSettingSchemes => Set<ParameterValueSettingScheme>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
