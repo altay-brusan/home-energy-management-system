@@ -12,6 +12,11 @@ public record GetDeviceNotificationsQuery : IRequest<PaginatedList<DeviceNotific
     public Guid SiteId { get; init; }
     public int PageNumber { get; init; } = 1;
     public int PageSize { get; init; } = 10;
+    
+    // Filter parameters
+    public bool? IsToday { get; init; } // Sadece bugünkü bildirimleri getirmek için
+    public bool? IsProcessed { get; init; } // Okundu/okunmadı durumuna göre filtreleme
+    public string? Category { get; init; } // Notification type'a göre filtreleme (INFO, WARNING, ERROR)
 }
 
 public class GetDeviceNotificationsQueryHandler : IRequestHandler<GetDeviceNotificationsQuery, PaginatedList<DeviceNotificationDto>>
@@ -32,11 +37,33 @@ public class GetDeviceNotificationsQueryHandler : IRequestHandler<GetDeviceNotif
         // Site yetki kontrolü
         await ValidateSiteAccessAsync(request.SiteId, cancellationToken);
 
-        var notifications = await _context.DeviceNotifications
+        var query = _context.DeviceNotifications
             .Include(dn => dn.DeviceNotificationType)
             .Include(dn => dn.Device)
             .Include(dn => dn.Site)
-            .Where(dn => dn.SiteId == request.SiteId)
+            .Where(dn => dn.SiteId == request.SiteId);
+
+        // IsToday filtresi - sadece bugünkü bildirimleri getir
+        if (request.IsToday == true)
+        {
+            var today = DateTimeOffset.Now.Date;
+            var tomorrow = today.AddDays(1);
+            query = query.Where(dn => dn.Timestamp >= today && dn.Timestamp < tomorrow);
+        }
+
+        // IsProcessed filtresi - okundu/okunmadı durumuna göre filtreleme
+        if (request.IsProcessed.HasValue)
+        {
+            query = query.Where(dn => dn.IsProcessed == request.IsProcessed.Value);
+        }
+
+        // Category filtresi - notification type'a göre filtreleme
+        if (!string.IsNullOrEmpty(request.Category))
+        {
+            query = query.Where(dn => dn.DeviceNotificationType.Category == request.Category);
+        }
+
+        var notifications = await query
             .OrderByDescending(dn => dn.Timestamp)
             .Select(dn => new DeviceNotificationDto
             {

@@ -6,8 +6,10 @@ using Hems_Backend.Application.Dashboard.Queries.GetPowerMetrics;
 using Hems_Backend.Application.Dashboard.Queries.GetBattery;
 using Hems_Backend.Application.Dashboard.Queries.GetChargeDischarge;
 using Hems_Backend.Application.Dashboard.Queries.GetBatteryComponent;
+using Hems_Backend.Application.Dashboard.Queries.GetInverterComponent;
 using Hems_Backend.Application.Dashboard.Queries.GetHero;
 using Hems_Backend.Application.Dashboard.Queries.GetSOC;
+using Hems_Backend.Application.Dashboard.Queries.GetSOH;
 using Hems_Backend.Application.Devices.Queries.GetDeviceWithData;
 using Hems_Backend.Application.Devices.Queries.GetComponentLiveData;
 using Hems_Backend.Web.Infrastructure;
@@ -25,6 +27,7 @@ public class MobileDashboard : EndpointGroupBase
             .RequireAuthorization()
             .MapGet(Hero, "hero")
             .MapGet(SOC, "graphs/SOC")
+            .MapGet(SOH, "graphs/SOH")
             .MapGet(GetDeviceWithData, "device/GetWithData")
             .MapGet(GetComponentLiveData, "device/component/getComponentLiveData")
             .MapGet(EnergyFlow, "graphs/EnergyFlow")
@@ -33,7 +36,9 @@ public class MobileDashboard : EndpointGroupBase
             .MapGet(PowerMetrics, "graphs/PowerMetrics")
             .MapGet(Battery, "graphs/Battery")
             .MapGet(ChargeDischarge, "graphs/ChargeDischarge")
-            .MapGet(BatteryComponent, "graphs/Components/Battery");
+            .MapGet(BatteryComponent, "graphs/Components/Battery")
+            .MapGet(InverterComponent, "graphs/Components/Inverter");
+        //TODO: �NVERTER YAp�calk
     }
 
     [Authorize]
@@ -55,6 +60,19 @@ public class MobileDashboard : EndpointGroupBase
         [FromQuery] Guid deviceId)
     {
         var query = new GetSOCQuery
+        {
+            DeviceId = deviceId
+        };
+
+        return await sender.Send(query);
+    }
+
+    [Authorize]
+    public async Task<SOHResponseDto> SOH(
+        ISender sender,
+        [FromQuery] Guid deviceId)
+    {
+        var query = new GetSOHQuery
         {
             DeviceId = deviceId
         };
@@ -184,6 +202,19 @@ public class MobileDashboard : EndpointGroupBase
         [FromQuery] Guid deviceId)
     {
         var query = new GetBatteryComponentQuery
+        {
+            DeviceId = deviceId
+        };
+
+        return await sender.Send(query);
+    }
+
+    [Authorize]
+    public async Task<InverterComponentDto> InverterComponent(
+        ISender sender,
+        [FromQuery] Guid deviceId)
+    {
+        var query = new GetInverterComponentQuery
         {
             DeviceId = deviceId
         };

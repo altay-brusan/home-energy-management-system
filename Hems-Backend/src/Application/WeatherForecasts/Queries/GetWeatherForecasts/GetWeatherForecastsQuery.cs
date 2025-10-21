@@ -25,7 +25,6 @@ public class GetWeatherForecastsQueryHandler : IRequestHandler<GetWeatherForecas
     {
         // Site'ı bul ve kullanıcının erişim yetkisini kontrol et
 
-        //TODO:Site Id Girilmesi Lazım
         var site = await _context.Sites
             .FirstOrDefaultAsync(s => s.Id == request.SiteId && 
                                      (s.UserId == _currentUser.Id || 

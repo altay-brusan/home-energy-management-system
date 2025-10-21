@@ -1,5 +1,6 @@
 using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Application.DeviceNotifications.Commands.CreateDeviceNotification;
+using Hems_Backend.Application.DeviceNotifications.Commands.MarkNotificationAsRead;
 using Hems_Backend.Application.DeviceNotifications.Common.Models;
 using Hems_Backend.Application.DeviceNotifications.Queries.GetDeviceNotifications;
 using Hems_Backend.Application.DeviceNotifications.Queries.GetDeviceNotificationTypes;
@@ -24,7 +25,8 @@ public class DeviceNotifications : EndpointGroupBase
         app.MapGroup(this)
             .RequireAuthorization()
             .MapGet(GetDeviceNotifications)
-            .MapGet(GetDeviceNotificationTypes, "types");
+            .MapGet(GetDeviceNotificationTypes, "types")
+            .MapPut(MarkDeviceNotificationAsRead, "{id}/mark-read");
     }
 
     [Authorize(Policies.DeviceOnly)]
@@ -34,10 +36,16 @@ public class DeviceNotifications : EndpointGroupBase
         IDeviceNotificationService notificationService)
     {
         var result = await sender.Send(command);
-        //TODO: Notification Localization.
-        // SignalR ile canlı bildirim gönder
-        await notificationService.SendNotificationToSiteAsync(result.SiteId, result);
-        await notificationService.SendNotificationToDeviceAsync(result.DeviceId, result);
+        
+        // Sadece WARNING, ERROR ve ALARM kategorisindeki notification'ları SignalR ile gönder
+        var criticalCategories = new[] { "WARNING", "ERROR", "ALARM" };
+        
+        if (criticalCategories.Contains(result.DeviceNotificationType.Category))
+        {
+            // SignalR ile canlı bildirim gönder
+            await notificationService.SendNotificationToSiteAsync(result.SiteId, result);
+            await notificationService.SendNotificationToDeviceAsync(result.DeviceId, result);
+        }
         
         return TypedResults.Ok(result);
     }
@@ -55,5 +63,14 @@ public class DeviceNotifications : EndpointGroupBase
         ISender sender)
     {
         return await sender.Send(new GetDeviceNotificationTypesQuery());
+    }
+
+    [Authorize]
+    public static async Task<IResult> MarkDeviceNotificationAsRead(
+        Guid id,
+        ISender sender)
+    {
+        await sender.Send(new MarkNotificationAsReadCommand { NotificationId = id });
+        return TypedResults.NoContent();
     }
 }

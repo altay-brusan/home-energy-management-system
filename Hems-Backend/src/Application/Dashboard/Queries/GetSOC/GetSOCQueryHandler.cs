@@ -18,7 +18,6 @@ public class GetSOCQueryHandler : IRequestHandler<GetSOCQuery, SOCResponseDto>
         _context = context;
         _sender = sender;
     }
-
     public async Task<SOCResponseDto> Handle(GetSOCQuery request, CancellationToken cancellationToken)
     {
         // Device access kontrolü

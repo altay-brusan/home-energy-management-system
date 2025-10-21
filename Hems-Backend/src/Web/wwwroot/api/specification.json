@@ -498,6 +498,33 @@
               "format": "int32"
             },
             "x-position": 3
+          },
+          {
+            "name": "IsToday",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "nullable": true
+            },
+            "x-position": 4
+          },
+          {
+            "name": "IsProcessed",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "nullable": true
+            },
+            "x-position": 5
+          },
+          {
+            "name": "Category",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 6
           }
         ],
         "responses": {
@@ -538,6 +565,36 @@
                 }
               }
             }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/DeviceNotifications/{id}/mark-read": {
+      "put": {
+        "tags": [
+          "DeviceNotifications"
+        ],
+        "operationId": "MarkDeviceNotificationAsRead",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
           }
         },
         "security": [
@@ -1003,6 +1060,74 @@
         ]
       }
     },
+    "/api/Locations": {
+      "get": {
+        "tags": [
+          "Locations"
+        ],
+        "operationId": "GetCountries",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CountryDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Locations/cities/{countryId}": {
+      "get": {
+        "tags": [
+          "Locations"
+        ],
+        "operationId": "GetCitiesByCountry",
+        "parameters": [
+          {
+            "name": "countryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CityDto"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/MobileDashboard/hero": {
       "get": {
         "tags": [
@@ -1065,6 +1190,43 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SOCResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/MobileDashboard/graphs/SOH": {
+      "get": {
+        "tags": [
+          "MobileDashboard"
+        ],
+        "operationId": "SOH",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SOHResponseDto"
                 }
               }
             }
@@ -1455,6 +1617,43 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BatteryComponentDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/MobileDashboard/graphs/Components/Inverter": {
+      "get": {
+        "tags": [
+          "MobileDashboard"
+        ],
+        "operationId": "InverterComponent",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InverterComponentDto"
                 }
               }
             }
@@ -4256,6 +4455,48 @@
           }
         }
       },
+      "CountryDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CityDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "countryId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "countryName": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
       "HeroResponseDto": {
         "type": "object",
         "additionalProperties": false,
@@ -4326,6 +4567,61 @@
         }
       },
       "SOCStatistics": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "total": {
+            "type": "number",
+            "format": "double"
+          },
+          "peak": {
+            "type": "number",
+            "format": "double"
+          },
+          "average": {
+            "type": "number",
+            "format": "double"
+          },
+          "unit": {
+            "type": "string"
+          }
+        }
+      },
+      "SOHResponseDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "range": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SOHDataPoint"
+            }
+          },
+          "statistics": {
+            "$ref": "#/components/schemas/SOHStatistics"
+          }
+        }
+      },
+      "SOHDataPoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "timestamp": {
+            "type": "string"
+          },
+          "value": {
+            "type": "number",
+            "format": "double"
+          },
+          "unit": {
+            "type": "string"
+          }
+        }
+      },
+      "SOHStatistics": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -4836,6 +5132,27 @@
           "soc": {
             "type": "number",
             "format": "double"
+          },
+          "today": {
+            "type": "number",
+            "format": "double"
+          },
+          "total": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "InverterComponentDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "power": {
+            "type": "number",
+            "format": "double"
+          },
+          "powerUnit": {
+            "type": "string"
           },
           "today": {
             "type": "number",

@@ -1,5 +1,6 @@
 using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Application.Common.Models;
+using Hems_Backend.Application.Sites.Queries.CheckSiteAccess;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,22 +25,25 @@ public class UserSetupDeviceDto
 public class GetSetupDevicesByUserQueryHandler : IRequestHandler<GetSetupDevicesByUserQuery, UserSetupDeviceDto?>
 {
     private readonly IApplicationDbContext _context;
-    private readonly IUser _user;
+    private readonly ISender _sender;
 
-    public GetSetupDevicesByUserQueryHandler(IApplicationDbContext context, IUser user)
+    public GetSetupDevicesByUserQueryHandler(IApplicationDbContext context, ISender sender)
     {
         _context = context;
-        _user = user;
+        _sender = sender;
     }
 
     public async Task<UserSetupDeviceDto?> Handle(GetSetupDevicesByUserQuery request, CancellationToken cancellationToken)
     {
-        var userId = _user.Id ?? throw new UnauthorizedAccessException("User not authenticated");
+        // Site access kontrolü
+        var hasAccess = await _sender.Send(new CheckSiteAccessQuery { SiteId = request.SiteId }, cancellationToken);
+        if (!hasAccess)
+        {
+            throw new UnauthorizedAccessException("Site access denied");
+        }
 
         return await _context.SetupDevices
-            .Where(sd => sd.Setup.SiteId == request.SiteId && 
-                        (sd.Setup.Site.UserId == userId || 
-                         _context.UserSites.Any(us => us.SiteId == sd.Setup.SiteId && us.UserId == userId)))
+            .Where(sd => sd.Setup.SiteId == request.SiteId)
             .Select(sd => new UserSetupDeviceDto
             {
                 SetupDeviceId = sd.Id,

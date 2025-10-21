@@ -1147,5 +1147,136 @@ public class ApplicationDbContextInitialiser
 
             _logger.LogInformation("Seeded {Count} device notification types", notificationTypes.Count);
         }
+
+        // Seed Countries and Cities
+        if (!_context.Countries.Any())
+        {
+            var countries = new List<Country>
+            {
+                new Country
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Türkiye",
+                    Code = "TR",
+                    IsActive = true,
+                    Created = DateTimeOffset.UtcNow,
+                    CreatedBy = administrator.Id
+                },
+                new Country
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "United States",
+                    Code = "US",
+                    IsActive = true,
+                    Created = DateTimeOffset.UtcNow,
+                    CreatedBy = administrator.Id
+                },
+                new Country
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Germany",
+                    Code = "DE",
+                    IsActive = true,
+                    Created = DateTimeOffset.UtcNow,
+                    CreatedBy = administrator.Id
+                },
+                new Country
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "France",
+                    Code = "FR",
+                    IsActive = true,
+                    Created = DateTimeOffset.UtcNow,
+                    CreatedBy = administrator.Id
+                },
+                new Country
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "United Kingdom",
+                    Code = "GB",
+                    IsActive = true,
+                    Created = DateTimeOffset.UtcNow,
+                    CreatedBy = administrator.Id
+                }
+            };
+
+            _context.Countries.AddRange(countries);
+            await _context.SaveChangesAsync();
+
+            // Get the country IDs for cities
+            var turkeyId = countries.First(c => c.Code == "TR").Id;
+            var usaId = countries.First(c => c.Code == "US").Id;
+            var germanyId = countries.First(c => c.Code == "DE").Id;
+            var franceId = countries.First(c => c.Code == "FR").Id;
+            var ukId = countries.First(c => c.Code == "GB").Id;
+
+            var cities = new List<City>
+            {
+                // Turkey Cities
+                new City { Id = Guid.NewGuid(), Name = "İstanbul", CountryId = turkeyId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Ankara", CountryId = turkeyId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "İzmir", CountryId = turkeyId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Bursa", CountryId = turkeyId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Antalya", CountryId = turkeyId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Adana", CountryId = turkeyId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Konya", CountryId = turkeyId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Gaziantep", CountryId = turkeyId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Şanlıurfa", CountryId = turkeyId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Kocaeli", CountryId = turkeyId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+
+                // USA Cities
+                new City { Id = Guid.NewGuid(), Name = "New York", CountryId = usaId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Los Angeles", CountryId = usaId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Chicago", CountryId = usaId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Houston", CountryId = usaId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Phoenix", CountryId = usaId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Philadelphia", CountryId = usaId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "San Antonio", CountryId = usaId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "San Diego", CountryId = usaId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Dallas", CountryId = usaId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "San Jose", CountryId = usaId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+
+                // Germany Cities
+                new City { Id = Guid.NewGuid(), Name = "Berlin", CountryId = germanyId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Hamburg", CountryId = germanyId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Munich", CountryId = germanyId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Cologne", CountryId = germanyId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Frankfurt", CountryId = germanyId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Stuttgart", CountryId = germanyId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Düsseldorf", CountryId = germanyId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Dortmund", CountryId = germanyId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Essen", CountryId = germanyId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Leipzig", CountryId = germanyId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+
+                // France Cities
+                new City { Id = Guid.NewGuid(), Name = "Paris", CountryId = franceId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Marseille", CountryId = franceId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Lyon", CountryId = franceId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Toulouse", CountryId = franceId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Nice", CountryId = franceId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Nantes", CountryId = franceId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Strasbourg", CountryId = franceId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Montpellier", CountryId = franceId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Bordeaux", CountryId = franceId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Lille", CountryId = franceId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+
+                // UK Cities
+                new City { Id = Guid.NewGuid(), Name = "London", CountryId = ukId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Birmingham", CountryId = ukId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Manchester", CountryId = ukId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Glasgow", CountryId = ukId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Liverpool", CountryId = ukId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Leeds", CountryId = ukId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Sheffield", CountryId = ukId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Edinburgh", CountryId = ukId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Bristol", CountryId = ukId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id },
+                new City { Id = Guid.NewGuid(), Name = "Cardiff", CountryId = ukId, IsActive = true, Created = DateTimeOffset.UtcNow, CreatedBy = administrator.Id }
+            };
+
+            _context.Cities.AddRange(cities);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Seeded {CountryCount} countries and {CityCount} cities", countries.Count, cities.Count);
+        }
     }
 }

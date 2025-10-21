@@ -26,7 +26,8 @@ public class Sites : EndpointGroupBase
             .MapPut(UpdateSite, "mobile/update-site/{id}")
             .MapDelete(DeleteSiteMobile, "mobile/delete-site/{id}");
     }
-
+    //TODO: TÜM EVLERİN ENERJİSİNİ VE TÜM EVLERİ DÖENN BİR ENDPOİNT GEREK.
+    //Ev içerisindede delta enerjisi konacak.
     // Admin endpoints
     [Authorize(Policies.AdminOnly)]
     public async Task<PaginatedList<SiteDto>> GetSites(

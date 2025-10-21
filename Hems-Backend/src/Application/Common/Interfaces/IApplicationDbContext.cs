@@ -1,4 +1,5 @@
 ﻿using Hems_Backend.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hems_Backend.Application.Common.Interfaces;
 
@@ -33,6 +34,10 @@ public interface IApplicationDbContext
     DbSet<DeviceNotificationType> DeviceNotificationTypes { get; }
 
     DbSet<DeviceNotification> DeviceNotifications { get; }
+
+    DbSet<Country> Countries { get; }
+
+    DbSet<City> Cities { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

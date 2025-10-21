@@ -53,17 +53,20 @@ public class DataGeneratorService : IDataGeneratorService
         _logger.LogInformation("✅ Component found: Type={DeviceType}, SerialNumber={SerialNumber}", 
             component.DeviceType, component.SerialNumber);
 
+        var timestamp = DateTime.UtcNow;
+
         // Component bilgilerini hazırla
         var componentInfo = new DeviceComponentInfo
         {
+            Id = componentId,
             DeviceId = deviceId,
             DeviceType = component.DeviceType,
             SerialNumber = component.SerialNumber,
             ModelNumber = component.ModelNumber
         };
 
-        // Live data oluştur
-        return GenerateDataForComponent(componentInfo);
+        // Live data oluştur - JSON'dan veri al
+        return await GenerateDataFromJsonAsync(componentInfo, timestamp);
     }
 
 
