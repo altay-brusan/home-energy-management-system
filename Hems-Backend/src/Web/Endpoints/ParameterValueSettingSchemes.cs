@@ -2,6 +2,7 @@ using Hems_Backend.Application.ParameterValueSettingSchemes.Commands.CreateParam
 using Hems_Backend.Application.ParameterValueSettingSchemes.Commands.DeleteParameterValueSettingScheme;
 using Hems_Backend.Application.ParameterValueSettingSchemes.Commands.UpdateParameterValueSettingScheme;
 using Hems_Backend.Application.ParameterValueSettingSchemes.Queries.GetParameterValueSettingSchemes;
+using Hems_Backend.Application.ParameterValueSettingSchemes.Queries.GetParameterValueSettingSchemesTree;
 using Hems_Backend.Domain.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -15,6 +16,7 @@ public class ParameterValueSettingSchemes : EndpointGroupBase
         app.MapGroup(this)
             .RequireAuthorization()
             .MapGet(GetParameterValueSettingSchemes)
+            .MapGet(GetParameterValueSettingSchemesTree, "tree")
             .MapPost(CreateParameterValueSettingScheme)
             .MapPut(UpdateParameterValueSettingScheme, "{id}")
             .MapDelete(DeleteParameterValueSettingScheme, "{id}");
@@ -26,6 +28,14 @@ public class ParameterValueSettingSchemes : EndpointGroupBase
         string? modelNumber = null)
     {
         return await sender.Send(new GetParameterValueSettingSchemesQuery { ModelNumber = modelNumber });
+    }
+
+    [Authorize(Policies.AdminOnly)]
+    public async Task<ParameterValueSettingSchemesTreeVm> GetParameterValueSettingSchemesTree(
+        ISender sender,
+        string? modelNumber = null)
+    {
+        return await sender.Send(new GetParameterValueSettingSchemesTreeQuery { ModelNumber = modelNumber });
     }
 
     [Authorize(Policies.AdminOnly)]

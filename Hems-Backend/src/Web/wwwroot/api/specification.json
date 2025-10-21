@@ -1913,6 +1913,42 @@
         ]
       }
     },
+    "/api/ParameterValueSettingSchemes/tree": {
+      "get": {
+        "tags": [
+          "ParameterValueSettingSchemes"
+        ],
+        "operationId": "GetParameterValueSettingSchemesTree",
+        "parameters": [
+          {
+            "name": "modelNumber",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParameterValueSettingSchemesTreeVm"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/ParameterValueSettingSchemes/{id}": {
       "put": {
         "tags": [
@@ -2207,6 +2243,43 @@
                 "schema": {
                   "type": "string",
                   "format": "guid"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/SetupDeviceParameterValues/tree": {
+      "get": {
+        "tags": [
+          "SetupDeviceParameterValues"
+        ],
+        "operationId": "GetSetupDeviceParameterValuesTree",
+        "parameters": [
+          {
+            "name": "setupDeviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupDeviceParameterValuesTreeVm"
                 }
               }
             }
@@ -5890,6 +5963,134 @@
           }
         }
       },
+      "ParameterValueSettingSchemesTreeVm": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "modelNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "parameterGroups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParameterGroupTreeDto"
+            }
+          }
+        }
+      },
+      "ParameterGroupTreeDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "version": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "parentId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParameterGroupTreeDto"
+            }
+          },
+          "parameters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParameterTreeDto"
+            }
+          }
+        }
+      },
+      "ParameterTreeDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "elementType": {
+            "type": "string"
+          },
+          "roleType": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "defaultValue": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "parameterValueSettingScheme": {
+            "$ref": "#/components/schemas/ParameterValueSettingSchemeTreeDto"
+          }
+        }
+      },
+      "ParameterValueSettingSchemeTreeDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "value": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "modelNumber": {
+            "type": "string"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastModified": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastModifiedBy": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
       "CreateParameterValueSettingSchemeCommand": {
         "type": "object",
         "additionalProperties": false,
@@ -6042,6 +6243,134 @@
           "parameterGroupName": {
             "type": "string",
             "nullable": true
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastModified": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastModifiedBy": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "SetupDeviceParameterValuesTreeVm": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "setupDeviceId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "parameterGroups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParameterGroupTreeDto2"
+            }
+          }
+        }
+      },
+      "ParameterGroupTreeDto2": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "version": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "parentId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParameterGroupTreeDto2"
+            }
+          },
+          "parameters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParameterTreeDto2"
+            }
+          }
+        }
+      },
+      "ParameterTreeDto2": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "elementType": {
+            "type": "string"
+          },
+          "roleType": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "defaultValue": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "setupDeviceParameterValue": {
+            "$ref": "#/components/schemas/SetupDeviceParameterValueTreeDto"
+          }
+        }
+      },
+      "SetupDeviceParameterValueTreeDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "value": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "modelNumber": {
+            "type": "string"
           },
           "created": {
             "type": "string",

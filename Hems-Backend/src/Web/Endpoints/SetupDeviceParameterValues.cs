@@ -2,6 +2,7 @@ using Hems_Backend.Application.SetupDeviceParameterValues.Commands.CreateSetupDe
 using Hems_Backend.Application.SetupDeviceParameterValues.Commands.DeleteSetupDeviceParameterValue;
 using Hems_Backend.Application.SetupDeviceParameterValues.Commands.UpdateSetupDeviceParameterValue;
 using Hems_Backend.Application.SetupDeviceParameterValues.Queries.GetSetupDeviceParameterValues;
+using Hems_Backend.Application.SetupDeviceParameterValues.Queries.GetSetupDeviceParameterValuesTree;
 using Hems_Backend.Domain.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -15,6 +16,7 @@ public class SetupDeviceParameterValues : EndpointGroupBase
         app.MapGroup(this)
             .RequireAuthorization()
             .MapGet(GetSetupDeviceParameterValues)
+            .MapGet(GetSetupDeviceParameterValuesTree, "tree")
             .MapPost(CreateSetupDeviceParameterValue)
             .MapPut(UpdateSetupDeviceParameterValue, "{id}")
             .MapDelete(DeleteSetupDeviceParameterValue, "{id}");
@@ -26,6 +28,14 @@ public class SetupDeviceParameterValues : EndpointGroupBase
         Guid setupDeviceId)
     {
         return await sender.Send(new GetSetupDeviceParameterValuesQuery { SetupDeviceId = setupDeviceId });
+    }
+
+    [Authorize(Policies.AdminOnly)]
+    public async Task<SetupDeviceParameterValuesTreeVm> GetSetupDeviceParameterValuesTree(
+        ISender sender,
+        Guid setupDeviceId)
+    {
+        return await sender.Send(new GetSetupDeviceParameterValuesTreeQuery { SetupDeviceId = setupDeviceId });
     }
 
     [Authorize(Policies.AdminOnly)]
