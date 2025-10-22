@@ -7,6 +7,7 @@ public class SiteDto
     public string Name { get; set; } = string.Empty;
     public string? Country { get; set; }
     public string? City { get; set; }
+    public string? District { get; set; }
     public string? AddressLine { get; set; }
     public decimal? Latitude { get; set; }
     public decimal? Longitude { get; set; }

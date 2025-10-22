@@ -11,6 +11,7 @@ public class DeviceNotification : BaseGuidAuditableEntity
     public DateTimeOffset Timestamp { get; set; }
     public string AdditionalData { get; set; } = string.Empty;
     public bool IsProcessed { get; set; } = false;
+    public bool IsDeleted { get; set; } = false;
 
     // Navigation properties
     public Device Device { get; set; } = null!;

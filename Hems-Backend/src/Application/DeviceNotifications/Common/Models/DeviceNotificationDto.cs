@@ -24,6 +24,7 @@ public class DeviceNotificationDto
     public DateTimeOffset Timestamp { get; init; }
     public string AdditionalData { get; init; } = string.Empty;
     public bool IsProcessed { get; init; }
+    public bool IsDeleted { get; init; }
     public DateTimeOffset Created { get; init; }
     
     // Navigation properties

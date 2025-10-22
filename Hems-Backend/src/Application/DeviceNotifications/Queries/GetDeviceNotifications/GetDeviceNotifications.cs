@@ -17,6 +17,7 @@ public record GetDeviceNotificationsQuery : IRequest<PaginatedList<DeviceNotific
     public bool? IsToday { get; init; } // Sadece bugünkü bildirimleri getirmek için
     public bool? IsProcessed { get; init; } // Okundu/okunmadı durumuna göre filtreleme
     public string? Category { get; init; } // Notification type'a göre filtreleme (INFO, WARNING, ERROR)
+    public bool? IncludeDeleted { get; init; } = false; // Silinen bildirimleri dahil et
 }
 
 public class GetDeviceNotificationsQueryHandler : IRequestHandler<GetDeviceNotificationsQuery, PaginatedList<DeviceNotificationDto>>
@@ -42,6 +43,12 @@ public class GetDeviceNotificationsQueryHandler : IRequestHandler<GetDeviceNotif
             .Include(dn => dn.Device)
             .Include(dn => dn.Site)
             .Where(dn => dn.SiteId == request.SiteId);
+
+        // IsDeleted filtresi - varsayılan olarak silinen bildirimleri gösterme
+        if (request.IncludeDeleted != true)
+        {
+            query = query.Where(dn => !dn.IsDeleted);
+        }
 
         // IsToday filtresi - sadece bugünkü bildirimleri getir
         if (request.IsToday == true)
@@ -75,6 +82,7 @@ public class GetDeviceNotificationsQueryHandler : IRequestHandler<GetDeviceNotif
                 Timestamp = dn.Timestamp,
                 AdditionalData = dn.AdditionalData,
                 IsProcessed = dn.IsProcessed,
+                IsDeleted = dn.IsDeleted,
                 Created = dn.Created,
                 DeviceNotificationType = new DeviceNotificationTypeDto
                 {
