@@ -39,5 +39,13 @@ public interface IApplicationDbContext
 
     DbSet<City> Cities { get; }
 
+    DbSet<ParameterGroup> ParameterGroups { get; }
+
+    DbSet<Parameter> Parameters { get; }
+
+    DbSet<SetupDeviceParameterValue> SetupDeviceParameterValues { get; }
+
+    DbSet<ParameterValueSettingScheme> ParameterValueSettingSchemes { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }
