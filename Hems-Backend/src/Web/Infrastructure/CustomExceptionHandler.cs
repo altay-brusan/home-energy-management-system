@@ -1,6 +1,7 @@
 ﻿using Hems_Backend.Application.Common.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using FluentValidation;
 
 namespace Hems_Backend.Web.Infrastructure;
 
@@ -13,7 +14,8 @@ public class CustomExceptionHandler : IExceptionHandler
         // Register known exception types and handlers.
         _exceptionHandlers = new()
             {
-                { typeof(ValidationException), HandleValidationException },
+                { typeof(FluentValidation.ValidationException), HandleFluentValidationException },
+                { typeof(Hems_Backend.Application.Common.Exceptions.ValidationException), HandleApplicationValidationException },
                 { typeof(Hems_Backend.Application.Common.Exceptions.NotFoundException), HandleNotFoundException },
                 { typeof(UnauthorizedAccessException), HandleUnauthorizedAccessException },
                 { typeof(ForbiddenAccessException), HandleForbiddenAccessException },
@@ -33,16 +35,47 @@ public class CustomExceptionHandler : IExceptionHandler
         return false;
     }
 
-    private async Task HandleValidationException(HttpContext httpContext, Exception ex)
+    private async Task HandleFluentValidationException(HttpContext httpContext, Exception ex)
     {
-        var exception = (ValidationException)ex;
+        var exception = (FluentValidation.ValidationException)ex;
 
         httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
 
-        await httpContext.Response.WriteAsJsonAsync(new ValidationProblemDetails(exception.Errors)
+        var modelState = new Dictionary<string, string[]>();
+        foreach (var error in exception.Errors)
+        {
+            if (!modelState.ContainsKey(error.PropertyName))
+                modelState[error.PropertyName] = new string[] { };
+            
+            var errors = modelState[error.PropertyName].ToList();
+            errors.Add(error.ErrorMessage);
+            modelState[error.PropertyName] = errors.ToArray();
+        }
+
+        await httpContext.Response.WriteAsJsonAsync(new ValidationProblemDetails(modelState)
         {
             Status = StatusCodes.Status400BadRequest,
             Type = "https://tools.ietf.org/html/rfc7231#section-6.5.1"
+        });
+    }
+
+    private async Task HandleApplicationValidationException(HttpContext httpContext, Exception ex)
+    {
+        var exception = (Hems_Backend.Application.Common.Exceptions.ValidationException)ex;
+
+        httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+
+        await httpContext.Response.WriteAsJsonAsync(new
+        {
+            statusCode = StatusCodes.Status400BadRequest,
+            message = "Validation failed",
+            type = "ValidationError",
+            timestamp = DateTime.UtcNow,
+            errors = exception.Errors?.Select(e => new
+            {
+                propertyName = e.Key,
+                errorMessages = e.Value
+            }).ToArray() ?? new object[0]
         });
     }
 

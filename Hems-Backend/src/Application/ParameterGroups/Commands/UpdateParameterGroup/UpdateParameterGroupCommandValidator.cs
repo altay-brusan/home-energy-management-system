@@ -18,9 +18,5 @@ public class UpdateParameterGroupCommandValidator : AbstractValidator<UpdatePara
 
         RuleFor(v => v.SortOrder)
             .GreaterThanOrEqualTo(0).WithMessage("Sıralama değeri 0'dan küçük olamaz.");
-
-        RuleFor(v => v.Version)
-            .NotEmpty().WithMessage("Versiyon zorunludur.")
-            .MaximumLength(50).WithMessage("Versiyon 50 karakterden fazla olamaz.");
     }
 }
