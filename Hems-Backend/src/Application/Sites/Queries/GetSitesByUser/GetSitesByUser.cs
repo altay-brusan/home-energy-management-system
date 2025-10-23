@@ -5,9 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Hems_Backend.Application.Sites.Queries.GetSitesByUser;
 
-public record GetSitesByUserQuery : IRequest<List<SiteDto>>;
+public record GetSitesByUserQuery : IRequest<SitesDashboardDto>;
 
-public class GetSitesByUserQueryHandler : IRequestHandler<GetSitesByUserQuery, List<SiteDto>>
+public class GetSitesByUserQueryHandler : IRequestHandler<GetSitesByUserQuery, SitesDashboardDto>
 {
     private readonly IApplicationDbContext _context;
     private readonly IUser _user;
@@ -18,35 +18,95 @@ public class GetSitesByUserQueryHandler : IRequestHandler<GetSitesByUserQuery, L
         _user = user;
     }
 
-    public async Task<List<SiteDto>> Handle(GetSitesByUserQuery request, CancellationToken cancellationToken)
+    public async Task<SitesDashboardDto> Handle(GetSitesByUserQuery request, CancellationToken cancellationToken)
     {
         var userId = _user.Id ?? throw new UnauthorizedAccessException("User not authenticated");
-
+        var userSharedSiteIds = await _context.UserSites.Where(f => f.UserId == _user.Id).Select(f => f.SiteId).ToListAsync();
         var sites = await _context.Sites
             .Include(x => x.Setup!)
                 .ThenInclude(s => s.SetupDevice)
-            .Where(x => x.UserId == userId && !x.IsDeleted)
+            .Where(x => (x.UserId == userId || userSharedSiteIds.Contains(x.Id)) && !x.IsDeleted)
             .OrderBy(x => x.Name)
             .ToListAsync(cancellationToken);
 
-        return sites.Select(x => new SiteDto
+        var totalpower = 0.0;
+        var siteList = new List<SiteWithPowerDto>();
+        
+        foreach (var site in sites)
         {
-            Id = x.Id,
-            UserId = x.UserId,
-            Name = x.Name,
-            Country = x.Country,
-            City = x.City,
-            District = x.District,
-            AddressLine = x.AddressLine,
-            Latitude = x.Latitude,
-            Longitude = x.Longitude,
-            Timezone = x.Timezone,
-            IsDeleted = x.IsDeleted,
-            HasDevice = x.Setup?.SetupDevice != null,
-            Created = x.Created.DateTime,
-            CreatedBy = x.CreatedBy,
-            LastModified = x.LastModified.DateTime,
-            LastModifiedBy = x.LastModifiedBy
-        }).ToList();
+            var homeEnergy = 0.0;
+            var powerString = "0.00 kW";
+            
+            if (site.Setup?.SetupDevice != null)
+            {
+                var deviceId = site.Setup.SetupDevice.DeviceId;
+                
+                // DeviceEnergyData'dan son veriyi çek (hourly olanlarından)
+                var lastEnergyData = await _context.DeviceEnergyData
+                    .Where(x => x.DeviceId == deviceId && 
+                               x.DataType == "DailyCumulativeEnergyData" &&
+                               x.DataDateTime.Date == DateTime.UtcNow.Date)
+                    .OrderByDescending(x => x.DataDateTime)
+                    .FirstOrDefaultAsync(cancellationToken);
+                
+                if (lastEnergyData != null)
+                {
+                    // Enerji formülü: Sources - Sinks
+                    // Sources: Solar (PV), Battery (deşarj), Grid, Generator
+                    // Sinks: Battery(şarj), Load, Grid
+                    var sources = (lastEnergyData.PvEnergyKWh ?? 0) + 
+                                 (lastEnergyData.BatteryDischargeEnergyKWh ?? 0) + 
+                                 (lastEnergyData.GridImportEnergyKWh ?? 0) + 
+                                 (lastEnergyData.GeneratorEnergyKWh ?? 0);
+                    
+                    var sinks = (lastEnergyData.BatteryChargeEnergyKWh ?? 0) + 
+                               (lastEnergyData.LoadEnergyKWh ?? 0) + 
+                               (lastEnergyData.GridExportEnergyKWh ?? 0);
+                    
+                    homeEnergy = sources - sinks;
+                }
+                
+                powerString = homeEnergy.ToString("0.00") + " kW";
+            }
+            
+            totalpower += homeEnergy;
+            
+            // Site'i SiteWithPowerDto'ya çevir
+            siteList.Add(new SiteWithPowerDto
+            {
+                Id = site.Id,
+                UserId = site.UserId,
+                Name = site.Name,
+                Country = site.Country,
+                City = site.City,
+                District = site.District,
+                AddressLine = site.AddressLine,
+                Latitude = site.Latitude,
+                Longitude = site.Longitude,
+                Timezone = site.Timezone,
+                IsDeleted = site.IsDeleted,
+                HasDevice = site.Setup?.SetupDevice != null,
+                Created = site.Created.DateTime,
+                CreatedBy = site.CreatedBy,
+                LastModified = site.LastModified.DateTime,
+                LastModifiedBy = site.LastModifiedBy,
+                Power = powerString
+            });
+        }
+
+        // TotalPower'ı string formatına çevir
+        var totalPowerString = totalpower.ToString("0.00") + " kW";
+        
+        // Dashboard istatistiklerini hesapla
+        var totalHomes = sites.Count;
+        var totalDevices = sites.Count(x => x.Setup?.SetupDevice != null);
+
+        return new SitesDashboardDto
+        {
+            TotalHomes = totalHomes,
+            TotalDevices = totalDevices,
+            TotalPower = totalPowerString,
+            SiteList = siteList
+        };
     }
 }

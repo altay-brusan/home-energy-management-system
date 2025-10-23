@@ -56,7 +56,7 @@ public class Sites : EndpointGroupBase
 
     // Mobile endpoints (normal kullanıcılar için)
     [Authorize]
-    public async Task<List<SiteDto>> GetUserSites(
+    public async Task<SitesDashboardDto> GetUserSites(
         ISender sender)
     {
         return await sender.Send(new GetSitesByUserQuery());

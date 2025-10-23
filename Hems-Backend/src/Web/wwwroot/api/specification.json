@@ -3206,10 +3206,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/SiteDto"
-                  }
+                  "$ref": "#/components/schemas/SitesDashboardDto"
                 }
               }
             }
@@ -6980,11 +6977,6 @@
             "type": "string",
             "format": "guid"
           },
-          "parameterGroupId": {
-            "type": "string",
-            "format": "guid",
-            "nullable": true
-          },
           "value": {
             "type": "string"
           },
@@ -7237,6 +7229,45 @@
             "nullable": true
           }
         }
+      },
+      "SitesDashboardDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "totalHomes": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalDevices": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPower": {
+            "type": "string"
+          },
+          "siteList": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SiteWithPowerDto"
+            }
+          }
+        }
+      },
+      "SiteWithPowerDto": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SiteDto"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "power": {
+                "type": "string"
+              }
+            }
+          }
+        ]
       },
       "CreateSiteCommand": {
         "type": "object",
