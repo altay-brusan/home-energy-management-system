@@ -6,7 +6,6 @@ namespace Hems_Backend.Application.SetupDeviceParameterValues.Commands.UpdateSet
 public record UpdateSetupDeviceParameterValueCommand : IRequest
 {
     public Guid Id { get; init; }
-    public Guid? ParameterGroupId { get; init; }
     public string Value { get; init; } = string.Empty;
     public int SortOrder { get; init; }
     public string ModelNumber { get; init; } = string.Empty;
@@ -35,19 +34,6 @@ public class UpdateSetupDeviceParameterValueCommandHandler : IRequestHandler<Upd
             throw new ArgumentException("Kayıt bulunamadı.");
         }
 
-        // ParameterGroupId doğrulama (varsa)
-        if (request.ParameterGroupId.HasValue)
-        {
-            var groupExists = await _context.ParameterGroups
-                .AnyAsync(pg => pg.Id == request.ParameterGroupId.Value, cancellationToken);
-            
-            if (!groupExists)
-            {
-                throw new ArgumentException("Parametre grubu bulunamadı.");
-            }
-        }
-
-        entity.ParameterGroupId = request.ParameterGroupId;
         entity.Value = request.Value;
         entity.SortOrder = request.SortOrder;
         entity.ModelNumber = request.ModelNumber;
