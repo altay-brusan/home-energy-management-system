@@ -16,7 +16,6 @@ public record SOHDataPoint
 
 public record SOHStatistics
 {
-    public double Total { get; init; }
     public double Peak { get; init; }
     public double Average { get; init; }
     public string Unit { get; init; } = string.Empty;

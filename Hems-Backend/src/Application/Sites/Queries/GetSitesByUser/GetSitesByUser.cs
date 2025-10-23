@@ -36,6 +36,7 @@ public class GetSitesByUserQueryHandler : IRequestHandler<GetSitesByUserQuery, L
             Name = x.Name,
             Country = x.Country,
             City = x.City,
+            District = x.District,
             AddressLine = x.AddressLine,
             Latitude = x.Latitude,
             Longitude = x.Longitude,

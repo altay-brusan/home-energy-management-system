@@ -11,6 +11,7 @@ public record UpdateSiteCommand : IRequest
     public string Name { get; init; } = string.Empty;
     public string? Country { get; init; }
     public string? City { get; init; }
+    public string? District { get; init; }
     public string? AddressLine { get; init; }
     public decimal? Latitude { get; init; }
     public decimal? Longitude { get; init; }
@@ -39,6 +40,7 @@ public class UpdateSiteCommandHandler : IRequestHandler<UpdateSiteCommand>
         entity.Name = request.Name;
         entity.Country = request.Country;
         entity.City = request.City;
+        entity.District = request.District;
         entity.AddressLine = request.AddressLine;
         entity.Latitude = request.Latitude;
         entity.Longitude = request.Longitude;

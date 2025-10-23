@@ -115,6 +115,115 @@ public class GetSitesTests : BaseTestFixture
         result.TotalCount.Should().Be(5);
         result.HasNextPage.Should().BeTrue();
     }
+
+    [Test]
+    public async Task ShouldFilterSitesByName()
+    {
+        var userId = await RunAsDefaultUserAsync();
+
+        var site1 = new CreateSiteCommand
+        {
+            Name = "Test Site 1",
+            Country = "Turkey",
+            City = "Istanbul"
+        };
+
+        var site2 = new CreateSiteCommand
+        {
+            Name = "Another Site",
+            Country = "Turkey",
+            City = "Ankara"
+        };
+
+        await SendAsync(site1);
+        await SendAsync(site2);
+
+        var query = new GetSitesQuery
+        {
+            UserId = userId,
+            Name = "Test"
+        };
+
+        var result = await SendAsync(query);
+
+        result.Should().NotBeNull();
+        result.Items.Should().HaveCount(1);
+        result.Items.Should().OnlyContain(x => x.Name.Contains("Test"));
+    }
+
+    [Test]
+    public async Task ShouldFilterSitesByCity()
+    {
+        var userId = await RunAsDefaultUserAsync();
+
+        var site1 = new CreateSiteCommand
+        {
+            Name = "Site 1",
+            Country = "Turkey",
+            City = "Istanbul",
+            District = "Kadıköy"
+        };
+
+        var site2 = new CreateSiteCommand
+        {
+            Name = "Site 2",
+            Country = "Turkey",
+            City = "Ankara",
+            District = "Çankaya"
+        };
+
+        await SendAsync(site1);
+        await SendAsync(site2);
+
+        var query = new GetSitesQuery
+        {
+            UserId = userId,
+            City = "Istanbul"
+        };
+
+        var result = await SendAsync(query);
+
+        result.Should().NotBeNull();
+        result.Items.Should().HaveCount(1);
+        result.Items.Should().OnlyContain(x => x.City == "Istanbul");
+    }
+
+    [Test]
+    public async Task ShouldFilterSitesByDistrict()
+    {
+        var userId = await RunAsDefaultUserAsync();
+
+        var site1 = new CreateSiteCommand
+        {
+            Name = "Site 1",
+            Country = "Turkey",
+            City = "Istanbul",
+            District = "Kadıköy"
+        };
+
+        var site2 = new CreateSiteCommand
+        {
+            Name = "Site 2",
+            Country = "Turkey",
+            City = "Istanbul",
+            District = "Beşiktaş"
+        };
+
+        await SendAsync(site1);
+        await SendAsync(site2);
+
+        var query = new GetSitesQuery
+        {
+            UserId = userId,
+            District = "Kadıköy"
+        };
+
+        var result = await SendAsync(query);
+
+        result.Should().NotBeNull();
+        result.Items.Should().HaveCount(1);
+        result.Items.Should().OnlyContain(x => x.District == "Kadıköy");
+    }
 }
 
 

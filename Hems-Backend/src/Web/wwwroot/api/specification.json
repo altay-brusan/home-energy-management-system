@@ -525,6 +525,15 @@
               "nullable": true
             },
             "x-position": 6
+          },
+          {
+            "name": "IncludeDeleted",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "nullable": true
+            },
+            "x-position": 7
           }
         ],
         "responses": {
@@ -574,12 +583,177 @@
         ]
       }
     },
+    "/api/DeviceNotifications/deleted": {
+      "get": {
+        "tags": [
+          "DeviceNotifications"
+        ],
+        "operationId": "GetDeletedDeviceNotifications",
+        "parameters": [
+          {
+            "name": "SiteId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "PageNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 2
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 3
+          },
+          {
+            "name": "IsToday",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "nullable": true
+            },
+            "x-position": 4
+          },
+          {
+            "name": "Category",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 5
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedListOfDeviceNotificationDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/DeviceNotifications/{id}/mark-read": {
       "put": {
         "tags": [
           "DeviceNotifications"
         ],
         "operationId": "MarkDeviceNotificationAsRead",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/DeviceNotifications/{id}": {
+      "delete": {
+        "tags": [
+          "DeviceNotifications"
+        ],
+        "operationId": "DeleteDeviceNotification",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/DeviceNotifications/{id}/restore": {
+      "put": {
+        "tags": [
+          "DeviceNotifications"
+        ],
+        "operationId": "RestoreDeviceNotification",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/DeviceNotifications/{id}/permanent": {
+      "delete": {
+        "tags": [
+          "DeviceNotifications"
+        ],
+        "operationId": "PermanentDeleteDeviceNotification",
         "parameters": [
           {
             "name": "id",
@@ -1629,6 +1803,43 @@
         ]
       }
     },
+    "/api/MobileDashboard/graphs/Components/Inverter": {
+      "get": {
+        "tags": [
+          "MobileDashboard"
+        ],
+        "operationId": "InverterComponent",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InverterComponentDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/ParameterGroups": {
       "get": {
         "tags": [
@@ -2178,43 +2389,6 @@
           },
           "400": {
             "description": ""
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/MobileDashboard/graphs/Components/Inverter": {
-      "get": {
-        "tags": [
-          "MobileDashboard"
-        ],
-        "operationId": "InverterComponent",
-        "parameters": [
-          {
-            "name": "deviceId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InverterComponentDto"
-                }
-              }
-            }
           }
         },
         "security": [
@@ -2853,6 +3027,24 @@
             "x-position": 1
           },
           {
+            "name": "UserEmail",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 2
+          },
+          {
+            "name": "UserName",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 3
+          },
+          {
             "name": "PageNumber",
             "in": "query",
             "required": true,
@@ -2860,7 +3052,7 @@
               "type": "integer",
               "format": "int32"
             },
-            "x-position": 2
+            "x-position": 4
           },
           {
             "name": "PageSize",
@@ -2870,7 +3062,52 @@
               "type": "integer",
               "format": "int32"
             },
-            "x-position": 3
+            "x-position": 5
+          },
+          {
+            "name": "Name",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 6
+          },
+          {
+            "name": "Country",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 7
+          },
+          {
+            "name": "City",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 8
+          },
+          {
+            "name": "AddressLine",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 9
+          },
+          {
+            "name": "District",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 10
           }
         ],
         "responses": {
@@ -4522,6 +4759,9 @@
           "isProcessed": {
             "type": "boolean"
           },
+          "isDeleted": {
+            "type": "boolean"
+          },
           "created": {
             "type": "string",
             "format": "date-time"
@@ -5369,10 +5609,6 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "total": {
-            "type": "number",
-            "format": "double"
-          },
           "peak": {
             "type": "number",
             "format": "double"
@@ -5908,6 +6144,551 @@
           }
         }
       },
+      "ParameterGroupsVm": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "parameterGroups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParameterGroupDto"
+            }
+          }
+        }
+      },
+      "ParameterGroupDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "parentId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "version": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastModified": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastModifiedBy": {
+            "type": "string",
+            "nullable": true
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParameterGroupDto"
+            }
+          },
+          "parameters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParameterDto"
+            }
+          }
+        }
+      },
+      "ParameterDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "parameterGroupId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "elementType": {
+            "type": "string"
+          },
+          "roleType": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "defaultValue": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastModified": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastModifiedBy": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "CreateParameterGroupCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "parentId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "version": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "UpdateParameterGroupCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "parentId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "version": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ParametersVm": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParameterDto2"
+            }
+          }
+        }
+      },
+      "ParameterDto2": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "parameterGroupId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "elementType": {
+            "type": "string"
+          },
+          "roleType": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "defaultValue": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "parameterGroupName": {
+            "type": "string",
+            "nullable": true
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastModified": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastModifiedBy": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "CreateParameterCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "parameterGroupId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "elementType": {
+            "type": "string"
+          },
+          "roleType": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "defaultValue": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "UpdateParameterCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "elementType": {
+            "type": "string"
+          },
+          "roleType": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "defaultValue": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ParameterValueSettingSchemesVm": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "parameterValueSettingSchemes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParameterValueSettingSchemeDto"
+            }
+          }
+        }
+      },
+      "ParameterValueSettingSchemeDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "parameterId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "parameterGroupId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "value": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "modelNumber": {
+            "type": "string"
+          },
+          "parameterName": {
+            "type": "string",
+            "nullable": true
+          },
+          "parameterGroupName": {
+            "type": "string",
+            "nullable": true
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastModified": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastModifiedBy": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "ParameterValueSettingSchemesTreeVm": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "modelNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "parameterGroups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParameterGroupTreeDto"
+            }
+          }
+        }
+      },
+      "ParameterGroupTreeDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "version": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "parentId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParameterGroupTreeDto"
+            }
+          },
+          "parameters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParameterTreeDto"
+            }
+          }
+        }
+      },
+      "ParameterTreeDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "elementType": {
+            "type": "string"
+          },
+          "roleType": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "defaultValue": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "parameterValueSettingScheme": {
+            "$ref": "#/components/schemas/ParameterValueSettingSchemeTreeDto"
+          }
+        }
+      },
+      "ParameterValueSettingSchemeTreeDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "value": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "modelNumber": {
+            "type": "string"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastModified": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastModifiedBy": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "CreateParameterValueSettingSchemeCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "parameterId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "parameterGroupId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "value": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "modelNumber": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateParameterValueSettingSchemeCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "value": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "modelNumber": {
+            "type": "string"
+          }
+        }
+      },
       "RolesVm": {
         "type": "object",
         "additionalProperties": false,
@@ -6411,6 +7192,10 @@
             "type": "string",
             "nullable": true
           },
+          "district": {
+            "type": "string",
+            "nullable": true
+          },
           "addressLine": {
             "type": "string",
             "nullable": true
@@ -6468,6 +7253,10 @@
             "type": "string",
             "nullable": true
           },
+          "district": {
+            "type": "string",
+            "nullable": true
+          },
           "addressLine": {
             "type": "string",
             "nullable": true
@@ -6503,6 +7292,10 @@
             "nullable": true
           },
           "city": {
+            "type": "string",
+            "nullable": true
+          },
+          "district": {
             "type": "string",
             "nullable": true
           },

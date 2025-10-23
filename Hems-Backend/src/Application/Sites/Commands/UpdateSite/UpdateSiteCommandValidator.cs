@@ -24,6 +24,10 @@ public class UpdateSiteCommandValidator : AbstractValidator<UpdateSiteCommand>
             .MaximumLength(100)
             .WithMessage("City must not exceed 100 characters.");
 
+        RuleFor(v => v.District)
+            .MaximumLength(100)
+            .WithMessage("District must not exceed 100 characters.");
+
         RuleFor(v => v.AddressLine)
             .MaximumLength(500)
             .WithMessage("AddressLine must not exceed 500 characters.");

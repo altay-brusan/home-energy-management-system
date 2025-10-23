@@ -21,6 +21,7 @@ public class CreateSiteTests : BaseTestFixture
             Name = "Test Site",
             Country = "Turkey",
             City = "Istanbul",
+            District = "Kadıköy",
             AddressLine = "123 Test Street",
             Latitude = 41.0082m,
             Longitude = 28.9784m,
@@ -36,6 +37,7 @@ public class CreateSiteTests : BaseTestFixture
         site.Name.Should().Be(command.Name);
         site.Country.Should().Be(command.Country);
         site.City.Should().Be(command.City);
+        site.District.Should().Be(command.District);
         site.AddressLine.Should().Be(command.AddressLine);
         site.Latitude.Should().Be(command.Latitude);
         site.Longitude.Should().Be(command.Longitude);

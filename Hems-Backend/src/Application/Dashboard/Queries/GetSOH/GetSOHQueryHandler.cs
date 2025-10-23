@@ -28,16 +28,22 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
             throw new UnauthorizedAccessException("Device access denied");
         }
 
-        var today = DateTime.UtcNow.Date;
-        var todayUtc = DateTime.SpecifyKind(today, DateTimeKind.Utc);
-
-        // Bugünün BatteryData verilerini al
-        var batteryData = await _context.DeviceData
+        // Önce toplam veri miktarını kontrol et
+        var totalDataCount = await _context.DeviceData
             .Where(x => x.DeviceId == request.DeviceId && 
-                       x.RequestDate.Date == todayUtc.Date &&
                        x.DataType == "BatteryData")
-            .OrderBy(x => x.RequestDate)
-            .ToListAsync(cancellationToken);
+            .CountAsync(cancellationToken);
+
+        if (totalDataCount == 0)
+        {
+            return CreateEmptyResponse();
+        }
+
+        // Veri miktarına göre range belirle
+        var range = DetermineRange(totalDataCount);
+        
+        // Range'e göre verileri çek
+        var batteryData = await GetDataByRange(request.DeviceId, range, cancellationToken);
 
         if (!batteryData.Any())
         {
@@ -47,7 +53,6 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
                 Data = new List<SOHDataPoint>(),
                 Statistics = new SOHStatistics
                 {
-                    Total = 0,
                     Peak = 0,
                     Average = 0,
                     Unit = "%"
@@ -55,19 +60,44 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
             };
         }
 
-        // SOH değerlerini çıkar ve saatlik grupla
+        // SOH değerlerini çıkar ve grupla
         var sohDataPoints = new List<SOHDataPoint>();
         
         foreach (var data in batteryData)
         {
             try
             {
-                // JSON'dan direkt SOH değerini al
-                var sohValue = data.Data.RootElement.GetProperty("SOH").GetDouble();
+                // JSON'dan SOH değerini al (array olabilir)
+                var sohElement = data.Data.RootElement.GetProperty("SOH");
+                double sohValue;
+                
+                if (sohElement.ValueKind == JsonValueKind.Array)
+                {
+                    // Array ise ortalama al
+                    var sohArray = sohElement.EnumerateArray()
+                        .Select(x => x.GetDouble())
+                        .ToList();
+                    sohValue = sohArray.Any() ? sohArray.Average() : 0;
+                }
+                else
+                {
+                    // Tek değer ise direkt al
+                    sohValue = sohElement.GetDouble();
+                }
+                
+                // Range'e göre timestamp formatı belirle
+                var timestamp = range switch
+                {
+                    "Day" => data.RequestDate.ToString("HH:mm"),
+                    "Week" => data.RequestDate.ToString("MM-dd"),
+                    "Month" => data.RequestDate.ToString("MM-dd"),
+                    "Year" => data.RequestDate.ToString("MM"),
+                    _ => data.RequestDate.ToString("HH:mm")
+                };
                 
                 sohDataPoints.Add(new SOHDataPoint
                 {
-                    Timestamp = data.RequestDate.ToString("HH:mm"),
+                    Timestamp = timestamp,
                     Value = Math.Round(sohValue, 1),
                     Unit = "%"
                 });
@@ -87,7 +117,6 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
                 Data = new List<SOHDataPoint>(),
                 Statistics = new SOHStatistics
                 {
-                    Total = 0,
                     Peak = 0,
                     Average = 0,
                     Unit = "%"
@@ -95,33 +124,203 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
             };
         }
 
-        // Saatlik gruplama yap (ortalama değeri al)
-        var hourlyData = sohDataPoints
-            .GroupBy(x => x.Timestamp.Substring(0, 2)) // Saat kısmını al (HH:mm -> HH)
-            .Select(g => new SOHDataPoint
-            {
-                Timestamp = $"{g.Key}:00",
-                Value = Math.Round(g.Average(x => x.Value), 1), // Saatlik ortalama
-                Unit = "%"
-            })
-            .OrderBy(x => x.Timestamp)
-            .ToList();
+        // Range'e göre gruplama yap
+        var groupedData = range switch
+        {
+            "Day" => sohDataPoints
+                .GroupBy(x => x.Timestamp.Substring(0, 2)) // Saatlik gruplama
+                .Select(g => new SOHDataPoint
+                {
+                    Timestamp = $"{g.Key}:00",
+                    Value = Math.Round(g.Average(x => x.Value), 1),
+                    Unit = "%"
+                })
+                .OrderBy(x => x.Timestamp)
+                .ToList(),
+            
+            "Week" => sohDataPoints
+                .Select(x => new SOHDataPoint
+                {
+                    Timestamp = x.Timestamp, // Zaten günlük veri
+                    Value = x.Value,
+                    Unit = "%"
+                })
+                .OrderBy(x => x.Timestamp)
+                .ToList(),
+            
+            "Month" => sohDataPoints
+                .Select(x => new SOHDataPoint
+                {
+                    Timestamp = x.Timestamp, // Zaten günlük veri
+                    Value = x.Value,
+                    Unit = "%"
+                })
+                .OrderBy(x => x.Timestamp)
+                .ToList(),
+            
+            "Year" => sohDataPoints
+                .Select(x => new SOHDataPoint
+                {
+                    Timestamp = x.Timestamp, // Zaten aylık veri
+                    Value = x.Value,
+                    Unit = "%"
+                })
+                .OrderBy(x => x.Timestamp)
+                .ToList(),
+            
+            _ => sohDataPoints
+        };
 
         // İstatistikleri hesapla
-        var allValues = hourlyData.Select(x => x.Value).ToList();
-        var total = allValues.Sum();
+        var allValues = groupedData.Select(x => x.Value).ToList();
         var peak = allValues.Count > 0 ? allValues.Max() : 0;
         var average = allValues.Count > 0 ? allValues.Average() : 0;
 
         return new SOHResponseDto
         {
-            Range = "Day",
-            Data = hourlyData,
+            Range = range,
+            Data = groupedData,
             Statistics = new SOHStatistics
             {
-                Total = Math.Round(total, 1),
                 Peak = Math.Round(peak, 1),
                 Average = Math.Round(average, 1),
+                Unit = "%"
+            }
+        };
+    }
+
+    private static string DetermineRange(int totalDataCount)
+    {
+        // 5 dakikada bir veri geldiği varsayımıyla hesapla
+        const int recordsPerDay = 288; // 24 saat × 12 (5 dakikada bir)
+        
+        var daysOfData = totalDataCount / (double)recordsPerDay;
+        
+        return daysOfData switch
+        {
+            <= 1 => "Day",
+            <= 7 => "Week", 
+            <= 30 => "Month",
+            _ => "Year"
+        };
+    }
+
+    private async Task<List<Hems_Backend.Domain.Entities.DeviceData>> GetDataByRange(Guid deviceId, string range, CancellationToken cancellationToken)
+    {
+        return range switch
+        {
+            "Day" => await GetDayData(deviceId, cancellationToken),
+            "Week" => await GetWeekData(deviceId, cancellationToken),
+            "Month" => await GetMonthData(deviceId, cancellationToken),
+            "Year" => await GetYearData(deviceId, cancellationToken),
+            _ => await GetDayData(deviceId, cancellationToken)
+        };
+    }
+
+    private async Task<List<Hems_Backend.Domain.Entities.DeviceData>> GetDayData(Guid deviceId, CancellationToken cancellationToken)
+    {
+        // Son 24 saatteki tüm veriler
+        var startDate = DateTime.UtcNow.AddDays(-1);
+        return await _context.DeviceData
+            .Where(x => x.DeviceId == deviceId && 
+                       x.RequestDate >= startDate &&
+                       x.DataType == "BatteryData")
+            .OrderBy(x => x.RequestDate)
+            .ToListAsync(cancellationToken);
+    }
+
+    private async Task<List<Hems_Backend.Domain.Entities.DeviceData>> GetWeekData(Guid deviceId, CancellationToken cancellationToken)
+    {
+        // Son 7 günün her gününden son veri
+        var result = new List<Hems_Backend.Domain.Entities.DeviceData>();
+        
+        for (int i = 6; i >= 0; i--)
+        {
+            var targetDate = DateTime.UtcNow.AddDays(-i).Date;
+            var nextDay = targetDate.AddDays(1);
+            
+            var lastDataOfDay = await _context.DeviceData
+                .Where(x => x.DeviceId == deviceId && 
+                           x.RequestDate >= targetDate &&
+                           x.RequestDate < nextDay &&
+                           x.DataType == "BatteryData")
+                .OrderByDescending(x => x.RequestDate)
+                .FirstOrDefaultAsync(cancellationToken);
+                
+            if (lastDataOfDay != null)
+            {
+                result.Add(lastDataOfDay);
+            }
+        }
+        
+        return result.OrderBy(x => x.RequestDate).ToList();
+    }
+
+    private async Task<List<Hems_Backend.Domain.Entities.DeviceData>> GetMonthData(Guid deviceId, CancellationToken cancellationToken)
+    {
+        // Son 30 günün her gününden son veri
+        var result = new List<Hems_Backend.Domain.Entities.DeviceData>();
+        
+        for (int i = 29; i >= 0; i--)
+        {
+            var targetDate = DateTime.UtcNow.AddDays(-i).Date;
+            var nextDay = targetDate.AddDays(1);
+            
+            var lastDataOfDay = await _context.DeviceData
+                .Where(x => x.DeviceId == deviceId && 
+                           x.RequestDate >= targetDate &&
+                           x.RequestDate < nextDay &&
+                           x.DataType == "BatteryData")
+                .OrderByDescending(x => x.RequestDate)
+                .FirstOrDefaultAsync(cancellationToken);
+                
+            if (lastDataOfDay != null)
+            {
+                result.Add(lastDataOfDay);
+            }
+        }
+        
+        return result.OrderBy(x => x.RequestDate).ToList();
+    }
+
+    private async Task<List<Hems_Backend.Domain.Entities.DeviceData>> GetYearData(Guid deviceId, CancellationToken cancellationToken)
+    {
+        // Son 12 ayın her ayından son veri
+        var result = new List<Hems_Backend.Domain.Entities.DeviceData>();
+        
+        for (int i = 11; i >= 0; i--)
+        {
+            var targetMonth = DateTime.UtcNow.AddMonths(-i);
+            var startOfMonth = new DateTime(targetMonth.Year, targetMonth.Month, 1);
+            var endOfMonth = startOfMonth.AddMonths(1);
+            
+            var lastDataOfMonth = await _context.DeviceData
+                .Where(x => x.DeviceId == deviceId && 
+                           x.RequestDate >= startOfMonth &&
+                           x.RequestDate < endOfMonth &&
+                           x.DataType == "BatteryData")
+                .OrderByDescending(x => x.RequestDate)
+                .FirstOrDefaultAsync(cancellationToken);
+                
+            if (lastDataOfMonth != null)
+            {
+                result.Add(lastDataOfMonth);
+            }
+        }
+        
+        return result.OrderBy(x => x.RequestDate).ToList();
+    }
+
+    private static SOHResponseDto CreateEmptyResponse()
+    {
+        return new SOHResponseDto
+        {
+            Range = "Day",
+            Data = new List<SOHDataPoint>(),
+            Statistics = new SOHStatistics
+            {
+                Peak = 0,
+                Average = 0,
                 Unit = "%"
             }
         };

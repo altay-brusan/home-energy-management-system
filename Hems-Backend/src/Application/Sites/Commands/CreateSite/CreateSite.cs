@@ -9,6 +9,7 @@ public record CreateSiteCommand : IRequest<Guid>
     public string Name { get; init; } = string.Empty;
     public string? Country { get; init; }
     public string? City { get; init; }
+    public string? District { get; init; }
     public string? AddressLine { get; init; }
     public decimal? Latitude { get; init; }
     public decimal? Longitude { get; init; }
@@ -40,6 +41,7 @@ public class CreateSiteCommandHandler : IRequestHandler<CreateSiteCommand, Guid>
             Name = request.Name,
             Country = request.Country,
             City = request.City,
+            District = request.District,
             AddressLine = request.AddressLine,
             Latitude = request.Latitude,
             Longitude = request.Longitude,

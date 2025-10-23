@@ -1,7 +1,11 @@
 using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Application.DeviceNotifications.Commands.CreateDeviceNotification;
+using Hems_Backend.Application.DeviceNotifications.Commands.DeleteDeviceNotification;
 using Hems_Backend.Application.DeviceNotifications.Commands.MarkNotificationAsRead;
+using Hems_Backend.Application.DeviceNotifications.Commands.PermanentDeleteDeviceNotification;
+using Hems_Backend.Application.DeviceNotifications.Commands.RestoreDeviceNotification;
 using Hems_Backend.Application.DeviceNotifications.Common.Models;
+using Hems_Backend.Application.DeviceNotifications.Queries.GetDeletedDeviceNotifications;
 using Hems_Backend.Application.DeviceNotifications.Queries.GetDeviceNotifications;
 using Hems_Backend.Application.DeviceNotifications.Queries.GetDeviceNotificationTypes;
 using Hems_Backend.Domain.Constants;
@@ -26,7 +30,11 @@ public class DeviceNotifications : EndpointGroupBase
             .RequireAuthorization()
             .MapGet(GetDeviceNotifications)
             .MapGet(GetDeviceNotificationTypes, "types")
-            .MapPut(MarkDeviceNotificationAsRead, "{id}/mark-read");
+            .MapGet(GetDeletedDeviceNotifications, "deleted")
+            .MapPut(MarkDeviceNotificationAsRead, "{id}/mark-read")
+            .MapDelete(DeleteDeviceNotification, "{id}")
+            .MapPut(RestoreDeviceNotification, "{id}/restore")
+            .MapDelete(PermanentDeleteDeviceNotification, "{id}/permanent");
     }
 
     [Authorize(Policies.DeviceOnly)]
@@ -71,6 +79,41 @@ public class DeviceNotifications : EndpointGroupBase
         ISender sender)
     {
         await sender.Send(new MarkNotificationAsReadCommand { NotificationId = id });
+        return TypedResults.NoContent();
+    }
+
+    [Authorize]
+    public static async Task<PaginatedList<DeviceNotificationDto>> GetDeletedDeviceNotifications(
+        ISender sender,
+        [AsParameters] GetDeletedDeviceNotificationsQuery query)
+    {
+        return await sender.Send(query);
+    }
+
+    [Authorize]
+    public static async Task<IResult> DeleteDeviceNotification(
+        Guid id,
+        ISender sender)
+    {
+        await sender.Send(new DeleteDeviceNotificationCommand { NotificationId = id });
+        return TypedResults.NoContent();
+    }
+
+    [Authorize]
+    public static async Task<IResult> RestoreDeviceNotification(
+        Guid id,
+        ISender sender)
+    {
+        await sender.Send(new RestoreDeviceNotificationCommand { NotificationId = id });
+        return TypedResults.NoContent();
+    }
+
+    [Authorize]
+    public static async Task<IResult> PermanentDeleteDeviceNotification(
+        Guid id,
+        ISender sender)
+    {
+        await sender.Send(new PermanentDeleteDeviceNotificationCommand { NotificationId = id });
         return TypedResults.NoContent();
     }
 }

@@ -12,3 +12,6 @@ public class PermanentDeleteDeviceNotificationCommandValidator : AbstractValidat
     }
 }
 
+
+
+

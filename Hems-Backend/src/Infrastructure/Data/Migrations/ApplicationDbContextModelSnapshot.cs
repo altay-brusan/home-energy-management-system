@@ -406,6 +406,9 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.Property<Guid>("DeviceNotificationTypeId")
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsProcessed")
                         .HasColumnType("boolean");
 
@@ -1004,6 +1007,9 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("District")
                         .HasColumnType("text");
 
                     b.Property<bool>("IsDeleted")

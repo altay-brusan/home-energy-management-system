@@ -9,6 +9,8 @@ namespace Hems_Backend.Application.Sites.Queries.GetSites;
 public record GetSitesQuery : IRequest<PaginatedList<SiteDto>>
 {
     public string? UserId { get; init; }
+    public string? UserEmail { get; init; }
+    public string? UserName { get; init; }
     public int PageNumber { get; init; } = 1;
     public int PageSize { get; init; } = 10;
     
@@ -23,19 +25,34 @@ public record GetSitesQuery : IRequest<PaginatedList<SiteDto>>
 public class GetSitesQueryHandler : IRequestHandler<GetSitesQuery, PaginatedList<SiteDto>>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IUserService _userService;
 
-    public GetSitesQueryHandler(IApplicationDbContext context)
+    public GetSitesQueryHandler(IApplicationDbContext context, IUserService userService)
     {
         _context = context;
+        _userService = userService;
     }
 
     public async Task<PaginatedList<SiteDto>> Handle(GetSitesQuery request, CancellationToken cancellationToken)
     {
         var query = _context.Sites.AsQueryable();
 
+        // User filtreleme mantığı
         if (!string.IsNullOrEmpty(request.UserId))
         {
             query = query.Where(x => x.UserId == request.UserId);
+        }
+        else if (!string.IsNullOrEmpty(request.UserEmail))
+        {
+            // Email'e göre kullanıcıları bul ve site'ları filtrele
+            var usersWithEmail = await _userService.GetUserIdsByEmailAsync(request.UserEmail, cancellationToken);
+            query = query.Where(x => usersWithEmail.Contains(x.UserId));
+        }
+        else if (!string.IsNullOrEmpty(request.UserName))
+        {
+            // Ad-soyad'a göre kullanıcıları bul ve site'ları filtrele
+            var usersWithName = await _userService.GetUserIdsByNameAsync(request.UserName, cancellationToken);
+            query = query.Where(x => usersWithName.Contains(x.UserId));
         }
         
         // Only get non-deleted sites
@@ -59,12 +76,12 @@ public class GetSitesQueryHandler : IRequestHandler<GetSitesQuery, PaginatedList
 
         if (!string.IsNullOrEmpty(request.AddressLine))
         {
-            query = query.Where(x => x.AddressLine != null && x.AddressLine.Contains(request.AddressLine));
+            query = query.Where(x => x.AddressLine != null && x.AddressLine.ToLower().Contains(request.AddressLine.ToLower()));
         }
 
         if (!string.IsNullOrEmpty(request.District))
         {
-            query = query.Where(x => x.District != null && x.District.Contains(request.District));
+            query = query.Where(x => x.District != null && x.District.ToLower().Contains(request.District.ToLower()));
         }
 
         var sites = await query

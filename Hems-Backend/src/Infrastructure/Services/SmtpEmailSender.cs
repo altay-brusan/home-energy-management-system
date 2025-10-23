@@ -23,7 +23,7 @@ public class SmtpEmailSender : IEmailSender
         {
             _logger.LogInformation("🚀 Starting to send SMTP email to {Email}", email);
 
-            using var smtpClient = new SmtpClient(_smtpSettings.Host, _smtpSettings.Port)
+            using var smtpClient = new SmtpClient(_smtpSettings.SmtpServer, _smtpSettings.Port)
             {
                 Credentials = new NetworkCredential(_smtpSettings.Username, _smtpSettings.Password),
                 EnableSsl = _smtpSettings.EnableSsl,
