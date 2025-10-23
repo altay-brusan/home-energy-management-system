@@ -23,17 +23,42 @@ public class GetSetupDeviceParameterValuesTreeQueryHandler : IRequestHandler<Get
 
     public async Task<SetupDeviceParameterValuesTreeVm> Handle(GetSetupDeviceParameterValuesTreeQuery request, CancellationToken cancellationToken)
     {
-        // SetupDeviceParameterValues'ları ParameterGroup ve Parameter ile birlikte getir
+        // 1. SetupDeviceParameterValues'ları çek
         var setupDeviceParameterValues = await _context.SetupDeviceParameterValues
             .Where(sdpv => sdpv.SetupDeviceId == request.SetupDeviceId)
             .Include(sdpv => sdpv.Parameter)
-                .ThenInclude(p => p.ParameterGroup)
-            .Include(sdpv => sdpv.ParameterGroup)
-            .OrderBy(sdpv => sdpv.SortOrder)
             .ToListAsync(cancellationToken);
 
-        // Hierarchical yapı oluştur
-        var tree = BuildHierarchicalTree(setupDeviceParameterValues);
+        if (!setupDeviceParameterValues.Any())
+        {
+            return new SetupDeviceParameterValuesTreeVm
+            {
+                SetupDeviceId = request.SetupDeviceId,
+                ParameterGroups = new List<ParameterGroupTreeDto>()
+            };
+        }
+
+        // 2. Bu parameter'ların ID'lerini al
+        var parameterIds = setupDeviceParameterValues.Select(sdpv => sdpv.ParameterId).ToList();
+
+        // 3. Parameter'ları ParameterGroup ile birlikte çek
+        var parameters = await _context.Parameters
+            .Where(p => parameterIds.Contains(p.Id))
+            .Include(p => p.ParameterGroup)
+            .ToListAsync(cancellationToken);
+
+        // 4. Bu parameter'ların ParameterGroup ID'lerini al
+        var parameterGroupIds = parameters
+            .Where(p => p.ParameterGroup != null)
+            .Select(p => p.ParameterGroup!.Id)
+            .Distinct()
+            .ToList();
+
+        // 5. Tüm ParameterGroup'ları (parent'lar dahil) çek
+        var allParameterGroups = await GetAllParameterGroupsWithParents(parameterGroupIds, cancellationToken);
+
+        // 6. Hierarchical yapı oluştur
+        var tree = BuildHierarchicalTree(setupDeviceParameterValues, parameters, allParameterGroups);
 
         return new SetupDeviceParameterValuesTreeVm
         {
@@ -42,108 +67,123 @@ public class GetSetupDeviceParameterValuesTreeQueryHandler : IRequestHandler<Get
         };
     }
 
-    private static List<ParameterGroupTreeDto> BuildHierarchicalTree(List<SetupDeviceParameterValue> setupDeviceParameterValues)
+    private async Task<List<ParameterGroup>> GetAllParameterGroupsWithParents(List<Guid> parameterGroupIds, CancellationToken cancellationToken)
     {
-        // Tüm unique ParameterGroup'ları topla
-        var allGroups = new Dictionary<Guid, ParameterGroupTreeDto>();
+        var allGroups = new List<ParameterGroup>();
+        var processedIds = new HashSet<Guid>();
 
-        foreach (var sdpv in setupDeviceParameterValues)
+        // İlk seviye grupları çek
+        var currentLevelGroups = await _context.ParameterGroups
+            .Where(pg => parameterGroupIds.Contains(pg.Id))
+            .ToListAsync(cancellationToken);
+
+        allGroups.AddRange(currentLevelGroups);
+        currentLevelGroups.ForEach(g => processedIds.Add(g.Id));
+
+        // Parent'ları recursive olarak çek
+        var parentIds = currentLevelGroups
+            .Where(g => g.ParentId.HasValue)
+            .Select(g => g.ParentId!.Value)
+            .Where(id => !processedIds.Contains(id))
+            .ToList();
+
+        while (parentIds.Any())
         {
-            // Parameter'ın ParameterGroup'ını ekle
-            if (sdpv.Parameter.ParameterGroup != null)
-            {
-                var group = sdpv.Parameter.ParameterGroup;
-                if (!allGroups.ContainsKey(group.Id))
-                {
-                    allGroups[group.Id] = new ParameterGroupTreeDto
-                    {
-                        Id = group.Id,
-                        Name = group.Name,
-                        Description = group.Description,
-                        Version = group.Version,
-                        SortOrder = group.SortOrder,
-                        ParentId = group.ParentId,
-                        Children = new List<ParameterGroupTreeDto>(),
-                        Parameters = new List<ParameterTreeDto>()
-                    };
-                }
-            }
+            var parentGroups = await _context.ParameterGroups
+                .Where(pg => parentIds.Contains(pg.Id))
+                .ToListAsync(cancellationToken);
 
-            // SDPV'nin ParameterGroup'ını ekle (varsa)
-            if (sdpv.ParameterGroup != null)
-            {
-                var group = sdpv.ParameterGroup;
-                if (!allGroups.ContainsKey(group.Id))
-                {
-                    allGroups[group.Id] = new ParameterGroupTreeDto
-                    {
-                        Id = group.Id,
-                        Name = group.Name,
-                        Description = group.Description,
-                        Version = group.Version,
-                        SortOrder = group.SortOrder,
-                        ParentId = group.ParentId,
-                        Children = new List<ParameterGroupTreeDto>(),
-                        Parameters = new List<ParameterTreeDto>()
-                    };
-                }
-            }
+            allGroups.AddRange(parentGroups);
+            parentGroups.ForEach(g => processedIds.Add(g.Id));
+
+            parentIds = parentGroups
+                .Where(g => g.ParentId.HasValue)
+                .Select(g => g.ParentId!.Value)
+                .Where(id => !processedIds.Contains(id))
+                .ToList();
         }
 
-        // Hierarchical yapı oluştur
-        var rootGroups = new List<ParameterGroupTreeDto>();
-        var groupLookup = allGroups.ToDictionary(g => g.Key, g => g.Value);
+        return allGroups;
+    }
 
+    private static List<ParameterGroupTreeDto> BuildHierarchicalTree(
+        List<SetupDeviceParameterValue> setupDeviceParameterValues,
+        List<Parameter> parameters,
+        List<ParameterGroup> allParameterGroups)
+    {
+        // 1. Tüm ParameterGroup'ları DTO'ya çevir
+        var allGroups = new Dictionary<Guid, ParameterGroupTreeDto>();
+        
+        foreach (var group in allParameterGroups)
+        {
+            allGroups[group.Id] = new ParameterGroupTreeDto
+            {
+                Id = group.Id,
+                Name = group.Name,
+                Description = group.Description,
+                Version = group.Version,
+                SortOrder = group.SortOrder,
+                ParentId = group.ParentId,
+                Children = new List<ParameterGroupTreeDto>(),
+                Parameters = new List<ParameterTreeDto>()
+            };
+        }
+
+        // 2. Hierarchical yapı oluştur (parent-child ilişkileri)
+        var rootGroups = new List<ParameterGroupTreeDto>();
+        
         foreach (var group in allGroups.Values)
         {
             if (group.ParentId == null)
             {
                 rootGroups.Add(group);
             }
-            else if (groupLookup.ContainsKey(group.ParentId.Value))
+            else if (allGroups.ContainsKey(group.ParentId.Value))
             {
-                groupLookup[group.ParentId.Value].Children.Add(group);
+                allGroups[group.ParentId.Value].Children.Add(group);
             }
         }
 
-        // Her grup için parameter'ları ekle
+        // 3. Parameter'ları ilgili gruplara ekle
+        var parameterLookup = parameters.ToDictionary(p => p.Id, p => p);
+        
         foreach (var sdpv in setupDeviceParameterValues)
         {
-            var parameterDto = new ParameterTreeDto
+            if (parameterLookup.ContainsKey(sdpv.ParameterId))
             {
-                Id = sdpv.Parameter.Id,
-                Name = sdpv.Parameter.Name,
-                Description = sdpv.Parameter.Description,
-                ElementType = sdpv.Parameter.ElementType,
-                RoleType = sdpv.Parameter.RoleType,
-                Unit = sdpv.Parameter.Unit,
-                DefaultValue = sdpv.Parameter.DefaultValue,
-                SortOrder = sdpv.Parameter.SortOrder,
-                SetupDeviceParameterValue = new SetupDeviceParameterValueTreeDto
+                var parameter = parameterLookup[sdpv.ParameterId];
+                
+                if (parameter.ParameterGroup != null && allGroups.ContainsKey(parameter.ParameterGroup.Id))
                 {
-                    Id = sdpv.Id,
-                    Value = sdpv.Value,
-                    SortOrder = sdpv.SortOrder,
-                    ModelNumber = sdpv.ModelNumber,
-                    Created = sdpv.Created,
-                    CreatedBy = sdpv.CreatedBy,
-                    LastModified = sdpv.LastModified,
-                    LastModifiedBy = sdpv.LastModifiedBy
-                }
-            };
+                    var parameterDto = new ParameterTreeDto
+                    {
+                        Id = parameter.Id,
+                        Name = parameter.Name,
+                        Description = parameter.Description,
+                        ElementType = parameter.ElementType,
+                        RoleType = parameter.RoleType,
+                        Unit = parameter.Unit,
+                        DefaultValue = parameter.DefaultValue,
+                        SortOrder = parameter.SortOrder,
+                        SetupDeviceParameterValue = new SetupDeviceParameterValueTreeDto
+                        {
+                            Id = sdpv.Id,
+                            Value = sdpv.Value,
+                            SortOrder = sdpv.SortOrder,
+                            ModelNumber = sdpv.ModelNumber,
+                            Created = sdpv.Created,
+                            CreatedBy = sdpv.CreatedBy,
+                            LastModified = sdpv.LastModified,
+                            LastModifiedBy = sdpv.LastModifiedBy
+                        }
+                    };
 
-            // Parameter'ın grubuna ekle
-            if (sdpv.Parameter.ParameterGroup != null)
-            {
-                var groupId = sdpv.Parameter.ParameterGroup.Id;
-                if (groupLookup.ContainsKey(groupId))
-                {
-                    groupLookup[groupId].Parameters.Add(parameterDto);
+                    allGroups[parameter.ParameterGroup.Id].Parameters.Add(parameterDto);
                 }
             }
         }
 
-        // Sort order'a göre sırala
+        // 4. Sort order'a göre sırala
         SortTree(rootGroups);
 
         return rootGroups;

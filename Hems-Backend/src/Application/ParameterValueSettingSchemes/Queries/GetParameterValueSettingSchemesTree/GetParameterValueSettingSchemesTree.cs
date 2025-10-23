@@ -23,7 +23,7 @@ public class GetParameterValueSettingSchemesTreeQueryHandler : IRequestHandler<G
 
     public async Task<ParameterValueSettingSchemesTreeVm> Handle(GetParameterValueSettingSchemesTreeQuery request, CancellationToken cancellationToken)
     {
-        // ParameterValueSettingSchemes'ları ParameterGroup ve Parameter ile birlikte getir
+        // 1. ParameterValueSettingSchemes'ları çek
         var query = _context.ParameterValueSettingSchemes.AsQueryable();
 
         if (!string.IsNullOrEmpty(request.ModelNumber))
@@ -33,13 +33,38 @@ public class GetParameterValueSettingSchemesTreeQueryHandler : IRequestHandler<G
 
         var parameterValueSettingSchemes = await query
             .Include(pvss => pvss.Parameter)
-                .ThenInclude(p => p.ParameterGroup)
-            .Include(pvss => pvss.ParameterGroup)
-            .OrderBy(pvss => pvss.SortOrder)
             .ToListAsync(cancellationToken);
 
-        // Hierarchical yapı oluştur
-        var tree = BuildHierarchicalTree(parameterValueSettingSchemes);
+        if (!parameterValueSettingSchemes.Any())
+        {
+            return new ParameterValueSettingSchemesTreeVm
+            {
+                ModelNumber = request.ModelNumber,
+                ParameterGroups = new List<ParameterGroupTreeDto>()
+            };
+        }
+
+        // 2. Bu parameter'ların ID'lerini al
+        var parameterIds = parameterValueSettingSchemes.Select(pvss => pvss.ParameterId).ToList();
+
+        // 3. Parameter'ları ParameterGroup ile birlikte çek
+        var parameters = await _context.Parameters
+            .Where(p => parameterIds.Contains(p.Id))
+            .Include(p => p.ParameterGroup)
+            .ToListAsync(cancellationToken);
+
+        // 4. Bu parameter'ların ParameterGroup ID'lerini al
+        var parameterGroupIds = parameters
+            .Where(p => p.ParameterGroup != null)
+            .Select(p => p.ParameterGroup!.Id)
+            .Distinct()
+            .ToList();
+
+        // 5. Tüm ParameterGroup'ları (parent'lar dahil) çek
+        var allParameterGroups = await GetAllParameterGroupsWithParents(parameterGroupIds, cancellationToken);
+
+        // 6. Hierarchical yapı oluştur
+        var tree = BuildHierarchicalTree(parameterValueSettingSchemes, parameters, allParameterGroups);
 
         return new ParameterValueSettingSchemesTreeVm
         {
@@ -48,108 +73,123 @@ public class GetParameterValueSettingSchemesTreeQueryHandler : IRequestHandler<G
         };
     }
 
-    private static List<ParameterGroupTreeDto> BuildHierarchicalTree(List<ParameterValueSettingScheme> parameterValueSettingSchemes)
+    private async Task<List<ParameterGroup>> GetAllParameterGroupsWithParents(List<Guid> parameterGroupIds, CancellationToken cancellationToken)
     {
-        // Tüm unique ParameterGroup'ları topla
-        var allGroups = new Dictionary<Guid, ParameterGroupTreeDto>();
+        var allGroups = new List<ParameterGroup>();
+        var processedIds = new HashSet<Guid>();
 
-        foreach (var pvss in parameterValueSettingSchemes)
+        // İlk seviye grupları çek
+        var currentLevelGroups = await _context.ParameterGroups
+            .Where(pg => parameterGroupIds.Contains(pg.Id))
+            .ToListAsync(cancellationToken);
+
+        allGroups.AddRange(currentLevelGroups);
+        currentLevelGroups.ForEach(g => processedIds.Add(g.Id));
+
+        // Parent'ları recursive olarak çek
+        var parentIds = currentLevelGroups
+            .Where(g => g.ParentId.HasValue)
+            .Select(g => g.ParentId!.Value)
+            .Where(id => !processedIds.Contains(id))
+            .ToList();
+
+        while (parentIds.Any())
         {
-            // Parameter'ın ParameterGroup'ını ekle
-            if (pvss.Parameter.ParameterGroup != null)
-            {
-                var group = pvss.Parameter.ParameterGroup;
-                if (!allGroups.ContainsKey(group.Id))
-                {
-                    allGroups[group.Id] = new ParameterGroupTreeDto
-                    {
-                        Id = group.Id,
-                        Name = group.Name,
-                        Description = group.Description,
-                        Version = group.Version,
-                        SortOrder = group.SortOrder,
-                        ParentId = group.ParentId,
-                        Children = new List<ParameterGroupTreeDto>(),
-                        Parameters = new List<ParameterTreeDto>()
-                    };
-                }
-            }
+            var parentGroups = await _context.ParameterGroups
+                .Where(pg => parentIds.Contains(pg.Id))
+                .ToListAsync(cancellationToken);
 
-            // PVSS'nin ParameterGroup'ını ekle (varsa)
-            if (pvss.ParameterGroup != null)
-            {
-                var group = pvss.ParameterGroup;
-                if (!allGroups.ContainsKey(group.Id))
-                {
-                    allGroups[group.Id] = new ParameterGroupTreeDto
-                    {
-                        Id = group.Id,
-                        Name = group.Name,
-                        Description = group.Description,
-                        Version = group.Version,
-                        SortOrder = group.SortOrder,
-                        ParentId = group.ParentId,
-                        Children = new List<ParameterGroupTreeDto>(),
-                        Parameters = new List<ParameterTreeDto>()
-                    };
-                }
-            }
+            allGroups.AddRange(parentGroups);
+            parentGroups.ForEach(g => processedIds.Add(g.Id));
+
+            parentIds = parentGroups
+                .Where(g => g.ParentId.HasValue)
+                .Select(g => g.ParentId!.Value)
+                .Where(id => !processedIds.Contains(id))
+                .ToList();
         }
 
-        // Hierarchical yapı oluştur
-        var rootGroups = new List<ParameterGroupTreeDto>();
-        var groupLookup = allGroups.ToDictionary(g => g.Key, g => g.Value);
+        return allGroups;
+    }
 
+    private static List<ParameterGroupTreeDto> BuildHierarchicalTree(
+        List<ParameterValueSettingScheme> parameterValueSettingSchemes,
+        List<Parameter> parameters,
+        List<ParameterGroup> allParameterGroups)
+    {
+        // 1. Tüm ParameterGroup'ları DTO'ya çevir
+        var allGroups = new Dictionary<Guid, ParameterGroupTreeDto>();
+        
+        foreach (var group in allParameterGroups)
+        {
+            allGroups[group.Id] = new ParameterGroupTreeDto
+            {
+                Id = group.Id,
+                Name = group.Name,
+                Description = group.Description,
+                Version = group.Version,
+                SortOrder = group.SortOrder,
+                ParentId = group.ParentId,
+                Children = new List<ParameterGroupTreeDto>(),
+                Parameters = new List<ParameterTreeDto>()
+            };
+        }
+
+        // 2. Hierarchical yapı oluştur (parent-child ilişkileri)
+        var rootGroups = new List<ParameterGroupTreeDto>();
+        
         foreach (var group in allGroups.Values)
         {
             if (group.ParentId == null)
             {
                 rootGroups.Add(group);
             }
-            else if (groupLookup.ContainsKey(group.ParentId.Value))
+            else if (allGroups.ContainsKey(group.ParentId.Value))
             {
-                groupLookup[group.ParentId.Value].Children.Add(group);
+                allGroups[group.ParentId.Value].Children.Add(group);
             }
         }
 
-        // Her grup için parameter'ları ekle
+        // 3. Parameter'ları ilgili gruplara ekle
+        var parameterLookup = parameters.ToDictionary(p => p.Id, p => p);
+        
         foreach (var pvss in parameterValueSettingSchemes)
         {
-            var parameterDto = new ParameterTreeDto
+            if (parameterLookup.ContainsKey(pvss.ParameterId))
             {
-                Id = pvss.Parameter.Id,
-                Name = pvss.Parameter.Name,
-                Description = pvss.Parameter.Description,
-                ElementType = pvss.Parameter.ElementType,
-                RoleType = pvss.Parameter.RoleType,
-                Unit = pvss.Parameter.Unit,
-                DefaultValue = pvss.Parameter.DefaultValue,
-                SortOrder = pvss.Parameter.SortOrder,
-                ParameterValueSettingScheme = new ParameterValueSettingSchemeTreeDto
+                var parameter = parameterLookup[pvss.ParameterId];
+                
+                if (parameter.ParameterGroup != null && allGroups.ContainsKey(parameter.ParameterGroup.Id))
                 {
-                    Id = pvss.Id,
-                    Value = pvss.Value,
-                    SortOrder = pvss.SortOrder,
-                    ModelNumber = pvss.ModelNumber,
-                    Created = pvss.Created,
-                    CreatedBy = pvss.CreatedBy,
-                    LastModified = pvss.LastModified,
-                    LastModifiedBy = pvss.LastModifiedBy
-                }
-            };
+                    var parameterDto = new ParameterTreeDto
+                    {
+                        Id = parameter.Id,
+                        Name = parameter.Name,
+                        Description = parameter.Description,
+                        ElementType = parameter.ElementType,
+                        RoleType = parameter.RoleType,
+                        Unit = parameter.Unit,
+                        DefaultValue = parameter.DefaultValue,
+                        SortOrder = parameter.SortOrder,
+                        ParameterValueSettingScheme = new ParameterValueSettingSchemeTreeDto
+                        {
+                            Id = pvss.Id,
+                            Value = pvss.Value,
+                            SortOrder = pvss.SortOrder,
+                            ModelNumber = pvss.ModelNumber,
+                            Created = pvss.Created,
+                            CreatedBy = pvss.CreatedBy,
+                            LastModified = pvss.LastModified,
+                            LastModifiedBy = pvss.LastModifiedBy
+                        }
+                    };
 
-            // Parameter'ın grubuna ekle
-            if (pvss.Parameter.ParameterGroup != null)
-            {
-                var groupId = pvss.Parameter.ParameterGroup.Id;
-                if (groupLookup.ContainsKey(groupId))
-                {
-                    groupLookup[groupId].Parameters.Add(parameterDto);
+                    allGroups[parameter.ParameterGroup.Id].Parameters.Add(parameterDto);
                 }
             }
         }
 
-        // Sort order'a göre sırala
+        // 4. Sort order'a göre sırala
         SortTree(rootGroups);
 
         return rootGroups;

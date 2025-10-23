@@ -40,8 +40,8 @@ app.UseSwaggerUi(settings =>
     settings.DocumentPath = "/api/specification.json";
 });
 
-
-app.UseMiddleware<GlobalExceptionMiddleware>();
+// Add custom exception handling middleware
+app.UseMiddleware<CustomExceptionMiddleware>();
 
 app.Map("/", () => Results.Redirect("/api"));
 
