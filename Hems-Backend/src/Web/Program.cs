@@ -1,9 +1,22 @@
 using Hems_Backend.Infrastructure.Data;
 using Hems_Backend.Infrastructure.Identity;
-using Hems_Backend.Web.Infrastructure;
 using Hems_Backend.Web.Hubs;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Serilog
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Error()
+    .WriteTo.Console()
+    .WriteTo.File("logs/hems-backend-.log", 
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 30,
+        fileSizeLimitBytes: 10 * 1024 * 1024, // 10MB
+        rollOnFileSizeLimit: true)
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 // Add services to the container.
 builder.AddKeyVaultIfConfigured();
@@ -31,6 +44,9 @@ app.UseHealthChecks("/health");
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
+// Use custom exception handler instead of developer exception page
+app.UseExceptionHandler(options => {});
+
 // Add rate limiting for device data endpoints
 app.UseMiddleware<DeviceDataRateLimitMiddleware>();
 
@@ -39,9 +55,6 @@ app.UseSwaggerUi(settings =>
     settings.Path = "/api";
     settings.DocumentPath = "/api/specification.json";
 });
-
-// Add custom exception handling middleware
-app.UseMiddleware<CustomExceptionMiddleware>();
 
 app.Map("/", () => Results.Redirect("/api"));
 

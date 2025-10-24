@@ -51,19 +51,15 @@ public class GetSitesByUserQueryHandler : IRequestHandler<GetSitesByUserQuery, S
                 
                 if (lastEnergyData != null)
                 {
-                    // Enerji formülü: Sources - Sinks
-                    // Sources: Solar (PV), Battery (deşarj), Grid, Generator
-                    // Sinks: Battery(şarj), Load, Grid
+                    
                     var sources = (lastEnergyData.PvEnergyKWh ?? 0) + 
                                  (lastEnergyData.BatteryDischargeEnergyKWh ?? 0) + 
                                  (lastEnergyData.GridImportEnergyKWh ?? 0) + 
                                  (lastEnergyData.GeneratorEnergyKWh ?? 0);
                     
-                    var sinks = (lastEnergyData.BatteryChargeEnergyKWh ?? 0) + 
-                               (lastEnergyData.LoadEnergyKWh ?? 0) + 
-                               (lastEnergyData.GridExportEnergyKWh ?? 0);
+                  
                     
-                    homeEnergy = sources - sinks;
+                    homeEnergy = sources;
                 }
                 
                 powerString = homeEnergy.ToString("0.00") + " kW";

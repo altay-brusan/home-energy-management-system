@@ -1,5 +1,6 @@
 using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Application.Common.Mappings;
+using Hems_Backend.Application.Common.Exceptions;
 using Hems_Backend.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -50,7 +51,7 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
 
         if (existingSetup != null)
         {
-            throw new InvalidOperationException("Bu site'ın zaten bir setup'ı var. Bir site'ın sadece bir setup'ı olabilir.");
+            throw new System.ComponentModel.DataAnnotations.ValidationException("Bu site'ın zaten bir setup'ı var. Bir site'ın sadece bir setup'ı olabilir.");
         }
 
         // Device bulma (eğer belirtilmişse)
@@ -79,6 +80,13 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
                 
                 throw new ArgumentException($"Device not found with {deviceIdentifier}");
             }
+            else if (_context.SetupDevices.Any(f=>f.DeviceId==device.Id))
+            {
+                throw new System.ComponentModel.DataAnnotations.ValidationException("bu cihaz zaten kullanımda.");
+
+            }
+
+
         }
 
         // Setup oluştur

@@ -18,8 +18,6 @@ public static class DependencyInjection
 {
     public static void AddWebServices(this IHostApplicationBuilder builder)
     {
-        builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-
         builder.Services.AddScoped<IUser, CurrentUser>();
 
         // Add HttpClient for DeviceSimulator communication
@@ -30,6 +28,12 @@ public static class DependencyInjection
             .AddDbContextCheck<ApplicationDbContext>();
 
         builder.Services.AddExceptionHandler<CustomExceptionHandler>();
+        
+        // Configure exception handler options
+        builder.Services.Configure<Microsoft.AspNetCore.Builder.ExceptionHandlerOptions>(options =>
+        {
+            options.AllowStatusCode404Response = true;
+        });
 
         // Add SignalR
         builder.Services.AddSignalR();

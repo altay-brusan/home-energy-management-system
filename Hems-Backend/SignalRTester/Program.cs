@@ -10,7 +10,7 @@ class Program
         Console.WriteLine("=====================================");
 
         // SignalR Hub URL'i
-        var hubUrl = "https://localhost:5001/deviceNotificationHub";
+        var hubUrl = "https://hems-api.pentaunity.com/deviceNotificationHub";
         
         // Hub connection oluştur
         var connection = new HubConnectionBuilder()
@@ -21,9 +21,17 @@ class Program
                 {
                     // Burada JWT token alman gerekiyor
                     // Örnek: User login API'sinden token al
-                    return await GetJwtTokenAsync();
+                    var token = await GetJwtTokenAsync();
+                    if (string.IsNullOrEmpty(token))
+                    {
+                        Console.WriteLine("❌ JWT Token alınamadı!");
+                        throw new UnauthorizedAccessException("JWT Token alınamadı");
+                    }
+                    Console.WriteLine($"🔑 JWT Token alındı: {token.Substring(0, Math.Min(20, token.Length))}...");
+                    return token;
                 };
             })
+            .WithAutomaticReconnect()
             .Build();
 
         // Event handler'ları ekle
@@ -77,7 +85,7 @@ class Program
             Console.WriteLine("✅ Connected to SignalR Hub!");
 
             // Site group'una katıl (örnek site ID)
-            var siteId = Guid.Parse("30745101-afa3-4875-968f-f39f49ce4cdd"); // Örnek site ID
+            var siteId = Guid.Parse("510649ed-fad7-4bfd-8af8-8db37c3e4483"); // Örnek site ID
             Console.WriteLine($"🏢 Joining site group: {siteId}");
             await connection.InvokeAsync("JoinSiteGroup", siteId);
             Console.WriteLine("✅ Joined site group!");
@@ -133,7 +141,7 @@ class Program
         try
         {
             using var httpClient = new HttpClient();
-            var loginUrl = "https://localhost:5001/api/Users/login";
+            var loginUrl = "https://hems-api.pentaunity.com/api/Users/login";
             
             // Örnek login request (gerçek credentials ile değiştir)
             var loginRequest = new
@@ -145,21 +153,37 @@ class Program
             var json = System.Text.Json.JsonSerializer.Serialize(loginRequest);
             var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
 
+            Console.WriteLine($"🔐 Attempting login to: {loginUrl}");
             var response = await httpClient.PostAsync(loginUrl, content);
             
             if (response.IsSuccessStatusCode)
             {
                 var responseContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"✅ Login successful, response length: {responseContent.Length}");
+                
                 var loginResponse = System.Text.Json.JsonSerializer.Deserialize<IdentityLoginResponse>(responseContent);
-                return loginResponse?.accessToken ?? string.Empty;
+                if (loginResponse?.accessToken != null)
+                {
+                    Console.WriteLine($"🔑 Token received: {loginResponse.accessToken.Substring(0, Math.Min(20, loginResponse.accessToken.Length))}...");
+                    return loginResponse.accessToken;
+                }
+                else
+                {
+                    Console.WriteLine($"❌ No access token in response: {responseContent}");
+                    return string.Empty;
+                }
             }
-            
-            Console.WriteLine($"❌ Login failed: {response.StatusCode}");
-            return string.Empty;
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"❌ Login failed: {response.StatusCode} - {errorContent}");
+                return string.Empty;
+            }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"❌ Error getting JWT token: {ex.Message}");
+            Console.WriteLine($"❌ Stack trace: {ex.StackTrace}");
             return string.Empty;
         }
     }
