@@ -5,8 +5,11 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  buildConfiguration: 'Release'
-  appSettings: $[ variables['appsettings_json'] ]
+- group: prod-config
+- name: buildConfiguration
+  value: 'Release'
+- name: appSettings
+  value: $[ variables['appsettings_json'] ]
 
 steps:
 - task: UseDotNet@2
