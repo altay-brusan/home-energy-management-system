@@ -12,23 +12,46 @@ class Program
         // SignalR Hub URL'i
         var hubUrl = "https://hems-api.pentaunity.com/deviceNotificationHub";
         
+        // SSL Certificate Validation Bypass for testing (ONLY FOR DEVELOPMENT!)
+        // WARNING: Never use this in production!
+        var httpClientHandler = new System.Net.Http.HttpClientHandler();
+        httpClientHandler.ServerCertificateCustomValidationCallback = 
+            (message, cert, chain, errors) => true; // Accept all certificates
+        
+        Console.WriteLine("⚠️ WARNING: SSL certificate validation is DISABLED for testing!");
+        
         // Hub connection oluştur
         var connection = new HubConnectionBuilder()
             .WithUrl(hubUrl, options =>
             {
+                // Use Long Polling as fallback (more reliable through proxies)
+                // WebSockets might be blocked or not properly configured in Nginx
+                options.Transports = Microsoft.AspNetCore.Http.Connections.HttpTransportType.LongPolling;
+                
+                // Use HttpClient with SSL certificate bypass
+                options.HttpMessageHandlerFactory = _ => httpClientHandler;
+                
                 // JWT token ile authentication 
                 options.AccessTokenProvider = async () =>
                 {
-                    // Burada JWT token alman gerekiyor
-                    // Örnek: User login API'sinden token al
-                    var token = await GetJwtTokenAsync();
-                    if (string.IsNullOrEmpty(token))
+                    try
                     {
-                        Console.WriteLine("❌ JWT Token alınamadı!");
-                        throw new UnauthorizedAccessException("JWT Token alınamadı");
+                        Console.WriteLine("🔐 Getting JWT token for hub connection...");
+                        var token = await GetJwtTokenAsync();
+                        if (string.IsNullOrEmpty(token))
+                        {
+                            Console.WriteLine("❌ JWT Token alınamadı!");
+                            throw new UnauthorizedAccessException("JWT Token alınamadı");
+                        }
+                        Console.WriteLine($"🔑 JWT Token alındı: {token.Substring(0, Math.Min(20, token.Length))}...");
+                        Console.WriteLine($"📏 Token length: {token.Length}");
+                        return token;
                     }
-                    Console.WriteLine($"🔑 JWT Token alındı: {token.Substring(0, Math.Min(20, token.Length))}...");
-                    return token;
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"❌ Error in AccessTokenProvider: {ex.Message}");
+                        throw;
+                    }
                 };
             })
             .WithAutomaticReconnect()
@@ -81,8 +104,47 @@ class Program
         {
             // Bağlantıyı başlat
             Console.WriteLine($"🔌 Connecting to SignalR Hub: {hubUrl}");
-            await connection.StartAsync();
-            Console.WriteLine("✅ Connected to SignalR Hub!");
+            Console.WriteLine($"🔄 Initial Connection State: {connection.State}");
+            
+            Console.WriteLine("📝 Starting handshake...");
+            
+            // Start the connection with a timeout
+            var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            
+            try
+            {
+                await connection.StartAsync(cts.Token);
+                Console.WriteLine("✅ Connected to SignalR Hub!");
+                Console.WriteLine($"🔄 New Connection State: {connection.State}");
+                Console.WriteLine($"🆔 Connection ID: {connection.ConnectionId}");
+                
+                // Check if token was sent
+                Console.WriteLine("🔍 Checking authentication...");
+            }
+            catch (Exception startEx)
+            {
+                Console.WriteLine($"❌ Failed to start connection: {startEx.GetType().Name}");
+                Console.WriteLine($"❌ Error: {startEx.Message}");
+                Console.WriteLine($"❌ Inner: {startEx.InnerException?.Message}");
+                Console.WriteLine($"🔍 Checking if server is reachable...");
+                
+                // Test if server is reachable
+                try
+                {
+                    var testHandler = new System.Net.Http.HttpClientHandler();
+                    testHandler.ServerCertificateCustomValidationCallback = 
+                        (message, cert, chain, errors) => true;
+                    using var testClient = new System.Net.Http.HttpClient(testHandler);
+                    var response = await testClient.GetAsync("https://hems-api.pentaunity.com/health");
+                    Console.WriteLine($"🌐 Server health check: {response.StatusCode}");
+                }
+                catch (Exception serverEx)
+                {
+                    Console.WriteLine($"❌ Cannot reach server: {serverEx.Message}");
+                }
+                
+                throw;
+            }
 
             // Site group'una katıl (örnek site ID)
             var siteId = Guid.Parse("510649ed-fad7-4bfd-8af8-8db37c3e4483"); // Örnek site ID
@@ -120,10 +182,37 @@ class Program
                 }
             }
         }
+        catch (OperationCanceledException ex)
+        {
+            Console.WriteLine($"❌ Connection timeout: {ex.Message}");
+            Console.WriteLine($"⏱️ Connection timeout after 30 seconds. The server might be unreachable or taking too long to respond.");
+        }
+        catch (System.Net.Http.HttpRequestException ex)
+        {
+            Console.WriteLine($"❌ HTTP Error: {ex.Message}");
+            Console.WriteLine($"🔍 Inner Exception: {ex.InnerException?.Message}");
+            Console.WriteLine($"❌ Stack Trace: {ex.StackTrace}");
+        }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Error: {ex.Message}");
+            Console.WriteLine($"❌ Error Type: {ex.GetType().Name}");
+            Console.WriteLine($"❌ Error Message: {ex.Message}");
+            Console.WriteLine($"❌ Inner Exception: {ex.InnerException?.Message}");
             Console.WriteLine($"❌ Stack Trace: {ex.StackTrace}");
+            
+            // Check for common SignalR errors
+            if (ex.Message.Contains("401"))
+            {
+                Console.WriteLine("\n⚠️ Authentication failed! Check your JWT token.");
+            }
+            else if (ex.Message.Contains("handshake"))
+            {
+                Console.WriteLine("\n⚠️ Handshake failed! This might be due to:");
+                Console.WriteLine("   1. SSL certificate issues");
+                Console.WriteLine("   2. CORS configuration");
+                Console.WriteLine("   3. Server not running or unreachable");
+                Console.WriteLine("   4. Authentication token issues");
+            }
         }
         finally
         {
@@ -140,7 +229,12 @@ class Program
     {
         try
         {
-            using var httpClient = new HttpClient();
+            // Use HttpClient with SSL certificate bypass
+            var handler = new System.Net.Http.HttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = 
+                (message, cert, chain, errors) => true;
+            
+            using var httpClient = new HttpClient(handler);
             var loginUrl = "https://hems-api.pentaunity.com/api/Users/login";
             
             // Örnek login request (gerçek credentials ile değiştir)

@@ -47,7 +47,7 @@ public class DeviceNotificationHub : Hub<IDeviceNotificationHubClient>
 
     private async Task ValidateSiteAccessAsync(Guid siteId)
     {
-        var userId = _user.Id ?? throw new UnauthorizedAccessException("User not authenticated");
+        var userId = GetUserIdFromContext();
 
         // Site sahibi mi kontrol et
         var isOwner = await _context.Sites
@@ -65,9 +65,37 @@ public class DeviceNotificationHub : Hub<IDeviceNotificationHubClient>
         }
     }
 
+    private string GetUserIdFromContext()
+    {
+        string? userId = null;
+        
+        // Try Context.User first (SignalR Hub context)
+        if (Context.User?.Identity?.IsAuthenticated == true)
+        {
+            userId = Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                    ?? Context.User?.FindFirst("sub")?.Value // JWT sub claim
+                    ?? Context.User?.FindFirst("unique_name")?.Value // JWT unique_name
+                    ?? Context.User?.FindFirst("email")?.Value // JWT email
+                    ?? Context.User?.Identity?.Name; // Generic identity name
+        }
+        
+        // If Context.User failed, try _user service (IUser) 
+        if (string.IsNullOrEmpty(userId))
+        {
+            userId = _user.Id;
+        }
+        
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new UnauthorizedAccessException("User not authenticated. Context.User is null and _user.Id is also null.");
+        }
+        
+        return userId;
+    }
+
     private async Task ValidateDeviceAccessAsync(Guid deviceId)
     {
-        var userId = _user.Id ?? throw new UnauthorizedAccessException("User not authenticated");
+        var userId = GetUserIdFromContext();
 
         // Device'ın hangi site'a ait olduğunu bul
         var deviceSite = await _context.SetupDevices

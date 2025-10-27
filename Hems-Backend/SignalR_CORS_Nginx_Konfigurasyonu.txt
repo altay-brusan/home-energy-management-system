@@ -116,3 +116,5 @@ CORS header'ları Nginx seviyesinde eklendiği için uygulama kodunda değişikl
 =========
 Sorun olursa veya ek bilgi gerekirse iletişime geçin.
 
+
+
