@@ -1,62 +1,31 @@
 trigger:
-  branches:
-    include:
-      - main   # main branch push ile tetiklenecek
+- main
 
 pool:
-  name: 'Default'  # Self-hosted agent pool
+  vmImage: 'ubuntu-latest'
 
 variables:
   buildConfiguration: 'Release'
-  publishDir: '$(Build.ArtifactStagingDirectory)/publish'
-  appPath: '/var/www/Hems/api'        # Web projesinin publish edileceği dizin
-  serviceName: 'hems-api.service'     # systemd servisi
-  webProject: 'src/Web/Web.csproj'    # Web projesi yolu (repo içinden relative)
+  appSettings: $[ variables['appsettings_json'] ]
 
 steps:
-  # 1. Repo checkout
-  - checkout: self
+- task: UseDotNet@2
+  inputs:
+    packageType: 'sdk'
+    version: '8.x'
 
-  # 2. Dotnet SDK yükle (ör. 9.x)
-  - task: UseDotNet@2
-    inputs:
-      packageType: 'sdk'
-      version: '9.x'
-      installationPath: $(Agent.ToolsDirectory)/dotnet
+- script: dotnet restore
+  displayName: 'Restore'
 
-  # 3. Restore sadece Web projesi için
-  - script: |
-      echo "Restoring Web project..."
-      dotnet restore "$(Build.SourcesDirectory)/$(webProject)"
-    displayName: 'Restore Web project'
+- script: dotnet publish -c $(buildConfiguration) -o $(Build.ArtifactStagingDirectory)
+  displayName: 'Publish'
 
-  # 4. Build sadece Web projesi için
-  - script: |
-      echo "Building Web project..."
-      dotnet build "$(Build.SourcesDirectory)/$(webProject)" --configuration $(buildConfiguration) --no-restore
-    displayName: 'Build Web project'
+# Secret appsettings.json oluştur
+- script: |
+    echo "$(appSettings)" > $(Build.ArtifactStagingDirectory)/appsettings.json
+  displayName: "Inject appsettings.json"
 
-  # 5. Publish sadece Web projesi için
-  - script: |
-      echo "Publishing Web project..."
-      dotnet publish "$(Build.SourcesDirectory)/$(webProject)" --configuration $(buildConfiguration) -o "$(publishDir)" --no-build
-    displayName: 'Publish Web project'
-
-  # 6. Deploy dosyaları hedef dizine
-  - script: |
-      echo "Deploying to $(appPath)..."
-      mkdir -p "$(appPath)"
-      if command -v rsync >/dev/null 2>&1; then
-        rsync -av --delete "$(publishDir)/" "$(appPath)/"
-      else
-        rm -rf "$(appPath)/*"
-        cp -r "$(publishDir)/*" "$(appPath)/"
-      fi
-    displayName: 'Deploy files'
-
-  # 7. Systemd servisini restart et
-  - script: |
-      echo "Restarting service $(serviceName)..."
-      sudo systemctl daemon-reload
-      sudo systemctl restart $(serviceName)
-    displayName: 'Restart systemd service'
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'drop'
