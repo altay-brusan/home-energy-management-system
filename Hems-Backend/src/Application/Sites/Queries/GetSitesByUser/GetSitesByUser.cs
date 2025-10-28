@@ -42,10 +42,15 @@ public class GetSitesByUserQueryHandler : IRequestHandler<GetSitesByUserQuery, S
                 var deviceId = site.Setup.SetupDevice.DeviceId;
                 
                 // DeviceEnergyData'dan son veriyi çek (hourly olanlarından)
+                var utcNow = DateTime.UtcNow;
+                var startOfDay = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 0, 0, 0, DateTimeKind.Utc);
+                var endOfDay = startOfDay.AddDays(1);
+                
                 var lastEnergyData = await _context.DeviceEnergyData
                     .Where(x => x.DeviceId == deviceId && 
                                x.DataType == "DailyCumulativeEnergyData" &&
-                               x.DataDateTime.Date == DateTime.UtcNow.Date)
+                               x.DataDateTime >= startOfDay &&
+                               x.DataDateTime < endOfDay)
                     .OrderByDescending(x => x.DataDateTime)
                     .FirstOrDefaultAsync(cancellationToken);
                 

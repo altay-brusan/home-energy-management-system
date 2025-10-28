@@ -45,9 +45,10 @@ public class GetDeletedDeviceNotificationsQueryHandler : IRequestHandler<GetDele
         // IsToday filtresi - sadece bugünkü silinen bildirimleri getir
         if (request.IsToday == true)
         {
-            var today = DateTimeOffset.Now.Date;
-            var tomorrow = today.AddDays(1);
-            query = query.Where(dn => dn.Timestamp >= today && dn.Timestamp < tomorrow);
+            var today = DateTime.UtcNow.Date;
+            var todayUtc = DateTime.SpecifyKind(today, DateTimeKind.Utc);
+            var tomorrowUtc = DateTime.SpecifyKind(today.AddDays(1), DateTimeKind.Utc);
+            query = query.Where(dn => dn.Timestamp >= todayUtc && dn.Timestamp < tomorrowUtc);
         }
 
         // Category filtresi - notification type'a göre filtreleme
@@ -93,6 +94,7 @@ public class GetDeletedDeviceNotificationsQueryHandler : IRequestHandler<GetDele
 
     private async Task ValidateSiteAccessAsync(Guid siteId, CancellationToken cancellationToken)
     {
+        //Admin Kontrolü
         var isOwner = await _context.Sites
             .AnyAsync(s => s.Id == siteId && s.UserId == _user.Id, cancellationToken);
 
@@ -107,6 +109,7 @@ public class GetDeletedDeviceNotificationsQueryHandler : IRequestHandler<GetDele
         }
     }
 }
+
 
 
 

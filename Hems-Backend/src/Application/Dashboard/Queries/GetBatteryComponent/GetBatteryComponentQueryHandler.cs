@@ -77,9 +77,14 @@ public class GetBatteryComponentQueryHandler : IRequestHandler<GetBatteryCompone
 
     private async Task<double> GetTodayBatteryChargeAsync(Guid deviceId, DateTime todayUtc, CancellationToken cancellationToken)
     {
+        var utcNow = DateTime.UtcNow;
+        var startOfDay = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 0, 0, 0, DateTimeKind.Utc);
+        var endOfDay = startOfDay.AddDays(1);
+        
         var todayData = await _context.DeviceEnergyData
             .Where(x => x.DeviceId == deviceId && 
-                       x.DataDateTime.Date == todayUtc.Date &&
+                       x.DataDateTime >= startOfDay &&
+                       x.DataDateTime < endOfDay &&
                        x.DataType == "DailyCumulativeEnergyData")
             .OrderByDescending(x => x.DataDateTime)
             .FirstOrDefaultAsync(cancellationToken);

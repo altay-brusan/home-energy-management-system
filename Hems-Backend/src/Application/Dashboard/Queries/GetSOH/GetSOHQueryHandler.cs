@@ -39,8 +39,19 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
             return CreateEmptyResponse();
         }
 
-        // Veri miktarına göre range belirle
-        var range = DetermineRange(totalDataCount);
+        // Battery sayısını al
+        var batteryCount = await _context.DeviceComponents
+            .Where(f => f.DeviceId == request.DeviceId && 
+                       f.DeviceType == Domain.Enums.DeviceType.Battery)
+            .CountAsync(cancellationToken);
+
+        // Eğer battery component yoksa, hesaplama için 1 kullan
+        if (batteryCount == 0)
+        {
+            batteryCount = 1;
+        }
+
+        var range = DetermineRange(totalDataCount, batteryCount);
         
         // Range'e göre verileri çek
         var batteryData = await GetDataByRange(request.DeviceId, range, cancellationToken);
@@ -189,10 +200,13 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
         };
     }
 
-    private static string DetermineRange(int totalDataCount)
+    private static string DetermineRange(int totalDataCount, int batteryCount)
     {
         // 5 dakikada bir veri geldiği varsayımıyla hesapla
-        const int recordsPerDay = 288; // 24 saat × 12 (5 dakikada bir)
+        const int recordsPerDayPerBattery = 288; // 24 saat × 12 (5 dakikada bir)
+        
+        // Birden fazla battery varsa, her battery için ayrı veri geliyor
+        var recordsPerDay = recordsPerDayPerBattery * batteryCount;
         
         var daysOfData = totalDataCount / (double)recordsPerDay;
         
@@ -220,7 +234,7 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
     private async Task<List<Hems_Backend.Domain.Entities.DeviceData>> GetDayData(Guid deviceId, CancellationToken cancellationToken)
     {
         // Son 24 saatteki tüm veriler
-        var startDate = DateTime.UtcNow.AddDays(-1);
+        var startDate = DateTime.SpecifyKind(DateTime.UtcNow.AddDays(-1), DateTimeKind.Utc);
         return await _context.DeviceData
             .Where(x => x.DeviceId == deviceId && 
                        x.RequestDate >= startDate &&
@@ -236,13 +250,14 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
         
         for (int i = 6; i >= 0; i--)
         {
-            var targetDate = DateTime.UtcNow.AddDays(-i).Date;
-            var nextDay = targetDate.AddDays(1);
+            var utcNow = DateTime.UtcNow.AddDays(-i);
+            var startOfDay = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 0, 0, 0, DateTimeKind.Utc);
+            var endOfDay = startOfDay.AddDays(1);
             
             var lastDataOfDay = await _context.DeviceData
                 .Where(x => x.DeviceId == deviceId && 
-                           x.RequestDate >= targetDate &&
-                           x.RequestDate < nextDay &&
+                           x.RequestDate >= startOfDay &&
+                           x.RequestDate < endOfDay &&
                            x.DataType == "BatteryData")
                 .OrderByDescending(x => x.RequestDate)
                 .FirstOrDefaultAsync(cancellationToken);
@@ -263,13 +278,14 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
         
         for (int i = 29; i >= 0; i--)
         {
-            var targetDate = DateTime.UtcNow.AddDays(-i).Date;
-            var nextDay = targetDate.AddDays(1);
+            var utcNow = DateTime.UtcNow.AddDays(-i);
+            var startOfDay = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 0, 0, 0, DateTimeKind.Utc);
+            var endOfDay = startOfDay.AddDays(1);
             
             var lastDataOfDay = await _context.DeviceData
                 .Where(x => x.DeviceId == deviceId && 
-                           x.RequestDate >= targetDate &&
-                           x.RequestDate < nextDay &&
+                           x.RequestDate >= startOfDay &&
+                           x.RequestDate < endOfDay &&
                            x.DataType == "BatteryData")
                 .OrderByDescending(x => x.RequestDate)
                 .FirstOrDefaultAsync(cancellationToken);
@@ -291,8 +307,8 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
         for (int i = 11; i >= 0; i--)
         {
             var targetMonth = DateTime.UtcNow.AddMonths(-i);
-            var startOfMonth = new DateTime(targetMonth.Year, targetMonth.Month, 1);
-            var endOfMonth = startOfMonth.AddMonths(1);
+            var startOfMonth = DateTime.SpecifyKind(new DateTime(targetMonth.Year, targetMonth.Month, 1), DateTimeKind.Utc);
+            var endOfMonth = DateTime.SpecifyKind(startOfMonth.AddMonths(1), DateTimeKind.Utc);
             
             var lastDataOfMonth = await _context.DeviceData
                 .Where(x => x.DeviceId == deviceId && 

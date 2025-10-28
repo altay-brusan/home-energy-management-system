@@ -27,13 +27,15 @@ public class GetChargeDischargeQueryHandler : IRequestHandler<GetChargeDischarge
             throw new UnauthorizedAccessException("Bu cihaza erişim yetkiniz bulunmamaktadır.");
         }
 
-        var today = DateTime.UtcNow.Date;
-        var todayUtc = DateTime.SpecifyKind(today, DateTimeKind.Utc);
+        var utcNow = DateTime.UtcNow;
+        var startOfDay = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 0, 0, 0, DateTimeKind.Utc);
+        var endOfDay = startOfDay.AddDays(1);
 
         // Bugünün DailyCumulativeEnergyData verilerini çek
         var energyData = await _context.DeviceEnergyData
             .Where(x => x.DeviceId == request.DeviceId && 
-                       x.DataDateTime.Date == todayUtc.Date &&
+                       x.DataDateTime >= startOfDay &&
+                       x.DataDateTime < endOfDay &&
                        x.DataType == "DailyCumulativeEnergyData")
             .OrderBy(x => x.DataDateTime)
             .ToListAsync(cancellationToken);

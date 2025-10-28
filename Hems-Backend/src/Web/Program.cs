@@ -3,6 +3,9 @@ using Hems_Backend.Infrastructure.Identity;
 using Hems_Backend.Web.Hubs;
 using Serilog;
 
+// Npgsql DateTime handling - PostgreSQL UTC support için
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Configure Serilog

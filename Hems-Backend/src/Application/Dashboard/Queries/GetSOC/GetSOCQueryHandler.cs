@@ -27,13 +27,15 @@ public class GetSOCQueryHandler : IRequestHandler<GetSOCQuery, SOCResponseDto>
             throw new UnauthorizedAccessException("Device access denied");
         }
 
-        var today = DateTime.UtcNow.Date;
-        var todayUtc = DateTime.SpecifyKind(today, DateTimeKind.Utc);
+        var utcNow = DateTime.UtcNow;
+        var startOfDay = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 0, 0, 0, DateTimeKind.Utc);
+        var endOfDay = startOfDay.AddDays(1);
 
         // Bugünün BatteryCluster verilerini al
         var batteryData = await _context.DeviceData
             .Where(x => x.DeviceId == request.DeviceId && 
-                       x.RequestDate.Date == todayUtc.Date &&
+                       x.RequestDate >= startOfDay &&
+                       x.RequestDate < endOfDay &&
                        x.DataType == "BatteryClusterData")
             .OrderBy(x => x.RequestDate)
             .ToListAsync(cancellationToken);

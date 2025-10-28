@@ -39,12 +39,14 @@ public class GetEnergyConsumptionQueryHandler : IRequestHandler<GetEnergyConsump
 
     private async Task<EnergyConsumptionResponseDto> GetDailyConsumptionAsync(Guid deviceId, CancellationToken cancellationToken)
     {
-        var today = DateTime.UtcNow.Date;
-        var todayUtc = DateTime.SpecifyKind(today, DateTimeKind.Utc);
+        var utcNow = DateTime.UtcNow;
+        var startOfDay = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 0, 0, 0, DateTimeKind.Utc);
+        var endOfDay = startOfDay.AddDays(1);
 
         var dailyData = await _context.DeviceEnergyData
             .Where(x => x.DeviceId == deviceId && 
-                       x.DataDateTime.Date == todayUtc.Date &&
+                       x.DataDateTime >= startOfDay &&
+                       x.DataDateTime < endOfDay &&
                        x.DataType == "DailyCumulativeEnergyData")
             .OrderBy(x => x.DataDateTime)
             .ToListAsync(cancellationToken);
@@ -92,11 +94,13 @@ public class GetEnergyConsumptionQueryHandler : IRequestHandler<GetEnergyConsump
         for (int i = 0; i < (int)today.DayOfWeek; i++)
         {
             var day = weekStart.AddDays(i);
-            var dayUtc = DateTime.SpecifyKind(day, DateTimeKind.Utc);
+            var startOfDay = new DateTime(day.Year, day.Month, day.Day, 0, 0, 0, DateTimeKind.Utc);
+            var endOfDay = startOfDay.AddDays(1);
 
             var lifetimeData = await _context.DeviceEnergyData
                 .Where(x => x.DeviceId == deviceId && 
-                           x.DataDateTime.Date == dayUtc.Date &&
+                           x.DataDateTime >= startOfDay &&
+                           x.DataDateTime < endOfDay &&
                            x.DataType == "LifetimeEnergyData")
                 .FirstOrDefaultAsync(cancellationToken);
 
@@ -124,9 +128,14 @@ public class GetEnergyConsumptionQueryHandler : IRequestHandler<GetEnergyConsump
         }
 
         // Bugün için DailyCumulativeEnergyData (son hourly)
+        var utcNow2 = DateTime.UtcNow;
+        var startOfDay2 = new DateTime(utcNow2.Year, utcNow2.Month, utcNow2.Day, 0, 0, 0, DateTimeKind.Utc);
+        var endOfDay2 = startOfDay2.AddDays(1);
+        
         var todayData = await _context.DeviceEnergyData
             .Where(x => x.DeviceId == deviceId && 
-                       x.DataDateTime.Date == todayUtc.Date &&
+                       x.DataDateTime >= startOfDay2 &&
+                       x.DataDateTime < endOfDay2 &&
                        x.DataType == "DailyCumulativeEnergyData")
             .OrderByDescending(x => x.DataDateTime)
             .FirstOrDefaultAsync(cancellationToken);
@@ -178,9 +187,13 @@ public class GetEnergyConsumptionQueryHandler : IRequestHandler<GetEnergyConsump
             if (day.Date == today.Date)
             {
                 // Bugün için DailyCumulativeEnergyData'nın son kaydını al
+                var dayStart = new DateTime(day.Year, day.Month, day.Day, 0, 0, 0, DateTimeKind.Utc);
+                var dayEnd = dayStart.AddDays(1);
+                
                 var todayData = await _context.DeviceEnergyData
                     .Where(x => x.DeviceId == deviceId && 
-                               x.DataDateTime.Date == dayUtc.Date &&
+                               x.DataDateTime >= dayStart &&
+                               x.DataDateTime < dayEnd &&
                                x.DataType == "DailyCumulativeEnergyData")
                     .OrderByDescending(x => x.DataDateTime)
                     .FirstOrDefaultAsync(cancellationToken);
@@ -198,9 +211,13 @@ public class GetEnergyConsumptionQueryHandler : IRequestHandler<GetEnergyConsump
             else
             {
                 // Geçmiş günler için LifetimeEnergyData
+                var dayStart = new DateTime(day.Year, day.Month, day.Day, 0, 0, 0, DateTimeKind.Utc);
+                var dayEnd = dayStart.AddDays(1);
+                
                 var lifetimeData = await _context.DeviceEnergyData
                     .Where(x => x.DeviceId == deviceId && 
-                               x.DataDateTime.Date == dayUtc.Date &&
+                               x.DataDateTime >= dayStart &&
+                               x.DataDateTime < dayEnd &&
                                x.DataType == "LifetimeEnergyData")
                     .FirstOrDefaultAsync(cancellationToken);
 

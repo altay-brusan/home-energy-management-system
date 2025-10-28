@@ -24,7 +24,7 @@ public class GetWeatherForecastsQueryHandler : IRequestHandler<GetWeatherForecas
     public async Task<IEnumerable<WeatherForecast>> Handle(GetWeatherForecastsQuery request, CancellationToken cancellationToken)
     {
         // Site'ı bul ve kullanıcının erişim yetkisini kontrol et
-
+        //TODO : Admin Kontrolü 
         var site = await _context.Sites
             .FirstOrDefaultAsync(s => s.Id == request.SiteId && 
                                      (s.UserId == _currentUser.Id || 

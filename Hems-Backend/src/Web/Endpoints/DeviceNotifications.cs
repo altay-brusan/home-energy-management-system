@@ -1,6 +1,7 @@
 using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Application.DeviceNotifications.Commands.CreateDeviceNotification;
 using Hems_Backend.Application.DeviceNotifications.Commands.DeleteDeviceNotification;
+using Hems_Backend.Application.DeviceNotifications.Commands.MarkAllSiteNotificationsAsRead;
 using Hems_Backend.Application.DeviceNotifications.Commands.MarkNotificationAsRead;
 using Hems_Backend.Application.DeviceNotifications.Commands.PermanentDeleteDeviceNotification;
 using Hems_Backend.Application.DeviceNotifications.Commands.RestoreDeviceNotification;
@@ -32,6 +33,7 @@ public class DeviceNotifications : EndpointGroupBase
             .MapGet(GetDeviceNotificationTypes, "types")
             .MapGet(GetDeletedDeviceNotifications, "deleted")
             .MapPut(MarkDeviceNotificationAsRead, "{id}/mark-read")
+            .MapPut(MarkAllSiteNotificationsAsRead, "mark-all-read/{siteId}")
             .MapDelete(DeleteDeviceNotification, "{id}")
             .MapPut(RestoreDeviceNotification, "{id}/restore")
             .MapDelete(PermanentDeleteDeviceNotification, "{id}/permanent");
@@ -80,6 +82,15 @@ public class DeviceNotifications : EndpointGroupBase
     {
         await sender.Send(new MarkNotificationAsReadCommand { NotificationId = id });
         return TypedResults.NoContent();
+    }
+
+    [Authorize]
+    public static async Task<IResult> MarkAllSiteNotificationsAsRead(
+        Guid siteId,
+        ISender sender)
+    {
+        var affectedCount = await sender.Send(new MarkAllSiteNotificationsAsReadCommand { SiteId = siteId });
+        return TypedResults.Ok(new { affectedCount });
     }
 
     [Authorize]

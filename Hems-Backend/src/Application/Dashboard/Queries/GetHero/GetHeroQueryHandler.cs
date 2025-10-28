@@ -27,13 +27,15 @@ public class GetHeroQueryHandler : IRequestHandler<GetHeroQuery, HeroResponseDto
             throw new UnauthorizedAccessException("Device access denied");
         }
 
-        var today = DateTime.UtcNow.Date;
-        var todayUtc = DateTime.SpecifyKind(today, DateTimeKind.Utc);
+        var utcNow = DateTime.UtcNow;
+        var startOfDay = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 0, 0, 0, DateTimeKind.Utc);
+        var endOfDay = startOfDay.AddDays(1);
 
         // Bugünün son hourly verisini al
         var lastHourlyData = await _context.DeviceEnergyData
             .Where(x => x.DeviceId == request.DeviceId && 
-                       x.DataDateTime.Date == todayUtc.Date &&
+                       x.DataDateTime >= startOfDay &&
+                       x.DataDateTime < endOfDay &&
                        x.DataType == "DailyCumulativeEnergyData")
             .OrderByDescending(x => x.DataDateTime)
             .FirstOrDefaultAsync(cancellationToken);
@@ -63,7 +65,8 @@ public class GetHeroQueryHandler : IRequestHandler<GetHeroQuery, HeroResponseDto
         // Current Power için bir önceki veriyi al
         var previousHourlyData = await _context.DeviceEnergyData
             .Where(x => x.DeviceId == request.DeviceId && 
-                       x.DataDateTime.Date == todayUtc.Date &&
+                       x.DataDateTime >= startOfDay &&
+                       x.DataDateTime < endOfDay &&
                        x.DataType == "DailyCumulativeEnergyData" &&
                        x.DataDateTime < lastHourlyData.DataDateTime)
             .OrderByDescending(x => x.DataDateTime)
