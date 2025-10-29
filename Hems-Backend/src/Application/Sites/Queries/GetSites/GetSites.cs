@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Hems_Backend.Application.Sites.Queries.GetSites;
 
-public record GetSitesQuery : IRequest<PaginatedList<SiteDto>>
+public record GetSitesQuery : IRequest<GetSitesResponseDto>
 {
     public string? UserId { get; init; }
     public string? UserEmail { get; init; }
@@ -22,7 +22,7 @@ public record GetSitesQuery : IRequest<PaginatedList<SiteDto>>
     public string? District { get; init; }
 }
 
-public class GetSitesQueryHandler : IRequestHandler<GetSitesQuery, PaginatedList<SiteDto>>
+public class GetSitesQueryHandler : IRequestHandler<GetSitesQuery, GetSitesResponseDto>
 {
     private readonly IApplicationDbContext _context;
     private readonly IUserService _userService;
@@ -33,7 +33,7 @@ public class GetSitesQueryHandler : IRequestHandler<GetSitesQuery, PaginatedList
         _userService = userService;
     }
 
-    public async Task<PaginatedList<SiteDto>> Handle(GetSitesQuery request, CancellationToken cancellationToken)
+    public async Task<GetSitesResponseDto> Handle(GetSitesQuery request, CancellationToken cancellationToken)
     {
         var query = _context.Sites.AsQueryable();
 
@@ -84,13 +84,28 @@ public class GetSitesQueryHandler : IRequestHandler<GetSitesQuery, PaginatedList
             query = query.Where(x => x.District != null && x.District.ToLower().Contains(request.District.ToLower()));
         }
 
-        var sites = await query
+        // Calculate TotalSite before pagination
+        var totalSite = await query.CountAsync(cancellationToken);
+
+        // Calculate TotalDevice - get all sites with Setup and SetupDevice included
+        var allSitesWithDevice = await query
             .Include(x => x.Setup!)
                 .ThenInclude(s => s.SetupDevice)
-            .OrderBy(x => x.Name)
             .ToListAsync(cancellationToken);
+        
+        // Count sites that have SetupDevice
+        var totalDevice = allSitesWithDevice.Count(x => x.Setup?.SetupDevice != null);
 
-        var siteDtos = sites.Select(x => new SiteDto
+        // Apply ordering and pagination to the full list
+        var orderedSites = allSitesWithDevice
+            .OrderBy(x => x.Name)
+            .ToList();
+
+        // Apply pagination manually
+        var skip = (request.PageNumber - 1) * request.PageSize;
+        var pagedSites = orderedSites.Skip(skip).Take(request.PageSize).ToList();
+
+        var siteDtos = pagedSites.Select(x => new SiteDto
         {
             Id = x.Id,
             UserId = x.UserId,
@@ -110,7 +125,14 @@ public class GetSitesQueryHandler : IRequestHandler<GetSitesQuery, PaginatedList
             LastModifiedBy = x.LastModifiedBy
         }).ToList();
 
-        return new PaginatedList<SiteDto>(siteDtos, siteDtos.Count, request.PageNumber, request.PageSize);
+        var paginatedList = new PaginatedList<SiteDto>(siteDtos, totalSite, request.PageNumber, request.PageSize);
+
+        return new GetSitesResponseDto
+        {
+            TotalSite = totalSite,
+            TotalDevice = totalDevice,
+            Data = paginatedList
+        };
     }
 }
 

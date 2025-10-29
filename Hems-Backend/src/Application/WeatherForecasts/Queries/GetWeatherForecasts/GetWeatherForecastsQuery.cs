@@ -10,30 +10,56 @@ public class GetWeatherForecastsQueryHandler : IRequestHandler<GetWeatherForecas
     private readonly IApplicationDbContext _context;
     private readonly IWeatherService _weatherService;
     private readonly IUser _currentUser;
+    private readonly IIdentityService _identityService;
 
     public GetWeatherForecastsQueryHandler(
         IApplicationDbContext context,
         IWeatherService weatherService,
-        IUser currentUser)
+        IUser currentUser,
+        IIdentityService identityService)
     {
         _context = context;
         _weatherService = weatherService;
         _currentUser = currentUser;
+        _identityService = identityService;
     }
 
     public async Task<IEnumerable<WeatherForecast>> Handle(GetWeatherForecastsQuery request, CancellationToken cancellationToken)
     {
-        // Site'ı bul ve kullanıcının erişim yetkisini kontrol et
-        //TODO : Admin Kontrolü 
+        // Admin kullanıcılar tüm site'lara erişebilir - Site kontrolünü önce yapalım
+        bool hasAccess = false;
+        
+        if (_currentUser.Id != null)
+        {
+            var isAdmin = await _identityService.IsInRoleAsync(_currentUser.Id, "Administrator");
+            if (isAdmin)
+            {
+                // Admin ise herhangi bir site'a erişebilir
+                hasAccess = true;
+            }
+            else
+            {
+                // Normal kullanıcılar için site sahipliği veya paylaşım kontrolü
+                hasAccess = await _context.Sites
+                    .AnyAsync(s => s.Id == request.SiteId && 
+                                 (s.UserId == _currentUser.Id || 
+                                  _context.UserSites.Any(us => us.SiteId == s.Id && us.UserId == _currentUser.Id)), 
+                             cancellationToken);
+            }
+        }
+
+        if (!hasAccess)
+        {
+            throw new UnauthorizedAccessException("Site not found or access denied");
+        }
+
+        // Site'ı bul
         var site = await _context.Sites
-            .FirstOrDefaultAsync(s => s.Id == request.SiteId && 
-                                     (s.UserId == _currentUser.Id || 
-                                      _context.UserSites.Any(us => us.SiteId == s.Id && us.UserId == _currentUser.Id)), 
-                                 cancellationToken);
+            .FirstOrDefaultAsync(s => s.Id == request.SiteId, cancellationToken);
 
         if (site == null)
         {
-            throw new UnauthorizedAccessException("Site not found or access denied");
+            throw new UnauthorizedAccessException("Site not found");
         }
 
         if (site.Latitude == null || site.Longitude == null)

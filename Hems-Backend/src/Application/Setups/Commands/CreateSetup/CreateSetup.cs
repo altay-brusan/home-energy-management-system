@@ -108,7 +108,23 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
             };
 
             _context.SetupDevices.Add(setupDevice);
+            var devicesettingSchemeValues = await _context.ParameterValueSettingSchemes.Where(f => f.ModelNumber == device.ModelNumber).ToListAsync();
+
+            foreach (var item in devicesettingSchemeValues)
+            {
+                var newSetupSettingsValue = new SetupDeviceParameterValue
+                {
+                    ParameterId = item.ParameterId,
+                    ParameterGroupId = item.ParameterGroupId,
+                    Value = item.Value,
+                    SortOrder = item.SortOrder,
+                    ModelNumber = item.ModelNumber,
+                    SetupDeviceId = setupDevice.Id,
+                };
+                _context.SetupDeviceParameterValues.Add(newSetupSettingsValue);
+            }
         }
+        //TODO: Setting Olayı
 
         // Tek seferde kaydet - EF Core otomatik transaction yapar
         await _context.SaveChangesAsync(cancellationToken);

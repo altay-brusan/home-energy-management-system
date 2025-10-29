@@ -38,7 +38,6 @@ public class MobileDashboard : EndpointGroupBase
             .MapGet(ChargeDischarge, "graphs/ChargeDischarge")
             .MapGet(BatteryComponent, "graphs/Components/Battery")
             .MapGet(InverterComponent, "graphs/Components/Inverter");
-        //TODO: �NVERTER YAp�calk
     }
 
     [Authorize]

@@ -31,11 +31,51 @@ public class GetSetupDeviceParameterValuesTreeQueryHandler : IRequestHandler<Get
 
         if (!setupDeviceParameterValues.Any())
         {
-            return new SetupDeviceParameterValuesTreeVm
+            var setupdevice = await _context.SetupDevices.Include(f => f.Device).FirstOrDefaultAsync(f => f.Id == request.SetupDeviceId);
+            if (setupdevice != null && setupdevice.Device != null)
             {
-                SetupDeviceId = request.SetupDeviceId,
-                ParameterGroups = new List<ParameterGroupTreeDto>()
-            };
+                var devicesettingSchemeValues = await _context.ParameterValueSettingSchemes.Where(f => f.ModelNumber == setupdevice.Device.ModelNumber).ToListAsync();
+                if (devicesettingSchemeValues != null && devicesettingSchemeValues.Any())
+                {
+                    foreach (var item in devicesettingSchemeValues)
+                    {
+                        var newSetupSettingsValue = new SetupDeviceParameterValue
+                        {
+                            ParameterId = item.ParameterId,
+                            ParameterGroupId = item.ParameterGroupId,
+                            Value = item.Value,
+                            SortOrder = item.SortOrder,
+                            ModelNumber = item.ModelNumber,
+                            SetupDeviceId = setupdevice.Id,
+                        };
+                        _context.SetupDeviceParameterValues.Add(newSetupSettingsValue);
+                    }
+                    await _context.SaveChangesAsync(cancellationToken);
+                    setupDeviceParameterValues = await _context.SetupDeviceParameterValues
+                                                        .Where(sdpv => sdpv.SetupDeviceId == request.SetupDeviceId)
+                                                        .Include(sdpv => sdpv.Parameter)
+                                                        .ToListAsync(cancellationToken);
+                }
+                else
+                {
+                    return new SetupDeviceParameterValuesTreeVm
+                    {
+                        SetupDeviceId = request.SetupDeviceId,
+                        ParameterGroups = new List<ParameterGroupTreeDto>()
+                    };
+                }
+
+
+            }
+            else
+            {
+                return new SetupDeviceParameterValuesTreeVm
+                {
+                    SetupDeviceId = request.SetupDeviceId,
+                    ParameterGroups = new List<ParameterGroupTreeDto>()
+                };
+            }
+
         }
 
         // 2. Bu parameter'ların ID'lerini al
@@ -113,7 +153,7 @@ public class GetSetupDeviceParameterValuesTreeQueryHandler : IRequestHandler<Get
     {
         // 1. Tüm ParameterGroup'ları DTO'ya çevir
         var allGroups = new Dictionary<Guid, ParameterGroupTreeDto>();
-        
+
         foreach (var group in allParameterGroups)
         {
             allGroups[group.Id] = new ParameterGroupTreeDto
@@ -131,7 +171,7 @@ public class GetSetupDeviceParameterValuesTreeQueryHandler : IRequestHandler<Get
 
         // 2. Hierarchical yapı oluştur (parent-child ilişkileri)
         var rootGroups = new List<ParameterGroupTreeDto>();
-        
+
         foreach (var group in allGroups.Values)
         {
             if (group.ParentId == null)
@@ -146,13 +186,13 @@ public class GetSetupDeviceParameterValuesTreeQueryHandler : IRequestHandler<Get
 
         // 3. Parameter'ları ilgili gruplara ekle
         var parameterLookup = parameters.ToDictionary(p => p.Id, p => p);
-        
+
         foreach (var sdpv in setupDeviceParameterValues)
         {
             if (parameterLookup.ContainsKey(sdpv.ParameterId))
             {
                 var parameter = parameterLookup[sdpv.ParameterId];
-                
+
                 if (parameter.ParameterGroup != null && allGroups.ContainsKey(parameter.ParameterGroup.Id))
                 {
                     var parameterDto = new ParameterTreeDto

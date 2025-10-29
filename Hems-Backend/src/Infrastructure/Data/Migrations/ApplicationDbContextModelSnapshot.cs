@@ -99,7 +99,7 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("CalibrationDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<DateTimeOffset>("Created")
                         .HasColumnType("timestamp with time zone");
@@ -108,7 +108,7 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("InstallationDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<bool>("IsDeleted")
                         .ValueGeneratedOnAdd()
@@ -131,7 +131,7 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.Property<DateTime?>("NextCheckoutDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("QRCode")
                         .HasMaxLength(100)
@@ -153,7 +153,7 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("WarrantyStartDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<int?>("WarrantyUnit")
                         .HasColumnType("integer");
@@ -229,7 +229,7 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("WarrantyStartDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<int?>("WarrantyUnit")
                         .HasColumnType("integer");
@@ -283,7 +283,7 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(256)");
 
                     b.Property<DateTime>("RequestDate")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.HasKey("Id");
 
@@ -328,7 +328,7 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("DataDateTime")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("DataType")
                         .IsRequired()
@@ -1092,7 +1092,7 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("Reminder")
-                        .HasColumnType("timestamp with time zone");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("Title")
                         .IsRequired()

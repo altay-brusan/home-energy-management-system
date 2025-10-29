@@ -13,13 +13,16 @@ public class MarkAllSiteNotificationsAsReadCommandHandler : IRequestHandler<Mark
 {
     private readonly IApplicationDbContext _context;
     private readonly IUser _user;
+    private readonly IIdentityService _identityService;
 
     public MarkAllSiteNotificationsAsReadCommandHandler(
         IApplicationDbContext context,
-        IUser user)
+        IUser user,
+        IIdentityService identityService)
     {
         _context = context;
         _user = user;
+        _identityService = identityService;
     }
 
     public async Task<int> Handle(MarkAllSiteNotificationsAsReadCommand request, CancellationToken cancellationToken)
@@ -53,12 +56,23 @@ public class MarkAllSiteNotificationsAsReadCommandHandler : IRequestHandler<Mark
 
     private async Task ValidateSiteAccessAsync(Guid siteId, CancellationToken cancellationToken)
     {
-        //TODO: Admin Kontrolü.
+        // Admin kullanıcılar tüm site'lara erişebilir
+        if (_user.Id != null)
+        {
+            var isAdmin = await _identityService.IsInRoleAsync(_user.Id, "Administrator");
+            if (isAdmin)
+            {
+                return;
+            }
+        }
+
+        // Site sahibi kontrolü
         var isOwner = await _context.Sites
             .AnyAsync(s => s.Id == siteId && s.UserId == _user.Id, cancellationToken);
 
         if (isOwner) return;
 
+        // UserSite erişim kontrolü
         var hasUserSiteAccess = await _context.UserSites
             .AnyAsync(us => us.SiteId == siteId && us.UserId == _user.Id, cancellationToken);
 

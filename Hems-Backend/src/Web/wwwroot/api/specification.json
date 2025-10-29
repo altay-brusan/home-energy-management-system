@@ -688,6 +688,36 @@
         ]
       }
     },
+    "/api/DeviceNotifications/mark-all-read/{siteId}": {
+      "put": {
+        "tags": [
+          "DeviceNotifications"
+        ],
+        "operationId": "MarkAllSiteNotificationsAsRead",
+        "parameters": [
+          {
+            "name": "siteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/DeviceNotifications/{id}": {
       "delete": {
         "tags": [

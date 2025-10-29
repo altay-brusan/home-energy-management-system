@@ -13,13 +13,16 @@ public class DeleteDeviceNotificationCommandHandler : IRequestHandler<DeleteDevi
 {
     private readonly IApplicationDbContext _context;
     private readonly IUser _user;
+    private readonly IIdentityService _identityService;
 
     public DeleteDeviceNotificationCommandHandler(
         IApplicationDbContext context,
-        IUser user)
+        IUser user,
+        IIdentityService identityService)
     {
         _context = context;
         _user = user;
+        _identityService = identityService;
     }
 
     public async Task Handle(DeleteDeviceNotificationCommand request, CancellationToken cancellationToken)
@@ -45,11 +48,23 @@ public class DeleteDeviceNotificationCommandHandler : IRequestHandler<DeleteDevi
 
     private async Task ValidateNotificationAccessAsync(Guid siteId, CancellationToken cancellationToken)
     {
+        // Admin kullanıcılar tüm site'lara erişebilir
+        if (_user.Id != null)
+        {
+            var isAdmin = await _identityService.IsInRoleAsync(_user.Id, "Administrator");
+            if (isAdmin)
+            {
+                return;
+            }
+        }
+
+        // Site sahibi kontrolü
         var isOwner = await _context.Sites
             .AnyAsync(s => s.Id == siteId && s.UserId == _user.Id, cancellationToken);
 
         if (isOwner) return;
 
+        // UserSite erişim kontrolü
         var hasUserSiteAccess = await _context.UserSites
             .AnyAsync(us => us.SiteId == siteId && us.UserId == _user.Id, cancellationToken);
 
