@@ -6,6 +6,16 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/invite": {
+      "get": {
+        "operationId": "GetInvite",
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/Auth/user-status": {
       "get": {
         "tags": [
@@ -3146,7 +3156,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PaginatedListOfSiteDto"
+                  "$ref": "#/components/schemas/GetSitesResponseDto"
                 }
               }
             }
@@ -7159,6 +7169,23 @@
           },
           "name": {
             "type": "string"
+          }
+        }
+      },
+      "GetSitesResponseDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "totalSite": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalDevice": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PaginatedListOfSiteDto"
           }
         }
       },

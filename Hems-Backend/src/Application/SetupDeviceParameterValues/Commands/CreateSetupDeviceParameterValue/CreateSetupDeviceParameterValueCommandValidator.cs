@@ -12,9 +12,6 @@ public class CreateSetupDeviceParameterValueCommandValidator : AbstractValidator
         RuleFor(v => v.SetupDeviceId)
             .NotEmpty().WithMessage("Setup device ID'si zorunludur.");
 
-        RuleFor(v => v.Value)
-            .MaximumLength(1000).WithMessage("Değer 1000 karakterden fazla olamaz.")
-            .When(v => !string.IsNullOrEmpty(v.Value));
 
 
         RuleFor(v => v.SortOrder)

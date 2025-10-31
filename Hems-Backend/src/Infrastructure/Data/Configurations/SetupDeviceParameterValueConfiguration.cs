@@ -9,7 +9,6 @@ public class SetupDeviceParameterValueConfiguration : IEntityTypeConfiguration<S
     public void Configure(EntityTypeBuilder<SetupDeviceParameterValue> builder)
     {
         builder.Property(t => t.Value)
-            .HasMaxLength(1000)
             .IsRequired();
 
         builder.Property(t => t.ModelNumber)

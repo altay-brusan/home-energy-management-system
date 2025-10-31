@@ -1,6 +1,7 @@
 using Hems_Backend.Application.Common.Interfaces;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Hems_Backend.Infrastructure.Services;
 
@@ -8,9 +9,11 @@ public class InvitationEmailService : IInvitationEmailService
 {
     private readonly IEmailSender _emailSender;
     private readonly ILogger<InvitationEmailService> _logger;
+    private readonly SmtpSettings _smtpSettings;
 
-    public InvitationEmailService(IEmailSender emailSender, ILogger<InvitationEmailService> logger)
+    public InvitationEmailService(IEmailSender emailSender, ILogger<InvitationEmailService> logger, IOptions<SmtpSettings> smtpSettings)
     {
+        _smtpSettings = smtpSettings.Value;
         _emailSender = emailSender;
         _logger = logger;
     }
@@ -28,8 +31,8 @@ public class InvitationEmailService : IInvitationEmailService
             
             var subject = $"{ownerName} size {siteName} evini paylaştı";
             
-            var htmlMessage = GenerateInvitationEmailTemplate(ownerName, siteName, token);
-
+            var htmlMessage = GenerateInvitationEmailTemplate(ownerName, siteName, token,_smtpSettings.InvitationUrl);
+            Console.WriteLine(htmlMessage);
             _logger.LogInformation("📧 Sending email with subject: {Subject}", subject);
             
             await _emailSender.SendEmailAsync(email, subject, htmlMessage);
@@ -43,8 +46,13 @@ public class InvitationEmailService : IInvitationEmailService
         }
     }
 
-    private static string GenerateInvitationEmailTemplate(string ownerName, string siteName, string token)
+    private static string GenerateInvitationEmailTemplate(string ownerName, string siteName, string token,string invetationUrl)
     {
+        var escapedToken = System.Uri.EscapeDataString(token);
+        var baseUrl = string.IsNullOrWhiteSpace(invetationUrl) ? "https://hems-api.n2nenergy.com" : invetationUrl.TrimEnd('/');
+        var fallback = $"{baseUrl}/invite?inviteCode={escapedToken}";
+        var intent = $"intent://invite?inviteCode={escapedToken}#Intent;scheme=n2nenergymobile;package=com.n2nenergymobile;S.browser_fallback_url={System.Uri.EscapeDataString(fallback)};end";
+
         return $@"
 <!DOCTYPE html>
 <html lang=""tr"">
@@ -173,8 +181,11 @@ public class InvitationEmailService : IInvitationEmailService
                 her davetiye için farklı bir kod oluşturulmaktadır.
             </p>
             <div style=""text-align: center;"">
-                <a href=""#"" class=""cta-button"">Uygulamaya Git</a>
+                <a href=""{fallback}"" class=""cta-button"" style=""display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; padding: 15px 40px; border-radius: 5px; font-weight: 600; margin-top: 20px;"">Uygulamaya Git</a>
             </div>
+            <p style=""text-align: center; color: #888; font-size: 12px; margin-top: 15px; word-break: break-all;"">
+                Veya bu linke tıklayın: <a href=""{fallback}"" style=""color: #667eea;"">{fallback}</a>
+            </p>
         </div>
         <div class=""footer"">
             <p>Bu daveti kabul etmek istemiyorsanız, bu e-postayı görmezden gelebilirsiniz.</p>

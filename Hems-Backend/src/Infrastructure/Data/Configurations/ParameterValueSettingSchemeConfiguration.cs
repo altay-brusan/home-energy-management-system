@@ -9,7 +9,6 @@ public class ParameterValueSettingSchemeConfiguration : IEntityTypeConfiguration
     public void Configure(EntityTypeBuilder<ParameterValueSettingScheme> builder)
     {
         builder.Property(t => t.Value)
-            .HasMaxLength(1000)
             .IsRequired();
 
         builder.Property(t => t.ModelNumber)

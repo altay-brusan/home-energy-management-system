@@ -40,8 +40,8 @@ public class GetSitesTests : BaseTestFixture
         var result = await SendAsync(query);
 
         result.Should().NotBeNull();
-        result.Items.Should().HaveCount(2);
-        result.Items.Should().OnlyContain(x => x.UserId == userId);
+        result.Data.Items.Should().HaveCount(2);
+        result.Data.Items.Should().OnlyContain(x => x.UserId == userId);
     }
 
     [Test]
@@ -57,7 +57,7 @@ public class GetSitesTests : BaseTestFixture
         var result = await SendAsync(query);
 
         result.Should().NotBeNull();
-        result.Items.Should().BeEmpty();
+        result.Data.Items.Should().BeEmpty();
     }
 
     [Test]
@@ -83,7 +83,7 @@ public class GetSitesTests : BaseTestFixture
         var result = await SendAsync(query);
 
         result.Should().NotBeNull();
-        result.Items.Should().BeEmpty();
+        result.Data.Items.Should().BeEmpty();
     }
 
     [Test]
@@ -111,9 +111,9 @@ public class GetSitesTests : BaseTestFixture
         var result = await SendAsync(query);
 
         result.Should().NotBeNull();
-        result.Items.Should().HaveCount(3);
-        result.TotalCount.Should().Be(5);
-        result.HasNextPage.Should().BeTrue();
+        result.Data.Items.Should().HaveCount(3);
+        result.Data.TotalCount.Should().Be(5);
+        result.Data.HasNextPage.Should().BeTrue();
     }
 
     [Test]
@@ -147,8 +147,8 @@ public class GetSitesTests : BaseTestFixture
         var result = await SendAsync(query);
 
         result.Should().NotBeNull();
-        result.Items.Should().HaveCount(1);
-        result.Items.Should().OnlyContain(x => x.Name.Contains("Test"));
+        result.Data.Items.Should().HaveCount(1);
+        result.Data.Items.Should().OnlyContain(x => x.Name.Contains("Test"));
     }
 
     [Test]
@@ -184,8 +184,8 @@ public class GetSitesTests : BaseTestFixture
         var result = await SendAsync(query);
 
         result.Should().NotBeNull();
-        result.Items.Should().HaveCount(1);
-        result.Items.Should().OnlyContain(x => x.City == "Istanbul");
+        result.Data.Items.Should().HaveCount(1);
+        result.Data.Items.Should().OnlyContain(x => x.City == "Istanbul");
     }
 
     [Test]
@@ -221,8 +221,8 @@ public class GetSitesTests : BaseTestFixture
         var result = await SendAsync(query);
 
         result.Should().NotBeNull();
-        result.Items.Should().HaveCount(1);
-        result.Items.Should().OnlyContain(x => x.District == "Kadıköy");
+        result.Data.Items.Should().HaveCount(1);
+        result.Data.Items.Should().OnlyContain(x => x.District == "Kadıköy");
     }
 }
 

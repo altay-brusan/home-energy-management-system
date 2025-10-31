@@ -127,6 +127,19 @@ public static class IdentityApiEndpointRouteBuilderExtensions
             ([FromBody] LoginRequest login, [FromQuery] bool? useCookies, [FromQuery] bool? useSessionCookies, [FromServices] IServiceProvider sp) =>
         {
             var signInManager = sp.GetRequiredService<SignInManager<TUser>>();
+            var userManager = sp.GetRequiredService<UserManager<TUser>>();
+
+            // Check if user exists and email is confirmed
+            var user = await userManager.FindByEmailAsync(login.Email);
+            if (user == null)
+            {
+                return TypedResults.Problem("Invalid login attempt.", statusCode: StatusCodes.Status401Unauthorized);
+            }
+
+            if (!await userManager.IsEmailConfirmedAsync(user))
+            {
+                return TypedResults.Problem("Email not confirmed. Please check your email and confirm your account.", statusCode: StatusCodes.Status401Unauthorized);
+            }
 
             var useCookieScheme = (useCookies == true) || (useSessionCookies == true);
             var isPersistent = (useCookies == true) && (useSessionCookies != true);

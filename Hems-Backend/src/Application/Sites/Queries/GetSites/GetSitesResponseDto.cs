@@ -8,3 +8,4 @@ public record GetSitesResponseDto
     public int TotalDevice { get; init; }
     public PaginatedList<SiteDto> Data { get; init; } = null!;
 }
+

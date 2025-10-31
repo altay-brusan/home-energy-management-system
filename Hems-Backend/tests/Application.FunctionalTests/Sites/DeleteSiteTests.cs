@@ -63,14 +63,14 @@ public class DeleteSiteTests : BaseTestFixture
         };
 
         var resultBeforeDelete = await SendAsync(query);
-        resultBeforeDelete.Items.Should().HaveCount(1);
+        resultBeforeDelete.Data.Items.Should().HaveCount(1);
 
         // Delete the site
         await SendAsync(new DeleteSiteCommand(siteId));
 
         // Verify site is not returned
         var resultAfterDelete = await SendAsync(query);
-        resultAfterDelete.Items.Should().BeEmpty();
+        resultAfterDelete.Data.Items.Should().BeEmpty();
     }
 
     [Test]

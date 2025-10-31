@@ -10,8 +10,7 @@ public class CreateParameterValueSettingSchemeCommandValidator : AbstractValidat
             .NotEmpty().WithMessage("Parametre ID'si zorunludur.");
 
         RuleFor(v => v.Value)
-            .NotEmpty().WithMessage("Değer zorunludur.")
-            .MaximumLength(1000).WithMessage("Değer 1000 karakterden fazla olamaz.");
+            .NotEmpty().WithMessage("Değer zorunludur.");
 
         RuleFor(v => v.ModelNumber)
             .NotEmpty().WithMessage("Model numarası zorunludur.")
