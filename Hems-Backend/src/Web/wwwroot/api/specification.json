@@ -1274,7 +1274,7 @@
         ]
       }
     },
-    "/api/Invitations/remove-user": {
+    "/api/Invitations/remove-user/{invitationId}": {
       "delete": {
         "tags": [
           "Invitations"
@@ -1282,24 +1282,14 @@
         "operationId": "RemoveUserFromSite",
         "parameters": [
           {
-            "name": "SiteId",
-            "in": "query",
+            "name": "invitationId",
+            "in": "path",
             "required": true,
             "schema": {
               "type": "string",
               "format": "guid"
             },
             "x-position": 1
-          },
-          {
-            "name": "UserId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "nullable": true
-            },
-            "x-position": 2
           }
         ],
         "responses": {
