@@ -3,6 +3,7 @@ using Hems_Backend.Application.Invitations.Commands.AcceptInvitation;
 using Hems_Backend.Application.Invitations.Commands.CreateInvitation;
 using Hems_Backend.Application.Invitations.Commands.DeclineInvitation;
 using Hems_Backend.Application.Invitations.Commands.MarkNotificationAsRead;
+using Hems_Backend.Application.Invitations.Commands.RemoveUserFromSite;
 using Hems_Backend.Application.Invitations.Queries.GetInvitationsBySite;
 using Hems_Backend.Application.Invitations.Queries.GetUserHomeSites;
 using Hems_Backend.Application.Invitations.Queries.GetUserNotifications;
@@ -29,7 +30,9 @@ public class Invitations : EndpointGroupBase
             // Kullanıcının bildirimlerini getirme
             .MapGet(GetUserNotifications, "notifications")
             // Bildirimi okundu olarak işaretleme
-            .MapPut(MarkNotificationAsRead, "notifications/{notificationId}/mark-read");
+            .MapPut(MarkNotificationAsRead, "notifications/{notificationId}/mark-read")
+            // Paylaşılan siteden kullanıcı kaldırma
+            .MapDelete(RemoveUserFromSite, "remove-user/{invitationId}");
     }
 
     /// <summary>
@@ -108,6 +111,18 @@ public class Invitations : EndpointGroupBase
     {
         await sender.Send(new MarkNotificationAsReadCommand { NotificationId = notificationId });
         return Results.NoContent();
+    }
+
+    /// <summary>
+    /// Paylaşılan Siteden Kullanıcı Kaldırma
+    /// </summary>
+    [Authorize]
+    public async Task<IResult> RemoveUserFromSite(
+        ISender sender,
+        Guid invitationId)
+    {
+        await sender.Send(new RemoveUserFromSiteCommand { InvitationId = invitationId });
+        return Results.Ok(new { message = "Kullanıcı siteden başarıyla kaldırıldı." });
     }
 }
 

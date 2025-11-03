@@ -1274,6 +1274,46 @@
         ]
       }
     },
+    "/api/Invitations/remove-user": {
+      "delete": {
+        "tags": [
+          "Invitations"
+        ],
+        "operationId": "RemoveUserFromSite",
+        "parameters": [
+          {
+            "name": "SiteId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "UserId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/Locations": {
       "get": {
         "tags": [

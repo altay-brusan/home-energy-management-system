@@ -53,11 +53,11 @@ app.UseExceptionHandler(options => {});
 // Add rate limiting for device data endpoints
 app.UseMiddleware<DeviceDataRateLimitMiddleware>();
 
-app.UseSwaggerUi(settings =>
-{
-    settings.Path = "/api";
-    settings.DocumentPath = "/api/specification.json";
-});
+//app.UseSwaggerUi(settings =>
+//{
+//    settings.Path = "/api";
+//    settings.DocumentPath = "/api/specification.json";
+//});
 
 app.Map("/", () => Results.Redirect("/api"));
 
