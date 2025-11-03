@@ -57,7 +57,7 @@ export const makeNotificationDetailStyles = (isDark: boolean) => {
     },
     footerRow: {
       flexDirection: 'row',
-      justifyContent: 'flex-end', 
+      justifyContent: 'flex-end',
       alignItems: 'center',
       marginTop: 16,
     },
@@ -73,7 +73,7 @@ export const makeNotificationDetailStyles = (isDark: boolean) => {
     time: {
       fontSize: 15,
       fontWeight: '600',
-      color: '#009687ff', 
+      color: '#009687ff',
     },
     button: {
       marginTop: 16,
@@ -90,6 +90,33 @@ export const makeNotificationDetailStyles = (isDark: boolean) => {
       letterSpacing: 0.3,
       color: isDark ? COLORS.textSoft : '#111827',
       textAlign: 'center',
+    },
+    additionalDataContainer: {
+      backgroundColor: isDark ? 'rgba(29,209,161,0.08)' : 'rgba(29,209,161,0.06)',
+      borderRadius: 12,
+      padding: 16,
+      marginTop: 12,
+      marginBottom: 16,
+      borderLeftWidth: 4,
+      borderLeftColor: COLORS.accent || '#1DD1A1',
+    },
+    additionalDataTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 8,
+    },
+    additionalDataTitle: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: TEXT,
+      marginLeft: 8,
+    },
+    additionalDataText: {
+      fontSize: 15,
+      fontWeight: '500',
+      color: isDark ? '#E6EAF2' : '#374151',
+      fontFamily: 'monospace',
+      lineHeight: 22,
     },
   });
 };

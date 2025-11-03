@@ -25,5 +25,12 @@ export function getGlobalErrorStyles() {
     title: { color: COLORS.textSoft, fontWeight: '800', marginBottom: 4 },
     msg: { color: COLORS.textSoft },
     meta: { color: 'rgba(255,255,255,0.7)', marginTop: 4, fontSize: 12 },
+    retryText: { 
+      color: COLORS.accent, 
+      marginTop: 8, 
+      fontSize: 14, 
+      fontWeight: '600',
+      textAlign: 'center'
+    },
   });
 }

@@ -9,6 +9,7 @@ import Animated, {
 import { useThemeStore } from "../../../../store/themeStore";
 import { getThemeColors } from "../../../../theme/constants";
 import { getModeSelectionPanelStyles } from "./ModeSelectionPanel.styles";
+import { useI18n } from "../../../../hooks/useI18n";
 
 export type OperationMode = "Battery Priority" | "Load Priority" | "Custom";
 export type GeneratorMode =
@@ -28,42 +29,13 @@ type Props = {
   onSelectGrid?: (grid: string) => void;
   onSelectExport?: (exportMode: string) => void;
   onSelectGenerator?: (mode: GeneratorMode) => void;
-  onSave: () => void;
+  onSave?: () => void;
   visible: boolean;
 };
 
-const MODES: { key: OperationMode; desc: string }[] = [
-  {
-    key: "Battery Priority",
-    desc: "PV → Battery → Load → Grid sequence for maximum storage.",
-  },
-  {
-    key: "Load Priority",
-    desc: "PV → Load → Battery → Grid for direct self-consumption.",
-  },
-  {
-    key: "Custom",
-    desc: "Manually configure advanced control logic.",
-  },
-];
 
-const GRID_CODES = ["IEEE-1547", "VDE-AR-N-4105", "AS4777"];
 
-const EXPORT_MODES = [
-  { key: "No Export", desc: "Disable all power export to grid." },
-  { key: "Limited", desc: "Export with limited capacity." },
-  { key: "Moderate", desc: "Balanced export between load and grid." },
-  { key: "Maximum", desc: "Export as much solar as possible." },
-  { key: "Custom", desc: "Manually configure export rules." },
-];
-
-const GENERATOR_MODES: { key: GeneratorMode; desc: string }[] = [
-  { key: "Generator Input Only", desc: "Use port for generator input only." },
-  { key: "Smart Load Output", desc: "Enable as smart load output." },
-  { key: "Microinverter Input", desc: "Use as microinverter input." },
-];
-
-export default function ModeSelectionPanel({
+export default function ModeSelectionPanel ({
   type,
   selectedMode,
   selectedGrid,
@@ -78,11 +50,60 @@ export default function ModeSelectionPanel({
 }: Props) {
   const isDark = useThemeStore((s) => s.mode) === "dark";
   const COLORS = getThemeColors(isDark);
-  const styles = getModeSelectionPanelStyles(COLORS);
+  const styles = getModeSelectionPanelStyles(COLORS, isDark);
 
   const height = useSharedValue(0);
   const opacity = useSharedValue(0);
+  const { t } = useI18n();
 
+  const getStoredModeValue = (displayValue: string): OperationMode => {
+    if (displayValue === t("modeSelection.operation.batteryPriority.title")) {
+      return "Battery Priority";
+    } else if (displayValue === t("modeSelection.operation.loadPriority.title")) {
+      return "Load Priority";
+    } else if (displayValue === t("modeSelection.operation.custom.title")) {
+      return "Custom";
+    }
+    return displayValue as OperationMode;
+  };
+
+  const MODES = [
+    { key: t("modeSelection.operation.batteryPriority.title"), desc: t("modeSelection.operation.batteryPriority.desc"), storedValue: "Battery Priority" },
+    { key: t("modeSelection.operation.loadPriority.title"), desc: t("modeSelection.operation.loadPriority.desc"), storedValue: "Load Priority" },
+    { key: t("modeSelection.operation.custom.title"), desc: t("modeSelection.operation.custom.desc"), storedValue: "Custom" },
+  ];
+
+  const GRID_CODES = [
+    t("modeSelection.grid.ieee"),
+    t("modeSelection.grid.vde"),
+    t("modeSelection.grid.as")
+  ];
+
+  const EXPORT_MODES = [
+    { key: t("modeSelection.export.noExport.title"), desc: t("modeSelection.export.noExport.desc") },
+    { key: t("modeSelection.export.limited.title"), desc: t("modeSelection.export.limited.desc") },
+    { key: t("modeSelection.export.moderate.title"), desc: t("modeSelection.export.moderate.desc") },
+    { key: t("modeSelection.export.maximum.title"), desc: t("modeSelection.export.maximum.desc") },
+    { key: t("modeSelection.export.custom.title"), desc: t("modeSelection.export.custom.desc") },
+  ];
+
+const GENERATOR_MODES = [
+  {
+    key: t("modeSelection.generator.inputOnly.title"),
+    desc: t("modeSelection.generator.inputOnly.desc"),
+    storedValue: "Generator Input Only",
+  },
+  {
+    key: t("modeSelection.generator.smartLoad.title"),
+    desc: t("modeSelection.generator.smartLoad.desc"),
+    storedValue: "Smart Load Output",
+  },
+  {
+    key: t("modeSelection.generator.microInput.title"),
+    desc: t("modeSelection.generator.microInput.desc"),
+    storedValue: "Microinverter Input",
+  },
+];
   useEffect(() => {
     if (visible) {
       height.value = withTiming(1, { duration: 350 });
@@ -108,7 +129,13 @@ export default function ModeSelectionPanel({
       key={key}
       style={[
         styles.option,
-        { borderColor: isActive ? COLORS.accent : COLORS.border },
+        {
+          borderColor: isActive
+            ? COLORS.accent
+            : isDark
+              ? "#FFFFFF"
+              : COLORS.border,
+        },
       ]}
       onPress={onSelect}
       activeOpacity={0.85}
@@ -136,8 +163,8 @@ export default function ModeSelectionPanel({
     <Animated.View style={[styles.container, animStyle]}>
       {type === "operation" &&
         MODES.map((m) =>
-          renderOption(m.key, m.desc, selectedMode === m.key, () =>
-            onSelectMode && onSelectMode(m.key)
+          renderOption(m.key, m.desc, selectedMode === m.storedValue, () =>
+            onSelectMode && onSelectMode(m.storedValue as OperationMode)
           )
         )}
 
@@ -155,20 +182,25 @@ export default function ModeSelectionPanel({
           )
         )}
 
-      {type === "generator" &&
-        GENERATOR_MODES.map((m) =>
-          renderOption(m.key, m.desc, selectedGeneratorMode === m.key, () =>
-            onSelectGenerator && onSelectGenerator(m.key)
-          )
-        )}
+    {type === "generator" &&
+  GENERATOR_MODES.map((m) =>
+    renderOption(
+      m.key,
+      m.desc,
+      selectedGeneratorMode === m.storedValue,
+      () => onSelectGenerator && onSelectGenerator(m.storedValue as GeneratorMode)
+    )
+  )}
 
-      <TouchableOpacity
-        onPress={onSave}
-        style={[styles.saveButton, { backgroundColor: COLORS.accent }]}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.saveText}>Save</Text>
-      </TouchableOpacity>
+      {type !== "export" && (
+        <TouchableOpacity
+          onPress={onSave}
+          style={[styles.saveButton, { backgroundColor: COLORS.accent }]}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.saveText}>{t('common.save')}</Text>
+        </TouchableOpacity>
+      )}
     </Animated.View>
   );
 }

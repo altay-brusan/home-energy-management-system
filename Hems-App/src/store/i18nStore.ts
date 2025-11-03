@@ -20,9 +20,7 @@ const getDeviceLanguage = (): Language => {
 
     // Türkçe ise 'tr', değilse 'en'
     return languageCode === 'tr' ? 'tr' : 'en';
-  } catch (error) {
-    console.error('Error detecting device language:', error);
-    return 'en'; // Varsayılan İngilizce
+  } catch (error) {return 'en'; // Varsayılan İngilizce
   }
 };
 
@@ -52,9 +50,7 @@ export const useI18nStore = create<I18nState>()(
           
           // Store'u güncelle
           set({ language, isLoading: false });
-        } catch (error) {
-          console.error('Language change error:', error);
-          set({ isLoading: false });
+        } catch (error) {set({ isLoading: false });
         }
       },
 
@@ -74,9 +70,7 @@ export const useI18nStore = create<I18nState>()(
             isLoading: false, 
             isInitialized: true 
           });
-        } catch (error) {
-          console.error('Language initialization error:', error);
-          set({ 
+        } catch (error) {set({ 
             isLoading: false, 
             isInitialized: true 
           });

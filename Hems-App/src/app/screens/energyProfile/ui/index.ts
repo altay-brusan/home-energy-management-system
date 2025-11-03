@@ -4,3 +4,4 @@ export { default as BatteryManagementCard } from "./BatteryManagementCard";
 export { default as TimeOfUseCard } from "./TimeOfUseCard";
 export { default as ProtectionSafetyCard } from "./ProtectionSafetyCard";
 export { default as GeneratorSmartLoadsCard } from "./GeneratorSmartLoadsCard";
+export { default as AdvancedPowerControlCard } from "./AdvancedPowerControlCard";

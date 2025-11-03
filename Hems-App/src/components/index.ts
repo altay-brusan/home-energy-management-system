@@ -1,4 +1,5 @@
 export { default as Button } from './ui/Button';
+export { default as BackButton } from './ui/Button/BackButton';
 export { default as Input } from './forms/Input';
 export { default as Card } from './ui/Card';
 export { default as Badge } from './ui/Badge';

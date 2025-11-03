@@ -17,9 +17,7 @@ export default function LoginScreen() {
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = (data: LoginForm) => {
-    console.log('Login:', data);
-  };
+  const onSubmit = (data: LoginForm) => {};
 
   return (
     <View style={styles.container}>
@@ -30,7 +28,7 @@ export default function LoginScreen() {
           <Input
             label="Email"
             value={value}
-            onChangeText={onChange}
+            onChangeText={(text) => onChange(text.toLowerCase())}
             error={errors.email?.message}
             keyboardType="email-address"
             autoCapitalize="none"

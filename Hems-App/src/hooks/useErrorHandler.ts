@@ -7,6 +7,11 @@ export function useErrorHandler() {
 
   const handleError = useCallback((err: unknown): AppError => {
     const appErr = mapToAppError(err);
+    
+    if (appErr.status === 401) {
+      return appErr;
+    }
+    
     show(appErr);
     return appErr;
   }, [show]);

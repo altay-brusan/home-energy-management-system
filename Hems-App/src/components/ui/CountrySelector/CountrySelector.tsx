@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,13 +7,16 @@ import {
   FlatList,
   Pressable,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { getThemeColors } from '../../../theme/constants';
 import { useThemeStore } from '../../../store/themeStore';
 import { makeCitySelectorStyles } from '../CitySelector/CitySelector.styles';
+import { locationsService } from '../../../api/services/locationsService';
+import { CountryDto } from '../../../api/types/locations.types';
 
 export interface Country {
-  code: string;
+  id: string;
   name: string;
 }
 
@@ -25,21 +28,6 @@ interface CountrySelectorProps {
   label?: string;
 }
 
-const COUNTRIES: Country[] = [
-  { code: 'TR', name: 'Turkey' },
-  { code: 'DE', name: 'Germany' },
-  { code: 'US', name: 'United States' },
-  { code: 'GB', name: 'United Kingdom' },
-  { code: 'FR', name: 'France' },
-  { code: 'IT', name: 'Italy' },
-  { code: 'ES', name: 'Spain' },
-  { code: 'NL', name: 'Netherlands' },
-  { code: 'RU', name: 'Russia' },
-  { code: 'CN', name: 'China' },
-  { code: 'JP', name: 'Japan' },
-  // listeyi ihtiyacına göre genişletebilirsin
-];
-
 export default function CountrySelector({
   selectedCountry,
   onCountrySelect,
@@ -49,13 +37,33 @@ export default function CountrySelector({
 }: CountrySelectorProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [loading, setLoading] = useState(false);
   const mode = useThemeStore(s => s.mode);
   const isDark = mode === 'dark';
   const COLORS = getThemeColors(isDark);
 
-  const filteredCountries = COUNTRIES.filter(country =>
-    country.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    country.code.toLowerCase().includes(searchQuery.toLowerCase())
+  useEffect(() => {
+    loadCountries();
+  }, []);
+
+  const loadCountries = async () => {
+    try {
+      setLoading(true);
+      const data = await locationsService.getCountries();
+      const mappedCountries = data.map((country: CountryDto) => ({
+        id: country.id,
+        name: country.name,
+      }));
+      setCountries(mappedCountries);
+    } catch (error) {setCountries([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredCountries = countries.filter(country =>
+    country.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleSelect = (country: Country) => {
@@ -102,29 +110,35 @@ export default function CountrySelector({
               />
             </View>
 
-            <FlatList
-              data={filteredCountries}
-              keyExtractor={(item) => item.code}
-              style={styles.listContainer}
-              showsVerticalScrollIndicator={false}
-              ListEmptyComponent={
-                <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>No countries found</Text>
-                </View>
-              }
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.cityItem,
-                    selectedCountry?.code === item.code && styles.selectedItem,
-                  ]}
-                  onPress={() => handleSelect(item)}
-                >
-                  <Text style={styles.cityName}>{item.name}</Text>
-                  <Text style={styles.cityCode}>{item.code}</Text>
-                </TouchableOpacity>
-              )}
-            />
+            {loading ? (
+              <View style={styles.emptyContainer}>
+                <ActivityIndicator color={COLORS.accent} />
+                <Text style={styles.emptyText}>Loading countries...</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={filteredCountries}
+                keyExtractor={(item) => item.id}
+                style={styles.listContainer}
+                showsVerticalScrollIndicator={false}
+                ListEmptyComponent={
+                  <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>No countries found</Text>
+                  </View>
+                }
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.cityItem,
+                      selectedCountry?.id === item.id && styles.selectedItem,
+                    ]}
+                    onPress={() => handleSelect(item)}
+                  >
+                    <Text style={styles.cityName}>{item.name}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            )}
 
             <TouchableOpacity
               style={styles.closeButton}

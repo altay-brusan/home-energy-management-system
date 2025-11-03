@@ -17,9 +17,7 @@ export const useI18n = () => {
   const changeLanguage = async (language: Language) => {
     try {
       await setLanguage(language);
-    } catch (error) {
-      console.error('Error changing language:', error);
-    }
+    } catch (error) {}
   };
 
   return {
@@ -54,9 +52,7 @@ export const useLanguage = () => {
   const changeLanguage = async (language: Language) => {
     try {
       await setLanguage(language);
-    } catch (error) {
-      console.error('Error changing language:', error);
-    }
+    } catch (error) {}
   };
 
   return {

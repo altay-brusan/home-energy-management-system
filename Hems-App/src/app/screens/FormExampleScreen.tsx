@@ -72,7 +72,7 @@ export default function FormExampleScreen() {
             <Input
               label="Email"
               onBlur={onBlur}
-              onChangeText={onChange}
+              onChangeText={(text) => onChange(text.toLowerCase())}
               value={value}
               placeholder="Enter email"
               keyboardType="email-address"

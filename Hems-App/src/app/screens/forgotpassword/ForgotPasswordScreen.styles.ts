@@ -97,7 +97,7 @@ export function getForgotPasswordStyles(
       width: 260,
       height: 260,
       borderRadius: 130,
-      backgroundColor: COLORS.bgShadeLight,
+    backgroundColor: isDark ? COLORS.bgShadeLight :COLORS.border,
       zIndex: 1, // Card'ın altında kalması için
     },
     bgBottomShade: {
@@ -107,7 +107,7 @@ export function getForgotPasswordStyles(
       width: 300,
       height: 300,
       borderRadius: 150,
-      backgroundColor: COLORS.bgShadeLight, // Üstteki oval ile aynı renk
+       backgroundColor: isDark ? COLORS.bgShadeLight :COLORS.border, // Üstteki oval ile aynı renk
       zIndex: 1, // Card'ın altında kalması için
     },
   });

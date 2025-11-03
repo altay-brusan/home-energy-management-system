@@ -9,13 +9,10 @@ import Button from '../../../../components/ui/Button';
 import MainLayout from '../../../layouts/MainLayout';
 import FontAwesome from '@react-native-vector-icons/fontawesome';
 import { useFaultsStore } from '../../../../store/faultsStore';
-
-const faultTypes = [
-  { label: "Alarm-Related", value: "alarm" },
-  { label: "Decoration Cover Damage", value: "decoration" },
-  { label: "Inquiry", value: "inquiry" },
-  { label: "Other", value: "other" },
-];
+import { useI18n } from '../../../../hooks/useI18n';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm, Controller } from 'react-hook-form';
+import { useTroubleShootingSchema, TroubleShootingForm } from './troubleShooting.schema';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -27,33 +24,39 @@ export default function TroubleShootingScreen({ navigation }: any) {
   const COLORS = getThemeColors(isDark);
   const styles = makeTroubleShootingStyles(COLORS, isDark);
   const insets = useSafeAreaInsets();
-
+  const { t } = useI18n();
+  const troubleShootingSchema = useTroubleShootingSchema();
   const addFault = useFaultsStore(s => s.addFault);
 
-  const [form, setForm] = useState({
-    faultType: '',
-    description: '',
-    name: '',
-    phone: '',
-    address: '',
-    zip: '',
-    email: '',
+  const { control, handleSubmit, setValue, formState: { errors } } = useForm<TroubleShootingForm>({
+    resolver: zodResolver(troubleShootingSchema),
+    defaultValues: {
+      faultType: '',
+      description: '',
+      name: '',
+      phone: '',
+      address: '',
+      zip: '',
+      email: '',
+    },
   });
 
   const [showDropdown, setShowDropdown] = useState(false);
-
-  const handleChange = (field: string, value: string) => {
-    setForm(f => ({ ...f, [field]: value }));
-  };
+  const faultTypes = [
+    { label: t('troubleshooting.faultTypes.alarm'), value: "alarm" },
+    { label: t('troubleshooting.faultTypes.decoration'), value: "decoration" },
+    { label: t('troubleshooting.faultTypes.inquiry'), value: "inquiry" },
+    { label: t('troubleshooting.faultTypes.other'), value: "other" },
+  ];
 
   const toggleDropdown = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setShowDropdown(!showDropdown);
   };
 
-  const handleConfirm = () => {
-    addFault(form);
-    navigation.navigate('Faults'); 
+  const onSubmit = (data: TroubleShootingForm) => {
+    addFault(data);
+    navigation.navigate('Faults');
   };
 
   return (
@@ -67,69 +70,146 @@ export default function TroubleShootingScreen({ navigation }: any) {
           <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
             <FontAwesome name="chevron-left" size={18} color={COLORS.textSoft} />
           </Pressable>
-          <Text style={styles.screenTitle}>Troubleshooting</Text>
+          <Text style={styles.screenTitle}>{t('troubleshooting.title')}</Text>
           <View style={{ width: 32 }} />
         </View>
 
-        <Text style={styles.title}>Issue Details</Text>
+        <Text style={styles.title}>{t('troubleshooting.issueDetails')}</Text>
 
-        <View style={{ marginBottom: 12, position: 'relative' }}>
-          <Pressable onPress={toggleDropdown}>
-            <Input
-              placeholder="Fault Type*"
-              placeholderTextColor={COLORS.slate400}
-              value={form.faultType}
-              editable={false}
-              pointerEvents="none"
-            />
-            <FontAwesome
-              name={showDropdown ? "chevron-up" : "chevron-down"}
-              size={16}
-              color={COLORS.slate400}
-              style={{ position: 'absolute', right: 16, top: '35%' }}
-            />
-          </Pressable>
-
-          {showDropdown && (
-            <View style={styles.dropdownOverlay}>
-              <View style={styles.dropdownList}>
-                {faultTypes.map((item, idx) => (
-                  <Pressable
-                    key={idx}
-                    style={styles.dropdownItem}
-                    onPress={() => {
-                      handleChange("faultType", item.label);
-                      toggleDropdown();
-                    }}
-                  >
-                    <Text style={styles.dropdownItemText}>{item.label}</Text>
-                  </Pressable>
-                ))}
-              </View>
+        <Controller
+          control={control}
+          name="faultType"
+          render={({ field }) => (
+            <View style={{ marginBottom: 12, position: 'relative' }}>
+              <Pressable onPress={toggleDropdown}>
+                <Input
+                  placeholder={t('troubleshooting.faultType')}
+                  placeholderTextColor={COLORS.slate400}
+                  value={field.value}
+                  editable={false}
+                  pointerEvents="none"
+                  error={errors.faultType?.message}
+                />
+                <FontAwesome
+                  name={showDropdown ? "chevron-up" : "chevron-down"}
+                  size={16}
+                  color={COLORS.slate400}
+                  style={{ position: 'absolute', right: 16, top: '35%' }}
+                />
+              </Pressable>
+              {showDropdown && (
+                <View style={styles.dropdownOverlay}>
+                  <View style={styles.dropdownList}>
+                    {faultTypes.map((item, idx) => (
+                      <Pressable
+                        key={idx}
+                        style={styles.dropdownItem}
+                        onPress={() => {
+                          setValue("faultType", item.label);
+                          toggleDropdown();
+                        }}
+                      >
+                        <Text style={styles.dropdownItemText}>{item.label}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+              )}
             </View>
           )}
-        </View>
-
-        <Input
-          placeholder="Description*"
-          placeholderTextColor={COLORS.slate400}
-          value={form.description}
-          onChangeText={v => handleChange('description', v)}
-          multiline
         />
 
-        <Text style={[styles.title, { marginTop: 24 }]}>Contact Information</Text>
-        <Input placeholder="Name*" value={form.name} onChangeText={v => handleChange('name', v)} />
-        <Input placeholder="Phone*" value={form.phone} onChangeText={v => handleChange('phone', v)} />
-        <Input placeholder="Address*" value={form.address} onChangeText={v => handleChange('address', v)} />
-        <Input placeholder="Zip Code*" value={form.zip} onChangeText={v => handleChange('zip', v)} />
-        <Input placeholder="Email*" value={form.email} onChangeText={v => handleChange('email', v)} />
+        <Controller
+          control={control}
+          name="description"
+          render={({ field }) => (
+            <Input
+              placeholder={t('troubleshooting.description')}
+              placeholderTextColor={COLORS.slate400}
+              value={field.value}
+              onChangeText={field.onChange}
+              error={errors.description?.message}
+              multiline
+            />
+          )}
+        />
+
+        <Text style={[styles.title, { marginTop: 24 }]}>{t('troubleshooting.contactInformation')}</Text>
+
+        <Controller
+          control={control}
+          name="name"
+          render={({ field }) => (
+            <Input
+              placeholder={t('troubleshooting.name')}
+              value={field.value}
+              onChangeText={field.onChange}
+              error={errors.name?.message}
+            />
+          )}
+        />
+
+        <Controller
+          control={control}
+          name="phone"
+          render={({ field }) => (
+            <Input
+              placeholder={t('troubleshooting.phone')}
+              value={field.value}
+              onChangeText={field.onChange}
+              keyboardType="phone-pad"
+              error={errors.phone?.message}
+            />
+          )}
+        />
+
+        <Controller
+          control={control}
+          name="address"
+          render={({ field }) => (
+            <Input
+              placeholder={t('troubleshooting.address')}
+              value={field.value}
+              onChangeText={field.onChange}
+              error={errors.address?.message}
+            />
+          )}
+        />
+
+        <Controller
+          control={control}
+          name="zip"
+          render={({ field }) => (
+            <Input
+              placeholder={t('troubleshooting.zipCode')}
+              value={field.value}
+              onChangeText={field.onChange}
+              keyboardType="number-pad"
+              error={errors.zip?.message}
+            />
+          )}
+        />
+
+        <Controller
+          control={control}
+          name="email"
+          render={({ field }) => (
+            <Input
+              placeholder={t('troubleshooting.email')}
+              value={field.value}
+              onChangeText={field.onChange}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              error={errors.email?.message}
+            />
+          )}
+        />
 
         <Button
-          title="Confirm"
+          title={t('troubleshooting.confirm')}
           style={styles.confirmBtn}
           textStyle={styles.confirmBtnText}
-          onPress={handleConfirm}
+          onPress={handleSubmit(onSubmit)}
         />
       </ScrollView>
     </MainLayout>

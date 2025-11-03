@@ -17,6 +17,9 @@ import MainLayout from "../../layouts/MainLayout";
 import { useThemeStore } from "../../../store/themeStore";
 import { getThemeColors } from "../../../theme/constants";
 import { getEnergyProfileStyles } from "./EnergyProfile.styles";
+import { useI18n } from "../../../hooks/useI18n";
+import { useDeviceParameters } from "../../../hooks/useDeviceParameters";
+import { useSitesStore } from "../../../store/sitesStore";
 
 import {
   EnergyPriorityCard,
@@ -25,6 +28,7 @@ import {
   TimeOfUseCard,
   ProtectionSafetyCard,
    GeneratorSmartLoadsCard,
+   AdvancedPowerControlCard
 } from "./ui";
 
 export default function EnergyProfileScreen() {
@@ -34,6 +38,9 @@ export default function EnergyProfileScreen() {
   const isDark = mode === "dark";
   const COLORS = getThemeColors(isDark);
   const styles = getEnergyProfileStyles(COLORS, isDark);
+  const { t } = useI18n();
+  const { loadSelectedSiteDevice } = useSitesStore();
+  const deviceParams = useDeviceParameters();
 
   const [refreshing, setRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -50,23 +57,38 @@ export default function EnergyProfileScreen() {
     }
   }, []);
 
-  const onRefresh = useCallback(() => {
+  // Load device parameters when screen mounts
+  useEffect(() => {
+    loadSelectedSiteDevice().catch(() => {
+      // Silently handle errors - device parameters will stay null
+    });
+  }, [loadSelectedSiteDevice]);
+
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    await deviceParams.refetch();
     setTimeout(() => setRefreshing(false), 1000);
-  }, []);
+  }, [deviceParams]);
 
-  const handleSave = () => {
-    setIsLoading(true);
-    setTimeout(() => setIsLoading(false), 1500);
-  };
+const handleSave = async (onClose?: () => void) => {
+  setIsLoading(true);
+  await new Promise<void>((resolve) => setTimeout(resolve, 1500)); 
+  setIsLoading(false);
 
+  if (onClose) {
+    setTimeout(() => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      onClose();
+    }, 300); 
+  }
+};
   return (
     <MainLayout>
       {isLoading && (
         <View style={styles.loadingOverlay}>
           <View style={styles.loadingBox}>
             <ActivityIndicator size="large" color={COLORS.accent} />
-            <Text style={styles.loadingText}>Applying settings...</Text>
+            <Text style={styles.loadingText}>{t('energyProfile.applyingSettings')}</Text>
           </View>
         </View>
       )}
@@ -103,23 +125,27 @@ export default function EnergyProfileScreen() {
           selectedGrid={selectedGrid}
           setSelectedGrid={setSelectedGrid}
           handleSave={handleSave}
+          deviceParams={deviceParams}
         />
 
-        <SolarPowerCard styles={styles} COLORS={COLORS} />
+        <SolarPowerCard styles={styles} COLORS={COLORS} deviceParams={deviceParams} />
 
-        <BatteryManagementCard styles={styles} COLORS={COLORS} />
+        <BatteryManagementCard styles={styles} COLORS={COLORS} deviceParams={deviceParams} />
 
         <TimeOfUseCard
           styles={styles}
           COLORS={COLORS}
           setIsLoading={setIsLoading}
+          deviceParams={deviceParams}
         />
-        <ProtectionSafetyCard styles={styles} COLORS={COLORS} />
+        <ProtectionSafetyCard styles={styles} COLORS={COLORS} deviceParams={deviceParams} />
         <GeneratorSmartLoadsCard 
-  styles={styles} 
-  COLORS={COLORS} 
-  setIsLoading={setIsLoading} 
-/> 
+          styles={styles} 
+          COLORS={COLORS} 
+          setIsLoading={setIsLoading}
+          deviceParams={deviceParams}
+        /> 
+        <AdvancedPowerControlCard styles={styles} COLORS={COLORS} deviceParams={deviceParams} />
       </ScrollView>
     </MainLayout>
   );

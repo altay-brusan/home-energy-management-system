@@ -1,10 +1,11 @@
 import React, { memo } from 'react';
-import { View } from 'react-native';
 import { Control, Controller, FieldErrors } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { Text, View } from 'react-native';
 
 import Input from '../../../components/forms/Input';
 import Button from '../../../components/ui/Button';
+import ErrorMessage from '../../../components/feedback/ErrorMessage';
 
 import type { SignUpForm } from './signup.schema';
 import type { SignUpStyles } from './SignUpScreen.styles';
@@ -13,38 +14,63 @@ type SignUpFormFieldsProps = {
   control: Control<SignUpForm>;
   errors: FieldErrors<SignUpForm>;
   isSubmitting: boolean;
+  registerLoading: boolean;
+  registerError: string | null;
   onSubmit: () => void;
   onGoBack: () => void;
   styles: SignUpStyles;
 };
 
-function SignUpFormFields({
+function SignUpFormFields ({
   control,
   errors,
   isSubmitting,
+  registerLoading,
+  registerError,
   onSubmit,
   onGoBack,
   styles,
 }: SignUpFormFieldsProps) {
   const { t } = useTranslation();
-  
+
   return (
     <View style={styles.formWrapper}>
       <View style={styles.form}>
+        {registerError && (
+          <ErrorMessage message={registerError} useToast={true} />
+        )}
         <Controller
           control={control}
-          name="name"
+          name="firstName"
           render={({ field: { onChange, onBlur, value } }) => (
             <Input
-              label={t('auth.name')}
-              placeholder={t('auth.namePlaceholder')}
+              label={t('auth.firstName')}
+              placeholder={t('auth.firstNamePlaceholder')}
               value={value}
               onChangeText={onChange}
               onBlur={onBlur}
-              error={errors.name?.message}
+              error={errors.firstName?.message}
               autoCapitalize="words"
-              autoComplete="name"
-              textContentType="name"
+              autoComplete="given-name"
+              textContentType="givenName"
+              returnKeyType="next"
+            />
+          )}
+        />
+        <Controller
+          control={control}
+          name="surname"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <Input
+              label={t('auth.surname')}
+              placeholder={t('auth.surnamePlaceholder')}
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              error={errors.surname?.message}
+              autoCapitalize="words"
+              autoComplete="family-name"
+              textContentType="familyName"
               returnKeyType="next"
             />
           )}
@@ -62,7 +88,7 @@ function SignUpFormFields({
               autoComplete="email"
               textContentType="emailAddress"
               value={value}
-              onChangeText={onChange}
+              onChangeText={(text) => onChange(text.toLowerCase())}
               onBlur={onBlur}
               error={errors.email?.message}
               returnKeyType="next"
@@ -88,6 +114,7 @@ function SignUpFormFields({
             />
           )}
         />
+
         <Controller
           control={control}
           name="confirmPassword"
@@ -108,11 +135,20 @@ function SignUpFormFields({
             />
           )}
         />
+
+        <View style={styles.passwordRules}>
+          <Text style={styles.passwordRulesTitle}>{t('passwordRules.title')}</Text>
+          <Text style={styles.passwordRule}>• {t('passwordRules.minLength')}</Text>
+          <Text style={styles.passwordRule}>• {t('passwordRules.uppercase')}</Text>
+          <Text style={styles.passwordRule}>• {t('passwordRules.lowercase')}</Text>
+          <Text style={styles.passwordRule}>• {t('passwordRules.specialChar')}</Text>
+        </View>
+
         <Button
-          title={isSubmitting ? t('auth.creatingAccount') : t('auth.createAccountButton')}
+          title={registerLoading ? t('auth.creatingAccount') : t('auth.createAccountButton')}
           onPress={onSubmit}
           variant="primary"
-          disabled={isSubmitting}
+          disabled={registerLoading || isSubmitting}
           style={styles.primaryButton}
         />
         <Button

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,65 +7,74 @@ import {
   FlatList,
   Pressable,
   TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { getThemeColors } from '../../../theme/constants';
 import { useThemeStore } from '../../../store/themeStore';
 import { makeCitySelectorStyles } from './CitySelector.styles';
+import { locationsService } from '../../../api/services/locationsService';
+import { CityDto } from '../../../api/types/locations.types';
 
 export interface City {
-    code: string;
+    id: string;
     name: string;
-    country: string;
+    countryId: string;
 }
 
 interface CitySelectorProps {
     selectedCity: City | null;
     onCitySelect: (city: City) => void;
+    selectedCountryId?: string;
     error?: string;
     placeholder?: string;
     label?: string;
 }
 
-const CITIES: City[] = [
-  { code: 'IST', name: 'Istanbul', country: 'Turkey' },
-  { code: 'ANK', name: 'Ankara', country: 'Turkey' },
-  { code: 'IZM', name: 'Izmir', country: 'Turkey' },
-  { code: 'ANT', name: 'Antalya', country: 'Turkey' },
-  { code: 'BUR', name: 'Bursa', country: 'Turkey' },
-  { code: 'ADN', name: 'Adana', country: 'Turkey' },
-  { code: 'KON', name: 'Konya', country: 'Turkey' },
-  { code: 'GAZ', name: 'Gaziantep', country: 'Turkey' },
-  { code: 'MRS', name: 'Mersin', country: 'Turkey' },
-  { code: 'DYN', name: 'Diyarbakır', country: 'Turkey' },
-  { code: 'KAY', name: 'Kayseri', country: 'Turkey' },
-  { code: 'ESK', name: 'Eskişehir', country: 'Turkey' },
-  { code: 'URF', name: 'Urfa', country: 'Turkey' },
-  { code: 'MAL', name: 'Malatya', country: 'Turkey' },
-  { code: 'ERZ', name: 'Erzurum', country: 'Turkey' },
-];
-
 export default function CitySelector ({
     selectedCity,
     onCitySelect,
+    selectedCountryId,
     error,
     placeholder = 'Select City',
     label = 'City',
 }: CitySelectorProps) {
     const [isVisible, setIsVisible] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [cities, setCities] = useState<City[]>([]);
+    const [loading, setLoading] = useState(false);
     const mode = useThemeStore(s => s.mode);
     const isDark = mode === 'dark';
     const COLORS = getThemeColors(isDark);
 
-  const filteredCities = CITIES.filter(city =>
-    city.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    city.code.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+    useEffect(() => {
+      if (selectedCountryId) {
+        loadCities();
+      } else {
+        setCities([]);
+      }
+    }, [selectedCountryId]);
 
-  console.log('CITIES:', CITIES.length);
-  console.log('filteredCities:', filteredCities.length);
-  console.log('isVisible:', isVisible);
-  console.log('searchQuery:', searchQuery);
+    const loadCities = async () => {
+      if (!selectedCountryId) return;
+      
+      try {
+        setLoading(true);
+        const data = await locationsService.getCitiesByCountry(selectedCountryId);
+        const mappedCities = data.map((city: CityDto) => ({
+          id: city.id,
+          name: city.name,
+          countryId: selectedCountryId,
+        }));
+        setCities(mappedCities);
+      } catch (error) {setCities([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+  const filteredCities = cities.filter(city =>
+    city.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
     const handleSelect = (city: City) => {
         onCitySelect(city);
@@ -109,40 +118,39 @@ export default function CitySelector ({
                 onChangeText={setSearchQuery}
                 autoFocus
               />
-              <Text style={styles.debugText}>
-                Debug: {filteredCities.length} cities found
-              </Text>
             </View>
 
-            <FlatList
-              data={filteredCities}
-              keyExtractor={(item) => item.code}
-              style={styles.listContainer}
-              showsVerticalScrollIndicator={false}
-              ListEmptyComponent={
-                <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>
-                    No cities found
-                  </Text>
-                </View>
-              }
-              renderItem={({ item, index }) => {
-                console.log(`Rendering item ${index}:`, item.name);
-                return (
+            {loading ? (
+              <View style={styles.emptyContainer}>
+                <ActivityIndicator color={COLORS.accent} />
+                <Text style={styles.emptyText}>Loading cities...</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={filteredCities}
+                keyExtractor={(item) => item.id}
+                style={styles.listContainer}
+                showsVerticalScrollIndicator={false}
+                ListEmptyComponent={
+                  <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>
+                      {selectedCountryId ? 'No cities found' : 'Please select a country first'}
+                    </Text>
+                  </View>
+                }
+                renderItem={({ item }) => (
                   <TouchableOpacity
                     style={[
                       styles.cityItem,
-                      selectedCity?.code === item.code && styles.selectedItem,
+                      selectedCity?.id === item.id && styles.selectedItem,
                     ]}
                     onPress={() => handleSelect(item)}
                   >
                     <Text style={styles.cityName}>{item.name}</Text>
-                    <Text style={styles.cityCode}>{item.code}</Text>
-                    <Text style={styles.cityCountry}>{item.country}</Text>
                   </TouchableOpacity>
-                );
-              }}
-            />
+                )}
+              />
+            )}
 
                         <TouchableOpacity
                             style={styles.closeButton}

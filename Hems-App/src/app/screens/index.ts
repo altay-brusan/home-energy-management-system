@@ -3,6 +3,8 @@ export { default as SettingsScreen } from "./SettingsScreen";
 export { default as FormExampleScreen } from "./FormExampleScreen";
 export { default as LoginScreen } from "./login/LoginScreen";
 export { default as SignUpScreen } from "./signup/SignUpScreen";
+export { default as ForgotPasswordScreen } from "./forgotpassword/ForgotPasswordScreen";
+export { default as ResetPasswordScreen } from "./resetpassword/ResetPasswordScreen";
 export { default as NotificationScreen } from './notification/NotificationScreen';
 export { default as ProfileInfoScreen } from './profile/ProfileInfo/ProfileInfoScreen';
 export { default as ChangePasswordScreen } from './profile/ChangePassword/ChangePasswordScreen';

@@ -44,7 +44,7 @@ export function getChargeDischargeChartStyles(COLORS: Record<string, string>) {
     },
     chartContainer: {
       width: '100%',
-      height: 200,
+      height: 260,
       borderRadius: 12,
       overflow: 'hidden',
       backgroundColor: 'transparent',
@@ -59,23 +59,26 @@ export function getChargeDischargeChartStyles(COLORS: Record<string, string>) {
     statItem: {
       alignItems: 'center',
       backgroundColor: COLORS.bgShadeLight,
-      borderRadius: 12,
-      paddingVertical: SPACING.sm,
-      paddingHorizontal: SPACING.md,
-      minWidth: 60,
+      borderRadius: 8,
+      paddingVertical: SPACING.xs,
+      paddingHorizontal: SPACING.sm,
+      flex: 1,
+      marginHorizontal: 2,
       borderWidth: 1,
       borderColor: COLORS.border,
     },
     statLabel: {
-      fontSize: 12,
+      fontSize: 10,
       color: COLORS.textSoft,
       fontWeight: '500',
       marginBottom: 2,
+      textAlign: 'center',
     },
     statValue: {
-      fontSize: 16,
+      fontSize: 12,
       color: COLORS.textSoft,
       fontWeight: '700',
+      textAlign: 'center',
     },
   });
 }

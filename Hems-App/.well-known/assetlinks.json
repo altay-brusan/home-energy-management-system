@@ -1,0 +1,17 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.n2nenergymobile",
+      "sha256_cert_fingerprints": [
+        "5C:A6:3B:56:92:CF:FD:B4:32:44:97:25:1D:20:44:29:D2:F1:E8:1F:9D:15:95:C3:70:3C:7C:36:24:5F:65:F7",
+        "FA:C6:17:45:DC:09:03:78:6F:B9:ED:E6:2A:96:2B:39:9F:73:48:F0:BB:6F:89:9B:83:32:66:75:91:03:3B:9C"
+      ]
+    }
+  }
+]
+
+

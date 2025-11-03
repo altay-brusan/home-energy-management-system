@@ -1,5 +1,8 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
 import { SPACING, TYPOGRAPHY } from '../../../../../theme/constants';
+
+const { width } = Dimensions.get('window');
+const isSmall = width <= 380;
 
 export function getDashboardWeatherStyles(COLORS: Record<string, string>) {
   return StyleSheet.create({
@@ -7,39 +10,49 @@ export function getDashboardWeatherStyles(COLORS: Record<string, string>) {
       width: '100%',
       backgroundColor: COLORS.surface,
       borderRadius: 14,
-      padding: SPACING.md,
+      padding: isSmall ? SPACING.sm : SPACING.md,
       marginBottom: SPACING.lg,
       borderWidth: 1,
       borderColor: COLORS.border,
     },
     title: {
-      fontSize: TYPOGRAPHY.lg,
+      fontSize: isSmall ? TYPOGRAPHY.md : TYPOGRAPHY.lg,
       fontWeight: '700',
       marginBottom: 6,
       color: COLORS.textSoft,
     },
     row: {
       flexDirection: 'row',
-      alignItems: 'center',
-      gap: SPACING.md,
+      alignItems: 'flex-start',
+      gap: isSmall ? SPACING.sm : SPACING.md,
+      flexWrap: 'wrap',
+    },
+    contentWrapper: {
+      flex: 1,
+      minWidth: 0,
+    },
+    weatherIcon: {
+      width: isSmall ? 36 : 48,
+      height: isSmall ? 36 : 48,
     },
     icon: {
-      fontSize: 36,
+      fontSize: isSmall ? 28 : 36,
       marginRight: 10,
     },
     temp: {
-      fontSize: TYPOGRAPHY.xxl,
+      fontSize: isSmall ? TYPOGRAPHY.xl : TYPOGRAPHY.xxl,
       fontWeight: 'bold',
       color: COLORS.accent,
     },
     desc: {
-      fontSize: TYPOGRAPHY.md,
+      fontSize: isSmall ? TYPOGRAPHY.sm : TYPOGRAPHY.md,
       color: COLORS.textSoft,
     },
     meta: {
-      fontSize: TYPOGRAPHY.sm,
+      fontSize: TYPOGRAPHY.xs,
       color: COLORS.slate400,
       marginTop: 2,
+      flexShrink: 1,
     },
   });
 }

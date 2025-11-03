@@ -38,17 +38,17 @@ export default function DeviceBadge({
   };
 
   return (
-    <Pressable
-      onPress={onPress}
-      style={[
-        badgeStyles.wrap,
-        {
-          backgroundColor: COLORS.dark,
-          borderColor: COLORS.border,
-          alignItems: align === 'left' ? 'flex-start' : 'flex-end',
-        },
-      ]}
-    >
+   <Pressable
+  onPress={onPress}
+  style={[
+    badgeStyles.wrap,
+    {
+      backgroundColor: COLORS.dark,
+      borderColor: COLORS.border,
+      alignItems: 'flex-start', 
+    },
+  ]}
+>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <View style={[badgeStyles.dot, { backgroundColor: getStatusColor() }]} />
         <View>

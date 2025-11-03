@@ -41,7 +41,14 @@ export const makeDeviceSharingStyles = (
     },
     leftCol: { flex: 1, justifyContent: 'center' },
     rightCol: { alignItems: 'flex-end', justifyContent: 'space-between', marginLeft: 12 },
-    email: { color: isDark ? COLORS.white : COLORS.textSoft, fontWeight: '700', fontSize: 16 },
+    email: {
+  color: isDark ? COLORS.white : COLORS.textSoft,
+  fontWeight: '700',
+  fontSize: 16,
+  flexShrink: 1,
+  flexWrap: 'nowrap',
+  width: '80%',
+},
     status: { fontSize: 13, fontWeight: '700' },
     pending: { color: COLORS.error },
     accepted: { color: COLORS.info },
@@ -67,4 +74,12 @@ export const makeDeviceSharingStyles = (
     separator: {
       height: 0, 
     },
+    emptyText: {
+  textAlign: 'center',
+  color: COLORS.textSoft,
+  fontSize: 15,
+  fontWeight: '500',
+  marginTop: 32,
+  opacity: 0.8,
+},
   });

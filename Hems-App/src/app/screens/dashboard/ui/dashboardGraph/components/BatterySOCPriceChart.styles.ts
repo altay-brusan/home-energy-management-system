@@ -49,7 +49,7 @@ export function makeBatterySOCPriceChartStyles (
             fontWeight: '500',
         },
         chartContainer: {
-            height: 250,
+            height: 300, // Eski yükseklik
             marginBottom: SPACING.md,
         },
         legend: {

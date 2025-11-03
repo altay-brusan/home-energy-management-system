@@ -7,6 +7,7 @@ import { makeFaultsScreenStyles } from './FaultsScreen.styles';
 import FontAwesome from '@react-native-vector-icons/fontawesome';
 import Button from '../../../../components/ui/Button';
 import { useFaultsStore, Fault } from '../../../../store/faultsStore';
+import { useI18n } from '../../../../hooks/useI18n';
 
 type FaultStatus = 'in_progress' | 'processing' | 'completed';
 
@@ -15,6 +16,7 @@ export default function FaultsScreen({ navigation }: any) {
     const isDark = useThemeStore(s => s.mode) === 'dark';
     const COLORS = getThemeColors(isDark);
     const styles = useMemo(() => makeFaultsScreenStyles(COLORS, isDark), [isDark]);
+    const { t } = useI18n();
 
     const faults = useFaultsStore(s => s.faults);
     const [refreshing, setRefreshing] = useState(false);
@@ -37,9 +39,9 @@ export default function FaultsScreen({ navigation }: any) {
     };
 
     const statusLabels: Record<FaultStatus, string> = {
-        in_progress: 'In Progress',
-        processing: 'Processing',
-        completed: 'Completed',
+        in_progress: t('troubleshooting.faultsScreen.status.inProgress'),
+        processing: t('troubleshooting.faultsScreen.status.processing'),
+        completed: t('troubleshooting.faultsScreen.status.completed'),
     };
 
     const openDetail = (f: Fault) => {
@@ -78,8 +80,8 @@ export default function FaultsScreen({ navigation }: any) {
         },
         {
             id: 'mock-completed',
-            faultType: 'Washing Machine',
-            description: 'Machine drum not spinning, technician replaced belt.',
+            faultType: 'Battery',
+            description: 'Battery system is not reaching desired temperature.',
             name: 'Demo User 2',
             phone: '555-333-444',
             address: 'Example Avenue 456',
@@ -115,9 +117,9 @@ export default function FaultsScreen({ navigation }: any) {
 
                         <View style={styles.itemMetaRow}>
                             {item.status === 'completed' && finished ? (
-                                <Text style={styles.itemMeta}>Finished at: {finished}</Text>
+                                <Text style={styles.itemMeta}>{t('troubleshooting.faultsScreen.finishedAt', { date: finished })}</Text>
                             ) : (
-                                <Text style={styles.itemMeta}>Created at: {created}</Text>
+                                <Text style={styles.itemMeta}>{t('troubleshooting.faultsScreen.createdAt', { date: created })}</Text>
                             )}
                         </View>
                     </View>
@@ -132,16 +134,16 @@ export default function FaultsScreen({ navigation }: any) {
                 <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
                     <FontAwesome name="chevron-left" size={18} color={COLORS.textSoft} />
                 </Pressable>
-                <Text style={styles.screenTitle}>Fault Records</Text>
+                <Text style={styles.screenTitle}>{t('troubleshooting.faultsScreen.title')}</Text>
                 <View style={{ width: 32 }} />
             </View>
 
             <View style={styles.warrantyCard}>
-                <Text style={styles.warrantyText}>Warranty valid until: 12/12/2026</Text>
+                <Text style={styles.warrantyText}>{t('troubleshooting.faultsScreen.warrantyValid', { date: '12/12/2026' })}</Text>
             </View>
 
             <Button
-                title="Create Fault Record"
+                title={t('troubleshooting.faultsScreen.createFaultRecord')}
                 style={styles.createBtn}
                 textStyle={styles.createBtnText}
                 onPress={() => navigation.navigate('TroubleShooting')}
@@ -155,13 +157,13 @@ export default function FaultsScreen({ navigation }: any) {
                         style={[styles.filterChip, filter === key && styles.filterChipActive]}
                     >
                         <Text style={[styles.filterText, filter === key && styles.filterTextActive]}>
-                            {key === 'all' ? 'All' : statusLabels[key as FaultStatus]}
+                            {key === 'all' ? t('troubleshooting.faultsScreen.all') : statusLabels[key as FaultStatus]}
                         </Text>
                     </Pressable>
                 ))}
             </View>
 
-            <Text style={styles.sectionTitle}>My Fault Records</Text>
+            <Text style={styles.sectionTitle}>{t('troubleshooting.faultsScreen.myFaultRecords')}</Text>
         </>
     );
 

@@ -1,6 +1,6 @@
 export const DARK_COLORS = {
   dark: '#1b222a',             // Koyu gri-mavi arka plan
-  border: '#2d3748',           // Orta gri border
+  border: '#374151',           // Orta gri border
   textSoft: '#cbd5e1',         // Açık gri metin
   accent: '#2bd5c4',           // Turkuaz accent
   accentGlow: '#2bd5c4',       // Turkuaz glow efekti

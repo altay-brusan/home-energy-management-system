@@ -1,102 +1,1229 @@
 {
-  "common": {
-    "language": "Language",
-    "selectLanguage": "Select Language",
-    "chooseLanguage": "Choose your language preference",
-    "turkish": "Turkish",
-    "english": "English",
-    "cancel": "Cancel",
-    "confirm": "Confirm",
+    "common": {
+      "language": "Language",
+      "selectLanguage": "Select Language",
+      "chooseLanguage": "Choose your language preference",
+      "turkish": "Turkish",
+      "english": "English",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "save": "Save",
+      "delete": "Delete",
+      "loading": "Loading...",
+      "error": "Error",
+      "success": "Success",
+      "warning": "Warning",
+      "info": "Info",
+      "critical": "Critical",
+      "back": "Back",
+      "ok": "OK",
+      "close": "Close",
+      "retry": "Retry"
+    },
+    "invitation": {
+      "title": "Home Invitation",
+      "message": "You have received a home invitation. Do you want to accept this invitation?",
+      "accept": "Accept",
+      "decline": "Decline",
+      "invalidCode": "Invalid invitation code",
+      "notLoggedIn": "Please log in or register with your email",
+      "accepted": "Invitation accepted",
+      "acceptFailed": "Failed to accept invitation",
+      "homeListUpdated": "Home list updated",
+      "codeReceived": "Invitation code received"
+    },
+    "time": {
+      "days": {
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday",
+        "sunday": "Sunday",
+        "short": {
+          "monday": "Mon",
+          "tuesday": "Tue",
+          "wednesday": "Wed",
+          "thursday": "Thu",
+          "friday": "Fri",
+          "saturday": "Sat",
+          "sunday": "Sun"
+        },
+        "veryShort": {
+          "monday": "M",
+          "tuesday": "T",
+          "wednesday": "W",
+          "thursday": "T",
+          "friday": "F",
+          "saturday": "S",
+          "sunday": "S"
+        }
+      },
+      "hours": {
+        "midnight": "00:00",
+        "earlyMorning": "04:00",
+        "morning": "08:00",
+        "noon": "12:00",
+        "afternoon": "16:00",
+        "evening": "20:00",
+        "night": "23:00"
+      }
+    },
+    "errors": {
+      "lockedOut": "Your account has been temporarily locked. Please try again later.",
+      "failed": "An error occurred. Please try again.",
+      "notFound": "The requested resource was not found.",
+      "invalidCredentials": "Invalid email or password.",
+      "userNotFound": "No user found with this email address.",
+      "emailAlreadyExists": "This email address is already registered.",
+      "passwordTooWeak": "Password does not meet requirements.",
+      "tokenExpired": "Your session has expired. Please log in again.",
+      "networkError": "Connection problem occurred. Please check your internet connection.",
+      "serverError": "Server error occurred. Please try again later.",
+      "validationError": "The submitted data is invalid. Please check.",
+      "unauthorized": "You do not have permission for this operation.",
+      "forbidden": "You do not have permission for this operation.",
+      "timeout": "Request timed out. Please try again.",
+      "rateLimit": "Too many requests sent. Please wait a while.",
+      "unknown": "An unknown error occurred.",
+      "loginNotFound": "Invalid email or password. Please check your credentials.",
+      "loginFailed": "Login failed. Please try again.",
+      "emailNotConfirmed": "Your email address has not been confirmed. Please check your email and confirm your account."
+    },
+    "auth": {
+      "login": "Log in",
+      "email": "Email",
+      "password": "Password",
+      "forgotPassword": "Forgot Password?",
+      "signUp": "Sign Up",
+      "welcome": "Welcome",
+      "loginSubtitle": "Sign in to your account",
+      "emailPlaceholder": "Your Email",
+      "passwordPlaceholder": "Your Password",
+      "loginButton": "Log in",
+      "signingIn": "Signing in…",
+      "dontHaveAccount": "Don't have an account?",
+      "alreadyHaveAccount": "Already have an account?",
+      "createAccount": "Create Account",
+      "loginError": "An error occurred while logging in",
+      "invalidCredentials": "Invalid email or password",
+      "networkError": "Network connection error",
+      "agreeToTerms": "I agree to the",
+      "termsOfService": "Terms of Service",
+      "and": "and",
+      "privacyPolicy": "Privacy Policy",
+      "forgotPasswordTitle": "Forgot Password",
+      "forgotPasswordSubtitle": "Enter your email address and we'll send you a reset code",
+      "sendResetCode": "Send Reset Code",
+      "sending": "Sending…",
+      "backToLogin": "Back to login",
+      "resetLinkSent": "Password reset link sent",
+      "resetCodeSent": "Reset code sent to your email",
+      "accountCreated": "Your account has been created successfully!",
+      "loginSuccess": "Login successful!",
+      "userNotFound": "No such user found",
+      "invalidPassword": "Invalid password",
+      "signUpTitle": "Create Account",
+      "signUpSubtitle": "Create your new account",
+      "name": "Full Name",
+      "namePlaceholder": "Your Full Name",
+      "firstName": "First Name",
+      "firstNamePlaceholder": "Your First Name",
+      "surname": "Surname",
+      "surnamePlaceholder": "Your Surname",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Confirm your password",
+      "createAccountButton": "Create Account",
+      "creatingAccount": "Creating account…",
+      "passwordsDoNotMatch": "Passwords do not match",
+      "passwordTooShort": "Password must be at least 6 characters",
+      "invalidEmail": "Invalid email address",
+      "emailAlreadyExists": "This email address is already in use",
+      "duplicateUserName": "This email address is already in use",
+      "registrationError": "An error occurred during registration. Please try again.",
+      "resetPasswordTitle": "Reset Password",
+      "resetPasswordSubtitle": "Enter the reset code sent to {{email}} and your new password",
+      "resetCode": "Reset Code",
+      "resetCodePlaceholder": "Enter reset code",
+      "newPassword": "New Password",
+      "newPasswordPlaceholder": "Enter new password",
+      "resetPasswordButton": "Reset Password",
+      "resetting": "Resetting...",
+      "passwordResetSuccess": "Password reset successfully",
+      "logoutSuccess": "Logged out",
+      "goodbye": "Goodbye",
+      "sessionExpired": "Session expired",
+      "pleaseLogin": "Please log in again",
+      "loginTitle": "Login"
+    },
+    "passwordRules": {
+      "title": "Password Rules:",
+      "minLength": "At least 8 characters",
+      "uppercase": "At least 1 uppercase letter (A-Z)",
+      "lowercase": "At least 1 lowercase letter (a-z)",
+      "specialChar": "At least 1 special character (!@#$%^&*)"
+    },
+    "validation": {
+      "firstNameRequired": "First name is required",
+      "surnameRequired": "Surname is required",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Please enter a valid email address",
+      "passwordRequired": "Password is required",
+      "oldPasswordRequired": "Current password is required",
+      "passwordMinLength": "Password must be at least 8 characters",
+      "passwordUppercase": "Password must contain at least 1 uppercase letter",
+      "passwordLowercase": "Password must contain at least 1 lowercase letter",
+      "passwordSpecialChar": "Password must contain at least 1 special character",
+      "confirmPasswordRequired": "Password confirmation is required",
+      "passwordsNotMatch": "Passwords do not match",
+      "resetCodeRequired": "Reset code is required"
+    },
+    "api": {
+      "success": {
+        "created": "Successfully created!",
+        "updated": "Successfully updated!",
+        "deleted": "Successfully deleted!",
+        "createdTitle": "Success",
+        "updatedTitle": "Update Successful",
+        "deletedTitle": "Delete Successful"
+      },
+      "error": {
+        "defaultTitle": "Error",
+        "defaultMessage": "An unknown error occurred",
+        "invalidRequest": "Invalid Request",
+        "invalidRequestMessage": "The submitted data is invalid",
+        "notFound": "Not Found",
+        "notFoundMessage": "The requested resource was not found",
+        "conflict": "Conflict Error",
+        "conflictMessage": "This operation already exists",
+        "validationError": "Validation Error",
+        "validationErrorMessage": "The submitted data could not be validated",
+        "serverError": "Server Error",
+        "serverErrorMessage": "A server error occurred, please try again later",
+        "connectionError": "Connection Error",
+        "connectionErrorMessage": "Please check your internet connection",
+        "networkError": "Network Error",
+        "networkErrorMessage": "Unable to reach the server. Please check your connection.",
+        "unknownError": "Unknown Error",
+        "unknownErrorMessage": "An unexpected error occurred"
+      }
+    },
+    "dashboard": {
+      "welcome": "Welcome",
+      "dashboard": "Dashboard",
+      "profile": "Profile",
+      "settings": "Settings",
+      "logout": "Logout",
+      "home": "Home",
+      "notifications": "Notifications",
+      "messages": "Messages"
+    },
+    "tabs": {
+      "dashboard": "Dashboard",
+      "device": "Device",
+      "notifications": "Notifications",
+      "profile": "Profile"
+    },
+    "profile": {
+      "profile": "Profile",
+      "editProfile": "Edit Profile",
+      "changePassword": "Change Password",
+      "personalInfo": "Personal Info",
+      "personalInformation": "Personal Information",
+      "contactInfo": "Contact Information",
+      "preferences": "Preferences",
+      "language": "Language",
+      "theme": "Theme",
+      "notifications": "Notifications",
+      "deviceSharing": "Device Sharing & Authorization",
+      "companyInfo": "Company / Region Info",
+      "troubleshooting": "Troubleshooting",
+      "logout": "Logout"
+    },
+    "changePassword": {
+      "title": "Change Password",
+      "oldPassword": "Old Password",
+      "newPassword": "New Password",
+      "repeatPassword": "Repeat New Password",
+      "save": "Save",
+      "cancel": "Cancel",
+      "fillAllFields": "Please fill in all fields.",
+      "passwordsNoMatch": "New passwords do not match.",
+      "passwordRequirements": "Password must be at least 8 characters, include uppercase, lowercase, and a number.",
+      "oldPasswordIncorrect": "Old password is incorrect.",
+      "passwordUpdated": "Password updated successfully."
+    },
+    "troubleshooting": {
+      "title": "Troubleshooting",
+      "issueDetails": "Issue Details",
+      "faultType": "Fault Type*",
+      "description": "Description*",
+      "contactInformation": "Contact Information",
+      "name": "Name*",
+      "phone": "Phone*",
+      "address": "Address*",
+      "zipCode": "Zip Code*",
+      "email": "Email*",
+      "confirm": "Confirm",
+      "faultTypes": {
+        "alarm": "Alarm-Related",
+        "decoration": "Decoration Cover Damage",
+        "inquiry": "Inquiry",
+        "other": "Other"
+      },
+      "validation": {
+        "faultTypeRequired": "Please select a fault type.",
+        "descriptionMin": "Description must be at least 10 characters.",
+        "descriptionMax": "Description can be at most 500 characters.",
+        "nameMin": "Name must be at least 2 characters.",
+        "nameMax": "Name can be at most 64 characters.",
+        "phoneInvalid": "Phone number must consist of digits only and be between 10-15 characters.",
+        "addressMin": "Address must be at least 5 characters.",
+        "addressMax": "Address is too long (maximum 120 characters).",
+        "zipInvalid": "Please enter a valid postal code.",
+        "emailInvalid": "Please enter a valid email address."
+      },
+      "faultsScreen": {
+        "title": "Fault Records",
+        "warrantyValid": "Warranty valid until: {{date}}",
+        "createFaultRecord": "Create Fault Record",
+        "all": "All",
+        "myFaultRecords": "My Fault Records",
+        "finishedAt": "Finished at: {{date}}",
+        "createdAt": "Created at: {{date}}",
+        "status": {
+          "inProgress": "In Progress",
+          "processing": "Processing",
+          "completed": "Completed"
+        }
+      },
+      "faultDetail": {
+        "title": "Issue Details",
+        "contactInformation": "Contact Information",
+        "location": "Location",
+        "timeline": "Timeline",
+        "created": "Created",
+        "completed": "Completed",
+        "technicianNotes": "Technician Notes",
+        "createRequest": "Create a request...",
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "address": "Address",
+        "zipCode": "Zip Code",
+        "mockNotes": {
+  "line1": "Technician checked the wiring.",
+  "line2": "Replaced faulty fuse.",
+  "line3": "Issue resolved successfully."
+}
+      }
+    },
+    "deviceSharing": {
+      "title": "Device Sharing & Authorization",
+      "invalidEmail": "Please enter a valid email address.",
+      "invitationSent": "Invitation sent successfully.",
+      "enterEmail": "Enter email",
+      "invite": "Invite",
+      "cancel": "Cancel",
+      "owner": "Owner",
+      "accessSince": "Access since: {{date}}",
+      "status": {
+        "pending": "Pending",
+        "accepted": "Accepted",
+        "rejected": "Rejected",
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "noInvitations": "No invitations found",
+      "invalidEmailFormat": "Please enter a valid email address.",
+      "noEmailEntered": "Please enter an email address.",
+      "noSiteSelected": "No valid site selected.",
+      "invitationError": "An error occurred while sending the invitation.",
+      "invitationListError": "Could not load invitation list.",
+      "invitationRemoved": "Invitation removed successfully.",
+      "removeInvitationError": "An error occurred while removing the invitation.",
+      "removing": "Removing...",
+      "sending": "Sending...",
+      "detail": {
+        "title": "User Detail",
+        "email": "Email:",
+        "accessSinceLabel": "Access Since:",
+        "active": "Active:",
+        "yes": "Yes",
+        "no": "No",
+        "statusLabel": "Status:",
+        "removeUser": "Remove User",
+        "activityLog": "Activity Log",
+        "invitationSent": "Invitation email sent on {{date}}",
+        "statusChanged": "Status changed to {{status}} on {{date}}",
+        "accessGranted": "Access granted on {{date}}",
+        "accessRevoked": "Access revoked on {{date}}"
+      }
+    },
+    "profileInfo": {
+      "title": "Personal Information",
+      "firstName": "First Name*",
+      "lastName": "Last Name*",
+      "email": "Email",
+      "phone": "Phone*",
+      "save": "Save",
+      "cancel": "Cancel",
+      "fillAllFields": "Please fill in all required fields.",
+      "invalidPhone": "Please enter a valid phone number.",
+      "profileUpdated": "Profile updated successfully.",
+      "profileUpdateError": "Failed to update profile. Please try again.",
+      "avatar": "Avatar",
+      "avatarNotImplemented": "Avatar upload/change not implemented in this demo."
+    },
+    "settings": {
+      "settings": "Settings",
+      "settingsScreen": "Settings Screen",
+      "setting1": "Setting 1",
+      "setting2": "Setting 2",
+      "logout": "Logout",
+      "general": "General",
+      "privacy": "Privacy",
+      "security": "Security",
+      "about": "About",
+      "version": "Version",
+      "contact": "Contact",
+      "help": "Help",
+      "feedback": "Feedback"
+    },
+    "alerts": {
+      "confirmLogout": "Are you sure you want to logout?",
+      "logoutSuccess": "Successfully logged out",
+      "saveSuccess": "Successfully saved",
+      "deleteConfirm": "Are you sure you want to delete?",
+      "deleteSuccess": "Successfully deleted",
+      "updateSuccess": "Successfully updated",
+      "networkError": "Network connection error",
+      "serverError": "Server error",
+      "unknownError": "Unknown error"
+    },
+    "dashboardDevices": {
+      "title": "Devices",
+      "devices": {
+        "inverter": "Inverter",
+        "battery": "Battery",
+        "evCharger": "EV Charger"
+      },
+      "status": {
+        "online": "ONLINE",
+        "normal": "NORMAL",
+        "offline": "OFFLINE"
+      },
+      "power": "Power",
+      "today": "Today",
+      "total": "Total",
+      "soc": "SOC",
+      "lastSession": "Last Session",
+      "sessionEnergy": "Session Energy",
+      "noDevice": "No device connected",
+      "noData": "No device data available"
+    },
+    "dashboardFlow": {
+      "title": "Energy Flow",
+      "dateRange": "Date Range",
+      "selectDateRange": "Select Date Range",
+      "selectStartDate": "Select start date",
+      "selectEndDate": "Select end date",
+      "loading": "Loading energy flow data...",
+      "noDevice": "No device found. Please add a device to view energy flow data.",
+      "noData": "No energy flow data available for the selected date range.",
+      "pv": "PV",
+      "battery": "Battery",
+      "generator": "Generator",
+      "grid": "Grid",
+      "load": "Load",
+      "system": "System",
+      "in": "In",
+      "out": "Out"
+    },
+    "dashboardGraph": {
+      "productionTitle": "Energy Production",
+      "consumptionTitle": "Energy Consumption",
+      "total": "Total",
+      "peak": "Peak",
+      "average": "Average",
+      "noDevice": "No device found. Please add a device to view production data.",
+      "noData": "No production data available for the selected period.",
+      "chartType": {
+        "bar": "Bar",
+        "area": "Area"
+      },
+      "range": {
+        "day": "Day",
+        "week": "Week",
+        "month": "Month",
+        "year": "Year"
+      }
+    },
+    "dashboardHero": {
+      "title": "Home Energy Status",
+      "subtitle": "Today's consumption and real-time power",
+      "today": "Today: {{value}} kWh",
+      "current": "Current: {{value}} W",
+      "lastSync": "Last sync: {{value}} ago",
+      "soc": "SOC: {{value}}%",
+      "total": "Total: {{value}} kWh"
+    },
+    "dashboardWelcome": {
+      "title": "Welcome Home!",
+      "subtitle": "Your smart energy dashboard",
+      "status": {
+        "active": "Active"
+      },
+      "lastSync": "Last sync: {{value}} ",
+      "metrics": {
+        "today": "Today",
+        "power": "Power",
+        "savings": "Savings"
+      }
+    },
+    "dashboardMode": {
+      "title": "Current Mode",
+      "modes": {
+        "batteryPriority": "Battery Priority",
+        "loadPriority": "Load Priority",
+        "manual": "Custom"
+      },
+      "descriptions": {
+        "battery": "PV → Battery → Load → Grid sequence for maximum storage.",
+        "load": "PV → Load → Battery → Grid for direct self-consumption.",
+        "manual": "Manually configure advanced control logic."
+      }
+    },
+    "dashboardShare": {
+      "title": "Share Dashboard",
+      "options": {
+        "copy": "Copy Link",
+        "whatsapp": "WhatsApp",
+        "twitter": "Twitter",
+        "mail": "Mail"
+      },
+      "cancel": "Cancel"
+    },
+    "dashboardStatus": {
+      "online": "Online",
+      "normal": "Normal",
+      "battery": "Battery: {{value}}%",
+      "grid": "Grid: Connected"
+    },
+    "dashboardWeather": {
+      "title": "Weather",
+      "desc": "Current forecast",
+      "meta": "Sunrise: {{sunrise}}  •  Sunset: {{sunset}}",
+      "humidity": "Humidity",
+      "wind": "Wind",
+      "noData": "No weather data available"
+    },
+    "dashboardBatteryPriceChart": {
+      "title": "Battery SOC ",
+      "switch": {
+        "buy": "Buy",
+        "sell": "Sell",
+        "soc": "SOC"
+      },
+      "legend": {
+        "buy": "Buying Price (€/kWh)",
+        "sell": "Selling Price (€/kWh)",
+        "soc": "Battery SOC (%)"
+      },
+      "noData": "No SOC data available"
+    },
+      "dashboardBatterySOHChart": {
+        "title": "Battery SOH",
+        "switch": {
+          "soh": "SOH"
+        },
+        "legend": {
+          "soh": "Battery SOH (%)"
+        },
+        "noData": "No SOH data available"
+      },
+      "dashboardBatterySOCChart": {
+        "title": "Battery SOC"
+      },
+    "dashboardPowerMetricsChart": {
+      "title": "Power Metrics Chart (kW)",
+      "labels": {
+        "solar": "Solar",
+        "battery": "Battery",
+        "grid": "Grid",
+        "load": "Load"
+      }
+    },
+    "dashboardBatteryChart": {
+      "title": "Battery (%)",
+      "stats": {
+        "avg": "Avg",
+        "peak": "Peak",
+        "current": "Current"
+      },
+      "noDevice": "No device connected",
+      "noData": "No data available"
+    },
+    "dashboardChargeDischargeChart": {
+      "title": "Charge & Discharge Power (kW)",
+      "legend": {
+        "charge": "Charge",
+        "discharge": "Discharge"
+      },
+      "stats": {
+        "avg": "Avg",
+        "peak": "Peak",
+        "current": "Current",
+        "chargeAvg": "Charge Avg",
+        "chargePeak": "Charge Peak",
+        "chargeCurrent": "Charge Now",
+        "dischargeAvg": "Discharge Avg",
+        "dischargePeak": "Discharge Peak",
+        "dischargeCurrent": "Discharge Now"
+      },
+      "noDevice": "No device connected",
+      "noData": "No data available"
+    },
+    "dashboardSidebar": {
+      "header": "My Houses",
+      "addButton": "Add House",
+      "noDevice": "No Device",
+      "switching": "Switching home..."
+    },
+    "deviceAdd": {
+      "title": "Add Device",
+      "subtitle": "Connect your energy device to this house",
+      "formTitle": "Device Information",
+      "deviceStatus": "No Device",
+      "setupName": "Setup Name",
+      "setupNamePlaceholder": "Enter setup name",
+      "qrCode": "QR Code",
+      "qrCodePlaceholder": "Scan or enter QR code",
+      "scanQr": "Scan QR Code",
+      "serialNumber": "Serial Number",
+      "serialNumberPlaceholder": "Enter device serial number",
+      "qrOrSerial": "Use QR Code or Serial Number",
+      "addDevice": "Add Device",
+      "noAddress": "No address specified",
+      "success": {
+        "title": "Device Added",
+        "message": "Device has been successfully added to your house"
+      },
+      "error": {
+        "title": "Error",
+        "message": "Failed to add device. Please try again."
+      },
+      "validation": {
+        "title": "Validation Error",
+        "message": "Please provide either QR code or serial number"
+      }
+    },
+    "dashboardScreen": {
+      "title": "Dashboard"
+    },
+    "dashboardHelpButton": {
+      "title": "Help"
+    },
+    "dashboardNotifications": {
+      "title": "Notifications",
+      "empty": "No notifications."
+    },
+    "globalAlert": {
+      "critical": "Critical",
+      "important": "Important",
+      "info": "Info",
+      "close": "Close",
+      "additionalInfo": "Additional Info",
+      "device": "Device"
+    },
+    "notifications": {
+      "justNow": "Just now",
+      "minutesAgo": "{{count}} minute ago",
+      "minutesAgo_other": "{{count}} minutes ago",
+      "hoursAgo": "{{count}} hour ago",
+      "hoursAgo_other": "{{count}} hours ago",
+      "categories": {
+        "critical": "Critical Alert",
+        "warning": "Warning",
+        "info": "Information"
+      },
+      "additionalData": "Additional Information",
+      "dismiss": "Dismiss",
+      "title": "Notifications",
+      "markAllRead": "Mark all read",
+      "markAsRead": "Mark as Read",
+      "markAsReadSuccess": "Marked as read",
+      "markAsReadFailed": "Failed to mark as read",
+      "critical": "CRITICAL",
+      "today": "Today",
+      "earlier": "Earlier",
+      "empty": "No notifications",
+      "offline": "Offline — showing cached notifications",
+      "filters": {
+        "all": "All",
+        "today": "Today",
+        "unread": "Unread",
+        "critical": "Critical"
+      },
+      "status": {
+        "read": "Read",
+        "unread": "Unread"
+      },
+      "deleteToast": {
+        "success": "Notification deleted",
+        "error": "Failed to delete notification"
+      },
+      "markAllReadSuccess": "All notifications marked as read",
+      "markAllReadError": "Failed to mark all notifications as read"
+    },
+    "deviceList": {
+      "title": "Device",
+      "online": "Online",
+      "offline": "Offline",
+      "onGrid": "On Grid",
+      "offGrid": "Off Grid"
+    },
+    "deviceDetail": {
+    "title": "NetZr Device Detail",
+    "loading": "Loading data...",
+    "totalComponents": "Total {{count}} components found",
+    "dailyProduction": "Daily Production",
+    "batteryCharge": "Battery Charge",
+    "connection": "Connection",
+    "devicesTitle": "NetZr Devices",
+    "pvPanel": {
+      "title": "PV Panel",
+      "subtitle": "Real-time production and historical data",
+      "bar": "Bar",
+      "area": "Area",
+      "day": "Day",
+      "week": "Week",
+      "month": "Month",
+      "year": "Year",
+      "basicInfo": "Basic Information",
+      "serialNumber": "Serial Number",
+      "connectedDevice": "Connected Device"
+    },
+    "gateway": {
+      "title": "Energy Gateway",
+      "subtitle": "Grid/Off Grid control and measurements",
+      "goOffGrid": "Go Off Grid",
+      "goOnGrid": "Go On Grid",
+      "inverterSide": "Inverter Side",
+      "gridSide": "Grid Side",
+      "voltage": "Voltage",
+      "frequency": "Frequency",
+      "phase": "Phase",
+      "mode": "Mode",
+      "alarmFault": "Alarm & Fault",
+      "noActiveAlarm": "No Active Alarm",
+      "onGrid": "On Grid",
+      "offGrid": "Off Grid Mode"
+    },
+    "battery": {
+      "title": "Battery Detail",
+      "subtitle": "Real-Time Information",
+      "restart": "Restart Device"
+    },
+    "confirmRestart": "Are you sure you want to restart the device now?",
+    "confirmStart": "Yes, Restart",
+    "actionStarted": "Process Started",
+    "deviceRestarting": "The device is restarting."
+    },
+    "deviceNames": {
+      "battery": "Battery",
+    "battery(1)": "Battery (1)",
+    "battery(2)": "Battery (2)",
+    "battery(3)": "Battery (3)",
+    "bms": "Battery Cluster",
+    "inverter": "Inverter"
+  },
+  "energyProfile": {
+    "title": "Energy Profile",
+    "saveSettings": "Save Settings",
+    "applyingSettings": "Applying settings..."
+  },
+  "energyFlow": {
+      "title": "Energy Flow",
+      "subtitle": "Real-time energy distribution visualization",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "loading": "Loading energy flow data...",
+      "noDevice": "No device found. Please add a device to view energy flow data."
+    },
+    "offline": {
+      "title": "No Internet Connection",
+      "subtitle": "Please check your network settings and try again",
+      "message": "Please check your connection and try again.",
+      "retry": "Retry",
+      "tryAgain": "Try Again",
+      "networkSettings": "Network Settings",
+      "checkingConnection": "Checking connection...",
+      "tips": {
+        "checkWifi": "Check WiFi or mobile data",
+        "moveToSignal": "Move to better signal area"
+      }
+    },
+    "trash": {
+      "title": "Trash Bin",
+      "restoreAll": "Restore All",
+      "deleteAll": "Delete All",
+      "restore": "Restore",
+      "deleted": "Deleted",
+      "deletedAt": "Deleted at {{date}}",
+      "today": "Today Deleted",
+      "earlier": "Earlier Deleted",
+      "empty": "Trash is empty",
+      "filters": {
+        "all": "All",
+        "today": "Today",
+        "critical": "Critical"
+      },
+      "restoreSuccess": "Notification restored",
+      "restoreFailed": "Failed to restore notification",
+      "deleteSuccess": "Notification permanently deleted",
+      "deleteFailed": "Failed to delete notification"
+    },
+    "homeEmptyState": {
+      "title": "No homes yet",
+      "subtitle": "Add your first home and device to start managing energy"
+    },
+    "homeCard": {
+      "statusOnline": "Online",
+      "statusNoDevice": "No Device",
+      "deviceCount": "1 Device",
+      "noDevice": "No Device",
+      "notAvailable": "N/A",
+      "goToDashboard": "Go to Dashboard",
+      "addDevice": "Add Device",
+      "delete": "Delete"
+    },
+    "homeHeader": {
+      "welcome": "Welcome User!",
+      "welcomeWithName": "Welcome, {{name}}!",
+      "subtitle": "Manage your home energy",
+      "addButton": "Add Home"
+    },
+    "homeStats": {
+      "homes": "Homes",
+      "devices": "Devices",
+      "totalPower": "Total Power"
+    },
+    "homeScreen": {
+      "myHomes": "My Homes",
+      "loading": "Loading homes...",
+      "retry": "Tap to retry",
+      "deleteConfirm": {
+        "title": "Delete Site",
+        "message": "Are you sure you want to delete {{siteName}}? This action cannot be undone.",
+        "cancel": "Cancel",
+        "delete": "Delete"
+      },
+      "deleteSuccess": {
+        "title": "Site Deleted",
+        "message": "{{siteName}} has been successfully deleted."
+      },
+      "deleteError": {
+        "title": "Delete Failed",
+        "message": "Failed to delete the site. Please try again."
+      }
+    },
+    "deviceSetup": {
+      "title": "Add your device",
+      "subtitle": "Link a device so we can start collecting data. You can add more devices later from the Devices tab.",
+      "deviceName": "Device name",
+      "deviceNamePlaceholder": "e.g. Living Room Gateway",
+      "serialNumber": "Serial number",
+      "serialNumberPlaceholder": "Enter serial manually",
+      "scanQr": "Scan QR code",
+      "saving": "Saving…",
+      "finish": "Finish setup",
+      "goBack": "Go Back"
+    },
+    "homeSetup": {
+      "title": "Create your home",
+      "subtitle": "Tell us how we should refer to this location and where it's situated so we can link your devices correctly.",
+      "homeName": "Home name",
+      "homeNamePlaceholder": "e.g. Istanbul Apartment",
+      "streetAddress": "Street address",
+      "streetAddressPlaceholder": "Street and number",
+      "apartment": "Apartment, suite (optional)",
+      "apartmentPlaceholder": "Floor, unit, etc.",
+      "country": "Country",
+      "countryPlaceholder": "Select Country",
+      "city": "City",
+      "cityPlaceholder": "Select City",
+      "state": "State / Province",
+      "statePlaceholder": "State or province",
+      "postalCode": "Postal code",
+      "postalCodePlaceholder": "Postal / ZIP",
+      "saving": "Saving…",
+      "save": "Save",
+      "goBack": "Go Back",
+      "locationPermission": {
+        "title": "Location Permission",
+        "message": "This app needs access to your location to provide accurate site coordinates and improve energy monitoring services.",
+        "askLater": "Ask Later",
+        "cancel": "Cancel",
+        "ok": "OK"
+      },
+      "locationSuccess": {
+        "title": "Location Obtained",
+        "message": "Your location has been successfully obtained and will be used for site coordinates."
+      },
+      "locationError": {
+        "title": "Location Error",
+        "message": "Unable to get your location. Please check your location settings and try again."
+      },
+      "createError": {
+        "title": "Create Site Error",
+        "message": "Failed to create site. Please try again."
+      },
+      "gettingLocation": "Getting Location...",
+      "useCurrentLocation": "Use Current Location",
+      "locationObtained": "Location Obtained",
+      "success": {
+        "title": "Site Created Successfully",
+        "message": "{{homeName}} has been created successfully!"
+      },
+      "locationRequired": {
+        "title": "Location Permission Required",
+        "message": "Location permission is required to create a site. Please enable location services in your device settings to continue.",
+        "cancel": "Cancel",
+        "settings": "Open Settings"
+      },
+      "locationSettings": {
+        "title": "Enable Location Services",
+        "message": "Please go to Settings > Privacy & Security > Location Services and enable location access for this app."
+      },
+      "validationError": {
+        "title": "Validation Error",
+        "cityRequired": "Please select a city.",
+        "countryRequired": "Please select a country."
+      },
+      "validation": {
+        "homeName": {
+          "min": "Please enter a name for your home.",
+          "max": "Home name is too long (maximum 64 characters)."
+        },
+        "addressLine1": {
+          "min": "Please enter street and number.",
+          "max": "Address line is too long (maximum 120 characters)."
+        },
+        "addressLine2": {
+          "max": "Address line is too long (maximum 80 characters)."
+        },
+        "city": {
+          "max": "City name is too long (maximum 60 characters).",
+          "required": "Please select a city."
+        },
+        "country": {
+          "max": "Country name is too long (maximum 56 characters).",
+          "required": "Please select a country."
+        },
+        "state": {
+          "max": "State / Province information is too long (maximum 80 characters)."
+        }
+      }
+    },
+   "admin": {
+    "title": "Admin Panel",
+    "welcome": "Welcome, Administrator",
+    "accessDenied": "Access Denied",
+    "adminOnly": "This page is accessible only to administrators.",
+    "homesTitle": "Homes",
+  
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "pageInfo": "{{current}} / {{total}}"
+    },
+  
+    "filters": {
+      "selectCountry": "Select Country",
+      "selectCity": "Select City",
+      "selectDistrict": "Select District",
+      "clearFilters": "Clear Filters"
+    },
+  
+    "labels": {
+      "country": "Country",
+      "city": "City",
+      "district": "District",
+      "homes": "Homes",
+      "devices": "Devices",
+      "activeUsers": "Active Users",
+      "totalCount": "Total Records"
+    },
+  
+    "messages": {
+      "noHomes": "No homes found.",
+      "noHomesFound": "No homes found with the selected filters.",
+      "loading": "Loading data...",
+      "refreshing": "Refreshing...",
+      "errorLoading": "An error occurred while loading data.",
+      "selectLocationMessage": "Please select a country and city.",
+      "selectFilters": "Please select country, city, or email to filter."
+    },
+  
+    "buttons": {
+      "previous": "Previous",
+      "next": "Next",
+      "refresh": "Refresh",
+      "viewDashboard": "Go to Dashboard"
+    },
+  
+    "stats": {
+      "totalHomes": "Total Homes",
+      "totalDevices": "Total Devices",
+      "activeUsers": "Active Users"
+    }
+  },
+  "adminHomeCard": {
+    "online": "Online",
+    "offline": "Offline"
+  },
+  "adminLocationSelector": {
+    "select": "Select",
+    "search": "search",
+    "noResults": "No results found",
+    "close": "Close"
+  },
+  "adminSearchBar": {
+    "placeholder": "Search by email address..."
+  },
+  "adminStats": {
+    "homes": "Homes",
+    "devices": "Devices"
+  },
+  "batteryLevel": {
+    "title": "Battery Level Settings",
     "save": "Save",
-    "loading": "Loading...",
-    "error": "Error",
-    "success": "Success",
-    "warning": "Warning",
-    "info": "Info"
+    "info": "Use +/- buttons to adjust SOC thresholds.",
+    "applying": "Applying settings...",
+    "chargeCutoff": "Charging Cut-off SOC",
+    "backupSOC": "Backup SOC",
+    "dischargeCutoff": "Discharging Cut-off SOC",
+    "warningSOC": "Warning SOC",
+    "currentLevel": "Current Level",
+    "legendTitle": "Level Indicators"
   },
-  "auth": {
-    "login": "Log in",
-    "email": "Email",
-    "password": "Password",
-    "forgotPassword": "Forgot Password?",
-    "signUp": "Sign Up",
-    "welcome": "Welcome",
-    "loginSubtitle": "Sign in to your account",
-    "emailPlaceholder": "Your Email",
-    "passwordPlaceholder": "Your Password",
-    "loginButton": "Log in",
-    "signingIn": "Signing in…",
-    "dontHaveAccount": "Don't have an account?",
-    "alreadyHaveAccount": "Already have an account?",
-    "createAccount": "Create Account",
-    "loginError": "An error occurred while logging in",
-    "invalidCredentials": "Invalid email or password",
-    "networkError": "Network connection error",
-    "agreeToTerms": "I agree to the",
-    "termsOfService": "Terms of Service",
-    "and": "and",
-    "privacyPolicy": "Privacy Policy",
-    "forgotPasswordTitle": "Forgot Password",
-    "forgotPasswordSubtitle": "Enter your email address and we'll send you a password reset link",
-    "sendResetLink": "Send Reset Link",
-    "sending": "Sending…",
-    "backToLogin": "Back to login",
-    "resetLinkSent": "Password reset link sent",
-    "signUpTitle": "Create Account",
-    "signUpSubtitle": "Create your new account",
-    "name": "Full Name",
-    "namePlaceholder": "Your Full Name",
-    "confirmPassword": "Confirm Password",
-    "confirmPasswordPlaceholder": "Confirm your password",
-    "createAccountButton": "Create Account",
-    "creatingAccount": "Creating account…",
-    "accountCreated": "Account created successfully",
-    "passwordsDoNotMatch": "Passwords do not match",
-    "passwordTooShort": "Password must be at least 6 characters",
-    "invalidEmail": "Invalid email address",
-    "emailAlreadyExists": "This email address is already in use"
+  "solarPriority": {
+    "title": "Solar Producing Source Priority",
+    "save": "Save",
+    "explanationTitle": "Explanation",
+    "explanationText": "This setting determines the order in which your generated solar power is directed. It dictates where solar energy goes first, second, and so on.",
+    "learnMore": "Learn More",
+    "instructions": "Tap two unlocked cards to swap their priority.\nTap the lock icon to unlock or lock a card.",
+    "sources": {
+      "grid": "Grid",
+      "smartLoad": "Smart Load",
+      "load": "Load",
+      "battery": "Battery"
+    }
   },
-  "dashboard": {
-    "welcome": "Welcome",
-    "dashboard": "Dashboard",
-    "profile": "Profile",
-    "settings": "Settings",
-    "logout": "Logout",
-    "home": "Home",
-    "notifications": "Notifications",
-    "messages": "Messages"
+  "advancedPower": {
+    "title": "Advanced Power Control",
+    "voltageWatt": "Voltage–Watt Curve",
+    "frequencyWatt": "Frequency–Watt Curve",
+    "enable": "Enable"
   },
-  "profile": {
-    "profile": "Profile",
-    "editProfile": "Edit Profile",
-    "changePassword": "Change Password",
-    "personalInfo": "Personal Information",
-    "contactInfo": "Contact Information",
-    "preferences": "Preferences",
-    "language": "Language",
-    "theme": "Theme",
-    "notifications": "Notifications"
+  "batteryManagement": {
+    "title": "Battery Management",
+    "chargeDischargeLimits": "Battery Charge / Discharge Limits",
+    "charging": "Charging",
+    "maxChargeCurrent": "Max Charge Current",
+    "maxChargePower": "Max Charge Power",
+    "discharging": "Discharging",
+    "maxDischargeCurrent": "Max Discharge Current",
+    "maxDischargePower": "Max Discharge Power",
+    "protectionReserve": "Battery Protection & Reserve",
+    "backupReserve": "Backup Reserve",
+    "dischargeCutoff": "Discharge Cutoff",
+    "lowBatteryWarning": "Low Battery Warning",
+    "batterySettings": "Battery Settings"
   },
-  "settings": {
-    "settings": "Settings",
-    "general": "General",
-    "privacy": "Privacy",
-    "security": "Security",
-    "about": "About",
-    "version": "Version",
-    "contact": "Contact",
-    "help": "Help",
-    "feedback": "Feedback"
+  "energyPriority": {
+    "title": "Energy Priority & Mode Selection",
+    "operationMode": "Operation Mode",
+    "gridInteraction": "Grid Interaction"
   },
-  "alerts": {
-    "confirmLogout": "Are you sure you want to logout?",
-    "logoutSuccess": "Successfully logged out",
-    "saveSuccess": "Successfully saved",
-    "deleteConfirm": "Are you sure you want to delete?",
-    "deleteSuccess": "Successfully deleted",
-    "updateSuccess": "Successfully updated",
-    "networkError": "Network connection error",
-    "serverError": "Server error",
-    "unknownError": "Unknown error"
+  "generatorSmart": {
+    "title": "Generator & Smart Loads",
+    "portMode": "Port Mode",
+    "smartLoadControl": "Smart Load Control",
+    "turnOn": "Turn ON when battery ",
+    "turnOff": "Turn OFF when battery "
+  },
+  "modeSelection": {
+    "operation": {
+      "batteryPriority": {
+        "title": "Battery Priority",
+        "desc": "PV → Battery → Load → Grid sequence for maximum storage."
+      },
+      "loadPriority": {
+        "title": "Load Priority",
+        "desc": "PV → Load → Battery → Grid for direct self-consumption."
+      },
+      "custom": {
+        "title": "Custom",
+        "desc": "Manually configure advanced control logic."
+      }
+    },
+    "grid": {
+      "ieee": "IEEE-1547 (US standard)",
+      "vde": "VDE-AR-N-4105 (Germany standard)",
+      "as": "AS4777 (Australia standard)"
+    },
+    "export": {
+      "noExport": {
+        "title": "No Export",
+        "desc": "Disable all power export to grid."
+      },
+      "limited": {
+        "title": "Limited",
+        "desc": "Export with limited capacity."
+      },
+      "moderate": {
+        "title": "Moderate",
+        "desc": "Balanced export between load and grid."
+      },
+      "maximum": {
+        "title": "Maximum",
+        "desc": "Export as much solar as possible."
+      },
+      "custom": {
+        "title": "Custom",
+        "desc": "Manually configure export rules."
+      }
+    },
+    "generator": {
+      "inputOnly": {
+        "title": "Generator Input Only",
+        "desc": "Use port for generator input only."
+      },
+      "smartLoad": {
+        "title": "Smart Load Output",
+        "desc": "Enable as smart load output."
+      },
+      "microInput": {
+        "title": "Microinverter Input",
+        "desc": "Use as microinverter input."
+      }
+    }
+  },
+  "protectionSafety": {
+    "title": "Protection & Safety",
+    "gridProtection": {
+      "title": "Grid Protection Settings",
+      "voltageLimits": "Voltage Limits",
+      "overVoltage": "Over Voltage",
+      "underVoltage": "Under Voltage",
+      "frequencyLimits": "Frequency Limits",
+      "overFrequency": "Over Frequency",
+      "underFrequency": "Under Frequency",
+      "lvrtHvrt": "Enable LVRT / HVRT",
+      "warning": "This setting may pose a risk during voltage fluctuations. Only expert users should modify it."
+    },
+    "systemProtection": {
+      "title": "System Protection",
+      "afci": "Enable AFCI (Arc Fault Protection)",
+      "afciWarning": "Incorrect AFCI configuration may cause system interruptions.",
+      "islanding": "Enable Islanding Protection",
+      "islandingWarning": "While Islanding Protection is active, an energy island may form; use with caution."
+    }
+  },
+  "sectionCard": {
+    "currentMode": "Current Mode",
+    "changeMode": "Change the mode"
+  },
+  "solarPower": {
+    "title": "Solar Power Management",
+    "exportControl": "Solar Export Control",
+    "enableSelling": "Enable Solar Selling to Grid",
+    "maxExportPower": "Max Solar Export Power",
+    "totalExportLimit": "Total Export Limit",
+    "pvArrayConfig": "PV Array Configuration",
+    "enableMpptScanning": "Enable MPPT Scanning",
+    "mpptTrackers": "MPPT Trackers",
+    "maxPvVoltage": "Max PV Voltage",
+    "maxPvCurrent": "Max PV Current",
+    "prioritySettings": "Solar Priority Settings"
+  },
+  "tou": {
+    "title": "Time-of-Use (TOU) Scheduling",
+    "periodSettings": "P{{index}} Settings",
+    "periodRange": "Period {{index}} ({{range}})",
+    "batteryDischarge": "Battery Discharge",
+    "targetSoc": "Target SOC",
+    "gridCharging": "Grid Charging",
+    "generatorCharging": "Generator Charging",
+    "exportMode": "Export Mode",
+    "applying": "Applying settings…"
+  },
+  "themeToggle": {
+    "dark": "Dark",
+    "light": "Light"
+  },
+  "deviceDetailBottomsheet": {
+    "common": {
+      "title": "Device Detail",
+      "loading": "Loading data...",
+      "close": "Close",
+      "restart": "Restart Device"
+    },
+    "inverter": {
+      "title": "Inverter Detail",
+      "activePower": "Active Power",
+      "reactivePower": "Reactive Power",
+      "powerFactor": "Power Factor",
+      "insulationResistance": "Insulation Resistance",
+      "phaseData": "Phase Data",
+      "info": "Inverter Info",
+      "startupTime": "Startup Time",
+      "shutdownTime": "Shutdown Time",
+      "deviceSN": "Device SN",
+      "firmwareVersion": "Firmware Version",
+      "phaseLabel": "Phase {{id}}"
+    },
+    "bms": {
+      "title": "BMS Detail",
+      "soc": "State of Charge (SOC)",
+      "packVoltage": "Pack Voltage",
+      "packCurrent": "Pack Current",
+      "maxClusterVoltage": "Max Cluster Voltage",
+      "minClusterVoltage": "Min Cluster Voltage",
+      "totalChargeCapacity": "Total Charge Capacity",
+      "totalDischargeCapacity": "Total Discharge Capacity",
+      "dateTime": "Date & Time",
+      "info": "BMS Info",
+      "deviceSN": "Device SN",
+      "firmwareVersion": "Firmware Version"
+    },
+    "battery": {
+      "title": "Battery Detail",
+      "soc": "Battery SOC",
+      "soh": "State of Health (SOH)",
+      "voltage": "Battery Pack Voltage",
+      "current": "Battery Current",
+      "avgCellVoltage": "Average Cell Voltage",
+      "avgTemp": "Average Cell Temperature",
+      "maxCellVoltage": "Max Cell Voltage",
+      "minCellVoltage": "Min Cell Voltage",
+      "maxCellTemp": "Max Cell Temperature",
+      "minCellTemp": "Min Cell Temperature",
+      "parameter": "Parameter",
+      "totalCharge": "Total Charge Amount",
+      "totalDischarge": "Total Discharge Amount",
+      "deviceModel": "Device Model",
+      "deviceSN": "Device SN",
+      "firmwareVersion": "Firmware Version",
+      "dateTime": "Date & Time"
+    }
+  },
+  "dashboardHeroCard": {
+    "title": "Smart Energy Management",
+    "subtitle": "Real-time monitoring and control"
   }
 }

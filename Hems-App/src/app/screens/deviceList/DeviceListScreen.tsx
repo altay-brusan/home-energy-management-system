@@ -5,6 +5,7 @@ import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors } from '../../../theme/constants';
 import { getDeviceListStyles } from './DeviceListScreen.styles';
 import { useNavigation } from '@react-navigation/native';
+import { useI18n } from '../../../hooks/useI18n';
 
 type Device = {
   id: string;
@@ -29,11 +30,12 @@ export default function DeviceListScreen() {
   const COLORS = getThemeColors(isDark);
   const styles = useMemo(() => getDeviceListStyles(COLORS), [COLORS]);
   const navigation = useNavigation<any>();
+  const { t } = useI18n();
 
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.container}>
-        <Text style={styles.title}>Device</Text>
+        <Text style={styles.title}>{t('deviceList.title')}</Text>
         
         <Pressable
           style={styles.card}
@@ -55,7 +57,7 @@ export default function DeviceListScreen() {
             <View style={styles.row}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={[styles.dot, { backgroundColor: DEVICE.status === 'online' ? COLORS.success : COLORS.error }]} />
-                <Text style={styles.serial}>{DEVICE.status === 'online' ? 'Online' : 'Offline'} • {DEVICE.mode}</Text>
+                <Text style={styles.serial}>{DEVICE.status === 'online' ? t('deviceList.online') : t('deviceList.offline')} • {DEVICE.mode === 'On Grid' ? t('deviceList.onGrid') : t('deviceList.offGrid')}</Text>
               </View>
               <View style={styles.chip}>
                 <Text style={styles.chipText}>{DEVICE.powerKw.toFixed(3)} kW</Text>

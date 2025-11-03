@@ -1,7 +1,10 @@
 import { StyleSheet } from "react-native";
 import { SPACING } from "../../../../theme/constants";
 
-export const getModeSelectionPanelStyles = (COLORS: Record<string, string>) =>
+export const getModeSelectionPanelStyles = (
+  COLORS: Record<string, string>,
+  isDark?: boolean
+) =>
   StyleSheet.create({
     container: {
       backgroundColor: COLORS.surface,
@@ -15,12 +18,13 @@ export const getModeSelectionPanelStyles = (COLORS: Record<string, string>) =>
       overflow: "hidden",
     },
     option: {
-      borderWidth: 1,
-      borderColor: COLORS.border,
+      borderWidth: 1.5,
+      borderColor: isDark ? "#FFFFFF" : COLORS.border, // ✨ dark mode'da beyaz çerçeve
       borderRadius: 10,
       paddingVertical: SPACING.md,
       paddingHorizontal: SPACING.md,
       marginBottom: SPACING.sm,
+      backgroundColor: COLORS.surface,
     },
     optionRow: {
       flexDirection: "row",

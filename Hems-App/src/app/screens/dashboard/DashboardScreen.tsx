@@ -1,28 +1,36 @@
+import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 import React, { JSX, useCallback, useState } from 'react';
-import { Image, RefreshControl, SafeAreaView, ScrollView, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { Image, Platform, RefreshControl, SafeAreaView, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { apiClient } from '../../../api/client/apiClient';
+import { sitesService } from "../../../api/services/sitesService";
+import { useDashboardRefresh } from '../../../hooks/useDashboardRefresh';
+import { useRoles } from '../../../hooks/useRoles';
+import { useSelectedSiteUtils } from '../../../hooks/useSelectedSite';
+import { useSelectedSiteDevice } from '../../../hooks/useSelectedSiteDevice';
 import { useThemeStore } from '../../../store/themeStore';
-import { getThemeColors } from '../../../theme/constants';
+import { getThemeColors, SPACING } from '../../../theme/constants';
 import { getDashboardStyles } from './DashboardScreen.styles';
+import SignalRStatus from './ui/SignalRStatus';
 import DashboardDevices from './ui/dashboardDevices/DashboardDevices';
+import DashboardFlowChart from './ui/dashboardFlowChart';
 import DashboardGraph from './ui/dashboardGraph/DashboardGraph';
 import BatteryChart from './ui/dashboardGraph/components/BatteryChart';
-import ChargeDischargeChart from './ui/dashboardGraph/components/ChargeDischargeChart';
 import BatterySOCPriceChart from './ui/dashboardGraph/components/BatterySOCPriceChart';
-import DashboardFlowChart from './ui/dashboardFlowChart';
+import BatterySOHChart from './ui/dashboardGraph/components/BatterySOHChart';
+import ChargeDischargeChart from './ui/dashboardGraph/components/ChargeDischargeChart';
 import DashboardHelpButton from './ui/dashboardHelpButton/DashboardHelpButton';
-import DashboardNotifications from './ui/dashboardNotifications/DashboardNotifications';
-import ShareButton from './ui/dashboardShareButton/ShareButton';
-import DashboardStatusRow from './ui/dashboardStatusRow/DashboardStatusRow';
+import DashboardHeroImage from './ui/dashboardHeroImage';
+import { DashboardModeCard } from './ui/dashboardModeCard';
+import Sidebar from "./ui/dashboardSideBar/Sidebar";
 import DashboardWeather from './ui/dashboardWeather/DashboardWeather';
 import DashboardWelcomeCard from './ui/dashboardWelcomeCard/DashboardWelcomeCard';
-import DashboardHeroImage from './ui/dashboardHeroImage';
-import Sidebar from "./ui/dashboardSideBar/Sidebar";
-import { DashboardModeCard } from './ui/dashboardModeCard';
 
 type Range = 'Day' | 'Week' | 'Month' | 'Year';
 
-export default function DashboardScreen(): JSX.Element {
+export default function DashboardScreen (): JSX.Element {
+  const { t } = useTranslation();
   const mode = useThemeStore(s => s.mode);
   const isDark = mode === 'dark';
   const COLORS = getThemeColors(isDark);
@@ -32,29 +40,126 @@ export default function DashboardScreen(): JSX.Element {
   const [selectedRange, setSelectedRange] = useState<Range>('Day');
   const [selectedBatteryIndex, setSelectedBatteryIndex] = useState<number | null>(null);
   const [selectedChargeIndex, setSelectedChargeIndex] = useState<number | null>(null);
+  const route = useRoute();
+  const navigation = useNavigation<any>();
+  const { isAdmin, hasRole } = useRoles();
+  const isAdminUser = isAdmin || hasRole("Administrator");
+  const siteIdFromParam = (route.params as any)?.siteId;
 
-  const handleHelp = (): void => {};
+  const [siteData, setSiteData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 1200);
+  const { selectedSite, getSelectedSiteName } = useSelectedSiteUtils();
+
+  const { selectedSiteDevice, hasDevice, device, externalDevices, setupInfo, loadSelectedSiteDevice } = useSelectedSiteDevice();
+
+  const { refreshAll } = useDashboardRefresh();
+
+  const sidebarRef = React.useRef<any>(null);
+
+  React.useEffect(() => {
+    if (selectedSite && selectedSite.hasDevice && !selectedSiteDevice) {loadSelectedSiteDevice().catch(error => {});
+    }
+  }, [selectedSite, selectedSiteDevice, loadSelectedSiteDevice]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (isAdminUser && !selectedSite && !siteIdFromParam) {
+        navigation.navigate('Admin');
+      }
+    }, [isAdminUser, selectedSite, siteIdFromParam, navigation])
+  );
+
+  React.useEffect(() => {
+    if (isAdminUser) {
+      return;
+    }
+
+    if (!hasDevice || !device?.id) {return;
+    }
+
+    setTimeout(() => {refreshAll();
+    }, 100);
+  }, [hasDevice, device?.id, isAdminUser]);
+  React.useEffect(() => {
+    const fetchSite = async () => {
+      if (!siteIdFromParam) return;
+      try {
+        setLoading(true);const data = await sitesService.getById(siteIdFromParam);
+        setSiteData(data);} catch (error) {} finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSite();
+  }, [siteIdFromParam]);
+
+  // Register global refresh callback for token refresh (only once)
+  React.useEffect(() => {
+    // Admin kullanıcılar için callback kaydı yapma
+    if (isAdminUser) {
+      return;
+    }
+
+    apiClient.registerGlobalRefreshCallback(refreshAll);
+    return () => {
+      apiClient.unregisterGlobalRefreshCallback();
+    };
   }, []);
+
+  React.useEffect(() => {
+    // Admin kullanıcılar için callback güncellemesi yapma
+    if (isAdminUser) {
+      return;
+    }
+
+    apiClient.updateGlobalRefreshCallback(refreshAll);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdminUser]);
+
+  const handleHelp = (): void => { };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      // Componentlerin callback'leri register olması için kısa bir delay
+      setTimeout(async () => {
+        await refreshAll();
+        setRefreshing(false);
+      }, 100);
+    } catch (error) {setRefreshing(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshAll]);
+
+  // Loading state - device bilgisi yüklenene kadar bekle
+  if (!isAdminUser && hasDevice && !device?.id && selectedSite) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.dark, justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ color: COLORS.white, fontSize: 16 }}>Loading device...</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.dark }}>
-          <Sidebar />
+      {!isAdminUser && <Sidebar ref={sidebarRef} />}
 
-      <ShareButton
+      {/* <ShareButton
         color={COLORS.accent}
         backgroundColor={COLORS.dark}
         top={insets.top + 8}
         right={16}
         COLORS={COLORS}
-      />
+      /> */}
       <ScrollView
         contentContainerStyle={[
           styles.container,
-          { backgroundColor: COLORS.dark, paddingBottom: insets.bottom + 24 },
+          {
+            backgroundColor: COLORS.dark,
+            paddingTop: Platform.OS === 'ios' ? SPACING.md : insets.top + SPACING.xs,
+            paddingBottom: insets.bottom + 24
+          },
         ]}
         refreshControl={
           <RefreshControl
@@ -71,27 +176,34 @@ export default function DashboardScreen(): JSX.Element {
             source={require('../../../assets/images/logo.png')}
             style={styles.screenLogo}
           />
-          <Text style={styles.screenTitle}>Dashboard</Text>
+          <View style={{ flex: 1, alignItems: 'center' }}>
+            <Text style={styles.screenTitle}>{t('dashboardScreen.title')}</Text>
+            {selectedSite && (
+              <Text style={[styles.screenTitle, { fontSize: 14, opacity: 0.7, marginTop: 4 }]}>
+                {getSelectedSiteName()}
+              </Text>
+            )}
+          </View>
+          <View style={{ width: 36 }} />
         </View>
-        <DashboardHeroImage COLORS={COLORS} />
         <DashboardWelcomeCard isDark={isDark} COLORS={COLORS} />
-
-    
-
-        <DashboardStatusRow COLORS={COLORS} />
+        <DashboardHeroImage COLORS={COLORS} />
         <DashboardModeCard COLORS={COLORS} />
         <DashboardWeather COLORS={COLORS} isDark={isDark} />
 
-        <BatterySOCPriceChart 
-          COLORS={COLORS} 
-          isDark={isDark} 
+        <BatterySOCPriceChart
+          COLORS={COLORS}
+          isDark={isDark}
         />
-        
-        <DashboardFlowChart 
-          COLORS={COLORS} 
-          isDark={isDark} 
+        <BatterySOHChart
+          COLORS={COLORS}
+          isDark={isDark}
         />
-        
+        <DashboardFlowChart
+          COLORS={COLORS}
+          isDark={isDark}
+        />
+
         <DashboardGraph
           COLORS={COLORS}
           isDark={isDark}
@@ -99,7 +211,7 @@ export default function DashboardScreen(): JSX.Element {
           setSelectedRange={setSelectedRange}
         />
 
-  
+
         <BatteryChart
           COLORS={COLORS}
           selectedIndex={selectedBatteryIndex}
@@ -114,7 +226,12 @@ export default function DashboardScreen(): JSX.Element {
 
         <DashboardDevices COLORS={COLORS} />
 
-        <DashboardNotifications COLORS={COLORS} />
+        {/* SignalR Connection Status 
+        <SignalRStatus COLORS={COLORS} />
+*/}
+
+        {/*  
+  <DashboardNotifications COLORS={COLORS} /> */}
 
         <DashboardHelpButton COLORS={COLORS} onPress={handleHelp} />
       </ScrollView>

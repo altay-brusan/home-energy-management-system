@@ -4,7 +4,7 @@ export const zEmail = z
   .string({ required_error: "Email is required" })
   .trim()
   .min(1, "Email is required")
-  .email("Please enter a valid email")
+  // .email("Please enter a valid email")
   .transform(v => v.toLowerCase());
 
 export const zPassword = z

@@ -6,7 +6,6 @@ export function getDashboardStyles (COLORS: Record<string, string>) {
         container: {
             flexGrow: 1,
             paddingHorizontal: SPACING.lg,
-            paddingTop: SPACING.lg,
             paddingBottom: SPACING.lg,
             alignItems: 'stretch',
             justifyContent: 'flex-start',
@@ -14,14 +13,16 @@ export function getDashboardStyles (COLORS: Record<string, string>) {
         titleRow: {
             flexDirection: 'row',
             alignItems: 'center',
-            gap: SPACING.sm,
+            justifyContent: 'space-between',
             marginBottom: SPACING.sm,
-            alignSelf: 'flex-start',
+            width: '100%',
+            paddingHorizontal: SPACING.sm,
         },
         screenTitle: {
             fontSize: TYPOGRAPHY.xxxl,
             fontWeight: '800',
             color: COLORS.textSoft,
+            textAlign: 'center',
         },
         screenLogo: {
             width: 36,

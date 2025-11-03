@@ -34,7 +34,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>This app uses the camera to scan QR codes for device registration and energy monitoring.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string></string>
+	<string>This app needs access to your location to provide accurate site coordinates and improve energy monitoring services.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>This app may use the microphone for video recording features.</string>
 	<key>RCTNewArchEnabled</key>

@@ -1,4 +1,4 @@
-import React, { JSX, useEffect, useMemo, useRef, useState } from 'react';
+import React, { JSX, useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { View, RefreshControl, Animated, FlatList } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../../store/themeStore';
@@ -6,8 +6,11 @@ import { getThemeColors } from '../../../theme/constants';
 import { makeTrashScreenStyles } from './TrashScreen.styles';
 import { usePlatform } from '../../../hooks/usePlatform';
 import { useNetInfo } from '../../../hooks/useNetInfo';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useI18n } from '../../../hooks/useI18n';
+import { useDeviceNotifications } from '../../../hooks/useDeviceNotifications';
+import { toast } from '../../../utils/toast';
 
 import {
   TrashHeader,
@@ -16,47 +19,13 @@ import {
   EmptyState,
   FilterChips,
 } from './ui';
-
-export type TrashNotification = {
-  id: string;
-  title: string;
-  message: string;
-  description: string;
-  createdAt: string;
-  read: boolean;
-  severity: 'normal' | 'critical';
-  deletedAt: string;
-};
+import type { TrashItemRef } from './ui/TrashItem';
 
 type Row =
   | { type: 'header'; id: string; title: string }
-  | { type: 'item'; id: string; n: TrashNotification };
+  | { type: 'item'; id: string; n: any };
 
 type Filter = 'all' | 'today' | 'critical';
-
-const now = Date.now();
-const seed: TrashNotification[] = [
-  {
-    id: 't1',
-    title: 'Welcome Home',
-    message: 'System is running normally.',
-    description: 'The system started successfully and is running in optimal condition.',
-    createdAt: new Date().toISOString(),
-    read: false,
-    severity: 'normal',
-    deletedAt: new Date().toISOString(),
-  },
-  {
-    id: 't2',
-    title: 'Grid Disconnected',
-    message: 'Grid connection lost. Please check the system.',
-    description: 'The power grid connection was interrupted. This may cause instability.',
-    createdAt: new Date(now - 1000 * 60 * 60 * 26).toISOString(),
-    read: true,
-    severity: 'critical',
-    deletedAt: new Date(now - 1000 * 60 * 60 * 26).toISOString(),
-  },
-];
 
 function isToday(iso: string) {
   const d = new Date(iso),
@@ -76,10 +45,24 @@ export default function TrashScreen(): JSX.Element {
   const { isConnected } = useNetInfo();
   const { isAndroid } = usePlatform();
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
+  const { t } = useI18n();
 
-  const [refreshing, setRefreshing] = useState(false);
-  const [items, setItems] = useState<TrashNotification[]>(seed);
+  // Use real API for deleted notifications
+  const { 
+    deletedNotifications,
+    loading,
+    refreshing,
+    loadingMore,
+    error,
+    hasNextPage,
+    refreshNotifications,
+    loadMoreNotifications,
+    restoreNotification,
+    permanentDeleteNotification
+  } = useDeviceNotifications({ includeDeleted: true });
+
   const [filter, setFilter] = useState<Filter>('all');
+  const openSwipeableRef = useRef<Map<string, TrashItemRef>>(new Map());
 
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(12)).current;
@@ -90,21 +73,29 @@ export default function TrashScreen(): JSX.Element {
     ]).start();
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      if (isConnected) {
+        refreshNotifications();
+      }
+    }, [isConnected, refreshNotifications])
+  );
+
   const filtered = useMemo(() => {
     switch (filter) {
       case 'today':
-        return items.filter((n) => isToday(n.deletedAt));
+        return deletedNotifications.filter((n) => isToday(n.createdAt));
       case 'critical':
-        return items.filter((n) => n.severity === 'critical');
+        return deletedNotifications.filter((n) => n.severity === 'critical');
       default:
-        return items;
+        return deletedNotifications;
     }
-  }, [items, filter]);
+  }, [deletedNotifications, filter]);
 
-  const splitGroups = (list: TrashNotification[]) => {
-    const today: TrashNotification[] = [];
-    const earlier: TrashNotification[] = [];
-    list.forEach((n) => (isToday(n.deletedAt) ? today : earlier).push(n));
+  const splitGroups = (list: any[]) => {
+    const today: any[] = [];
+    const earlier: any[] = [];
+    list.forEach((n) => (isToday(n.createdAt) ? today : earlier).push(n));
     return { today, earlier };
   };
 
@@ -112,34 +103,44 @@ export default function TrashScreen(): JSX.Element {
     const { today, earlier } = splitGroups(filtered);
     const rows: Row[] = [];
     if (today.length) {
-      rows.push({ type: 'header', id: 'h-today', title: 'Today' });
+      rows.push({ type: 'header', id: 'h-today', title: t('trash.today') });
       today.forEach((n) => rows.push({ type: 'item', id: n.id, n }));
     }
     if (earlier.length) {
-      rows.push({ type: 'header', id: 'h-earlier', title: 'Earlier Deleted' });
+      rows.push({ type: 'header', id: 'h-earlier', title: t('trash.earlier') });
       earlier.forEach((n) => rows.push({ type: 'item', id: n.id, n }));
     }
     return rows;
-  }, [filtered]);
+  }, [filtered, t]);
 
-  const onRefresh = async () => {
+  const onRefresh = useCallback(async () => {
     if (!isConnected) return;
-    setRefreshing(true);
+    await refreshNotifications();
+  }, [isConnected, refreshNotifications]);
+
+  const handleRestore = async (id: string) => {
     try {
-      setItems((prev) => [...prev]);
-    } finally {
-      setRefreshing(false);
+      await restoreNotification(id);
+      openSwipeableRef.current.delete(id);
+      toast.success(t('trash.restoreSuccess'), t('common.success'));
+    } catch (error) {toast.error(t('trash.restoreFailed'), t('common.error'));
     }
   };
+  
+  const handleDelete = async (id: string) => {
+    try {
+      await permanentDeleteNotification(id);
+      openSwipeableRef.current.delete(id);
+      toast.success(t('trash.deleteSuccess'), t('common.success'));
+    } catch (error) {toast.error(t('trash.deleteFailed'), t('common.error'));
+    }
+  };
+  
+  const handleBack = () => {
+    navigation.goBack();
+  };
 
-  const handleRestore = (id: string) =>
-    setItems((prev) => prev.filter((n) => n.id !== id));
-  const handleDelete = (id: string) =>
-    setItems((prev) => prev.filter((n) => n.id !== id));
-  const handleRestoreAll = () => setItems([]);
-  const handleDeleteAll = () => setItems([]);
-
-  const openDetail = (n: TrashNotification) => {
+  const openDetail = (n: any) => {
     navigation.navigate('NotificationDetail', { item: n });
   };
 
@@ -147,8 +148,7 @@ export default function TrashScreen(): JSX.Element {
     <>
       <TrashHeader
         styles={styles}
-        onRestoreAll={handleRestoreAll}
-        onDeleteAll={handleDeleteAll}
+        onBack={handleBack}
       />
       <FilterChips value={filter} onChange={setFilter} styles={styles} />
     </>
@@ -164,12 +164,26 @@ export default function TrashScreen(): JSX.Element {
 
     return (
       <TrashItem
+        ref={(ref) => {
+          if (ref) {
+            openSwipeableRef.current.set(item.n.id, ref);
+          } else {
+            openSwipeableRef.current.delete(item.n.id);
+          }
+        }}
         n={n}
         styles={styles}
         color={color}
         onRestore={handleRestore}
         onDelete={handleDelete}
         onOpen={openDetail}
+        onSwipeableOpen={(id, closePrevious) => {
+          openSwipeableRef.current.forEach((ref, itemId) => {
+            if (itemId !== id) {
+              ref.close();
+            }
+          });
+        }}
       />
     );
   };

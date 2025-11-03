@@ -32,8 +32,8 @@ export default function GridCard({ COLORS, title, subtitle, icon, onPress }: Pro
 
       {icon && (
         <View style={gridStyles.iconContainer}>
-          <FontAwesome name={icon as any} size={22} color={COLORS.accent} />
-          <FontAwesome name="chevron-right" size={12} color={COLORS.slate400} style={gridStyles.chevron} />
+          <FontAwesome name={icon as any} size={16} color={COLORS.accent} />
+          <FontAwesome name="chevron-right" size={10} color={COLORS.slate400} style={gridStyles.chevron} />
         </View>
       )}
     </Pressable>

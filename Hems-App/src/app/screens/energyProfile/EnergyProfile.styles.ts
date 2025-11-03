@@ -1,11 +1,15 @@
-import { StyleSheet } from "react-native";
+import { StyleSheet, Dimensions } from "react-native";
 import { SPACING } from "../../../theme/constants";
 
 export const getEnergyProfileStyles = (
   COLORS: Record<string, string>,
   isDark: boolean
-) =>
-  StyleSheet.create({
+) => {
+  const { width } = Dimensions.get("window");
+  const isSmall = width <= 380;
+  const isVerySmall = width <= 340;
+  
+  return StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: COLORS.background,
@@ -66,41 +70,47 @@ export const getEnergyProfileStyles = (
       borderColor: COLORS.border,
     },
     cardTitle: {
-      fontSize: 22,
+      fontSize: isVerySmall ? 18 : isSmall ? 20 : 22,
       fontWeight: "700",
-      color: COLORS.textSoft,
-      paddingHorizontal: 22,
+      color: COLORS.accentGlow,
+      paddingHorizontal: isVerySmall ? 16 : isSmall ? 20 : 22,
       paddingTop: 14,
       paddingBottom: 8,
     },
     subCard: {
       borderTopWidth: 1,
       borderTopColor: COLORS.border,
-      paddingHorizontal: 22,
-      paddingVertical: 18,
+      paddingHorizontal: isVerySmall ? 16 : isSmall ? 20 : 22,
+      paddingVertical: isVerySmall ? 14 : 18,
     },
     subCardTitle: {
       color: COLORS.textSoft,
       fontWeight: "700",
-      fontSize: 18,
-      marginBottom: 12,
+      fontSize: isVerySmall ? 15 : isSmall ? 16 : 18,
+      flex: 1,
+      flexShrink: 1,
     },
 
     switchRow: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      marginVertical: 10,
+      marginVertical: isVerySmall ? 8 : 10,
+      gap: 8,
     },
     label: {
       color: COLORS.textSoft,
-      fontSize: 17,
+      fontSize: isVerySmall ? 14 : isSmall ? 15 : 17,
       fontWeight: "600",
+      flex: 1,
+      flexShrink: 1,
+      marginRight: 8,
     },
     valueText: {
       color: COLORS.textSoft,
-      fontSize: 17,
+      fontSize: isVerySmall ? 14 : isSmall ? 15 : 17,
       marginTop: 4,
+      flexShrink: 1,
     },
     valueAccent: {
       fontWeight: "700",
@@ -108,7 +118,7 @@ export const getEnergyProfileStyles = (
     },
     subHeader: {
       color: COLORS.textSoft,
-      fontSize: 17,
+      fontSize: isVerySmall ? 15 : isSmall ? 16 : 17,
       fontWeight: "600",
       marginTop: 12,
       marginBottom: 6,
@@ -126,8 +136,9 @@ dropdownRow: {
   justifyContent: "space-between",
   borderTopWidth: 1,
   borderTopColor: COLORS.border,
-  paddingHorizontal: 22,
-  paddingVertical: 16,
+  paddingHorizontal: isVerySmall ? 16 : isSmall ? 20 : 22,
+  paddingVertical: isVerySmall ? 12 : 16,
+  gap: 8,
 },
 
     dropdownList: {
@@ -213,5 +224,31 @@ saveButtonText: {
   fontSize: 16,
   letterSpacing: 0.5,
 },
+warningText: {
+  fontSize: isVerySmall ? 11 : isSmall ? 12 : 13,
+  marginTop: 6,
+  lineHeight: isVerySmall ? 16 : isSmall ? 17 : 18,
+  flexShrink: 1,
+},
+
+ timeLabel: {
+      fontSize: 11,
+      fontWeight: "600",
+      color: isDark ? "#ffffff" : "#333333",
+    },
+
+    periodBox: {
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: isDark ? "#ffffff" : "#dcdcdc",
+      borderColor: COLORS.border,
+      borderWidth: 1,
+    },
+
+    periodBoxActive: {
+      backgroundColor: "#ffea61",
+    },
+
 
   });
+};

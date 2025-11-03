@@ -79,7 +79,7 @@ export function getDashboardWelcomeCardStyles (
       marginTop: 4,
     },
     lastSync: {
-      color: COLORS.slate400,
+      color: COLORS.textSoft,
       fontSize: lastSyncSize,
       marginLeft: SPACING.xs,
     },

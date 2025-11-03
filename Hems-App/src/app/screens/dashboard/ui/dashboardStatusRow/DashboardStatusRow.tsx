@@ -4,27 +4,25 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 import { Badge } from '../../../../../components';
 import { getDashboardStatusRowStyles } from './DashboardStatusRow.styles';
 import type { DashboardStatusRowProps } from './DashboardStatusRow.types';
+import { useTranslation } from 'react-i18next';
 
-export default function DashboardStatusRow({
-  COLORS,
-}: DashboardStatusRowProps) {
+export default function DashboardStatusRow({ COLORS }: DashboardStatusRowProps) {
   const styles = getDashboardStatusRowStyles(COLORS);
+  const { t } = useTranslation();
+
   return (
-    <Animated.View
-      entering={FadeInUp.delay(100).duration(600)}
-      style={styles.row}
-    >
+    <Animated.View entering={FadeInUp.delay(100).duration(600)} style={styles.row}>
       <View style={styles.badgeContainer}>
-        <Badge text="Online" variant="success" />
+        <Badge text={t('dashboardStatus.online')} variant="success" />
       </View>
       <View style={styles.badgeContainer}>
-        <Badge text="Normal" variant="info" />
+        <Badge text={t('dashboardStatus.normal')} variant="info" />
       </View>
       <View style={styles.badgeContainer}>
-        <Badge text="Battery: 82%" variant="warning" />
+        <Badge text={t('dashboardStatus.battery', { value: 0 })} variant="warning" />
       </View>
       <View style={styles.badgeContainer}>
-        <Badge text="Grid: Connected" variant="success" />
+        <Badge text={t('dashboardStatus.grid')} variant="success" />
       </View>
     </Animated.View>
   );

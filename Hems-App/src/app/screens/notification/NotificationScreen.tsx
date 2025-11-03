@@ -1,23 +1,22 @@
-import React, { JSX, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, RefreshControl, Animated, FlatList } from 'react-native';
+import React, { JSX, useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { View, Text, RefreshControl, Animated, FlatList, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors } from '../../../theme/constants';
 import { makeNotificationScreenStyles } from './NotificationScreen.styles';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNetInfo } from '../../../hooks/useNetInfo';
 import { useErrorHandler } from '../../../hooks/useErrorHandler';
 import { usePlatform } from '../../../hooks/usePlatform';
-import { useNotifications, Notification } from '../../../hooks/useNotifications';
+import { useDeviceNotifications, DeviceNotification } from '../../../hooks/useDeviceNotifications';
 import { EmptyState, Filter, FilterChips, NotificationHeader, NotificationItem, OfflineBanner, SectionHeader } from './ui';
+import type { NotificationItemRef } from './ui/NotificationItem';
+import { useI18n } from '../../../hooks/useI18n';
+import { toast } from '../../../utils/toast';
+import { useRoles } from '../../../hooks/useRoles';
+import { useSelectedSiteUtils } from '../../../hooks/useSelectedSite';
 
-const seed: Notification[] = [
-  { id: 'n1', title: 'Welcome Home', message: 'System is running normally.', description: 'The system started successfully and is running in optimal condition.', createdAt: new Date().toISOString(), read: false, severity: 'normal' },
-  { id: 'n2', title: 'Battery Low', message: 'Battery level is 18%. Charging is recommended.', description: 'The battery level has dropped below 20%. Please connect to a charger to avoid interruption.', createdAt: new Date(Date.now() - 1000 * 60 * 40).toISOString(), read: false, severity: 'normal' },
-  { id: 'n3', title: 'Grid Disconnected', message: 'Grid connection lost. Please check the system.', description: 'The power grid connection was interrupted. This may cause instability. Please verify your grid connection immediately.', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 26).toISOString(), read: true, severity: 'critical' },
-  { id: 'n4', title: 'Firmware Info', message: 'New firmware notes are available.', description: 'A new firmware update has been released. Review the release notes for bug fixes and improvements.', createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), read: true, severity: 'normal' },
-];
 
 function isToday(iso: string) {
   const d = new Date(iso), n = new Date();
@@ -26,41 +25,74 @@ function isToday(iso: string) {
 
 type Row =
   | { type: 'header'; id: string; title: string }
-  | { type: 'item'; id: string; n: Notification };
+  | { type: 'item'; id: string; n: DeviceNotification };
 
 export default function NotificationScreen(): JSX.Element {
   const insets = useSafeAreaInsets();
   const isDark = useThemeStore(s => s.mode) === 'dark';
   const COLORS = getThemeColors(isDark) as any;
   const styles = useMemo(() => makeNotificationScreenStyles(isDark), [isDark]);
-
-  const { items, setItems, deleteNotification, markRead, markAllRead } = useNotifications(seed);
-
-  const [refreshing, setRefreshing] = useState(false);
-  const [filter, setFilter] = useState<Filter>('all');
-
+  const { t } = useI18n();
+  const { isAdmin, hasRole } = useRoles();
+  const isAdminUser = isAdmin || hasRole("Administrator");
+  const { selectedSite } = useSelectedSiteUtils();
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
+
+  // Admin kullanıcılar için ev seçmeden Notifications'a geçmeyi engelle
+  useFocusEffect(
+    useCallback(() => {
+      if (isAdminUser && !selectedSite) {
+        // Admin kullanıcı ev seçmemişse Admin tab'ına yönlendir
+        // Tab navigator içinde jumpTo kullanmalıyız
+        (navigation as any).jumpTo?.('Admin');
+      }
+    }, [isAdminUser, selectedSite, navigation])
+  );
+
+  const { 
+    notifications, 
+    loading, 
+    refreshing, 
+    loadingMore, 
+    error, 
+    hasNextPage,
+    refreshNotifications,
+    loadMoreNotifications,
+    markAsRead, 
+    markAllAsRead, 
+    deleteNotification 
+  } = useDeviceNotifications();
+
+  const [filter, setFilter] = useState<Filter>('all');
+  const [markingAllAsRead, setMarkingAllAsRead] = useState(false);
   const { isAndroid } = usePlatform();
   const { isConnected } = useNetInfo();
   const { handleError } = useErrorHandler();
+  const openSwipeableRef = useRef<Map<string, NotificationItemRef>>(new Map());
 
   const filtered = useMemo(() => {
     switch (filter) {
-      case 'today': return items.filter(n => isToday(n.createdAt));
-      case 'unread': return items.filter(n => !n.read);
-      case 'critical': return items.filter(n => n.severity === 'critical');
-      default: return items;
+      case 'today': return notifications.filter(n => isToday(n.createdAt));
+      case 'unread': return notifications.filter(n => !n.read);
+      case 'critical': return notifications.filter(n => n.severity === 'critical');
+      default: return notifications;
     }
-  }, [items, filter]);
+  }, [notifications, filter]);
 
-  const openDetail = (n: Notification) => {
-    if (!n.read) markRead(n.id);
+  const openDetail = async (n: DeviceNotification) => {
+    if (!n.read) {
+      try {
+        await markAsRead(n.id);
+        // Toast gösterilmiyor - sadece detaya gidiyor
+      } catch (error) {// Hata durumunda da toast gösterilmiyor
+      }
+    }
     navigation.navigate('NotificationDetail', { item: n });
   };
 
-  const splitGroups = (list: Notification[]) => {
-    const today: Notification[] = [];
-    const earlier: Notification[] = [];
+  const splitGroups = (list: DeviceNotification[]) => {
+    const today: DeviceNotification[] = [];
+    const earlier: DeviceNotification[] = [];
     list.forEach(n => (isToday(n.createdAt) ? today : earlier).push(n));
     return { today, earlier };
   };
@@ -69,15 +101,15 @@ export default function NotificationScreen(): JSX.Element {
     const { today, earlier } = splitGroups(filtered);
     const rows: Row[] = [];
     if (today.length) {
-      rows.push({ type: 'header', id: 'h-today', title: 'Today' });
-      today.forEach(n => rows.push({ type: 'item', id: n.id, n }));
+      rows.push({ type: 'header', id: 'h-today', title: t('notifications.today') });
+      today.forEach((n, index) => rows.push({ type: 'item', id: `today-${n.id}-${index}`, n }));
     }
     if (earlier.length) {
-      rows.push({ type: 'header', id: 'h-earlier', title: 'Earlier' });
-      earlier.forEach(n => rows.push({ type: 'item', id: n.id, n }));
+      rows.push({ type: 'header', id: 'h-earlier', title: t('notifications.earlier') });
+      earlier.forEach((n, index) => rows.push({ type: 'item', id: `earlier-${n.id}-${index}`, n }));
     }
     return rows;
-  }, [filtered]);
+  }, [filtered, t]);
 
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(12)).current;
@@ -90,16 +122,27 @@ export default function NotificationScreen(): JSX.Element {
 
   const onRefresh = async () => {
     if (!isConnected) return;
-    setRefreshing(true);
-    try { setItems(prev => [...prev]); } catch (e) { handleError(e); } finally { setRefreshing(false); }
+    refreshNotifications();
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      setMarkingAllAsRead(true);
+      await markAllAsRead();
+      toast.success(t('notifications.markAllReadSuccess'), t('common.success'));
+    } catch (error) {toast.error(t('notifications.markAllReadError'), t('common.error'));
+    } finally {
+      setMarkingAllAsRead(false);
+    }
   };
 
   const ListHeader = (
     <>
    <NotificationHeader
   styles={styles}
-  onMarkAllRead={markAllRead}
+  onMarkAllRead={handleMarkAllAsRead}
   onPressTrash={() => navigation.navigate('Trash')}
+  markingAllAsRead={markingAllAsRead}
 />
       <View style={styles.filterSticky}>
         <View style={styles.filterRow}>
@@ -121,13 +164,45 @@ export default function NotificationScreen(): JSX.Element {
             ? <SectionHeader title={item.title} styles={styles} />
             : (
               <NotificationItem
+                ref={(ref) => {
+                  if (ref) {
+                    openSwipeableRef.current.set(item.n.id, ref);
+                  } else {
+                    openSwipeableRef.current.delete(item.n.id);
+                  }
+                }}
                 n={item.n}
                 styles={styles}
                 isDark={isDark}
                 accent={COLORS.accent}
                 onOpen={openDetail}
-               onDelete={(id) => deleteNotification(id)} 
-                onMarkRead={markRead}
+                onDelete={async (id) => {
+                  try {
+                    await deleteNotification(id);
+                    openSwipeableRef.current.delete(id);
+                    toast.success(t('notifications.deleteToast.success'), t('common.success'));
+                  } catch (error) {toast.error(t('notifications.deleteToast.error'), t('common.error'));
+                  }
+                }}
+                onMarkRead={async (id) => {
+                  const notification = notifications.find(n => n.id === id);
+                  if (notification?.read) {return;
+                  }
+                  
+                  try {
+                    await markAsRead(id);
+                    openSwipeableRef.current.delete(id);
+                    toast.success(t('notifications.markAsRead'), t('common.success'));
+                  } catch (error) {toast.error(t('notifications.markAsReadFailed'), t('common.error'));
+                  }
+                }}
+                onSwipeableOpen={(id, closePrevious) => {
+                  openSwipeableRef.current.forEach((ref, itemId) => {
+                    if (itemId !== id) {
+                      ref.close();
+                    }
+                  });
+                }}
               />
             )
         }
@@ -142,6 +217,15 @@ export default function NotificationScreen(): JSX.Element {
             colors={[COLORS.accent ?? '#00D1A1']}
             tintColor={COLORS.accent ?? '#00D1A1'}
           />
+        }
+        onEndReached={loadMoreNotifications}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={() => 
+          loadingMore ? (
+            <View style={{ padding: 20, alignItems: 'center' }}>
+              <ActivityIndicator size="small" color={COLORS.accent} />
+            </View>
+          ) : null
         }
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         showsVerticalScrollIndicator={false}

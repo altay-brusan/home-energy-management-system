@@ -11,6 +11,7 @@ import {
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { Card, ThemeToggle } from '../../../components';
 import Input from '../../../components/forms/Input';
@@ -31,6 +32,7 @@ type RootStackParamList = {
 };
 
 export default function DeviceSetupScreen() {
+  const { t } = useTranslation();
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { setDevice, completeOnboarding } = useOnboardingStore();
@@ -100,11 +102,8 @@ export default function DeviceSetupScreen() {
               >
                 <Card variant="elevated" padding={24} style={styles.card}>
                   <View style={styles.inner}>
-                    <Text style={styles.title}>Add your device</Text>
-                    <Text style={styles.subtitle}>
-                      Link a device so we can start collecting data. 
-                      You can add more devices later from the Devices tab.
-                    </Text>
+                    <Text style={styles.title}>{t('deviceSetup.title')}</Text>
+                    <Text style={styles.subtitle}>{t('deviceSetup.subtitle')}</Text>
 
                     <View style={styles.formWrapper}>
                       <Controller
@@ -112,8 +111,8 @@ export default function DeviceSetupScreen() {
                         name="deviceName"
                         render={({ field }) => (
                           <Input
-                            label="Device name"
-                            placeholder="e.g. Living Room Gateway"
+                            label={t('deviceSetup.deviceName')}
+                            placeholder={t('deviceSetup.deviceNamePlaceholder')}
                             autoCapitalize="words"
                             value={field.value}
                             onChangeText={field.onChange}
@@ -127,8 +126,8 @@ export default function DeviceSetupScreen() {
                         name="serialNumber"
                         render={({ field }) => (
                           <Input
-                            label="Serial number"
-                            placeholder="Enter serial manually"
+                            label={t('deviceSetup.serialNumber')}
+                            placeholder={t('deviceSetup.serialNumberPlaceholder')}
                             autoCapitalize="characters"
                             autoCorrect={false}
                             value={field.value}
@@ -140,21 +139,25 @@ export default function DeviceSetupScreen() {
                         )}
                       />
                       <Button
-                        title="Scan QR code"
+                        title={t('deviceSetup.scanQr')}
                         onPress={() => setIsQrScannerVisible(true)}
                         variant="secondary"
                         style={styles.secondaryButton}
                         textStyle={styles.secondaryButtonText}
                       />
                       <Button
-                        title={isSubmitting ? 'Saving…' : 'Finish setup'}
+                        title={
+                          isSubmitting
+                            ? t('deviceSetup.saving')
+                            : t('deviceSetup.finish')
+                        }
                         onPress={handleSubmit(onSubmit)}
                         disabled={isSubmitting}
                         style={styles.primaryButton}
                         textStyle={styles.primaryButtonText}
                       />
                       <Button
-                        title="Go Back"
+                        title={t('deviceSetup.goBack')}
                         onPress={() => navigation.goBack()}
                         variant="secondary"
                         style={[styles.secondaryButton, { marginTop: 12 }]}

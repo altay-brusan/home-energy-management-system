@@ -1,7 +1,12 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
 import { SPACING } from '../../../theme/constants';
 
-export const makeProfileScreenStyles = (COLORS: Record<string, string>) => StyleSheet.create({
+export const makeProfileScreenStyles = (COLORS: Record<string, string>) => {
+  const width = Dimensions.get('window').width;
+  const isSmall = width <= 380;
+  const isVerySmall = width <= 340;
+
+  return StyleSheet.create({
   container: {
     flexGrow: 1,
     backgroundColor: COLORS.dark,
@@ -48,19 +53,22 @@ export const makeProfileScreenStyles = (COLORS: Record<string, string>) => Style
     backgroundColor: COLORS.cardBg,
     borderRadius: 16,
     paddingVertical: SPACING.lg,
-    paddingHorizontal: SPACING.lg,
+    paddingHorizontal: isVerySmall ? SPACING.md : SPACING.lg,
     marginBottom: 0,
     elevation: 1,
     alignItems: 'center',
     flexDirection: 'row',
-    gap: SPACING.md,
+    gap: isVerySmall ? SPACING.sm : SPACING.md,
     minHeight: 56,
+    overflow: 'hidden',
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: isVerySmall ? 14 : isSmall ? 15 : 16,
     fontWeight: '600',
     color: COLORS.textSoft,
     letterSpacing: 0.1,
+    flex: 1,
+    flexShrink: 1,
   },
   tabButton: {
     minWidth: 80,
@@ -83,4 +91,10 @@ export const makeProfileScreenStyles = (COLORS: Record<string, string>) => Style
     paddingHorizontal: 12,
     marginBottom: 8,
   },
-});
+  regionWrap: {
+  marginLeft: 8,
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+  });
+};

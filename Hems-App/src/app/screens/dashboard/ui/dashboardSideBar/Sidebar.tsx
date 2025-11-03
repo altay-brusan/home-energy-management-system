@@ -1,12 +1,10 @@
-import React, { useState, forwardRef, useImperativeHandle, useEffect, useRef } from "react";
+import React, { useState, forwardRef, useImperativeHandle, useEffect } from "react";
 import {
   Text,
   TouchableOpacity,
   Animated,
   Dimensions,
   ScrollView,
-  ActivityIndicator,
-  View,
 } from "react-native";
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 
@@ -16,6 +14,8 @@ import { useThemeStore } from "../../../../../store/themeStore";
 import { getThemeColors } from "../../../../../theme/constants";
 import { makeSidebarStyles } from "./Sidebar.styles";
 import { SidebarHeader, SidebarHouseCard, SidebarAddButton } from "./ui";
+import { useTranslation } from "react-i18next";
+import { useSitesStore } from "../../../../../store/sitesStore";
 
 const { width } = Dimensions.get("window");
 
@@ -28,18 +28,14 @@ type RootStackParamList = {
 
 const Sidebar = forwardRef((props, ref) => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { t } = useTranslation();
 
-  const houses: House[] = [
-    { id: "1", name: "Istanbul Apartment", address: "Ankara / Turkey" },
-    { id: "2", name: "Summer House", address: "Istanbul / Turkey" },
-    { id: "empty", name: "Empty House", address: "Tap to add devices", isEmpty: true },
-  ];
+  const { sites, selectedSite, getUserSites, selectSiteById } = useSitesStore();
+
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedHouse, setSelectedHouse] = useState("1");
-  const [isLoading, setIsLoading] = useState(false);
+  const [selectedHouse, setSelectedHouse] = useState("");
+  const [houses, setHouses] = useState<House[]>([]);
   const translateX = useState(new Animated.Value(-width))[0];
-  const buttonScale = useState(new Animated.Value(1))[0];
-  const prevSelectedHouse = useRef(selectedHouse);
 
   const mode = useThemeStore((s) => s.mode);
   const isDark = mode === "dark";
@@ -65,32 +61,34 @@ const Sidebar = forwardRef((props, ref) => {
 
   useImperativeHandle(ref, () => ({ toggleSidebar }));
 
+  useEffect(() => {
+    const loadSites = async () => {
+      try {
+        await getUserSites();
+      } catch (error) {}
+    };
+    loadSites();
+  }, [getUserSites]);
 
   useEffect(() => {
-    if (prevSelectedHouse.current !== selectedHouse) {
-      setIsLoading(true);
-      toggleSidebar();
-
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 2000);
-
-      prevSelectedHouse.current = selectedHouse;
+    if (selectedSite) {
+      setSelectedHouse(selectedSite.id);
     }
-  }, [selectedHouse]);
+  }, [selectedSite]);
 
+  useEffect(() => {
+    const housesFromSites = sites.map(site => ({
+      id: site.id,
+      name: site.name,
+      address: `${site.city || ''}, ${site.country || ''}`.replace(/^,\s*|,\s*$/g, ''),
+      isEmpty: !site.hasDevice
+    }));
+
+    setHouses(housesFromSites);
+  }, [sites]);
+    
   return (
     <>
-
-
-      {isLoading && (
-        <View style={styles.loadingOverlay}>
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={COLORS.accent} />
-            <Text style={styles.loadingText}>Switching home...</Text>
-          </View>
-        </View>
-      )}
       <TouchableOpacity
         onPress={toggleSidebar}
         style={styles.centerToggleButton}
@@ -103,11 +101,13 @@ const Sidebar = forwardRef((props, ref) => {
         />
       </TouchableOpacity>
       {isOpen && (
-        <TouchableOpacity
-          style={styles.overlay}
-          onPress={toggleSidebar}
-          activeOpacity={1}
-        >
+        <>
+          <TouchableOpacity
+            style={styles.overlay}
+            onPress={toggleSidebar}
+            activeOpacity={1}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          />
           <Animated.View
             style={[styles.sidebar, { transform: [{ translateX }] }]}
           >
@@ -118,7 +118,7 @@ const Sidebar = forwardRef((props, ref) => {
             >
               <SidebarHeader styles={styles} />
 
-              <SidebarAddButton styles={styles} />
+              <SidebarAddButton styles={styles} navigation={navigation} />
 
               {houses.map((house) => (
                 <SidebarHouseCard
@@ -126,20 +126,16 @@ const Sidebar = forwardRef((props, ref) => {
                   house={house}
                   isDark={isDark}
                   selected={selectedHouse === house.id}
-                  onSelect={() => {
-                    if (house.isEmpty) {
-                      navigation.navigate('DeviceSetup');
-                      toggleSidebar();
-                    } else {
-                      setSelectedHouse(house.id);
-                    }
+                  onSelect={async () => {
+                    await selectSiteById(house.id);
+                    setSelectedHouse(house.id);
                   }}
                   styles={styles}
                 />
               ))}
             </ScrollView>
           </Animated.View>
-        </TouchableOpacity>
+        </>
       )}
     </>
   );

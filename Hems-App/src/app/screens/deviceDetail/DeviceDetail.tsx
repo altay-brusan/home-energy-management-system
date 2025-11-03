@@ -1,126 +1,131 @@
-import React, { useMemo, useRef, useState } from 'react';
+import FontAwesome from "@react-native-vector-icons/fontawesome";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Animated,
-  Dimensions,
-  Image,
+  ActivityIndicator,
   Alert,
-  Modal,
+  Animated,
+  Image,
   Pressable,
-  ScrollView,
-  Text,
-  View,
-  StatusBar,
   RefreshControl,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getThemeColors, SPACING } from '../../../theme/constants';
-import { useThemeStore } from '../../../store/themeStore';
-import Button from '../../../components/ui/Button';
-import { useRoute, useNavigation } from '@react-navigation/native';
-import FontAwesome from '@react-native-vector-icons/fontawesome';
-import { getStyles } from './DeviceDetail.styles';
-import DeviceBadge from './ui/DeviceBadge';
-import GridCard from './ui/GridCard';
-import BatteryDetailBottomSheet from './ui/BatteryDetailBottomSheet';
-
-type SheetData = {
-  id: string;
-  title: string;
-  value: string;
-  subtitle?: string;
-  description?: string;
-  icon?: string;
-  status?: 'normal' | 'warning' | 'error' | 'inactive';
-} | null;
+  ScrollView,
+  StatusBar,
+  Text,
+  View
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { mobileDashboardService } from "../../../api/services/mobileDashboardService";
+import { sitesService } from "../../../api/services/sitesService";
+import { useDeviceLiveData } from "../../../hooks/useDeviceLiveData";
+import { useI18n } from "../../../hooks/useI18n";
+import { useRoles } from "../../../hooks/useRoles";
+import { useSelectedSiteUtils } from "../../../hooks/useSelectedSite";
+import { useThemeStore } from "../../../store/themeStore";
+import { getThemeColors, SPACING } from "../../../theme/constants";
+import { getStyles } from "./DeviceDetail.styles";
+import BatteryDetailBottomSheet from "./ui/BatteryDetailBottomSheet";
+import DeviceBadge from "./ui/DeviceBadge";
+import GridCard from "./ui/GridCard";
 
 export default function DeviceDetail () {
   const navigation = useNavigation<any>();
-  const isDark = useThemeStore(s => s.mode) === 'dark';
+  const isDark = useThemeStore((s) => s.mode) === "dark";
   const COLORS = getThemeColors(isDark);
   const styles = useMemo(() => getStyles(COLORS), [COLORS]);
   const insets = useSafeAreaInsets();
-  const route = useRoute<any>();
-  const device = route?.params?.device;
+  const { t } = useI18n();
+  const { isAdmin, hasRole } = useRoles();
+  const isAdminUser = isAdmin || hasRole("Administrator");
+  const { selectedSite } = useSelectedSiteUtils();
+
+  useFocusEffect(
+    useCallback(() => {
+      if (isAdminUser && !selectedSite) {
+        navigation.navigate('Admin');
+      }
+    }, [isAdminUser, selectedSite, navigation])
+  );
 
   const headerOpacity = useRef(new Animated.Value(0)).current;
   const headerY = useRef(new Animated.Value(-50)).current;
 
-  const [batterySheetVisible, setBatterySheetVisible] = useState(false);
-
-  const batteryData = {
-    soc: 89.0,
-    power: 0.763,
-    voltage: 30.2,
-    preheating: false,
-    discharge: 3.0,
-    avgCellVoltage: 3.357,
-    avgTemp: 24,
-    sn: '110*****0012',
-    version: 'V100R001C00',
-    model: 'Netzr BAT 8.0',
-    capacity: 8.06,
-  };
-
-  const SHEET_H = Math.round(Dimensions.get('window').height * 0.6);
-  const sheetY = useRef(new Animated.Value(SHEET_H)).current;
-  const sheetOpacity = useRef(new Animated.Value(0)).current;
-  const canCloseRef = useRef(false);
-  const [sheet, setSheet] = useState<SheetData>(null);
+  const [components, setComponents] = useState<any[]>([]);
+  const [deviceId, setDeviceId] = useState<string | null>(null);
+  const [setupId, setSetupId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [batterySheetVisible, setBatterySheetVisible] = useState(false);
+  const [selectedBattery, setSelectedBattery] = useState<any>(null);
+  const [inverterData, setInverterData] = useState<any>(null);
 
-  const onRefresh = () => {
+  const { data: batteryData, isFetching: isFetchingLive, fetchLiveData } =
+    useDeviceLiveData(deviceId);
+
+  const onRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 800);
+    await fetchDeviceComponents();
+    setRefreshing(false);
   };
 
-  const openSheet = (data: NonNullable<SheetData>) => {
-    if (['bat1', 'bat2', 'bat3', 'batCluster'].includes(data.id)) {
-      setBatterySheetVisible(true);
-      return;
+  const fetchDeviceComponents = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      const sitesData = await sitesService.getUserSites();
+      const siteId = sitesData?.siteList?.[0]?.id;
+
+      if (!siteId) {setComponents([]);
+        return;
+      }
+
+      const setupRes = await mobileDashboardService.getSetupDevice(siteId);
+      const device = setupRes?.device;
+      if (!device?.id) {setComponents([]);
+        return;
+      }
+
+      setDeviceId(device.id);
+      setSetupId(setupRes?.setupId || null);
+
+      const withDataRes = await mobileDashboardService.getDeviceWithData(device.id);
+
+      const comps = withDataRes?.components?.map((c: any) => ({
+        id: c.componentId,
+        name: c.componentName,
+        modelNumber: c.serialNumber || "—",
+        isDeleted: false,
+        componentData: c.componentData || 0,
+      }));
+
+      setComponents(comps || []);
+    } catch (err) {setComponents([]);
+    } finally {
+      setLoading(false);
     }
+  }, []);
 
-    sheetY.setValue(SHEET_H);
-    sheetOpacity.setValue(0);
-    canCloseRef.current = false;
-    setSheet(data);
-    requestAnimationFrame(() => {
-      Animated.parallel([
-        Animated.spring(sheetY, {
-          toValue: 0,
-          useNativeDriver: true,
-          bounciness: 7,
-          speed: 18,
-        }),
-        Animated.timing(sheetOpacity, {
-          toValue: 1,
-          duration: 180,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        setTimeout(() => {
-          canCloseRef.current = true;
-        }, 120);
-      });
-    });
-  };
+  useEffect(() => {
+    fetchDeviceComponents();
+  }, [fetchDeviceComponents]);
+  useEffect(() => {
+    const loadInverterLiveData = async () => {
+      const inverterComp = components.find((c) =>
+        c.name.toLowerCase().includes("inverter")
+      );
+      if (inverterComp) {
+        const data = await fetchLiveData(inverterComp);
+        if (data && data["Active Power"] !== undefined) {
+          setInverterData(data);
+        }
+      }
+    };
 
-  const closeSheet = () => {
-    canCloseRef.current = false;
-    Animated.parallel([
-      Animated.timing(sheetY, {
-        toValue: SHEET_H,
-        duration: 180,
-        useNativeDriver: true,
-      }),
-      Animated.timing(sheetOpacity, {
-        toValue: 0,
-        duration: 140,
-        useNativeDriver: true,
-      }),
-    ]).start(() => setSheet(null));
-  };
+    if (components.length > 0) {
+      loadInverterLiveData();
+    }
+  }, [components]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     Animated.parallel([
       Animated.timing(headerOpacity, {
         toValue: 1,
@@ -136,118 +141,174 @@ export default function DeviceDetail () {
     ]).start();
   }, []);
 
-  const deviceComponents = [
-    { id: 'inv', title: 'Inverter', subtitle: '(012)', value: '5.166 kW', icon: 'bolt', status: 'normal', position: 'left-1' },
-    { id: 'bat1', title: 'Battery', subtitle: '(1)', value: '100.0%', icon: 'battery-full', status: 'normal', position: 'left-2' },
-    { id: 'bat3', title: 'Battery', subtitle: '(3)', value: '100.0%', icon: 'battery-full', status: 'normal', position: 'left-3' },
-    { id: 'dc', title: 'DC Charger', subtitle: '', value: '0.000 kW', icon: 'plug', status: 'inactive', position: 'right-1' },
-    { id: 'bat2', title: 'Battery', subtitle: '(2)', value: '100.0%', icon: 'battery-full', status: 'normal', position: 'right-2' },
-    { id: 'batCluster', title: 'Battery Cluster', subtitle: '', value: '100.0%', icon: 'battery', status: 'normal', position: 'right-3' },
-  ] as const;
+  const handleOpenBattery = async (component: any) => {
+    setSelectedBattery(component);
+    setBatterySheetVisible(true);
+    await fetchLiveData(component);
+  };
 
-  const leftBadges = deviceComponents.filter(c => c.position.startsWith('left'));
-  const rightBadges = deviceComponents.filter(c => c.position.startsWith('right'));
+  const handleRestartDevice = () => {
+    Alert.alert(
+      t("deviceDetail.battery.restart"),
+      t("deviceDetail.confirmRestart"),
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("deviceDetail.confirmStart"),
+          style: "destructive",
+          onPress: () => {
+            Alert.alert(t("deviceDetail.actionStarted"), t("deviceDetail.deviceRestarting"));
+          },
+        },
+      ]
+    );
+  };
 
   const navigateToDetailScreen = (componentId: string) => {
     switch (componentId) {
-      case 'pvpanel':
-        navigation.navigate('PVPanelDetail', { device });
+      case "pvpanel":
+        navigation.navigate("PVPanelDetail");
         break;
-      case 'gateway':
-        navigation.navigate('GatewayDetail', { device });
-        break;
-      case 'inv':
-      case 'dc':
-        navigation.navigate('PVPanelDetail', { device, componentId });
+      case "gateway":
+        navigation.navigate("GatewayDetail");
         break;
       default:
         break;
     }
   };
 
-  const getStatusColor = (status?: string) => {
-    switch (status) {
-      case 'warning': return COLORS.warning;
-      case 'error': return COLORS.error;
-      case 'inactive': return COLORS.slate400;
-      default: return COLORS.success;
-    }
-  };
-
-  const handleRealTimeInfo = () => {
-    navigation.navigate('PVPanelDetail', { device, isRealTime: true });
-  };
-
-  const handleRestartDevice = () => {
-    Alert.alert(
-      'Cihazı Tekrar Başlat',
-      'Cihazı şimdi yeniden başlatmak istediğinize emin misiniz?',
-      [
-        { text: 'Vazgeç', style: 'cancel' },
-        {
-          text: 'Evet, Başlat',
-          style: 'destructive',
-          onPress: () => {
-            closeSheet();
-            setTimeout(() => {
-              Alert.alert('İşlem Başlatıldı', 'Cihaz yeniden başlatılıyor.');
-            }, 150);
-          },
-        },
-      ],
+  if (loading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
+        <ActivityIndicator size="large" color={COLORS.accent} />
+        <Text style={{ color: COLORS.textSoft, marginTop: 10 }}>
+          {t("common.loading")}
+        </Text>
+      </View>
     );
-  };
+  }
+  const bmsComp = components.find(c =>
+    c.name.toLowerCase().includes("bms")
+  );
+
+  const inverterComp = components.find(c =>
+    c.name.toLowerCase().includes("inverter")
+  );
+
+  // 🔹 SOC ve total power değerleri
+  const socValue = bmsComp?.componentData || 0;
+
+  const totalPower = inverterData?.["Active Power"] || 0;const leftComponents = components.filter((_, i) => i % 2 === 0);
+  const rightComponents = components.filter((_, i) => i % 2 === 1);
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
       <Animated.View
         style={[
           styles.header,
-          { paddingTop: insets.top, opacity: headerOpacity, transform: [{ translateY: headerY }] },
+          {
+            paddingTop: insets.top,
+            opacity: headerOpacity,
+            transform: [{ translateY: headerY }],
+          },
         ]}
       >
-        <View style={styles.headerContent}>
-          <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+        <View style={[styles.headerContent, { flexDirection: "row", alignItems: "center" }]}>
+          <Pressable
+            style={{ padding: 8, zIndex: 2 }}
+            onPress={() => navigation.goBack()}
+          >
             <FontAwesome name="chevron-left" size={16} color={COLORS.textSoft} />
           </Pressable>
-          <Text style={styles.headerTitle}>{device?.name || 'NetZr'}</Text>
-          <Pressable style={styles.infoButton} onPress={handleRealTimeInfo}>
-            <FontAwesome name="info-circle" size={18} color={COLORS.accent} />
-          </Pressable>
+
+          <View style={{ flex: 1, alignItems: "center", marginRight: 32 }}>
+            <Text style={[styles.headerTitle, { textAlign: "center" }]}>
+              {t("deviceDetail.title")}
+            </Text>
+          </View>
         </View>
       </Animated.View>
 
       <ScrollView
-        contentContainerStyle={{ paddingBottom: insets.bottom + SPACING.lg }}
+        contentContainerStyle={{
+          paddingBottom: insets.bottom + SPACING.lg,
+        }}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.accent} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={COLORS.accent}
+          />
+        }
       >
         <View style={[styles.heroCard, { marginTop: insets.top + 72 }]}>
           <View style={styles.headerRow}>
             <View>
-              <Text style={styles.title}>{device?.name ?? 'NetZr'}</Text>
+              <Text style={styles.title}>NetZr</Text>
+              <Text style={[styles.statLabel, { marginTop: 4 }]}>
+                {t("deviceDetail.totalComponents", { count: components.length })}
+              </Text>
             </View>
-            <Pressable style={styles.rtBtn} onPress={handleRealTimeInfo}>
-              <FontAwesome name="line-chart" size={14} color={COLORS.accent} style={{ marginRight: 6 }} />
-              <Text style={styles.rtBtnText}>Live Data</Text>
-            </Pressable>
           </View>
 
           <View style={styles.visualWrap}>
-            <Image source={require('../../../assets/images/device-image.png')} style={styles.visualImg} resizeMode="contain" />
+            <Image
+              source={require("../../../assets/images/device-image.png")}
+              style={styles.visualImg}
+              resizeMode="contain"
+            />
           </View>
 
           <View style={styles.badgesBelowRow}>
             <View style={styles.badgesCol}>
-              {leftBadges.map(b => (
-                <DeviceBadge key={b.id} COLORS={COLORS} title={b.title} subtitle={b.subtitle} value={b.value} icon={b.icon} status={b.status} onPress={() => openSheet(b)} />
+              {leftComponents.map((comp) => (
+                <DeviceBadge
+                  key={comp.id}
+                  COLORS={COLORS}
+                  title={String(t(`deviceNames.${comp.name.toLowerCase()}`, { defaultValue: comp.name }))}
+
+                  subtitle={""}
+                  value={comp.componentData ? comp.componentData.toFixed(2).toString() : "0"}
+
+                  icon={
+                    comp.name.toLowerCase().includes("inverter")
+                      ? "bolt"
+                      : comp.name.toLowerCase().includes("bms")
+                        ? "microchip"
+                        : "battery-full"
+                  }
+                  status={comp.isDeleted ? "inactive" : "normal"}
+                  onPress={() => handleOpenBattery(comp)}
+                />
               ))}
             </View>
             <View style={styles.badgesCol}>
-              {rightBadges.map(b => (
-                <DeviceBadge key={b.id} COLORS={COLORS} title={b.title} subtitle={b.subtitle} value={b.value} icon={b.icon} status={b.status} align="right" onPress={() => openSheet(b)} />
+              {rightComponents.map((comp) => (
+                <DeviceBadge
+                  key={comp.id}
+                  COLORS={COLORS}
+                  title={String(t(`deviceNames.${comp.name.toLowerCase()}`, { defaultValue: comp.name }))}
+
+                  subtitle={""}
+                  value={comp.componentData ? comp.componentData.toFixed(2).toString() : "0"}
+                  icon={
+                    comp.name.toLowerCase().includes("inverter")
+                      ? "bolt"
+                      : comp.name.toLowerCase().includes("bms")
+                        ? "microchip"
+                        : "battery-full"
+                  }
+                  status={comp.isDeleted ? "inactive" : "normal"}
+                  align="right"
+                  onPress={() => handleOpenBattery(comp)}
+                />
               ))}
             </View>
           </View>
@@ -256,75 +317,70 @@ export default function DeviceDetail () {
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <FontAwesome name="bolt" size={18} color={COLORS.accent} />
-            <Text style={styles.statValue}>8.24 kWh</Text>
-            <Text style={styles.statLabel}>Günlük Üretim</Text>
+            <Text style={styles.statValue}>{(totalPower).toFixed(2)} kW</Text>
+            <Text style={styles.statLabel}>{t("deviceDetail.dailyProduction")}</Text>
           </View>
+
           <View style={styles.statCard}>
             <FontAwesome name="battery-full" size={18} color={COLORS.success} />
-            <Text style={styles.statValue}>100%</Text>
-            <Text style={styles.statLabel}>Batarya Şarjı</Text>
+            <Text style={styles.statValue}>{socValue.toFixed(0)}%</Text>
+            <Text style={styles.statLabel}>{t("deviceDetail.batteryCharge")}</Text>
           </View>
-          <View style={styles.statCard}>
-            <FontAwesome name="plug" size={18} color={COLORS.textSoft} />
-            <Text style={styles.statValue}>On-Grid</Text>
-            <Text style={styles.statLabel}>Bağlantı</Text>
-          </View>
+
+    <View style={styles.statCard}>
+  <FontAwesome name="plug" size={18} color={COLORS.textSoft} />
+
+  <Text
+    style={[styles.statValue, { textAlign: 'center', marginTop: 6 }]}
+    numberOfLines={1}
+    adjustsFontSizeToFit
+    minimumFontScale={0.75} // gerekirse %75’e kadar küçültür
+  >
+    {t("deviceList.onGrid")}
+  </Text>
+
+  <Text
+    style={[
+      styles.statLabel,
+      { textAlign: 'center', alignSelf: 'center', marginTop: 6 },
+    ]}
+  >
+    {t("deviceDetail.connection")}
+  </Text>
+</View>
+
         </View>
 
 
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Netzr Cihazları</Text>
+          <Text style={styles.sectionTitle}>{t("deviceDetail.devicesTitle")}</Text>
           <View style={styles.gridRow}>
-            <GridCard COLORS={COLORS} title="PV Panel" subtitle="10.0 kWp" icon="sun-o" onPress={() => navigateToDetailScreen('pvpanel')} />
-            <GridCard COLORS={COLORS} title="Energy Gateway" subtitle="On Grid" icon="exchange" onPress={() => navigateToDetailScreen('gateway')} />
+            <GridCard
+              COLORS={COLORS}
+              title={t("deviceDetail.pvPanel.title")}
+              subtitle="—"
+              icon="sun-o"
+              onPress={() => navigateToDetailScreen("pvpanel")}
+            />
+            <GridCard
+              COLORS={COLORS}
+              title={t("deviceDetail.gateway.title")}
+              subtitle={t("deviceDetail.gateway.subtitle")}
+              icon="exchange"
+              onPress={() => navigateToDetailScreen("gateway")}
+            />
           </View>
         </View>
       </ScrollView>
-
-      <Modal visible={!!sheet} transparent animationType="none" onRequestClose={closeSheet}>
-        <Animated.View style={[styles.scrim, { opacity: sheetOpacity }]}>
-          <Pressable style={{ flex: 1 }} onPress={() => { if (canCloseRef.current) closeSheet(); }} />
-        </Animated.View>
-        <Animated.View style={[styles.sheet, { height: SHEET_H, paddingBottom: insets.bottom + SPACING.md, transform: [{ translateY: sheetY }] }]}>
-          <View style={styles.sheetHandle} />
-          <View style={styles.sheetHeader}>
-            <View style={styles.sheetHeaderLeft}>
-              <Text style={styles.sheetTitle}>{sheet?.title} {sheet?.subtitle}</Text>
-              <Text style={styles.sheetValue}>{sheet?.value}</Text>
-            </View>
-            {sheet?.icon && (
-              <View style={[styles.sheetIconContainer, { backgroundColor: getStatusColor(sheet?.status) }]}>
-                <FontAwesome name={sheet?.icon as any} size={32} color="#fff" />
-              </View>
-            )}
-          </View>
-          <View style={styles.sheetDivider} />
-          <Text style={styles.sheetSectionTitle}>Durum</Text>
-          <View style={styles.sheetStatusRow}>
-            <View style={[styles.sheetStatusDot, { backgroundColor: getStatusColor(sheet?.status) }]} />
-            <Text style={styles.sheetStatusText}>
-              {sheet?.status === 'warning' ? 'Uyarı' : sheet?.status === 'error' ? 'Hata' : sheet?.status === 'inactive' ? 'Pasif' : 'Normal Çalışıyor'}
-            </Text>
-          </View>
-          <Text style={styles.sheetSectionTitle}>Detaylar</Text>
-          <Text style={styles.sheetInfo}>
-            {sheet?.description || 'Bu bileşen hakkında detaylı bilgi ve gerçek zamanlı veriler için detay sayfasına gidebilirsiniz.'}
-          </Text>
-          <View style={styles.sheetBtnRow}>
-            <Button title="Detaya Git" onPress={() => navigateToDetailScreen(sheet?.id || '')} variant="primary" style={{ flex: 1 }} />
-            <Button title="Kapat" onPress={closeSheet} variant="secondary" style={{ flex: 1 }} />
-          </View>
-          <View style={{ marginTop: SPACING.sm }}>
-            <Button title="Cihazı Tekrar Başlat" onPress={handleRestartDevice} variant="danger" style={{ paddingVertical: SPACING.lg }} />
-          </View>
-        </Animated.View>
-      </Modal>
 
       <BatteryDetailBottomSheet
         visible={batterySheetVisible}
         onClose={() => setBatterySheetVisible(false)}
         onRestart={handleRestartDevice}
-        batteryData={batteryData}
+        loading={isFetchingLive}
+        deviceName={selectedBattery?.name || "Battery"}
+        batteryData={batteryData || {}}
+        
       />
     </View>
   );

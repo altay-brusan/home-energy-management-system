@@ -10,6 +10,7 @@ import Button from '../../components/ui/Button';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import useAuth from '../../hooks/useAuth';
+import { useI18n } from '../../hooks/useI18n';
 
 type RootStackParamList = { Login: undefined; MainTabs: undefined };
 
@@ -18,6 +19,7 @@ export default function SettingsScreen(): JSX.Element {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { logout } = useAuth();
+  const { t } = useI18n();
 
   const animatedStyle = useAnimatedStyle(() => {
     const translateX = interpolate(progress.value, [0, 1], [-200, 0]);
@@ -32,21 +34,20 @@ export default function SettingsScreen(): JSX.Element {
 
   const handleLogout = async () => {
     await logout();
-    navigation.replace('Login');
   };
 
   return (
     <View style={styles.container}>
       <Animated.View style={animatedStyle}>
-        <Text style={styles.title}>Settings Screen</Text>
+        <Text style={styles.title}>{t('settings.settingsScreen')}</Text>
         <View style={styles.settingItem}>
-          <Text>Setting 1</Text>
+          <Text>{t('settings.setting1')}</Text>
         </View>
         <View style={styles.settingItem}>
-          <Text>Setting 2</Text>
+          <Text>{t('settings.setting2')}</Text>
         </View>
         <Button
-          title="Logout"
+          title={t('settings.logout')}
           onPress={handleLogout}
           style={{ marginTop: 24 }}
         />

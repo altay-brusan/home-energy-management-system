@@ -7,7 +7,7 @@ export type Address = {
   line2?: string;
   city: string;
   state?: string;
-  postalCode: string;
+  postalCode?: string;
   country: string;
 };
 
@@ -51,7 +51,7 @@ export const useOnboardingStore = create<OnboardingState>()(
               line2: address.line2?.trim() || undefined,
               city: address.city.trim(),
               state: address.state?.trim() || undefined,
-              postalCode: address.postalCode.trim(),
+              postalCode: address.postalCode?.trim() || undefined,
               country: address.country.trim(),
             },
           },

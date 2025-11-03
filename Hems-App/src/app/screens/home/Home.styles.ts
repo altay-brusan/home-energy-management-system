@@ -18,6 +18,23 @@ export function getHomeStyles (COLORS: Record<string, string>, isDark: boolean) 
     welcomeSection: {
       marginBottom: SPACING.lg,
     },
+    welcomeRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+},
+
+profileButton: {
+  padding: 6,
+  borderRadius: 999,
+  backgroundColor: COLORS.bgShadeLight,
+  borderWidth: 1,
+  borderColor: COLORS.border,
+},
+
+profileIcon: {
+  color: COLORS.textSoft,
+},
     welcomeText: {
       fontSize: TYPOGRAPHY.xxxl,
       fontWeight: '800',
@@ -38,29 +55,33 @@ export function getHomeStyles (COLORS: Record<string, string>, isDark: boolean) 
       flexDirection: 'row',
       justifyContent: 'space-between',
       marginBottom: SPACING.xl,
-      gap: SPACING.sm,
+      gap: SPACING.xs,
     },
     statCard: {
       flex: 1,
       backgroundColor: COLORS.surface,
-      borderRadius: 16,
-      padding: SPACING.md,
+      borderRadius: 12,
+      padding: SPACING.sm,
       alignItems: 'center',
+      justifyContent: 'center',
       borderWidth: 1,
       borderColor: COLORS.border,
-
+      minHeight: 80,
     },
     statNumber: {
-      fontSize: TYPOGRAPHY.xxl,
+      fontSize: TYPOGRAPHY.lg,
       fontWeight: '700',
       color: COLORS.textSoft,
-      marginTop: 4,
+      marginTop: 2,
+      textAlign: 'center',
     },
     statLabel: {
-      fontSize: TYPOGRAPHY.sm,
+      fontSize: TYPOGRAPHY.xs,
       color: COLORS.slate400,
       fontWeight: '500',
       marginTop: 2,
+      textAlign: 'center',
+      lineHeight: 14,
     },
     sectionTitle: {
       fontSize: TYPOGRAPHY.xxl,
@@ -288,5 +309,6 @@ export function getHomeStyles (COLORS: Record<string, string>, isDark: boolean) 
       marginTop: SPACING.md,
       textAlign: 'center',
     },
+    
   })
 }

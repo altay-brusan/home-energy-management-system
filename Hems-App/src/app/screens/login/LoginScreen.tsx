@@ -18,15 +18,15 @@ import {
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
-import { Card, ThemeToggle, LanguageSelector } from '../../../components';
-import ErrorMessage from '../../../components/feedback/ErrorMessage';
+import { useTranslation } from 'react-i18next';
+import { Card, LanguageSelector, ThemeToggle } from '../../../components';
 import Input from '../../../components/forms/Input';
 import Button from '../../../components/ui/Button';
 import useAuth from '../../../hooks/useAuth';
-import { useTranslation } from 'react-i18next';
 import { usePlatform } from '../../../hooks/usePlatform';
-import { useThemeStore } from '../../../store/themeStore';
+import { useAuthStore } from '../../../store/authStore';
 import { useOnboardingStore } from '../../../store/onboardingStore';
+import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors } from '../../../theme/constants';
 import MainLayout from '../../layouts/MainLayout';
 import type { LoginForm } from './login.schema';
@@ -37,6 +37,7 @@ type RootStackParamList = {
   Login: undefined;
   MainTabs: undefined;
   ForgotPassword: undefined;
+  ResetPassword: { email: string };
   SignUp: undefined;
   Onboarding: undefined;
   Home: undefined;
@@ -45,7 +46,8 @@ type RootStackParamList = {
 export default function LoginScreen (): JSX.Element {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { login, loginLoading, loginError, isAuthenticated } = useAuth();
+  const { login, loginLoading, loginError, clearLoginError, isAuthenticated } = useAuth();
+  const user = useAuthStore(s => s.user);
   const hasOnboarded = useOnboardingStore(s => s.hasOnboarded);
   const { t } = useTranslation();
 
@@ -78,15 +80,23 @@ export default function LoginScreen (): JSX.Element {
     formState: { errors, isSubmitting },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: 'demo@hems.app', password: '123456' },
+    defaultValues: { email: "administrator@localhost", password: "***REMOVED***" },
   });
 
   React.useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !user) return;
 
+    const checkHomesAndNavigate = async () => {
+      try {
+        const isAdminUser = user?.roles?.includes('Administrator');if (isAdminUser) {navigation.replace('MainTabs');
+        } else {navigation.replace('Home');
+        }
+      } catch (error) {navigation.replace('Home');
+      }
+    };
 
-    navigation.replace('Home');
-  }, [isAuthenticated, navigation]);
+    checkHomesAndNavigate();
+  }, [isAuthenticated, user, navigation]);
 
   const onSubmit = (values: LoginForm) => {
     if (!agreed) return;
@@ -131,7 +141,10 @@ export default function LoginScreen (): JSX.Element {
                             autoCorrect={false}
                             autoComplete="email"
                             value={value}
-                            onChangeText={onChange}
+                            onChangeText={(text) => {
+                              onChange(text.toLowerCase());
+                              if (loginError) clearLoginError();
+                            }}
                             error={errors.email?.message}
                           />
                         )}
@@ -146,11 +159,15 @@ export default function LoginScreen (): JSX.Element {
                             autoCorrect={false}
                             autoComplete="password"
                             value={value}
-                            onChangeText={onChange}
+                            onChangeText={(text) => {
+                              onChange(text);
+                              if (loginError) clearLoginError();
+                            }}
                             error={errors.password?.message}
                           />
                         )}
                       />
+
                       <Pressable
                         onPress={() => navigation.navigate('ForgotPassword')}
                       >

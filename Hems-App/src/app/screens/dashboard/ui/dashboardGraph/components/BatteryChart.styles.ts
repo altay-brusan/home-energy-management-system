@@ -21,7 +21,7 @@ export function getBatteryChartStyles (COLORS: Record<string, string>) {
     },
     chartContainer: {
       width: '100%',
-      height: 200,
+      height: 300, // Dikey yazılar için daha yüksek
       borderRadius: 12,
       overflow: 'hidden',
       backgroundColor: 'transparent',

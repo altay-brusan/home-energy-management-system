@@ -1,24 +1,19 @@
-import React, { useState } from 'react';
-import { RefreshControl, View, FlatList } from 'react-native';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
+import { RefreshControl, View, FlatList, ActivityIndicator, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { useThemeStore } from '../../../../store/themeStore';
 import { getThemeColors } from '../../../../theme/constants';
 import { makeDeviceSharingStyles } from './DeviceSharingScreen.styles';
 import { useNetInfo } from '../../../../hooks/useNetInfo';
+import { useI18n } from '../../../../hooks/useI18n';
+import { useInvitation } from '../../../../hooks/useInvitation';
 
 import {
   DeviceSharingHeader,
   DeviceSharingForm,
   DeviceSharingUserItem,
 } from './ui';
-
-type SharedUser = {
-  id: string;
-  email: string;
-  role: 'owner' | 'member';
-  status: 'pending' | 'accepted' | 'rejected' | 'active' | 'inactive';
-  since?: string;
-};
 
 export default function DeviceSharingScreen({ navigation }: any) {
   const mode = useThemeStore((s) => s.mode);
@@ -27,74 +22,104 @@ export default function DeviceSharingScreen({ navigation }: any) {
   const styles = makeDeviceSharingStyles(COLORS, isDark);
   const insets = useSafeAreaInsets();
   const { isConnected } = useNetInfo();
+  const { t } = useI18n();
 
-  const [email, setEmail] = useState('');
-  const [users, setUsers] = useState<SharedUser[]>([
-    { id: '1', email: 'owner@example.com', role: 'owner', status: 'active', since: '2024-01-01' },
-    { id: '2', email: 'ex2@example.com', role: 'member', status: 'pending', since: '2024-02-01' },
-    { id: '3', email: 'ex3@example.com', role: 'member', status: 'accepted', since: '2024-02-01' },
-    { id: '4', email: 'ex4@example.com', role: 'member', status: 'accepted', since: '2024-02-01' },
-  ]);
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
+  const { email, setEmail, error, message, loading, invitations, sendInvitation, removeInvitation, removeUser, reload } = useInvitation();
   const [refreshing, setRefreshing] = useState(false);
+  const hasLoadedOnceRef = useRef(false);
+  const reloadRef = useRef(reload);
 
-  const handleAdd = () => {
-    setError('');
-    setMessage('');
-    if (!email.includes('@')) {
-      setError('Please enter a valid email address.');
-      return;
-    }
-    setUsers((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        email,
-        role: 'member',
-        status: 'pending',
-        since: new Date().toISOString().split('T')[0],
-      },
-    ]);
-    setMessage('Invitation sent successfully.');
-    setEmail('');
-  };
+  reloadRef.current = reload;
 
-  const handleCancel = () => {
-    setError('');
-    setMessage('');
+  useFocusEffect(
+    useCallback(() => {
+      if (hasLoadedOnceRef.current) {
+        reloadRef.current();
+      } else {
+        hasLoadedOnceRef.current = true;
+      }
+    }, [])
+  );
+
+  const handleAdd = useCallback(async () => { 
+    await sendInvitation(); 
+  }, [sendInvitation]);
+
+  const handleCancel = useCallback(() => {
     navigation?.goBack?.();
-  };
+  }, [navigation]);
 
-  const onRefresh = async () => {
+  const onRefresh = useCallback(async () => {
     if (!isConnected) return;
     setRefreshing(true);
-    try {
-      setUsers((prev) => [...prev]);
-    } finally {
-      setRefreshing(false);
+    try { 
+      await reload(); 
+    } finally { 
+      setRefreshing(false); 
     }
-  };
+  }, [isConnected, reload]);
 
-  const renderUser = ({ item }: { item: SharedUser }) => (
+  const allUsers = useMemo(() => {
+    if (!invitations) return [];
+    const withUser = Array.isArray(invitations.withUser) ? invitations.withUser : [];
+    const withoutUser = Array.isArray(invitations.withoutUser) ? invitations.withoutUser : [];
+    return [...withUser, ...withoutUser];
+  }, [invitations]);
+
+  const listKey = useMemo(() => {
+    if (!invitations) return 'empty';
+    const withUser = Array.isArray(invitations.withUser) ? invitations.withUser : [];
+    const withoutUser = Array.isArray(invitations.withoutUser) ? invitations.withoutUser : [];
+    const allIds = [...withUser, ...withoutUser].map(item => item.id).sort().join(',');
+    return `${withUser.length}-${withoutUser.length}-${allIds}`;
+  }, [invitations]);
+
+  const handleRemoveUser = useCallback(async (invitedUserId: string | undefined, invitationId?: string, hasInvitedUserId?: boolean) => {
+    try {
+      if (invitationId) {
+        await removeUser(invitationId);
+      } else {
+        await removeInvitation(invitedUserId || '');
+      }
+    } catch (error) {
+    }
+  }, [removeUser, removeInvitation]);
+
+  const renderUser = useCallback(({ item }: { item: any }) => (
     <DeviceSharingUserItem
-      item={item}
+      item={{
+        id: item.invitedUserId || item.id,
+        email: item.email,
+        role: 'member',
+        status: item.invitedUserId ? 'active' : 'pending',
+        since: item.created,
+        invitationId: item.id,
+        hasInvitedUserId: !!item.invitedUserId,
+      }}
       styles={styles}
       COLORS={COLORS}
       navigation={navigation}
-      onRemove={(id: string) =>
-        setUsers((prev) => prev.filter((u) => u.id !== id))
-      }
+      onRemove={(userId: string, invitationId?: string, hasInvitedUserId?: boolean) => {
+        handleRemoveUser(undefined, invitationId || item.id, hasInvitedUserId);
+      }}
     />
-  );
+  ), [styles, COLORS, navigation, handleRemoveUser]);
 
   return (
     <FlatList
       style={[styles.container, { paddingTop: insets.top + 16 }]}
-      data={users}
-      keyExtractor={(item) => item.id}
+      data={allUsers}
+      extraData={invitations} // Force re-render when invitations object changes (new reference)
+      keyExtractor={(item) => item.id || `invitation-${item.email}`} // Use ID or email as fallback
       renderItem={renderUser}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
+      ListEmptyComponent={
+        loading ? (
+          <ActivityIndicator color={COLORS.accent} style={{ marginTop: 40 }} />
+        ) : (
+          <Text style={styles.emptyText}>{t('deviceSharing.noInvitations')}</Text>
+        )
+      }
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -112,14 +137,9 @@ export default function DeviceSharingScreen({ navigation }: any) {
         <View style={styles.pageScroll}>
           <DeviceSharingHeader styles={styles} />
           <DeviceSharingForm
-            email={email}
-            setEmail={setEmail}
-            error={error}
-            message={message}
             COLORS={COLORS}
             styles={styles}
-            onInvite={handleAdd}
-            onCancel={handleCancel}
+            navigation={navigation}
           />
         </View>
       }

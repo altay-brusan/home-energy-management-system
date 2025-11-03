@@ -1,49 +1,61 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, ActivityIndicator } from 'react-native';
 import Input from '../../../../../components/forms/Input';
 import Button from '../../../../../components/ui/Button/Button';
+import { useI18n } from '../../../../../hooks/useI18n';
+import { useInvitation } from '../../../../../hooks/useInvitation';
 
 type Props = {
-  email: string;
-  setEmail: (v: string) => void;
-  error: string;
-  message: string;
   COLORS: any;
   styles: any;
-  onInvite: () => void;
-  onCancel: () => void;
+  navigation?: any;
 };
 
-export function DeviceSharingForm({
-  email,
-  setEmail,
-  error,
-  message,
-  COLORS,
-  styles,
-  onInvite,
-  onCancel,
-}: Props) {
+export function DeviceSharingForm({ COLORS, styles, navigation }: Props) {
+  const { t } = useI18n();
+  const {
+    email,
+    setEmail,
+    error,
+    message,
+    loading,
+    sendInvitation,
+    reload,
+  } = useInvitation();
+
+  const handleSendInvitation = async () => {
+    await sendInvitation();
+  };
+
   return (
     <View style={styles.inputGroup}>
       <Input
-        placeholder="Enter email"
+        placeholder={t('deviceSharing.enterEmail')}
         placeholderTextColor={COLORS.slate400}
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoCorrect={false}
+        autoComplete="email"
         value={email}
-        onChangeText={setEmail}
+        onChangeText={(text) => setEmail(text.toLowerCase())}
       />
+
       <View style={styles.buttonRow}>
         <Button
-          title="Invite"
+          title={loading ? t('deviceSharing.sending') : t('deviceSharing.invite')}
           style={styles.saveBtn}
           textStyle={styles.saveBtnText}
-          onPress={onInvite}
+          disabled={loading}
+          onPress={handleSendInvitation}
         />
         <Button
-          title="Cancel"
+          title={t('deviceSharing.cancel')}
           style={styles.cancelBtn}
           textStyle={styles.cancelBtnText}
-          onPress={onCancel}
+          onPress={() => {
+            setEmail('');
+            navigation?.goBack?.();
+          }}
         />
       </View>
 
@@ -57,6 +69,12 @@ export function DeviceSharingForm({
           >
             {error || message}
           </Text>
+        </View>
+      )}
+
+      {loading && (
+        <View style={{ marginTop: 10 }}>
+          <ActivityIndicator color={COLORS.accent} />
         </View>
       )}
     </View>

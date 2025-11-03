@@ -2,9 +2,11 @@ import React from 'react';
 import { View, Text, Pressable, Image } from 'react-native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { Card } from '../../../../components';
+import { useTranslation } from 'react-i18next';
+import { useSitesStore } from '../../../../store/sitesStore';
 
 type Props = {
-  home: { id: string; name: string; address: string; hasDevice: boolean };
+  home: { id: string; name: string; address: string; hasDevice: boolean; power: string };
   styles: any;
   COLORS: any;
   isDark: boolean;
@@ -24,14 +26,19 @@ export function HomeCard({
   setMenuVisibleId,
   onDelete,
 }: Props) {
+  const { t } = useTranslation();
+  const { selectSiteById } = useSitesStore();
+
   return (
     <View style={styles.cardWrapper}>
       <Pressable
-        onPress={() => {
+        onPress={async () => {
+          await selectSiteById(home.id);
           if (home.hasDevice) {
-            navigation.navigate('MainTabs');
+            // Dashboard tab'ına özel yönlendirme
+            navigation.navigate('MainTabs', { screen: 'Dashboard' });
           } else {
-            navigation.navigate('DeviceSetup');
+            navigation.navigate('DeviceAdd', { siteId: home.id });
           }
         }}
         android_ripple={{ color: COLORS.accentGlow }}
@@ -64,7 +71,9 @@ export function HomeCard({
                   ]}
                 />
                 <Text style={styles.statusText}>
-                  {home.hasDevice ? 'Online' : 'No Device'}
+                  {home.hasDevice
+                    ? t('homeCard.statusOnline')
+                    : t('homeCard.statusNoDevice')}
                 </Text>
               </View>
             </View>
@@ -99,7 +108,9 @@ export function HomeCard({
                   color={COLORS.accent}
                 />
                 <Text style={styles.cardStatText}>
-                  {home.hasDevice ? '1 Device' : 'No Device'}
+                  {home.hasDevice
+                    ? t('homeCard.deviceCount')
+                    : t('homeCard.noDevice')}
                 </Text>
               </View>
               <View style={styles.cardStatItem}>
@@ -118,26 +129,7 @@ export function HomeCard({
                     },
                   ]}
                 >
-                  {home.hasDevice ? '2.4kW' : '0kW'}
-                </Text>
-              </View>
-              <View style={styles.cardStatItem}>
-                <MaterialIcons
-                  name="trending-up"
-                  size={16}
-                  color={home.hasDevice ? COLORS.warning : COLORS.disabled}
-                />
-                <Text
-                  style={[
-                    styles.cardStatText,
-                    {
-                      color: home.hasDevice
-                        ? COLORS.textSoft
-                        : COLORS.disabled,
-                    },
-                  ]}
-                >
-                  {home.hasDevice ? '+12%' : 'N/A'}
+                  {home.hasDevice ? home.power : '0kW'}
                 </Text>
               </View>
             </View>
@@ -147,26 +139,29 @@ export function HomeCard({
             <View style={styles.dropdownMenu}>
               {home.hasDevice ? (
                 <Pressable
-                  onPress={() => {
-                    navigation.navigate('MainTabs');
+                  onPress={async () => {
+                    await selectSiteById(home.id);
+                    // Dashboard tab'ına özel yönlendirme
+                    navigation.navigate('MainTabs', { screen: 'Dashboard' });
                     setMenuVisibleId(null);
                   }}
                 >
-                  <Text style={styles.dropdownItem}>Go to Dashboard</Text>
+                  <Text style={styles.dropdownItem}>{t('homeCard.goToDashboard')}</Text>
                 </Pressable>
               ) : (
                 <Pressable
-                  onPress={() => {
-                    navigation.navigate('DeviceSetup');
+                  onPress={async () => {
+                    await selectSiteById(home.id);
+                    navigation.navigate('DeviceAdd', { siteId: home.id });
                     setMenuVisibleId(null);
                   }}
                 >
-                  <Text style={styles.dropdownItem}>Add Device</Text>
+                  <Text style={styles.dropdownItem}>{t('homeCard.addDevice')}</Text>
                 </Pressable>
               )}
               <Pressable onPress={() => onDelete(home.id)}>
                 <Text style={[styles.dropdownItem, { color: 'red' }]}>
-                  Delete
+                  {t('homeCard.delete')}
                 </Text>
               </Pressable>
             </View>

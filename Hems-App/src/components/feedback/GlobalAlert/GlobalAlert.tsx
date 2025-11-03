@@ -7,8 +7,10 @@ import { SPACING, getThemeColors } from '../../../theme/constants';
 import { useThemeStore } from '../../../store/themeStore';
 import FontAwesome from '@react-native-vector-icons/fontawesome';
 import Button from '../../ui/Button';
+import { useTranslation } from 'react-i18next';
 
 export default function GlobalAlert() {
+  const { t } = useTranslation();
   const visible = useAlertStore(s => s.visible);
   const title = useAlertStore(s => s.title);
   const message = useAlertStore(s => s.message);
@@ -17,9 +19,6 @@ export default function GlobalAlert() {
   const deviceName = useAlertStore(s => s.deviceName);
   const recommendation = useAlertStore(s => s.recommendation);
   const timestamp = useAlertStore(s => s.timestamp);
-  const onDetails = useAlertStore(s => s.onDetails);
-  const onSupport = useAlertStore(s => s.onSupport);
-  const show = useAlertStore(s => s.show);
   const insets = useSafeAreaInsets();
 
   const styles = getGlobalAlertStyles();
@@ -40,7 +39,7 @@ export default function GlobalAlert() {
       ? 'exclamation-circle'
       : 'info-circle';
   const levelLabel =
-    level === 'critical' ? 'Kritik' : level === 'warning' ? 'Önemli' : 'Bilgi';
+    level === 'critical' ? t('globalAlert.critical') : level === 'warning' ? t('globalAlert.important') : t('globalAlert.info');
 
   const formattedTime = (() => {
     if (!timestamp) return '';
@@ -51,17 +50,7 @@ export default function GlobalAlert() {
     )}.${d.getFullYear()} • ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   })();
 
-  useEffect(() => {
-    const id = setInterval(() => {
-      show({
-        title: 'Kritik Uyarı',
-        message:
-          'A cihazınız olması gerekenden fazla ısındı, lütfen kontrol edin.',
-        level: 'critical',
-      });
-    }, 5 * 60 * 1000); // Çalışma için 30 saniyedir sunum sonrası  bu kural kaldıralacak.
-    return () => clearInterval(id);
-  }, [show]);
+  // Test kodu kaldırıldı - SignalR'dan gelecek notification'lar kullanılacak
 
   useEffect(() => {
     Animated.timing(anim, {
@@ -112,37 +101,20 @@ export default function GlobalAlert() {
         </View>
         <Text style={styles.msg}>
           {message}
-          {deviceName ? ` (Cihaz: ${deviceName})` : ''}
+          {deviceName ? ` (${t('globalAlert.device')}: ${deviceName})` : ''}
         </Text>
         {formattedTime ? (
           <Text style={styles.meta}>{formattedTime}</Text>
         ) : null}
-        <Text style={styles.sectionTitle}>Öneri</Text>
-        <Text style={styles.msg}>
-          {recommendation ||
-            'Lütfen cihazı kontrol edin ve gerekli önlemleri alınız. Sorun devam ederse destek ile iletişime geçin.'}
-        </Text>
+        {recommendation && (
+          <>
+            <Text style={styles.sectionTitle}>{t('globalAlert.additionalInfo')}</Text>
+            <Text style={styles.msg}>{recommendation}</Text>
+          </>
+        )}
         <View style={styles.btnRow}>
           <Button
-            title="Detaya Git"
-            onPress={() => {
-              hide();
-              if (onDetails) onDetails();
-            }}
-            variant="primary"
-            style={[styles.btnHalf]}
-          />
-          <Button
-            title="Destek"
-            onPress={() => {
-              hide();
-              if (onSupport) onSupport();
-            }}
-            variant="secondary"
-            style={styles.btnHalf}
-          />
-          <Button
-            title="Kapat"
+            title={t('globalAlert.close')}
             onPress={hide}
             variant="primary"
             style={[styles.closeBtn, { backgroundColor: levelColor }]}

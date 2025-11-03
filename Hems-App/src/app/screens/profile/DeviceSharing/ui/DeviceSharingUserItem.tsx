@@ -3,6 +3,7 @@ import { TouchableOpacity, View, Text } from 'react-native';
 import Card from '../../../../../components/ui/Card/Card';
 import FontAwesome from '@react-native-vector-icons/fontawesome';
 import type { makeDeviceSharingStyles } from '../DeviceSharingScreen.styles';
+import { useI18n } from '../../../../../hooks/useI18n';
 
 type Styles = ReturnType<typeof makeDeviceSharingStyles>;
 
@@ -12,6 +13,8 @@ type SharedUser = {
   role: 'owner' | 'member';
   status: 'pending' | 'accepted' | 'rejected' | 'active' | 'inactive';
   since?: string;
+  invitationId?: string;
+  hasInvitedUserId?: boolean;
 };
 
 type Props = {
@@ -19,7 +22,7 @@ type Props = {
   styles: Styles;
   COLORS: any;
   navigation: any;
-  onRemove: (id: string) => void;
+  onRemove: (userId: string, invitationId?: string, hasInvitedUserId?: boolean) => void;
 };
 
 export function DeviceSharingUserItem({
@@ -29,6 +32,18 @@ export function DeviceSharingUserItem({
   navigation,
   onRemove,
 }: Props) {
+  const { t } = useI18n();
+
+  const formattedDate = item.since
+    ? new Date(item.since).toLocaleString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : null;
+
   return (
     <TouchableOpacity
       activeOpacity={0.9}
@@ -41,6 +56,8 @@ export function DeviceSharingUserItem({
             status: item.status,
             since: item.since,
             role: item.role,
+            invitationId: item.invitationId,
+            hasInvitedUserId: item.hasInvitedUserId,
             onRemove,
           });
         }
@@ -48,30 +65,37 @@ export function DeviceSharingUserItem({
     >
       <Card style={styles.row}>
         <View style={styles.leftCol}>
-          <Text style={styles.email}>{item.email}</Text>
+          {/* 🔹 Email tek satır ve taşarsa '...' ile kısalır */}
+          <Text style={styles.email} numberOfLines={1} ellipsizeMode="tail">
+            {item.email}
+          </Text>
+
           {item.role !== 'owner' && (
             <Text
               style={[
                 styles.status,
                 item.status === 'pending'
                   ? styles.pending
-                  : item.status === 'accepted'
+                  : item.status === 'accepted' || item.status === 'active'
                   ? styles.accepted
                   : styles.rejected,
               ]}
             >
-              {item.status}
+              {t(`deviceSharing.status.${item.status}`)}
             </Text>
           )}
         </View>
+
         <View style={styles.rightCol}>
           {item.role === 'owner' ? (
-            <Text style={styles.ownerBadge}>Owner</Text>
+            <Text style={styles.ownerBadge}>{t('deviceSharing.owner')}</Text>
           ) : (
             <FontAwesome name="chevron-right" size={18} color={COLORS.textSoft} />
           )}
-          {item.since && (
-            <Text style={styles.since}>Access since: {item.since}</Text>
+          {formattedDate && (
+            <Text style={styles.since}>
+              {t('deviceSharing.accessSince', { date: formattedDate })}
+            </Text>
           )}
         </View>
       </Card>

@@ -1,5 +1,5 @@
 import React from 'react';
-import Svg, { Defs, LinearGradient, Stop, Rect, Path, Circle } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Stop, Rect, Path, Circle, Text as SvgText } from 'react-native-svg';
 import ReferenceLines from './ReferenceLines';
 import Tooltip from './Tooltip';
 
@@ -20,6 +20,7 @@ type Props = {
   peak: number;
   selectedIndex: number | null;
   setSelectedIndex: (i: number | null) => void;
+  selectedRange?: string;
 };
 
 export default function AreaChart({
@@ -37,15 +38,39 @@ export default function AreaChart({
   peak,
   selectedIndex,
   setSelectedIndex,
+  selectedRange,
 }: Props) {
-  const points = data.map((d, i) => ({
-    x: padding.left + i * stepX + stepX / 2,
-    y: padding.top + yScale(d.y),
-  }));
+  const getLabelInterval = (dataLength: number, timeRange?: string) => {
+    if (timeRange === 'Week' && dataLength <= 7) return 1;
+    
+    if (dataLength <= 7) return 1;   // Show all if 7 or fewer points
+    if (dataLength <= 14) return 2;  // Every 2nd if 8-14 points
+    if (dataLength <= 21) return 3;  // Every 3rd if 15-21 points
+    if (dataLength <= 31) return 4;  // Every 4th if 22-31 points
+    return Math.ceil(dataLength / 8); // Fallback for larger datasets
+  };
+
+  const labelInterval = getLabelInterval(data.length, selectedRange);
+
+  const points = data
+    .map((d, i) => {
+      if (!d || typeof d.y !== 'number' || isNaN(d.y)) return null;
+      return {
+        x: padding.left + i * stepX + stepX / 2,
+        y: padding.top + yScale(Math.max(0, d.y)),
+        originalIndex: i,
+      };
+    })
+    .filter((p): p is { x: number; y: number; originalIndex: number } => p !== null);
+  
+  if (points.length === 0) {
+    return null;
+  }
+  
   const pathD = points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`)).join(' ');
-  const areaD = `${pathD} L ${padding.left + (data.length - 1) * stepX + stepX / 2} ${
-    padding.top + innerH
-  } L ${padding.left + stepX / 2} ${padding.top + innerH} Z`;
+  const lastPoint = points[points.length - 1];
+  const firstPoint = points[0];
+  const areaD = `${pathD} L ${lastPoint.x} ${padding.top + innerH} L ${firstPoint.x} ${padding.top + innerH} Z`;
 
   return (
     <Svg width={width} height={height}>
@@ -76,10 +101,18 @@ export default function AreaChart({
       <Path d={areaD} fill="url(#areaGrad)" />
       <Path d={pathD} stroke={accentColor} strokeWidth={2} fill="none" />
       {points.map((p, i) => (
-        <Circle key={i} cx={p.x} cy={p.y} r={3} fill={accentColor} onPress={() => setSelectedIndex(i)} />
+        <Circle 
+          key={i} 
+          cx={p.x} 
+          cy={p.y} 
+          r={3} 
+          fill={accentColor} 
+          onPress={() => setSelectedIndex(p.originalIndex)} 
+        />
       ))}
 
-      {data.map((_, i) => {
+      {data.map((d, i) => {
+        if (!d || typeof d.y !== 'number' || isNaN(d.y)) return null;
         const hx = padding.left + i * stepX;
         return (
           <Rect
@@ -94,6 +127,41 @@ export default function AreaChart({
         );
       })}
 
+      {/* X-axis labels */}
+      {data.map((d, i) => {
+        if (selectedRange === 'Day') {
+          const showHours = [0, 4, 8, 12, 16, 20, 23];
+          if (!showHours.includes(i)) return null;
+        } else if (selectedRange === 'Week') {
+          if (i >= 7) return null;
+        } else {
+          if (i % labelInterval !== 0) return null;
+        }
+        
+        const x = padding.left + i * stepX + stepX / 2;
+        
+        let labelText = d.x;
+        if (selectedRange === 'Week') {
+          const dayNames = ['P', 'S', 'Ç', 'P', 'C', 'C', 'P'];
+          labelText = i < 7 ? dayNames[i] : d.x;
+        }
+        
+        return (
+          <SvgText
+            key={`label-${i}`}
+            x={x}
+            y={selectedRange === 'Week' ? padding.top + innerH + 35 : padding.top + innerH + 35}
+            fontSize={selectedRange === 'Week' ? "10" : "12"}
+            fill={COLORS.textSoft}
+            textAnchor="middle"
+            fontWeight="bold"
+            transform={selectedRange === 'Week' ? `rotate(-60 ${x} ${padding.top + innerH + 35})` : `rotate(-90 ${x} ${padding.top + innerH + 35})`}
+          >
+            {labelText}
+          </SvgText>
+        );
+      })}
+
       <ReferenceLines
         avg={avg}
         peak={peak}
@@ -104,9 +172,10 @@ export default function AreaChart({
         accentColor={accentColor}
       />
 
-      {selectedIndex !== null && (() => {
+      {selectedIndex !== null && selectedIndex >= 0 && selectedIndex < data.length && (() => {
         const i = selectedIndex as number;
         const d = data[i];
+        if (!d || typeof d.y !== 'number' || isNaN(d.y)) return null;
         const cx = padding.left + i * stepX + stepX / 2;
         const cy = padding.top + yScale(d.y);
         return (

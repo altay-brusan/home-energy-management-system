@@ -1,34 +1,36 @@
 import { z } from 'zod';
 
-const optionalText = z
-  .string()
-  .max(80, 'Too long')
-  .optional()
-  .or(z.literal(''));
+export const getHomeSetupSchema = (t: (key: string) => string) => {
+  const optionalText = z
+    .string()
+    .max(80, t('homeSetup.validation.addressLine2.max'))
+    .optional()
+    .or(z.literal(''));
 
-export const homeSetupSchema = z.object({
-  homeName: z
-    .string()
-    .min(2, 'Please provide a name for your home.')
-    .max(64, 'Home name is too long.'),
-  addressLine1: z
-    .string()
-    .min(6, 'Please enter the street and number.')
-    .max(120, 'Address line is too long.'),
-  addressLine2: optionalText,
-  city: z
-    .string()
-    .min(2, 'City is required.')
-    .max(60, 'City name is too long.'),
-  state: optionalText,
-  postalCode: z
-    .string()
-    .min(3, 'Postal code is too short.')
-    .max(20, 'Postal code is too long.'),
-  country: z
-    .string()
-    .min(2, 'Country is required.')
-    .max(56, 'Country name is too long.'),
-});
+  return z.object({
+    homeName: z
+      .string()
+      .min(2, t('homeSetup.validation.homeName.min'))
+      .max(64, t('homeSetup.validation.homeName.max')),
+    addressLine1: z
+      .string()
+      .min(6, t('homeSetup.validation.addressLine1.min'))
+      .max(120, t('homeSetup.validation.addressLine1.max')),
+    addressLine2: optionalText,
+    city: z
+      .string()
+      .max(60, t('homeSetup.validation.city.max'))
+      .optional(),
+    country: z
+      .string()
+      .max(56, t('homeSetup.validation.country.max'))
+      .optional(),
+    state: z
+      .string()
+      .max(80, t('homeSetup.validation.state.max'))
+      .optional()
+      .or(z.literal('')),
+  });
+};
 
-export type HomeSetupForm = z.infer<typeof homeSetupSchema>;
+export type HomeSetupForm = z.infer<ReturnType<typeof getHomeSetupSchema>>;

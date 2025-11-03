@@ -142,6 +142,7 @@ export default function LanguageSelector({ style }: LanguageSelectorProps) {
         transparent
         animationType="none"
         statusBarTranslucent
+        onRequestClose={closeModal}
       >
         <View style={styles.modalContainer}>
           <Pressable style={styles.backdrop} onPress={closeModal}>

@@ -15,6 +15,7 @@ import { getThemeColors } from '../../../../theme/constants';
 import { makeFaultDetailStyles } from './FaultDetailScreen.styles';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
 import Button from '../../../../components/ui/Button';
+import { useI18n } from '../../../../hooks/useI18n';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -55,12 +56,13 @@ type TimelineItemProps = {
 
 export default function FaultDetailScreen({ navigation, route }: any) {
     const { item }: { item: Fault } = route.params;
-
+ const { t } = useI18n();
     const mockItem: Fault = {
         ...item,
-        technicianNote:
-            item.technicianNote ||
-            'Technician checked the wiring.\nReplaced faulty fuse.\nIssue resolved successfully.',
+      technicianNote:
+  item.technicianNote ||
+  `${t('troubleshooting.faultDetail.mockNotes.line1')}\n${t('troubleshooting.faultDetail.mockNotes.line2')}\n${t('troubleshooting.faultDetail.mockNotes.line3')}`,
+
     };
 
     const insets = useSafeAreaInsets();
@@ -68,6 +70,7 @@ export default function FaultDetailScreen({ navigation, route }: any) {
     const isDark = mode === 'dark';
     const COLORS = getThemeColors(isDark);
     const styles = makeFaultDetailStyles(COLORS, isDark);
+  
 
     const [expanded, setExpanded] = useState(false);
     const [notes, setNotes] = useState<{ text: string; requests: string[] }[]>(
@@ -101,11 +104,11 @@ export default function FaultDetailScreen({ navigation, route }: any) {
     const getStatusConfig = (status: Fault['status']) => {
         switch (status) {
             case 'completed':
-                return { color: '#10B981', icon: 'check-circle', label: 'Completed' };
+                return { color: '#10B981', icon: 'check-circle', label: t('troubleshooting.faultsScreen.status.completed') };
             case 'processing':
-                return { color: '#F59E0B', icon: 'schedule', label: 'Processing' };
+                return { color: '#F59E0B', icon: 'schedule', label: t('troubleshooting.faultsScreen.status.processing') };
             case 'in_progress':
-                return { color: '#EB5757', icon: 'build-circle', label: 'In Progress' };
+                return { color: '#EB5757', icon: 'build-circle', label: t('troubleshooting.faultsScreen.status.inProgress') };
             default:
                 return { color: '#6B7280', icon: 'help-outline', label: status };
         }
@@ -121,7 +124,7 @@ export default function FaultDetailScreen({ navigation, route }: any) {
                     <MaterialIcons name="arrow-back" size={24} color={textColor} />
                 </Pressable>
                 <Text style={[styles.screenTitle, { color: textColor }]}>
-                    Issue Details
+                    {t('troubleshooting.faultDetail.title')}
                 </Text>
                 <Pressable style={styles.moreButton}>
                     <MaterialIcons name="more-vert" size={24} color={textColor} />
@@ -171,25 +174,25 @@ export default function FaultDetailScreen({ navigation, route }: any) {
                 </View>
 
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Contact Information</Text>
+                    <Text style={styles.sectionTitle}>{t('troubleshooting.faultDetail.contactInformation')}</Text>
                     <View style={styles.sectionCard}>
                         <InfoRow
                             icon="person"
-                            label="Name"
+                            label={t('troubleshooting.faultDetail.name')}
                             value={mockItem.name}
                             COLORS={COLORS}
                             styles={styles}
                         />
                         <InfoRow
                             icon="email"
-                            label="Email"
+                            label={t('troubleshooting.faultDetail.email')}
                             value={mockItem.email}
                             COLORS={COLORS}
                             styles={styles}
                         />
                         <InfoRow
                             icon="phone"
-                            label="Phone"
+                            label={t('troubleshooting.faultDetail.phone')}
                             value={mockItem.phone}
                             COLORS={COLORS}
                             isLast
@@ -199,18 +202,18 @@ export default function FaultDetailScreen({ navigation, route }: any) {
                 </View>
 
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Location</Text>
+                    <Text style={styles.sectionTitle}>{t('troubleshooting.faultDetail.location')}</Text>
                     <View style={styles.sectionCard}>
                         <InfoRow
                             icon="location-on"
-                            label="Address"
+                            label={t('troubleshooting.faultDetail.address')}
                             value={mockItem.address}
                             COLORS={COLORS}
                             styles={styles}
                         />
                         <InfoRow
                             icon="local-post-office"
-                            label="Zip Code"
+                            label={t('troubleshooting.faultDetail.zipCode')}
                             value={mockItem.zip}
                             COLORS={COLORS}
                             isLast
@@ -220,11 +223,11 @@ export default function FaultDetailScreen({ navigation, route }: any) {
                 </View>
 
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Timeline</Text>
+                    <Text style={styles.sectionTitle}>{t('troubleshooting.faultDetail.timeline')}</Text>
                     <View style={styles.sectionCard}>
                         <TimelineItem
                             icon="event"
-                            label="Created"
+                            label={t('troubleshooting.faultDetail.created')}
                             value={new Date(mockItem.createdAt).toLocaleString()}
                             COLORS={COLORS}
                             styles={styles}
@@ -232,7 +235,7 @@ export default function FaultDetailScreen({ navigation, route }: any) {
                         {mockItem.status === 'completed' && mockItem.finishedAt && (
                             <TimelineItem
                                 icon="event-available"
-                                label="Completed"
+                                label={t('troubleshooting.faultDetail.completed')}
                                 value={new Date(mockItem.finishedAt).toLocaleString()}
                                 COLORS={COLORS}
                                 isLast
@@ -253,7 +256,7 @@ export default function FaultDetailScreen({ navigation, route }: any) {
                             <Text
                                 style={[styles.sectionTitle, { marginLeft: 8 }]}
                             >
-                                Technician Notes
+                                {t('troubleshooting.faultDetail.technicianNotes')}
                             </Text>
                             <MaterialIcons
                                 name={expanded ? 'expand-less' : 'expand-more'}
@@ -296,7 +299,7 @@ export default function FaultDetailScreen({ navigation, route }: any) {
                                                 <View style={styles.newNoteRow}>
                                                     <TextInput
                                                         style={styles.noteInputBig}
-                                                        placeholder="Create a request..."
+                                                        placeholder={t('troubleshooting.faultDetail.createRequest')}
                                                         placeholderTextColor={COLORS.textSoft}
                                                         value={newRequest}
                                                         onChangeText={setNewRequest}

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import type { makeNotificationScreenStyles } from '../NotificationScreen.styles';
+import { useI18n } from '../../../../hooks/useI18n';
 
 type Styles = ReturnType<typeof makeNotificationScreenStyles>;
 
@@ -14,6 +15,8 @@ type Props = {
 };
 
 export function StatusPill({ read, styles, isDark, accent, accentSoft, textMuted }: Props) {
+  const { t } = useI18n();
+  
   const bg = read
     ? isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'
     : accentSoft ?? (isDark ? 'rgba(29,209,161,0.12)' : 'rgba(29,209,161,0.10)');
@@ -23,7 +26,7 @@ export function StatusPill({ read, styles, isDark, accent, accentSoft, textMuted
 
   return (
     <View style={[styles.statusPill, { backgroundColor: bg }]}>
-      <Text style={[styles.statusPillText, { color: fg }]}>{read ? 'Read' : 'Unread'}</Text>
+      <Text style={[styles.statusPillText, { color: fg }]}>{read ? t('notifications.status.read') : t('notifications.status.unread')}</Text>
     </View>
   );
 }

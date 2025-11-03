@@ -27,7 +27,6 @@ export const makeChangePasswordStyles = (COLORS: Record<string, string>) => Styl
         textAlign: 'center',
         color: COLORS.accent,
     },
-
     messageBox: {
         marginBottom: SPACING.sm,
         marginTop: 2,
@@ -100,5 +99,23 @@ export const makeChangePasswordStyles = (COLORS: Record<string, string>) => Styl
         width: '100%',
         gap: 12,
         marginBottom: 18,
+    },
+    passwordRules: {
+        marginTop: 8,
+        marginBottom: 16,
+        padding: 8,
+        backgroundColor: COLORS.bgShadeLight,
+        borderRadius: 8,
+    },
+    passwordRulesTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: COLORS.textSoft,
+        marginBottom: 4,
+    },
+    passwordRule: {
+        fontSize: 12,
+        color: COLORS.textSoft,
+        marginBottom: 2,
     },
 });

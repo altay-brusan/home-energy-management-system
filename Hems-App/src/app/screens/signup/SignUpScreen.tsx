@@ -12,15 +12,16 @@ import {
   View,
 } from 'react-native';
 
-import { Card, ThemeToggle, LanguageSelector } from '../../../components';
 import { useTranslation } from 'react-i18next';
+import { Card, LanguageSelector, ThemeToggle } from '../../../components';
 import { usePlatform } from '../../../hooks/usePlatform';
 import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors } from '../../../theme/constants';
 import MainLayout from '../../layouts/MainLayout';
 
-import { SignUpForm, signupSchema } from './signup.schema';
+import { SignUpForm, createSignupSchema } from './signup.schema';
 
+import useRegister from '../../../hooks/useRegister';
 import SignUpFormFields from './SignUpForm';
 import { getSignUpStyles } from './SignUpScreen.styles';
 
@@ -32,10 +33,11 @@ type RootStackParamList = {
   Onboarding: undefined;
 };
 
-export default function SignUpScreen() {
+export default function SignUpScreen () {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { t } = useTranslation();
+  const { register, registerLoading, registerError, registerSuccess, clearError } = useRegister();
   const mode = useThemeStore(s => s.mode);
   const isDark = mode === 'dark';
   const COLORS = getThemeColors(isDark);
@@ -48,8 +50,8 @@ export default function SignUpScreen() {
     formState: { errors, isSubmitting },
     reset,
   } = useForm<SignUpForm>({
-    resolver: zodResolver(signupSchema),
-    defaultValues: { name: '', email: '', password: '', confirmPassword: '' },
+    resolver: zodResolver(createSignupSchema(t)),
+    defaultValues: { firstName: '', surname: '', email: '', password: '', confirmPassword: '' },
   });
 
   const handleNavigateBack = useCallback(() => {
@@ -58,11 +60,23 @@ export default function SignUpScreen() {
 
   const onSubmit = useCallback(
     async (values: SignUpForm) => {
-      console.log('Sign up values:', values);
-      reset();
-      navigation.goBack();
+      // Clear any previous errors
+      clearError();
+      
+      try {
+        await register({
+          firstName: values.firstName,
+          surname: values.surname,
+          email: values.email,
+          password: values.password,
+        });
+        reset();
+        navigation.goBack();
+      } catch (error) {
+        // Error is handled by useRegister hook
+      }
     },
-    [navigation, reset],
+    [register, navigation, reset, clearError],
   );
 
   return (
@@ -79,7 +93,6 @@ export default function SignUpScreen() {
           <View style={styles.content}>
             <View style={styles.bgTopShade} pointerEvents="none" />
             <View style={styles.bgBottomShade} pointerEvents="none" />
-            
             <KeyboardAvoidingView
               style={styles.keyboardAvoider}
               behavior={isIOS ? 'padding' : 'height'}
@@ -101,6 +114,8 @@ export default function SignUpScreen() {
                       control={control}
                       errors={errors}
                       isSubmitting={isSubmitting}
+                      registerLoading={registerLoading}
+                      registerError={registerError}
                       onSubmit={handleSubmit(onSubmit)}
                       onGoBack={handleNavigateBack}
                       styles={styles}

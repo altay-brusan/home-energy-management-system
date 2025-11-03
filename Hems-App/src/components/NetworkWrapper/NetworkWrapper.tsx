@@ -4,6 +4,7 @@ import { useNetInfo } from '../../hooks/useNetInfo';
 import { useThemeStore } from '../../store/themeStore';
 import { getThemeColors } from '../../theme/constants';
 import OfflineScreen from '../../app/screens/offline/OfflineScreen';
+import { apiClient } from '../../api/client/apiClient';
 
 interface NetworkWrapperProps {
   children: React.ReactNode;
@@ -19,6 +20,12 @@ export default function NetworkWrapper({
   const { isConnected } = useNetInfo();
   const isDark = useThemeStore(s => s.mode) === 'dark';
   const COLORS = getThemeColors(isDark);
+
+  // Logout sırasında offline screen gösterme
+  const isLoggingOut = apiClient.getIsLoggingOut();
+
+  if (isLoggingOut) {return <>{children}</>;
+  }
 
   if (isConnected === null) {
     return (

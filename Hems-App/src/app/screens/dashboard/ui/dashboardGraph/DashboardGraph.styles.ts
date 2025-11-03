@@ -27,7 +27,7 @@ export function getDashboardGraphStyles (COLORS: Record<string, string>) {
     },
     chartContainer: {
       width: '100%',
-      height: 200,
+      height: 300, // Label'lar için daha yüksek
       borderRadius: 12,
       overflow: 'hidden',
       backgroundColor: 'transparent',
@@ -58,29 +58,33 @@ export function getDashboardGraphStyles (COLORS: Record<string, string>) {
     statPillsContainer: {
       flexDirection: 'row',
       justifyContent: 'center',
-      gap: 8,
+      flexWrap: 'wrap',
+      gap: 6,
       marginBottom: 8,
     },
     statPill: {
       flexDirection: 'column',
       alignItems: 'center',
       backgroundColor: COLORS.bgShadeLight,
-      borderRadius: 16,
-      paddingVertical: 6,
-      paddingHorizontal: 12,
-      minWidth: 60,
+      borderRadius: 12,
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+      minWidth: 50,
+      maxWidth: 80,
       borderWidth: 1,
       borderColor: COLORS.border,
     },
     statPillLabel: {
-      fontSize: 12,
+      fontSize: 10,
       color: COLORS.textSoft,
       fontWeight: '500',
+      textAlign: 'center',
     },
     statPillValue: {
-      fontSize: 16,
+      fontSize: 14,
       color: COLORS.textSoft,
       fontWeight: '700',
+      textAlign: 'center',
     },
     gridLinesContainer: {
       ...StyleSheet.absoluteFillObject,
@@ -205,6 +209,73 @@ export function getDashboardGraphStyles (COLORS: Record<string, string>) {
       fontSize: 12,
       color: COLORS.textSoft,
       fontWeight: '500',
+    },
+    
+    segmentedControl: {
+      alignItems: 'center',
+      marginTop: SPACING.sm,
+      marginBottom: SPACING.xs,
+    },
+    segmentedTrack: {
+      flexDirection: 'row',
+      backgroundColor: COLORS.bgShadeLight,
+      borderRadius: 25,
+      padding: 2,
+      position: 'relative',
+      borderWidth: 1,
+      borderColor: COLORS.border,
+    },
+    segmentedIndicator: {
+      position: 'absolute',
+      top: 2,
+      bottom: 2,
+      borderRadius: 23,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    segmentedButton: {
+      flex: 1,
+      paddingVertical: SPACING.sm,
+      paddingHorizontal: SPACING.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1,
+    },
+    segmentedContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    segmentedText: {
+      fontSize: 14,
+      fontWeight: '500',
+    },
+    
+    // Simple Pill Tabs Styles
+    pillTabs: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      gap: SPACING.xs,
+      marginTop: SPACING.xs,
+      paddingHorizontal: SPACING.sm,
+    },
+    pillTab: {
+      flex: 1,
+      paddingVertical: SPACING.sm,
+      paddingHorizontal: SPACING.xs,
+      borderRadius: 18,
+      borderWidth: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginHorizontal: 2,
+    },
+    pillText: {
+      fontSize: 11,
+      fontWeight: '500',
+      textAlign: 'center',
     },
   });
 }

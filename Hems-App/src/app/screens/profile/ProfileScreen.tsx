@@ -1,6 +1,6 @@
 import FontAwesome from '@react-native-vector-icons/fontawesome';
-import React from 'react';
-import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { Image, ScrollView, Text, TouchableOpacity, View, Pressable, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Button from '../../../components/ui/Button';
 import RegionSelector, {
@@ -11,10 +11,10 @@ import useAuth from '../../../hooks/useAuth';
 import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors, SPACING } from '../../../theme/constants';
 import { makeProfileScreenStyles } from './ProfileScreenStyles';
+import LanguageSelector from '../../../components/ui/LanguageSelector';
+import { useI18n } from '../../../hooks/useI18n';
+import pkg from '../../../../package.json';
 
-const AVATAR_URL =
-  'https://ui-avatars.com/api/?name=User&background=2563eb&color=fff&size=128';
-const EMAIL = 'user@example.com';
 
 export default function ProfileScreen ({ navigation }: any) {
   const mode = useThemeStore(s => s.mode);
@@ -23,19 +23,32 @@ export default function ProfileScreen ({ navigation }: any) {
   const styles = makeProfileScreenStyles(COLORS);
   const insets = useSafeAreaInsets();
   const [region, setRegion] = React.useState<Region>('Europe');
+  const { t } = useI18n();
 
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  const handleLogout = async () => {
-    await logout();
-    navigation.replace('Login');
-  };
+  const avatarUrl = user?.name && user?.surname 
+    ? `https://ui-avatars.com/api/?name=${user.name}+${user.surname}&background=2563eb&color=fff&size=128`
+    : user?.email 
+    ? `https://ui-avatars.com/api/?name=${user.email.split('@')[0]}&background=2563eb&color=fff&size=128`
+    : 'https://ui-avatars.com/api/?name=User&background=2563eb&color=fff&size=128';
+
+const handleLogout = async () => {
+  setShowLogoutModal(true);
+};
+const confirmLogout = async () => {
+  setShowLogoutModal(false);
+  await logout();
+};
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.dark }}>
+     <View style={{ flex: 1, backgroundColor: COLORS.dark }}>
       <View style={[styles.topBar, { marginTop: insets.top + 8 }]}>
         <ThemeToggle />
-        <RegionSelector selectedRegion={region} onRegionChange={setRegion} />
+        <View style={styles.regionWrap}>
+          <LanguageSelector />
+        </View>
       </View>
       <ScrollView
         contentContainerStyle={[
@@ -45,8 +58,8 @@ export default function ProfileScreen ({ navigation }: any) {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.avatarContainer}>
-          <Image source={{ uri: AVATAR_URL }} style={styles.avatar} />
-          <Text style={styles.email}>{EMAIL}</Text>
+          <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+          <Text style={styles.email}>{user?.email || ''}</Text>
         </View>
         <View style={styles.cardList}>
           <TouchableOpacity
@@ -59,7 +72,13 @@ export default function ProfileScreen ({ navigation }: any) {
               color={COLORS.accent}
               style={{ marginRight: 12 }}
             />
-            <Text style={styles.sectionTitle}>Personal Info</Text>
+            <Text 
+              style={styles.sectionTitle}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {t('profile.personalInfo')}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.card}
             onPress={() => navigation.navigate('DeviceSharing')}>
@@ -70,20 +89,14 @@ export default function ProfileScreen ({ navigation }: any) {
               color={COLORS.accent}
               style={{ marginRight: 12 }}
             />
-            <Text style={styles.sectionTitle}>
-              Device Sharing & Authorization
+            <Text 
+              style={styles.sectionTitle}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {t('profile.deviceSharing')}
             </Text>
           </TouchableOpacity>
-          {/* <TouchableOpacity style={styles.card}
-            onPress={() => navigation.navigate('CompanyInfo')}>
-            <FontAwesome
-              name="building"
-              size={22}
-              color={COLORS.accent}
-              style={{ marginRight: 12 }}
-            />
-            <Text style={styles.sectionTitle}>Company / Region Info</Text>
-          </TouchableOpacity> */}
   <TouchableOpacity
   style={styles.card}
   onPress={() => navigation.navigate('Faults')}
@@ -94,7 +107,13 @@ export default function ProfileScreen ({ navigation }: any) {
     color={COLORS.accent}
     style={{ marginRight: 12 }}
   />
-  <Text style={styles.sectionTitle}>Troubleshooting</Text>
+            <Text 
+              style={styles.sectionTitle}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {t('profile.troubleshooting')}
+            </Text>
 </TouchableOpacity>
 
           <TouchableOpacity
@@ -107,7 +126,13 @@ export default function ProfileScreen ({ navigation }: any) {
               color={COLORS.accent}
               style={{ marginRight: 12 }}
             />
-            <Text style={styles.sectionTitle}>Change Password</Text>
+            <Text 
+              style={styles.sectionTitle}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {t('profile.changePassword')}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.card}
@@ -119,9 +144,105 @@ export default function ProfileScreen ({ navigation }: any) {
               color={COLORS.accent}
               style={{ marginRight: 12 }}
             />
-            <Text style={styles.sectionTitle}>Logout</Text>
+            <Text 
+              style={styles.sectionTitle}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {t('profile.logout')}
+            </Text>
           </TouchableOpacity>
         </View>
+        <Text style={{ color: COLORS.slate400, marginTop: SPACING.lg }}>
+          {t('settings.version')}: {pkg.version}
+        </Text>
+        <Modal
+  visible={showLogoutModal}
+  transparent
+  animationType="fade"
+  onRequestClose={() => setShowLogoutModal(false)}
+>
+  <View
+    style={{
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 24,
+    }}
+  >
+    <View
+      style={{
+        backgroundColor: COLORS.surface,
+        borderRadius: 16,
+        padding: 20,
+        width: '90%',
+        maxWidth: 400,
+      }}
+    >
+      <Text
+        style={{
+          color: COLORS.textSoft,
+          fontSize: 16,
+          fontWeight: '600',
+          textAlign: 'center',
+          marginBottom: 16,
+        }}
+      >
+        {t('alerts.confirmLogout')}
+      </Text>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-around',
+          marginTop: 8,
+        }}
+      >
+        <Pressable
+          onPress={() => setShowLogoutModal(false)}
+          style={{
+            backgroundColor: COLORS.border,
+            paddingVertical: 10,
+            paddingHorizontal: 20,
+            borderRadius: 12,
+            minWidth: 120,
+          }}
+        >
+          <Text
+            style={{
+              color: COLORS.textSoft,
+              fontWeight: '600',
+              textAlign: 'center',
+            }}
+          >
+            {t('common.cancel')}
+          </Text>
+        </Pressable>
+
+        <Pressable
+          onPress={confirmLogout}
+          style={{
+            backgroundColor: COLORS.accent,
+            paddingVertical: 10,
+            paddingHorizontal: 20,
+            borderRadius: 12,
+            minWidth: 120,
+          }}
+        >
+          <Text
+            style={{
+              color: COLORS.white,
+              fontWeight: '700',
+              textAlign: 'center',
+            }}
+          >
+            {t('common.confirm')}
+          </Text>
+        </Pressable>
+      </View>
+    </View>
+  </View>
+</Modal>
       </ScrollView>
     </View>
   );

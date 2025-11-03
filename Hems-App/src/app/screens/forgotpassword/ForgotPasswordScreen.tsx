@@ -12,45 +12,37 @@ import {
   View
 } from 'react-native';
 
-import ErrorMessage from '../../../components/feedback/ErrorMessage';
+import { useTranslation } from 'react-i18next';
 import Input from '../../../components/forms/Input';
 import Button from '../../../components/ui/Button';
-import { useTranslation } from 'react-i18next';
 import { usePlatform } from '../../../hooks/usePlatform';
 import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors } from '../../../theme/constants';
 import MainLayout from '../../layouts/MainLayout';
 import { getForgotPasswordStyles } from './ForgotPasswordScreen.styles';
 
-import * as z from 'zod';
-import { Card, ThemeToggle, LanguageSelector } from '../../../components';
-
-const forgotPasswordSchema = z.object({
-  email: z
-    .string()
-    .email('Please enter a valid email')
-    .min(1, 'Email is required'),
-});
-type ForgotPasswordForm = z.infer<typeof forgotPasswordSchema>;
+import { Card, LanguageSelector, ThemeToggle } from '../../../components';
+import useForgotPassword from '../../../hooks/useForgotPassword';
+import { ForgotPasswordForm, createForgotPasswordSchema } from './forgotPassword.schema';
+import { showToast } from '../../../utils/toast';
 
 type RootStackParamList = {
   Login: undefined;
   MainTabs: undefined;
   ForgotPassword: undefined;
+  ResetPassword: { email: string };
 };
 
 export default function ForgotPasswordScreen (): JSX.Element {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { t } = useTranslation();
+  const { forgotPassword, forgotPasswordLoading, forgotPasswordError, forgotPasswordSuccess } = useForgotPassword();
   const mode = useThemeStore(s => s.mode);
   const isDark = mode === 'dark';
   const COLORS = getThemeColors(isDark);
   const styles = getForgotPasswordStyles(COLORS, isDark);
   const { isIOS } = usePlatform();
-
-  const [submitError, setSubmitError] = React.useState<string | null>(null);
-  const [submitted, setSubmitted] = React.useState<boolean>(false);
 
   const {
     control,
@@ -58,14 +50,25 @@ export default function ForgotPasswordScreen (): JSX.Element {
     formState: { errors, isSubmitting },
     reset,
   } = useForm<ForgotPasswordForm>({
-    resolver: zodResolver(forgotPasswordSchema),
+    resolver: zodResolver(createForgotPasswordSchema(t)),
     defaultValues: { email: '' },
   });
 
   const onSubmit = async (values: ForgotPasswordForm) => {
-    setSubmitError(null);
-    setSubmitted(true);
-    reset();
+    try {
+      await forgotPassword({ email: values.email });
+      reset();
+
+      showToast({
+        title: t('common.success'),
+        message: t('auth.resetCodeSent'),
+        type: 'success',
+      });
+
+      navigation.navigate('ResetPassword', { email: values.email });
+    } catch (error) {
+      // Error is handled by useForgotPassword hook
+    }
   };
 
   return (
@@ -106,13 +109,12 @@ export default function ForgotPasswordScreen (): JSX.Element {
                             autoCorrect={false}
                             autoComplete="email"
                             value={value}
-                            onChangeText={onChange}
+                            onChangeText={(text) => onChange(text.toLowerCase())}
                             error={errors.email?.message}
                           />
                         )}
                       />
-                      {!!submitError && <ErrorMessage message={submitError} />}
-                      {submitted && (
+                      {forgotPasswordSuccess && (
                         <Text
                           style={{
                             color: COLORS.success,
@@ -125,11 +127,11 @@ export default function ForgotPasswordScreen (): JSX.Element {
                         </Text>
                       )}
                       <Button
-                        title={isSubmitting ? t('auth.sending') : t('auth.sendResetLink')}
+                        title={forgotPasswordLoading ? t('auth.sending') : t('auth.sendResetCode')}
                         onPress={handleSubmit(onSubmit)}
                         variant="primary"
                         style={[styles.primaryBtn, { marginTop: 8 }]}
-                        disabled={isSubmitting}
+                        disabled={forgotPasswordLoading || isSubmitting}
                       />
                       <Button
                         title={t('auth.backToLogin')}

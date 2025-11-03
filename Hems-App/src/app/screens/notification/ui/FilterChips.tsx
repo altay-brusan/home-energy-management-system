@@ -1,6 +1,7 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import type { makeNotificationScreenStyles } from '../NotificationScreen.styles';
+import { useI18n } from '../../../../hooks/useI18n';
 
 type Styles = ReturnType<typeof makeNotificationScreenStyles>;
 
@@ -15,19 +16,31 @@ type Props = {
 function Chip({ active, label, onPress, styles }: { active: boolean; label: string; onPress: () => void; styles: Styles }) {
   return (
     <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
-      <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
+      <Text 
+        style={[styles.chipText, active && styles.chipTextActive]}
+        allowFontScaling={false}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 }
 
 export function FilterChips({ value, onChange, styles }: Props) {
+  const { t } = useI18n();
+  
   return (
-    <View style={styles.chipsWrap}>
-      <Chip active={value === 'all'} label="All" onPress={() => onChange('all')} styles={styles} />
-      <Chip active={value === 'today'} label="Today" onPress={() => onChange('today')} styles={styles} />
-      <Chip active={value === 'unread'} label="Unread" onPress={() => onChange('unread')} styles={styles} />
-      <Chip active={value === 'critical'} label="Critical" onPress={() => onChange('critical')} styles={styles} />
-    </View>
+    <ScrollView 
+      horizontal 
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.chipsWrap}
+      style={styles.chipsScrollView}
+    >
+      <Chip active={value === 'all'} label={t('notifications.filters.all')} onPress={() => onChange('all')} styles={styles} />
+      <Chip active={value === 'today'} label={t('notifications.filters.today')} onPress={() => onChange('today')} styles={styles} />
+      <Chip active={value === 'unread'} label={t('notifications.filters.unread')} onPress={() => onChange('unread')} styles={styles} />
+      <Chip active={value === 'critical'} label={t('notifications.filters.critical')} onPress={() => onChange('critical')} styles={styles} />
+    </ScrollView>
   );
 }
 

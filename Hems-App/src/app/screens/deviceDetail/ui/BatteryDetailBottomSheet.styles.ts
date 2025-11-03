@@ -1,7 +1,7 @@
 import { Dimensions, StyleSheet } from "react-native";
 import { SPACING, TYPOGRAPHY } from "../../../../theme/constants";
 
-export function makeBatteryDetailStyles(
+export function makeBatteryDetailStyles (
   COLORS: Record<string, string>,
   isDark: boolean
 ) {
@@ -27,7 +27,7 @@ export function makeBatteryDetailStyles(
       shadowRadius: 14,
       elevation: 12,
       overflow: "hidden",
-      height: Dimensions.get("window").height * 0.85, 
+      height: Dimensions.get("window").height * 0.85,
     },
     handleContainer: {
       alignItems: "center",
@@ -95,15 +95,16 @@ export function makeBatteryDetailStyles(
       flexDirection: "row",
       justifyContent: "space-between",
       marginTop: SPACING.md,
-       marginBottom: SPACING.lg, 
+      marginBottom: SPACING.lg,
       paddingHorizontal: SPACING.sm,
     },
-   actionBtn: {
-  flex: 1,
-  height: 72,          
-  marginHorizontal: 4,
-  borderRadius: 12,   
-  justifyContent: "center",
-},
+    actionBtn: {
+      flex: 1,
+      height: 60,
+      marginHorizontal: 4,
+      borderRadius: 12,
+      justifyContent: "center",
+      marginBottom: SPACING.xs,
+    },
   });
 }

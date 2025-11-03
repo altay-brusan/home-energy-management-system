@@ -42,15 +42,7 @@ export default function CompanyInfoScreen({ navigation }: any) {
     }
   };
 
-  const handleSave = () => {
-    console.log('Company info saved:', {
-      companyName,
-      address,
-      email,
-      phone,
-      region,
-    });
-    navigation?.goBack?.();
+  const handleSave = () => {navigation?.goBack?.();
   };
 
   const handleCancel = () => {

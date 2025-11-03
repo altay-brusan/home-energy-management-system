@@ -12,19 +12,19 @@ type BackendErrorShape = {
   errors?: Record<string, string[]> | string[];
 };
 
-function extractBackendError(data: unknown): BackendErrorShape | null {
+function extractBackendError (data: unknown): BackendErrorShape | null {
   if (!data || typeof data !== 'object') return null;
   if ('error' in data && typeof (data as any).error === 'object') return (data as any).error as BackendErrorShape;
   return data as BackendErrorShape;
 }
 
-export function mapToAppError(err: unknown): AppError {
+export function mapToAppError (err: unknown): AppError {
   const error = err as any;
   const isAxios = !!error?.isAxiosError || !!error?.config || !!error?.response;
 
   if (isAxios) {
-    const status: number | undefined = error?.response?.status;
-    const data = error?.response?.data;
+    const status: number | undefined = error?.response?.status || error?.status;
+    const data = error?.response?.data || error?.data;
     const backend = extractBackendError(data);
 
     if (error?.code === 'ECONNABORTED' || error?.message?.includes('Network Error')) {
@@ -59,7 +59,7 @@ export function mapToAppError(err: unknown): AppError {
       backend?.message ||
       error?.response?.statusText ||
       error?.message ||
-      'Bilinmeyen bir hata oluştu.';
+      'Bir hata oluştu. Lütfen tekrar deneyin.';
     return { code: 'UNKNOWN', status, message: fallback };
   }
 

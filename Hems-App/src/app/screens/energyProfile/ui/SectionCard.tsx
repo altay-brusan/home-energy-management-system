@@ -4,6 +4,7 @@ import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useThemeStore } from '../../../../store/themeStore';
 import { getThemeColors } from '../../../../theme/constants';
 import { getSectionCardStyles } from './SectionCard.styles';
+import { useI18n } from "../../../../hooks/useI18n";
 
 type SectionCardProps = {
   title: string;
@@ -16,6 +17,7 @@ export default function SectionCard({ title, items, showIcon, isExpanded }: Sect
   const mode = useThemeStore(s => s.mode);
   const isDark = mode === 'dark';
   const COLORS = getThemeColors(isDark);
+  const { t } = useI18n();
   const styles = getSectionCardStyles(COLORS, isDark);
 
   return (

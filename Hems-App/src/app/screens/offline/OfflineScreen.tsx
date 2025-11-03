@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors } from '../../../theme/constants';
 import { makeOfflineScreenStyles } from './OfflineScreen.styles';
+import { useI18n } from '../../../hooks/useI18n';
 
 
 interface OfflineScreenProps {
@@ -16,6 +17,7 @@ export default function OfflineScreen ({ onRetry }: OfflineScreenProps) {
     const COLORS = getThemeColors(isDark);
     const styles = makeOfflineScreenStyles(COLORS);
     const insets = useSafeAreaInsets();
+    const { t } = useI18n();
 
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(30)).current;
@@ -96,20 +98,20 @@ export default function OfflineScreen ({ onRetry }: OfflineScreenProps) {
                     </View>
 
                     <View style={styles.messageSection}>
-                        <Text style={styles.title}>No Internet Connection</Text>
+                        <Text style={styles.title}>{t('offline.title')}</Text>
                         <Text style={styles.subtitle}>
-                            Please check your network settings and try again
+                            {t('offline.subtitle')}
                         </Text>
                     </View>
 
                     <View style={styles.tipsSection}>
                         <View style={styles.tip}>
                             <FontAwesome name="wifi" size={14} color={COLORS.accent} />
-                            <Text style={styles.tipText}>Check WiFi or mobile data</Text>
+                            <Text style={styles.tipText}>{t('offline.tips.checkWifi')}</Text>
                         </View>
                         <View style={styles.tip}>
                             <FontAwesome name="signal" size={14} color={COLORS.accent} />
-                            <Text style={styles.tipText}>Move to better signal area</Text>
+                            <Text style={styles.tipText}>{t('offline.tips.moveToSignal')}</Text>
                         </View>
                     </View>
 
@@ -125,7 +127,7 @@ export default function OfflineScreen ({ onRetry }: OfflineScreenProps) {
                                 color={COLORS.white}
                                 style={styles.buttonIcon}
                             />
-                            <Text style={styles.retryText}>Try Again</Text>
+                            <Text style={styles.retryText}>{t('offline.tryAgain')}</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
@@ -139,13 +141,13 @@ export default function OfflineScreen ({ onRetry }: OfflineScreenProps) {
                                 color={COLORS.textSoft}
                                 style={styles.buttonIcon}
                             />
-                            <Text style={styles.settingsText}>Network Settings</Text>
+                            <Text style={styles.settingsText}>{t('offline.networkSettings')}</Text>
                         </TouchableOpacity>
                     </View>
 
                     <View style={styles.statusSection}>
                         <View style={styles.statusDot} />
-                        <Text style={styles.statusText}>Checking connection...</Text>
+                        <Text style={styles.statusText}>{t('offline.checkingConnection')}</Text>
                     </View>
                 </Animated.View>
             </ScrollView>

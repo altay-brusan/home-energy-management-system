@@ -3,6 +3,7 @@ import { View, Text } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import FontAwesome from '@react-native-vector-icons/fontawesome';
 
 import MainLayout from '../../layouts/MainLayout';
 import { useThemeStore } from '../../../store/themeStore';
@@ -10,16 +11,11 @@ import { getThemeColors } from '../../../theme/constants';
 import { makeNotificationDetailStyles } from './NotificationDetailScreen.styles';
 import { Card } from '../../../components';
 import Button from '../../../components/ui/Button';
+import { useI18n } from '../../../hooks/useI18n';
 
-type DetailItem = {
-  id: string;
-  title: string;
-  message: string;
-  description: string;
-  createdAt: string;
-  read: boolean;
-  severity: 'critical' | 'normal';
-};
+import { DeviceNotification } from '../../../hooks/useDeviceNotifications';
+
+type DetailItem = DeviceNotification;
 
 type ParamList = {
   NotificationDetail: { item: DetailItem };
@@ -34,6 +30,7 @@ export default function NotificationDetailScreen(): JSX.Element {
   const isDark = mode === 'dark';
   const COLORS = getThemeColors(isDark);
   const styles = useMemo(() => makeNotificationDetailStyles(isDark), [isDark]);
+  const { t } = useI18n();
 
   const criticalFg = (COLORS as any).critical ?? '#EB5757';
   const criticalBg =
@@ -48,7 +45,7 @@ export default function NotificationDetailScreen(): JSX.Element {
           {item.severity === 'critical' && (
             <View style={[styles.badge, { backgroundColor: criticalBg }]}>
               <Text style={[styles.badgeText, { color: criticalFg }]}>
-                CRITICAL
+                {t('notifications.critical')}
               </Text>
             </View>
           )}
@@ -60,7 +57,13 @@ export default function NotificationDetailScreen(): JSX.Element {
           <View style={styles.divider} />
 
           {item.description && (
-            <Text style={styles.description}>{item.description}</Text>
+            <View style={styles.additionalDataContainer}>
+              <View style={styles.additionalDataTitleRow}>
+                <FontAwesome name="info-circle" size={16} color={COLORS.accent || '#1DD1A1'} />
+                <Text style={styles.additionalDataTitle}>Additional Information</Text>
+              </View>
+              <Text style={styles.additionalDataText}>{item.description}</Text>
+            </View>
           )}
 
           <View style={styles.footerRow}>
@@ -71,7 +74,7 @@ export default function NotificationDetailScreen(): JSX.Element {
         </Card>
 
         <Button
-          title="Back"
+          title={t('common.back')}
           onPress={() => navigation.goBack()}
           style={styles.button}
           textStyle={styles.buttonText}

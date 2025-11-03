@@ -3,7 +3,7 @@ import { Animated, Pressable, Text, View } from 'react-native';
 import { useErrorStore } from '../../../store/errorStore';
 import { getGlobalErrorStyles } from './GlobalError.styles';
 
-export default function GlobalError() {
+export default function GlobalError () {
   const err = useErrorStore((s) => s.current);
   const clear = useErrorStore((s) => s.clear);
   const anim = useRef(new Animated.Value(0)).current;
@@ -17,6 +17,9 @@ export default function GlobalError() {
     }
   }, [err, anim]);
 
+  const handleRetry = () => {clear();
+  };
+
   if (!err) return null;
 
   return (
@@ -29,10 +32,11 @@ export default function GlobalError() {
         },
       ]}
     >
-      <Pressable onPress={clear} style={styles.card}>
+      <Pressable onPress={handleRetry} style={styles.card}>
         <Text style={styles.title}>Hata</Text>
         <Text style={styles.msg}>{err.message}</Text>
         {!!err.status && <Text style={styles.meta}>Kod: {err.status} • {err.code}</Text>}
+        <Text style={styles.retryText}>Tap to retry</Text>
       </Pressable>
     </Animated.View>
   );

@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { SPACING, TYPOGRAPHY } from '../../../theme/constants';
 
-export function getSignUpStyles(
+export function getSignUpStyles (
   COLORS: Record<string, string>,
   isDark: boolean
 ) {
@@ -31,7 +31,7 @@ export function getSignUpStyles(
     content: {
       flex: 1,
       paddingHorizontal: SPACING.md,
-      position: 'relative', // Oval görseller için relative positioning
+      position: 'relative',
     },
 
     keyboardAvoider: {
@@ -40,7 +40,7 @@ export function getSignUpStyles(
 
     scrollContent: {
       paddingVertical: SPACING.lg,
-      minHeight: '100%', // Minimum yükseklik
+      minHeight: '100%',
     },
 
     card: {
@@ -49,13 +49,8 @@ export function getSignUpStyles(
       alignSelf: 'center',
       borderRadius: 20,
       backgroundColor: COLORS.cardBg,
-      shadowColor: COLORS.black,
-      shadowOffset: { width: 0, height: 12 },
-      shadowOpacity: isDark ? 0.24 : 0.12,
-      shadowRadius: 20,
-      elevation: 50, // Çok yüksek elevation değeri
-      zIndex: 100, // Çok yüksek z-index değeri
-      minHeight: 400, // Minimum yükseklik
+      zIndex: 100,
+      minHeight: 400,
     },
 
     cardInner: {
@@ -91,6 +86,39 @@ export function getSignUpStyles(
       borderRadius: 14,
     },
 
+    errorText: {
+      color: COLORS.error || '#ef4444',
+      fontSize: TYPOGRAPHY.sm,
+      textAlign: 'center',
+      marginTop: SPACING.sm,
+      marginBottom: SPACING.xs,
+    },
+
+    errorMessage: {
+      marginBottom: SPACING.sm,
+    },
+
+    passwordRules: {
+      marginTop: SPACING.sm,
+      marginBottom: SPACING.md,
+      padding: SPACING.sm,
+      backgroundColor: COLORS.bgShadeLight,
+      borderRadius: 8,
+    },
+
+    passwordRulesTitle: {
+      fontSize: TYPOGRAPHY.sm,
+      fontWeight: '600',
+      color: COLORS.textSoft,
+      marginBottom: SPACING.xs,
+    },
+
+    passwordRule: {
+      fontSize: TYPOGRAPHY.xs,
+      color: COLORS.textSoft,
+      marginBottom: 2,
+    },
+
     bgTopShade: {
       position: 'absolute',
       top: -110,
@@ -98,8 +126,8 @@ export function getSignUpStyles(
       width: 260,
       height: 260,
       borderRadius: 130,
-      backgroundColor: COLORS.bgShadeLight,
-      zIndex: -1, // Card'ın çok altında kalması için
+  backgroundColor: isDark ? COLORS.bgShadeLight :COLORS.border,
+      zIndex: -1,
     },
 
     bgBottomShade: {
@@ -109,8 +137,8 @@ export function getSignUpStyles(
       width: 300,
       height: 300,
       borderRadius: 150,
-      backgroundColor: COLORS.bgShadeLight, // Üstteki oval ile aynı renk
-      zIndex: -1, // Card'ın çok altında kalması için
+     backgroundColor: isDark ? COLORS.bgShadeLight :COLORS.border,
+      zIndex: -1,
     },
   });
 }

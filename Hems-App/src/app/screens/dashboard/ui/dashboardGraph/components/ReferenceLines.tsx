@@ -1,5 +1,7 @@
 import React from 'react';
 import { Path, Rect, Text as SvgText } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
+
 
 type Props = {
   avg: number;
@@ -12,6 +14,7 @@ type Props = {
 };
 
 export default function ReferenceLines({
+  
   avg,
   peak,
   padding,
@@ -20,10 +23,11 @@ export default function ReferenceLines({
   COLORS,
   accentColor,
 }: Props) {
+  const { t } = useTranslation(); 
   const yAvg = padding.top + yScale(avg);
   const yPeak = padding.top + yScale(peak);
   const labelAvg = `Avg ${avg}`;
-  const labelPeak = `Peak ${peak}`;
+  const labelPeak = `${t('dashboardGraph.peak')} ${peak}`;
   const labelX = padding.left + innerW - 6;
   const bwAvg = Math.max(34, labelAvg.length * 6 + 10);
   const bwPeak = Math.max(40, labelPeak.length * 6 + 10);
@@ -34,7 +38,7 @@ export default function ReferenceLines({
 
   return (
     <>
-      <Path
+      {/* <Path
         d={`M ${padding.left} ${yAvg} H ${padding.left + innerW}`}
         stroke={COLORS.slate400}
         strokeDasharray="4 4"
@@ -58,7 +62,7 @@ export default function ReferenceLines({
         textAnchor="middle"
       >
         {labelAvg}
-      </SvgText>
+      </SvgText> */}
 
       <Path
         d={`M ${padding.left} ${yPeak} H ${padding.left + innerW}`}

@@ -108,9 +108,10 @@ export function getStyles (COLORS: Record<string, string>) {
     },
     badgesBelowRow: {
       flexDirection: isSmall ? 'column' : 'row',
-      columnGap: SPACING.xs,
-      rowGap: SPACING.xs,
+      columnGap: SPACING.md,
+      rowGap: SPACING.sm,
       marginTop: SPACING.sm,
+      marginLeft: -3,
     },
     badgesCol: { flex: 1, rowGap: 8 },
 
@@ -123,13 +124,14 @@ export function getStyles (COLORS: Record<string, string>) {
     },
     statCard: {
       flexBasis: statBasis,
+      width: isVerySmall ? '100%' : isSmall ? '48%' : undefined,
       backgroundColor: COLORS.dark,
-      padding: isSmall ? SPACING.xs : SPACING.sm,
+      padding: isSmall ? SPACING.sm : SPACING.md,
+      paddingVertical: isSmall ? SPACING.sm + 6 : SPACING.md + 6,
       borderRadius: isSmall ? 12 : 16,
       alignItems: 'center',
       justifyContent: 'center',
-      marginHorizontal: 4,
-      marginBottom: SPACING.sm,
+      marginBottom: isSmall ? SPACING.xs : SPACING.sm,
       borderWidth: 1,
       borderColor: COLORS.border,
       shadowColor: COLORS.black,
@@ -137,6 +139,8 @@ export function getStyles (COLORS: Record<string, string>) {
       shadowOpacity: 0.08,
       shadowRadius: 6,
       elevation: 3,
+     minHeight: isSmall ? 105 : 115,
+     gap: 6,
     },
     statValue: {
       fontSize: TYPOGRAPHY.md,
@@ -147,7 +151,8 @@ export function getStyles (COLORS: Record<string, string>) {
     statLabel: {
       fontSize: 11,
       color: COLORS.slate400,
-      marginTop: 2,
+   marginTop: 6, 
+      
     },
 
     sectionContainer: {
@@ -364,13 +369,13 @@ export const gridStyles = StyleSheet.create({
     marginTop: 4,
     fontSize: TYPOGRAPHY.sm,
   },
-  iconContainer: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+iconContainer: {
+  position: 'absolute',
+  top: 8,
+  right: 8,
+  alignItems: 'center',
+  justifyContent: 'center',
+},
   chevron: {
     position: 'absolute',
     bottom: -24,

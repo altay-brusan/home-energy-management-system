@@ -9,6 +9,7 @@
   ],
   "exclude": [
     "**/node_modules",
-    "**/Pods"
+    "**/Pods",
+    "__tests__/**/*"
   ]
 }
