@@ -1,0 +1,187 @@
+pipeline {
+    agent any
+
+    environment {
+        // Docker Registry Configuration
+        DOCKER_REGISTRY = 'registry.oklidis.com.tr:5000'
+        DOCKER_IMAGE_NAME = 'hems-backend'
+
+        // Docker Registry Credentials (Jenkins'te tanımlanmış olmalı)
+        DOCKER_CREDENTIALS_ID = 'docker-registry-credentials'
+
+        // K3s Kubeconfig Credentials (Jenkins'te tanımlanmış olmalı)
+        KUBECONFIG_CREDENTIALS_ID = 'k3s-kubeconfig'
+
+        // Build Info
+        GIT_COMMIT_SHORT = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
+        BUILD_TAG = "${env.BRANCH_NAME}-${env.BUILD_NUMBER}-${GIT_COMMIT_SHORT}"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo "🔄 Checking out code from ${env.BRANCH_NAME} branch..."
+                checkout scm
+            }
+        }
+
+        stage('Restore & Build') {
+            steps {
+                echo "🔨 Restoring NuGet packages and building project..."
+                sh 'dotnet restore'
+                sh 'dotnet build --configuration Release --no-restore'
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                echo "🧪 Running tests..."
+                sh 'dotnet test --configuration Release --no-build --verbosity normal'
+            }
+            post {
+                failure {
+                    echo "❌ Tests failed! Blocking deployment."
+                    error("Tests failed. Deployment is blocked.")
+                }
+                success {
+                    echo "✅ All tests passed! Proceeding to build Docker image."
+                }
+            }
+        }
+
+        stage('Build Docker Image - Development') {
+            when {
+                branch 'development'
+            }
+            steps {
+                echo "🐳 Building Docker image for DEVELOPMENT environment..."
+                script {
+                    sh "docker build -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:development-${BUILD_TAG} -f src/Web/Dockerfile ."
+                    sh "docker build -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:development-latest -f src/Web/Dockerfile ."
+                }
+            }
+        }
+
+        stage('Build Docker Image - Stage') {
+            when {
+                branch 'stage'
+            }
+            steps {
+                echo "🐳 Building Docker image for STAGE environment..."
+                script {
+                    sh "docker build -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:stage-${BUILD_TAG} -f src/Web/Dockerfile ."
+                    sh "docker build -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:stage-latest -f src/Web/Dockerfile ."
+                }
+            }
+        }
+
+        stage('Push Docker Image - Development') {
+            when {
+                branch 'development'
+            }
+            steps {
+                echo "📦 Pushing Docker image to registry (DEVELOPMENT)..."
+                script {
+                    sh "docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:development-${BUILD_TAG}"
+                    sh "docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:development-latest"
+                }
+            }
+        }
+
+        stage('Push Docker Image - Stage') {
+            when {
+                branch 'stage'
+            }
+            steps {
+                echo "📦 Pushing Docker image to registry (STAGE)..."
+                script {
+                    sh "docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:stage-${BUILD_TAG}"
+                    sh "docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:stage-latest"
+                }
+            }
+        }
+
+        stage('Deploy to K3s - Development') {
+            when {
+                branch 'development'
+            }
+            steps {
+                echo "🚀 Deploying to K3s DEVELOPMENT namespace..."
+                script {
+                    withCredentials([file(credentialsId: KUBECONFIG_CREDENTIALS_ID, variable: 'KUBECONFIG')]) {
+                        sh """
+                            # Update the deployment image to the newly pushed version
+                            kubectl set image deployment/hems-backend-dev \
+                                hems-backend=${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:development-${BUILD_TAG} \
+                                -n hems-dev \
+                                --kubeconfig=\$KUBECONFIG
+
+                            # Wait for rollout to complete
+                            kubectl rollout status deployment/hems-backend-dev \
+                                -n hems-dev \
+                                --timeout=5m \
+                                --kubeconfig=\$KUBECONFIG
+                        """
+                    }
+                }
+            }
+            post {
+                success {
+                    echo "✅ Successfully deployed to DEVELOPMENT environment!"
+                    echo "🌐 URL: http://hems-api-dev.oklidis.com.tr"
+                }
+                failure {
+                    echo "❌ Deployment to DEVELOPMENT failed!"
+                }
+            }
+        }
+
+        stage('Deploy to K3s - Stage') {
+            when {
+                branch 'stage'
+            }
+            steps {
+                echo "🚀 Deploying to K3s STAGE namespace..."
+                script {
+                    withCredentials([file(credentialsId: KUBECONFIG_CREDENTIALS_ID, variable: 'KUBECONFIG')]) {
+                        sh """
+                            # Update the deployment image to the newly pushed version
+                            kubectl set image deployment/hems-backend-stage \
+                                hems-backend=${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:stage-${BUILD_TAG} \
+                                -n hems-stage \
+                                --kubeconfig=\$KUBECONFIG
+
+                            # Wait for rollout to complete
+                            kubectl rollout status deployment/hems-backend-stage \
+                                -n hems-stage \
+                                --timeout=5m \
+                                --kubeconfig=\$KUBECONFIG
+                        """
+                    }
+                }
+            }
+            post {
+                success {
+                    echo "✅ Successfully deployed to STAGE environment!"
+                    echo "🌐 URL: http://hems-api-stage.oklidis.com.tr"
+                }
+                failure {
+                    echo "❌ Deployment to STAGE failed!"
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "🧹 Cleaning up workspace..."
+            cleanWs()
+        }
+        success {
+            echo "✅ Pipeline completed successfully!"
+        }
+        failure {
+            echo "❌ Pipeline failed!"
+        }
+    }
+}

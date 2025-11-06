@@ -1,0 +1,69 @@
+# Build artifacts
+**/bin/
+**/obj/
+**/out/
+**/publish/
+
+# Test projects and coverage
+**/tests/
+**/TestResults/
+**/*.trx
+**/*.coverage
+**/*.coveragexml
+
+# Logs
+**/logs/
+**/*.log
+
+# IDE and editor directories
+**/.vs/
+**/.vscode/
+**/.idea/
+**/*.user
+**/*.suo
+**/*.userosscache
+**/*.sln.docstates
+
+# OS files
+**/.DS_Store
+**/Thumbs.db
+
+# Git
+**/.git/
+**/.gitignore
+**/.gitattributes
+
+# Documentation
+**/*.md
+!README.md
+
+# Docker files
+**/Dockerfile*
+**/.dockerignore
+**/docker-compose*
+
+# CI/CD
+**/.github/
+**/.azure-pipelines.yaml
+**/Jenkinsfile
+
+# Package restore
+**/.nuget/
+**/packages/
+**/*.nupkg
+
+# Database files
+**/*.db
+**/*.db-shm
+**/*.db-wal
+
+# Environment files
+**/.env
+**/.env.*
+
+# Misc
+**/node_modules/
+**/npm-debug.log
+**/*.swp
+**/*.swo
+**/*~

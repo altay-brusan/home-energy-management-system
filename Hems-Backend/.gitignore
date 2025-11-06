@@ -510,3 +510,17 @@ Thumbs.db
 *.log
 *.bak
 *.backup
+
+# Claude Code files (not needed in repository)
+.claude/
+CLAUDE.md
+
+# Documentation and photos (optional, not for deployment)
+Photos/
+DEPLOYMENT_SETUP.md
+DEPLOYMENT_SETUP.md.backup
+SERVER_DEPLOYMENT_GUIDE.md
+
+# Old/backup Jenkins files
+Jenkinsfile.old
+Jenkinsfile.k8s
