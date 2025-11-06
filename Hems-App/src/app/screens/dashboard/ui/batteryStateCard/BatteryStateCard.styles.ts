@@ -1,0 +1,57 @@
+import { StyleSheet } from 'react-native';
+import { TYPOGRAPHY, SPACING } from '../../../../../theme/constants';
+
+export const createStyles = (COLORS: Record<string, string>) => {
+  return StyleSheet.create({
+    container: {
+      backgroundColor: COLORS.surface,
+      borderRadius: 16,
+      padding: SPACING.lg,
+      marginBottom: SPACING.sm,
+      borderWidth: 1,
+      borderColor: COLORS.border,
+      shadowColor: COLORS.black,
+      shadowOpacity: 0.06,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 1,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: SPACING.md,
+    },
+    title: {
+      fontSize: TYPOGRAPHY.lg,
+      fontWeight: '700',
+      color: COLORS.textSoft,
+    },
+    percentage: {
+      fontSize: TYPOGRAPHY.xl,
+      fontWeight: '700',
+    },
+    progressBarContainer: {
+      height: 8,
+      backgroundColor: COLORS.bgShadeLight,
+      borderRadius: 4,
+      overflow: 'hidden',
+      marginBottom: SPACING.sm,
+    },
+    progressBar: {
+      height: '100%',
+      borderRadius: 4,
+    },
+    statusText: {
+      fontSize: TYPOGRAPHY.sm,
+      fontWeight: '600',
+      color: COLORS.textSoft,
+      opacity: 0.7,
+    },
+    loadingContainer: {
+      height: 100,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+  });
+};

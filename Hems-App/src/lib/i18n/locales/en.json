@@ -482,6 +482,16 @@
         "savings": "Savings"
       }
     },
+    "dashboard": {
+      "summary": "Summary",
+      "status": "Status",
+      "saving": "Saving",
+      "onGrid": "On Grid",
+      "off": "Off",
+      "hybrid": "Hybrid",
+      "totalPower": "Total Power",
+      "noDataAvailable": "No data available"
+    },
     "dashboardMode": {
       "title": "Current Mode",
       "modes": {
@@ -584,6 +594,18 @@
       },
       "noDevice": "No device connected",
       "noData": "No data available"
+    },
+    "dashboardEnergyReview": {
+      "title": "Energy Revenue",
+      "subtitle": "1 week energy trading with Grid",
+      "totalBuy": "Total Buy",
+      "totalSell": "Total Sell",
+      "net": "Net",
+      "buy": "Buy",
+      "sell": "Sell",
+      "price": "Price",
+      "gridBuy": "Buy from Grid",
+      "gridSell": "Sell to Grid"
     },
     "dashboardSidebar": {
       "header": "My Houses",

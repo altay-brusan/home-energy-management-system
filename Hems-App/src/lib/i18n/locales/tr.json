@@ -498,6 +498,16 @@
       "savings": "Tasarruf"
     }
   },
+  "dashboard": {
+    "summary": "Özet",
+    "status": "Durum",
+    "saving": "Tasarruf",
+    "onGrid": "Şebeke Bağlı",
+    "off": "Kapalı",
+    "hybrid": "Hibrit",
+    "totalPower": "Toplam Güç",
+    "noDataAvailable": "Veri mevcut değil"
+  },
   "dashboardMode": {
     "title": "Şu anki Mod",
     "modes": {
@@ -600,6 +610,18 @@
     },
     "noDevice": "Cihaz bağlı değil",
     "noData": "Veri bulunamadı"
+  },
+  "dashboardEnergyReview": {
+    "title": "Enerji Alış/Satış",
+    "subtitle": "Grid ile 1 haftalık enerji ticareti",
+    "totalBuy": "Toplam Alış",
+    "totalSell": "Toplam Satış",
+    "net": "Net",
+    "buy": "Alış",
+    "sell": "Satış",
+    "price": "Fiyat",
+    "gridBuy": "Grid'den Alış",
+    "gridSell": "Grid'e Satış"
   },
   "dashboardSidebar": {
     "header": "Evlerim",
