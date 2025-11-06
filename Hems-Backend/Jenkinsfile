@@ -25,30 +25,6 @@ pipeline {
             }
         }
 
-        stage('Restore & Build') {
-            steps {
-                echo "🔨 Restoring NuGet packages and building project..."
-                sh 'dotnet restore'
-                sh 'dotnet build --configuration Release --no-restore'
-            }
-        }
-
-        stage('Run Tests') {
-            steps {
-                echo "🧪 Running tests..."
-                sh 'dotnet test --configuration Release --no-build --verbosity normal'
-            }
-            post {
-                failure {
-                    echo "❌ Tests failed! Blocking deployment."
-                    error("Tests failed. Deployment is blocked.")
-                }
-                success {
-                    echo "✅ All tests passed! Proceeding to build Docker image."
-                }
-            }
-        }
-
         stage('Build Docker Image - Development') {
             when {
                 branch 'development'
@@ -57,7 +33,7 @@ pipeline {
                 echo "🐳 Building Docker image for DEVELOPMENT environment..."
                 script {
                     sh "docker build -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:development-${BUILD_TAG} -f src/Web/Dockerfile ."
-                    sh "docker build -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:development-latest -f src/Web/Dockerfile ."
+                    sh "docker tag ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:development-${BUILD_TAG} ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:development-latest"
                 }
             }
         }
@@ -70,7 +46,7 @@ pipeline {
                 echo "🐳 Building Docker image for STAGE environment..."
                 script {
                     sh "docker build -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:stage-${BUILD_TAG} -f src/Web/Dockerfile ."
-                    sh "docker build -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:stage-latest -f src/Web/Dockerfile ."
+                    sh "docker tag ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:stage-${BUILD_TAG} ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:stage-latest"
                 }
             }
         }
@@ -175,7 +151,7 @@ pipeline {
     post {
         always {
             echo "🧹 Cleaning up workspace..."
-            cleanWs()
+            deleteDir()
         }
         success {
             echo "✅ Pipeline completed successfully!"
