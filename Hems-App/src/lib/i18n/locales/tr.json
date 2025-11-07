@@ -476,6 +476,30 @@
       "year": "Yıl"
     }
   },
+  "energyChart": {
+    "title": "Enerji Genel Bakış",
+    "subtitle": "Üretim ve Tüketim",
+    "production": "Üretim",
+    "consumption": "Tüketim",
+    "total": "Toplam",
+    "sources": {
+      "solar": "Güneş",
+      "batteryDischarge": "Batarya Deşarj",
+      "generator": "Jeneratör",
+      "gridImport": "Şebekeden Çekiş",
+      "load": "Ev Yükü",
+      "batteryCharge": "Batarya Şarj",
+      "gridExport": "Şebekeye Satış"
+    },
+    "period": {
+      "weekly": "Haftalık",
+      "monthly": "Aylık",
+      "yearly": "Yıllık"
+    },
+    "noDevice": "Cihaz bulunamadı. Enerji verilerini görüntülemek için lütfen cihaz ekleyin.",
+    "noData": "Seçilen dönem için enerji verisi bulunamadı.",
+    "loading": "Enerji verileri yükleniyor..."
+  },
   "dashboardHero": {
     "title": "Ev Enerji Durumu",
     "subtitle": "Bugünkü tüketim ve anlık güç",
@@ -502,10 +526,12 @@
     "summary": "Özet",
     "status": "Durum",
     "saving": "Tasarruf",
+    "weather": "Hava Durumu",
     "onGrid": "Şebeke Bağlı",
     "off": "Kapalı",
     "hybrid": "Hibrit",
     "totalPower": "Toplam Güç",
+    "dailiyPower": "Günlük Güç",
     "noDataAvailable": "Veri mevcut değil"
   },
   "dashboardMode": {
@@ -622,6 +648,18 @@
     "price": "Fiyat",
     "gridBuy": "Grid'den Alış",
     "gridSell": "Grid'e Satış"
+  },
+  "dashboardGridPerformance": {
+    "title": "Şebeke Performansı",
+    "totalBuy": "Toplam Alış",
+    "totalSell": "Toplam Satış",
+    "netBalance": "Net Denge",
+    "month": "Ay",
+    "year": "Yıl",
+    "lifetime": "Tüm Zamanlar",
+    "buyLabel": "Şebeke Alım",
+    "sellLabel": "Şebeke Satım",
+    "noData": "Şebeke verisi mevcut değil"
   },
   "dashboardSidebar": {
     "header": "Evlerim",

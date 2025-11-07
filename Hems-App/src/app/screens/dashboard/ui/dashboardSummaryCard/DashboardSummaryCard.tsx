@@ -230,10 +230,6 @@ const DashboardSummaryCard: React.FC<DashboardSummaryCardProps> = ({ deviceId })
         <Svg width={280} height={280} viewBox="0 0 280 280">
           <G>
             {chartPaths.map((segment, index) => {
-              // Calculate background rectangle dimensions based on text length
-              const textLength = segment.label.length;
-              const rectWidth = Math.max(textLength * 9, 60);
-              const rectHeight = 24;
               const isPressed = pressedSegmentIndex === index;
 
               return (
@@ -256,29 +252,6 @@ const DashboardSummaryCard: React.FC<DashboardSummaryCardProps> = ({ deviceId })
                       setTooltipData(null);
                     }}
                   />
-                  {/* Background rectangle for text */}
-                  <Rect
-                    x={segment.labelX - rectWidth / 2}
-                    y={segment.labelY - rectHeight / 2}
-                    width={rectWidth}
-                    height={rectHeight}
-                    rx={6}
-                    ry={6}
-                    fill={isDark ? 'rgba(30, 41, 59, 0.9)' : 'rgba(255, 255, 255, 0.9)'}
-                    stroke={segment.color}
-                    strokeWidth={1.5}
-                  />
-                  <SvgText
-                    x={segment.labelX}
-                    y={segment.labelY}
-                    fill={COLORS.textSoft}
-                    fontSize="14"
-                    fontWeight="700"
-                    textAnchor="middle"
-                    alignmentBaseline="middle"
-                  >
-                    {segment.label}
-                  </SvgText>
                 </G>
               );
             })}
@@ -286,8 +259,8 @@ const DashboardSummaryCard: React.FC<DashboardSummaryCardProps> = ({ deviceId })
         </Svg>
 
         <View style={styles.centerLabelContainer}>
-          <Text style={styles.centerValue}>{summaryData.totalEnergy} kW</Text>
-          <Text style={styles.centerUnit}>{t('dashboard.totalPower')}</Text>
+          <Text style={styles.centerValue}>{summaryData.totalEnergy} kWh</Text>
+          <Text style={styles.centerUnit}>{t('dashboard.dailiyPower')}</Text>
         </View>
 
         {tooltipData && (
@@ -306,6 +279,20 @@ const DashboardSummaryCard: React.FC<DashboardSummaryCardProps> = ({ deviceId })
         )}
       </View>
 
+      {/* Legend */}
+      <View style={styles.legendContainer}>
+        {summaryData.sources.map((source, index) => (
+          <View key={index} style={styles.legendItem}>
+            <View style={styles.legendLeft}>
+              <View style={[styles.legendColor, { backgroundColor: source.color }]} />
+              <Text style={styles.legendText}>{source.label}</Text>
+            </View>
+            <Text style={styles.legendValue}>{source.value.toFixed(2)} kWh</Text>
+            <Text style={styles.legendPercentage}>{source.percentage.toFixed(1)}%</Text>
+          </View>
+        ))}
+      </View>
+
       <View style={styles.metricsContainer}>
         <View style={styles.metricCard}>
           <Text style={styles.metricLabel}>{t('dashboard.status')}</Text>
@@ -316,6 +303,22 @@ const DashboardSummaryCard: React.FC<DashboardSummaryCardProps> = ({ deviceId })
         <View style={styles.metricCard}>
           <Text style={styles.metricLabel}>{t('dashboard.saving')}</Text>
           <Text style={styles.metricValue}>%{summaryData.savingPercentage}</Text>
+        </View>
+        <View style={styles.metricCard}>
+          {weather ? (
+            <>
+              {weather.icon && (
+                <Image
+                  source={{ uri: weather.icon.startsWith('http') ? weather.icon : `https:${weather.icon}` }}
+                  style={styles.weatherIcon}
+                  resizeMode="contain"
+                />
+              )}
+              <Text style={styles.weatherTemp}>{weather.temperature}°</Text>
+            </>
+          ) : (
+            <Text style={styles.weatherTemp}>--°</Text>
+          )}
         </View>
       </View>
     </View>

@@ -8,39 +8,38 @@ import { getThemeColors } from '../../../../../theme/constants';
 import { createStyles } from './EnergyReviewCard.styles';
 import { EnergyTransaction, EnergyReviewData, TooltipData } from './EnergyReviewCard.types';
 
-// Generate mock data for 1 week (7 days) with hourly data points
+// Generate mock data for 30 days with daily data points
 const generateMockData = (): EnergyReviewData => {
   const transactions: EnergyTransaction[] = [];
   const now = new Date();
-  const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const monthStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
   let totalBuy = 0;
   let totalSell = 0;
 
-  // Generate hourly data for 7 days (168 hours)
-  for (let day = 0; day < 7; day++) {
-    for (let hour = 0; hour < 24; hour++) {
-      const timestamp = new Date(weekStart.getTime() + day * 24 * 60 * 60 * 1000 + hour * 60 * 60 * 1000).getTime();
+  // Generate daily data for 30 days
+  for (let day = 0; day < 30; day++) {
+    const timestamp = new Date(monthStart.getTime() + day * 24 * 60 * 60 * 1000).getTime();
 
-      // Realistic patterns:
-      // - More buying at night (18:00-06:00) when solar is not producing
-      // - More selling during day (09:00-17:00) when solar produces excess
-      const isBuyTime = hour >= 18 || hour <= 6;
+    // Realistic daily patterns:
+    // - More buying in winter/cloudy days
+    // - More selling in sunny days when solar produces excess
+    // Add some variation to make it realistic
+    const isSunnyDay = Math.random() > 0.4; // 60% sunny days
 
-      const buy = isBuyTime ? Math.random() * 5 + 2 : Math.random() * 1;
-      const sell = !isBuyTime ? Math.random() * 6 + 3 : Math.random() * 0.5;
-      const price = 0.15 + Math.random() * 0.1; // Price per kWh between $0.15-$0.25
+    const buy = isSunnyDay ? Math.random() * 20 + 10 : Math.random() * 40 + 30; // Less buy on sunny days
+    const sell = isSunnyDay ? Math.random() * 50 + 40 : Math.random() * 15 + 5; // More sell on sunny days
+    const price = 0.15 + Math.random() * 0.1; // Price per kWh between $0.15-$0.25
 
-      totalBuy += buy;
-      totalSell += sell;
+    totalBuy += buy;
+    totalSell += sell;
 
-      transactions.push({
-        timestamp,
-        buy,
-        sell,
-        price,
-      });
-    }
+    transactions.push({
+      timestamp,
+      buy,
+      sell,
+      price,
+    });
   }
 
   const netEnergy = totalSell - totalBuy;
@@ -48,7 +47,7 @@ const generateMockData = (): EnergyReviewData => {
 
   return {
     transactions,
-    weekStart,
+    weekStart: monthStart,
     weekEnd: now,
     totalBuy,
     totalSell,
@@ -61,39 +60,36 @@ export default function EnergyReviewCard() {
   const mode = useThemeStore(s => s.mode);
   const isDark = mode === 'dark';
   const COLORS = getThemeColors(isDark);
-  const { t } = useI18n();
+  const { t, language } = useI18n();
   const styles = createStyles(COLORS);
 
+  // Get locale for date formatting based on current language
+  const locale = language === 'tr' ? 'tr-TR' : 'en-US';
+
   const [chartSize, setChartSize] = useState({ width: 0, height: 0 });
-  const [offsetX, setOffsetX] = useState(0);
-  const [startOffsetX, setStartOffsetX] = useState(0);
-  const [tooltip, setTooltip] = useState<TooltipData>({
-    x: 0,
-    y: 0,
-    transaction: { timestamp: 0, buy: 0, sell: 0, price: 0 },
-    visible: false,
-  });
 
   const data = useMemo(() => generateMockData(), []);
+
+  // Set initial selected data to last day
+  const [selectedData, setSelectedData] = useState<EnergyTransaction | null>(
+    data.transactions[data.transactions.length - 1] || null
+  );
 
   const onLayout = useCallback((event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
     setChartSize({ width, height });
   }, []);
 
-  // Chart dimensions (fixed padding)
-  const padding = useMemo(() => ({ top: 30, right: 20, bottom: 60, left: 30 }), []);
+  // Chart dimensions (fixed padding) - top increased for info box space
+  const padding = useMemo(() => ({ top: 100, right: 20, bottom: 40, left: 30 }), []);
   const chartWidth = chartSize.width - padding.left - padding.right;
   const chartHeight = chartSize.height - padding.top - padding.bottom;
 
   // Calculate scale for X axis (time)
-  // Show 24 hours at a time (1 day visible on screen)
-  const hoursVisible = 24;
-  const totalHours = data.transactions.length;
-  const barWidth = Math.max(4, chartWidth / hoursVisible - 1); // Bar width with 1px gap
-  const xScale = chartWidth / hoursVisible;
-  const totalChartWidth = totalHours * xScale;
-  const maxOffsetX = Math.max(0, totalChartWidth - chartWidth);
+  // Show all 30 days on screen
+  const totalDays = data.transactions.length; // 30 days
+  const barWidth = Math.max(3, (chartWidth / totalDays) - 2); // Bar width with 2px gap between bars
+  const xScale = chartWidth / totalDays;
 
   // Calculate scale for Y axis (energy) - centered at 0
   const maxValue = Math.max(
@@ -102,43 +98,52 @@ export default function EnergyReviewCard() {
   const centerY = chartHeight / 2;
   const yScale = (chartHeight / 2) / (maxValue * 1.1); // Half height for each direction
 
-  // Pan responder for horizontal scrolling
+  // Calculate which bar is at the touch position
+  const getBarAtPosition = useCallback((touchX: number) => {
+    // Adjust for padding
+    const adjustedX = touchX - padding.left;
+
+    // Calculate which bar index
+    const barIndex = Math.floor(adjustedX / xScale);
+
+    // Check if valid index
+    if (barIndex >= 0 && barIndex < data.transactions.length) {
+      return data.transactions[barIndex];
+    }
+
+    return null;
+  }, [xScale, data.transactions, padding.left]);
+
+  // Pan responder for interactive touch tracking
   const panResponder = useMemo(() => PanResponder.create({
-    onStartShouldSetPanResponder: () => false,
-    onMoveShouldSetPanResponder: (evt, gestureState) => {
-      // Only activate pan if horizontal movement is significant
-      // This prevents interfering with vertical scrolling
-      const isHorizontal = Math.abs(gestureState.dx) > Math.abs(gestureState.dy);
-      const hasMovedEnough = Math.abs(gestureState.dx) > 5;
-      return isHorizontal && hasMovedEnough;
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderGrant: (evt) => {
+      const touchX = evt.nativeEvent.locationX;
+      const transaction = getBarAtPosition(touchX);
+      if (transaction) {
+        setSelectedData(transaction);
+      }
     },
-    onPanResponderGrant: (evt, gestureState) => {
-      setStartOffsetX(offsetX);
-      setTooltip(prev => ({ ...prev, visible: false }));
-    },
-    onPanResponderMove: (evt, gestureState) => {
-      // Update offset based on drag distance
-      const newOffset = Math.max(0, Math.min(maxOffsetX, startOffsetX - gestureState.dx));
-      setOffsetX(newOffset);
+    onPanResponderMove: (evt) => {
+      const touchX = evt.nativeEvent.locationX;
+      const transaction = getBarAtPosition(touchX);
+      if (transaction) {
+        setSelectedData(transaction);
+      }
     },
     onPanResponderRelease: () => {
-      // Optional: Add momentum/snap behavior here if needed
+      // Keep the info box visible after release
     },
     onPanResponderTerminationRequest: () => true,
-    onShouldBlockNativeResponder: () => false,
-  }), [offsetX, startOffsetX, maxOffsetX]);
+  }), [getBarAtPosition]);
 
-  // Generate bars for chart
+  // Generate bars for chart (all 30 days visible)
   const visibleBars = useMemo(() => {
     if (chartWidth === 0 || chartHeight === 0) return [];
 
     return data.transactions.map((t, i) => {
-      const x = i * xScale - offsetX;
-
-      // Only render bars that are visible on screen
-      if (x < -barWidth || x > chartWidth + barWidth) {
-        return null;
-      }
+      const x = i * xScale;
 
       // Sell bar goes up from center (positive)
       const sellHeight = t.sell * yScale;
@@ -157,32 +162,26 @@ export default function EnergyReviewCard() {
         buyHeight,
         transaction: t,
       };
-    }).filter(Boolean);
-  }, [data.transactions, xScale, offsetX, chartWidth, chartHeight, barWidth, yScale, centerY]);
+    });
+  }, [data.transactions, xScale, chartWidth, chartHeight, yScale, centerY]);
 
-  // Generate time labels (show every 6 hours for 24h view)
+  // Generate time labels (show every 5 days for 30-day view)
   const timeLabels = useMemo(() => {
     const labels: { x: number; label: string }[] = [];
-    for (let i = 0; i < data.transactions.length; i += 6) {
+    for (let i = 0; i < data.transactions.length; i += 5) {
       const transaction = data.transactions[i];
       const date = new Date(transaction.timestamp);
-      const x = i * xScale - offsetX;
+      const x = (i + 0.5) * xScale; // Center of the bar
 
-      if (x >= -50 && x <= chartWidth + 50) {
-        // Show time for current day, date for day boundaries
-        const hour = date.getHours();
-        const label = hour === 0
-          ? date.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' })
-          : date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+      const label = date.toLocaleDateString(locale, { day: '2-digit', month: '2-digit' });
 
-        labels.push({
-          x,
-          label,
-        });
-      }
+      labels.push({
+        x,
+        label,
+      });
     }
     return labels;
-  }, [data.transactions, xScale, offsetX, chartWidth]);
+  }, [data.transactions, xScale, locale]);
 
   // Generate Y-axis labels (centered at 0)
   const yLabels = useMemo(() => {
@@ -227,45 +226,63 @@ export default function EnergyReviewCard() {
       <View style={styles.header}>
         <Text style={styles.title}>{t('dashboardEnergyReview.title', 'Enerji Alış/Satış')}</Text>
         <Text style={styles.subtitle}>
-          {t('dashboardEnergyReview.subtitle', 'Grid ile 1 haftalık enerji ticareti')}
+          {t('dashboardEnergyReview.subtitle', 'Grid ile 30 günlük enerji ticareti')}
         </Text>
       </View>
 
-      {/* Summary */}
-      <View style={styles.summaryContainer}>
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>{t('dashboardEnergyReview.totalBuy', 'Toplam Alış')}</Text>
-          <Text style={[styles.summaryValue, styles.buyColor]}>
-            {data.totalBuy.toFixed(1)}
-          </Text>
-          <Text style={[styles.summaryLabel, { fontSize: 9 }]}>kWh</Text>
-        </View>
+      {/* Chart Wrapper - for absolute positioning of info box */}
+      <View style={styles.chartWrapper}>
+        {/* Info Box - Outside chart container but above it */}
+        {selectedData && (
+          <View style={styles.infoBox}>
+            <Text style={styles.infoDate}>
+              {new Date(selectedData.timestamp).toLocaleDateString(locale, {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric',
+              })}
+            </Text>
 
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>{t('dashboardEnergyReview.totalSell', 'Toplam Satış')}</Text>
-          <Text style={[styles.summaryValue, styles.sellColor]}>
-            {data.totalSell.toFixed(1)}
-          </Text>
-          <Text style={[styles.summaryLabel, { fontSize: 9 }]}>kWh</Text>
-        </View>
+            <View style={styles.infoGrid}>
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>{t('dashboardEnergyReview.buy', 'Alış')}</Text>
+                <Text style={[styles.infoValue, styles.buyColor]}>
+                  {selectedData.buy.toFixed(1)} kWh
+                </Text>
+              </View>
 
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>{t('dashboardEnergyReview.net', 'Net')}</Text>
-          <Text style={[styles.summaryValue, data.netEnergy >= 0 ? styles.sellColor : styles.buyColor]}>
-            {data.netEnergy >= 0 ? '+' : ''}{data.netEnergy.toFixed(1)}
-          </Text>
-          <Text style={[styles.summaryLabel, { fontSize: 9 }]}>kWh</Text>
-        </View>
-      </View>
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>{t('dashboardEnergyReview.sell', 'Satış')}</Text>
+                <Text style={[styles.infoValue, styles.sellColor]}>
+                  {selectedData.sell.toFixed(1)} kWh
+                </Text>
+              </View>
 
-      {/* Chart */}
-      <View style={styles.chartContainer} onLayout={onLayout} {...(chartSize.width > 0 && chartWidth > 0 ? panResponder.panHandlers : {})}>
-        {chartSize.width === 0 || chartWidth <= 0 || chartHeight <= 0 ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={COLORS.accent} />
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>{t('dashboardEnergyReview.net', 'Net')}</Text>
+                <Text style={[styles.infoValue, (selectedData.sell - selectedData.buy) >= 0 ? styles.sellColor : styles.buyColor]}>
+                  {(selectedData.sell - selectedData.buy) >= 0 ? '+' : ''}{(selectedData.sell - selectedData.buy).toFixed(1)} kWh
+                </Text>
+              </View>
+
+              <View style={styles.infoItem}>
+                <Text style={styles.infoLabel}>{t('dashboardEnergyReview.price', 'Fiyat')}</Text>
+                <Text style={styles.infoValue}>
+                  ${(selectedData.price * Math.abs(selectedData.sell - selectedData.buy)).toFixed(2)}
+                </Text>
+              </View>
+            </View>
           </View>
-        ) : (
-          <Svg width={chartSize.width} height={chartSize.height}>
+        )}
+
+        {/* Chart */}
+        <View style={styles.chartContainer} onLayout={onLayout} {...panResponder.panHandlers}>
+          {chartSize.width === 0 || chartWidth <= 0 || chartHeight <= 0 ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={COLORS.accent} />
+            </View>
+          ) : (
+            <Svg width={chartSize.width} height={chartSize.height}>
             <G x={padding.left} y={padding.top}>
               {/* Grid lines */}
               {yLabels.map((label, i) => (
@@ -358,46 +375,34 @@ export default function EnergyReviewCard() {
             </G>
           </Svg>
         )}
+        </View>
+      </View>
 
-        {/* Tooltip */}
-        {chartSize.width > 0 && tooltip.visible && (
-          <View
-            style={[
-              styles.tooltipContainer,
-              {
-                left: Math.max(10, Math.min(chartSize.width - 170, tooltip.x - 80)),
-                top: Math.max(10, tooltip.y - 80),
-              },
-            ]}
-          >
-            <View style={styles.tooltipRow}>
-              <Text style={styles.tooltipLabel}>{t('dashboardEnergyReview.buy', 'Alış')}:</Text>
-              <Text style={[styles.tooltipValue, styles.buyColor]}>
-                {tooltip.transaction.buy.toFixed(2)} kWh
-              </Text>
-            </View>
-            <View style={styles.tooltipRow}>
-              <Text style={styles.tooltipLabel}>{t('dashboardEnergyReview.sell', 'Satış')}:</Text>
-              <Text style={[styles.tooltipValue, styles.sellColor]}>
-                {tooltip.transaction.sell.toFixed(2)} kWh
-              </Text>
-            </View>
-            <View style={styles.tooltipRow}>
-              <Text style={styles.tooltipLabel}>{t('dashboardEnergyReview.price', 'Fiyat')}:</Text>
-              <Text style={styles.tooltipValue}>
-                ${tooltip.transaction.price.toFixed(3)}
-              </Text>
-            </View>
-            <Text style={styles.tooltipTime}>
-              {new Date(tooltip.transaction.timestamp).toLocaleString('tr-TR', {
-                day: '2-digit',
-                month: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </Text>
-          </View>
-        )}
+      {/* Summary Cards */}
+      <View style={styles.summaryCardsContainer}>
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryCardLabel}>{t('dashboardEnergyReview.totalBuy', 'Toplam Alış')}</Text>
+          <Text style={[styles.summaryCardValue, styles.buyColor]}>
+            {data.totalBuy.toFixed(1)}
+          </Text>
+          <Text style={styles.summaryCardUnit}>kWh</Text>
+        </View>
+
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryCardLabel}>{t('dashboardEnergyReview.totalSell', 'Toplam Satış')}</Text>
+          <Text style={[styles.summaryCardValue, styles.sellColor]}>
+            {data.totalSell.toFixed(1)}
+          </Text>
+          <Text style={styles.summaryCardUnit}>kWh</Text>
+        </View>
+
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryCardLabel}>{t('dashboardEnergyReview.net', 'Net')}</Text>
+          <Text style={[styles.summaryCardValue, data.netEnergy >= 0 ? styles.sellColor : styles.buyColor]}>
+            {data.netEnergy >= 0 ? '+' : ''}{data.netEnergy.toFixed(1)}
+          </Text>
+          <Text style={styles.summaryCardUnit}>kWh</Text>
+        </View>
       </View>
 
       {/* Legend */}

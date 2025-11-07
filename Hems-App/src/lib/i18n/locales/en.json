@@ -460,6 +460,30 @@
         "year": "Year"
       }
     },
+    "energyChart": {
+      "title": "Energy Overview",
+      "subtitle": "Production vs Consumption",
+      "production": "Production",
+      "consumption": "Consumption",
+      "total": "Total",
+      "sources": {
+        "solar": "Solar",
+        "batteryDischarge": "Battery Discharge",
+        "generator": "Generator",
+        "gridImport": "Grid Import",
+        "load": "Load",
+        "batteryCharge": "Battery Charge",
+        "gridExport": "Grid Export"
+      },
+      "period": {
+        "weekly": "Weekly",
+        "monthly": "Monthly",
+        "yearly": "Yearly"
+      },
+      "noDevice": "No device found. Please add a device to view energy data.",
+      "noData": "No energy data available for the selected period.",
+      "loading": "Loading energy data..."
+    },
     "dashboardHero": {
       "title": "Home Energy Status",
       "subtitle": "Today's consumption and real-time power",
@@ -486,10 +510,12 @@
       "summary": "Summary",
       "status": "Status",
       "saving": "Saving",
+      "weather": "Weather",
       "onGrid": "On Grid",
       "off": "Off",
       "hybrid": "Hybrid",
       "totalPower": "Total Power",
+      "dailiyPower": "Daily Power",
       "noDataAvailable": "No data available"
     },
     "dashboardMode": {
@@ -606,6 +632,18 @@
       "price": "Price",
       "gridBuy": "Buy from Grid",
       "gridSell": "Sell to Grid"
+    },
+    "dashboardGridPerformance": {
+      "title": "Grid Performance",
+      "totalBuy": "Total Buy",
+      "totalSell": "Total Sell",
+      "netBalance": "Net Balance",
+      "month": "Month",
+      "year": "Year",
+      "lifetime": "Lifetime",
+      "buyLabel": "Grid Buy",
+      "sellLabel": "Grid Sell",
+      "noData": "No grid data available"
     },
     "dashboardSidebar": {
       "header": "My Houses",

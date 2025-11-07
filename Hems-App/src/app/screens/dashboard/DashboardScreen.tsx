@@ -28,6 +28,8 @@ import { DashboardSummaryCard } from './ui/dashboardSummaryCard';
 import { BatteryStateCard } from './ui/batteryStateCard';
 import { CO2Card } from './ui/co2Card';
 import EnergyReviewCard from './ui/energyReviewCard';
+import EnergyChart from './ui/energyChart/EnergyChart';
+import { GridPerformanceCard } from './ui/gridPerformanceCard';
 import DashboardWelcomeCard from './ui/dashboardWelcomeCard/DashboardWelcomeCard';
 
 type Range = 'Day' | 'Week' | 'Month' | 'Year';
@@ -193,18 +195,20 @@ export default function DashboardScreen (): JSX.Element {
         <BatteryStateCard deviceId={device?.id} />
         <CO2Card deviceId={device?.id} />
         <EnergyReviewCard />
+        <EnergyChart />
+        <GridPerformanceCard deviceId={device?.id} />
         <DashboardWelcomeCard isDark={isDark} COLORS={COLORS} />
         <DashboardHeroImage COLORS={COLORS} />
         <DashboardModeCard COLORS={COLORS} />
 
-        <BatterySOCPriceChart
+        {/* <BatterySOCPriceChart
           COLORS={COLORS}
           isDark={isDark}
-        />
-        <BatterySOHChart
+        /> */}
+        {/* <BatterySOHChart
           COLORS={COLORS}
           isDark={isDark}
-        />
+        /> */}
         <DashboardFlowChart
           COLORS={COLORS}
           isDark={isDark}
