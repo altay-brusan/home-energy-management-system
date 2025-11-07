@@ -10,9 +10,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Error()
+    .MinimumLevel.Information()
     .WriteTo.Console()
-    .WriteTo.File("logs/hems-backend-.log", 
+    .WriteTo.File("logs/hems-backend-.log",
         rollingInterval: RollingInterval.Day,
         retainedFileCountLimit: 30,
         fileSizeLimitBytes: 10 * 1024 * 1024, // 10MB
