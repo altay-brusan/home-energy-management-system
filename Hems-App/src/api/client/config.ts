@@ -80,6 +80,7 @@ export const ENDPOINTS = {
     POWER_METRICS: '/MobileDashboard/graphs/PowerMetrics',
     BATTERY: '/MobileDashboard/graphs/Battery',
     CHARGE_DISCHARGE: '/MobileDashboard/graphs/ChargeDischarge',
+    GRID_PERFORMANCE: '/MobileDashboard/graphs/GridPerformance',
   },
   ROLES: {
     GET_ALL: '/RoleManagement',
