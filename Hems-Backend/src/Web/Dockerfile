@@ -43,7 +43,7 @@ EXPOSE 8080
 
 # Set environment variables
 ENV ASPNETCORE_URLS=http://+:8080
-ENV ASPNETCORE_ENVIRONMENT=Production
+# ASPNETCORE_ENVIRONMENT will be set by Kubernetes deployment
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
