@@ -5,9 +5,9 @@ export function getChargeDischargeChartStyles(COLORS: Record<string, string>) {
   return StyleSheet.create({
     container: {
       backgroundColor: COLORS.surface,
-      borderRadius: 14,
+      borderRadius: 12,
       padding: SPACING.md,
-      marginBottom: SPACING.lg,
+      marginBottom: 12,
       borderWidth: 1,
       borderColor: COLORS.border,
     },

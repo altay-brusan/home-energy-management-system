@@ -4,12 +4,8 @@ import { TYPOGRAPHY, SPACING } from '../../../../../theme/constants';
 export const createStyles = (COLORS: Record<string, string>) => {
   return StyleSheet.create({
     card: {
-      backgroundColor: COLORS.cardBg,
-      borderRadius: 16,
-      padding: SPACING.lg,
       marginBottom: 12,
-      borderWidth: 1,
-      borderColor: COLORS.border,
+      alignItems: 'center',
     },
     title: {
       fontSize: TYPOGRAPHY.lg,
@@ -29,7 +25,7 @@ export const createStyles = (COLORS: Record<string, string>) => {
       zIndex: 1,
     },
     loadingContainer: {
-      height: 400,
+      height: 450,
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -39,7 +35,7 @@ export const createStyles = (COLORS: Record<string, string>) => {
       marginTop: SPACING.md,
     },
     emptyContainer: {
-      height: 400,
+      height: 450,
       justifyContent: 'center',
       alignItems: 'center',
       paddingHorizontal: SPACING.xl,

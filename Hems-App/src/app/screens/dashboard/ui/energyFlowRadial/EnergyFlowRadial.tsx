@@ -13,7 +13,7 @@ import { createStyles } from './EnergyFlowRadial.styles';
 
 // Layout constants
 const CONTAINER_WIDTH = 350;
-const CONTAINER_HEIGHT = 400;
+const CONTAINER_HEIGHT = 450; // Increased for labels
 const NODE_SIZE = 100;
 const CENTER_SIZE = 60;
 const OFFSET = 140; // Distance from center to nodes
@@ -45,7 +45,7 @@ export const EnergyFlowRadial: React.FC = () => {
 
   // Calculate center position
   const centerX = CONTAINER_WIDTH / 2;
-  const centerY = CONTAINER_HEIGHT / 2;
+  const centerY = CONTAINER_HEIGHT / 2 + 12; // Add small offset for labels
 
   // Load power data
   const loadPowerData = useCallback(async () => {
@@ -94,7 +94,6 @@ export const EnergyFlowRadial: React.FC = () => {
   if (!hasDevice) {
     return (
       <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
-        <Text style={styles.title}>{t('energyFlowRadial.title')}</Text>
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>{t('energyFlowRadial.noDevice')}</Text>
         </View>
@@ -105,7 +104,6 @@ export const EnergyFlowRadial: React.FC = () => {
   if (loading && !powerData) {
     return (
       <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
-        <Text style={styles.title}>{t('energyFlowRadial.title')}</Text>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.accent} />
           <Text style={styles.loadingText}>{t('energyFlowRadial.loading')}</Text>
@@ -117,7 +115,6 @@ export const EnergyFlowRadial: React.FC = () => {
   if (error || !powerData) {
     return (
       <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
-        <Text style={styles.title}>{t('energyFlowRadial.title')}</Text>
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
             {error || t('energyFlowRadial.noData')}
@@ -127,18 +124,11 @@ export const EnergyFlowRadial: React.FC = () => {
     );
   }
 
-  // Determine flow line colors based on energy type
-  const flowColors = {
-    pv: '#FDB52E',       // Orange (PV to center)
-    battery: '#12C6A9',  // Teal (Battery <-> center)
-    grid: '#9D76F2',     // Purple (Grid <-> center)
-    load: '#FF6B6B',     // Red (Center to load)
-  };
+  // Use primary accent color for all flow lines
+  const flowColor = COLORS.accent;
 
   return (
     <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
-      <Text style={styles.title}>{t('energyFlowRadial.title')}</Text>
-
       <View style={[styles.diagramContainer, { width: CONTAINER_WIDTH, height: CONTAINER_HEIGHT }]}>
         {/* SVG Layer for flow lines */}
         <Svg
@@ -155,7 +145,7 @@ export const EnergyFlowRadial: React.FC = () => {
               endY={centerY - CENTER_SIZE / 2}
               direction="forward"
               active={true}
-              color={flowColors.pv}
+              color={flowColor}
             />
           )}
 
@@ -168,7 +158,7 @@ export const EnergyFlowRadial: React.FC = () => {
               endY={centerY}
               direction={powerData.battery.flow === 'input' ? 'backward' : 'forward'}
               active={true}
-              color={flowColors.battery}
+              color={flowColor}
             />
           )}
 
@@ -181,7 +171,7 @@ export const EnergyFlowRadial: React.FC = () => {
               endY={centerY}
               direction={powerData.grid.flow === 'input' ? 'backward' : 'forward'}
               active={true}
-              color={flowColors.grid}
+              color={flowColor}
             />
           )}
 
@@ -194,7 +184,7 @@ export const EnergyFlowRadial: React.FC = () => {
               endY={centerY + OFFSET - NODE_SIZE / 2}
               direction="forward"
               active={true}
-              color={flowColors.load}
+              color={flowColor}
             />
           )}
         </Svg>
@@ -213,7 +203,9 @@ export const EnergyFlowRadial: React.FC = () => {
           type="pv"
           power={powerData.pv.power}
           active={powerData.pv.active}
+          label="Solar"
           style={{
+            position: 'absolute',
             left: centerX - NODE_SIZE / 2,
             top: centerY - OFFSET - NODE_SIZE / 2,
           }}
@@ -224,7 +216,9 @@ export const EnergyFlowRadial: React.FC = () => {
           type="battery"
           power={powerData.battery.power}
           active={powerData.battery.active}
+          label="Battery"
           style={{
+            position: 'absolute',
             left: centerX - OFFSET - NODE_SIZE / 2,
             top: centerY - NODE_SIZE / 2,
           }}
@@ -235,7 +229,9 @@ export const EnergyFlowRadial: React.FC = () => {
           type="grid"
           power={powerData.grid.power}
           active={powerData.grid.active}
+          label="Grid"
           style={{
+            position: 'absolute',
             left: centerX + OFFSET - NODE_SIZE / 2,
             top: centerY - NODE_SIZE / 2,
           }}
@@ -246,19 +242,15 @@ export const EnergyFlowRadial: React.FC = () => {
           type="load"
           power={powerData.load.power}
           active={powerData.load.active}
+          label="Home"
+          labelPosition="bottom"
           style={{
+            position: 'absolute',
             left: centerX - NODE_SIZE / 2,
             top: centerY + OFFSET - NODE_SIZE / 2,
           }}
         />
       </View>
-
-      {/* Timestamp (optional) */}
-      {powerData.timestamp && (
-        <Text style={styles.timestamp}>
-          {t('energyFlowRadial.lastUpdate')}: {new Date(powerData.timestamp).toLocaleTimeString()}
-        </Text>
-      )}
     </Animated.View>
   );
 };

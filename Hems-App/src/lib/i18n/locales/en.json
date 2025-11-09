@@ -449,6 +449,13 @@
       "errorLoading": "Error loading power data. Please try again.",
       "lastUpdate": "Last updated"
     },
+    "todaySummary": {
+      "title": "Today",
+      "gridImport": "Grid Import",
+      "gridExport": "Grid Export",
+      "consumption": "Consumption",
+      "production": "Production"
+    },
     "dashboardGraph": {
       "productionTitle": "Energy Production",
       "consumptionTitle": "Energy Consumption",
@@ -688,7 +695,8 @@
       }
     },
     "dashboardScreen": {
-      "title": "Dashboard"
+      "title": "Dashboard",
+      "welcome": "Welcome"
     },
     "dashboardHelpButton": {
       "title": "Help"

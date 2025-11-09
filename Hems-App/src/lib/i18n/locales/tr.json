@@ -465,6 +465,13 @@
     "errorLoading": "Güç verileri yüklenirken hata oluştu. Lütfen tekrar deneyin.",
     "lastUpdate": "Son güncelleme"
   },
+  "todaySummary": {
+    "title": "Bugün",
+    "gridImport": "Şebekeden Alınan",
+    "gridExport": "Şebekeye Verilen",
+    "consumption": "Tüketim",
+    "production": "Üretim"
+  },
   "dashboardGraph": {
     "productionTitle": "Enerji Üretimi",
     "consumptionTitle": "Enerji Tüketimi",
@@ -704,7 +711,8 @@
     }
   },
   "dashboardScreen": {
-    "title": "Ana Ekran"
+    "title": "Ana Ekran",
+    "welcome": "Hoş Geldiniz"
   },
   "dashboardHelpButton": {
     "title": "Yardım"

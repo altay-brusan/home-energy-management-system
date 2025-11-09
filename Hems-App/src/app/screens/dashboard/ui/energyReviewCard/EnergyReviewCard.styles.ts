@@ -5,16 +5,11 @@ export const createStyles = (COLORS: Record<string, string>) => {
   return StyleSheet.create({
     container: {
       backgroundColor: COLORS.surface,
-      borderRadius: 16,
-      padding: SPACING.lg,
+      borderRadius: 12,
+      padding: SPACING.md,
       marginBottom: SPACING.sm,
       borderWidth: 1,
       borderColor: COLORS.border,
-      shadowColor: COLORS.black,
-      shadowOpacity: 0.06,
-      shadowRadius: 6,
-      shadowOffset: { width: 0, height: 2 },
-      elevation: 1,
     },
     header: {
       marginBottom: SPACING.md,
@@ -120,11 +115,6 @@ export const createStyles = (COLORS: Record<string, string>) => {
       alignItems: 'center',
       borderWidth: 1,
       borderColor: COLORS.border,
-      shadowColor: COLORS.black,
-      shadowOpacity: 0.06,
-      shadowRadius: 6,
-      shadowOffset: { width: 0, height: 2 },
-      elevation: 1,
     },
     summaryCardLabel: {
       fontSize: 10,

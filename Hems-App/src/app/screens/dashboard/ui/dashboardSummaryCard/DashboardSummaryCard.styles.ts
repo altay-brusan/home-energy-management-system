@@ -8,7 +8,7 @@ export const createStyles = (COLORS: Record<string, string>) => {
       width: '100%',
     },
     card: {
-      backgroundColor: COLORS.bgShade,
+      backgroundColor: COLORS.cardBg,
       borderRadius: 16,
       padding: SPACING.lg,
       marginBottom: 12,

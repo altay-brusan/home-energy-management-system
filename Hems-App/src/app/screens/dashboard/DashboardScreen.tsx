@@ -20,6 +20,7 @@ import BatteryChart from './ui/dashboardGraph/components/BatteryChart';
 import BatterySOCPriceChart from './ui/dashboardGraph/components/BatterySOCPriceChart';
 import BatterySOHChart from './ui/dashboardGraph/components/BatterySOHChart';
 import ChargeDischargeChart from './ui/dashboardGraph/components/ChargeDischargeChart';
+import MultiLineChart from './ui/dashboardGraph/components/MultiLineChart';
 import DashboardHelpButton from './ui/dashboardHelpButton/DashboardHelpButton';
 import DashboardHeroImage from './ui/dashboardHeroImage';
 import { DashboardModeCard } from './ui/dashboardModeCard';
@@ -32,6 +33,8 @@ import EnergyChart from './ui/energyChart/EnergyChart';
 import { GridPerformanceCard } from './ui/gridPerformanceCard';
 import DashboardWelcomeCard from './ui/dashboardWelcomeCard/DashboardWelcomeCard';
 import { EnergyFlowRadial } from './ui/energyFlowRadial';
+import { TodaySummary } from './ui/todaySummary';
+import { WeatherStatus } from './ui/weatherStatus';
 
 type Range = 'Day' | 'Week' | 'Month' | 'Year';
 
@@ -178,29 +181,23 @@ export default function DashboardScreen (): JSX.Element {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.titleRow}>
-          <Image
-            source={require('../../../assets/images/logo.png')}
-            style={styles.screenLogo}
-          />
           <View style={{ flex: 1, alignItems: 'center' }}>
-            <Text style={styles.screenTitle}>{t('dashboardScreen.title')}</Text>
+            <Text style={[styles.screenTitle, { fontSize: 18 }]}>{t('dashboardScreen.welcome')}</Text>
             {selectedSite && (
               <Text style={[styles.screenTitle, { fontSize: 14, opacity: 0.7, marginTop: 4 }]}>
                 {getSelectedSiteName()}
               </Text>
             )}
           </View>
-          <View style={{ width: 36 }} />
         </View>
+        <WeatherStatus deviceId={device?.id} />
         <EnergyFlowRadial />
-        <DashboardSummaryCard deviceId={device?.id} />
+        <TodaySummary />
+        {/* <DashboardSummaryCard deviceId={device?.id} /> */}
         <BatteryStateCard deviceId={device?.id} />
-        <CO2Card deviceId={device?.id} />
-        <EnergyReviewCard />
-        <EnergyChart />
-        <GridPerformanceCard deviceId={device?.id} />
-        <DashboardWelcomeCard isDark={isDark} COLORS={COLORS} />
-        <DashboardHeroImage COLORS={COLORS} />
+        {/* <EnergyChart /> */}
+        {/* <DashboardWelcomeCard isDark={isDark} COLORS={COLORS} /> */}
+        {/* <DashboardHeroImage COLORS={COLORS} /> */}
         <DashboardModeCard COLORS={COLORS} />
 
         {/* <BatterySOCPriceChart
@@ -211,23 +208,28 @@ export default function DashboardScreen (): JSX.Element {
           COLORS={COLORS}
           isDark={isDark}
         /> */}
-        <DashboardFlowChart
+        {/* <DashboardFlowChart
           COLORS={COLORS}
           isDark={isDark}
-        />
+        /> */}
 
-        <DashboardGraph
+        {/* <DashboardGraph
           COLORS={COLORS}
           isDark={isDark}
           selectedRange={selectedRange}
           setSelectedRange={setSelectedRange}
-        />
+        /> */}
 
 
-        <BatteryChart
+        {/* <BatteryChart
           COLORS={COLORS}
           selectedIndex={selectedBatteryIndex}
           setSelectedIndex={setSelectedBatteryIndex}
+        /> */}
+
+        <MultiLineChart
+          COLORS={COLORS}
+          selectedRange={selectedRange}
         />
 
         <ChargeDischargeChart
@@ -235,6 +237,12 @@ export default function DashboardScreen (): JSX.Element {
           selectedIndex={selectedChargeIndex}
           setSelectedIndex={setSelectedChargeIndex}
         />
+
+        <GridPerformanceCard deviceId={device?.id} />
+
+        <EnergyReviewCard />
+
+        <CO2Card deviceId={device?.id} />
 
         <DashboardDevices COLORS={COLORS} />
 

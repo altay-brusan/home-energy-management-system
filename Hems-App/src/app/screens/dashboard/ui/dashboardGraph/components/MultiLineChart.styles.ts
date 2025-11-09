@@ -2,14 +2,12 @@ import { StyleSheet } from 'react-native';
 import { SPACING, TYPOGRAPHY } from '../../../../../../theme/constants';
 
 export const getPowerMetricsChartStyles = (COLORS: Record<string, string>, dataLength: number = 24) => {
-  const dynamicWidth = Math.max(800, dataLength * 60);
-
   return StyleSheet.create({
     container: {
       backgroundColor: COLORS.surface,
-      borderRadius: 14,
+      borderRadius: 12,
       padding: SPACING.md,
-      marginBottom: SPACING.lg,
+      marginBottom: 12,
       borderWidth: 1,
       borderColor: COLORS.border,
     },
@@ -22,25 +20,11 @@ export const getPowerMetricsChartStyles = (COLORS: Record<string, string>, dataL
     chartContainer: {
       height: 400,
       minHeight: 350,
+      width: '100%',
     },
     chartAndHoursWrapper: {
-      width: dynamicWidth,
-    },
-    chart: {
-      height: 400,
-      width: dynamicWidth,
-    },
-    scrollView: {
-      height: 400,
-    },
-    scrollContainer: {
-      paddingRight: SPACING.md,
-    },
-    verticalScrollView: {
-      height: 300,
-    },
-    verticalScrollContainer: {
-      paddingBottom: 35,
+      width: '100%',
+      alignItems: 'center',
     },
     hoursContainer: {
       flexDirection: 'row',

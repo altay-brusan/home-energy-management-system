@@ -6,7 +6,7 @@ export const DARK_COLORS = {
   accentGlow: '#2bd5c4',       // Turkuaz glow efekti
   white: '#ffffff',            // Beyaz
   black: '#000000',            // Siyah
-  surface: '#2d3748',          // Orta gri yüzey
+  surface: '#232b36',          // Koyu kart yüzeyi (Today Summary ile aynı)
   buttonBg: '#374151',         // Koyu gri buton arka planı
   bgShadeLight: '#374151',     // Açık gri gölge
   bgShadeDark: '#1a202c',      // Koyu gri gölge
@@ -33,7 +33,7 @@ export const LIGHT_COLORS = {
   accentGlow: '#06b6d4',       // Cyan glow efekti
   white: '#ffffff',            // Beyaz
   black: '#000000',            // Siyah
-  surface: '#f3f4f6',          // Açık gri yüzey
+  surface: '#ffffff',          // Beyaz yüzey (kartlar)
   buttonBg: '#f9fafb',         // Çok açık gri buton arka planı
   bgShadeLight: '#f1f5f9',     // Açık mavi-gri gölge
   bgShadeDark: '#e2e8f0',      // Orta gri gölge
