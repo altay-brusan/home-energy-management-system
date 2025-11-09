@@ -441,6 +441,14 @@
       "in": "In",
       "out": "Out"
     },
+    "energyFlowRadial": {
+      "title": "Real-Time Energy Flow",
+      "loading": "Loading power data...",
+      "noDevice": "No device found. Please add a device to view real-time power flow.",
+      "noData": "No power data available.",
+      "errorLoading": "Error loading power data. Please try again.",
+      "lastUpdate": "Last updated"
+    },
     "dashboardGraph": {
       "productionTitle": "Energy Production",
       "consumptionTitle": "Energy Consumption",

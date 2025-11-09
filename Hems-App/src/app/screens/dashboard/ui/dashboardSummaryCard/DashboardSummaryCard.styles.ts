@@ -7,6 +7,14 @@ export const createStyles = (COLORS: Record<string, string>) => {
       marginBottom: 12,
       width: '100%',
     },
+    card: {
+      backgroundColor: COLORS.bgShade,
+      borderRadius: 16,
+      padding: SPACING.lg,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: COLORS.border,
+    },
     chartContainer: {
       alignItems: 'center',
       justifyContent: 'center',

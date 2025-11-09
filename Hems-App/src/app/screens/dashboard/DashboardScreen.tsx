@@ -31,6 +31,7 @@ import EnergyReviewCard from './ui/energyReviewCard';
 import EnergyChart from './ui/energyChart/EnergyChart';
 import { GridPerformanceCard } from './ui/gridPerformanceCard';
 import DashboardWelcomeCard from './ui/dashboardWelcomeCard/DashboardWelcomeCard';
+import { EnergyFlowRadial } from './ui/energyFlowRadial';
 
 type Range = 'Day' | 'Week' | 'Month' | 'Year';
 
@@ -191,6 +192,7 @@ export default function DashboardScreen (): JSX.Element {
           </View>
           <View style={{ width: 36 }} />
         </View>
+        <EnergyFlowRadial />
         <DashboardSummaryCard deviceId={device?.id} />
         <BatteryStateCard deviceId={device?.id} />
         <CO2Card deviceId={device?.id} />

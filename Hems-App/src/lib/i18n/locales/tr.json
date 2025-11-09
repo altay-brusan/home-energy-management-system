@@ -457,6 +457,14 @@
     "in": "Giriş",
     "out": "Çıkış"
   },
+  "energyFlowRadial": {
+    "title": "Anlık Enerji Akışı",
+    "loading": "Güç verileri yükleniyor...",
+    "noDevice": "Cihaz bulunamadı. Anlık güç akışını görüntülemek için lütfen cihaz ekleyin.",
+    "noData": "Güç verisi bulunamadı.",
+    "errorLoading": "Güç verileri yüklenirken hata oluştu. Lütfen tekrar deneyin.",
+    "lastUpdate": "Son güncelleme"
+  },
   "dashboardGraph": {
     "productionTitle": "Enerji Üretimi",
     "consumptionTitle": "Enerji Tüketimi",
