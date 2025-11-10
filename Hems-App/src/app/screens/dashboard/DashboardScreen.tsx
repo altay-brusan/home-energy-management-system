@@ -168,7 +168,7 @@ export default function DashboardScreen (): JSX.Element {
           {
             backgroundColor: COLORS.dark,
             paddingTop: Platform.OS === 'ios' ? SPACING.md : insets.top + SPACING.xs,
-            paddingBottom: insets.bottom + 24
+            paddingBottom: insets.bottom + 100
           },
         ]}
         refreshControl={

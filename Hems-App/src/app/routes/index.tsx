@@ -69,6 +69,7 @@ import FaultsScreen from '../screens/profile/FaultsScreen/FaultsScreen';
 import TroubleShootingScreen from '../screens/profile/TroubleShooting/TroubleShootingScreen';
 import SignUpScreen from '../screens/signup/SignUpScreen';
 import TrashScreen from '../screens/trashscreen/TrashScreen';
+import { CustomTabBar } from '../../components/CustomTabBar';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
@@ -109,15 +110,11 @@ function TabNavigator () {
     <Tab.Navigator
       key={navigatorKey}
       initialRouteName={isAdminUser ? 'Admin' : 'Dashboard'}
+      tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: COLORS.accent,
         tabBarInactiveTintColor: COLORS.slate400,
-        tabBarStyle: {
-          backgroundColor: COLORS.surface,
-          borderTopWidth: 1,
-          borderTopColor: COLORS.border,
-        },
       }}
     >
       {/* Admin kullanıcı ev seçmemişse sadece Admin ve Profile tab'larını göster */}
