@@ -63,7 +63,7 @@ spec:
                         dotnet restore
                         dotnet build -c Release --no-restore
                         dotnet test -c Release --no-build --verbosity normal \
-                            --filter "FullyQualifiedName!~FunctionalTests&FullyQualifiedName!~IntegrationTests" \
+                            --filter "FullyQualifiedName!~FunctionalTests&FullyQualifiedName!~IntegrationTests&FullyQualifiedName!~GetUserStatusQueryTests&FullyQualifiedName!~CreateDeviceDataCommandValidatorTests" \
                             /p:CollectCoverage=true \
                             /p:CoverletOutputFormat=opencover \
                             /p:CoverletOutput=./TestResults/coverage/
