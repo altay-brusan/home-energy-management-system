@@ -14,6 +14,7 @@ interface EnergyNodeProps {
   unit?: string;
   label?: string;
   labelPosition?: 'top' | 'bottom';
+  soc?: number; // Battery State of Charge (percentage)
 }
 
 // SVG Icons - Custom Design
@@ -91,6 +92,7 @@ export const EnergyNode: React.FC<EnergyNodeProps> = ({
   unit,
   label,
   labelPosition = 'top',
+  soc,
 }) => {
   const mode = useThemeStore(s => s.mode);
   const isDark = mode === 'dark';
@@ -167,6 +169,20 @@ export const EnergyNode: React.FC<EnergyNodeProps> = ({
           {label}
         </Text>
       )}
+
+      {/* SOC (State of Charge) - Only for battery, shown below label */}
+      {soc !== undefined && type === 'battery' && (
+        <Text
+          style={[
+            styles.socText,
+            {
+              color: COLORS.textSoft,
+            },
+          ]}
+        >
+          SOC: {Math.round(soc)}%
+        </Text>
+      )}
     </View>
   );
 };
@@ -191,6 +207,16 @@ const styles = StyleSheet.create({
     bottom: -24,
     left: 0,
     right: 0,
+  },
+  socText: {
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+    position: 'absolute',
+    bottom: -26,
+    left: 0,
+    right: 0,
+    opacity: 0.8,
   },
   container: {
     width: 100,

@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { LayoutChangeEvent, Text, View, ActivityIndicator } from 'react-native';
+import { LayoutChangeEvent, Text, View, ActivityIndicator, TouchableOpacity } from 'react-native';
 import Svg, { Defs, LinearGradient, Stop, Rect, Path, Circle, Text as SvgText } from 'react-native-svg';
 import Animated, { FadeInUp, useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { getChargeDischargeChartStyles } from './ChargeDischargeChart.styles';
@@ -9,6 +9,20 @@ import { useDashboardRefresh } from '../../../../../../hooks/useDashboardRefresh
 import { mobileDashboardService, ChargeDischargeResponseDto } from '../../../../../../api/services/mobileDashboardService';
 import { SPACING } from '../../../../../../theme/constants';
 import Tooltip from './Tooltip';
+
+// History Icon Component
+const HistoryIcon: React.FC<{ color: string }> = ({ color }) => (
+  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+      stroke={color}
+      strokeWidth={1}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
 type Datum = { x: string | number; charge: number; discharge: number };
 
 type Props = {
@@ -240,20 +254,30 @@ export default function ChargeDischargeChart({
     return labels;
   }, [maxY, padding.top, innerH]);
 
+  const handleHistoryPress = () => {
+    // TODO: Navigate to historical data screen or show modal
+    console.log('History pressed - ChargeDischargeChart');
+  };
+
   return (
     <Animated.View entering={FadeInUp.delay(300).duration(600)} style={styles.container}>
       <View style={styles.header}>
-              <Text style={styles.title}>{t('dashboardChargeDischargeChart.title')}</Text>
-        <View style={styles.legendContainer}>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: COLORS.info || '#3B82F6' }]} />
-        <Text style={styles.legendText}>{t('dashboardChargeDischargeChart.legend.charge')}</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: COLORS.warning || '#F59E0B' }]} />
-          <Text style={styles.legendText}>{t('dashboardChargeDischargeChart.legend.discharge')}</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>{t('dashboardChargeDischargeChart.title')}</Text>
+          <View style={styles.legendContainer}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: COLORS.accent }]} />
+              <Text style={styles.legendText}>{t('dashboardChargeDischargeChart.legend.charge')}</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: '#EF4444' }]} />
+              <Text style={styles.legendText}>{t('dashboardChargeDischargeChart.legend.discharge')}</Text>
+            </View>
           </View>
         </View>
+        <TouchableOpacity onPress={handleHistoryPress} style={{ padding: 4 }}>
+          <HistoryIcon color={COLORS.accent} />
+        </TouchableOpacity>
       </View>
       
       <Animated.View style={[styles.chartContainer, animatedChartStyle]} onLayout={onChartLayout}>
@@ -278,26 +302,26 @@ export default function ChargeDischargeChart({
           <Defs>
             {/* Charge gradients */}
             <LinearGradient id="chargeGrad" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0%" stopColor={COLORS.info || '#3B82F6'} stopOpacity={0.4} />
-              <Stop offset="50%" stopColor={COLORS.info || '#3B82F6'} stopOpacity={0.2} />
-              <Stop offset="100%" stopColor={COLORS.info || '#3B82F6'} stopOpacity={0.05} />
+              <Stop offset="0%" stopColor={COLORS.accent} stopOpacity={0.4} />
+              <Stop offset="50%" stopColor={COLORS.accent} stopOpacity={0.2} />
+              <Stop offset="100%" stopColor={COLORS.accent} stopOpacity={0.05} />
             </LinearGradient>
             <LinearGradient id="chargeLineGrad" x1="0" y1="0" x2="1" y2="0">
-              <Stop offset="0%" stopColor={COLORS.info || '#3B82F6'} stopOpacity={0.8} />
-              <Stop offset="50%" stopColor={COLORS.info || '#3B82F6'} stopOpacity={1} />
-              <Stop offset="100%" stopColor={COLORS.info || '#3B82F6'} stopOpacity={0.8} />
+              <Stop offset="0%" stopColor={COLORS.accent} stopOpacity={0.8} />
+              <Stop offset="50%" stopColor={COLORS.accent} stopOpacity={1} />
+              <Stop offset="100%" stopColor={COLORS.accent} stopOpacity={0.8} />
             </LinearGradient>
-            
+
             {/* Discharge gradients */}
             <LinearGradient id="dischargeGrad" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0%" stopColor={COLORS.warning || '#F59E0B'} stopOpacity={0.4} />
-              <Stop offset="50%" stopColor={COLORS.warning || '#F59E0B'} stopOpacity={0.2} />
-              <Stop offset="100%" stopColor={COLORS.warning || '#F59E0B'} stopOpacity={0.05} />
+              <Stop offset="0%" stopColor="#EF4444" stopOpacity={0.4} />
+              <Stop offset="50%" stopColor="#EF4444" stopOpacity={0.2} />
+              <Stop offset="100%" stopColor="#EF4444" stopOpacity={0.05} />
             </LinearGradient>
             <LinearGradient id="dischargeLineGrad" x1="0" y1="0" x2="1" y2="0">
-              <Stop offset="0%" stopColor={COLORS.warning || '#F59E0B'} stopOpacity={0.8} />
-              <Stop offset="50%" stopColor={COLORS.warning || '#F59E0B'} stopOpacity={1} />
-              <Stop offset="100%" stopColor={COLORS.warning || '#F59E0B'} stopOpacity={0.8} />
+              <Stop offset="0%" stopColor="#EF4444" stopOpacity={0.8} />
+              <Stop offset="50%" stopColor="#EF4444" stopOpacity={1} />
+              <Stop offset="100%" stopColor="#EF4444" stopOpacity={0.8} />
             </LinearGradient>
           </Defs>
 
@@ -320,52 +344,24 @@ export default function ChargeDischargeChart({
 
           {/* Charge area and line */}
           <Path d={chargeAreaD} fill="url(#chargeGrad)" />
-          <Path 
-            d={chargePathD} 
-            stroke="url(#chargeLineGrad)" 
-            strokeWidth={3} 
+          <Path
+            d={chargePathD}
+            stroke="url(#chargeLineGrad)"
+            strokeWidth={1}
             fill="none"
           />
-          
+
           {/* Discharge area and line */}
           <Path d={dischargeAreaD} fill="url(#dischargeGrad)" />
-          <Path 
-            d={dischargePathD} 
-            stroke="url(#dischargeLineGrad)" 
-            strokeWidth={3} 
+          <Path
+            d={dischargePathD}
+            stroke="url(#dischargeLineGrad)"
+            strokeWidth={1}
             fill="none"
           />
-          
-          {/* Charge points */}
-          {chargePoints.map((p, i) => {
-            const isSelected = selectedIndex === i;
-            return (
-              <Circle 
-                key={`charge-${i}`} 
-                cx={p.x} 
-                cy={p.y} 
-                r={isSelected ? 6 : 4} 
-                fill={COLORS.info || '#3B82F6'}
-                onPress={() => setSelectedIndex(i)} 
-              />
-            );
-          })}
-          
-          {/* Discharge points */}
-          {dischargePoints.map((p, i) => {
-            const isSelected = selectedIndex === i;
-            return (
-              <Circle 
-                key={`discharge-${i}`} 
-                cx={p.x} 
-                cy={p.y} 
-                r={isSelected ? 6 : 4} 
-                fill={COLORS.warning || '#F59E0B'}
-                onPress={() => setSelectedIndex(i)} 
-              />
-            );
-          })}
 
+
+          {/* Interactive hit areas for selection */}
           {chartData.map((_, i) => {
             const hx = padding.left + i * stepX;
             return (
@@ -384,34 +380,34 @@ export default function ChargeDischargeChart({
           {/* Charge average line */}
           <Path
             d={`M ${padding.left} ${padding.top + yScale(chargeAvg)} H ${padding.left + innerW}`}
-            stroke={COLORS.info || '#3B82F6'}
+            stroke={COLORS.accent}
             strokeDasharray="4 4"
             strokeWidth={1}
             opacity={0.7}
           />
-          
+
           {/* Discharge average line */}
           <Path
             d={`M ${padding.left} ${padding.top + yScale(dischargeAvg)} H ${padding.left + innerW}`}
-            stroke={COLORS.warning || '#F59E0B'}
+            stroke="#EF4444"
             strokeDasharray="4 4"
             strokeWidth={1}
             opacity={0.7}
           />
-          
+
           {/* Charge peak line */}
           <Path
             d={`M ${padding.left} ${padding.top + yScale(chargePeak)} H ${padding.left + innerW}`}
-            stroke={COLORS.info || '#3B82F6'}
+            stroke={COLORS.accent}
             strokeDasharray="6 4"
             strokeWidth={1}
             opacity={0.9}
           />
-          
+
           {/* Discharge peak line */}
           <Path
             d={`M ${padding.left} ${padding.top + yScale(dischargePeak)} H ${padding.left + innerW}`}
-            stroke={COLORS.warning || '#F59E0B'}
+            stroke="#EF4444"
             strokeDasharray="6 4"
             strokeWidth={1}
             opacity={0.9}
@@ -473,36 +469,36 @@ export default function ChargeDischargeChart({
       </Animated.View>
       
       {/* Stats Container - 2 rows */}
-      <View style={{ marginTop: SPACING.md }}>
+      <View style={{ marginTop: SPACING.md, gap: SPACING.sm }}>
         {/* First Row - Charge Stats */}
-        <View style={[styles.statsContainer, { marginBottom: SPACING.xs }]}>
+        <View style={styles.statsContainer}>
           <View style={styles.statItem}>
             <Text style={styles.statLabel}>{t('dashboardChargeDischargeChart.stats.chargeAvg')}</Text>
-            <Text style={[styles.statValue, { color: COLORS.info || '#3B82F6' }]}>{chargeAvg} kW</Text>
+            <Text style={[styles.statValue, { color: COLORS.accent }]}>{chargeAvg} kW</Text>
           </View>
           <View style={styles.statItem}>
             <Text style={styles.statLabel}>{t('dashboardChargeDischargeChart.stats.chargePeak')}</Text>
-            <Text style={[styles.statValue, { color: COLORS.info || '#3B82F6' }]}>{chargePeak} kW</Text>
+            <Text style={[styles.statValue, { color: COLORS.accent }]}>{chargePeak} kW</Text>
           </View>
           <View style={styles.statItem}>
             <Text style={styles.statLabel}>{t('dashboardChargeDischargeChart.stats.chargeCurrent')}</Text>
-            <Text style={[styles.statValue, { color: COLORS.info || '#3B82F6' }]}>{stats.charge.current} kW</Text>
+            <Text style={[styles.statValue, { color: COLORS.accent }]}>{stats.charge.current} kW</Text>
           </View>
         </View>
-        
+
         {/* Second Row - Discharge Stats */}
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
             <Text style={styles.statLabel}>{t('dashboardChargeDischargeChart.stats.dischargeAvg')}</Text>
-            <Text style={[styles.statValue, { color: COLORS.warning || '#F59E0B' }]}>{dischargeAvg} kW</Text>
+            <Text style={[styles.statValue, { color: '#EF4444' }]}>{dischargeAvg} kW</Text>
           </View>
           <View style={styles.statItem}>
             <Text style={styles.statLabel}>{t('dashboardChargeDischargeChart.stats.dischargePeak')}</Text>
-            <Text style={[styles.statValue, { color: COLORS.warning || '#F59E0B' }]}>{dischargePeak} kW</Text>
+            <Text style={[styles.statValue, { color: '#EF4444' }]}>{dischargePeak} kW</Text>
           </View>
           <View style={styles.statItem}>
             <Text style={styles.statLabel}>{t('dashboardChargeDischargeChart.stats.dischargeCurrent')}</Text>
-            <Text style={[styles.statValue, { color: COLORS.warning || '#F59E0B' }]}>{stats.discharge.current} kW</Text>
+            <Text style={[styles.statValue, { color: '#EF4444' }]}>{stats.discharge.current} kW</Text>
           </View>
         </View>
       </View>

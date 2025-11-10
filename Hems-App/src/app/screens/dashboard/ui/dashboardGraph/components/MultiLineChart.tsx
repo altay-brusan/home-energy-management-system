@@ -422,7 +422,7 @@ export default function PowerMetricsChart ({ COLORS, selectedRange }: Props) {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <View style={styles.header}>
         <Text style={styles.title}>{t('dashboardPowerMetricsChart.title')}</Text>
         <TouchableOpacity onPress={handleHistoryPress} style={{ padding: 4 }}>
           <HistoryIcon color={COLORS.accent} />

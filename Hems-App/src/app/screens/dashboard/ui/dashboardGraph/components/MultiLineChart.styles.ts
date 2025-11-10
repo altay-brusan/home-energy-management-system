@@ -11,10 +11,15 @@ export const getPowerMetricsChartStyles = (COLORS: Record<string, string>, dataL
       borderWidth: 1,
       borderColor: COLORS.border,
     },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: SPACING.md,
+    },
     title: {
       fontSize: TYPOGRAPHY.lg,
       fontWeight: '700',
-      marginBottom: SPACING.md,
       color: COLORS.textSoft,
     },
     chartContainer: {
@@ -50,15 +55,18 @@ export const getPowerMetricsChartStyles = (COLORS: Record<string, string>, dataL
     toggleItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: COLORS.surface,
+      backgroundColor: COLORS.cardBg,
       borderRadius: 8,
       paddingHorizontal: 12,
-      paddingVertical: 6,
+      paddingVertical: 8,
+      borderWidth: 1,
+      borderColor: COLORS.border,
+      gap: 8,
     },
     toggleLabel: {
       color: COLORS.textSoft,
       fontSize: 14,
-      marginRight: 6,
+      fontWeight: '600',
     },
     loadingContainer: {
       justifyContent: 'center',

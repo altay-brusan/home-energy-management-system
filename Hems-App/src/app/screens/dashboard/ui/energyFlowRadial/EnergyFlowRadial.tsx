@@ -8,6 +8,7 @@ import { useSelectedSiteDevice } from '../../../../../hooks/useSelectedSiteDevic
 import { useThemeStore } from '../../../../../store/themeStore';
 import { getThemeColors } from '../../../../../theme/constants';
 import mockPowerService, { RealTimePowerResponseDto } from '../../../../../api/services/mockPowerService';
+import { mobileDashboardService } from '../../../../../api/services/mobileDashboardService';
 import { EnergyNode, AnimatedFlowLine, CenterHub } from './components';
 import { createStyles } from './EnergyFlowRadial.styles';
 
@@ -15,7 +16,7 @@ import { createStyles } from './EnergyFlowRadial.styles';
 const CONTAINER_WIDTH = 350;
 const CONTAINER_HEIGHT = 450; // Increased for labels
 const NODE_SIZE = 100;
-const CENTER_SIZE = 60;
+const CENTER_SIZE = 80; // Increased to fit logo
 const OFFSET = 140; // Distance from center to nodes
 
 /**
@@ -42,12 +43,13 @@ export const EnergyFlowRadial: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [powerData, setPowerData] = useState<RealTimePowerResponseDto | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [batterySoc, setBatterySoc] = useState<number | undefined>(undefined);
 
   // Calculate center position
   const centerX = CONTAINER_WIDTH / 2;
   const centerY = CONTAINER_HEIGHT / 2 + 12; // Add small offset for labels
 
-  // Load power data
+  // Load power data and battery SOC
   const loadPowerData = useCallback(async () => {
     if (!hasDevice || !device?.id) {
       setLoading(false);
@@ -57,12 +59,20 @@ export const EnergyFlowRadial: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await mockPowerService.getCurrentPower(device.id);
-      setPowerData(data);
+
+      // Fetch mock power data and real battery SOC in parallel
+      const [powerData, batteryComponent] = await Promise.all([
+        mockPowerService.getCurrentPower(device.id),
+        mobileDashboardService.getBatteryComponent(device.id).catch(() => null),
+      ]);
+
+      setPowerData(powerData);
+      setBatterySoc(batteryComponent?.soc);
     } catch (err) {
       console.error('Error loading power data:', err);
       setError(t('energyFlowRadial.errorLoading'));
       setPowerData(null);
+      setBatterySoc(undefined);
     } finally {
       setLoading(false);
     }
@@ -217,6 +227,7 @@ export const EnergyFlowRadial: React.FC = () => {
           power={powerData.battery.power}
           active={powerData.battery.active}
           label="Battery"
+          soc={batterySoc}
           style={{
             position: 'absolute',
             left: centerX - OFFSET - NODE_SIZE / 2,

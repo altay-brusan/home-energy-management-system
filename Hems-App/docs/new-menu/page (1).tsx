@@ -9,11 +9,11 @@ export default function MobileApp() {
   const [activeTab, setActiveTab] = useState<TabType>("home")
 
   const tabs = [
-    { id: "home" as TabType, icon: Home, label: "Home" },
-    { id: "device" as TabType, icon: Smartphone, label: "Device" },
-    { id: "notifications" as TabType, icon: Bell, label: "Notifications" },
-    { id: "profile" as TabType, icon: User, label: "Profile" },
-    { id: "admin" as TabType, icon: Shield, label: "Admin" },
+    { id: "home" as TabType, icon: Home, label: "Home", color: "bg-red-100 text-red-600" },
+    { id: "device" as TabType, icon: Smartphone, label: "Device", color: "bg-purple-100 text-purple-600" },
+    { id: "notifications" as TabType, icon: Bell, label: "Notifications", color: "bg-cyan-100 text-cyan-600" },
+    { id: "profile" as TabType, icon: User, label: "Profile", color: "bg-orange-100 text-orange-600" },
+    { id: "admin" as TabType, icon: Shield, label: "Admin", color: "bg-pink-100 text-pink-600" },
   ]
 
   const renderContent = () => {
@@ -62,58 +62,33 @@ export default function MobileApp() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-gray-50">
+    <div className="flex h-screen flex-col bg-gradient-to-br from-indigo-300 via-purple-200 to-blue-300">
       {/* Main Content Area */}
       <div className="flex-1 overflow-auto p-6">
         <div className="flex h-full items-center justify-center">{renderContent()}</div>
       </div>
 
-      {/* Bottom Navigation */}
-      <nav className="border-t border-gray-200 bg-white shadow-lg">
-        <div className="mx-auto flex max-w-md items-center justify-around px-4 py-2">
-          {tabs.map((tab) => {
-            const Icon = tab.icon
-            const isActive = activeTab === tab.id
+      <nav className="p-6">
+        <div className="mx-auto max-w-2xl rounded-full bg-white px-6 py-4 shadow-xl">
+          <div className="flex items-center justify-between gap-2">
+            {tabs.map((tab) => {
+              const Icon = tab.icon
+              const isActive = activeTab === tab.id
 
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className="group relative flex flex-col items-center gap-1 px-3 py-2 transition-all duration-300"
-              >
-                {/* Active indicator */}
-                {isActive && (
-                  <div className="absolute -top-2 left-1/2 h-1 w-12 -translate-x-1/2 rounded-full bg-gradient-to-r from-blue-500 to-purple-500" />
-                )}
-
-                {/* Icon */}
-                <div
-                  className={`rounded-xl p-2 transition-all duration-300 ${
-                    isActive
-                      ? "bg-gradient-to-br from-blue-500 to-purple-500 shadow-lg"
-                      : "bg-gray-100 group-hover:bg-gray-200"
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 rounded-full px-4 py-2 transition-all duration-300 ${
+                    isActive ? tab.color : "hover:bg-gray-50"
                   }`}
                 >
-                  <Icon
-                    className={`h-5 w-5 transition-colors duration-300 ${
-                      isActive ? "text-white" : "text-gray-600 group-hover:text-gray-800"
-                    }`}
-                  />
-                </div>
-
-                {/* Label */}
-                <span
-                  className={`text-xs font-medium transition-colors duration-300 ${
-                    isActive
-                      ? "bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
-                      : "text-gray-600 group-hover:text-gray-800"
-                  }`}
-                >
-                  {tab.label}
-                </span>
-              </button>
-            )
-          })}
+                  <Icon className={`h-6 w-6 ${isActive ? "" : "text-gray-600"}`} strokeWidth={2} />
+                  {isActive && <span className="font-medium">{tab.label}</span>}
+                </button>
+              )
+            })}
+          </div>
         </div>
       </nav>
     </div>
