@@ -14,6 +14,9 @@ spec:
     image: mcr.microsoft.com/dotnet/sdk:9.0
     command: ['cat']
     tty: true
+    env:
+    - name: ConnectionStrings__Hems_BackendDb
+      value: "Server=localhost;Port=5432;User ID=postgres;Password=test;Database=HEMS_Test;Pooling=true;"
   - name: docker
     image: docker:27.0-cli
     command: ['cat']
@@ -25,6 +28,17 @@ spec:
     image: alpine/k8s:1.28.3
     command: ['cat']
     tty: true
+  - name: postgres
+    image: postgres:15
+    env:
+    - name: POSTGRES_USER
+      value: "postgres"
+    - name: POSTGRES_PASSWORD
+      value: "test"
+    - name: POSTGRES_DB
+      value: "HEMS_Test"
+    ports:
+    - containerPort: 5432
   volumes:
   - name: docker-sock
     hostPath:
@@ -63,7 +77,6 @@ spec:
                         dotnet restore
                         dotnet build -c Release --no-restore
                         dotnet test -c Release --no-build --verbosity normal \
-                            --filter "FullyQualifiedName!~FunctionalTests&FullyQualifiedName!~IntegrationTests&FullyQualifiedName!~GetUserStatusQueryTests&FullyQualifiedName!~CreateDeviceDataCommandValidatorTests" \
                             /p:CollectCoverage=true \
                             /p:CoverletOutputFormat=opencover \
                             /p:CoverletOutput=./TestResults/coverage/
