@@ -142,6 +142,7 @@ export default function NotificationScreen(): JSX.Element {
   styles={styles}
   onMarkAllRead={handleMarkAllAsRead}
   onPressTrash={() => navigation.navigate('Trash')}
+  onPressBack={() => navigation.goBack()}
   markingAllAsRead={markingAllAsRead}
 />
       <View style={styles.filterSticky}>

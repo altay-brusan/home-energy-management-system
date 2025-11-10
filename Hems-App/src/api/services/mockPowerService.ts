@@ -7,12 +7,9 @@
  * Expected real API endpoint: GET /MobileDashboard/graphs/CurrentPower?deviceId={deviceId}
  */
 
-export type FlowDirection = 'input' | 'output' | 'both';
-
 export interface PowerComponentData {
-  power: number;        // Power in Watts (W)
+  power: number;        // Power in Watts (W) - Positive: output/discharge, Negative: input/charge
   active: boolean;      // Whether the component is currently active
-  flow: FlowDirection;  // Direction of energy flow
 }
 
 export interface RealTimePowerResponseDto {
@@ -34,40 +31,39 @@ export const getCurrentPower = async (deviceId: string): Promise<RealTimePowerRe
   await new Promise<void>(resolve => setTimeout(() => resolve(), 300));
 
   // Generate realistic power values
+  // PV: Always positive (output/generating) or 0
   const pvPower = Math.random() > 0.2 ? Math.floor(Math.random() * 5000) : 0; // 0-5kW
-  const loadPower = Math.floor(Math.random() * 3000) + 500; // 500W-3.5kW (always consuming)
 
-  // Battery can charge or discharge
+  // Load: Always negative (input/consuming)
+  const loadPower = -(Math.floor(Math.random() * 3000) + 500); // -500W to -3.5kW
+
+  // Battery: Can be positive (discharging) or negative (charging)
   const batteryCharging = Math.random() > 0.5;
-  const batteryPower = Math.random() > 0.3 ? Math.floor(Math.random() * 2000) : 0; // 0-2kW
+  const batteryPowerAbs = Math.random() > 0.3 ? Math.floor(Math.random() * 2000) : 0; // 0-2kW
+  const batteryPower = batteryCharging ? -batteryPowerAbs : batteryPowerAbs; // Negative = charging, Positive = discharging
 
-  // Grid compensates for energy balance
-  // If PV > Load, export to grid; otherwise import from grid
-  const energyBalance = pvPower + (batteryCharging ? -batteryPower : batteryPower) - loadPower;
-  const gridPower = Math.abs(energyBalance);
-  const gridExporting = energyBalance > 0;
+  // Grid: Compensates for energy balance
+  // Positive = exporting to grid, Negative = importing from grid
+  const energyBalance = pvPower + batteryPower + loadPower;
+  const gridPower = -energyBalance; // Grid compensates the balance
 
   return {
     timestamp: new Date().toISOString(),
     pv: {
-      power: pvPower,
+      power: pvPower, // Always >= 0 (output)
       active: pvPower > 0,
-      flow: 'output', // PV always outputs when active
     },
     battery: {
-      power: batteryPower,
-      active: batteryPower > 0,
-      flow: batteryCharging ? 'input' : 'output',
+      power: batteryPower, // Positive = discharging, Negative = charging
+      active: Math.abs(batteryPower) > 0,
     },
     grid: {
-      power: gridPower,
-      active: gridPower > 100, // Consider grid active if >100W
-      flow: gridExporting ? 'output' : 'input',
+      power: gridPower, // Positive = exporting, Negative = importing
+      active: Math.abs(gridPower) > 100, // Consider grid active if >100W
     },
     load: {
-      power: loadPower,
-      active: true, // Load is always active (house always consuming)
-      flow: 'input', // Load always inputs (consumes)
+      power: loadPower, // Always < 0 (consuming)
+      active: true, // Load is always active
     },
   };
 };

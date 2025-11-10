@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import FontAwesome from "@react-native-vector-icons/fontawesome";
+import { ArrowLeft } from 'lucide-react-native';
 import MainLayout from "../../layouts/MainLayout";
 import { useThemeStore } from "../../../store/themeStore";
 import { getThemeColors } from "../../../theme/constants";
@@ -95,7 +96,7 @@ const handleSave = async (onClose?: () => void) => {
 
       <ScrollView
         style={styles.container}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -108,10 +109,10 @@ const handleSave = async (onClose?: () => void) => {
       >
         <View style={styles.headerRow}>
           <Pressable
-            style={styles.backButton}
+            style={{ paddingVertical: 8, paddingRight: 8 }}
             onPress={() => navigation.goBack()}
           >
-            <FontAwesome name="chevron-left" size={22} color={COLORS.textSoft} />
+            <ArrowLeft size={24} color={COLORS.textSoft} strokeWidth={2} />
           </Pressable>
           <Text style={styles.screenTitle}>My Energy Profile</Text>
           <View style={{ width: 32 }} />

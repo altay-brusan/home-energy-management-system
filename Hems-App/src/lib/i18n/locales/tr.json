@@ -5,6 +5,7 @@
     "chooseLanguage": "Dil tercihinizi seçin",
     "turkish": "Türkçe",
     "english": "İngilizce",
+    "dutch": "Hollandaca",
     "cancel": "İptal",
     "confirm": "Onayla",
     "save": "Kaydet",
@@ -236,10 +237,11 @@
     "messages": "Mesajlar"
   },
   "tabs": {
-    "dashboard": "Ana Sayfa",
+    "dashboard": "Home",
     "device": "Cihaz",
     "notifications": "Bildirimler",
-    "profile": "Profil"
+    "profile": "Profil",
+    "settings": "Ayarlar"
   },
   "profile": {
     "profile": "Profil",

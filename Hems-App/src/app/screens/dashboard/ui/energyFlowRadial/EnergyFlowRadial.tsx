@@ -134,8 +134,9 @@ export const EnergyFlowRadial: React.FC = () => {
     );
   }
 
-  // Use primary accent color for all flow lines
+  // Use accent color for flow lines
   const flowColor = COLORS.accent;
+  const baseLineColor = isDark ? '#374151' : '#CBD5E1'; // Dark gray for dark mode
 
   return (
     <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
@@ -147,6 +148,7 @@ export const EnergyFlowRadial: React.FC = () => {
           style={styles.svgContainer}
         >
           {/* PV to Center (Top -> Center) */}
+          {/* PV: power > 0 means generating (output), flow from PV to Center */}
           {powerData.pv.active && powerData.pv.power > 0 && (
             <AnimatedFlowLine
               startX={centerX}
@@ -156,37 +158,43 @@ export const EnergyFlowRadial: React.FC = () => {
               direction="forward"
               active={true}
               color={flowColor}
+              baseColor={baseLineColor}
             />
           )}
 
           {/* Battery to/from Center (Left <-> Center) */}
-          {powerData.battery.active && powerData.battery.power > 0 && (
+          {/* Battery: power > 0 = discharging (Battery -> Center), power < 0 = charging (Center -> Battery) */}
+          {powerData.battery.active && Math.abs(powerData.battery.power) > 0 && (
             <AnimatedFlowLine
               startX={centerX - OFFSET + NODE_SIZE / 2}
               startY={centerY}
               endX={centerX - CENTER_SIZE / 2}
               endY={centerY}
-              direction={powerData.battery.flow === 'input' ? 'backward' : 'forward'}
+              direction={powerData.battery.power > 0 ? 'forward' : 'backward'}
               active={true}
               color={flowColor}
+              baseColor={baseLineColor}
             />
           )}
 
           {/* Grid to/from Center (Right <-> Center) */}
-          {powerData.grid.active && powerData.grid.power > 0 && (
+          {/* Grid: power > 0 = exporting (Center -> Grid), power < 0 = importing (Grid -> Center) */}
+          {powerData.grid.active && Math.abs(powerData.grid.power) > 0 && (
             <AnimatedFlowLine
               startX={centerX + CENTER_SIZE / 2}
               startY={centerY}
               endX={centerX + OFFSET - NODE_SIZE / 2}
               endY={centerY}
-              direction={powerData.grid.flow === 'input' ? 'backward' : 'forward'}
+              direction={powerData.grid.power > 0 ? 'forward' : 'backward'}
               active={true}
               color={flowColor}
+              baseColor={baseLineColor}
             />
           )}
 
           {/* Center to Load (Center -> Bottom) */}
-          {powerData.load.active && powerData.load.power > 0 && (
+          {/* Load: power < 0 means consuming (Center -> Load) */}
+          {powerData.load.active && powerData.load.power < 0 && (
             <AnimatedFlowLine
               startX={centerX}
               startY={centerY + CENTER_SIZE / 2}
@@ -195,6 +203,7 @@ export const EnergyFlowRadial: React.FC = () => {
               direction="forward"
               active={true}
               color={flowColor}
+              baseColor={baseLineColor}
             />
           )}
         </Svg>
@@ -211,7 +220,7 @@ export const EnergyFlowRadial: React.FC = () => {
         {/* PV Node - Top */}
         <EnergyNode
           type="pv"
-          power={powerData.pv.power}
+          power={Math.abs(powerData.pv.power)}
           active={powerData.pv.active}
           label="Solar"
           style={{
@@ -224,7 +233,7 @@ export const EnergyFlowRadial: React.FC = () => {
         {/* Battery Node - Left */}
         <EnergyNode
           type="battery"
-          power={powerData.battery.power}
+          power={Math.abs(powerData.battery.power)}
           active={powerData.battery.active}
           label="Battery"
           soc={batterySoc}
@@ -238,7 +247,7 @@ export const EnergyFlowRadial: React.FC = () => {
         {/* Grid Node - Right */}
         <EnergyNode
           type="grid"
-          power={powerData.grid.power}
+          power={Math.abs(powerData.grid.power)}
           active={powerData.grid.active}
           label="Grid"
           style={{
@@ -251,7 +260,7 @@ export const EnergyFlowRadial: React.FC = () => {
         {/* Load Node - Bottom */}
         <EnergyNode
           type="load"
-          power={powerData.load.power}
+          power={Math.abs(powerData.load.power)}
           active={powerData.load.active}
           label="Home"
           labelPosition="bottom"

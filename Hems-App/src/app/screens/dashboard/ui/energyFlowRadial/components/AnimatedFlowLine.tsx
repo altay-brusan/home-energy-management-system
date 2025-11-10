@@ -1,14 +1,15 @@
 import React, { useEffect } from 'react';
-import { G, Line, Defs, LinearGradient, Stop } from 'react-native-svg';
+import { G, Line, Circle } from 'react-native-svg';
 import Animated, {
   useSharedValue,
   withRepeat,
   withTiming,
   Easing,
   useAnimatedProps,
+  cancelAnimation,
 } from 'react-native-reanimated';
 
-const AnimatedLine = Animated.createAnimatedComponent(Line);
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 interface AnimatedFlowLineProps {
   startX: number;
@@ -18,9 +19,10 @@ interface AnimatedFlowLineProps {
   direction: 'forward' | 'backward';
   active: boolean;
   color?: string;
+  baseColor?: string;
 }
 
-export const AnimatedFlowLine: React.FC<AnimatedFlowLineProps> = ({
+const AnimatedFlowLineComponent: React.FC<AnimatedFlowLineProps> = ({
   startX,
   startY,
   endX,
@@ -28,40 +30,73 @@ export const AnimatedFlowLine: React.FC<AnimatedFlowLineProps> = ({
   direction,
   active,
   color = '#3B82F6',
+  baseColor = '#CBD5E1',
 }) => {
-  // Animated value for dash offset
-  const dashOffset = useSharedValue(0);
+  // Moving dot animation
+  const dotProgress = useSharedValue(0);
 
   useEffect(() => {
-    if (active) {
-      // Animate dash offset for flowing effect
-      // Forward: 0 -> 20, Backward: 20 -> 0
-      const startValue = direction === 'forward' ? 0 : 20;
-      const endValue = direction === 'forward' ? 20 : 0;
+    // Cancel any existing animation first
+    cancelAnimation(dotProgress);
 
-      dashOffset.value = withRepeat(
-        withTiming(endValue, {
-          duration: 1500,
+    if (active) {
+      // Reset to 0 first
+      dotProgress.value = 0;
+
+      // Then start moving dot animation
+      dotProgress.value = withRepeat(
+        withTiming(1, {
+          duration: 2000,
           easing: Easing.linear,
         }),
         -1, // Infinite repeat
         false
       );
     } else {
-      // Reset when inactive
-      dashOffset.value = 0;
+      // When inactive, set to 0
+      dotProgress.value = 0;
     }
-  }, [active, direction, dashOffset]);
 
-  // Animated props for the flowing line
-  const animatedProps = useAnimatedProps(() => {
+    return () => {
+      // Cleanup: cancel animation when component unmounts or dependencies change
+      cancelAnimation(dotProgress);
+    };
+  }, [active, direction]);
+
+  // Calculate moving dot positions along the line (3 dots with offset)
+  const animatedDot1Props = useAnimatedProps(() => {
+    'worklet';
+    // Forward: startX -> endX (normal direction)
+    // Backward: endX -> startX (reverse direction)
+    let progress = direction === 'forward' ? dotProgress.value : 1 - dotProgress.value;
     return {
-      strokeDashoffset: dashOffset.value,
+      cx: startX + (endX - startX) * progress,
+      cy: startY + (endY - startY) * progress,
+      opacity: active ? 0.8 : 0,
     };
   });
 
-  // Calculate gradient ID based on position (unique for each line)
-  const gradientId = `flowGradient-${startX}-${startY}-${endX}-${endY}`;
+  const animatedDot2Props = useAnimatedProps(() => {
+    'worklet';
+    let baseProgress = (dotProgress.value + 0.33) % 1;
+    let progress = direction === 'forward' ? baseProgress : 1 - baseProgress;
+    return {
+      cx: startX + (endX - startX) * progress,
+      cy: startY + (endY - startY) * progress,
+      opacity: active ? 0.8 : 0,
+    };
+  });
+
+  const animatedDot3Props = useAnimatedProps(() => {
+    'worklet';
+    let baseProgress = (dotProgress.value + 0.66) % 1;
+    let progress = direction === 'forward' ? baseProgress : 1 - baseProgress;
+    return {
+      cx: startX + (endX - startX) * progress,
+      cy: startY + (endY - startY) * progress,
+      opacity: active ? 0.8 : 0,
+    };
+  });
 
   return (
     <G>
@@ -71,31 +106,28 @@ export const AnimatedFlowLine: React.FC<AnimatedFlowLineProps> = ({
         y1={startY}
         x2={endX}
         y2={endY}
-        stroke="#CBD5E1"
+        stroke={baseColor}
         strokeWidth={3}
         strokeLinecap="round"
       />
 
-      {/* Animated flow line (only visible when active) */}
+      {/* Moving dots animation (only visible when active) */}
       {active && (
         <>
-          <Defs>
-            <LinearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
-              <Stop offset="0%" stopColor={color} stopOpacity={0.3} />
-              <Stop offset="50%" stopColor={color} stopOpacity={1} />
-              <Stop offset="100%" stopColor={color} stopOpacity={0.3} />
-            </LinearGradient>
-          </Defs>
-          <AnimatedLine
-            x1={startX}
-            y1={startY}
-            x2={endX}
-            y2={endY}
-            stroke={`url(#${gradientId})`}
-            strokeWidth={3}
-            strokeDasharray="10, 10"
-            strokeLinecap="round"
-            animatedProps={animatedProps}
+          <AnimatedCircle
+            r={2.5}
+            fill={color}
+            animatedProps={animatedDot1Props}
+          />
+          <AnimatedCircle
+            r={2.5}
+            fill={color}
+            animatedProps={animatedDot2Props}
+          />
+          <AnimatedCircle
+            r={2.5}
+            fill={color}
+            animatedProps={animatedDot3Props}
           />
         </>
       )}
@@ -103,4 +135,5 @@ export const AnimatedFlowLine: React.FC<AnimatedFlowLineProps> = ({
   );
 };
 
+export const AnimatedFlowLine = React.memo(AnimatedFlowLineComponent);
 export default AnimatedFlowLine;

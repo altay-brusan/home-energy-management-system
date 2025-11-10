@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, Text, View, ActivityIndicator } from 'react-native';
 import FontAwesome from '@react-native-vector-icons/fontawesome';
+import { ArrowLeft } from 'lucide-react-native';
 import type { makeNotificationScreenStyles } from '../NotificationScreen.styles';
 import { useI18n } from '../../../../hooks/useI18n';
 
@@ -10,18 +11,24 @@ type Props = {
   styles: Styles;
   onMarkAllRead: () => void;
   onPressTrash: () => void;
+  onPressBack: () => void;
   markingAllAsRead?: boolean;
 };
 
-export function NotificationHeader({ styles, onMarkAllRead, onPressTrash, markingAllAsRead }: Props) {
+export function NotificationHeader({ styles, onMarkAllRead, onPressTrash, onPressBack, markingAllAsRead }: Props) {
   const { t } = useI18n();
-  
+
   return (
     <View style={styles.headerRow}>
-      <Text style={styles.title}>{t('notifications.title')}</Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <Pressable 
-          onPress={onMarkAllRead} 
+        <Pressable onPress={onPressBack} style={{ paddingVertical: 8, paddingRight: 8 }}>
+          <ArrowLeft size={24} color={styles.headerBtnText.color} strokeWidth={2} />
+        </Pressable>
+        <Text style={styles.title}>{t('notifications.title')}</Text>
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <Pressable
+          onPress={onMarkAllRead}
           style={[styles.headerBtn, { opacity: markingAllAsRead ? 0.6 : 1 }]}
           disabled={markingAllAsRead}
         >

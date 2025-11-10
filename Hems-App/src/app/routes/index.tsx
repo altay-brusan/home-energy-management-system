@@ -1,4 +1,3 @@
-import FontAwesome from '@react-native-vector-icons/fontawesome';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import {
   DarkTheme,
@@ -10,6 +9,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, View } from 'react-native';
+import { Home, Smartphone, User, Shield, Settings, Bell } from 'lucide-react-native';
 import { apiClient } from '../../api/client/apiClient';
 import { invitationsService } from '../../api/services/devicesharingService';
 import { InvitationModal } from '../../components/InvitationModal/InvitationModal';
@@ -126,7 +126,7 @@ function TabNavigator () {
             options={{
               tabBarLabel: t('tabs.dashboard'),
               tabBarIcon: ({ color, size }) => (
-                <FontAwesome name="home" color={color} size={size} />
+                <Home color={color} size={size} strokeWidth={2} />
               ),
             }}
           />
@@ -136,17 +136,7 @@ function TabNavigator () {
             options={{
               tabBarLabel: t('tabs.device'),
               tabBarIcon: ({ color, size }) => (
-                <FontAwesome name="server" color={color} size={size} />
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="Notifications"
-            component={NotificationScreen}
-            options={{
-              tabBarLabel: t('tabs.notifications'),
-              tabBarIcon: ({ color, size }) => (
-                <FontAwesome name="bell" color={color} size={size} />
+                <Smartphone color={color} size={size} strokeWidth={2} />
               ),
             }}
           />
@@ -160,7 +150,19 @@ function TabNavigator () {
         options={{
           tabBarLabel: t('tabs.profile'),
           tabBarIcon: ({ color, size }) => (
-            <FontAwesome name="user" color={color} size={size} />
+            <User color={color} size={size} strokeWidth={2} />
+          ),
+        }}
+      />
+
+      {/* Settings tab'ı her zaman göster */}
+      <Tab.Screen
+        name="Settings"
+        component={EnergyProfileScreen}
+        options={{
+          tabBarLabel: t('tabs.settings'),
+          tabBarIcon: ({ color, size }) => (
+            <Settings color={color} size={size} strokeWidth={2} />
           ),
         }}
       />
@@ -173,7 +175,7 @@ function TabNavigator () {
           options={{
             tabBarLabel: ('Admin'),
             tabBarIcon: ({ color, size }) => (
-              <FontAwesome name="cog" color={color} size={size} />
+              <Shield color={color} size={size} strokeWidth={2} />
             ),
           }}
         />
@@ -316,6 +318,11 @@ export function RootNavigator () {
             <Stack.Screen
               name="Trash"
               component={TrashScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="Notifications"
+              component={NotificationScreen}
               options={{ animation: 'slide_from_right' }}
             />
             <Stack.Screen

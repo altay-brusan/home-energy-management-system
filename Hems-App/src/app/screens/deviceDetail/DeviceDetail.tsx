@@ -1,5 +1,6 @@
 import FontAwesome from "@react-native-vector-icons/fontawesome";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { ArrowLeft } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -223,10 +224,10 @@ export default function DeviceDetail () {
       >
         <View style={[styles.headerContent, { flexDirection: "row", alignItems: "center" }]}>
           <Pressable
-            style={{ padding: 8, zIndex: 2 }}
+            style={{ paddingVertical: 8, paddingRight: 8, zIndex: 2 }}
             onPress={() => navigation.goBack()}
           >
-            <FontAwesome name="chevron-left" size={16} color={COLORS.textSoft} />
+            <ArrowLeft size={24} color={COLORS.textSoft} strokeWidth={2} />
           </Pressable>
 
           <View style={{ flex: 1, alignItems: "center" }}>
@@ -268,7 +269,7 @@ export default function DeviceDetail () {
 
       <ScrollView
         contentContainerStyle={{
-          paddingBottom: insets.bottom + SPACING.lg,
+          paddingBottom: insets.bottom + 100,
         }}
         showsVerticalScrollIndicator={false}
         refreshControl={

@@ -1,0 +1,1310 @@
+{
+    "common": {
+      "language": "Taal",
+      "selectLanguage": "Selecteer Taal",
+      "chooseLanguage": "Kies uw taalvoorkeur",
+      "turkish": "Turks",
+      "english": "Engels",
+      "dutch": "Nederlands",
+      "cancel": "Annuleren",
+      "confirm": "Bevestigen",
+      "save": "Opslaan",
+      "delete": "Verwijderen",
+      "loading": "Laden...",
+      "error": "Fout",
+      "success": "Succes",
+      "warning": "Waarschuwing",
+      "info": "Info",
+      "critical": "Kritiek",
+      "back": "Terug",
+      "ok": "OK",
+      "close": "Sluiten",
+      "retry": "Opnieuw proberen"
+    },
+    "invitation": {
+      "title": "Woninguitnodiging",
+      "message": "U heeft een woninguitnodiging ontvangen. Wilt u deze uitnodiging accepteren?",
+      "accept": "Accepteren",
+      "decline": "Afwijzen",
+      "invalidCode": "Ongeldige uitnodigingscode",
+      "notLoggedIn": "Log in of registreer met uw e-mail",
+      "accepted": "Uitnodiging geaccepteerd",
+      "acceptFailed": "Kan uitnodiging niet accepteren",
+      "homeListUpdated": "Woninglijst bijgewerkt",
+      "codeReceived": "Uitnodigingscode ontvangen"
+    },
+    "time": {
+      "days": {
+        "monday": "Maandag",
+        "tuesday": "Dinsdag",
+        "wednesday": "Woensdag",
+        "thursday": "Donderdag",
+        "friday": "Vrijdag",
+        "saturday": "Zaterdag",
+        "sunday": "Zondag",
+        "short": {
+          "monday": "Ma",
+          "tuesday": "Di",
+          "wednesday": "Wo",
+          "thursday": "Do",
+          "friday": "Vr",
+          "saturday": "Za",
+          "sunday": "Zo"
+        },
+        "veryShort": {
+          "monday": "M",
+          "tuesday": "D",
+          "wednesday": "W",
+          "thursday": "D",
+          "friday": "V",
+          "saturday": "Z",
+          "sunday": "Z"
+        }
+      },
+      "hours": {
+        "midnight": "00:00",
+        "earlyMorning": "04:00",
+        "morning": "08:00",
+        "noon": "12:00",
+        "afternoon": "16:00",
+        "evening": "20:00",
+        "night": "23:00"
+      }
+    },
+    "errors": {
+      "lockedOut": "Uw account is tijdelijk vergrendeld. Probeer het later opnieuw.",
+      "failed": "Er is een fout opgetreden. Probeer het opnieuw.",
+      "notFound": "De gevraagde bron is niet gevonden.",
+      "invalidCredentials": "Ongeldige e-mail of wachtwoord.",
+      "userNotFound": "Geen gebruiker gevonden met dit e-mailadres.",
+      "emailAlreadyExists": "Dit e-mailadres is al geregistreerd.",
+      "passwordTooWeak": "Wachtwoord voldoet niet aan de vereisten.",
+      "tokenExpired": "Uw sessie is verlopen. Log opnieuw in.",
+      "networkError": "Verbindingsprobleem opgetreden. Controleer uw internetverbinding.",
+      "serverError": "Serverfout opgetreden. Probeer het later opnieuw.",
+      "validationError": "De ingediende gegevens zijn ongeldig. Controleer alstublieft.",
+      "unauthorized": "U heeft geen toestemming voor deze bewerking.",
+      "forbidden": "U heeft geen toestemming voor deze bewerking.",
+      "timeout": "Verzoek verlopen. Probeer het opnieuw.",
+      "rateLimit": "Te veel verzoeken verzonden. Wacht even.",
+      "unknown": "Er is een onbekende fout opgetreden.",
+      "loginNotFound": "Ongeldige e-mail of wachtwoord. Controleer uw inloggegevens.",
+      "loginFailed": "Inloggen mislukt. Probeer het opnieuw.",
+      "emailNotConfirmed": "Uw e-mailadres is niet bevestigd. Controleer uw e-mail en bevestig uw account."
+    },
+    "auth": {
+      "login": "Inloggen",
+      "email": "E-mail",
+      "password": "Wachtwoord",
+      "forgotPassword": "Wachtwoord vergeten?",
+      "signUp": "Registreren",
+      "welcome": "Welkom",
+      "loginSubtitle": "Log in op uw account",
+      "emailPlaceholder": "Uw E-mail",
+      "passwordPlaceholder": "Uw Wachtwoord",
+      "loginButton": "Inloggen",
+      "signingIn": "Bezig met inloggen…",
+      "dontHaveAccount": "Heeft u geen account?",
+      "alreadyHaveAccount": "Heeft u al een account?",
+      "createAccount": "Account Aanmaken",
+      "loginError": "Er is een fout opgetreden tijdens het inloggen",
+      "invalidCredentials": "Ongeldige e-mail of wachtwoord",
+      "networkError": "Netwerkverbindingsfout",
+      "agreeToTerms": "Ik ga akkoord met de",
+      "termsOfService": "Servicevoorwaarden",
+      "and": "en",
+      "privacyPolicy": "Privacybeleid",
+      "forgotPasswordTitle": "Wachtwoord Vergeten",
+      "forgotPasswordSubtitle": "Voer uw e-mailadres in en we sturen u een herstelcode",
+      "sendResetCode": "Herstelcode Verzenden",
+      "sending": "Verzenden…",
+      "backToLogin": "Terug naar inloggen",
+      "resetLinkSent": "Link voor wachtwoordherstel verzonden",
+      "resetCodeSent": "Herstelcode verzonden naar uw e-mail",
+      "accountCreated": "Uw account is succesvol aangemaakt!",
+      "loginSuccess": "Succesvol ingelogd!",
+      "userNotFound": "Geen gebruiker gevonden",
+      "invalidPassword": "Ongeldig wachtwoord",
+      "signUpTitle": "Account Aanmaken",
+      "signUpSubtitle": "Maak uw nieuwe account aan",
+      "name": "Volledige Naam",
+      "namePlaceholder": "Uw Volledige Naam",
+      "firstName": "Voornaam",
+      "firstNamePlaceholder": "Uw Voornaam",
+      "surname": "Achternaam",
+      "surnamePlaceholder": "Uw Achternaam",
+      "confirmPassword": "Wachtwoord Bevestigen",
+      "confirmPasswordPlaceholder": "Bevestig uw wachtwoord",
+      "createAccountButton": "Account Aanmaken",
+      "creatingAccount": "Account aanmaken…",
+      "passwordsDoNotMatch": "Wachtwoorden komen niet overeen",
+      "passwordTooShort": "Wachtwoord moet minimaal 6 tekens bevatten",
+      "invalidEmail": "Ongeldig e-mailadres",
+      "emailAlreadyExists": "Dit e-mailadres is al in gebruik",
+      "duplicateUserName": "Dit e-mailadres is al in gebruik",
+      "registrationError": "Er is een fout opgetreden tijdens registratie. Probeer het opnieuw.",
+      "resetPasswordTitle": "Wachtwoord Herstellen",
+      "resetPasswordSubtitle": "Voer de herstelcode in die naar {{email}} is verzonden en uw nieuwe wachtwoord",
+      "resetCode": "Herstelcode",
+      "resetCodePlaceholder": "Voer herstelcode in",
+      "newPassword": "Nieuw Wachtwoord",
+      "newPasswordPlaceholder": "Voer nieuw wachtwoord in",
+      "resetPasswordButton": "Wachtwoord Herstellen",
+      "resetting": "Herstellen...",
+      "passwordResetSuccess": "Wachtwoord succesvol hersteld",
+      "logoutSuccess": "Uitgelogd",
+      "goodbye": "Tot ziens",
+      "sessionExpired": "Sessie verlopen",
+      "pleaseLogin": "Log opnieuw in",
+      "loginTitle": "Inloggen"
+    },
+    "passwordRules": {
+      "title": "Wachtwoordregels:",
+      "minLength": "Minimaal 8 tekens",
+      "uppercase": "Minimaal 1 hoofdletter (A-Z)",
+      "lowercase": "Minimaal 1 kleine letter (a-z)",
+      "specialChar": "Minimaal 1 speciaal teken (!@#$%^&*)"
+    },
+    "validation": {
+      "firstNameRequired": "Voornaam is verplicht",
+      "surnameRequired": "Achternaam is verplicht",
+      "emailRequired": "E-mail is verplicht",
+      "emailInvalid": "Voer een geldig e-mailadres in",
+      "passwordRequired": "Wachtwoord is verplicht",
+      "oldPasswordRequired": "Huidig wachtwoord is verplicht",
+      "passwordMinLength": "Wachtwoord moet minimaal 8 tekens bevatten",
+      "passwordUppercase": "Wachtwoord moet minimaal 1 hoofdletter bevatten",
+      "passwordLowercase": "Wachtwoord moet minimaal 1 kleine letter bevatten",
+      "passwordSpecialChar": "Wachtwoord moet minimaal 1 speciaal teken bevatten",
+      "confirmPasswordRequired": "Wachtwoordbevestiging is verplicht",
+      "passwordsNotMatch": "Wachtwoorden komen niet overeen",
+      "resetCodeRequired": "Herstelcode is verplicht"
+    },
+    "api": {
+      "success": {
+        "created": "Succesvol aangemaakt!",
+        "updated": "Succesvol bijgewerkt!",
+        "deleted": "Succesvol verwijderd!",
+        "createdTitle": "Succes",
+        "updatedTitle": "Update Succesvol",
+        "deletedTitle": "Verwijderen Succesvol"
+      },
+      "error": {
+        "defaultTitle": "Fout",
+        "defaultMessage": "Er is een onbekende fout opgetreden",
+        "invalidRequest": "Ongeldig Verzoek",
+        "invalidRequestMessage": "De ingediende gegevens zijn ongeldig",
+        "notFound": "Niet Gevonden",
+        "notFoundMessage": "De gevraagde bron is niet gevonden",
+        "conflict": "Conflictfout",
+        "conflictMessage": "Deze bewerking bestaat al",
+        "validationError": "Validatiefout",
+        "validationErrorMessage": "De ingediende gegevens kunnen niet worden gevalideerd",
+        "serverError": "Serverfout",
+        "serverErrorMessage": "Er is een serverfout opgetreden, probeer het later opnieuw",
+        "connectionError": "Verbindingsfout",
+        "connectionErrorMessage": "Controleer uw internetverbinding",
+        "networkError": "Netwerkfout",
+        "networkErrorMessage": "Kan de server niet bereiken. Controleer uw verbinding.",
+        "unknownError": "Onbekende Fout",
+        "unknownErrorMessage": "Er is een onverwachte fout opgetreden"
+      }
+    },
+    "dashboard": {
+      "welcome": "Welkom",
+      "dashboard": "Dashboard",
+      "profile": "Profiel",
+      "settings": "Instellingen",
+      "logout": "Uitloggen",
+      "home": "Home",
+      "notifications": "Meldingen",
+      "messages": "Berichten"
+    },
+    "tabs": {
+      "dashboard": "Home",
+      "device": "Apparaat",
+      "notifications": "Meldingen",
+      "profile": "Profiel",
+      "settings": "Instellingen"
+    },
+    "profile": {
+      "profile": "Profiel",
+      "editProfile": "Profiel Bewerken",
+      "changePassword": "Wachtwoord Wijzigen",
+      "personalInfo": "Persoonlijke Info",
+      "personalInformation": "Persoonlijke Informatie",
+      "contactInfo": "Contactinformatie",
+      "preferences": "Voorkeuren",
+      "language": "Taal",
+      "theme": "Thema",
+      "notifications": "Meldingen",
+      "deviceSharing": "Apparaat Delen & Autorisatie",
+      "companyInfo": "Bedrijf / Regio Info",
+      "troubleshooting": "Probleemoplossing",
+      "logout": "Uitloggen"
+    },
+    "changePassword": {
+      "title": "Wachtwoord Wijzigen",
+      "oldPassword": "Oud Wachtwoord",
+      "newPassword": "Nieuw Wachtwoord",
+      "repeatPassword": "Herhaal Nieuw Wachtwoord",
+      "save": "Opslaan",
+      "cancel": "Annuleren",
+      "fillAllFields": "Vul alle velden in.",
+      "passwordsNoMatch": "Nieuwe wachtwoorden komen niet overeen.",
+      "passwordRequirements": "Wachtwoord moet minimaal 8 tekens bevatten, inclusief hoofdletters, kleine letters en een cijfer.",
+      "oldPasswordIncorrect": "Oud wachtwoord is onjuist.",
+      "passwordUpdated": "Wachtwoord succesvol bijgewerkt."
+    },
+    "troubleshooting": {
+      "title": "Probleemoplossing",
+      "issueDetails": "Probleemdetails",
+      "faultType": "Storingtype*",
+      "description": "Beschrijving*",
+      "contactInformation": "Contactinformatie",
+      "name": "Naam*",
+      "phone": "Telefoon*",
+      "address": "Adres*",
+      "zipCode": "Postcode*",
+      "email": "E-mail*",
+      "confirm": "Bevestigen",
+      "faultTypes": {
+        "alarm": "Alarm-Gerelateerd",
+        "decoration": "Decoratieschade",
+        "inquiry": "Vraag",
+        "other": "Anders"
+      },
+      "validation": {
+        "faultTypeRequired": "Selecteer een storingtype.",
+        "descriptionMin": "Beschrijving moet minimaal 10 tekens bevatten.",
+        "descriptionMax": "Beschrijving mag maximaal 500 tekens bevatten.",
+        "nameMin": "Naam moet minimaal 2 tekens bevatten.",
+        "nameMax": "Naam mag maximaal 64 tekens bevatten.",
+        "phoneInvalid": "Telefoonnummer moet alleen cijfers bevatten en tussen 10-15 tekens zijn.",
+        "addressMin": "Adres moet minimaal 5 tekens bevatten.",
+        "addressMax": "Adres is te lang (maximaal 120 tekens).",
+        "zipInvalid": "Voer een geldige postcode in.",
+        "emailInvalid": "Voer een geldig e-mailadres in."
+      },
+      "faultsScreen": {
+        "title": "Storingsmeldingen",
+        "warrantyValid": "Garantie geldig tot: {{date}}",
+        "createFaultRecord": "Storingsmelding Aanmaken",
+        "all": "Alle",
+        "myFaultRecords": "Mijn Storingsmeldingen",
+        "finishedAt": "Voltooid op: {{date}}",
+        "createdAt": "Aangemaakt op: {{date}}",
+        "status": {
+          "inProgress": "In Behandeling",
+          "processing": "Verwerken",
+          "completed": "Voltooid"
+        }
+      },
+      "faultDetail": {
+        "title": "Probleemdetails",
+        "contactInformation": "Contactinformatie",
+        "location": "Locatie",
+        "timeline": "Tijdlijn",
+        "created": "Aangemaakt",
+        "completed": "Voltooid",
+        "technicianNotes": "Monteur Notities",
+        "createRequest": "Maak een verzoek aan...",
+        "name": "Naam",
+        "email": "E-mail",
+        "phone": "Telefoon",
+        "address": "Adres",
+        "zipCode": "Postcode",
+        "mockNotes": {
+          "line1": "Monteur controleerde de bedrading.",
+          "line2": "Defecte zekering vervangen.",
+          "line3": "Probleem succesvol opgelost."
+        }
+      }
+    },
+    "deviceSharing": {
+      "title": "Apparaat Delen & Autorisatie",
+      "invalidEmail": "Voer een geldig e-mailadres in.",
+      "invitationSent": "Uitnodiging succesvol verzonden.",
+      "enterEmail": "Voer e-mail in",
+      "invite": "Uitnodigen",
+      "cancel": "Annuleren",
+      "owner": "Eigenaar",
+      "accessSince": "Toegang sinds: {{date}}",
+      "status": {
+        "pending": "In Afwachting",
+        "accepted": "Geaccepteerd",
+        "rejected": "Afgewezen",
+        "active": "Actief",
+        "inactive": "Inactief"
+      },
+      "noInvitations": "Geen uitnodigingen gevonden",
+      "invalidEmailFormat": "Voer een geldig e-mailadres in.",
+      "noEmailEntered": "Voer een e-mailadres in.",
+      "noSiteSelected": "Geen geldige locatie geselecteerd.",
+      "invitationError": "Er is een fout opgetreden tijdens het verzenden van de uitnodiging.",
+      "invitationListError": "Kan uitnodigingslijst niet laden.",
+      "invitationRemoved": "Uitnodiging succesvol verwijderd.",
+      "removeInvitationError": "Er is een fout opgetreden tijdens het verwijderen van de uitnodiging.",
+      "removing": "Verwijderen...",
+      "sending": "Verzenden...",
+      "detail": {
+        "title": "Gebruikersdetails",
+        "email": "E-mail:",
+        "accessSinceLabel": "Toegang Sinds:",
+        "active": "Actief:",
+        "yes": "Ja",
+        "no": "Nee",
+        "statusLabel": "Status:",
+        "removeUser": "Gebruiker Verwijderen",
+        "activityLog": "Activiteitenlog",
+        "invitationSent": "Uitnodigingsemail verzonden op {{date}}",
+        "statusChanged": "Status gewijzigd naar {{status}} op {{date}}",
+        "accessGranted": "Toegang verleend op {{date}}",
+        "accessRevoked": "Toegang ingetrokken op {{date}}"
+      }
+    },
+    "profileInfo": {
+      "title": "Persoonlijke Informatie",
+      "firstName": "Voornaam*",
+      "lastName": "Achternaam*",
+      "email": "E-mail",
+      "phone": "Telefoon*",
+      "save": "Opslaan",
+      "cancel": "Annuleren",
+      "fillAllFields": "Vul alle verplichte velden in.",
+      "invalidPhone": "Voer een geldig telefoonnummer in.",
+      "profileUpdated": "Profiel succesvol bijgewerkt.",
+      "profileUpdateError": "Kan profiel niet bijwerken. Probeer het opnieuw.",
+      "avatar": "Avatar",
+      "avatarNotImplemented": "Avatar uploaden/wijzigen niet geïmplementeerd in deze demo."
+    },
+    "settings": {
+      "settings": "Instellingen",
+      "settingsScreen": "Instellingen Scherm",
+      "setting1": "Instelling 1",
+      "setting2": "Instelling 2",
+      "logout": "Uitloggen",
+      "general": "Algemeen",
+      "privacy": "Privacy",
+      "security": "Beveiliging",
+      "about": "Over",
+      "version": "Versie",
+      "contact": "Contact",
+      "help": "Hulp",
+      "feedback": "Feedback"
+    },
+    "alerts": {
+      "confirmLogout": "Weet u zeker dat u wilt uitloggen?",
+      "logoutSuccess": "Succesvol uitgelogd",
+      "saveSuccess": "Succesvol opgeslagen",
+      "deleteConfirm": "Weet u zeker dat u wilt verwijderen?",
+      "deleteSuccess": "Succesvol verwijderd",
+      "updateSuccess": "Succesvol bijgewerkt",
+      "networkError": "Netwerkverbindingsfout",
+      "serverError": "Serverfout",
+      "unknownError": "Onbekende fout"
+    },
+    "dashboardDevices": {
+      "title": "Apparaten",
+      "devices": {
+        "inverter": "Omvormer",
+        "battery": "Batterij",
+        "evCharger": "EV Lader"
+      },
+      "status": {
+        "online": "ONLINE",
+        "normal": "NORMAAL",
+        "offline": "OFFLINE"
+      },
+      "power": "Vermogen",
+      "today": "Vandaag",
+      "total": "Totaal",
+      "soc": "SOC",
+      "lastSession": "Laatste Sessie",
+      "sessionEnergy": "Sessie Energie",
+      "noDevice": "Geen apparaat verbonden",
+      "noData": "Geen apparaatgegevens beschikbaar"
+    },
+    "dashboardFlow": {
+      "title": "Energiestroom",
+      "dateRange": "Datumbereik",
+      "selectDateRange": "Selecteer Datumbereik",
+      "selectStartDate": "Selecteer startdatum",
+      "selectEndDate": "Selecteer einddatum",
+      "loading": "Energiestroomgegevens laden...",
+      "noDevice": "Geen apparaat gevonden. Voeg een apparaat toe om energiestroomgegevens te bekijken.",
+      "noData": "Geen energiestroomgegevens beschikbaar voor het geselecteerde datumbereik.",
+      "pv": "PV",
+      "battery": "Batterij",
+      "generator": "Generator",
+      "grid": "Net",
+      "load": "Belasting",
+      "system": "Systeem",
+      "in": "In",
+      "out": "Uit"
+    },
+    "energyFlowRadial": {
+      "title": "Real-Time Energiestroom",
+      "loading": "Vermogensgegevens laden...",
+      "noDevice": "Geen apparaat gevonden. Voeg een apparaat toe om real-time energiestroom te bekijken.",
+      "noData": "Geen vermogensgegevens beschikbaar.",
+      "errorLoading": "Fout bij het laden van vermogensgegevens. Probeer het opnieuw.",
+      "lastUpdate": "Laatst bijgewerkt"
+    },
+    "todaySummary": {
+      "title": "Vandaag",
+      "gridImport": "Net Import",
+      "gridExport": "Net Export",
+      "consumption": "Verbruik",
+      "production": "Productie"
+    },
+    "dashboardGraph": {
+      "productionTitle": "Energieproductie",
+      "consumptionTitle": "Energieverbruik",
+      "total": "Totaal",
+      "peak": "Piek",
+      "average": "Gemiddeld",
+      "noDevice": "Geen apparaat gevonden. Voeg een apparaat toe om productiegegevens te bekijken.",
+      "noData": "Geen productiegegevens beschikbaar voor de geselecteerde periode.",
+      "chartType": {
+        "bar": "Staaf",
+        "area": "Gebied"
+      },
+      "range": {
+        "day": "Dag",
+        "week": "Week",
+        "month": "Maand",
+        "year": "Jaar"
+      }
+    },
+    "energyChart": {
+      "title": "Energie Overzicht",
+      "subtitle": "Productie vs Verbruik",
+      "production": "Productie",
+      "consumption": "Verbruik",
+      "total": "Totaal",
+      "sources": {
+        "solar": "Zonne-energie",
+        "batteryDischarge": "Batterij Ontlading",
+        "generator": "Generator",
+        "gridImport": "Net Import",
+        "load": "Belasting",
+        "batteryCharge": "Batterij Opladen",
+        "gridExport": "Net Export"
+      },
+      "period": {
+        "weekly": "Wekelijks",
+        "monthly": "Maandelijks",
+        "yearly": "Jaarlijks"
+      },
+      "noDevice": "Geen apparaat gevonden. Voeg een apparaat toe om energiegegevens te bekijken.",
+      "noData": "Geen energiegegevens beschikbaar voor de geselecteerde periode.",
+      "loading": "Energiegegevens laden..."
+    },
+    "dashboardHero": {
+      "title": "Thuisenergiestat us",
+      "subtitle": "Verbruik van vandaag en real-time vermogen",
+      "today": "Vandaag: {{value}} kWh",
+      "current": "Huidig: {{value}} W",
+      "lastSync": "Laatste sync: {{value}} geleden",
+      "soc": "SOC: {{value}}%",
+      "total": "Totaal: {{value}} kWh"
+    },
+    "dashboardWelcome": {
+      "title": "Welkom Thuis!",
+      "subtitle": "Uw slimme energiedashboard",
+      "status": {
+        "active": "Actief"
+      },
+      "lastSync": "Laatste sync: {{value}} ",
+      "metrics": {
+        "today": "Vandaag",
+        "power": "Vermogen",
+        "savings": "Besparingen"
+      }
+    },
+    "dashboard": {
+      "summary": "Samenvatting",
+      "status": "Status",
+      "saving": "Besparing",
+      "weather": "Weer",
+      "onGrid": "Op Net",
+      "off": "Uit",
+      "hybrid": "Hybride",
+      "totalPower": "Totaal Vermogen",
+      "dailiyPower": "Dagelijks Vermogen",
+      "noDataAvailable": "Geen gegevens beschikbaar"
+    },
+    "dashboardMode": {
+      "title": "Huidige Modus",
+      "modes": {
+        "batteryPriority": "Batterij Prioriteit",
+        "loadPriority": "Belasting Prioriteit",
+        "manual": "Aangepast"
+      },
+      "descriptions": {
+        "battery": "PV → Batterij → Belasting → Net volgorde voor maximale opslag.",
+        "load": "PV → Belasting → Batterij → Net voor direct eigenverbruik.",
+        "manual": "Handmatig geavanceerde besturingslogica configureren."
+      }
+    },
+    "dashboardShare": {
+      "title": "Dashboard Delen",
+      "options": {
+        "copy": "Link Kopiëren",
+        "whatsapp": "WhatsApp",
+        "twitter": "Twitter",
+        "mail": "E-mail"
+      },
+      "cancel": "Annuleren"
+    },
+    "dashboardStatus": {
+      "online": "Online",
+      "normal": "Normaal",
+      "battery": "Batterij: {{value}}%",
+      "grid": "Net: Verbonden"
+    },
+    "dashboardWeather": {
+      "title": "Weer",
+      "desc": "Huidige voorspelling",
+      "meta": "Zonsopgang: {{sunrise}}  •  Zonsondergang: {{sunset}}",
+      "humidity": "Vochtigheid",
+      "wind": "Wind",
+      "noData": "Geen weergegevens beschikbaar"
+    },
+    "dashboardBatteryPriceChart": {
+      "title": "Batterij SOC ",
+      "switch": {
+        "buy": "Kopen",
+        "sell": "Verkopen",
+        "soc": "SOC"
+      },
+      "legend": {
+        "buy": "Koopprijs (€/kWh)",
+        "sell": "Verkoopprijs (€/kWh)",
+        "soc": "Batterij SOC (%)"
+      },
+      "noData": "Geen SOC-gegevens beschikbaar"
+    },
+    "dashboardBatterySOHChart": {
+      "title": "Batterij SOH",
+      "switch": {
+        "soh": "SOH"
+      },
+      "legend": {
+        "soh": "Batterij SOH (%)"
+      },
+      "noData": "Geen SOH-gegevens beschikbaar"
+    },
+    "dashboardBatterySOCChart": {
+      "title": "Batterij SOC"
+    },
+    "dashboardPowerMetricsChart": {
+      "title": "Vermogen Statistieken Grafiek (kW)",
+      "labels": {
+        "solar": "Zonne-energie",
+        "battery": "Batterij",
+        "grid": "Net",
+        "load": "Belasting"
+      }
+    },
+    "dashboardBatteryChart": {
+      "title": "Batterij (%)",
+      "stats": {
+        "avg": "Gem",
+        "peak": "Piek",
+        "current": "Huidig"
+      },
+      "noDevice": "Geen apparaat verbonden",
+      "noData": "Geen gegevens beschikbaar"
+    },
+    "dashboardChargeDischargeChart": {
+      "title": "Opladen & Ontladen Vermogen (kW)",
+      "legend": {
+        "charge": "Opladen",
+        "discharge": "Ontladen"
+      },
+      "stats": {
+        "avg": "Gem",
+        "peak": "Piek",
+        "current": "Huidig",
+        "chargeAvg": "Opladen Gem",
+        "chargePeak": "Opladen Piek",
+        "chargeCurrent": "Opladen Nu",
+        "dischargeAvg": "Ontladen Gem",
+        "dischargePeak": "Ontladen Piek",
+        "dischargeCurrent": "Ontladen Nu"
+      },
+      "noDevice": "Geen apparaat verbonden",
+      "noData": "Geen gegevens beschikbaar"
+    },
+    "dashboardEnergyReview": {
+      "title": "Energie-opbrengst",
+      "subtitle": "1 week energiehandel met Net",
+      "totalBuy": "Totaal Kopen",
+      "totalSell": "Totaal Verkopen",
+      "net": "Netto",
+      "buy": "Kopen",
+      "sell": "Verkopen",
+      "price": "Prijs",
+      "gridBuy": "Kopen van Net",
+      "gridSell": "Verkopen aan Net"
+    },
+    "dashboardGridPerformance": {
+      "title": "Netprestaties",
+      "totalBuy": "Totaal Kopen",
+      "totalSell": "Totaal Verkopen",
+      "netBalance": "Nettobalans",
+      "month": "Maand",
+      "year": "Jaar",
+      "lifetime": "Levensduur",
+      "buyLabel": "Net Kopen",
+      "sellLabel": "Net Verkopen",
+      "noData": "Geen netgegevens beschikbaar"
+    },
+    "dashboardSidebar": {
+      "header": "Mijn Woningen",
+      "addButton": "Woning Toevoegen",
+      "noDevice": "Geen Apparaat",
+      "switching": "Woning wisselen..."
+    },
+    "deviceAdd": {
+      "title": "Apparaat Toevoegen",
+      "subtitle": "Verbind uw energieapparaat met deze woning",
+      "formTitle": "Apparaatinformatie",
+      "deviceStatus": "Geen Apparaat",
+      "setupName": "Setup Naam",
+      "setupNamePlaceholder": "Voer setup naam in",
+      "qrCode": "QR Code",
+      "qrCodePlaceholder": "Scan of voer QR code in",
+      "scanQr": "QR Code Scannen",
+      "serialNumber": "Serienummer",
+      "serialNumberPlaceholder": "Voer apparaat serienummer in",
+      "qrOrSerial": "Gebruik QR Code of Serienummer",
+      "addDevice": "Apparaat Toevoegen",
+      "noAddress": "Geen adres opgegeven",
+      "success": {
+        "title": "Apparaat Toegevoegd",
+        "message": "Apparaat is succesvol toegevoegd aan uw woning"
+      },
+      "error": {
+        "title": "Fout",
+        "message": "Kan apparaat niet toevoegen. Probeer het opnieuw."
+      },
+      "validation": {
+        "title": "Validatiefout",
+        "message": "Geef QR code of serienummer op"
+      }
+    },
+    "dashboardScreen": {
+      "title": "Dashboard",
+      "welcome": "Welkom"
+    },
+    "environmentalBenefits": {
+      "title": "Milieuvoordelen",
+      "co2Savings": "CO₂ Besparingen",
+      "equivalentTrees": "Equivalente Bomen",
+      "infoTitle": "Hoe het werkt",
+      "co2Info": "Berekend op basis van uw totale energieverbruik. Elke kWh zonne-energie die u gebruikt, voorkomt ongeveer 0,25 kg CO₂-uitstoot.",
+      "treesInfo": "Een enkele boom absorbeert ongeveer 22 kg CO₂ per jaar. Dit toont hoeveel bomen nodig zouden zijn om dezelfde hoeveelheid uitstoot te compenseren.",
+      "gotIt": "Begrepen"
+    },
+    "dashboardHelpButton": {
+      "title": "Hulp"
+    },
+    "dashboardNotifications": {
+      "title": "Meldingen",
+      "empty": "Geen meldingen."
+    },
+    "globalAlert": {
+      "critical": "Kritiek",
+      "important": "Belangrijk",
+      "info": "Info",
+      "close": "Sluiten",
+      "additionalInfo": "Aanvullende Info",
+      "device": "Apparaat"
+    },
+    "notifications": {
+      "justNow": "Zojuist",
+      "minutesAgo": "{{count}} minuut geleden",
+      "minutesAgo_other": "{{count}} minuten geleden",
+      "hoursAgo": "{{count}} uur geleden",
+      "hoursAgo_other": "{{count}} uur geleden",
+      "categories": {
+        "critical": "Kritieke Waarschuwing",
+        "warning": "Waarschuwing",
+        "info": "Informatie"
+      },
+      "additionalData": "Aanvullende Informatie",
+      "dismiss": "Negeren",
+      "title": "Meldingen",
+      "markAllRead": "Alles als gelezen markeren",
+      "markAsRead": "Markeren als Gelezen",
+      "markAsReadSuccess": "Gemarkeerd als gelezen",
+      "markAsReadFailed": "Kan niet als gelezen markeren",
+      "critical": "KRITIEK",
+      "today": "Vandaag",
+      "earlier": "Eerder",
+      "empty": "Geen meldingen",
+      "offline": "Offline — gecachte meldingen weergegeven",
+      "filters": {
+        "all": "Alle",
+        "today": "Vandaag",
+        "unread": "Ongelezen",
+        "critical": "Kritiek"
+      },
+      "status": {
+        "read": "Gelezen",
+        "unread": "Ongelezen"
+      },
+      "deleteToast": {
+        "success": "Melding verwijderd",
+        "error": "Kan melding niet verwijderen"
+      },
+      "markAllReadSuccess": "Alle meldingen gemarkeerd als gelezen",
+      "markAllReadError": "Kan niet alle meldingen als gelezen markeren"
+    },
+    "deviceList": {
+      "title": "Apparaat",
+      "online": "Online",
+      "offline": "Offline",
+      "onGrid": "Op Net",
+      "offGrid": "Off Grid"
+    },
+    "deviceDetail": {
+      "title": "NetZr Apparaatdetails",
+      "loading": "Gegevens laden...",
+      "totalComponents": "Totaal {{count}} componenten gevonden",
+      "dailyProduction": "Dagelijkse Productie",
+      "batteryCharge": "Batterij Opladen",
+      "connection": "Verbinding",
+      "devicesTitle": "NetZr Apparaten",
+      "pvPanel": {
+        "title": "PV Paneel",
+        "subtitle": "Real-time productie en historische gegevens",
+        "bar": "Staaf",
+        "area": "Gebied",
+        "day": "Dag",
+        "week": "Week",
+        "month": "Maand",
+        "year": "Jaar",
+        "basicInfo": "Basisinformatie",
+        "serialNumber": "Serienummer",
+        "connectedDevice": "Verbonden Apparaat"
+      },
+      "gateway": {
+        "title": "Energie Gateway",
+        "subtitle": "Net/Off Grid besturing en metingen",
+        "goOffGrid": "Ga Off Grid",
+        "goOnGrid": "Ga Op Net",
+        "inverterSide": "Omvormer Zijde",
+        "gridSide": "Net Zijde",
+        "voltage": "Spanning",
+        "frequency": "Frequentie",
+        "phase": "Fase",
+        "mode": "Modus",
+        "alarmFault": "Alarm & Storing",
+        "noActiveAlarm": "Geen Actief Alarm",
+        "onGrid": "Op Net",
+        "offGrid": "Off Grid Modus"
+      },
+      "battery": {
+        "title": "Batterijdetails",
+        "subtitle": "Real-Time Informatie",
+        "restart": "Apparaat Herstarten"
+      },
+      "confirmRestart": "Weet u zeker dat u het apparaat nu wilt herstarten?",
+      "confirmStart": "Ja, Herstarten",
+      "actionStarted": "Proces Gestart",
+      "deviceRestarting": "Het apparaat wordt opnieuw opgestart."
+    },
+    "deviceNames": {
+      "battery": "Batterij",
+      "battery(1)": "Batterij (1)",
+      "battery(2)": "Batterij (2)",
+      "battery(3)": "Batterij (3)",
+      "bms": "Batterij Cluster",
+      "inverter": "Omvormer"
+    },
+    "energyProfile": {
+      "title": "Energieprofiel",
+      "saveSettings": "Instellingen Opslaan",
+      "applyingSettings": "Instellingen toepassen..."
+    },
+    "energyFlow": {
+      "title": "Energiestroom",
+      "subtitle": "Real-time energiedistributie visualisatie",
+      "startDate": "Startdatum",
+      "endDate": "Einddatum",
+      "loading": "Energiestroomgegevens laden...",
+      "noDevice": "Geen apparaat gevonden. Voeg een apparaat toe om energiestroomgegevens te bekijken."
+    },
+    "offline": {
+      "title": "Geen Internetverbinding",
+      "subtitle": "Controleer uw netwerkinstellingen en probeer het opnieuw",
+      "message": "Controleer uw verbinding en probeer het opnieuw.",
+      "retry": "Opnieuw proberen",
+      "tryAgain": "Probeer Opnieuw",
+      "networkSettings": "Netwerkinstellingen",
+      "checkingConnection": "Verbinding controleren...",
+      "tips": {
+        "checkWifi": "Controleer WiFi of mobiele data",
+        "moveToSignal": "Ga naar een gebied met beter signaal"
+      }
+    },
+    "trash": {
+      "title": "Prullenbak",
+      "restoreAll": "Alles Herstellen",
+      "deleteAll": "Alles Verwijderen",
+      "restore": "Herstellen",
+      "deleted": "Verwijderd",
+      "deletedAt": "Verwijderd op {{date}}",
+      "today": "Vandaag Verwijderd",
+      "earlier": "Eerder Verwijderd",
+      "empty": "Prullenbak is leeg",
+      "filters": {
+        "all": "Alle",
+        "today": "Vandaag",
+        "critical": "Kritiek"
+      },
+      "restoreSuccess": "Melding hersteld",
+      "restoreFailed": "Kan melding niet herstellen",
+      "deleteSuccess": "Melding permanent verwijderd",
+      "deleteFailed": "Kan melding niet verwijderen"
+    },
+    "homeEmptyState": {
+      "title": "Nog geen woningen",
+      "subtitle": "Voeg uw eerste woning en apparaat toe om energiebeheer te starten"
+    },
+    "homeCard": {
+      "statusOnline": "Online",
+      "statusNoDevice": "Geen Apparaat",
+      "deviceCount": "1 Apparaat",
+      "noDevice": "Geen Apparaat",
+      "notAvailable": "N/B",
+      "goToDashboard": "Ga naar Dashboard",
+      "addDevice": "Apparaat Toevoegen",
+      "delete": "Verwijderen"
+    },
+    "homeHeader": {
+      "welcome": "Welkom Gebruiker!",
+      "welcomeWithName": "Welkom, {{name}}!",
+      "subtitle": "Beheer uw thuis energie",
+      "addButton": "Woning Toevoegen"
+    },
+    "homeStats": {
+      "homes": "Woningen",
+      "devices": "Apparaten",
+      "totalPower": "Totaal Vermogen"
+    },
+    "homeScreen": {
+      "myHomes": "Mijn Woningen",
+      "loading": "Woningen laden...",
+      "retry": "Tik om opnieuw te proberen",
+      "deleteConfirm": {
+        "title": "Locatie Verwijderen",
+        "message": "Weet u zeker dat u {{siteName}} wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
+        "cancel": "Annuleren",
+        "delete": "Verwijderen"
+      },
+      "deleteSuccess": {
+        "title": "Locatie Verwijderd",
+        "message": "{{siteName}} is succesvol verwijderd."
+      },
+      "deleteError": {
+        "title": "Verwijderen Mislukt",
+        "message": "Kan de locatie niet verwijderen. Probeer het opnieuw."
+      }
+    },
+    "deviceSetup": {
+      "title": "Voeg uw apparaat toe",
+      "subtitle": "Koppel een apparaat zodat we kunnen beginnen met het verzamelen van gegevens. U kunt later meer apparaten toevoegen vanaf het tabblad Apparaten.",
+      "deviceName": "Apparaatnaam",
+      "deviceNamePlaceholder": "bijv. Woonkamer Gateway",
+      "serialNumber": "Serienummer",
+      "serialNumberPlaceholder": "Voer serienummer handmatig in",
+      "scanQr": "QR code scannen",
+      "saving": "Opslaan…",
+      "finish": "Setup voltooien",
+      "goBack": "Ga Terug"
+    },
+    "homeSetup": {
+      "title": "Maak uw woning aan",
+      "subtitle": "Vertel ons hoe we naar deze locatie moeten verwijzen en waar deze zich bevindt, zodat we uw apparaten correct kunnen koppelen.",
+      "homeName": "Woningnaam",
+      "homeNamePlaceholder": "bijv. Amsterdam Appartement",
+      "streetAddress": "Straat adres",
+      "streetAddressPlaceholder": "Straat en nummer",
+      "apartment": "Appartement, suite (optioneel)",
+      "apartmentPlaceholder": "Verdieping, unit, enz.",
+      "country": "Land",
+      "countryPlaceholder": "Selecteer Land",
+      "city": "Stad",
+      "cityPlaceholder": "Selecteer Stad",
+      "state": "Staat / Provincie",
+      "statePlaceholder": "Staat of provincie",
+      "postalCode": "Postcode",
+      "postalCodePlaceholder": "Postcode / ZIP",
+      "saving": "Opslaan…",
+      "save": "Opslaan",
+      "goBack": "Ga Terug",
+      "locationPermission": {
+        "title": "Locatietoestemming",
+        "message": "Deze app heeft toegang nodig tot uw locatie om nauwkeurige locatiecoördinaten te bieden en energiemonitoringdiensten te verbeteren.",
+        "askLater": "Vraag Later",
+        "cancel": "Annuleren",
+        "ok": "OK"
+      },
+      "locationSuccess": {
+        "title": "Locatie Verkregen",
+        "message": "Uw locatie is succesvol verkregen en wordt gebruikt voor locatiecoördinaten."
+      },
+      "locationError": {
+        "title": "Locatiefout",
+        "message": "Kan uw locatie niet ophalen. Controleer uw locatie-instellingen en probeer het opnieuw."
+      },
+      "createError": {
+        "title": "Locatie Aanmaken Fout",
+        "message": "Kan locatie niet aanmaken. Probeer het opnieuw."
+      },
+      "gettingLocation": "Locatie Ophalen...",
+      "useCurrentLocation": "Gebruik Huidige Locatie",
+      "locationObtained": "Locatie Verkregen",
+      "success": {
+        "title": "Locatie Succesvol Aangemaakt",
+        "message": "{{homeName}} is succesvol aangemaakt!"
+      },
+      "locationRequired": {
+        "title": "Locatietoestemming Vereist",
+        "message": "Locatietoestemming is vereist om een locatie aan te maken. Schakel locatieservices in uw apparaatinstellingen in om door te gaan.",
+        "cancel": "Annuleren",
+        "settings": "Instellingen Openen"
+      },
+      "locationSettings": {
+        "title": "Schakel Locatieservices In",
+        "message": "Ga naar Instellingen > Privacy & Beveiliging > Locatieservices en schakel locatietoegang voor deze app in."
+      },
+      "validationError": {
+        "title": "Validatiefout",
+        "cityRequired": "Selecteer een stad.",
+        "countryRequired": "Selecteer een land."
+      },
+      "validation": {
+        "homeName": {
+          "min": "Voer een naam in voor uw woning.",
+          "max": "Woningnaam is te lang (maximaal 64 tekens)."
+        },
+        "addressLine1": {
+          "min": "Voer straat en nummer in.",
+          "max": "Adresregel is te lang (maximaal 120 tekens)."
+        },
+        "addressLine2": {
+          "max": "Adresregel is te lang (maximaal 80 tekens)."
+        },
+        "city": {
+          "max": "Stadsnaam is te lang (maximaal 60 tekens).",
+          "required": "Selecteer een stad."
+        },
+        "country": {
+          "max": "Landnaam is te lang (maximaal 56 tekens).",
+          "required": "Selecteer een land."
+        },
+        "state": {
+          "max": "Staat / Provincie informatie is te lang (maximaal 80 tekens)."
+        }
+      }
+    },
+    "admin": {
+      "title": "Beheerders Paneel",
+      "welcome": "Welkom, Beheerder",
+      "accessDenied": "Toegang Geweigerd",
+      "adminOnly": "Deze pagina is alleen toegankelijk voor beheerders.",
+      "homesTitle": "Woningen",
+      "pagination": {
+        "previous": "Vorige",
+        "next": "Volgende",
+        "pageInfo": "{{current}} / {{total}}"
+      },
+      "filters": {
+        "selectCountry": "Selecteer Land",
+        "selectCity": "Selecteer Stad",
+        "selectDistrict": "Selecteer District",
+        "clearFilters": "Filters Wissen"
+      },
+      "labels": {
+        "country": "Land",
+        "city": "Stad",
+        "district": "District",
+        "homes": "Woningen",
+        "devices": "Apparaten",
+        "activeUsers": "Actieve Gebruikers",
+        "totalCount": "Totaal Records"
+      },
+      "messages": {
+        "noHomes": "Geen woningen gevonden.",
+        "noHomesFound": "Geen woningen gevonden met de geselecteerde filters.",
+        "loading": "Gegevens laden...",
+        "refreshing": "Verversen...",
+        "errorLoading": "Er is een fout opgetreden bij het laden van gegevens.",
+        "selectLocationMessage": "Selecteer een land en stad.",
+        "selectFilters": "Selecteer land, stad of e-mail om te filteren."
+      },
+      "buttons": {
+        "previous": "Vorige",
+        "next": "Volgende",
+        "refresh": "Verversen",
+        "viewDashboard": "Ga naar Dashboard"
+      },
+      "stats": {
+        "totalHomes": "Totaal Woningen",
+        "totalDevices": "Totaal Apparaten",
+        "activeUsers": "Actieve Gebruikers"
+      }
+    },
+    "adminHomeCard": {
+      "online": "Online",
+      "offline": "Offline"
+    },
+    "adminLocationSelector": {
+      "select": "Selecteer",
+      "search": "zoeken",
+      "noResults": "Geen resultaten gevonden",
+      "close": "Sluiten"
+    },
+    "adminSearchBar": {
+      "placeholder": "Zoek op e-mailadres..."
+    },
+    "adminStats": {
+      "homes": "Woningen",
+      "devices": "Apparaten"
+    },
+    "batteryLevel": {
+      "title": "Batterijniveau Instellingen",
+      "save": "Opslaan",
+      "info": "Gebruik +/- knoppen om SOC drempels aan te passen.",
+      "applying": "Instellingen toepassen...",
+      "chargeCutoff": "Opladen Afkapwaarde SOC",
+      "backupSOC": "Backup SOC",
+      "dischargeCutoff": "Ontladen Afkapwaarde SOC",
+      "warningSOC": "Waarschuwing SOC",
+      "currentLevel": "Huidig Niveau",
+      "legendTitle": "Niveau Indicatoren"
+    },
+    "solarPriority": {
+      "title": "Zonne-energie Producerende Bron Prioriteit",
+      "save": "Opslaan",
+      "explanationTitle": "Uitleg",
+      "explanationText": "Deze instelling bepaalt de volgorde waarin uw gegenereerde zonne-energie wordt gestuurd. Het dicteert waar zonne-energie eerst, tweede, enzovoort naartoe gaat.",
+      "learnMore": "Meer Informatie",
+      "instructions": "Tik op twee ontgrendelde kaarten om hun prioriteit te wisselen.\nTik op het slotpictogram om een kaart te ontgrendelen of vergrendelen.",
+      "sources": {
+        "grid": "Net",
+        "smartLoad": "Slimme Belasting",
+        "load": "Belasting",
+        "battery": "Batterij"
+      }
+    },
+    "advancedPower": {
+      "title": "Geavanceerde Vermogensregeling",
+      "voltageWatt": "Spanning–Watt Curve",
+      "frequencyWatt": "Frequentie–Watt Curve",
+      "enable": "Inschakelen"
+    },
+    "batteryManagement": {
+      "title": "Batterijbeheer",
+      "chargeDischargeLimits": "Batterij Opladen / Ontladen Limieten",
+      "charging": "Opladen",
+      "maxChargeCurrent": "Max Oplaadstroom",
+      "maxChargePower": "Max Oplaadvermogen",
+      "discharging": "Ontladen",
+      "maxDischargeCurrent": "Max Ontlaadstroom",
+      "maxDischargePower": "Max Ontlaadvermogen",
+      "protectionReserve": "Batterijbescherming & Reserve",
+      "backupReserve": "Backup Reserve",
+      "dischargeCutoff": "Ontlaad Afkapwaarde",
+      "lowBatteryWarning": "Lage Batterij Waarschuwing",
+      "batterySettings": "Batterij Instellingen"
+    },
+    "energyPriority": {
+      "title": "Energie Prioriteit & Modusselectie",
+      "operationMode": "Bedrijfsmodus",
+      "gridInteraction": "Net Interactie"
+    },
+    "generatorSmart": {
+      "title": "Generator & Slimme Belastingen",
+      "portMode": "Poort Modus",
+      "smartLoadControl": "Slimme Belasting Regeling",
+      "turnOn": "Inschakelen wanneer batterij ",
+      "turnOff": "Uitschakelen wanneer batterij "
+    },
+    "modeSelection": {
+      "operation": {
+        "batteryPriority": {
+          "title": "Batterij Prioriteit",
+          "desc": "PV → Batterij → Belasting → Net volgorde voor maximale opslag."
+        },
+        "loadPriority": {
+          "title": "Belasting Prioriteit",
+          "desc": "PV → Belasting → Batterij → Net voor direct eigenverbruik."
+        },
+        "custom": {
+          "title": "Aangepast",
+          "desc": "Handmatig geavanceerde besturingslogica configureren."
+        }
+      },
+      "grid": {
+        "ieee": "IEEE-1547 (VS standaard)",
+        "vde": "VDE-AR-N-4105 (Duitse standaard)",
+        "as": "AS4777 (Australische standaard)"
+      },
+      "export": {
+        "noExport": {
+          "title": "Geen Export",
+          "desc": "Schakel alle energieexport naar het net uit."
+        },
+        "limited": {
+          "title": "Beperkt",
+          "desc": "Exporteren met beperkte capaciteit."
+        },
+        "moderate": {
+          "title": "Gematigd",
+          "desc": "Gebalanceerde export tussen belasting en net."
+        },
+        "maximum": {
+          "title": "Maximum",
+          "desc": "Exporteer zoveel mogelijk zonne-energie."
+        },
+        "custom": {
+          "title": "Aangepast",
+          "desc": "Handmatig exportregels configureren."
+        }
+      },
+      "generator": {
+        "inputOnly": {
+          "title": "Alleen Generator Ingang",
+          "desc": "Gebruik poort alleen voor generator ingang."
+        },
+        "smartLoad": {
+          "title": "Slimme Belasting Uitgang",
+          "desc": "Schakel in als slimme belasting uitgang."
+        },
+        "microInput": {
+          "title": "Microomvormer Ingang",
+          "desc": "Gebruik als microomvormer ingang."
+        }
+      }
+    },
+    "protectionSafety": {
+      "title": "Bescherming & Veiligheid",
+      "gridProtection": {
+        "title": "Net Bescherming Instellingen",
+        "voltageLimits": "Spanningslimieten",
+        "overVoltage": "Overspanning",
+        "underVoltage": "Onderspanning",
+        "frequencyLimits": "Frequentielimieten",
+        "overFrequency": "Overfrequentie",
+        "underFrequency": "Onderfrequentie",
+        "lvrtHvrt": "Schakel LVRT / HVRT In",
+        "warning": "Deze instelling kan een risico vormen tijdens spanningsschommelingen. Alleen ervaren gebruikers mogen dit wijzigen."
+      },
+      "systemProtection": {
+        "title": "Systeembescherming",
+        "afci": "Schakel AFCI In (Boogfoutbescherming)",
+        "afciWarning": "Onjuiste AFCI-configuratie kan systeemonderbrekingen veroorzaken.",
+        "islanding": "Schakel Eilandvorming Bescherming In",
+        "islandingWarning": "Terwijl Eilandvorming Bescherming actief is, kan een energie-eiland ontstaan; gebruik met voorzichtigheid."
+      }
+    },
+    "sectionCard": {
+      "currentMode": "Huidige Modus",
+      "changeMode": "Wijzig de modus"
+    },
+    "solarPower": {
+      "title": "Zonne-energie Beheer",
+      "exportControl": "Zonne-energie Export Regeling",
+      "enableSelling": "Schakel Zonne-energie Verkoop aan Net In",
+      "maxExportPower": "Max Zonne-energie Export Vermogen",
+      "totalExportLimit": "Totale Export Limiet",
+      "pvArrayConfig": "PV Array Configuratie",
+      "enableMpptScanning": "Schakel MPPT Scannen In",
+      "mpptTrackers": "MPPT Trackers",
+      "maxPvVoltage": "Max PV Spanning",
+      "maxPvCurrent": "Max PV Stroom",
+      "prioritySettings": "Zonne-energie Prioriteit Instellingen"
+    },
+    "tou": {
+      "title": "Tijd-van-Gebruik (TOU) Planning",
+      "periodSettings": "P{{index}} Instellingen",
+      "periodRange": "Periode {{index}} ({{range}})",
+      "batteryDischarge": "Batterij Ontladen",
+      "targetSoc": "Doel SOC",
+      "gridCharging": "Net Opladen",
+      "generatorCharging": "Generator Opladen",
+      "exportMode": "Export Modus",
+      "applying": "Instellingen toepassen…"
+    },
+    "themeToggle": {
+      "dark": "Donker",
+      "light": "Licht"
+    },
+    "deviceDetailBottomsheet": {
+      "common": {
+        "title": "Apparaatdetails",
+        "loading": "Gegevens laden...",
+        "close": "Sluiten",
+        "restart": "Apparaat Herstarten"
+      },
+      "inverter": {
+        "title": "Omvormer Details",
+        "activePower": "Actief Vermogen",
+        "reactivePower": "Reactief Vermogen",
+        "powerFactor": "Vermogensfactor",
+        "insulationResistance": "Isolatieweerstand",
+        "phaseData": "Fasegegevens",
+        "info": "Omvormer Info",
+        "startupTime": "Opstarttijd",
+        "shutdownTime": "Afsluit Tijd",
+        "deviceSN": "Apparaat SN",
+        "firmwareVersion": "Firmware Versie",
+        "phaseLabel": "Fase {{id}}"
+      },
+      "bms": {
+        "title": "BMS Details",
+        "soc": "Laadtoestand (SOC)",
+        "packVoltage": "Pack Spanning",
+        "packCurrent": "Pack Stroom",
+        "maxClusterVoltage": "Max Cluster Spanning",
+        "minClusterVoltage": "Min Cluster Spanning",
+        "totalChargeCapacity": "Totale Oplaadcapaciteit",
+        "totalDischargeCapacity": "Totale Ontlaadcapaciteit",
+        "dateTime": "Datum & Tijd",
+        "info": "BMS Info",
+        "deviceSN": "Apparaat SN",
+        "firmwareVersion": "Firmware Versie"
+      },
+      "battery": {
+        "title": "Batterijdetails",
+        "soc": "Batterij SOC",
+        "soh": "Gezondheid Toestand (SOH)",
+        "voltage": "Batterij Pack Spanning",
+        "current": "Batterij Stroom",
+        "avgCellVoltage": "Gemiddelde Cel Spanning",
+        "avgTemp": "Gemiddelde Cel Temperatuur",
+        "maxCellVoltage": "Max Cel Spanning",
+        "minCellVoltage": "Min Cel Spanning",
+        "maxCellTemp": "Max Cel Temperatuur",
+        "minCellTemp": "Min Cel Temperatuur",
+        "parameter": "Parameter",
+        "totalCharge": "Totaal Opgeladen Hoeveelheid",
+        "totalDischarge": "Totaal Ontladen Hoeveelheid",
+        "deviceModel": "Apparaat Model",
+        "deviceSN": "Apparaat SN",
+        "firmwareVersion": "Firmware Versie",
+        "dateTime": "Datum & Tijd"
+      }
+    },
+    "dashboardHeroCard": {
+      "title": "Slim Energiebeheer",
+      "subtitle": "Real-time monitoring en regeling"
+    }
+  }
