@@ -27,9 +27,6 @@ export const NotificationItem = forwardRef<NotificationItemRef, Props>(({ n, sty
   const [showActions, setShowActions] = useState(false);
   const swipeableRef = useRef<Swipeable>(null);
   const { t } = useI18n();
-  const color = n.read
-    ? (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)')
-    : (n.severity === 'critical' ? '#EB5757' : (accent ?? '#1DD1A1'));
   const metaText = new Date(n.createdAt).toLocaleString();
 
   useImperativeHandle(ref, () => ({
@@ -87,17 +84,11 @@ export const NotificationItem = forwardRef<NotificationItemRef, Props>(({ n, sty
       friction={2}
     >
       <Pressable onPress={() => onOpen(n)} style={styles.itemPress}>
-        <View style={[
-          styles.itemRow,
-          {
-            borderLeftColor: color,
-            borderLeftWidth: n.read ? 0 : 5
-          }
-        ]}>
-          <View style={styles.itemContent}>
+        <View style={styles.itemRow}>
+          <View style={{ flex: 1, paddingHorizontal: 16 }}>
             <View style={styles.itemHeader}>
-              <Text 
-                style={styles.itemTitle}
+              <Text
+                style={[styles.itemTitle, n.read && styles.itemTitleRead]}
                 numberOfLines={2}
                 ellipsizeMode="tail"
               >
@@ -105,7 +96,7 @@ export const NotificationItem = forwardRef<NotificationItemRef, Props>(({ n, sty
               </Text>
               {!n.read && <StatusPill read={n.read} styles={styles} isDark={isDark} accent={accent} />}
             </View>
-            <Text style={styles.itemMsg} numberOfLines={2}>{n.message}</Text>
+            <Text style={[styles.itemMsg, n.read && styles.itemMsgRead]} numberOfLines={2}>{n.message}</Text>
             <View style={styles.itemMetaRow}>
               <View style={styles.metaLeft}>
                 {n.severity === 'critical' && <Text style={styles.criticalText}>{t('notifications.critical')}</Text>}

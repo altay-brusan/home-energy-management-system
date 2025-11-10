@@ -146,10 +146,7 @@ export default function NotificationScreen(): JSX.Element {
   markingAllAsRead={markingAllAsRead}
 />
       <View style={styles.filterSticky}>
-        <View style={styles.filterRow}>
-          <View style={styles.flex1} />
-          <FilterChips value={filter} onChange={setFilter} styles={styles} />
-        </View>
+        <FilterChips value={filter} onChange={setFilter} styles={styles} />
         {!isConnected && <OfflineBanner styles={styles} />}
       </View>
     </>

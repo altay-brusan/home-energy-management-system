@@ -20,13 +20,14 @@ export const makeNotificationScreenStyles = (isDark: boolean) => {
 
   return StyleSheet.create({
     screen: { flex: 1, backgroundColor: APP_BG },
-    pageScroll: { flexGrow: 1, paddingHorizontal: 16, paddingBottom: 16 },
+    pageScroll: { flexGrow: 1, paddingHorizontal: 0, paddingBottom: 16 },
 
     headerRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       marginBottom: 12,
+      paddingHorizontal: 16,
     },
     title: { fontSize: 22, fontWeight: '700', color: TEXT },
     headerBtn: {
@@ -37,35 +38,34 @@ export const makeNotificationScreenStyles = (isDark: boolean) => {
     },
     headerBtnText: { color: TEXT, fontSize: 15, fontWeight: '700' },
 
-    filterSticky: { backgroundColor: APP_BG, paddingTop: 4, paddingBottom: 8, paddingHorizontal: 16 },
-    filterRow: { flexDirection: 'row', alignItems: 'center' },
+    filterSticky: { backgroundColor: APP_BG, paddingTop: 4, paddingBottom: 12, paddingHorizontal: 16 },
     chipsScrollView: {
-      marginTop: 12,
+      marginTop: 0,
     },
     chipsWrap: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 8,
-      paddingRight: 16,
+      paddingHorizontal: 0,
     },
     chip: {
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: isVerySmall ? 10 : isSmall ? 12 : 14,
-      paddingHorizontal: isVerySmall ? 16 : isSmall ? 18 : 20,
-      borderRadius: 999,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 20,
       backgroundColor: 'transparent',
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#000',
-      minHeight: isVerySmall ? 42 : isSmall ? 46 : 50,
+      borderWidth: 0,
       flexShrink: 0,
     },
-    chipActive: { backgroundColor: ACCENT_SOFT, borderColor: ACCENT },
-    chipText: { 
-      color: MUTED, 
-      fontWeight: '600', 
-      fontSize: chipFontSize,
-      lineHeight: chipLineHeight,
+    chipActive: {
+      backgroundColor: ACCENT,
+      borderWidth: 0,
+    },
+    chipText: {
+      color: isDark ? '#9CA3AF' : '#6B7280',
+      fontWeight: '500',
+      fontSize: 15,
       textAlign: 'center',
       includeFontPadding: false,
       ...(Platform.OS === 'android' && {
@@ -74,11 +74,10 @@ export const makeNotificationScreenStyles = (isDark: boolean) => {
         paddingBottom: 0,
       }),
     },
-    chipTextActive: { 
-      color: isDark ? TEXT : ACCENT, 
-      fontWeight: '700',
-      fontSize: chipFontSize,
-      lineHeight: chipLineHeight,
+    chipTextActive: {
+      color: '#FFFFFF',
+      fontWeight: '600',
+      fontSize: 15,
       textAlign: 'center',
       includeFontPadding: false,
       ...(Platform.OS === 'android' && {
@@ -88,16 +87,27 @@ export const makeNotificationScreenStyles = (isDark: boolean) => {
       }),
     },
 
-    groupHeader: { marginTop: 14, marginBottom: 6, color: MUTED, fontSize: 18, fontWeight: '700' },
-    itemPress: { paddingVertical: 2 },
+    groupHeader: {
+      marginTop: 20,
+      marginBottom: 12,
+      marginHorizontal: 0,
+      color: TEXT,
+      fontSize: 18,
+      fontWeight: '700'
+    },
+    itemPress: {
+      paddingVertical: 0,
+      paddingHorizontal: 0,
+    },
     itemRow: {
       flexDirection: 'row',
       alignItems: 'flex-start',
       paddingVertical: 16,
-      paddingHorizontal: 16,
-      borderLeftWidth: 5,
-      backgroundColor: APP_BG,
-      minHeight: 80,
+      paddingHorizontal: 0,
+      borderLeftWidth: 0,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(249,250,251,0.8)',
+      borderRadius: 0,
+      minHeight: 90,
     },
     itemContent: { flex: 1 },
 
@@ -107,17 +117,31 @@ export const makeNotificationScreenStyles = (isDark: boolean) => {
       alignItems: 'flex-start',
       marginBottom: 4,
     },
-    itemTitle: { 
-      color: TEXT, 
-      fontSize: isVerySmall ? 15 : isSmall ? 16 : 17, 
-      fontWeight: '600', 
+    itemTitle: {
+      color: TEXT,
+      fontSize: 16,
+      fontWeight: '700',
       flex: 1,
       flexShrink: 1,
-      marginRight: isVerySmall ? 6 : isSmall ? 8 : 10,
-      lineHeight: isVerySmall ? 20 : isSmall ? 22 : 24,
+      marginRight: 8,
+      lineHeight: 22,
+      marginBottom: 4,
+    },
+    itemTitleRead: {
+      color: MUTED,
+      opacity: 0.7,
     },
 
-    itemMsg: { color: MUTED, fontSize: 15, marginBottom: 6, lineHeight: 20 },
+    itemMsg: {
+      color: MUTED,
+      fontSize: 14,
+      marginBottom: 8,
+      lineHeight: 20,
+      fontWeight: '400',
+    },
+    itemMsgRead: {
+      opacity: 0.6,
+    },
 
     additionalDataContainer: {
       backgroundColor: isDark ? 'rgba(29,209,161,0.08)' : 'rgba(29,209,161,0.06)',
@@ -142,20 +166,28 @@ export const makeNotificationScreenStyles = (isDark: boolean) => {
       marginTop: 4,
     },
     metaLeft: { minWidth: 1 },
-    itemMeta: { color: MUTED, fontSize: 13, textAlign: 'right' },
+    itemMeta: {
+      color: MUTED,
+      fontSize: 12,
+      textAlign: 'right',
+      fontWeight: '400',
+    },
     criticalText: { fontSize: 13, fontWeight: '700', color: '#EB5757' },
 
     statusPill: {
-      paddingHorizontal: isVerySmall ? 8 : isSmall ? 9 : 10,
-      paddingVertical: isVerySmall ? 3 : 4,
-      borderRadius: 999,
-      marginLeft: 0,
+      paddingHorizontal: 12,
+      paddingVertical: 5,
+      borderRadius: 4,
+      marginLeft: 8,
       alignSelf: 'center',
       flexShrink: 0,
+      backgroundColor: ACCENT,
     },
-    statusPillText: { 
-      fontSize: isVerySmall ? 12 : isSmall ? 13 : 14, 
-      fontWeight: '700',
+    statusPillText: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: '#FFFFFF',
+      textTransform: 'capitalize',
     },
 
     swipeLeft: {
@@ -163,14 +195,15 @@ export const makeNotificationScreenStyles = (isDark: boolean) => {
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: ACCENT,
-      borderTopLeftRadius: 10,
-      borderBottomLeftRadius: 10,
-      minHeight: 80,
+      borderRadius: 0,
+      minHeight: 90,
+      marginVertical: 0,
+      marginLeft: 0,
     },
-    swipeLeftText: { 
-      color: '#fff', 
+    swipeLeftText: {
+      color: '#fff',
       fontWeight: '700',
-      fontSize: 14,
+      fontSize: 13,
     },
 
     swipeRight: {
@@ -178,14 +211,15 @@ export const makeNotificationScreenStyles = (isDark: boolean) => {
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: '#E63946',
-      borderTopRightRadius: 10,
-      borderBottomRightRadius: 10,
-      minHeight: 80,
+      borderRadius: 0,
+      minHeight: 90,
+      marginVertical: 0,
+      marginRight: 0,
     },
-    swipeRightText: { 
-      color: '#fff', 
+    swipeRightText: {
+      color: '#fff',
       fontWeight: '700',
-      fontSize: 14,
+      fontSize: 13,
     },
 
     emptyWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 100 },
@@ -202,6 +236,10 @@ export const makeNotificationScreenStyles = (isDark: boolean) => {
 
     flex1: { flex: 1 },
 
-    separator: { height: 1, backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)', marginLeft: 12 },
+    separator: {
+      height: 1,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+      marginVertical: 0,
+    },
   });
 };

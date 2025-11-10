@@ -30,22 +30,59 @@ export const getCurrentPower = async (deviceId: string): Promise<RealTimePowerRe
   // Simulate API delay
   await new Promise<void>(resolve => setTimeout(() => resolve(), 300));
 
-  // Generate realistic power values
-  // PV: Always positive (output/generating) or 0
+  // Generate realistic power values with energy balance
+  // Load: Always consuming (negative value) - this is the demand
+  const loadPowerAbs = Math.floor(Math.random() * 3000) + 500; // 500W to 3.5kW
+  const loadPower = -loadPowerAbs; // Always negative (consuming)
+
+  // PV: Solar generation (positive value or 0)
   const pvPower = Math.random() > 0.2 ? Math.floor(Math.random() * 5000) : 0; // 0-5kW
 
-  // Load: Always negative (input/consuming)
-  const loadPower = -(Math.floor(Math.random() * 3000) + 500); // -500W to -3.5kW
+  // Calculate remaining energy need after PV
+  const remainingNeed = loadPowerAbs - pvPower;
 
-  // Battery: Can be positive (discharging) or negative (charging)
-  const batteryCharging = Math.random() > 0.5;
-  const batteryPowerAbs = Math.random() > 0.3 ? Math.floor(Math.random() * 2000) : 0; // 0-2kW
-  const batteryPower = batteryCharging ? -batteryPowerAbs : batteryPowerAbs; // Negative = charging, Positive = discharging
+  let batteryPower = 0;
+  let gridPower = 0;
 
-  // Grid: Compensates for energy balance
-  // Positive = exporting to grid, Negative = importing from grid
-  const energyBalance = pvPower + batteryPower + loadPower;
-  const gridPower = -energyBalance; // Grid compensates the balance
+  if (remainingNeed > 0) {
+    // Load > PV: Need more energy
+    // Battery can help (discharge) or grid must provide
+    const batteryCanHelp = Math.random() > 0.3;
+
+    if (batteryCanHelp) {
+      // Battery discharges (positive value)
+      const batteryContribution = Math.floor(Math.random() * Math.min(remainingNeed, 2000));
+      batteryPower = batteryContribution;
+
+      // Grid provides the rest (negative = importing)
+      gridPower = -(remainingNeed - batteryContribution);
+    } else {
+      // Only grid provides (negative = importing)
+      gridPower = -remainingNeed;
+    }
+  } else if (remainingNeed < 0) {
+    // PV > Load: Excess energy
+    const excess = -remainingNeed;
+
+    // Battery can charge or excess goes to grid
+    const batteryCanCharge = Math.random() > 0.4;
+
+    if (batteryCanCharge) {
+      // Battery charges (negative value)
+      const batteryCharge = Math.floor(Math.random() * Math.min(excess, 2000));
+      batteryPower = -batteryCharge;
+
+      // Remaining excess goes to grid (positive = exporting)
+      gridPower = excess - batteryCharge;
+    } else {
+      // All excess goes to grid (positive = exporting)
+      gridPower = excess;
+    }
+  }
+  // else: remainingNeed === 0, PV exactly matches load, battery and grid are 0
+
+  // Verify energy balance: pvPower + batteryPower + gridPower + loadPower should = 0
+  // pvPower (positive) + batteryPower (+/-) + gridPower (+/-) + loadPower (negative) = 0
 
   return {
     timestamp: new Date().toISOString(),
@@ -54,11 +91,11 @@ export const getCurrentPower = async (deviceId: string): Promise<RealTimePowerRe
       active: pvPower > 0,
     },
     battery: {
-      power: batteryPower, // Positive = discharging, Negative = charging
+      power: batteryPower, // Positive = discharging, Negative = charging, 0 = idle
       active: Math.abs(batteryPower) > 0,
     },
     grid: {
-      power: gridPower, // Positive = exporting, Negative = importing
+      power: gridPower, // Positive = exporting, Negative = importing, 0 = idle
       active: Math.abs(gridPower) > 100, // Consider grid active if >100W
     },
     load: {
