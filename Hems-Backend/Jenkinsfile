@@ -10,6 +10,10 @@ metadata:
 spec:
   serviceAccountName: jenkins-agent
   containers:
+  - name: dotnet
+    image: mcr.microsoft.com/dotnet/sdk:9.0
+    command: ['cat']
+    tty: true
   - name: docker
     image: docker:27.0-cli
     command: ['cat']
@@ -37,6 +41,10 @@ spec:
         // Build Info
         GIT_COMMIT_SHORT = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
         BUILD_TAG = "${env.BRANCH_NAME}-${env.BUILD_NUMBER}-${GIT_COMMIT_SHORT}"
+
+        // SonarQube Configuration
+        SONAR_PROJECT_KEY = "hems-backend"
+        SONAR_HOST_URL = "http://sonarqube-sonarqube.sonarqube.svc.cluster.local:9000"
     }
 
     stages {
@@ -44,6 +52,72 @@ spec:
             steps {
                 echo "🔄 Checking out code from ${env.BRANCH_NAME} branch..."
                 checkout scm
+            }
+        }
+
+        stage('Build & Test with Coverage') {
+            steps {
+                echo "🔨 Building and testing with coverage..."
+                container('dotnet') {
+                    sh """
+                        dotnet restore
+                        dotnet build -c Release --no-restore
+                        dotnet test -c Release --no-build --verbosity normal \
+                            /p:CollectCoverage=true \
+                            /p:CoverletOutputFormat=opencover \
+                            /p:CoverletOutput=./TestResults/coverage/
+                    """
+                }
+            }
+            post {
+                failure {
+                    echo "❌ Tests failed! Blocking deployment."
+                    error("Tests failed. Deployment is blocked.")
+                }
+                success {
+                    echo "✅ All tests passed!"
+                }
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                echo "📊 Running SonarQube analysis..."
+                container('dotnet') {
+                    withSonarQubeEnv('SonarQube') {
+                        sh """
+                            dotnet tool install --global dotnet-sonarscanner || true
+                            export PATH="\$PATH:\$HOME/.dotnet/tools"
+
+                            dotnet sonarscanner begin \
+                                /k:"${SONAR_PROJECT_KEY}" \
+                                /d:sonar.host.url="${SONAR_HOST_URL}" \
+                                /d:sonar.token="\${SONAR_AUTH_TOKEN}" \
+                                /d:sonar.cs.opencover.reportsPaths="**/TestResults/coverage/coverage.opencover.xml"
+
+                            dotnet build -c Release --no-restore
+
+                            dotnet sonarscanner end /d:sonar.token="\${SONAR_AUTH_TOKEN}"
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                echo "🚦 Waiting for SonarQube Quality Gate..."
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+            post {
+                failure {
+                    echo "❌ Quality Gate failed! Code quality below threshold."
+                }
+                success {
+                    echo "✅ Quality Gate passed!"
+                }
             }
         }
 

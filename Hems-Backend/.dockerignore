@@ -10,6 +10,11 @@
 **/*.trx
 **/*.coverage
 **/*.coveragexml
+**/*.opencover.xml
+
+# SonarQube
+**/.sonarqube/
+**/.scannerwork/
 
 # Logs
 **/logs/
