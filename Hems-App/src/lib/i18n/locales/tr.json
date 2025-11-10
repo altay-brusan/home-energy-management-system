@@ -714,6 +714,15 @@
     "title": "Ana Ekran",
     "welcome": "Hoş Geldiniz"
   },
+  "environmentalBenefits": {
+    "title": "Çevresel Faydalar",
+    "co2Savings": "CO₂ Tasarrufu",
+    "equivalentTrees": "Eşdeğer Ağaç",
+    "infoTitle": "Nasıl Çalışır",
+    "co2Info": "Toplam enerji tüketiminize göre hesaplanır. Kullandığınız her kWh güneş enerjisi, yaklaşık 0.25 kg CO₂ emisyonunu önler.",
+    "treesInfo": "Bir ağaç yılda yaklaşık 22 kg CO₂ emer. Bu, aynı miktarda emisyonu dengelemek için kaç ağaca ihtiyaç olduğunu gösterir.",
+    "gotIt": "Anladım"
+  },
   "dashboardHelpButton": {
     "title": "Yardım"
   },

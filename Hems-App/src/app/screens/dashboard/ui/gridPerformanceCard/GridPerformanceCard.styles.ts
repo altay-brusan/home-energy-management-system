@@ -12,6 +12,9 @@ export const createStyles = (COLORS: Record<string, string>) => {
       borderColor: COLORS.border,
     },
     header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
       marginBottom: SPACING.lg,
     },
     title: {

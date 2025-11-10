@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, LayoutChangeEvent, ActivityIndicator, PanResponder } from 'react-native';
+import { View, Text, LayoutChangeEvent, ActivityIndicator, PanResponder, TouchableOpacity } from 'react-native';
 import Svg, { Line, Circle, Path, Text as SvgText, Rect, G } from 'react-native-svg';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useI18n } from '../../../../../hooks/useI18n';
@@ -7,6 +7,19 @@ import { useThemeStore } from '../../../../../store/themeStore';
 import { getThemeColors } from '../../../../../theme/constants';
 import { createStyles } from './EnergyReviewCard.styles';
 import { EnergyTransaction, EnergyReviewData, TooltipData } from './EnergyReviewCard.types';
+
+// History Icon Component
+const HistoryIcon: React.FC<{ color: string }> = ({ color }) => (
+  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
 
 // Generate mock data for 30 days with daily data points
 const generateMockData = (): EnergyReviewData => {
@@ -221,13 +234,23 @@ export default function EnergyReviewCard() {
     return labels;
   }, [maxValue, chartHeight, centerY, yScale]);
 
+  const handleHistoryPress = () => {
+    // TODO: Navigate to historical data screen or show modal
+    console.log('History pressed - EnergyReviewCard');
+  };
+
   return (
     <Animated.View entering={FadeInUp.delay(200).duration(600)} style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>{t('dashboardEnergyReview.title', 'Enerji Alış/Satış')}</Text>
-        <Text style={styles.subtitle}>
-          {t('dashboardEnergyReview.subtitle', 'Grid ile 30 günlük enerji ticareti')}
-        </Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>{t('dashboardEnergyReview.title', 'Enerji Alış/Satış')}</Text>
+          <Text style={styles.subtitle}>
+            {t('dashboardEnergyReview.subtitle', 'Grid ile 30 günlük enerji ticareti')}
+          </Text>
+        </View>
+        <TouchableOpacity onPress={handleHistoryPress} style={{ padding: 4 }}>
+          <HistoryIcon color={COLORS.accent} />
+        </TouchableOpacity>
       </View>
 
       {/* Chart Wrapper - for absolute positioning of info box */}

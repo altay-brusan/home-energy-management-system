@@ -8,6 +8,19 @@ import { useSelectedSiteDevice } from '../../../../../../hooks/useSelectedSiteDe
 import { useDashboardRefresh } from '../../../../../../hooks/useDashboardRefresh';
 import { mobileDashboardService, PowerMetricsResponseDto } from '../../../../../../api/services/mobileDashboardService';
 
+// History Icon Component
+const HistoryIcon: React.FC<{ color: string }> = ({ color }) => (
+  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
 type Props = { 
   COLORS: Record<string, string>;
   selectedRange?: string;
@@ -401,9 +414,20 @@ export default function PowerMetricsChart ({ COLORS, selectedRange }: Props) {
     };
   }, [registerRefreshCallback, loadPowerMetricsData]);
 
+  const handleHistoryPress = () => {
+    // TODO: Navigate to historical data screen or show modal
+    console.log('History pressed - MultiLineChart');
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{t('dashboardPowerMetricsChart.title')}</Text>
+      {/* Header */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <Text style={styles.title}>{t('dashboardPowerMetricsChart.title')}</Text>
+        <TouchableOpacity onPress={handleHistoryPress} style={{ padding: 4 }}>
+          <HistoryIcon color={COLORS.accent} />
+        </TouchableOpacity>
+      </View>
 
       {loading ? (
         <View style={styles.loadingContainer}>

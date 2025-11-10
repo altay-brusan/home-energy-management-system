@@ -11,54 +11,133 @@ export const createStyles = (COLORS: Record<string, string>) => {
       borderWidth: 1,
       borderColor: COLORS.border,
     },
+
+    // Header
     header: {
-      marginBottom: SPACING.md,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: SPACING.sm,
     },
     title: {
-      fontSize: TYPOGRAPHY.lg,
+      fontSize: TYPOGRAPHY.sm,
+      fontWeight: '600',
+      color: COLORS.textSoft,
+    },
+
+    // Grid (2 columns)
+    grid: {
+      flexDirection: 'row',
+      gap: SPACING.xs,
+    },
+
+    // Benefit Card
+    benefitCard: {
+      flex: 1,
+      backgroundColor: 'transparent',
+      flexDirection: 'column',
+    },
+
+    // Value Row
+    valueRow: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      gap: 4,
+      marginBottom: 4,
+    },
+    value: {
+      fontSize: TYPOGRAPHY.xl,
       fontWeight: '700',
       color: COLORS.textSoft,
-      marginBottom: SPACING.xs,
     },
-    subtitle: {
-      fontSize: TYPOGRAPHY.sm,
+    unit: {
+      fontSize: TYPOGRAPHY.xs,
+      fontWeight: '500',
       color: COLORS.textSoft,
-      opacity: 0.7,
+      opacity: 0.5,
     },
-    metricsContainer: {
-      flexDirection: 'row',
-      gap: SPACING.md,
+
+    // Label
+    label: {
+      fontSize: TYPOGRAPHY.xs,
+      color: COLORS.textSoft,
+      opacity: 0.6,
     },
-    metricBox: {
-      flex: 1,
-      backgroundColor: COLORS.bgShadeLight,
-      borderRadius: 12,
-      padding: SPACING.md,
+
+    // Loading
+    loadingContainer: {
+      height: 80,
+      justifyContent: 'center',
       alignItems: 'center',
+    },
+
+    // Modal Styles
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: SPACING.lg,
+    },
+    modalContent: {
+      backgroundColor: COLORS.surface,
+      borderRadius: 16,
+      padding: SPACING.lg,
+      width: '100%',
+      maxWidth: 400,
       borderWidth: 1,
       borderColor: COLORS.border,
     },
-    metricIcon: {
-      fontSize: 32,
-      marginBottom: SPACING.xs,
-    },
-    metricValue: {
-      fontSize: TYPOGRAPHY.xl,
+    modalTitle: {
+      fontSize: TYPOGRAPHY.lg,
       fontWeight: '700',
-      color: COLORS.success,
-      marginBottom: 4,
-    },
-    metricLabel: {
-      fontSize: TYPOGRAPHY.xs,
-      fontWeight: '600',
       color: COLORS.textSoft,
-      opacity: 0.7,
+      marginBottom: SPACING.lg,
       textAlign: 'center',
     },
-    loadingContainer: {
-      height: 120,
-      justifyContent: 'center',
+    modalSection: {
+      marginBottom: SPACING.lg,
+    },
+    modalIconRow: {
+      flexDirection: 'row',
       alignItems: 'center',
+      marginBottom: SPACING.xs,
+      gap: SPACING.xs,
+    },
+    modalIconBg: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: COLORS.bgShadeLight,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    modalIcon: {
+      fontSize: 18,
+    },
+    modalSectionTitle: {
+      fontSize: TYPOGRAPHY.md,
+      fontWeight: '600',
+      color: COLORS.textSoft,
+    },
+    modalText: {
+      fontSize: TYPOGRAPHY.sm,
+      color: COLORS.textSoft,
+      opacity: 0.8,
+      lineHeight: 20,
+      marginLeft: 40, // align with title
+    },
+    modalButton: {
+      backgroundColor: COLORS.accent,
+      borderRadius: 8,
+      padding: SPACING.md,
+      alignItems: 'center',
+      marginTop: SPACING.sm,
+    },
+    modalButtonText: {
+      fontSize: TYPOGRAPHY.md,
+      fontWeight: '600',
+      color: COLORS.white,
     },
   });
 };

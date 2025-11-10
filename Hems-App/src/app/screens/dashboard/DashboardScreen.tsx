@@ -232,28 +232,28 @@ export default function DashboardScreen (): JSX.Element {
           selectedRange={selectedRange}
         />
 
+        <GridPerformanceCard deviceId={device?.id} />
+
+        <EnergyReviewCard />
+
         <ChargeDischargeChart
           COLORS={COLORS}
           selectedIndex={selectedChargeIndex}
           setSelectedIndex={setSelectedChargeIndex}
         />
 
-        <GridPerformanceCard deviceId={device?.id} />
-
-        <EnergyReviewCard />
-
         <CO2Card deviceId={device?.id} />
 
-        <DashboardDevices COLORS={COLORS} />
+        {/* <DashboardDevices COLORS={COLORS} /> */}
 
         {/* SignalR Connection Status 
         <SignalRStatus COLORS={COLORS} />
 */}
 
-        {/*  
+        {/*
   <DashboardNotifications COLORS={COLORS} /> */}
 
-        <DashboardHelpButton COLORS={COLORS} onPress={handleHelp} />
+        {/* <DashboardHelpButton COLORS={COLORS} onPress={handleHelp} /> */}
       </ScrollView>
     </SafeAreaView>
   );

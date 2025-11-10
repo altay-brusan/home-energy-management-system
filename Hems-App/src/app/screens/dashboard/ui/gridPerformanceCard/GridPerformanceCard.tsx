@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import Svg, { Path } from 'react-native-svg';
 import { useThemeStore } from '../../../../../store/themeStore';
 import { getThemeColors } from '../../../../../theme/constants';
 import { useI18n } from '../../../../../hooks/useI18n';
@@ -8,6 +9,19 @@ import { useDashboardRefresh } from '../../../../../hooks/useDashboardRefresh';
 import { gridPerformanceService } from '../../../../../api/services/gridPerformanceService';
 import { GridPeriod } from '../../../../../api/types/gridPerformance.types';
 import { createStyles } from './GridPerformanceCard.styles';
+
+// History Icon Component
+const HistoryIcon: React.FC<{ color: string }> = ({ color }) => (
+  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
 
 interface GridPerformanceCardProps {
   deviceId: string | undefined;
@@ -88,6 +102,11 @@ const GridPerformanceCard: React.FC<GridPerformanceCardProps> = ({ deviceId }) =
     return value.toFixed(1);
   };
 
+  const handleHistoryPress = () => {
+    // TODO: Navigate to historical data screen or show modal
+    console.log('History pressed - GridPerformanceCard');
+  };
+
   if (!deviceId) {
     return null;
   }
@@ -97,6 +116,9 @@ const GridPerformanceCard: React.FC<GridPerformanceCardProps> = ({ deviceId }) =
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>{t('dashboardGridPerformance.title')}</Text>
+        <TouchableOpacity onPress={handleHistoryPress} style={{ padding: 4 }}>
+          <HistoryIcon color={COLORS.accent} />
+        </TouchableOpacity>
       </View>
 
       {loading ? (
