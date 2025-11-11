@@ -121,13 +121,13 @@ spec:
         stage('Quality Gate') {
             steps {
                 echo "🚦 Waiting for SonarQube Quality Gate..."
-                timeout(time: 15, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: false
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
                 }
             }
             post {
                 failure {
-                    echo "⚠️ Quality Gate failed! Check SonarQube dashboard for details."
+                    echo "❌ Quality Gate failed! Code quality below threshold."
                 }
                 success {
                     echo "✅ Quality Gate passed!"
@@ -257,7 +257,9 @@ spec:
     post {
         always {
             echo "🧹 Cleaning up workspace..."
-            deleteDir()
+            catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+                deleteDir()
+            }
         }
         success {
             echo "✅ Pipeline completed successfully!"
