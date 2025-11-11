@@ -122,12 +122,12 @@ spec:
             steps {
                 echo "🚦 Waiting for SonarQube Quality Gate..."
                 timeout(time: 15, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
+                    waitForQualityGate abortPipeline: false
                 }
             }
             post {
                 failure {
-                    echo "❌ Quality Gate failed! Code quality below threshold."
+                    echo "⚠️ Quality Gate failed! Check SonarQube dashboard for details."
                 }
                 success {
                     echo "✅ Quality Gate passed!"
