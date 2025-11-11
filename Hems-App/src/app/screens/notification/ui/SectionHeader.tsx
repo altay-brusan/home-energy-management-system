@@ -6,9 +6,7 @@ type Styles = ReturnType<typeof makeNotificationScreenStyles>;
 
 export function SectionHeader({ title, styles }: { title: string; styles: Styles }) {
   return (
-    <View style={{ paddingHorizontal: 16 }}>
-      <Text style={styles.groupHeader}>{title}</Text>
-    </View>
+    <Text style={styles.groupHeader}>{title}</Text>
   );
 }
 

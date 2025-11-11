@@ -85,7 +85,7 @@ export const NotificationItem = forwardRef<NotificationItemRef, Props>(({ n, sty
     >
       <Pressable onPress={() => onOpen(n)} style={styles.itemPress}>
         <View style={styles.itemRow}>
-          <View style={{ flex: 1, paddingHorizontal: 16 }}>
+          <View style={styles.itemContent}>
             <View style={styles.itemHeader}>
               <Text
                 style={[styles.itemTitle, n.read && styles.itemTitleRead]}
@@ -96,10 +96,18 @@ export const NotificationItem = forwardRef<NotificationItemRef, Props>(({ n, sty
               </Text>
               {!n.read && <StatusPill read={n.read} styles={styles} isDark={isDark} accent={accent} />}
             </View>
-            <Text style={[styles.itemMsg, n.read && styles.itemMsgRead]} numberOfLines={2}>{n.message}</Text>
+            <Text
+              style={[styles.itemMsg, n.read && styles.itemMsgRead]}
+              numberOfLines={2}
+              ellipsizeMode="tail"
+            >
+              {n.message}
+            </Text>
             <View style={styles.itemMetaRow}>
               <View style={styles.metaLeft}>
-                {n.severity === 'critical' && <Text style={styles.criticalText}>{t('notifications.critical')}</Text>}
+                {n.severity === 'critical' && (
+                  <Text style={styles.criticalText}>{t('notifications.critical')}</Text>
+                )}
               </View>
               <Text style={styles.itemMeta}>{metaText}</Text>
             </View>

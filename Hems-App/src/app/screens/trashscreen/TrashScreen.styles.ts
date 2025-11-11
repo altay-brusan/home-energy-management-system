@@ -20,63 +20,45 @@ export const makeTrashScreenStyles = (isDark: boolean, COLORS: any) => {
 
   return StyleSheet.create({
     screen: { flex: 1, backgroundColor: APP_BG },
-    pageScroll: { paddingHorizontal: 16, paddingBottom: 16 },
+    pageScroll: { paddingHorizontal: 0, paddingBottom: 16 },
 
     headerRow: {
-      flexDirection: 'column',
-      alignItems: 'flex-start',
-      justifyContent: 'space-between',
-      marginBottom: 12,
-    },
-    headerTop: {
       flexDirection: 'row',
       alignItems: 'center',
-      width: '100%',
-      marginBottom: 8,
-    },
-    backButton: {
-      padding: 8,
-      marginRight: 12,
-      borderRadius: 8,
-      backgroundColor: isDark ? COLORS.surface : COLORS.bgShadeDark,
-    },
-    backButtonText: {
-      color: isDark ? COLORS.white : COLORS.textPrimary,
-    },
-    title: { fontSize: 22, fontWeight: '700', color: TEXT, flex: 1 },
-
-    chipsScrollView: {
+      justifyContent: 'space-between',
       marginBottom: 12,
-      marginTop: 4,
+      paddingHorizontal: 16,
     },
-    filterRow: {
+    title: { fontSize: 22, fontWeight: '700', color: TEXT },
+
+    filterSticky: { backgroundColor: APP_BG, paddingTop: 4, paddingBottom: 12, paddingHorizontal: 16 },
+    chipsScrollView: {
+      marginTop: 0,
+    },
+    chipsWrap: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 8,
-      paddingRight: 16,
+      paddingHorizontal: 0,
     },
     chip: {
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: isVerySmall ? 10 : isSmall ? 12 : 14,
-      paddingHorizontal: isVerySmall ? 16 : isSmall ? 18 : 20,
-      marginHorizontal: 2,
-      borderRadius: 999,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 20,
       backgroundColor: 'transparent',
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: isDark ? COLORS.buttonBg : COLORS.black,
-      minHeight: isVerySmall ? 42 : isSmall ? 46 : 50,
+      borderWidth: 0,
       flexShrink: 0,
     },
     chipActive: {
-      backgroundColor: ACCENT_SOFT,
-      borderColor: ACCENT,
+      backgroundColor: ACCENT,
+      borderWidth: 0,
     },
     chipText: {
-      color: MUTED,
-      fontWeight: '600',
-      fontSize: chipFontSize,
-      lineHeight: chipLineHeight,
+      color: isDark ? '#9CA3AF' : '#6B7280',
+      fontWeight: '500',
+      fontSize: 15,
       textAlign: 'center',
       includeFontPadding: false,
       ...(Platform.OS === 'android' && {
@@ -86,10 +68,9 @@ export const makeTrashScreenStyles = (isDark: boolean, COLORS: any) => {
       }),
     },
     chipTextActive: {
-      color: isDark ? TEXT : ACCENT,
-      fontWeight: '700',
-      fontSize: chipFontSize,
-      lineHeight: chipLineHeight,
+      color: '#FFFFFF',
+      fontWeight: '600',
+      fontSize: 15,
       textAlign: 'center',
       includeFontPadding: false,
       ...(Platform.OS === 'android' && {
@@ -107,8 +88,9 @@ export const makeTrashScreenStyles = (isDark: boolean, COLORS: any) => {
       alignItems: 'flex-start',
       paddingVertical: 16,
       paddingHorizontal: 16,
-      borderLeftWidth: 5,
-      backgroundColor: APP_BG,
+      borderLeftWidth: 0,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(249,250,251,0.8)',
+      borderRadius: 0,
       minHeight: 80,
     },
     itemContent: { flex: 1 },
@@ -148,12 +130,12 @@ export const makeTrashScreenStyles = (isDark: boolean, COLORS: any) => {
       marginLeft: 0,
       alignSelf: 'center',
       flexShrink: 0,
-      backgroundColor: isDark ? 'rgba(239,68,68,0.12)' : 'rgba(239,68,68,0.10)',
+      backgroundColor: ACCENT,
     },
-    statusPillText: { 
-      fontSize: isVerySmall ? 12 : isSmall ? 13 : 14, 
-      fontWeight: '700', 
-      color: '#EF4444',
+    statusPillText: {
+      fontSize: isVerySmall ? 12 : isSmall ? 13 : 14,
+      fontWeight: '700',
+      color: '#FFFFFF',
     },
 
     swipeLeft: {
@@ -196,8 +178,8 @@ export const makeTrashScreenStyles = (isDark: boolean, COLORS: any) => {
 
     separator: {
       height: 1,
-      backgroundColor:COLORS.bgShadeDark,
-      marginLeft: 12,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+      marginLeft: 0,
     },
 emptyWrap: { 
   flex: 1, 

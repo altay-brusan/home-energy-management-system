@@ -206,8 +206,7 @@ export default function DeviceDetail () {
   // 🔹 SOC ve total power değerleri
   const socValue = bmsComp?.componentData || 0;
 
-  const totalPower = inverterData?.["Active Power"] || 0;const leftComponents = components.filter((_, i) => i % 2 === 0);
-  const rightComponents = components.filter((_, i) => i % 2 === 1);
+  const totalPower = inverterData?.["Active Power"] || 0;
 
   return (
     <View style={styles.container}>
@@ -299,88 +298,67 @@ export default function DeviceDetail () {
           </View>
 
           <View style={styles.badgesBelowRow}>
-            <View style={styles.badgesCol}>
-              {leftComponents.map((comp) => (
-                <DeviceBadge
-                  key={comp.id}
-                  COLORS={COLORS}
-                  title={String(t(`deviceNames.${comp.name.toLowerCase()}`, { defaultValue: comp.name }))}
-
-                  subtitle={""}
-                  value={comp.componentData ? comp.componentData.toFixed(2).toString() : "0"}
-
-                  icon={
-                    comp.name.toLowerCase().includes("inverter")
-                      ? "bolt"
-                      : comp.name.toLowerCase().includes("bms")
-                        ? "microchip"
-                        : "battery-full"
-                  }
-                  status={comp.isDeleted ? "inactive" : "normal"}
-                  onPress={() => handleOpenBattery(comp)}
-                />
-              ))}
-            </View>
-            <View style={styles.badgesCol}>
-              {rightComponents.map((comp) => (
-                <DeviceBadge
-                  key={comp.id}
-                  COLORS={COLORS}
-                  title={String(t(`deviceNames.${comp.name.toLowerCase()}`, { defaultValue: comp.name }))}
-
-                  subtitle={""}
-                  value={comp.componentData ? comp.componentData.toFixed(2).toString() : "0"}
-                  icon={
-                    comp.name.toLowerCase().includes("inverter")
-                      ? "bolt"
-                      : comp.name.toLowerCase().includes("bms")
-                        ? "microchip"
-                        : "battery-full"
-                  }
-                  status={comp.isDeleted ? "inactive" : "normal"}
-                  align="right"
-                  onPress={() => handleOpenBattery(comp)}
-                />
-              ))}
-            </View>
+            {components.map((comp) => (
+              <DeviceBadge
+                key={comp.id}
+                COLORS={COLORS}
+                title={String(t(`deviceNames.${comp.name.toLowerCase()}`, { defaultValue: comp.name }))}
+                subtitle={""}
+                value={comp.componentData ? comp.componentData.toFixed(2).toString() : "0"}
+                icon={
+                  comp.name.toLowerCase().includes("inverter")
+                    ? "bolt"
+                    : comp.name.toLowerCase().includes("bms")
+                      ? "microchip"
+                      : "battery-full"
+                }
+                status={comp.isDeleted ? "inactive" : "normal"}
+                onPress={() => handleOpenBattery(comp)}
+              />
+            ))}
           </View>
         </View>
 
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <FontAwesome name="bolt" size={18} color={COLORS.accent} />
-            <Text style={styles.statValue}>{(totalPower).toFixed(2)} kW</Text>
-            <Text style={styles.statLabel}>{t("deviceDetail.dailyProduction")}</Text>
+        <View style={styles.statsSection}>
+          <View style={styles.statsSectionHeader}>
+            <Text style={styles.statsSectionTitle}>{t("deviceDetail.informations")}</Text>
           </View>
 
-          <View style={styles.statCard}>
-            <FontAwesome name="battery-full" size={18} color={COLORS.success} />
-            <Text style={styles.statValue}>{socValue.toFixed(0)}%</Text>
-            <Text style={styles.statLabel}>{t("deviceDetail.batteryCharge")}</Text>
+          <View style={styles.statsContainer}>
+            <View style={styles.statCard}>
+              <FontAwesome name="bolt" size={18} color={COLORS.accent} />
+              <Text style={styles.statValue}>{(totalPower).toFixed(2)} kW</Text>
+              <Text style={styles.statLabel}>{t("deviceDetail.dailyProduction")}</Text>
+            </View>
+
+            <View style={styles.statCard}>
+              <FontAwesome name="battery-full" size={18} color={COLORS.success} />
+              <Text style={styles.statValue}>{socValue.toFixed(0)}%</Text>
+              <Text style={styles.statLabel}>{t("deviceDetail.batteryCharge")}</Text>
+            </View>
+
+            <View style={styles.statCard}>
+              <FontAwesome name="plug" size={18} color={COLORS.textSoft} />
+
+              <Text
+                style={[styles.statValue, { textAlign: 'center', marginTop: 6 }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.75}
+              >
+                {t("deviceList.onGrid")}
+              </Text>
+
+              <Text
+                style={[
+                  styles.statLabel,
+                  { textAlign: 'center', alignSelf: 'center', marginTop: 6 },
+                ]}
+              >
+                {t("deviceDetail.connection")}
+              </Text>
+            </View>
           </View>
-
-    <View style={styles.statCard}>
-  <FontAwesome name="plug" size={18} color={COLORS.textSoft} />
-
-  <Text
-    style={[styles.statValue, { textAlign: 'center', marginTop: 6 }]}
-    numberOfLines={1}
-    adjustsFontSizeToFit
-    minimumFontScale={0.75} // gerekirse %75’e kadar küçültür
-  >
-    {t("deviceList.onGrid")}
-  </Text>
-
-  <Text
-    style={[
-      styles.statLabel,
-      { textAlign: 'center', alignSelf: 'center', marginTop: 6 },
-    ]}
-  >
-    {t("deviceDetail.connection")}
-  </Text>
-</View>
-
         </View>
 
 

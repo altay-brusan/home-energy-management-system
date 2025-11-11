@@ -38,41 +38,33 @@ export default function DeviceBadge({
   };
 
   return (
-   <Pressable
-  onPress={onPress}
-  style={[
-    badgeStyles.wrap,
-    {
-      backgroundColor: COLORS.dark,
-      borderColor: COLORS.border,
-      alignItems: 'flex-start', 
-    },
-  ]}
->
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <View style={[badgeStyles.dot, { backgroundColor: getStatusColor() }]} />
-        <View>
-          <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-            <Text style={[badgeStyles.title, { color: COLORS.textSoft }]} numberOfLines={1}>
-              {title}
-            </Text>
-            {subtitle && (
-              <Text style={[badgeStyles.subtitle, { color: COLORS.slate400 }]} numberOfLines={1}>
-                {' '}
-                {subtitle}
-              </Text>
-            )}
-          </View>
-          <Text style={[badgeStyles.value, { color: COLORS.textSoft }]} numberOfLines={1}>
-            {value}
-          </Text>
-        </View>
-      </View>
-      <View style={badgeStyles.iconContainer}>
+    <Pressable
+      onPress={onPress}
+      style={[
+        badgeStyles.wrap,
+        {
+          backgroundColor: COLORS.cardBg,
+          borderColor: COLORS.border,
+        },
+      ]}
+    >
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+        <Text style={[badgeStyles.title, { color: COLORS.textSoft }]} numberOfLines={1}>
+          {title}
+        </Text>
         {icon && (
-          <FontAwesome name={icon as any} size={14} color={getStatusColor()} style={{ marginRight: 4 }} />
+          <FontAwesome name={icon as any} size={16} color={getStatusColor()} />
         )}
-        <FontAwesome name="chevron-right" size={12} color={COLORS.slate400} />
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
+        <Text style={[badgeStyles.value, { color: getStatusColor() }]} numberOfLines={1}>
+          {value}
+        </Text>
+        {subtitle && (
+          <Text style={[badgeStyles.subtitle, { color: COLORS.slate400, opacity: 0.6 }]} numberOfLines={1}>
+            {subtitle}
+          </Text>
+        )}
       </View>
     </Pressable>
   );

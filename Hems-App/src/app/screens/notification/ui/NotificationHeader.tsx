@@ -20,13 +20,20 @@ export function NotificationHeader({ styles, onMarkAllRead, onPressTrash, onPres
 
   return (
     <View style={styles.headerRow}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <Pressable onPress={onPressBack} style={{ paddingVertical: 8, paddingRight: 8 }}>
-          <ArrowLeft size={24} color={styles.headerBtnText.color} strokeWidth={2} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+        <Pressable
+          onPress={onPressBack}
+          style={{
+            paddingVertical: 8,
+            paddingRight: 8,
+            marginLeft: -4
+          }}
+        >
+          <ArrowLeft size={26} color={styles.title.color} strokeWidth={2.5} />
         </Pressable>
         <Text style={styles.title}>{t('notifications.title')}</Text>
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
         <Pressable
           onPress={onMarkAllRead}
           style={[styles.headerBtn, { opacity: markingAllAsRead ? 0.6 : 1 }]}

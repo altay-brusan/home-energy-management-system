@@ -765,7 +765,9 @@
     "markAllReadSuccess": "Tüm bildirimler okundu olarak işaretlendi",
     "markAllReadError": "Tüm bildirimler okundu olarak işaretlenemedi",
     "markAsRead": "Okundu olarak işaretlendi",
-    "markAsReadFailed": "İşaretleme başarısız"
+    "markAsReadFailed": "İşaretleme başarısız",
+    "details": "Bildirim Detayı",
+    "additionalInfo": "Ek Bilgiler"
   },
 "deviceList": {
   "title": "Cihaz",
@@ -778,6 +780,7 @@
   "title": "NetZr Cihaz Detayı",
   "loading": "Veriler Yükleniyor...",
   "totalComponents": "Toplam {{count}} bileşen bulundu",
+  "informations": "Bilgiler",
   "dailyProduction": "Günlük Üretim",
   "batteryCharge": "Batarya Şarjı",
   "connection": "Bağlantı",
@@ -1243,6 +1246,7 @@
 },
 "tou": {
   "title": "Zaman Kullanımına Göre (TOU) Planlama",
+  "schedule": "Program",
   "periodSettings": "P{{index}} Ayarları",
   "periodRange": "{{index}}. Dönem ({{range}})",
   "batteryDischarge": "Batarya Deşarjı",
