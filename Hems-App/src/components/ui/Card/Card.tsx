@@ -23,8 +23,7 @@ export default function Card({
 }: CardProps) {
   const mode = useThemeStore(s => s.mode);
   const isDark = mode === 'dark';
-  const COLORS = getThemeColors(isDark);
-  const variantStyle = getCardVariantStyle(variant, radius, COLORS, isDark);
+  const variantStyle = getCardVariantStyle(variant, radius, isDark);
 
   return <View style={[variantStyle, { padding }, style]}>{children}</View>;
 }

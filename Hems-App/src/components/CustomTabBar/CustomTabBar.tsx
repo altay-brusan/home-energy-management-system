@@ -3,23 +3,23 @@ import { View, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FontAwesome from '@react-native-vector-icons/fontawesome';
-import { getThemeColors } from '../../theme/constants';
+import { getDesignTokens } from '../../theme/constants';
 import { useThemeStore } from '../../store/themeStore';
 
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const mode = useThemeStore((s) => s.mode);
   const isDark = mode === 'dark';
-  const COLORS = getThemeColors(isDark);
+  const tokens = getDesignTokens(isDark);
 
   return (
     <View style={[styles.container, {
       paddingBottom: Platform.OS === 'ios' ? insets.bottom : 16,
-      backgroundColor: isDark ? COLORS.surface : '#FFFFFF',
+      backgroundColor: tokens.surface.base,
     }]}>
       <View style={[styles.tabBar, {
-        backgroundColor: isDark ? COLORS.surface : '#FFFFFF',
-        borderTopColor: isDark ? COLORS.border : '#E5E7EB',
+        backgroundColor: tokens.surface.base,
+        borderTopColor: tokens.border.primary,
       }]}>
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
@@ -54,7 +54,7 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
           // Get icon component
           const iconComponent = options.tabBarIcon?.({
             focused: isFocused,
-            color: isFocused ? COLORS.accent : (isDark ? COLORS.textSoft : COLORS.slate400),
+            color: isFocused ? tokens.brand.accent : tokens.text.tertiary,
             size: 24,
           });
 
@@ -70,7 +70,7 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
               style={[
                 styles.tabButton,
                 isFocused && {
-                  backgroundColor: isDark ? COLORS.accent + '30' : COLORS.accent + '20',
+                  backgroundColor: tokens.background.selected,
                   paddingHorizontal: 16,
                 },
               ]}
@@ -83,7 +83,7 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
                   style={[
                     styles.label,
                     {
-                      color: COLORS.accent,
+                      color: tokens.brand.accent,
                     },
                   ]}
                   numberOfLines={1}

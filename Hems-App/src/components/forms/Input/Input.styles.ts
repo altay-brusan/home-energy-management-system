@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { getThemeColors, SPACING } from '../../../theme/constants';
+import { getDesignTokens, SPACING } from '../../../theme/constants';
 import { useThemeStore } from '../../../store/themeStore';
 
 type Params = {
@@ -10,9 +10,7 @@ type Params = {
 export function getInputStyles ({ focused, error }: Params) {
     const mode = useThemeStore.getState().mode;
     const isDark = mode === 'dark';
-    const C = getThemeColors(isDark);
-
-    const placeholderColor = isDark ? 'rgba(255,255,255,0.5)' : '#9CA3AF';
+    const tokens = getDesignTokens(isDark);
 
     return {
         ...StyleSheet.create({
@@ -20,34 +18,32 @@ export function getInputStyles ({ focused, error }: Params) {
             label: {
                 fontSize: 14,
                 fontWeight: '500',
-                color: isDark ? C.white : C.textSoft,
+                color: tokens.input.label,
                 marginBottom: 4,
             },
             input: {
                 height: 48,
                 borderWidth: 1,
-                borderColor: isDark ? C.border : '#CBD5E1',
+                borderColor: tokens.input.border,
                 borderRadius: 10,
                 paddingHorizontal: SPACING.md,
                 paddingVertical: SPACING.sm,
                 fontSize: 16,
-                color: isDark ? C.white : '#111827',
-                backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : C.surface,
+                color: tokens.input.text,
+                backgroundColor: tokens.input.bg,
             },
             inputFocused: {
-                borderColor: C.accent,
-
-
+                borderColor: tokens.input.borderFocus,
             },
             inputError: {
-                borderColor: '#EF4444',
+                borderColor: tokens.input.borderError,
             },
             error: {
                 fontSize: 12,
-                color: '#EF4444',
+                color: tokens.input.error,
                 marginTop: 4,
             },
         }),
-        placeholderColor,
+        placeholderColor: tokens.input.placeholder,
     };
 }
