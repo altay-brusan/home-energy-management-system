@@ -26,8 +26,58 @@ const seededRandom = (seed: number): number => {
   return x - Math.floor(x);
 };
 
+// Get weather condition for a day (sunny, partly cloudy, cloudy)
+// Creates patterns like 2-3 cloudy days in a row
+const getDayWeatherMultiplier = (date: Date): number => {
+  const dailySeed = date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate();
+  const random = seededRandom(dailySeed);
+
+  // Check if previous day was cloudy to create multi-day patterns
+  const prevDate = new Date(date);
+  prevDate.setDate(date.getDate() - 1);
+  const prevSeed = prevDate.getFullYear() * 10000 + (prevDate.getMonth() + 1) * 100 + prevDate.getDate();
+  const prevRandom = seededRandom(prevSeed);
+
+  // If previous day was cloudy (< 0.25), higher chance this day is cloudy too
+  if (prevRandom < 0.25) {
+    // 60% chance to continue cloudy pattern
+    if (random < 0.6) {
+      return 0.55 + random * 0.2; // Cloudy: 55-75% solar
+    }
+  }
+
+  // Normal weather distribution
+  if (random < 0.15) {
+    return 0.5 + random * 0.25; // Cloudy: 50-75% solar (15% of days)
+  } else if (random < 0.35) {
+    return 0.75 + random * 0.15; // Partly cloudy: 75-90% solar (20% of days)
+  } else {
+    return 0.95 + random * 0.1; // Sunny: 95-105% solar (65% of days)
+  }
+};
+
+// Get seasonal multiplier (winter: lower solar, summer: higher solar)
+const getSeasonalMultiplier = (date: Date): number => {
+  const month = date.getMonth(); // 0-11
+
+  // Northern hemisphere seasonal pattern
+  if (month >= 5 && month <= 7) {
+    // Summer (Jun, Jul, Aug): +5% to +15%
+    return 1.05 + seededRandom(month * 100) * 0.1;
+  } else if (month >= 11 || month <= 1) {
+    // Winter (Dec, Jan, Feb): -5% to -15%
+    return 0.85 + seededRandom(month * 100) * 0.1;
+  } else if (month >= 2 && month <= 4) {
+    // Spring (Mar, Apr, May): -5% to +5%
+    return 0.95 + seededRandom(month * 100) * 0.1;
+  } else {
+    // Fall (Sep, Oct, Nov): 0% to +10%
+    return 1.0 + seededRandom(month * 100) * 0.1;
+  }
+};
+
 // Helper to generate realistic solar power (bell curve during daylight)
-const getSolarPower = (hour: number, minute: number, seed: number): number => {
+const getSolarPower = (hour: number, minute: number, seed: number, date: Date): number => {
   const sunriseHour = 6.5; // 6:30
   const sunsetHour = 18.75; // 18:45
   const currentTime = hour + minute / 60;
@@ -44,11 +94,15 @@ const getSolarPower = (hour: number, minute: number, seed: number): number => {
   const falloff = Math.pow(Math.cos((hoursSinceNoon / (dayLength / 2)) * (Math.PI / 2)), 2);
   const randomVariation = 0.9 + seededRandom(seed + hour * 100 + minute) * 0.2;
 
-  return Math.round(peakPower * falloff * randomVariation);
+  // Apply weather and seasonal variations
+  const weatherMultiplier = getDayWeatherMultiplier(date);
+  const seasonalMultiplier = getSeasonalMultiplier(date);
+
+  return Math.round(peakPower * falloff * randomVariation * weatherMultiplier * seasonalMultiplier);
 };
 
 // Helper to generate realistic load power
-const getLoadPower = (hour: number, seed: number): number => {
+const getLoadPower = (hour: number, seed: number, date: Date): number => {
   const baseLoad = 2200;
 
   let multiplier = 1.0;
@@ -60,8 +114,16 @@ const getLoadPower = (hour: number, seed: number): number => {
     multiplier = 0.8; // Night low
   }
 
+  // Daily variation: some days use more power (weekends, holidays, etc.)
+  const dailySeed = date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate();
+  const dayVariation = 0.9 + seededRandom(dailySeed + 500) * 0.2; // 90% to 110%
+
+  // Weekend tends to have different usage pattern
+  const dayOfWeek = date.getDay();
+  const weekendMultiplier = (dayOfWeek === 0 || dayOfWeek === 6) ? 1.1 : 1.0; // +10% on weekends
+
   const randomVariation = 0.85 + seededRandom(seed + hour * 50) * 0.3;
-  return Math.round(baseLoad * multiplier * randomVariation);
+  return Math.round(baseLoad * multiplier * randomVariation * dayVariation * weekendMultiplier);
 };
 
 // Helper to generate battery power
@@ -112,8 +174,8 @@ export const generate24HourPowerMetrics = (deviceId: string, date?: Date): Power
       timestamp.setHours(hour, minute, 0, 0);
 
       const seed = dailySeed + hour * 100 + minute;
-      const solarPower = getSolarPower(hour, minute, seed);
-      const loadPower = getLoadPower(hour, seed);
+      const solarPower = getSolarPower(hour, minute, seed, targetDate);
+      const loadPower = getLoadPower(hour, seed, targetDate);
       const batteryPower = getBatteryPower(solarPower, loadPower, hour);
       const gridPower = getGridPower(solarPower, batteryPower, loadPower, seed);
 
@@ -183,6 +245,153 @@ export const getPowerMetricsForDate = (deviceId: string, selectedDate?: Date): P
   return fullData;
 };
 
+/**
+ * Get power metrics for a week (7 days)
+ * Returns array of daily data starting from the given date (or Monday of the week)
+ * Only returns data up to today (no future dates)
+ */
+export const getPowerMetricsForWeek = (deviceId: string, selectedDate?: Date): Array<{ date: string; data: PowerDataPoint[] }> => {
+  const targetDate = selectedDate ? new Date(selectedDate) : new Date();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Find Monday of the week
+  const dayOfWeek = targetDate.getDay();
+  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Sunday = 0, Monday = 1
+  const monday = new Date(targetDate);
+  monday.setDate(targetDate.getDate() + mondayOffset);
+  monday.setHours(0, 0, 0, 0);
+
+  const weekData: Array<{ date: string; data: PowerDataPoint[] }> = [];
+
+  // Generate data for 7 days (Monday to Sunday), but only up to today
+  for (let i = 0; i < 7; i++) {
+    const currentDay = new Date(monday);
+    currentDay.setDate(monday.getDate() + i);
+    currentDay.setHours(0, 0, 0, 0);
+
+    // Only include days that are today or in the past
+    if (currentDay.getTime() <= today.getTime()) {
+      const dayData = generate24HourPowerMetrics(deviceId, currentDay);
+      weekData.push({
+        date: currentDay.toISOString().split('T')[0],
+        data: dayData.data
+      });
+    }
+  }
+
+  return weekData;
+};
+
+/**
+ * Get power metrics for a month
+ * Returns array of daily data for all days in the month
+ * Only returns data up to today (no future dates)
+ */
+export const getPowerMetricsForMonth = (deviceId: string, selectedDate?: Date): Array<{ date: string; data: PowerDataPoint[] }> => {
+  const targetDate = selectedDate ? new Date(selectedDate) : new Date();
+  targetDate.setHours(0, 0, 0, 0);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const year = targetDate.getFullYear();
+  const month = targetDate.getMonth();
+
+  // Get first and last day of the month
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const daysInMonth = lastDay.getDate();
+
+  const monthData: Array<{ date: string; data: PowerDataPoint[] }> = [];
+
+  // Generate data for each day in the month, but only up to today
+  for (let day = 1; day <= daysInMonth; day++) {
+    const currentDay = new Date(year, month, day);
+    currentDay.setHours(0, 0, 0, 0);
+
+    // Only include days that are today or in the past
+    if (currentDay.getTime() <= today.getTime()) {
+      const dayData = generate24HourPowerMetrics(deviceId, currentDay);
+
+      monthData.push({
+        date: currentDay.toISOString().split('T')[0],
+        data: dayData.data
+      });
+    }
+  }
+
+  return monthData;
+};
+
+/**
+ * Get power metrics for a year (12 months)
+ * Returns array of monthly data, where each month contains daily data
+ * Only returns data up to today (no future months/days)
+ */
+export const getPowerMetricsForYear = (
+  deviceId: string,
+  selectedDate?: Date
+): Array<{
+  month: number;
+  year: number;
+  dailyData: Array<{ date: string; data: PowerDataPoint[] }>
+}> => {
+  const targetDate = selectedDate ? new Date(selectedDate) : new Date();
+  const year = targetDate.getFullYear();
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+
+  const yearData: Array<{
+    month: number;
+    year: number;
+    dailyData: Array<{ date: string; data: PowerDataPoint[] }>
+  }> = [];
+
+  // Generate data for each month (0-11), but only up to current month if it's current year
+  for (let month = 0; month < 12; month++) {
+    // Skip future months in the current year
+    if (year === currentYear && month > currentMonth) {
+      continue;
+    }
+
+    const monthlyDailyData: Array<{ date: string; data: PowerDataPoint[] }> = [];
+
+    // Get number of days in this month
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    // Generate data for each day in the month, but only up to today
+    for (let day = 1; day <= daysInMonth; day++) {
+      const currentDay = new Date(year, month, day);
+      currentDay.setHours(0, 0, 0, 0);
+
+      // Only include days that are today or in the past
+      if (currentDay.getTime() <= today.getTime()) {
+        const dayData = generate24HourPowerMetrics(deviceId, currentDay);
+
+        monthlyDailyData.push({
+          date: currentDay.toISOString().split('T')[0],
+          data: dayData.data
+        });
+      }
+    }
+
+    // Only add the month if it has data
+    if (monthlyDailyData.length > 0) {
+      yearData.push({
+        month,
+        year,
+        dailyData: monthlyDailyData
+      });
+    }
+  }
+
+  return yearData;
+};
+
 export const powerMetrics24HService = {
   /**
    * Get 24-hour power metrics for a specific date
@@ -191,7 +400,50 @@ export const powerMetrics24HService = {
    */
   getPowerMetrics24H: async (deviceId: string, selectedDate?: Date): Promise<PowerMetrics24HData> => {
     // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise<void>(resolve => setTimeout(() => resolve(), 300));
     return getPowerMetricsForDate(deviceId, selectedDate);
+  },
+
+  /**
+   * Get power metrics for a week
+   * Returns 7 days of data starting from Monday of the selected week
+   */
+  getPowerMetricsForWeek: async (
+    deviceId: string,
+    selectedDate?: Date
+  ): Promise<Array<{ date: string; data: PowerDataPoint[] }>> => {
+    // Simulate API delay
+    await new Promise<void>(resolve => setTimeout(() => resolve(), 400));
+    return getPowerMetricsForWeek(deviceId, selectedDate);
+  },
+
+  /**
+   * Get power metrics for a month
+   * Returns all days in the selected month
+   */
+  getPowerMetricsForMonth: async (
+    deviceId: string,
+    selectedDate?: Date
+  ): Promise<Array<{ date: string; data: PowerDataPoint[] }>> => {
+    // Simulate API delay
+    await new Promise<void>(resolve => setTimeout(() => resolve(), 500));
+    return getPowerMetricsForMonth(deviceId, selectedDate);
+  },
+
+  /**
+   * Get power metrics for a year
+   * Returns 12 months of data, each containing daily data
+   */
+  getPowerMetricsForYear: async (
+    deviceId: string,
+    selectedDate?: Date
+  ): Promise<Array<{
+    month: number;
+    year: number;
+    dailyData: Array<{ date: string; data: PowerDataPoint[] }>
+  }>> => {
+    // Simulate API delay
+    await new Promise<void>(resolve => setTimeout(() => resolve(), 600));
+    return getPowerMetricsForYear(deviceId, selectedDate);
   }
 };

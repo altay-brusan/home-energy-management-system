@@ -13,6 +13,9 @@ import { powerMetrics24HService } from '../../../api/services/powerMetrics24HSer
 import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors, SPACING } from '../../../theme/constants';
 import { getPowerMetricsDetailStyles } from './PowerMetricsDetailScreen.styles';
+import StackedBarChart from '../../../components/charts/StackedBarChart';
+import { aggregateToHourly, aggregateToWeekDays, aggregateToMonthDays, aggregateToMonths } from '../../../utils/powerMetricsAggregation';
+import type { AggregatedEnergyDataPoint } from '../../../api/types/powerMetrics.types';
 
 // Power line colors
 const POWER_COLORS = {
@@ -48,6 +51,7 @@ export default function PowerMetricsDetailScreen() {
   const [showLoad, setShowLoad] = useState(true);
 
   const [powerMetricsData, setPowerMetricsData] = useState<any>(null);
+  const [aggregatedData, setAggregatedData] = useState<AggregatedEnergyDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [touchX, setTouchX] = useState<number | null>(null);
@@ -74,33 +78,91 @@ export default function PowerMetricsDetailScreen() {
     }
 
     try {
-      const data = await powerMetrics24HService.getPowerMetrics24H(device.id, selectedDate);
-      console.log('Power Metrics Data:', {
-        totalDataPoints: data.data.length,
-        firstTimestamp: data.data[0]?.timestamp,
-        lastTimestamp: data.data[data.data.length - 1]?.timestamp,
-        currentTime: new Date().toISOString(),
-        selectedDate: selectedDate.toISOString()
-      });
-      setPowerMetricsData(data);
+      let aggregated: AggregatedEnergyDataPoint[] = [];
+
+      switch (selectedRange) {
+        case 'Day': {
+          // Day view uses line chart with raw 15-minute data
+          const data = await powerMetrics24HService.getPowerMetrics24H(device.id, selectedDate);
+          setPowerMetricsData(data);
+          // No aggregation needed for day view
+          console.log('Power Metrics Data (Day):', {
+            totalDataPoints: data.data.length,
+            firstTimestamp: data.data[0]?.timestamp,
+            lastTimestamp: data.data[data.data.length - 1]?.timestamp,
+            selectedDate: selectedDate.toISOString()
+          });
+          break;
+        }
+        case 'Week': {
+          const weekData = await powerMetrics24HService.getPowerMetricsForWeek(device.id, selectedDate);
+          // Calculate Monday of the week
+          const dayOfWeek = selectedDate.getDay();
+          const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+          const monday = new Date(selectedDate);
+          monday.setDate(selectedDate.getDate() + mondayOffset);
+          monday.setHours(0, 0, 0, 0);
+
+          aggregated = aggregateToWeekDays(weekData, monday);
+          setPowerMetricsData(null); // No sunrise/sunset for week view
+          console.log('Aggregated Data (Week):', {
+            range: selectedRange,
+            dataPoints: aggregated.length,
+            selectedDate: selectedDate.toISOString(),
+            monday: monday.toISOString()
+          });
+          break;
+        }
+        case 'Month': {
+          const monthData = await powerMetrics24HService.getPowerMetricsForMonth(device.id, selectedDate);
+          const year = selectedDate.getFullYear();
+          const month = selectedDate.getMonth();
+
+          aggregated = aggregateToMonthDays(monthData, year, month);
+          setPowerMetricsData(null); // No sunrise/sunset for month view
+          console.log('Aggregated Data (Month):', {
+            range: selectedRange,
+            dataPoints: aggregated.length,
+            selectedDate: selectedDate.toISOString(),
+            year,
+            month
+          });
+          break;
+        }
+        case 'Year': {
+          const yearData = await powerMetrics24HService.getPowerMetricsForYear(device.id, selectedDate);
+          const year = selectedDate.getFullYear();
+
+          aggregated = aggregateToMonths(yearData, year);
+          setPowerMetricsData(null); // No sunrise/sunset for year view
+          console.log('Aggregated Data (Year):', {
+            range: selectedRange,
+            dataPoints: aggregated.length,
+            selectedDate: selectedDate.toISOString(),
+            year
+          });
+          break;
+        }
+      }
+
+      setAggregatedData(aggregated);
     } catch (error) {
       console.error('Failed to load power metrics:', error);
       setPowerMetricsData(null);
+      setAggregatedData([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [hasDevice, device?.id, selectedDate]);
+  }, [hasDevice, device?.id, selectedDate, selectedRange]);
 
   useEffect(() => {
     loadPowerMetricsData(true); // Initial load
   }, []);
 
   useEffect(() => {
-    if (powerMetricsData) {
-      loadPowerMetricsData(false); // Date change - don't show full page loading
-    }
-  }, [selectedDate]);
+    loadPowerMetricsData(false); // Date or range change - don't show full page loading
+  }, [selectedDate, selectedRange]);
 
   useEffect(() => {
     const refreshCallback = () => loadPowerMetricsData(false);
@@ -187,7 +249,35 @@ export default function PowerMetricsDetailScreen() {
     }
   };
 
+  // Check if we can navigate to next period (prevent future dates)
+  const canNavigateNext = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const newDate = new Date(selectedDate);
+
+    if (selectedRange === 'Day') {
+      newDate.setDate(newDate.getDate() + 1);
+      return newDate.getTime() <= today.getTime();
+    } else if (selectedRange === 'Week') {
+      newDate.setDate(newDate.getDate() + 7);
+      return newDate.getTime() <= today.getTime();
+    } else if (selectedRange === 'Month') {
+      newDate.setMonth(newDate.getMonth() + 1);
+      return newDate.getTime() <= today.getTime();
+    } else if (selectedRange === 'Year') {
+      newDate.setFullYear(newDate.getFullYear() + 1);
+      return newDate.getFullYear() <= today.getFullYear();
+    }
+
+    return true;
+  };
+
   const navigateDate = (direction: 'prev' | 'next') => {
+    // Don't allow navigation to future dates
+    if (direction === 'next' && !canNavigateNext()) {
+      return;
+    }
+
     const newDate = new Date(selectedDate);
     if (selectedRange === 'Day') {
       newDate.setDate(newDate.getDate() + (direction === 'next' ? 1 : -1));
@@ -280,6 +370,55 @@ export default function PowerMetricsDetailScreen() {
   };
 
   const renderChart = () => {
+    // Day view uses line chart, other views use stacked bar chart
+    if (selectedRange === 'Day') {
+      return renderLineChart();
+    } else {
+      return renderStackedBarChart();
+    }
+  };
+
+  const renderStackedBarChart = () => {
+    const chartWidth = Dimensions.get('window').width;
+    // Header (60) + TimeSelector (60) + Bottom area (140) + top padding (insets.top + 8) + safe area bottom + extra padding
+    const chartHeight = screenHeight - insets.top - 60 - 60 - 140 - insets.bottom - SPACING.md - 40;
+
+    if (!aggregatedData || aggregatedData.length === 0) {
+      return (
+        <View style={styles.loadingContainer}>
+          {refreshing ? (
+            <>
+              <ActivityIndicator size="large" color={COLORS.accent} />
+              <Text style={styles.loadingText}>{t('common.loading', 'Loading...')}</Text>
+            </>
+          ) : (
+            <Text style={styles.loadingText}>{t('common.noData', 'No data available')}</Text>
+          )}
+        </View>
+      );
+    }
+
+    return (
+      <View style={{ flex: 1 }}>
+        <StackedBarChart
+          data={aggregatedData}
+          colors={POWER_COLORS}
+          visibility={{
+            solar: showSolar,
+            battery: showBattery,
+            grid: showGrid,
+            load: showLoad
+          }}
+          width={chartWidth}
+          height={chartHeight}
+          cardBgColor={COLORS.cardBg}
+          textColor={COLORS.textSoft}
+        />
+      </View>
+    );
+  };
+
+  const renderLineChart = () => {
     const chartWidth = Dimensions.get('window').width;
     // Header (60) + TimeSelector (60) + Bottom area (140) + top padding (insets.top + 8) + safe area bottom + extra padding
     const chartHeight = screenHeight - insets.top - 60 - 60 - 140 - insets.bottom - SPACING.md - 40;
@@ -646,8 +785,16 @@ export default function PowerMetricsDetailScreen() {
           <TouchableOpacity onPress={() => setIsDatePickerVisible(true)}>
             <Text style={styles.dateText}>{formatDate(selectedDate)}</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigateDate('next')} style={styles.arrowButton}>
-            <Icon name="chevron-right" size={24} color={COLORS.textSoft} />
+          <TouchableOpacity
+            onPress={() => navigateDate('next')}
+            style={styles.arrowButton}
+            disabled={!canNavigateNext()}
+          >
+            <Icon
+              name="chevron-right"
+              size={24}
+              color={canNavigateNext() ? COLORS.textSoft : (isDark ? '#4B5563' : '#D1D5DB')}
+            />
           </TouchableOpacity>
         </View>
         <TouchableOpacity
@@ -796,6 +943,7 @@ export default function PowerMetricsDetailScreen() {
               current={selectedDate.toISOString().split('T')[0]}
               markedDates={getMarkedDates()}
               markingType={'period'}
+              maxDate={new Date().toISOString().split('T')[0]}
               onDayPress={(day) => {
                 setSelectedDate(new Date(day.timestamp));
                 setIsDatePickerVisible(false);

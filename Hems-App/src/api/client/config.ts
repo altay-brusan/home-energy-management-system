@@ -1,5 +1,5 @@
 export const API_CONFIG = {
-  BASE_URL: 'https://hems-api.pentaunity.com/api',
+  BASE_URL: 'https://hems-api.n2nenergy.com/api',
   TIMEOUT: 30000,
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000,
