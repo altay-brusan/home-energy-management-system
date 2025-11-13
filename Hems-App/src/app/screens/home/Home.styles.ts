@@ -231,7 +231,7 @@ profileIcon: {
       position: 'absolute',
       bottom: 25,
       right: 55,
-      backgroundColor: isDark ? '#333333' : '#ffffff',
+      backgroundColor: COLORS.surface,
       borderRadius: 8,
       borderWidth: 1,
       borderColor: COLORS.border,
@@ -242,7 +242,7 @@ profileIcon: {
     dropdownItem: {
       fontSize: TYPOGRAPHY.md,
       paddingVertical: 6,
-      color: isDark ? '#fff' : '#111827',
+      color: COLORS.textSoft,
     },
     emptyState: {
       alignItems: 'center',

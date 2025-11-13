@@ -1,9 +1,11 @@
 import React, { JSX, useMemo } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Pressable, ScrollView } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import FontAwesome from '@react-native-vector-icons/fontawesome';
+import { ArrowLeft } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import MainLayout from '../../layouts/MainLayout';
 import { useThemeStore } from '../../../store/themeStore';
@@ -31,6 +33,7 @@ export default function NotificationDetailScreen(): JSX.Element {
   const COLORS = getThemeColors(isDark);
   const styles = useMemo(() => makeNotificationDetailStyles(isDark), [isDark]);
   const { t } = useI18n();
+  const insets = useSafeAreaInsets();
 
   const criticalFg = (COLORS as any).critical ?? '#EB5757';
   const criticalBg =
@@ -38,48 +41,58 @@ export default function NotificationDetailScreen(): JSX.Element {
     (isDark ? 'rgba(235,87,87,0.18)' : 'rgba(235,87,87,0.12)');
 
   return (
-    <MainLayout>
-      <View style={styles.container}>
-        <View style={styles.pageTitleRow}>
-          <Text style={styles.pageTitle}>{item.title}</Text>
+    <View style={[styles.screen, { paddingTop: insets.top + 8 }]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <Pressable
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <ArrowLeft size={26} color={styles.headerTitle.color} strokeWidth={2.5} />
+          </Pressable>
+          <Text style={styles.headerTitle}>{t('notifications.details')}</Text>
+        </View>
+      </View>
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Title and Badge */}
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>{item.title}</Text>
           {item.severity === 'critical' && (
-            <View style={[styles.badge, { backgroundColor: criticalBg }]}>
-              <Text style={[styles.badgeText, { color: criticalFg }]}>
+            <View style={[styles.criticalBadge, { backgroundColor: criticalBg }]}>
+              <Text style={[styles.criticalBadgeText, { color: criticalFg }]}>
                 {t('notifications.critical')}
               </Text>
             </View>
           )}
         </View>
 
-        <Card padding={20} radius={18} style={styles.card}>
-          <Text style={styles.itemTitle}>{item.message}</Text>
+        {/* Message */}
+        <Text style={styles.message}>{item.message}</Text>
 
-          <View style={styles.divider} />
-
-          {item.description && (
-            <View style={styles.additionalDataContainer}>
-              <View style={styles.additionalDataTitleRow}>
-                <FontAwesome name="info-circle" size={16} color={COLORS.accent || '#1DD1A1'} />
-                <Text style={styles.additionalDataTitle}>Additional Information</Text>
+        {/* Additional Information */}
+        {item.description && (
+          <View style={styles.infoCard}>
+            <View style={styles.infoHeader}>
+              <View style={styles.infoIcon}>
+                <FontAwesome name="info-circle" size={18} color={COLORS.accent || '#1DD1A1'} />
               </View>
-              <Text style={styles.additionalDataText}>{item.description}</Text>
+              <Text style={styles.infoTitle}>{t('notifications.additionalInfo')}</Text>
             </View>
-          )}
-
-          <View style={styles.footerRow}>
-            <Text style={styles.time}>
-              {new Date(item.createdAt).toLocaleString()}
-            </Text>
+            <Text style={styles.infoText}>{item.description}</Text>
           </View>
-        </Card>
+        )}
 
-        <Button
-          title={t('common.back')}
-          onPress={() => navigation.goBack()}
-          style={styles.button}
-          textStyle={styles.buttonText}
-        />
-      </View>
-    </MainLayout>
+        {/* Timestamp - Bottom Center */}
+        <Text style={styles.timestamp}>
+          {new Date(item.createdAt).toLocaleString()}
+        </Text>
+      </ScrollView>
+    </View>
   );
 }

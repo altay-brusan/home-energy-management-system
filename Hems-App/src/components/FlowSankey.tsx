@@ -3,6 +3,7 @@ import { View, StyleSheet, Text as RNText, Pressable } from "react-native";
 import Svg, { Defs, LinearGradient, RadialGradient, Stop, Path, Rect, G, Text, Circle, Line, Image } from "react-native-svg";
 import Animated, { useSharedValue, withTiming, useAnimatedStyle, interpolate, withRepeat, Easing, useAnimatedProps } from "react-native-reanimated";
 import { useI18n } from "../hooks/useI18n";
+import { getDesignTokens } from "../theme/constants";
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -23,19 +24,83 @@ const limitText = (text: string, maxLength: number = 8): string => {
 
 type CatMeta = { chip: string; chip2?: string; text: string; stroke?: string };
 
-const CAT: Record<string, CatMeta> = {
-    SOLAR: { chip: "#FFE7B0", chip2: "#FFC56B", text: "#5C3B00", stroke: "#FFB23B" },
-    PV: { chip: "#FFE7B0", chip2: "#FFC56B", text: "#5C3B00", stroke: "#FFB23B" },
-    BATTERY: { chip: "#CFFAF3", chip2: "#A6F0E3", text: "#0A5A55", stroke: "#68E5D4" },
-    GENERATOR: { chip: "#FFE0CC", chip2: "#FFB380", text: "#663300", stroke: "#FF9500" },
-    GRID: { chip: "#E5DAFF", chip2: "#D3C4FF", text: "#3E2A80", stroke: "#B79AFF" },
-    LOAD: { chip: "#FFD8D8", chip2: "#FFC2C2", text: "#7D1421", stroke: "#FF9AA5" },
-    SYSTEM: { chip: "#D6EBFF", chip2: "#A8D5FF", text: "#003D7A", stroke: "#4A90E2" },
-    CENTER: { chip: "#D6EBFF", chip2: "#A8D5FF", text: "#003D7A", stroke: "#4A90E2" },
+// Helper function to create category colors from design tokens
+const createCatColors = (isDark: boolean): Record<string, CatMeta> => {
+    const tokens = getDesignTokens(isDark);
+
+    // Helper to lighten color for chip effect (using opacity-like approach)
+    const lightenForChip = (baseColor: string) => baseColor + 'D9'; // ~85% opacity
+    const lightenForChip2 = (baseColor: string) => baseColor + 'B3'; // ~70% opacity
+
+    // Determine text color based on theme
+    const getTextColor = (baseColor: string) => {
+        // In dark mode, use lighter text; in light mode, use darker text
+        return isDark ? tokens.text.primary : tokens.text.inverse;
+    };
+
+    return {
+        SOLAR: {
+            chip: lightenForChip(tokens.energy.solar),
+            chip2: tokens.energy.solarLight,
+            text: isDark ? tokens.text.primary : '#5C3B00',
+            stroke: tokens.energy.solar
+        },
+        PV: {
+            chip: lightenForChip(tokens.energy.solar),
+            chip2: tokens.energy.solarLight,
+            text: isDark ? tokens.text.primary : '#5C3B00',
+            stroke: tokens.energy.solar
+        },
+        BATTERY: {
+            chip: lightenForChip(tokens.energy.battery),
+            chip2: tokens.energy.batteryLight,
+            text: isDark ? tokens.text.primary : '#0A5A55',
+            stroke: tokens.energy.battery
+        },
+        GENERATOR: {
+            chip: lightenForChip(tokens.energy.generator),
+            chip2: tokens.energy.generatorLight,
+            text: isDark ? tokens.text.primary : '#663300',
+            stroke: tokens.energy.generator
+        },
+        GRID: {
+            chip: lightenForChip(tokens.energy.grid),
+            chip2: tokens.energy.gridLight,
+            text: isDark ? tokens.text.primary : '#3E2A80',
+            stroke: tokens.energy.grid
+        },
+        LOAD: {
+            chip: lightenForChip(tokens.energy.load),
+            chip2: tokens.energy.loadLight,
+            text: isDark ? tokens.text.primary : '#7D1421',
+            stroke: tokens.energy.load
+        },
+        SYSTEM: {
+            chip: lightenForChip(tokens.brand.primary),
+            chip2: tokens.brand.primaryLight,
+            text: isDark ? tokens.text.primary : '#003D7A',
+            stroke: tokens.brand.primary
+        },
+        CENTER: {
+            chip: lightenForChip(tokens.brand.primary),
+            chip2: tokens.brand.primaryLight,
+            text: isDark ? tokens.text.primary : '#003D7A',
+            stroke: tokens.brand.primary
+        },
+    };
 };
 
-const getCat = (label: string): CatMeta =>
-    CAT[label.toUpperCase()] ?? { chip: "#EDEFF5", chip2: "#EDEFF5", text: "#1B2333", stroke: "#D8DEE9" };
+const getCat = (label: string, isDark: boolean): CatMeta => {
+    const tokens = getDesignTokens(isDark);
+    const CAT = createCatColors(isDark);
+
+    return CAT[label.toUpperCase()] ?? {
+        chip: tokens.surface.card,
+        chip2: tokens.surface.card,
+        text: tokens.text.primary,
+        stroke: tokens.border.primary
+    };
+};
 
 export type SankeyNode = {
     id: string;
@@ -97,14 +162,19 @@ const FlowSankey: React.FC<Props> = ({
     layoutOpts,
     enableFocusMode = true,
     linkColorMode = "absolute",
-    linkColorStops = [
-        { stop: 0.00, color: "#FF4757" },
-        { stop: 0.25, color: "#FF7A00" },
-        { stop: 0.50, color: "#FDB52E" },
-        { stop: 0.75, color: "#10D3CF" },
-        { stop: 1.00, color: "#5B6EF5" },
-    ],
+    linkColorStops,
 }) => {
+    // Create default color stops from design tokens if not provided
+    const isDarkTheme = theme === "dark";
+    const tokensForStops = getDesignTokens(isDarkTheme);
+    const defaultLinkColorStops: ColorStop[] = [
+        { stop: 0.00, color: tokensForStops.semantic.error },
+        { stop: 0.25, color: tokensForStops.energy.generator },
+        { stop: 0.50, color: tokensForStops.energy.solar },
+        { stop: 0.75, color: tokensForStops.energy.battery },
+        { stop: 1.00, color: tokensForStops.brand.primary },
+    ];
+    const effectiveLinkColorStops = linkColorStops || defaultLinkColorStops;
     const {
         nodeWidth = 15,
         minHeight = 16,
@@ -116,9 +186,14 @@ const FlowSankey: React.FC<Props> = ({
 
     const pad = padding;
     const nodeW = nodeWidth;
-    const bg = theme === "dark" ? "#2B2F36" : "#F6F7FA";
-    const text = theme === "dark" ? "#EAF0FF" : "#1B2333";
-    const subtext = theme === "dark" ? "rgba(234,240,255,0.7)" : "rgba(27,35,51,0.6)";
+
+    // Get design tokens for theme-aware colors
+    const isDark = theme === "dark";
+    const tokens = getDesignTokens(isDark);
+
+    const bg = tokens.background.primary;
+    const text = tokens.text.primary;
+    const subtext = tokens.text.secondary;
 
     const valueFont = Math.max(6, Math.round(nodeW * 0.24 * fontScale));
     const unitFont = Math.max(4, Math.round(nodeW * 0.12 * fontScale));
@@ -426,23 +501,26 @@ const FlowSankey: React.FC<Props> = ({
     };
 
     const nodeFillByLabel = (label: string): [string, string] => {
+        const isDark = theme === "dark";
+        const tokens = getDesignTokens(isDark);
+
         switch (label.toUpperCase()) {
             case "SOLAR":
             case "PV":
-                return ["#FDB52E", "#FF7A00"];
+                return [tokens.energy.solar, tokens.energy.solarDark];
             case "BATTERY":
-                return ["#12C6A9", "#09A79F"];
+                return [tokens.energy.battery, tokens.energy.batteryDark];
             case "GRID":
-                return ["#9D76F2", "#7B63FF"];
+                return [tokens.energy.grid, tokens.energy.gridDark];
             case "LOAD":
-                return ["#FF6B6B", "#FF4B5C"];
+                return [tokens.energy.load, tokens.energy.loadDark];
             case "GENERATOR":
-                return ["#FF9500", "#FF7A00"];
+                return [tokens.energy.generator, tokens.energy.generatorDark];
             case "SYSTEM":
             case "CENTER":
-                return ["#FFFFFF", "#F8F9FA"];
+                return [tokens.brand.primary, tokens.brand.primaryDark];
             default:
-                return ["#636972", "#545B65"];
+                return [tokens.utility.gray500, tokens.utility.gray600];
         }
     };
 
@@ -452,8 +530,8 @@ const FlowSankey: React.FC<Props> = ({
                 <Defs>
                     {links.map((l, i) => {
                         const r = Math.max(0, Math.min(1, ratioFor(l)));
-                        const col = sampleColor(linkColorStops, r);
-                        const col2 = sampleColor(linkColorStops, Math.min(1, r + 0.08));
+                        const col = sampleColor(effectiveLinkColorStops, r);
+                        const col2 = sampleColor(effectiveLinkColorStops, Math.min(1, r + 0.08));
                         return (
                             <React.Fragment key={`gradient-${l.source}-${l.target}-${i}`}>
                                 {createFlowGradient(i, col, col2)}
@@ -470,8 +548,8 @@ const FlowSankey: React.FC<Props> = ({
                     const triangularPath = createPerfectTriangularPath(s, t);
 
                     const r = Math.max(0, Math.min(1, ratioFor(l)));
-                    const baseCol = sampleColor(linkColorStops, r);
-                    const baseCol2 = sampleColor(linkColorStops, Math.min(1, r + 0.08));
+                    const baseCol = sampleColor(effectiveLinkColorStops, r);
+                    const baseCol2 = sampleColor(effectiveLinkColorStops, Math.min(1, r + 0.08));
 
                     // Akıllı renk yoğunluğu - değer büyüklüğüne göre
                     const valueIntensity = Math.max(0.3, Math.min(1, (l.value || 0) / vMax));
@@ -519,7 +597,7 @@ const FlowSankey: React.FC<Props> = ({
                     const highlightPath = createPerfectTriangularPath(s, t);
 
                     const r = Math.max(0, Math.min(1, ratioFor(l)));
-                    const col = sampleColor(linkColorStops, r);
+                    const col = sampleColor(effectiveLinkColorStops, r);
 
                     return (
                         <G key={`HL${idx}`}>
@@ -538,7 +616,7 @@ const FlowSankey: React.FC<Props> = ({
                     const isLeftGrid = n.label.toUpperCase() === "GRID" && n.side === "left";
                     const isSystemCenter = n.label.toUpperCase() === "SYSTEM" && n.side === "center";
                     const isPassiveGrid = n.id === "GRID_L";
-                    const nodeColors = isPassiveGrid ? ["#6B7280", "#4B5563"] : [c0, c1];
+                    const nodeColors = isPassiveGrid ? [tokens.utility.gray500, tokens.utility.gray600] : [c0, c1];
 
                     const inbound = links
                         .filter(l => l.target === n.id)

@@ -2,45 +2,34 @@ import { StyleSheet } from 'react-native';
 import { SPACING, TYPOGRAPHY } from '../../../../../../theme/constants';
 
 export const getPowerMetricsChartStyles = (COLORS: Record<string, string>, dataLength: number = 24) => {
-  const dynamicWidth = Math.max(800, dataLength * 60);
-
   return StyleSheet.create({
     container: {
       backgroundColor: COLORS.surface,
-      borderRadius: 14,
+      borderRadius: 12,
       padding: SPACING.md,
-      marginBottom: SPACING.lg,
+      marginBottom: 12,
       borderWidth: 1,
       borderColor: COLORS.border,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: SPACING.md,
     },
     title: {
       fontSize: TYPOGRAPHY.lg,
       fontWeight: '700',
-      marginBottom: SPACING.md,
       color: COLORS.textSoft,
     },
     chartContainer: {
       height: 400,
       minHeight: 350,
+      width: '100%',
     },
     chartAndHoursWrapper: {
-      width: dynamicWidth,
-    },
-    chart: {
-      height: 400,
-      width: dynamicWidth,
-    },
-    scrollView: {
-      height: 400,
-    },
-    scrollContainer: {
-      paddingRight: SPACING.md,
-    },
-    verticalScrollView: {
-      height: 300,
-    },
-    verticalScrollContainer: {
-      paddingBottom: 35,
+      width: '100%',
+      alignItems: 'center',
     },
     hoursContainer: {
       flexDirection: 'row',
@@ -54,27 +43,27 @@ export const getPowerMetricsChartStyles = (COLORS: Record<string, string>, dataL
       fontWeight: '500',
     },
     togglesContainer: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      flexWrap: 'wrap',
+      marginTop: SPACING.md,
+      gap: SPACING.sm,
     },
     togglesRow: {
       flexDirection: 'row',
-      justifyContent: 'space-around',
-      marginTop: 12,
+      gap: SPACING.sm,
     },
     toggleItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: COLORS.surface,
+      justifyContent: 'space-between',
+      backgroundColor: COLORS.cardBg,
       borderRadius: 8,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
+      paddingHorizontal: SPACING.md,
+      paddingVertical: SPACING.sm,
+      flex: 1,
     },
     toggleLabel: {
       color: COLORS.textSoft,
-      fontSize: 14,
-      marginRight: 6,
+      fontSize: TYPOGRAPHY.sm,
+      fontWeight: '600',
     },
     loadingContainer: {
       justifyContent: 'center',

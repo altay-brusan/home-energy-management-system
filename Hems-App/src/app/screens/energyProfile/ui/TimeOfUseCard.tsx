@@ -296,16 +296,16 @@ export default function TimeOfUseCard({ styles, COLORS, isDark, deviceParams, se
           padding: 10,
         }}
       >
-        <Text style={{ color: COLORS.accent, fontWeight: "700", marginBottom: 6, fontSize: 20 }}>
+        <Text style={{ color: COLORS.accent, fontWeight: "600", marginBottom: 6, fontSize: 15 }}>
         {t('tou.periodSettings', { index: index + 1 })}
         </Text>
-        <Text style={{ color: COLORS.textSoft, fontSize: 15, marginBottom: 8 }}>
+        <Text style={{ color: COLORS.textSoft, fontSize: 14, marginBottom: 8, opacity: 0.7 }}>
          {t('tou.periodRange', { index: index + 1, range })}
         </Text>
-        <Text style={{ color: COLORS.textSoft, fontSize: 15 }}>
+        <Text style={{ color: COLORS.textSoft, fontSize: 15, fontWeight: "400" }}>
           {t('tou.batteryDischarge')}: {stat.dischargePower} kW
         </Text>
-        <Text style={{ color: COLORS.textSoft, fontSize: 15, marginBottom: 10 }}>
+        <Text style={{ color: COLORS.textSoft, fontSize: 15, marginBottom: 10, fontWeight: "400" }}>
          {t('tou.targetSoc')}: {stat.targetSOC}%
         </Text>
         <View style={styles.switchRow}>
@@ -437,44 +437,23 @@ export default function TimeOfUseCard({ styles, COLORS, isDark, deviceParams, se
   }
 
   return (
-    <View
-      style={[
-        styles.mainCard,
-        {
-          borderRadius: 14,
-          marginBottom: 18,
-          overflow: "hidden",
-        },
-      ]}
-    >
+    <View style={styles.mainCard}>
+      <Text style={styles.cardTitle}>{t('tou.title')}</Text>
+
       <TouchableOpacity
-        onPress={() => setCollapsed(!collapsed)}
         activeOpacity={0.8}
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          backgroundColor: COLORS.surface,
-          paddingVertical: 14,
-          paddingHorizontal: 20,
-          borderBottomWidth: collapsed ? 0 : 1,
-          borderBottomColor: COLORS.border,
+        onPress={() => {
+          setCollapsed(!collapsed);
         }}
       >
-        <Text
-          style={{
-            color: COLORS.accentGlow,
-            fontSize: 21,
-            fontWeight: "700",
-          }}
-        >
-         {t('tou.title')}
-        </Text>
-        <FontAwesome
-          name={collapsed ? "chevron-down" : "chevron-up"}
-          size={18}
-          color={COLORS.textSoft}
-        />
+        <View style={styles.dropdownRow}>
+          <Text style={styles.subCardTitle}>{t('tou.schedule')}</Text>
+          <FontAwesome
+            name={collapsed ? "chevron-down" : "chevron-up"}
+            size={16}
+            color={COLORS.textSoft}
+          />
+        </View>
       </TouchableOpacity>
 
       {!collapsed && (
@@ -486,7 +465,7 @@ export default function TimeOfUseCard({ styles, COLORS, isDark, deviceParams, se
               <View key={`bottom-panel-${idx}`}>{renderSettingsPanel(idx)}</View>
             ))}
           </View>
-          
+
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={async () => {

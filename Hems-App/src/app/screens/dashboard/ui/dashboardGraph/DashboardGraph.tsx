@@ -11,6 +11,7 @@ import type { DashboardGraphProps } from './DashboardGraph.types';
 import AreaChart from './components/AreaChart';
 import BarChart from './components/BarChart';
 import MultiLineChart from './components/MultiLineChart';
+import PowerMetricsChart from './components/PowerMetricsChart';
 
 export default function DashboardGraph ({
   COLORS,
@@ -483,7 +484,8 @@ export default function DashboardGraph ({
 
   return (
     <>
-      <Animated.View entering={FadeInUp.delay(250).duration(600)} style={styles.card}>
+      {/* Energy Production Card - Commented out */}
+      {/* <Animated.View entering={FadeInUp.delay(250).duration(600)} style={styles.card}>
         <Text style={styles.title}>{t('dashboardGraph.productionTitle')}</Text>
         <View style={styles.statPillsContainer}>
           <StatPill label={t('dashboardGraph.peak')} value={prodStats.peak} />
@@ -535,7 +537,7 @@ export default function DashboardGraph ({
                   });
 
                   setChartTypeProd(type);
-                  setSelectedIndexProd(null); 
+                  setSelectedIndexProd(null);
                 }}
                 activeOpacity={0.7}
                 accessibilityLabel={`${t(`dashboardGraph.chartType.${type}`)} chart type`}
@@ -605,9 +607,10 @@ export default function DashboardGraph ({
             );
           })}
         </View>
-      </Animated.View>
+      </Animated.View> */}
 
-      <Animated.View entering={FadeInUp.delay(350).duration(600)} style={styles.card}>
+      {/* Energy Consumption Card - Commented out */}
+      {/* <Animated.View entering={FadeInUp.delay(350).duration(600)} style={styles.card}>
         <Text style={styles.title}>{t('dashboardGraph.consumptionTitle')}</Text>
         <View style={styles.statPillsContainer}>
           <StatPill label={t('dashboardGraph.peak')} value={consStats.peak} />
@@ -736,9 +739,11 @@ export default function DashboardGraph ({
             );
           })}
         </View>
-      </Animated.View>
+      </Animated.View> */}
 
-      <MultiLineChart COLORS={COLORS} selectedRange={selectedRange} />
+      {/* <MultiLineChart COLORS={COLORS} selectedRange={selectedRange} /> */}
+
+      <PowerMetricsChart COLORS={COLORS} />
     </>
   );
 }

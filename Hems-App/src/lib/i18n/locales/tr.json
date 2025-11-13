@@ -5,6 +5,7 @@
     "chooseLanguage": "Dil tercihinizi seçin",
     "turkish": "Türkçe",
     "english": "İngilizce",
+    "dutch": "Hollandaca",
     "cancel": "İptal",
     "confirm": "Onayla",
     "save": "Kaydet",
@@ -236,10 +237,11 @@
     "messages": "Mesajlar"
   },
   "tabs": {
-    "dashboard": "Ana Sayfa",
+    "dashboard": "Home",
     "device": "Cihaz",
     "notifications": "Bildirimler",
-    "profile": "Profil"
+    "profile": "Profil",
+    "settings": "Ayarlar"
   },
   "profile": {
     "profile": "Profil",
@@ -457,6 +459,21 @@
     "in": "Giriş",
     "out": "Çıkış"
   },
+  "energyFlowRadial": {
+    "title": "Anlık Enerji Akışı",
+    "loading": "Güç verileri yükleniyor...",
+    "noDevice": "Cihaz bulunamadı. Anlık güç akışını görüntülemek için lütfen cihaz ekleyin.",
+    "noData": "Güç verisi bulunamadı.",
+    "errorLoading": "Güç verileri yüklenirken hata oluştu. Lütfen tekrar deneyin.",
+    "lastUpdate": "Son güncelleme"
+  },
+  "todaySummary": {
+    "title": "Bugün",
+    "gridImport": "Şebekeden Alınan",
+    "gridExport": "Şebekeye Verilen",
+    "consumption": "Tüketim",
+    "production": "Üretim"
+  },
   "dashboardGraph": {
     "productionTitle": "Enerji Üretimi",
     "consumptionTitle": "Enerji Tüketimi",
@@ -475,6 +492,30 @@
       "month": "Ay",
       "year": "Yıl"
     }
+  },
+  "energyChart": {
+    "title": "Enerji Genel Bakış",
+    "subtitle": "Üretim ve Tüketim",
+    "production": "Üretim",
+    "consumption": "Tüketim",
+    "total": "Toplam",
+    "sources": {
+      "solar": "Güneş",
+      "batteryDischarge": "Batarya Deşarj",
+      "generator": "Jeneratör",
+      "gridImport": "Şebekeden Çekiş",
+      "load": "Ev Yükü",
+      "batteryCharge": "Batarya Şarj",
+      "gridExport": "Şebekeye Satış"
+    },
+    "period": {
+      "weekly": "Haftalık",
+      "monthly": "Aylık",
+      "yearly": "Yıllık"
+    },
+    "noDevice": "Cihaz bulunamadı. Enerji verilerini görüntülemek için lütfen cihaz ekleyin.",
+    "noData": "Seçilen dönem için enerji verisi bulunamadı.",
+    "loading": "Enerji verileri yükleniyor..."
   },
   "dashboardHero": {
     "title": "Ev Enerji Durumu",
@@ -497,6 +538,18 @@
       "power": "Güç",
       "savings": "Tasarruf"
     }
+  },
+  "dashboard": {
+    "summary": "Özet",
+    "status": "Durum",
+    "saving": "Tasarruf",
+    "weather": "Hava Durumu",
+    "onGrid": "Şebeke Bağlı",
+    "off": "Kapalı",
+    "hybrid": "Hibrit",
+    "totalPower": "Toplam Güç",
+    "dailiyPower": "Günlük Güç",
+    "noDataAvailable": "Veri mevcut değil"
   },
   "dashboardMode": {
     "title": "Şu anki Mod",
@@ -571,6 +624,11 @@
        "load": "Yük"
     }
   },
+  "powerMetrics24H": {
+    "title": "Güç Ölçümleri",
+    "sunrise": "Gün Doğumu",
+    "sunset": "Gün Batımı"
+  },
   "dashboardBatteryChart": {
     "title": "Batarya (%)",
     "stats": {
@@ -600,6 +658,30 @@
     },
     "noDevice": "Cihaz bağlı değil",
     "noData": "Veri bulunamadı"
+  },
+  "dashboardEnergyReview": {
+    "title": "Enerji Alış/Satış",
+    "subtitle": "Grid ile 1 haftalık enerji ticareti",
+    "totalBuy": "Toplam Alış",
+    "totalSell": "Toplam Satış",
+    "net": "Net",
+    "buy": "Alış",
+    "sell": "Satış",
+    "price": "Fiyat",
+    "gridBuy": "Grid'den Alış",
+    "gridSell": "Grid'e Satış"
+  },
+  "dashboardGridPerformance": {
+    "title": "Şebeke Performansı",
+    "totalBuy": "Toplam Alış",
+    "totalSell": "Toplam Satış",
+    "netBalance": "Net Denge",
+    "month": "Ay",
+    "year": "Yıl",
+    "lifetime": "Tüm Zamanlar",
+    "buyLabel": "Şebeke Alım",
+    "sellLabel": "Şebeke Satım",
+    "noData": "Şebeke verisi mevcut değil"
   },
   "dashboardSidebar": {
     "header": "Evlerim",
@@ -636,7 +718,17 @@
     }
   },
   "dashboardScreen": {
-    "title": "Ana Ekran"
+    "title": "Ana Ekran",
+    "welcome": "Hoş Geldiniz"
+  },
+  "environmentalBenefits": {
+    "title": "Çevresel Faydalar",
+    "co2Savings": "CO₂ Tasarrufu",
+    "equivalentTrees": "Eşdeğer Ağaç",
+    "infoTitle": "Nasıl Çalışır",
+    "co2Info": "Toplam enerji tüketiminize göre hesaplanır. Kullandığınız her kWh güneş enerjisi, yaklaşık 0.25 kg CO₂ emisyonunu önler.",
+    "treesInfo": "Bir ağaç yılda yaklaşık 22 kg CO₂ emer. Bu, aynı miktarda emisyonu dengelemek için kaç ağaca ihtiyaç olduğunu gösterir.",
+    "gotIt": "Anladım"
   },
   "dashboardHelpButton": {
     "title": "Yardım"
@@ -678,7 +770,9 @@
     "markAllReadSuccess": "Tüm bildirimler okundu olarak işaretlendi",
     "markAllReadError": "Tüm bildirimler okundu olarak işaretlenemedi",
     "markAsRead": "Okundu olarak işaretlendi",
-    "markAsReadFailed": "İşaretleme başarısız"
+    "markAsReadFailed": "İşaretleme başarısız",
+    "details": "Bildirim Detayı",
+    "additionalInfo": "Ek Bilgiler"
   },
 "deviceList": {
   "title": "Cihaz",
@@ -691,6 +785,7 @@
   "title": "NetZr Cihaz Detayı",
   "loading": "Veriler Yükleniyor...",
   "totalComponents": "Toplam {{count}} bileşen bulundu",
+  "informations": "Bilgiler",
   "dailyProduction": "Günlük Üretim",
   "batteryCharge": "Batarya Şarjı",
   "connection": "Bağlantı",
@@ -1156,6 +1251,7 @@
 },
 "tou": {
   "title": "Zaman Kullanımına Göre (TOU) Planlama",
+  "schedule": "Program",
   "periodSettings": "P{{index}} Ayarları",
   "periodRange": "{{index}}. Dönem ({{range}})",
   "batteryDischarge": "Batarya Deşarjı",

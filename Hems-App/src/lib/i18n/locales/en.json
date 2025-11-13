@@ -5,6 +5,7 @@
       "chooseLanguage": "Choose your language preference",
       "turkish": "Turkish",
       "english": "English",
+      "dutch": "Dutch",
       "cancel": "Cancel",
       "confirm": "Confirm",
       "save": "Save",
@@ -220,10 +221,11 @@
       "messages": "Messages"
     },
     "tabs": {
-      "dashboard": "Dashboard",
+      "dashboard": "Home",
       "device": "Device",
       "notifications": "Notifications",
-      "profile": "Profile"
+      "profile": "Profile",
+      "settings": "Settings"
     },
     "profile": {
       "profile": "Profile",
@@ -441,6 +443,21 @@
       "in": "In",
       "out": "Out"
     },
+    "energyFlowRadial": {
+      "title": "Real-Time Energy Flow",
+      "loading": "Loading power data...",
+      "noDevice": "No device found. Please add a device to view real-time power flow.",
+      "noData": "No power data available.",
+      "errorLoading": "Error loading power data. Please try again.",
+      "lastUpdate": "Last updated"
+    },
+    "todaySummary": {
+      "title": "Today",
+      "gridImport": "Grid Import",
+      "gridExport": "Grid Export",
+      "consumption": "Consumption",
+      "production": "Production"
+    },
     "dashboardGraph": {
       "productionTitle": "Energy Production",
       "consumptionTitle": "Energy Consumption",
@@ -459,6 +476,30 @@
         "month": "Month",
         "year": "Year"
       }
+    },
+    "energyChart": {
+      "title": "Energy Overview",
+      "subtitle": "Production vs Consumption",
+      "production": "Production",
+      "consumption": "Consumption",
+      "total": "Total",
+      "sources": {
+        "solar": "Solar",
+        "batteryDischarge": "Battery Discharge",
+        "generator": "Generator",
+        "gridImport": "Grid Import",
+        "load": "Load",
+        "batteryCharge": "Battery Charge",
+        "gridExport": "Grid Export"
+      },
+      "period": {
+        "weekly": "Weekly",
+        "monthly": "Monthly",
+        "yearly": "Yearly"
+      },
+      "noDevice": "No device found. Please add a device to view energy data.",
+      "noData": "No energy data available for the selected period.",
+      "loading": "Loading energy data..."
     },
     "dashboardHero": {
       "title": "Home Energy Status",
@@ -481,6 +522,18 @@
         "power": "Power",
         "savings": "Savings"
       }
+    },
+    "dashboard": {
+      "summary": "Summary",
+      "status": "Status",
+      "saving": "Saving",
+      "weather": "Weather",
+      "onGrid": "On Grid",
+      "off": "Off",
+      "hybrid": "Hybrid",
+      "totalPower": "Total Power",
+      "dailiyPower": "Daily Power",
+      "noDataAvailable": "No data available"
     },
     "dashboardMode": {
       "title": "Current Mode",
@@ -555,6 +608,11 @@
         "load": "Load"
       }
     },
+    "powerMetrics24H": {
+      "title": "Power Metrics",
+      "sunrise": "Sunrise",
+      "sunset": "Sunset"
+    },
     "dashboardBatteryChart": {
       "title": "Battery (%)",
       "stats": {
@@ -584,6 +642,30 @@
       },
       "noDevice": "No device connected",
       "noData": "No data available"
+    },
+    "dashboardEnergyReview": {
+      "title": "Energy Revenue",
+      "subtitle": "1 week energy trading with Grid",
+      "totalBuy": "Total Buy",
+      "totalSell": "Total Sell",
+      "net": "Net",
+      "buy": "Buy",
+      "sell": "Sell",
+      "price": "Price",
+      "gridBuy": "Buy from Grid",
+      "gridSell": "Sell to Grid"
+    },
+    "dashboardGridPerformance": {
+      "title": "Grid Performance",
+      "totalBuy": "Total Buy",
+      "totalSell": "Total Sell",
+      "netBalance": "Net Balance",
+      "month": "Month",
+      "year": "Year",
+      "lifetime": "Lifetime",
+      "buyLabel": "Grid Buy",
+      "sellLabel": "Grid Sell",
+      "noData": "No grid data available"
     },
     "dashboardSidebar": {
       "header": "My Houses",
@@ -620,7 +702,17 @@
       }
     },
     "dashboardScreen": {
-      "title": "Dashboard"
+      "title": "Dashboard",
+      "welcome": "Welcome"
+    },
+    "environmentalBenefits": {
+      "title": "Environmental Benefits",
+      "co2Savings": "CO₂ Savings",
+      "equivalentTrees": "Equivalent Trees",
+      "infoTitle": "How it works",
+      "co2Info": "Calculated based on your total energy consumption. Every kWh of solar energy you use prevents approximately 0.25 kg of CO₂ emissions.",
+      "treesInfo": "A single tree absorbs about 22 kg of CO₂ per year. This shows how many trees would be needed to offset the same amount of emissions.",
+      "gotIt": "Got it"
     },
     "dashboardHelpButton": {
       "title": "Help"
@@ -675,7 +767,9 @@
         "error": "Failed to delete notification"
       },
       "markAllReadSuccess": "All notifications marked as read",
-      "markAllReadError": "Failed to mark all notifications as read"
+      "markAllReadError": "Failed to mark all notifications as read",
+      "details": "Notification Details",
+      "additionalInfo": "Additional Information"
     },
     "deviceList": {
       "title": "Device",
@@ -688,6 +782,7 @@
     "title": "NetZr Device Detail",
     "loading": "Loading data...",
     "totalComponents": "Total {{count}} components found",
+    "informations": "Informations",
     "dailyProduction": "Daily Production",
     "batteryCharge": "Battery Charge",
     "connection": "Connection",
@@ -1153,6 +1248,7 @@
   },
   "tou": {
     "title": "Time-of-Use (TOU) Scheduling",
+    "schedule": "Schedule",
     "periodSettings": "P{{index}} Settings",
     "periodRange": "Period {{index}} ({{range}})",
     "batteryDischarge": "Battery Discharge",

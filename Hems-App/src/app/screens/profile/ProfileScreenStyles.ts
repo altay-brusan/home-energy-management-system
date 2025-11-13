@@ -1,7 +1,7 @@
 import { StyleSheet, Dimensions } from 'react-native';
 import { SPACING } from '../../../theme/constants';
 
-export const makeProfileScreenStyles = (COLORS: Record<string, string>) => {
+export const makeProfileScreenStyles = (COLORS: Record<string, string>, isDark: boolean) => {
   const width = Dimensions.get('window').width;
   const isSmall = width <= 380;
   const isVerySmall = width <= 340;
@@ -10,10 +10,9 @@ export const makeProfileScreenStyles = (COLORS: Record<string, string>) => {
   container: {
     flexGrow: 1,
     backgroundColor: COLORS.dark,
-    paddingHorizontal: SPACING.xl,
+    paddingHorizontal: 0,
     paddingTop: SPACING.xl,
     paddingBottom: SPACING.xl,
-    alignItems: 'center',
     justifyContent: 'flex-start',
     minHeight: '100%',
   },
@@ -21,6 +20,7 @@ export const makeProfileScreenStyles = (COLORS: Record<string, string>) => {
     alignItems: 'center',
     marginBottom: SPACING.xl,
     width: '100%',
+    paddingHorizontal: SPACING.lg,
   },
   avatar: {
     width: 100,
@@ -45,28 +45,24 @@ export const makeProfileScreenStyles = (COLORS: Record<string, string>) => {
   },
   cardList: {
     width: '100%',
-    gap: SPACING.lg,
     marginBottom: SPACING.xl,
   },
   card: {
     width: '100%',
-    backgroundColor: COLORS.cardBg,
-    borderRadius: 16,
-    paddingVertical: SPACING.lg,
-    paddingHorizontal: isVerySmall ? SPACING.md : SPACING.lg,
+    backgroundColor: isDark ? 'rgba(32, 40, 53, 1)' : '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+    paddingVertical: 16,
+    paddingHorizontal: SPACING.lg,
     marginBottom: 0,
-    elevation: 1,
     alignItems: 'center',
     flexDirection: 'row',
-    gap: isVerySmall ? SPACING.sm : SPACING.md,
     minHeight: 56,
-    overflow: 'hidden',
   },
   sectionTitle: {
-    fontSize: isVerySmall ? 14 : isSmall ? 15 : 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '400',
     color: COLORS.textSoft,
-    letterSpacing: 0.1,
     flex: 1,
     flexShrink: 1,
   },
@@ -92,9 +88,15 @@ export const makeProfileScreenStyles = (COLORS: Record<string, string>) => {
     marginBottom: 8,
   },
   regionWrap: {
-  marginLeft: 8,
-  alignItems: 'center',
-  justifyContent: 'center',
-},
+    marginLeft: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  versionText: {
+    color: COLORS.slate400,
+    marginTop: SPACING.lg,
+    textAlign: 'center',
+    paddingHorizontal: SPACING.lg,
+  },
   });
 };

@@ -4,9 +4,10 @@ import { NativeModules, Platform } from 'react-native';
 
 import en from './locales/en.json';
 import tr from './locales/tr.json';
+import nl from './locales/nl.json';
 
 // Cihaz dilini algıla
-const getDeviceLanguage = (): 'tr' | 'en' => {
+const getDeviceLanguage = (): 'tr' | 'en' | 'nl' => {
   try {
     const locale =
       Platform.OS === 'ios'
@@ -15,7 +16,9 @@ const getDeviceLanguage = (): 'tr' | 'en' => {
         : NativeModules.I18nManager?.localeIdentifier;
 
     const languageCode = locale?.split(/[-_]/)[0]?.toLowerCase();
-    return languageCode === 'tr' ? 'tr' : 'en';
+    if (languageCode === 'tr') return 'tr';
+    if (languageCode === 'nl') return 'nl';
+    return 'en';
   } catch (error) {
     return 'en';
   }
@@ -30,6 +33,9 @@ i18n
       },
       tr: {
         translation: tr,
+      },
+      nl: {
+        translation: nl,
       },
     },
     lng: getDeviceLanguage(), // Cihaz dilini otomatik algıla

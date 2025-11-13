@@ -160,13 +160,7 @@ export default function SolarPowerCard({ styles, COLORS, isDark, deviceParams }:
 
           {hasMpptScan && (
             <View style={styles.switchRow}>
-              <Text
-                style={{
-                  color: COLORS.textSoft,
-                  fontWeight: "600",
-                  fontSize: 16,
-                }}
-              >
+              <Text style={styles.label}>
                 {t('solarPower.enableMpptScanning')}
               </Text>
               <Switch
@@ -209,14 +203,14 @@ export default function SolarPowerCard({ styles, COLORS, isDark, deviceParams }:
             <Text
               style={{
                 color: COLORS.accent,
-                fontWeight: "700",
-                fontSize: 18,
+                fontWeight: "600",
+                fontSize: 15,
                 marginRight: 6,
               }}
             >
              {t('solarPower.prioritySettings')}
             </Text>
-            <FontAwesome name="cog" size={16} color={COLORS.accent} />
+            <FontAwesome name="cog" size={14} color={COLORS.accent} />
           </TouchableOpacity>
         </View>
       )}
