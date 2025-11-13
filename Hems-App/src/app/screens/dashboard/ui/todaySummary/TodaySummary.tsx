@@ -22,14 +22,110 @@ const HistoryIcon: React.FC<{ color: string }> = ({ color }) => (
   </Svg>
 );
 
+// Grid Import Icon (with down arrow badge at bottom-right)
+const GridImportIcon: React.FC<{ color: string; badgeBg: string }> = ({ color, badgeBg }) => (
+  <View style={{ position: 'relative', width: 20, height: 20 }}>
+    <Svg width={20} height={20} viewBox="0 0 15.16 24.42">
+      <Path
+        d="M14.94,1.35h-5.48v-2.11h.84v.83c0,.23.19.42.42.42s.42-.19.42-.42v-.83h1.26c.46,0,.84-.38.84-.84v-.85c0-.46-.38-.84-.84-.84h-2.95v-.84c0-.93-.76-1.68-1.68-1.68s-1.68.76-1.68,1.68v.84h-2.95c-.46,0-.84.38-.84.84v.85c0,.46.38.84.84.84h1.26v.83c0,.23.19.42.42.42s.42-.19.42-.42v-.83h.84v2.11H.6c-.46,0-.84.38-.84.84v.84c0,.46.38.84.84.84h1.26v.84c0,.23.19.42.42.42s.42-.19.42-.42v-.84h.84v.84c0,.23.19.42.42.42s.42-.19.42-.42v-.84h1.69v14.74H.17c-.23,0-.42.19-.42.42s.19.42.42.42h15.16c.23,0,.42-.19.42-.42s-.19-.42-.42-.42h-5.9V4.03h1.69v.84c0,.23.19.42.42.42s.42-.19.42-.42v-.84h.84v.84c0,.23.19.42.42.42s.42-.19.42-.42v-.84h1.26c.46,0,.84-.38.84-.84v-.84c0-.46-.38-.84-.84-.84Z"
+        fill={color}
+        transform="translate(0 6.76)"
+      />
+    </Svg>
+    {/* Down Arrow Badge */}
+    <View style={{
+      position: 'absolute',
+      bottom: -3,
+      right: -3,
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      backgroundColor: badgeBg,
+      justifyContent: 'center',
+      alignItems: 'center',
+    }}>
+      <Svg width={8} height={8} viewBox="0 0 12 12" fill="none">
+        <Path
+          d="M6 2v8m0 0L3 7m3 3l3-3"
+          stroke={color}
+          strokeWidth={1.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
+    </View>
+  </View>
+);
+
+// Grid Export Icon (with up arrow badge at bottom-right)
+const GridExportIcon: React.FC<{ color: string; badgeBg: string }> = ({ color, badgeBg }) => (
+  <View style={{ position: 'relative', width: 20, height: 20 }}>
+    <Svg width={20} height={20} viewBox="0 0 15.16 24.42">
+      <Path
+        d="M14.94,1.35h-5.48v-2.11h.84v.83c0,.23.19.42.42.42s.42-.19.42-.42v-.83h1.26c.46,0,.84-.38.84-.84v-.85c0-.46-.38-.84-.84-.84h-2.95v-.84c0-.93-.76-1.68-1.68-1.68s-1.68.76-1.68,1.68v.84h-2.95c-.46,0-.84.38-.84.84v.85c0,.46.38.84.84.84h1.26v.83c0,.23.19.42.42.42s.42-.19.42-.42v-.83h.84v2.11H.6c-.46,0-.84.38-.84.84v.84c0,.46.38.84.84.84h1.26v.84c0,.23.19.42.42.42s.42-.19.42-.42v-.84h.84v.84c0,.23.19.42.42.42s.42-.19.42-.42v-.84h1.69v14.74H.17c-.23,0-.42.19-.42.42s.19.42.42.42h15.16c.23,0,.42-.19.42-.42s-.19-.42-.42-.42h-5.9V4.03h1.69v.84c0,.23.19.42.42.42s.42-.19.42-.42v-.84h.84v.84c0,.23.19.42.42.42s.42-.19.42-.42v-.84h1.26c.46,0,.84-.38.84-.84v-.84c0-.46-.38-.84-.84-.84Z"
+        fill={color}
+        transform="translate(0 6.76)"
+      />
+    </Svg>
+    {/* Up Arrow Badge */}
+    <View style={{
+      position: 'absolute',
+      bottom: -3,
+      right: -3,
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      backgroundColor: badgeBg,
+      justifyContent: 'center',
+      alignItems: 'center',
+    }}>
+      <Svg width={8} height={8} viewBox="0 0 12 12" fill="none">
+        <Path
+          d="M6 10V2m0 0L3 5m3-3l3 3"
+          stroke={color}
+          strokeWidth={1.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
+    </View>
+  </View>
+);
+
+// Consumption Icon (Load/Home) - From EnergyNode
+const ConsumptionIcon: React.FC<{ color: string }> = ({ color }) => (
+  <Svg width={20} height={20} viewBox="0 0 18.4 24.37">
+    <Path
+      d="M9.08,1.39c-.49-.12-.99-.12-1.48,0-.52.13-1.02.48-2.27,1.38l-3.88,2.8c-.93.67-1.29.94-1.55,1.27-.24.31-.42.66-.53,1.04-.12.41-.12.86-.12,2.02v5c0,1.05,0,1.8.05,2.38.05.58.14.95.28,1.24.29.58.75,1.05,1.32,1.35.29.15.65.24,1.22.29.58.05,1.31.05,2.34.05h7.76c1.03,0,1.76,0,2.34-.05.57-.05.93-.14,1.22-.29.57-.3,1.03-.77,1.32-1.35.15-.29.24-.66.28-1.24.05-.59.05-1.34.05-2.38v-5c0-1.16,0-1.61-.12-2.02-.11-.38-.29-.73-.53-1.04-.26-.33-.62-.6-1.55-1.27l-3.88-2.8c-1.25-.9-1.75-1.25-2.27-1.38Z"
+      fill={color}
+      fillRule="evenodd"
+    />
+  </Svg>
+);
+
+// Production Icon (Lightning/Electricity)
+const ProductionIcon: React.FC<{ color: string }> = ({ color }) => (
+  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M13 2L3 14h8l-1 8 10-12h-8l1-8z"
+      fill={color}
+      stroke={color}
+      strokeWidth={1}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
 interface MetricCardProps {
   label: string;
   value: string;
   unit: string;
   color: string;
+  icon: React.ReactNode;
 }
 
-const MetricCard: React.FC<MetricCardProps> = ({ label, value, unit, color }) => {
+const MetricCard: React.FC<MetricCardProps> = ({ label, value, unit, color, icon }) => {
   const mode = useThemeStore(s => s.mode);
   const isDark = mode === 'dark';
   const COLORS = getThemeColors(isDark);
@@ -37,10 +133,15 @@ const MetricCard: React.FC<MetricCardProps> = ({ label, value, unit, color }) =>
 
   return (
     <View style={styles.metricCard}>
-      <Text style={styles.metricLabel}>{label}</Text>
-      <View style={styles.metricValueContainer}>
-        <Text style={[styles.metricValue, { color }]}>{value}</Text>
-        <Text style={styles.metricUnit}>{unit}</Text>
+      <View style={[styles.iconContainer, { backgroundColor: `${color}15` }]}>
+        {icon}
+      </View>
+      <View style={styles.metricContent}>
+        <View style={styles.metricValueContainer}>
+          <Text style={[styles.metricValue, { color: COLORS.textSoft }]}>{value}</Text>
+          <Text style={styles.metricUnit}>{unit}</Text>
+        </View>
+        <Text style={styles.metricLabel}>{label}</Text>
       </View>
     </View>
   );
@@ -120,13 +221,15 @@ export const TodaySummary: React.FC = () => {
             label={t('todaySummary.gridImport')}
             value={metrics.gridImport.value}
             unit={metrics.gridImport.unit}
-            color={COLORS.accent}
+            color="#5EB2F7"
+            icon={<GridImportIcon color="#5EB2F7" badgeBg={COLORS.surface} />}
           />
           <MetricCard
             label={t('todaySummary.gridExport')}
             value={metrics.gridExport.value}
             unit={metrics.gridExport.unit}
-            color={COLORS.success}
+            color="#5EB2F7"
+            icon={<GridExportIcon color="#5EB2F7" badgeBg={COLORS.surface} />}
           />
         </View>
 
@@ -136,13 +239,15 @@ export const TodaySummary: React.FC = () => {
             label={t('todaySummary.consumption')}
             value={metrics.consumption.value}
             unit={metrics.consumption.unit}
-            color={COLORS.error}
+            color="#5EB2F7"
+            icon={<ConsumptionIcon color="#5EB2F7" />}
           />
           <MetricCard
             label={t('todaySummary.production')}
             value={metrics.production.value}
             unit={metrics.production.unit}
-            color={COLORS.success}
+            color="#5EB2F7"
+            icon={<ProductionIcon color="#5EB2F7" />}
           />
         </View>
       </View>

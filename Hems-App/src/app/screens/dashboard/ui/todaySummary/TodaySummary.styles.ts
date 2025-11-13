@@ -29,22 +29,28 @@ export const createStyles = (COLORS: Record<string, string>) => {
     },
     metricCard: {
       flex: 1,
-      backgroundColor: COLORS.cardBg,
+      backgroundColor: COLORS.surface,
       borderRadius: 12,
       padding: SPACING.md,
-      borderWidth: 1,
-      borderColor: COLORS.border,
-      minHeight: 80,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.sm,
+    },
+    iconContainer: {
+      width: 40,
+      height: 40,
+      borderRadius: 10,
       justifyContent: 'center',
+      alignItems: 'center',
+    },
+    metricContent: {
+      flex: 1,
     },
     metricLabel: {
       fontSize: TYPOGRAPHY.xs,
-      fontWeight: '600',
+      fontWeight: '500',
       color: COLORS.textSoft,
-      opacity: 0.7,
-      textTransform: 'uppercase',
-      letterSpacing: 0.5,
-      marginBottom: SPACING.xs,
+      marginTop: 2,
     },
     metricValueContainer: {
       flexDirection: 'row',
@@ -52,14 +58,14 @@ export const createStyles = (COLORS: Record<string, string>) => {
       gap: 4,
     },
     metricValue: {
-      fontSize: TYPOGRAPHY.xl,
+      fontSize: TYPOGRAPHY.xxl,
       fontWeight: '700',
+      color: COLORS.textSoft,
     },
     metricUnit: {
       fontSize: TYPOGRAPHY.sm,
-      fontWeight: '600',
+      fontWeight: '500',
       color: COLORS.textSoft,
-      opacity: 0.6,
     },
   });
 };

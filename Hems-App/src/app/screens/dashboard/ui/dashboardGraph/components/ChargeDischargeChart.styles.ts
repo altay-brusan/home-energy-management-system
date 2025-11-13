@@ -8,8 +8,6 @@ export function getChargeDischargeChartStyles(COLORS: Record<string, string>) {
       borderRadius: 12,
       padding: SPACING.md,
       marginBottom: 12,
-      borderWidth: 1,
-      borderColor: COLORS.border,
     },
     header: {
       flexDirection: 'row',

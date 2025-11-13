@@ -9,8 +9,6 @@ export function getDashboardGraphStyles (COLORS: Record<string, string>) {
       borderRadius: 14,
       padding: SPACING.md,
       marginBottom: SPACING.lg,
-      borderWidth: 1,
-      borderColor: COLORS.border,
     },
     title: {
       fontSize: TYPOGRAPHY.lg,

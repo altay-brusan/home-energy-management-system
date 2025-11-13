@@ -49,6 +49,7 @@ import {
 } from '../screens';
 import { AdminPage } from '../screens/adminPage';
 import DashboardScreen from '../screens/dashboard/DashboardScreen';
+import PowerMetricsDetailScreen from '../screens/powerMetricsDetail/PowerMetricsDetailScreen';
 import DeviceDetail from '../screens/deviceDetail/DeviceDetail';
 import GatewayDetailScreen from '../screens/deviceDetail/GatewayDetailScreen';
 import PVPanelDetailScreen from '../screens/deviceDetail/PVPanelDetailScreen';
@@ -315,6 +316,11 @@ export function RootNavigator () {
             <Stack.Screen name="HomeSetup" component={HomeSetupScreen} />
             <Stack.Screen name="DeviceSetup" component={DeviceSetupScreen} />
             <Stack.Screen name="DeviceAdd" component={DeviceAddScreen} />
+            <Stack.Screen
+              name="PowerMetricsDetail"
+              component={PowerMetricsDetailScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
             <Stack.Screen
               name="Trash"
               component={TrashScreen}

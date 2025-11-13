@@ -49,7 +49,7 @@ export const makeProfileScreenStyles = (COLORS: Record<string, string>, isDark: 
   },
   card: {
     width: '100%',
-    backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#FFFFFF',
+    backgroundColor: isDark ? 'rgba(32, 40, 53, 1)' : '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
     paddingVertical: 16,

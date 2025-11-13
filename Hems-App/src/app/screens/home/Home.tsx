@@ -202,11 +202,11 @@ export default function Home () {
           showsVerticalScrollIndicator={false}
         >
           <HomeHeader navigation={navigation} styles={styles} COLORS={COLORS} />
-          <HomeStats 
-            homes={homes} 
+          <HomeStats
+            homes={homes}
             sitesDashboard={sitesDashboard}
-            styles={styles} 
-            COLORS={COLORS} 
+            styles={styles}
+            COLORS={COLORS}
           />
 
           <Text style={styles.sectionTitle}>{t('homeScreen.myHomes')}</Text>

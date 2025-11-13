@@ -608,6 +608,11 @@
         "load": "Load"
       }
     },
+    "powerMetrics24H": {
+      "title": "Power Metrics",
+      "sunrise": "Sunrise",
+      "sunset": "Sunset"
+    },
     "dashboardBatteryChart": {
       "title": "Battery (%)",
       "stats": {

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Image, Platform, RefreshControl, SafeAreaView, ScrollView, Text, View, TouchableOpacity } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import LinearGradient from 'react-native-linear-gradient';
 import { apiClient } from '../../../api/client/apiClient';
 import { sitesService } from "../../../api/services/sitesService";
 import { useDashboardRefresh } from '../../../hooks/useDashboardRefresh';
@@ -152,8 +153,25 @@ export default function DashboardScreen (): JSX.Element {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.dark }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? 'rgba(28, 34, 43, 1)' : 'rgba(243, 243, 245, 1)' }}>
       {!isAdminUser && <Sidebar ref={sidebarRef} />}
+
+      {/* Gradient Background at Top - Only for light mode */}
+      {!isDark && (
+        <LinearGradient
+          colors={['rgba(118, 192, 253, 0.48)', 'rgba(243, 243, 245, 1)']}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 300,
+            zIndex: 0,
+          }}
+        />
+      )}
 
       {/* <ShareButton
         color={COLORS.accent}
@@ -166,7 +184,7 @@ export default function DashboardScreen (): JSX.Element {
         contentContainerStyle={[
           styles.container,
           {
-            backgroundColor: COLORS.dark,
+            backgroundColor: 'transparent',
             paddingTop: Platform.OS === 'ios' ? SPACING.md : insets.top + SPACING.xs,
             paddingBottom: insets.bottom + 100
           },
@@ -247,12 +265,12 @@ export default function DashboardScreen (): JSX.Element {
           isDark={isDark}
         /> */}
 
-        {/* <DashboardGraph
+        <DashboardGraph
           COLORS={COLORS}
           isDark={isDark}
           selectedRange={selectedRange}
           setSelectedRange={setSelectedRange}
-        /> */}
+        />
 
 
         {/* <BatteryChart
@@ -261,10 +279,10 @@ export default function DashboardScreen (): JSX.Element {
           setSelectedIndex={setSelectedBatteryIndex}
         /> */}
 
-        <MultiLineChart
+        {/* <MultiLineChart
           COLORS={COLORS}
           selectedRange={selectedRange}
-        />
+        /> */}
 
         <GridPerformanceCard deviceId={device?.id} />
 

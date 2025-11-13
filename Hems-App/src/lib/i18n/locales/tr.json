@@ -624,6 +624,11 @@
        "load": "Yük"
     }
   },
+  "powerMetrics24H": {
+    "title": "Güç Ölçümleri",
+    "sunrise": "Gün Doğumu",
+    "sunset": "Gün Batımı"
+  },
   "dashboardBatteryChart": {
     "title": "Batarya (%)",
     "stats": {

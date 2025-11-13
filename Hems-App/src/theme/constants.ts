@@ -76,3 +76,12 @@ export const TYPOGRAPHY = {
   xxxl: 32,
 };
 
+// Font families
+export const FONTS = {
+  regular: 'Montserrat-Regular',
+  medium: 'Montserrat-Medium',
+  semiBold: 'Montserrat-SemiBold',
+  bold: 'Montserrat-Bold',
+  light: 'Montserrat-Light',
+};
+

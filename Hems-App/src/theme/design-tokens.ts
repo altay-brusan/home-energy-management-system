@@ -12,14 +12,14 @@
 export const DESIGN_TOKENS_LIGHT = {
   // === BRAND COLORS (Marka renkleri) ===
   brand: {
-    primary: '#06b6d4',           // Ana marka rengi (cyan)
+    primary: '#1169b1',           // Ana marka rengi (cyan)
     primaryLight: '#67e8f9',      // Açık varyant
     primaryDark: '#0891b2',       // Koyu varyant
     secondary: '#8b5cf6',         // İkincil marka rengi (purple)
     secondaryLight: '#a78bfa',    // Açık varyant
     secondaryDark: '#7c3aed',     // Koyu varyant
-    accent: '#06b6d4',            // Vurgu rengi
-    accentGlow: '#06b6d4',        // Glow efekti
+    accent: '#1169b1',            // Vurgu rengi
+    accentGlow: '#1169b1',        // Glow efekti
   },
 
   // === SEMANTIC COLORS (Anlamsal renkler) ===
@@ -46,7 +46,7 @@ export const DESIGN_TOKENS_LIGHT = {
     quaternary: '#9ca3af',        // Dördüncül metin (açık gri)
     disabled: '#d1d5db',          // Devre dışı
     inverse: '#ffffff',           // Ters renk (dark background üzerinde)
-    link: '#06b6d4',              // Link
+    link: '#1169b1',              // Link
     linkHover: '#0891b2',         // Link hover
     linkActive: '#0e7490',        // Link active
     placeholder: '#9ca3af',       // Placeholder text
@@ -75,7 +75,7 @@ export const DESIGN_TOKENS_LIGHT = {
     secondary: '#d1d5db',         // İkincil border
     tertiary: '#9ca3af',          // Üçüncül border
     light: '#f3f4f6',             // Hafif border
-    focus: '#06b6d4',             // Focus state
+    focus: '#1169b1',             // Focus state
     error: '#ef4444',             // Hata border
     success: '#10b981',           // Başarı border
     warning: '#f59e0b',           // Uyarı border
@@ -98,7 +98,7 @@ export const DESIGN_TOKENS_LIGHT = {
 
   // === BUTTON COLORS ===
   button: {
-    primaryBg: '#06b6d4',
+    primaryBg: '#1169b1',
     primaryText: '#ffffff',
     primaryHover: '#0891b2',
     primaryPressed: '#0e7490',
@@ -130,7 +130,7 @@ export const DESIGN_TOKENS_LIGHT = {
     bgDisabled: '#f9fafb',
     border: '#e5e7eb',
     borderHover: '#d1d5db',
-    borderFocus: '#06b6d4',
+    borderFocus: '#1169b1',
     borderError: '#ef4444',
     borderSuccess: '#10b981',
     text: '#111827',
@@ -144,14 +144,14 @@ export const DESIGN_TOKENS_LIGHT = {
 
   // === CHART COLORS (Grafik renkleri) ===
   chart: {
-    primary: '#06b6d4',
+    primary: '#1169b1',
     secondary: '#8b5cf6',
     tertiary: '#f59e0b',
     quaternary: '#10b981',
     quinary: '#ef4444',
     senary: '#ec4899',
 
-    line1: '#06b6d4',
+    line1: '#1169b1',
     line2: '#8b5cf6',
     line3: '#f59e0b',
     line4: '#10b981',
@@ -181,7 +181,7 @@ export const DESIGN_TOKENS_LIGHT = {
     batteryCharging: '#10b981',
     batteryDischarging: '#f59e0b',
 
-    grid: '#06b6d4',              // Şebeke (cyan/mavi)
+    grid: '#1169b1',              // Şebeke (cyan/mavi)
     gridLight: '#22d3ee',
     gridDark: '#0891b2',
     gridImport: '#ef4444',        // Şebekeden çekme (kırmızı)
@@ -201,7 +201,7 @@ export const DESIGN_TOKENS_LIGHT = {
     online: '#10b981',            // Çevrimiçi
     offline: '#ef4444',           // Çevrimdışı
     idle: '#f59e0b',              // Boşta
-    active: '#06b6d4',            // Aktif
+    active: '#1169b1',            // Aktif
     pending: '#f59e0b',           // Beklemede
     completed: '#10b981',         // Tamamlandı
     failed: '#ef4444',            // Başarısız
@@ -247,7 +247,7 @@ export const DESIGN_TOKENS_LIGHT = {
 
   // === GRADIENT COLORS ===
   gradient: {
-    primary: ['#06b6d4', '#0891b2'],
+    primary: ['#1169b1', '#0891b2'],
     secondary: ['#8b5cf6', '#7c3aed'],
     success: ['#10b981', '#059669'],
     error: ['#ef4444', '#dc2626'],
@@ -295,14 +295,14 @@ export const DESIGN_TOKENS_LIGHT = {
 export const DESIGN_TOKENS_DARK = {
   // === BRAND COLORS (Marka renkleri) ===
   brand: {
-    primary: '#2bd5c4',           // Ana marka rengi (turkuaz)
+    primary: '#1169b1',           // Ana marka rengi (turkuaz)
     primaryLight: '#5ce1d3',      // Açık varyant
     primaryDark: '#1ab5a6',       // Koyu varyant
     secondary: '#a78bfa',         // İkincil marka rengi (açık mor)
     secondaryLight: '#c4b5fd',    // Açık varyant
     secondaryDark: '#8b5cf6',     // Koyu varyant
-    accent: '#2bd5c4',            // Vurgu rengi
-    accentGlow: '#2bd5c4',        // Glow efekti
+    accent: '#1169b1',            // Vurgu rengi
+    accentGlow: '#1169b1',        // Glow efekti
   },
 
   // === SEMANTIC COLORS (Anlamsal renkler) ===
@@ -338,18 +338,18 @@ export const DESIGN_TOKENS_DARK = {
 
   // === BACKGROUND COLORS (Arka plan renkleri) ===
   background: {
-    primary: '#1b222a',           // Ana arka plan
+    primary: '#15191dff',           // Ana arka plan
     secondary: '#232b36',         // İkincil arka plan
     tertiary: '#2d3748',          // Üçüncül arka plan
     quaternary: '#374151',        // Dördüncül arka plan
     elevated: '#232b36',          // Yükseltilmiş
     overlay: 'rgba(0, 0, 0, 0.7)', // Modal overlay
     page: '#1b222a',              // Sayfa arka planı
-    shade: '#374151',             // Hafif gölge
+    shade: '#2d343fff',             // Hafif gölge
     shadeDark: '#1a202c',         // Koyu gölge
     hover: '#2d3748',             // Hover state
     pressed: '#374151',           // Pressed state
-    selected: '#164e63',          // Selected state
+    selected: '#272b3dff',          // Selected state
   },
 
   // === BORDER COLORS (Border renkleri) ===
@@ -368,7 +368,7 @@ export const DESIGN_TOKENS_DARK = {
 
   // === SURFACE COLORS (Yüzey renkleri) ===
   surface: {
-    base: '#232b36',              // Temel yüzey
+    base: 'rgba(32, 40, 53, 1)',              // Temel yüzey
     elevated: '#232b36',          // Yükseltilmiş yüzey
     overlay: '#2d3748',           // Overlay yüzey
     card: '#232b36',              // Kart arka planı
@@ -586,3 +586,18 @@ export function getDesignTokens(isDark: boolean) {
  * Type definition for design tokens
  */
 export type DesignTokens = typeof DESIGN_TOKENS_LIGHT;
+
+/**
+ * Font weight to font family mapping for Montserrat
+ * Use these to apply different font weights
+ */
+export const getFontFamily = (weight: '300' | '400' | '500' | '600' | '700' = '400') => {
+  const fontMap = {
+    '300': 'Montserrat-Light',
+    '400': 'Montserrat-Regular',
+    '500': 'Montserrat-Medium',
+    '600': 'Montserrat-SemiBold',
+    '700': 'Montserrat-Bold',
+  };
+  return fontMap[weight];
+};

@@ -8,8 +8,6 @@ export const createStyles = (COLORS: Record<string, string>) => {
       borderRadius: 12,
       padding: SPACING.md,
       marginBottom: SPACING.sm,
-      borderWidth: 1,
-      borderColor: COLORS.border,
     },
 
     // Header

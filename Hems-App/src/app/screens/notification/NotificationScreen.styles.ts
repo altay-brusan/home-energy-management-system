@@ -127,7 +127,7 @@ export const makeNotificationScreenStyles = (isDark: boolean) => {
       paddingVertical: 18,
       paddingHorizontal: 16,
       borderLeftWidth: 0,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(249,250,251,0.9)',
+      backgroundColor: isDark ? 'rgba(32, 40, 53, 1)' : 'rgba(249,250,251,0.9)',
       borderRadius: 0,
       minHeight: 96,
     },

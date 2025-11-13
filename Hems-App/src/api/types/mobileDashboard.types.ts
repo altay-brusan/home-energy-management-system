@@ -292,3 +292,25 @@ export interface GetComponentLiveDataParams {
   deviceId: string;
   componentId: string;
 }
+
+// Power Metrics 24H Chart Types
+export interface PowerMetrics24HDataPoint {
+  timestamp: string;           // ISO datetime string (hourly intervals)
+  solarPower: number;          // in watts
+  gridPower: number;           // in watts (positive = import, negative = export)
+  batteryPower: number;        // in watts (positive = discharge, negative = charge)
+  loadPower: number;           // in watts
+  unit: string;                // "W" or "kW"
+}
+
+export interface SunriseSunsetInfo {
+  sunrise: string;             // ISO datetime string
+  sunset: string;              // ISO datetime string
+}
+
+export interface PowerMetrics24HResponseDto {
+  deviceId: string;
+  date: string;                // ISO date string
+  data: PowerMetrics24HDataPoint[];
+  sunriseSunset: SunriseSunsetInfo;
+}

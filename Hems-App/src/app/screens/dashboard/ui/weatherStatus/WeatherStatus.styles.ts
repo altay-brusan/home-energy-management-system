@@ -17,8 +17,6 @@ export const createStyles = (COLORS: Record<string, string>) => {
       paddingHorizontal: SPACING.md,
       paddingVertical: SPACING.xs,
       gap: SPACING.xs,
-      borderWidth: 1,
-      borderColor: COLORS.border,
     },
     weatherIcon: {
       width: 20,
