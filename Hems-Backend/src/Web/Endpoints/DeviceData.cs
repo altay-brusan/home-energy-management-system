@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Globalization;
+using System.Text.Json;
 using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Application.DeviceData.Commands.BulkCreateDeviceData;
 using Hems_Backend.Application.DeviceData.Commands.CreateDeviceData;
@@ -7,8 +8,8 @@ using Hems_Backend.Application.DeviceData.Queries.GetDeviceData;
 using Hems_Backend.Domain.Constants;
 using Hems_Backend.Web.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http; // make sure this is present
+using Microsoft.AspNetCore.Mvc;
 
 namespace Hems_Backend.Web.Endpoints;
 
@@ -65,30 +66,96 @@ public class DeviceData : EndpointGroupBase
     }
 
 
-    /// <summary>
-    /// Receives ThingBoard telemetry envelopes.
-    /// Protected by X-API-Key header via middleware.
-    /// For now this just logs the received JSON and returns 200.
-    /// </summary>
-    public IResult ReceiveTelemetry([FromBody] JsonElement body, ILogger<DeviceData> logger)
+public async Task<IResult> ReceiveTelemetry(
+    [FromBody] JsonElement body,
+    ILogger<DeviceData> logger,
+    ISender sender)
+{
+    try
     {
-        try
-        {
-            logger.LogInformation("📥 ThingsBoard telemetry received at {UtcNow}: {Payload}", DateTime.UtcNow, body.ToString());
+        logger.LogInformation(
+            "📥 ThingsBoard telemetry received at {UtcNow}: {Payload}",
+            DateTime.UtcNow,
+            body.ToString());
 
-            if (body.ValueKind == JsonValueKind.Object && body.TryGetProperty("payload", out var inner))
+        // 1) Get the inner "data" object
+        if (!body.TryGetProperty("data", out var dataElement) ||
+            dataElement.ValueKind != JsonValueKind.Object)
+        {
+            logger.LogWarning("Received telemetry without 'data' object");
+            return Results.Problem("Missing 'data' object", statusCode: 400);
+        }
+
+        logger.LogInformation("📦 ThingsBoard inner data payload: {InnerPayload}", dataElement.ToString());
+
+        // 2) DataType comes from data.kind
+        var dataType = dataElement.TryGetProperty("kind", out var kindEl)
+            ? kindEl.GetString() ?? string.Empty
+            : string.Empty;
+
+        // 3) RequestDate comes from data.timestampUtc
+        DateTime requestDate = DateTime.UtcNow;
+        if (dataElement.TryGetProperty("timestampUtc", out var tsEl))
+        {
+            var tsStr = tsEl.GetString();
+            if (!string.IsNullOrWhiteSpace(tsStr) &&
+                DateTime.TryParse(tsStr, CultureInfo.InvariantCulture,
+                    DateTimeStyles.AdjustToUniversal, out var parsed))
             {
-                logger.LogInformation("📦 ThingsBoard inner payload: {InnerPayload}", inner.ToString());
+                requestDate = parsed;
+            }
+            else
+            {
+                logger.LogWarning("Could not parse timestampUtc: {TimestampUtc}", tsStr);
+            }
+        }
+
+            // 4) DeviceId comes from data.DeviceId (string → Guid)
+            Guid deviceId = Guid.Empty;
+            if (dataElement.TryGetProperty("DeviceId", out var devIdEl))
+            {
+                var devIdStr = devIdEl.GetString();
+                if (!string.IsNullOrWhiteSpace(devIdStr))
+                {
+                    if (!Guid.TryParse(devIdStr, out deviceId))
+                    {
+                        logger.LogWarning("DeviceId '{DeviceId}' is not a valid Guid, using Guid.Empty", devIdStr);
+                        return Results.Problem("Invalid 'DeviceId' format", statusCode: 400);
+                    }
+                }
+                else
+                {
+                    logger.LogWarning("DeviceId is null or empty, using Guid.Empty");
+                    return Results.Problem("Missing 'DeviceId' in data", statusCode: 400);
+                }
             }
 
-            return Results.Ok(new { message = "Telemetry received" });
-        }
-        catch (Exception ex)
+            // 5) Store the whole inner data object as JsonDocument
+            var dataJson = JsonDocument.Parse(dataElement.GetRawText());
+
+        var command = new CreateDeviceDataCommand
         {
-            logger.LogError(ex, "Error handling ThingsBoard telemetry");
-            return Results.Problem(detail: ex.Message, statusCode: 500);
-        }
+            DataType = dataType,
+            DeviceId = deviceId,
+            RequestDate = requestDate,
+            Data = dataJson
+        };
+
+        var createdId = await sender.Send(command);
+
+        return Results.Ok(new
+        {
+            message = "Telemetry received",
+            id = createdId
+        });
     }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error handling ThingsBoard telemetry");
+        return Results.Problem(detail: ex.Message, statusCode: 500);
+    }
+}
+
 
 
 }
