@@ -111,24 +111,12 @@ public async Task<IResult> ReceiveTelemetry(
         }
 
             // 4) DeviceId comes from data.DeviceId (string → Guid)
-            Guid deviceId = Guid.Empty;
-            if (dataElement.TryGetProperty("DeviceId", out var devIdEl))
+            var deviceIdResult = TryParseDeviceId(dataElement, logger);
+            if (deviceIdResult.Error != null)
             {
-                var devIdStr = devIdEl.GetString();
-                if (!string.IsNullOrWhiteSpace(devIdStr))
-                {
-                    if (!Guid.TryParse(devIdStr, out deviceId))
-                    {
-                        logger.LogWarning("DeviceId '{DeviceId}' is not a valid Guid, using Guid.Empty", devIdStr);
-                        return Results.Problem("Invalid 'DeviceId' format", statusCode: 400);
-                    }
-                }
-                else
-                {
-                    logger.LogWarning("DeviceId is null or empty, using Guid.Empty");
-                    return Results.Problem("Missing 'DeviceId' in data", statusCode: 400);
-                }
+                return deviceIdResult.Error;
             }
+            var deviceId = deviceIdResult.DeviceId;
 
             // 5) Store the whole inner data object as JsonDocument
             var dataJson = JsonDocument.Parse(dataElement.GetRawText());
@@ -156,6 +144,29 @@ public async Task<IResult> ReceiveTelemetry(
     }
 }
 
+    private static (Guid DeviceId, IResult? Error) TryParseDeviceId(
+        JsonElement dataElement,
+        ILogger<DeviceData> logger)
+    {
+        if (!dataElement.TryGetProperty("DeviceId", out var devIdEl))
+        {
+            return (Guid.Empty, null);
+        }
 
+        var devIdStr = devIdEl.GetString();
+        if (string.IsNullOrWhiteSpace(devIdStr))
+        {
+            logger.LogWarning("DeviceId is null or empty, using Guid.Empty");
+            return (Guid.Empty, Results.Problem("Missing 'DeviceId' in data", statusCode: 400));
+        }
+
+        if (!Guid.TryParse(devIdStr, out var deviceId))
+        {
+            logger.LogWarning("DeviceId '{DeviceId}' is not a valid Guid, using Guid.Empty", devIdStr);
+            return (Guid.Empty, Results.Problem("Invalid 'DeviceId' format", statusCode: 400));
+        }
+
+        return (deviceId, null);
+    }
 
 }
