@@ -45,8 +45,7 @@ else
 }
 
 app.UseHealthChecks("/health");
-// Comment out HTTPS redirection to allow HTTP connections from ThingsBoard
-// app.UseHttpsRedirection();
+// TODO: in future disable Http and redirect them to https: app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 // Use custom exception handler instead of developer exception page
