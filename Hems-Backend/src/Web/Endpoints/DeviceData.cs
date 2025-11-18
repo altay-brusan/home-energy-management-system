@@ -17,13 +17,6 @@ public class DeviceData : EndpointGroupBase
 {
     public override void Map(WebApplication app)
     {
-        // Device endpoints (require device-only authorization)
-        //app.MapGroup(this)
-        //    .RequireAuthorization(Policies.DeviceOnly)
-        //    .MapPost(CreateDeviceData)
-        //    .MapPost(CreateDeviceEnergyData, "energy")
-        //    .MapPost("bulk", BulkCreateDeviceData);
-
         // User endpoints (require user authorization)
         app.MapGroup(this)
             .MapPost(ReceiveTelemetry, "PowerFlow");
