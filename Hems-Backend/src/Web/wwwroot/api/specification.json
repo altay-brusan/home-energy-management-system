@@ -258,19 +258,17 @@
         ]
       }
     },
-    "/api/DeviceData": {
+    "/api/DeviceData/PowerFlow": {
       "post": {
         "tags": [
           "DeviceData"
         ],
-        "operationId": "CreateDeviceData",
+        "operationId": "ReceiveTelemetry",
         "requestBody": {
-          "x-name": "command",
+          "x-name": "body",
           "content": {
             "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateDeviceDataCommand"
-              }
+              "schema": {}
             }
           },
           "required": true,
@@ -278,23 +276,12 @@
         },
         "responses": {
           "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "integer",
-                  "format": "int32"
-                }
-              }
-            }
+            "description": ""
           }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      },
+        }
+      }
+    },
+    "/api/DeviceData": {
       "get": {
         "tags": [
           "DeviceData"
@@ -357,81 +344,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PaginatedListOfDeviceDataDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/DeviceData/energy": {
-      "post": {
-        "tags": [
-          "DeviceData"
-        ],
-        "operationId": "CreateDeviceEnergyData",
-        "requestBody": {
-          "x-name": "command",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateDeviceEnergyDataCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "integer",
-                  "format": "int32"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/DeviceData/bulk": {
-      "post": {
-        "tags": [
-          "DeviceData"
-        ],
-        "operationId": "PostApiDeviceDataBulk",
-        "requestBody": {
-          "x-name": "command",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/BulkCreateDeviceDataCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BulkCreateDeviceDataResult"
                 }
               }
             }
@@ -4514,169 +4426,6 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
-          }
-        }
-      },
-      "CreateDeviceDataCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "dataType": {
-            "type": "string"
-          },
-          "deviceId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "requestDate": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "data": {
-            "$ref": "#/components/schemas/JsonDocument"
-          }
-        }
-      },
-      "CreateDeviceEnergyDataCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "dataType": {
-            "type": "string"
-          },
-          "deviceId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "dataDateTime": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "pvEnergyKWhToday": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "gridImportEnergyKWhToday": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "gridExportEnergyKWhToday": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "generatorEnergyKWhToday": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "batteryDischargeEnergyKWhToday": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "batteryChargeEnergyKWhToday": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "loadEnergyKWhToday": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "pvEnergyKWhTotal": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "gridImportEnergyKWhTotal": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "gridExportEnergyKWhTotal": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "generatorEnergyKWhTotal": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "batteryDischargeEnergyKWhTotal": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "batteryChargeEnergyKWhTotal": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "loadEnergyKWhTotal": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          }
-        }
-      },
-      "BulkCreateDeviceDataResult": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "successCount": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "failureCount": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "errors": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "processingTime": {
-            "type": "string",
-            "format": "duration"
-          }
-        }
-      },
-      "BulkCreateDeviceDataCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "deviceDataItems": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DeviceDataItem"
-            }
-          }
-        }
-      },
-      "DeviceDataItem": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "dataType": {
-            "type": "string"
-          },
-          "deviceId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "requestDate": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "data": {
-            "$ref": "#/components/schemas/JsonDocument"
           }
         }
       },
