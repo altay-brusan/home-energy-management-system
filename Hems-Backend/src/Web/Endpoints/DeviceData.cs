@@ -19,7 +19,8 @@ public class DeviceData : EndpointGroupBase
     {
         // User endpoints (require user authorization)
         app.MapGroup(this)
-            .MapPost(ReceiveTelemetry, "PowerFlow");
+            .MapPost(ReceiveTelemetry, "PowerFlow")
+            .MapPost(ReceiveTelemetry, "BatterySoc");
 
         // User endpoints (require user authorization)
         app.MapGroup(this)
