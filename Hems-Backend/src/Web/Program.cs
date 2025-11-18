@@ -1,6 +1,7 @@
 using Hems_Backend.Infrastructure.Data;
 using Hems_Backend.Infrastructure.Identity;
 using Hems_Backend.Web.Hubs;
+using Hems_Backend.Web.Middleware;
 using Serilog;
 
 // Npgsql DateTime handling - PostgreSQL UTC support için
@@ -44,7 +45,8 @@ else
 }
 
 app.UseHealthChecks("/health");
-app.UseHttpsRedirection();
+// Comment out HTTPS redirection to allow HTTP connections from ThingsBoard
+// app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 // Use custom exception handler instead of developer exception page
@@ -52,6 +54,8 @@ app.UseExceptionHandler(options => {});
 
 // Add rate limiting for device data endpoints
 app.UseMiddleware<DeviceDataRateLimitMiddleware>();
+// Register ThingsBoard API-key middleware BEFORE endpoints are mapped.
+app.UseMiddleware<ApiKeyAuthenticationMiddleware>();
 
 app.UseSwaggerUi(settings =>
 {
