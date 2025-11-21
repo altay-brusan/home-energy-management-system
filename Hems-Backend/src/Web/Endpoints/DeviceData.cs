@@ -60,7 +60,6 @@ public class DeviceData : EndpointGroupBase
     }
 
 
-[Authorize(Policies.DeviceOnly)]
 public async Task<IResult> ReceiveBatterySocTelemetry(
     [FromBody] JsonElement body,
     ILogger<DeviceData> logger,
@@ -69,7 +68,6 @@ public async Task<IResult> ReceiveBatterySocTelemetry(
     return await ProcessTelemetry(body, "BatterySoc", logger, sender);
 }
 
-[Authorize(Policies.DeviceOnly)]
 public async Task<IResult> ReceivePowerFlowTelemetry(
     [FromBody] JsonElement body,
     ILogger<DeviceData> logger,
