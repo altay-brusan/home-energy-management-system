@@ -17,9 +17,10 @@ public class DeviceData : EndpointGroupBase
 {
     public override void Map(WebApplication app)
     {
-        // User endpoints (require user authorization)
+        // Device telemetry endpoints (no authorization - devices authenticate via policy)
         app.MapGroup(this)
-            .MapPost(ReceiveTelemetry, "PowerFlow");
+            .MapPost(ReceivePowerFlowTelemetry, "PowerFlow")
+            .MapPost(ReceiveBatterySocTelemetry, "BatterySoc");
 
         // User endpoints (require user authorization)
         app.MapGroup(this)
@@ -59,17 +60,34 @@ public class DeviceData : EndpointGroupBase
     }
 
 
-public async Task<IResult> ReceiveTelemetry(
+public async Task<IResult> ReceiveBatterySocTelemetry(
     [FromBody] JsonElement body,
+    ILogger<DeviceData> logger,
+    ISender sender)
+{
+    return await ProcessTelemetry(body, "BatterySoc", logger, sender);
+}
+
+public async Task<IResult> ReceivePowerFlowTelemetry(
+    [FromBody] JsonElement body,
+    ILogger<DeviceData> logger,
+    ISender sender)
+{
+    return await ProcessTelemetry(body, "PowerFlow", logger, sender);
+}
+
+private async Task<IResult> ProcessTelemetry(
+    JsonElement body,
+    string dataType,
     ILogger<DeviceData> logger,
     ISender sender)
 {
     try
     {
         logger.LogInformation(
-            "📥 ThingsBoard telemetry received at {UtcNow}: {Payload}",
-            DateTime.UtcNow,
-            body.ToString());
+            "📥 {DataType} telemetry received at {UtcNow}",
+            dataType,
+            DateTime.UtcNow);
 
         // 1) Get the inner "data" object
         if (!body.TryGetProperty("data", out var dataElement) ||
@@ -79,14 +97,7 @@ public async Task<IResult> ReceiveTelemetry(
             return Results.Problem("Missing 'data' object", statusCode: 400);
         }
 
-        logger.LogInformation("📦 ThingsBoard inner data payload: {InnerPayload}", dataElement.ToString());
-
-        // 2) DataType comes from data.kind
-        var dataType = dataElement.TryGetProperty("kind", out var kindEl)
-            ? kindEl.GetString() ?? string.Empty
-            : string.Empty;
-
-        // 3) RequestDate comes from data.timestampUtc
+        // 2) RequestDate comes from data.timestampUtc
         DateTime requestDate = DateTime.UtcNow;
         if (dataElement.TryGetProperty("timestampUtc", out var tsEl))
         {
@@ -103,16 +114,16 @@ public async Task<IResult> ReceiveTelemetry(
             }
         }
 
-            // 4) DeviceId comes from data.DeviceId (string → Guid)
-            var deviceIdResult = TryParseDeviceId(dataElement, logger);
-            if (deviceIdResult.Error != null)
-            {
-                return deviceIdResult.Error;
-            }
-            var deviceId = deviceIdResult.DeviceId;
+        // 3) DeviceId comes from data.DeviceId (string → Guid)
+        var deviceIdResult = TryParseDeviceId(dataElement, logger);
+        if (deviceIdResult.Error != null)
+        {
+            return deviceIdResult.Error;
+        }
+        var deviceId = deviceIdResult.DeviceId;
 
-            // 5) Store the whole inner data object as JsonDocument
-            var dataJson = JsonDocument.Parse(dataElement.GetRawText());
+        // 4) Store the whole inner data object as JsonDocument
+        var dataJson = JsonDocument.Parse(dataElement.GetRawText());
 
         var command = new CreateDeviceDataCommand
         {
@@ -126,13 +137,13 @@ public async Task<IResult> ReceiveTelemetry(
 
         return Results.Ok(new
         {
-            message = "Telemetry received",
+            message = $"{dataType} telemetry received",
             id = createdId
         });
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "Error handling ThingsBoard telemetry");
+        logger.LogError(ex, "Error handling {DataType} telemetry", dataType);
         return Results.Problem(detail: ex.Message, statusCode: 500);
     }
 }
