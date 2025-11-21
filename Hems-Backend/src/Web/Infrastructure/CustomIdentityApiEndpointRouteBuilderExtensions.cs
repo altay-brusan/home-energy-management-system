@@ -301,8 +301,6 @@ public static class IdentityApiEndpointRouteBuilderExtensions
 
             return TypedResults.Ok();
         });
-
-        // userInfo2 endpoint requires authorization to access ClaimsPrincipal
         routeGroup.MapGet("/userInfo2", async Task<Results<Ok<UserInfoDTO>, ValidationProblem, NotFound>>
             (ClaimsPrincipal claimsPrincipal, [FromServices] IServiceProvider sp) =>
         {
@@ -313,7 +311,7 @@ public static class IdentityApiEndpointRouteBuilderExtensions
             }
 
             return TypedResults.Ok(await CreateUserInfoResponseAsync(user, userManager));
-        }).RequireAuthorization();
+        });
 
 
         var accountGroup = routeGroup.MapGroup("/manage").RequireAuthorization();
