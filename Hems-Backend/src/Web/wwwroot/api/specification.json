@@ -263,7 +263,35 @@
         "tags": [
           "DeviceData"
         ],
-        "operationId": "ReceiveTelemetry",
+        "operationId": "ReceivePowerFlowTelemetry",
+        "requestBody": {
+          "x-name": "body",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/DeviceData/BatterySoc": {
+      "post": {
+        "tags": [
+          "DeviceData"
+        ],
+        "operationId": "ReceiveBatterySocTelemetry",
         "requestBody": {
           "x-name": "body",
           "content": {
@@ -5336,54 +5364,59 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "range": {
+          "timestampUtc": {
             "type": "string"
           },
-          "data": {
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "deviceId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "inverterBatChannelSoc": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SOCDataPoint"
+              "$ref": "#/components/schemas/InverterBatChannelSocDto"
             }
           },
-          "statistics": {
-            "$ref": "#/components/schemas/SOCStatistics"
+          "bmsSocDetails": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BmsSocDetailDto"
+            }
           }
         }
       },
-      "SOCDataPoint": {
+      "InverterBatChannelSocDto": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "timestamp": {
-            "type": "string"
+          "channelId": {
+            "type": "integer",
+            "format": "int32"
           },
-          "value": {
+          "socPercent": {
             "type": "number",
             "format": "double"
-          },
-          "unit": {
-            "type": "string"
           }
         }
       },
-      "SOCStatistics": {
+      "BmsSocDetailDto": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "total": {
-            "type": "number",
-            "format": "double"
+          "channelId": {
+            "type": "integer",
+            "format": "int32"
           },
-          "peak": {
-            "type": "number",
-            "format": "double"
-          },
-          "average": {
-            "type": "number",
-            "format": "double"
-          },
-          "unit": {
+          "deviceId": {
             "type": "string"
+          },
+          "socPercent": {
+            "type": "number",
+            "format": "double"
           }
         }
       },
