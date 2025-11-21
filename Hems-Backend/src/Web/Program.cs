@@ -1,7 +1,10 @@
+using System.IO;
+using System.Runtime.InteropServices;
 using Hems_Backend.Infrastructure.Data;
 using Hems_Backend.Infrastructure.Identity;
 using Hems_Backend.Web.Hubs;
 using Hems_Backend.Web.Middleware;
+using Microsoft.AspNetCore.DataProtection;
 using Serilog;
 
 // Npgsql DateTime handling - PostgreSQL UTC support için
@@ -31,6 +34,29 @@ builder.AddWebServices();
 // Add HTTP Client Factory
 builder.Services.AddHttpClient();
 
+// === OS-agnostic Data Protection key storage ===
+string dataProtectionPath;
+
+if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+{
+    // e.g. C:\ProgramData\Hems\DataProtectionKeys
+    var commonAppData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+    dataProtectionPath = Path.Combine(commonAppData, "Hems", "DataProtectionKeys");
+}
+else
+{
+    // e.g. /var/lib/hems/dataprotection-keys
+    dataProtectionPath = "/var/lib/hems/dataprotection-keys";
+}
+
+// Ensure directory exists
+Directory.CreateDirectory(dataProtectionPath);
+
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionPath))
+    .SetApplicationName("HEMS-API");
+// ===============================================
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -48,7 +74,7 @@ app.UseHealthChecks("/health");
 app.UseStaticFiles();
 
 // Use custom exception handler instead of developer exception page
-app.UseExceptionHandler(options => {});
+app.UseExceptionHandler(options => { });
 
 // Add rate limiting for device data endpoints
 app.UseMiddleware<DeviceDataRateLimitMiddleware>();
