@@ -115,12 +115,12 @@ public static class IdentityApiEndpointRouteBuilderExtensions
             {
                 notification.UserId = userId;
             }
-          
+
             await dbContext.SaveChangesAsync();
             await SendConfirmationEmailAsync(user, userManager, context, email);
             return TypedResults.Ok();
         });
-        
+
 
 
         routeGroup.MapPost("/login", async Task<Results<Ok<AccessTokenResponse>, EmptyHttpResult, ProblemHttpResult>>
@@ -301,6 +301,8 @@ public static class IdentityApiEndpointRouteBuilderExtensions
 
             return TypedResults.Ok();
         });
+
+        // userInfo2 endpoint requires authorization to access ClaimsPrincipal
         routeGroup.MapGet("/userInfo2", async Task<Results<Ok<UserInfoDTO>, ValidationProblem, NotFound>>
             (ClaimsPrincipal claimsPrincipal, [FromServices] IServiceProvider sp) =>
         {
@@ -311,7 +313,7 @@ public static class IdentityApiEndpointRouteBuilderExtensions
             }
 
             return TypedResults.Ok(await CreateUserInfoResponseAsync(user, userManager));
-        });
+        }).RequireAuthorization();
 
 
         var accountGroup = routeGroup.MapGroup("/manage").RequireAuthorization();
@@ -403,7 +405,7 @@ public static class IdentityApiEndpointRouteBuilderExtensions
 
             return TypedResults.Ok(await CreateInfoResponseAsync(user, userManager));
         });
-        
+
         accountGroup.MapPost("/info", async Task<Results<Ok<InfoResponse>, ValidationProblem, NotFound>>
             (ClaimsPrincipal claimsPrincipal, [FromBody] InfoRequest infoRequest, HttpContext context, [FromServices] IServiceProvider sp) =>
         {
@@ -493,7 +495,7 @@ public static class IdentityApiEndpointRouteBuilderExtensions
         public required string Surname { get; set; }
         public required string Password { get; init; }
     }
-   
+
     public sealed class UserInfoDTO
     {
         public required string Email { get; init; }
