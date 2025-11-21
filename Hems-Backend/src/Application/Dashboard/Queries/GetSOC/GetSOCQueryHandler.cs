@@ -18,113 +18,93 @@ public class GetSOCQueryHandler : IRequestHandler<GetSOCQuery, SOCResponseDto>
         _context = context;
         _sender = sender;
     }
+
     public async Task<SOCResponseDto> Handle(GetSOCQuery request, CancellationToken cancellationToken)
     {
-        // Device access kontrolü
+        // Device access check
         var hasAccess = await _sender.Send(new CheckDeviceAccessQuery { DeviceId = request.DeviceId }, cancellationToken);
         if (!hasAccess)
         {
             throw new UnauthorizedAccessException("Device access denied");
         }
 
-        var utcNow = DateTime.UtcNow;
-        var startOfDay = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 0, 0, 0, DateTimeKind.Utc);
-        var endOfDay = startOfDay.AddDays(1);
+        // Query the latest BatterySoc data for the device
+        var latestSocData = await _context.DeviceData
+            .Where(dd => dd.DeviceId == request.DeviceId && dd.DataType == "BatterySoc")
+            .OrderByDescending(dd => dd.RequestDate)
+            .FirstOrDefaultAsync(cancellationToken);
 
-        // Bugünün BatteryCluster verilerini al
-        var batteryData = await _context.DeviceData
-            .Where(x => x.DeviceId == request.DeviceId && 
-                       x.RequestDate >= startOfDay &&
-                       x.RequestDate < endOfDay &&
-                       x.DataType == "BatteryClusterData")
-            .OrderBy(x => x.RequestDate)
-            .ToListAsync(cancellationToken);
-
-        if (!batteryData.Any())
+        if (latestSocData == null)
         {
+            // Return empty response if no data found
             return new SOCResponseDto
             {
-                Range = "Day",
-                Data = new List<SOCDataPoint>(),
-                Statistics = new SOCStatistics
-                {
-                    Total = 0,
-                    Peak = 0,
-                    Average = 0,
-                    Unit = "%"
-                }
+                TimestampUtc = DateTime.UtcNow.ToString("o"),
+                Version = 0,
+                DeviceId = request.DeviceId,
+                InverterBatChannelSoc = new List<InverterBatChannelSocDto>(),
+                BmsSocDetails = new List<BmsSocDetailDto>()
             };
         }
 
-        // SOC değerlerini çıkar ve saatlik grupla
-        var socDataPoints = new List<SOCDataPoint>();
-        
-        foreach (var data in batteryData)
+        // Parse the JSON data
+        var jsonData = latestSocData.Data.RootElement;
+
+        // Extract timestampUtc
+        var timestampUtc = jsonData.TryGetProperty("timestampUtc", out var tsElement)
+            ? tsElement.GetString() ?? DateTime.UtcNow.ToString("o")
+            : DateTime.UtcNow.ToString("o");
+
+        // Extract version
+        var version = jsonData.TryGetProperty("version", out var versionElement)
+            ? versionElement.GetInt32()
+            : 0;
+
+        // Extract inverterBatChannelSoc array
+        var inverterChannels = new List<InverterBatChannelSocDto>();
+        if (jsonData.TryGetProperty("inverterBatChannelSoc", out var inverterArrayElement)
+            && inverterArrayElement.ValueKind == JsonValueKind.Array)
         {
-            try
+            foreach (var item in inverterArrayElement.EnumerateArray())
             {
-                // JSON'dan direkt SOC değerini al
-                var socValue = data.Data.RootElement.GetProperty("SOC").GetDouble();
-                
-                socDataPoints.Add(new SOCDataPoint
+                var channelId = item.TryGetProperty("channelId", out var chIdEl) ? chIdEl.GetInt32() : 0;
+                var socPercent = item.TryGetProperty("socPercent", out var socEl) ? socEl.GetDouble() : 0.0;
+
+                inverterChannels.Add(new InverterBatChannelSocDto
                 {
-                    Timestamp = data.RequestDate.ToString("HH:mm"),
-                    Value = Math.Round(socValue, 1),
-                    Unit = "%"
+                    ChannelId = channelId,
+                    SocPercent = socPercent
                 });
             }
-            catch
+        }
+
+        // Extract bmsSocDetails array
+        var bmsDetails = new List<BmsSocDetailDto>();
+        if (jsonData.TryGetProperty("bmsSocDetails", out var bmsArrayElement)
+            && bmsArrayElement.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in bmsArrayElement.EnumerateArray())
             {
-                // JSON parse hatası - skip
-                continue;
+                var channelId = item.TryGetProperty("channelId", out var chIdEl) ? chIdEl.GetInt32() : 0;
+                var deviceId = item.TryGetProperty("deviceId", out var devIdEl) ? devIdEl.GetString() ?? string.Empty : string.Empty;
+                var socPercent = item.TryGetProperty("socPercent", out var socEl) ? socEl.GetDouble() : 0.0;
+
+                bmsDetails.Add(new BmsSocDetailDto
+                {
+                    ChannelId = channelId,
+                    DeviceId = deviceId,
+                    SocPercent = socPercent
+                });
             }
         }
-
-        if (!socDataPoints.Any())
-        {
-            return new SOCResponseDto
-            {
-                Range = "Day",
-                Data = new List<SOCDataPoint>(),
-                Statistics = new SOCStatistics
-                {
-                    Total = 0,
-                    Peak = 0,
-                    Average = 0,
-                    Unit = "%"
-                }
-            };
-        }
-
-        // Saatlik gruplama yap (en yüksek peak'i al)
-        var hourlyData = socDataPoints
-            .GroupBy(x => x.Timestamp.Substring(0, 2)) // Saat kısmını al (HH:mm -> HH)
-            .Select(g => new SOCDataPoint
-            {
-                Timestamp = $"{g.Key}:00",
-                Value = Math.Round(g.Max(x => x.Value), 1), // Saatlik peak
-                Unit = "%"
-            })
-            .OrderBy(x => x.Timestamp)
-            .ToList();
-
-        // İstatistikleri hesapla
-        var allValues = hourlyData.Select(x => x.Value).ToList();
-        var total = allValues.Sum();
-        var peak = allValues.Count > 0 ? allValues.Max() : 0;
-        var average = allValues.Count > 0 ? allValues.Average() : 0;
 
         return new SOCResponseDto
         {
-            Range = "Day",
-            Data = hourlyData,
-            Statistics = new SOCStatistics
-            {
-                Total = Math.Round(total, 1),
-                Peak = Math.Round(peak, 1),
-                Average = Math.Round(average, 1),
-                Unit = "%"
-            }
+            TimestampUtc = timestampUtc,
+            Version = version,
+            DeviceId = request.DeviceId,
+            InverterBatChannelSoc = inverterChannels,
+            BmsSocDetails = bmsDetails
         };
     }
 }

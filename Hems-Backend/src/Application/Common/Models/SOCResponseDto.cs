@@ -2,22 +2,22 @@ namespace Hems_Backend.Application.Common.Models;
 
 public record SOCResponseDto
 {
-    public string Range { get; init; } = string.Empty;
-    public List<SOCDataPoint> Data { get; init; } = new();
-    public SOCStatistics Statistics { get; init; } = null!;
+    public string TimestampUtc { get; init; } = string.Empty;
+    public int Version { get; init; }
+    public Guid DeviceId { get; init; }
+    public List<InverterBatChannelSocDto> InverterBatChannelSoc { get; init; } = new();
+    public List<BmsSocDetailDto> BmsSocDetails { get; init; } = new();
 }
 
-public record SOCDataPoint
+public record InverterBatChannelSocDto
 {
-    public string Timestamp { get; init; } = string.Empty;
-    public double Value { get; init; }
-    public string Unit { get; init; } = string.Empty;
+    public int ChannelId { get; init; }
+    public double SocPercent { get; init; }
 }
 
-public record SOCStatistics
+public record BmsSocDetailDto
 {
-    public double Total { get; init; }
-    public double Peak { get; init; }
-    public double Average { get; init; }
-    public string Unit { get; init; } = string.Empty;
+    public int ChannelId { get; init; }
+    public string DeviceId { get; init; } = string.Empty;
+    public double SocPercent { get; init; }
 }

@@ -45,7 +45,6 @@ else
 }
 
 app.UseHealthChecks("/health");
-// TODO: in future disable Http and redirect them to https: app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 // Use custom exception handler instead of developer exception page
