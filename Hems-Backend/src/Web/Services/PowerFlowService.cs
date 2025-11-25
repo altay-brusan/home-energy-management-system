@@ -49,7 +49,7 @@ public class PowerFlowService : IPowerFlowService
     public async Task<PowerFlowDto?> GetPowerFlowAsync(Guid deviceId, CancellationToken cancellationToken = default)
     {
         // TEMP: TB device id hard-coded
-        var tbDeviceId = "d6526050-bebb-11f0-abe8-afb6b6171dad";
+        var tbDeviceId = deviceId.ToString();//"725dabc0-c6bf-11f0-a84b-2f34a5f564b4";
 
         var timeoutMs = 10000;
         var url = $"{_tbBaseUrl.TrimEnd('/')}/api/plugins/rpc/twoway/{tbDeviceId}?timeout={timeoutMs}";
