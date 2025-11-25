@@ -7,6 +7,7 @@ using Hems_Backend.Application.DeviceData.Commands.CreateDeviceEnergyData;
 using Hems_Backend.Application.DeviceData.Queries.GetDeviceData;
 using Hems_Backend.Domain.Constants;
 using Hems_Backend.Web.Infrastructure;
+using Hems_Backend.Web.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http; // make sure this is present
 using Microsoft.AspNetCore.Mvc;
@@ -24,9 +25,34 @@ public class DeviceData : EndpointGroupBase
 
         // User endpoints (require user authorization)
         app.MapGroup(this)
-            .RequireAuthorization()
-            .MapGet(GetDeviceData);
+            //.RequireAuthorization()
+            .MapGet(GetDeviceData)
+            .MapGet(GetLivePowerFlow, "PowerFlow/live/{deviceId:guid}"); ;
     }
+
+    public async Task<IResult> GetLivePowerFlow(
+    Guid deviceId,
+    IPowerFlowService powerFlowService,
+    ILogger<DeviceData> logger,
+    CancellationToken ct)
+    {
+        logger.LogInformation("🔌 Live PowerFlow requested for DeviceId {DeviceId}", deviceId);
+
+        // Call our RPC-based service (TB -> Node-RED -> inverter)
+        var dto = await powerFlowService.GetPowerFlowAsync(deviceId, ct);
+
+        if (dto == null)
+        {
+            logger.LogWarning("PowerFlow could not be retrieved for DeviceId {DeviceId}", deviceId);
+            return Results.Problem(
+                detail: "PowerFlow could not be retrieved (TB RPC failed or device offline).",
+                statusCode: StatusCodes.Status502BadGateway);
+        }
+
+        return Results.Ok(dto);
+    }
+
+
 
     public async Task<PaginatedList<DeviceDataDto>> GetDeviceData(
         ISender sender,
@@ -148,7 +174,7 @@ private async Task<IResult> ProcessTelemetry(
     }
 }
 
-    private static (Guid DeviceId, IResult? Error) TryParseDeviceId(
+private static (Guid DeviceId, IResult? Error) TryParseDeviceId(
         JsonElement dataElement,
         ILogger<DeviceData> logger)
     {
