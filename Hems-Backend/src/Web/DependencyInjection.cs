@@ -38,9 +38,16 @@ public static class DependencyInjection
         // Add SignalR
         builder.Services.AddSignalR();
 
+        // ThingsBoard auth (gets JWT and caches it)
+        builder.Services.AddHttpClient<IThingsBoardAuthService, ThingsBoardAuthService>();
+
+        // PowerFlow service (calls TB RPC)
+        builder.Services.AddHttpClient<IPowerFlowService, PowerFlowService>();
+
+
         // Add Device Notification Service
         builder.Services.AddScoped<IDeviceNotificationService, DeviceNotificationService>();
-
+  
         // Add Authorization Policies
         //builder.Services.AddAuthorization(options =>
         //{

@@ -371,12 +371,32 @@
               }
             }
           }
-        },
-        "security": [
+        }
+      }
+    },
+    "/api/DeviceData/PowerFlow/live/{deviceId}": {
+      "get": {
+        "tags": [
+          "DeviceData"
+        ],
+        "operationId": "GetLivePowerFlow",
+        "parameters": [
           {
-            "JWT": []
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
       }
     },
     "/api/DeviceNotifications": {
