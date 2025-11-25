@@ -65,7 +65,7 @@ app.MapEndpoints();
 
 // Map SignalR Hub
 app.MapHub<DeviceNotificationHub>("/deviceNotificationHub");
-
+app.MapHub<PowerFlowHub>("/powerFlowHub");
 app.Run();
 
 public partial class Program { }
