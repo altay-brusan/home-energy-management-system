@@ -36,7 +36,20 @@ export default function useAuth () {
         const tokenResponse: AccessTokenResponse = await authService.login(loginData);
         await apiClient.saveTokens(tokenResponse);
 
-        const userInfo = await authService.getUserInfo();
+        let userInfo;
+        try {
+          // getUserInfo çağır, hata verirse catch'e düş
+          userInfo = await authService.getUserInfo();
+        } catch (userInfoError) {
+          console.warn('getUserInfo failed, using default values:', userInfoError);
+          // getUserInfo başarısız olursa varsayılan değerler kullan
+          userInfo = {
+            email: email,
+            name: email.split('@')[0], // Email'den kullanıcı adı çıkar
+            surname: '',
+            roles: ['User'] // Varsayılan rol
+          };
+        }
 
         const userData: UserData = {
           id: email,
@@ -49,7 +62,8 @@ export default function useAuth () {
         await saveUserData(userData);
         setUser(userData);
       } catch (err: any) {
-        const appError = mapToAppError(err);// Handle specific login errors
+        const appError = mapToAppError(err);
+        // Handle specific login errors
         const detail: string | undefined = err?.response?.data?.detail || err?.response?.data?.message || err?.detail || err?.message;
         if (err?.response?.status === 401 || err?.status === 401) {
           if (typeof detail === 'string' && /email\s+not\s+confirmed/i.test(detail)) {

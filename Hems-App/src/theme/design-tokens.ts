@@ -295,9 +295,9 @@ export const DESIGN_TOKENS_LIGHT = {
 export const DESIGN_TOKENS_DARK = {
   // === BRAND COLORS (Marka renkleri) ===
   brand: {
-    primary: '#1169b1',           // Ana marka rengi (turkuaz)
-    primaryLight: '#5ce1d3',      // Açık varyant
-    primaryDark: '#1ab5a6',       // Koyu varyant
+    primary: '#1169b1',           // Ana marka rengi (mavi)
+    primaryLight: '#67e8f9',      // Açık varyant
+    primaryDark: '#0891b2',       // Koyu varyant
     secondary: '#a78bfa',         // İkincil marka rengi (açık mor)
     secondaryLight: '#c4b5fd',    // Açık varyant
     secondaryDark: '#8b5cf6',     // Koyu varyant
@@ -329,9 +329,9 @@ export const DESIGN_TOKENS_DARK = {
     quaternary: '#64748b',        // Dördüncül metin
     disabled: '#475569',          // Devre dışı
     inverse: '#111827',           // Ters renk
-    link: '#2bd5c4',              // Link
-    linkHover: '#5ce1d3',         // Link hover
-    linkActive: '#1ab5a6',        // Link active
+    link: '#1169b1',              // Link
+    linkHover: '#67e8f9',         // Link hover
+    linkActive: '#0891b2',        // Link active
     placeholder: '#64748b',       // Placeholder text
     hint: '#94a3b8',              // Hint text
   },
@@ -358,7 +358,7 @@ export const DESIGN_TOKENS_DARK = {
     secondary: '#4b5563',         // İkincil border
     tertiary: '#6b7280',          // Üçüncül border
     light: '#2d3748',             // Hafif border
-    focus: '#2bd5c4',             // Focus state
+    focus: '#1169b1',             // Focus state
     error: '#ef4444',             // Hata border
     success: '#10b981',           // Başarı border
     warning: '#f59e0b',           // Uyarı border
@@ -381,10 +381,10 @@ export const DESIGN_TOKENS_DARK = {
 
   // === BUTTON COLORS ===
   button: {
-    primaryBg: '#2bd5c4',
+    primaryBg: '#1169b1',
     primaryText: '#ffffff',
-    primaryHover: '#5ce1d3',
-    primaryPressed: '#1ab5a6',
+    primaryHover: '#0e7490',
+    primaryPressed: '#0891b2',
     primaryDisabled: '#475569',
 
     secondaryBg: '#374151',
@@ -413,7 +413,7 @@ export const DESIGN_TOKENS_DARK = {
     bgDisabled: '#1b222a',
     border: '#374151',
     borderHover: '#4b5563',
-    borderFocus: '#2bd5c4',
+    borderFocus: '#1169b1',
     borderError: '#ef4444',
     borderSuccess: '#10b981',
     text: '#ffffff',
@@ -427,20 +427,20 @@ export const DESIGN_TOKENS_DARK = {
 
   // === CHART COLORS (Grafik renkleri) ===
   chart: {
-    primary: '#2bd5c4',
+    primary: '#1169b1',
     secondary: '#a78bfa',
     tertiary: '#fbbf24',
     quaternary: '#34d399',
     quinary: '#f87171',
     senary: '#f472b6',
 
-    line1: '#2bd5c4',
+    line1: '#1169b1',
     line2: '#a78bfa',
     line3: '#fbbf24',
     line4: '#34d399',
     line5: '#f87171',
 
-    area1: 'rgba(43, 213, 196, 0.15)',
+    area1: 'rgba(17, 105, 177, 0.15)',
     area2: 'rgba(167, 139, 250, 0.15)',
     area3: 'rgba(251, 191, 36, 0.15)',
 
@@ -464,9 +464,9 @@ export const DESIGN_TOKENS_DARK = {
     batteryCharging: '#10b981',
     batteryDischarging: '#f59e0b',
 
-    grid: '#2bd5c4',
-    gridLight: '#5ce1d3',
-    gridDark: '#1ab5a6',
+    grid: '#1169b1',
+    gridLight: '#67e8f9',
+    gridDark: '#0891b2',
     gridImport: '#ef4444',
     gridExport: '#10b981',
 
@@ -484,7 +484,7 @@ export const DESIGN_TOKENS_DARK = {
     online: '#10b981',
     offline: '#ef4444',
     idle: '#f59e0b',
-    active: '#2bd5c4',
+    active: '#1169b1',
     pending: '#f59e0b',
     completed: '#10b981',
     failed: '#ef4444',
@@ -530,7 +530,7 @@ export const DESIGN_TOKENS_DARK = {
 
   // === GRADIENT COLORS ===
   gradient: {
-    primary: ['#2bd5c4', '#1ab5a6'],
+    primary: ['#1169b1', '#0891b2'],
     secondary: ['#a78bfa', '#8b5cf6'],
     success: ['#34d399', '#059669'],
     error: ['#f87171', '#dc2626'],

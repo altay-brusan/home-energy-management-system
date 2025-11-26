@@ -26,6 +26,7 @@ export function getThemeColors (isDark: boolean) {
     bgShadeDark: tokens.background.shadeDark,
 
     // Text colors
+    text: tokens.text.primary,
     textSoft: tokens.text.secondary,
 
     // Border colors

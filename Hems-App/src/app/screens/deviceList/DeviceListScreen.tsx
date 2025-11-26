@@ -53,7 +53,7 @@ export default function DeviceListScreen() {
               <Text style={styles.name} numberOfLines={1}>{DEVICE.name}</Text>
               <FontAwesome name="chevron-right" size={14} color={COLORS.slate400} style={styles.rightIcon} />
             </View>
-            <Text style={styles.serial} numberOfLines={1}>SN: {DEVICE.serial}</Text>
+            <Text style={styles.serial} numberOfLines={1}>{t('common.serialLabel')}: {DEVICE.serial}</Text>
             <View style={styles.row}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <View style={[styles.dot, { backgroundColor: DEVICE.status === 'online' ? COLORS.success : COLORS.error }]} />

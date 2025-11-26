@@ -1,6 +1,6 @@
 import apiClient from '../client/apiClient';
 import { ENDPOINTS } from '../client/config';
-import { MobileDashboardDto,WeatherForecastDto } from '../types/dashboard.types';
+import { MobileDashboardDto, WeatherForecastDto, SocResponseDto } from '../types/dashboard.types';
 
 export const dashboardService = {
   async getDashboard(): Promise<MobileDashboardDto> {
@@ -22,6 +22,22 @@ export const dashboardService = {
   const response = await apiClient.get<WeatherForecastDto[]>(url);
   return response.data;
 },
+
+  async getDeviceSoc(deviceId: string): Promise<number | null> {
+    const response = await apiClient.get<SocResponseDto>(
+      ENDPOINTS.MOBILE_DASHBOARD.SOC,
+      {
+        params: { deviceId }
+      }
+    );
+
+    // inverterBatChannelSoc array'inden SOC değerini döndür
+    if (response.data.inverterBatChannelSoc && response.data.inverterBatChannelSoc.length > 0) {
+      return response.data.inverterBatChannelSoc[0].socPercent;
+    }
+
+    return null;
+  },
 };
 
 

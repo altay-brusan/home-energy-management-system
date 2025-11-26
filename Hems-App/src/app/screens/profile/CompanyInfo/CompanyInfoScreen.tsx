@@ -8,11 +8,13 @@ import { useThemeStore } from '../../../../store/themeStore';
 import { getThemeColors } from '../../../../theme/constants';
 import { makeCompanyInfoStyles } from './CompanyInfoScreen.styles';
 import { useNetInfo } from '../../../../hooks/useNetInfo';
+import { useI18n } from '../../../../hooks/useI18n';
 
 export default function CompanyInfoScreen({ navigation }: any) {
   const mode = useThemeStore(s => s.mode);
   const isDark = mode === 'dark';
   const COLORS: Record<string, string> = getThemeColors(isDark);
+  const { t } = useI18n();
 
   const insets = useSafeAreaInsets();
   const styles = makeCompanyInfoStyles(COLORS, isDark, insets.top);
@@ -63,29 +65,29 @@ export default function CompanyInfoScreen({ navigation }: any) {
         />
       }
     >
-      <Text style={styles.title}>Company Information</Text>
+      <Text style={styles.title}>{t('companyInfo.title')}</Text>
       <Card>
         <View style={styles.inputGroup}>
           <Input
-            placeholder="Company Name"
+            placeholder={t('companyInfo.companyName')}
             placeholderTextColor={COLORS.textMuted}
             value={companyName}
             onChangeText={setCompanyName}
           />
           <Input
-            placeholder="Address"
+            placeholder={t('companyInfo.address')}
             placeholderTextColor={COLORS.textMuted}
             value={address}
             onChangeText={setAddress}
           />
           <Input
-            placeholder="Email"
+            placeholder={t('companyInfo.email')}
             placeholderTextColor={COLORS.textMuted}
             value={email}
             onChangeText={setEmail}
           />
           <Input
-            placeholder="Phone"
+            placeholder={t('companyInfo.phone')}
             placeholderTextColor={COLORS.textMuted}
             value={phone}
             onChangeText={setPhone}
@@ -93,7 +95,7 @@ export default function CompanyInfoScreen({ navigation }: any) {
         </View>
       </Card>
 
- <Text style={styles.regionTitle}>Region Information</Text>
+ <Text style={styles.regionTitle}>{t('companyInfo.regionTitle')}</Text>
 <Card style={styles.regionCard}>
   <View style={styles.regionRow}>
     <Text style={styles.regionEmoji}>{region.emoji}</Text>
@@ -107,13 +109,13 @@ export default function CompanyInfoScreen({ navigation }: any) {
 </Card>
       <View style={styles.buttonRow}>
         <Button
-          title="Save"
+          title={t('companyInfo.save')}
           style={styles.saveBtn}
           textStyle={styles.saveBtnText}
           onPress={handleSave}
         />
         <Button
-          title="Cancel"
+          title={t('companyInfo.cancel')}
           style={styles.cancelBtn}
           textStyle={styles.cancelBtnText}
           onPress={handleCancel}

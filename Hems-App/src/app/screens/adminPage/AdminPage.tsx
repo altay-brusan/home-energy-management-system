@@ -16,6 +16,7 @@ import AdminLocationSelector from "./components/AdminLocationSelector";
 import AdminSearchBar from "./components/AdminSearchBar";
 import AdminStats from "./components/AdminStats";
 import { CountryDto, CityDto } from "../../../api/types/locations.types";
+import { PowerFlowDebug } from "../../../components/debug/PowerFlowDebug";
 
 export default function AdminPage () {
   const navigation = useNavigation<any>();
@@ -110,7 +111,7 @@ export default function AdminPage () {
     }
 
     try {
-      const res = await adminService.getAdminSites({
+      const requestParams = {
         pageNumber: currentPage,
         pageSize: itemsPerPage,
         filters: {
@@ -118,15 +119,62 @@ export default function AdminPage () {
           country: selectedCountry || undefined,
           city: selectedCity || undefined,
         },
+      };
+
+      console.log('🔍 [AdminPage] Fetching sites with params:', requestParams);
+
+      const res = await adminService.getAdminSites(requestParams);
+
+      console.log('✅ [AdminPage] API Response:', {
+        itemsCount: res.items?.length,
+        totalCount: res.totalCount,
+        pageNumber: res.pageNumber,
+        pageSize: res.pageSize,
+        items: res.items,
       });
+
+      // DEBUG: Test without country filter to see all sites
+      console.log('🔍 [AdminPage] Testing: Fetching ALL sites without country filter...');
+      const allSitesRes = await adminService.getAdminSites({
+        pageNumber: 1,
+        pageSize: 100,
+        filters: {},
+      });
+
+      console.log('✅ [AdminPage] ALL Sites Response:', {
+        totalCount: allSitesRes.totalCount,
+        itemsCount: allSitesRes.items?.length,
+        countries: allSitesRes.items?.map((s: any) => s.country).filter((c: any, i: number, arr: any[]) => arr.indexOf(c) === i),
+        firstFewSites: allSitesRes.items?.slice(0, 5).map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          country: s.country,
+          city: s.city,
+        })),
+      });
+
+      // Show results
+      Alert.alert(
+        'DEBUG: Türkiye Sites',
+        `Türkiye için: ${res.totalCount} site\n\nToplam (tüm ülkeler): ${allSitesRes.totalCount} site\n\nÜlkeler: ${allSitesRes.items?.map((s: any) => s.country).filter((c: any, i: number, arr: any[]) => arr.indexOf(c) === i).join(', ') || 'none'}`,
+        [{ text: 'OK' }]
+      );
 
       const allFilteredHomes = res.items || [];
       setHomes(allFilteredHomes);
       setTotalCount(res.totalCount || 0);
-      
+
       const totalDevices = allFilteredHomes.filter((home: any) => home.hasDevice).length;
       setTotalDeviceCount(totalDevices);
-    } catch (err) {
+    } catch (err: any) {
+      console.error('❌ [AdminPage] Error fetching sites:', err);
+
+      Alert.alert(
+        'DEBUG: Error',
+        `Error: ${err?.message || 'unknown'}\nStatus: ${err?.response?.status || 'N/A'}`,
+        [{ text: 'OK' }]
+      );
+
       setHomes([]);
       setTotalCount(0);
       setTotalDeviceCount(0);
@@ -301,8 +349,8 @@ export default function AdminPage () {
                   try {
                     if (!home?.hasDevice) {
                       Alert.alert(
-                        t("admin.noDeviceTitle") || "No Device Found",
-                        t("admin.noDeviceMessage") || "This site has no registered device."
+                        t("admin.noDeviceTitle"),
+                        t("admin.noDeviceMessage")
                       );
                       return;
                     }
@@ -311,16 +359,16 @@ export default function AdminPage () {
 
                     navigation.navigate("MainTabs", {
                       screen: "Dashboard",
-                      params: { 
-                        siteId: home.id, 
+                      params: {
+                        siteId: home.id,
                         siteData: home,
                         key: Date.now()
                       },
                     });
                   } catch (err) {
                     Alert.alert(
-                      t("admin.errorTitle") || "Error",
-                      t("admin.errorFetchingSite") || "Failed to navigate."
+                      t("admin.errorTitle"),
+                      t("admin.errorFetchingSite")
                     );
                   }
                 }}
@@ -378,6 +426,11 @@ export default function AdminPage () {
             </View>
           </>
         )}
+
+        {/* DEBUG: PowerFlow Streaming Test */}
+        <View style={{ marginTop: 24, paddingBottom: 40 }}>
+          <PowerFlowDebug />
+        </View>
       </ScrollView>
     </MainLayout>
   );

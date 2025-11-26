@@ -9,15 +9,18 @@ import GlobalAlert from './components/feedback/GlobalAlert';
 import GlobalError from './components/feedback/GlobalError';
 import Toast from './components/feedback/Toast/Toast';
 import NetworkWrapper from './components/NetworkWrapper';
+import MaintenanceScreen from './screens/MaintenanceScreen';
 import { SignalRProvider } from './providers/SignalRProvider';
 import './lib/i18n';
 import { initializeI18nStore } from './store/i18nStore';
 import { useToastStore } from './store/toastStore';
+import { useErrorStore } from './store/errorStore';
 import { useInvitationStore, loadPendingInvitationFromStorage } from './store/invitationStore';
 
 export default function App () {
   const { visible, message, type, title, duration, hide } = useToastStore();
   const { setPendingInvitationCode } = useInvitationStore();
+  const criticalError = useErrorStore(s => s.criticalError);
 
   // Deep link handler
   useEffect(() => {
@@ -68,6 +71,18 @@ export default function App () {
     };
     initializeApp();
   }, []);
+
+  // Kritik hata varsa (sunucu/ağ hatası) bakım sayfası göster
+  if (criticalError) {
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <StatusBar barStyle="light-content" backgroundColor="#1b222a" />
+          <MaintenanceScreen error={criticalError} />
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    );
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

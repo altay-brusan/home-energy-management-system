@@ -18,6 +18,7 @@ interface SitesState {
   currentSite: SiteDto | null;
   selectedSite: SiteDto | null;
   selectedSiteDevice: UserSetupDeviceDto | null;
+  deviceComponents: any[] | null;
   paginatedSites: PaginatedSiteList | null;
   isLoading: boolean;
   error: string | null;
@@ -34,6 +35,7 @@ interface SitesState {
   loadSelectedSiteFromStorage: () => Promise<void>;
   getSiteDevice: (siteId: string) => Promise<UserSetupDeviceDto | null>;
   loadSelectedSiteDevice: () => Promise<void>;
+  setDeviceComponents: (components: any[] | null) => void;
   clearError: () => void;
   clearSites: () => Promise<void>;
 }
@@ -44,6 +46,7 @@ export const useSitesStore = create<SitesState>((set, get) => ({
   currentSite: null,
   selectedSite: null,
   selectedSiteDevice: null,
+  deviceComponents: null,
   paginatedSites: null,
   isLoading: false,
   error: null,
@@ -267,8 +270,18 @@ export const useSitesStore = create<SitesState>((set, get) => ({
         set({ selectedSiteDevice: null });
         throw error;
       }
-      
+
       set({ selectedSiteDevice: null });
+    }
+  },
+
+  setDeviceComponents: (components: any[] | null) => {
+    set({ deviceComponents: components });
+    // Cache to AsyncStorage
+    if (components) {
+      AsyncStorage.setItem('@device_components', JSON.stringify(components)).catch(() => {});
+    } else {
+      AsyncStorage.removeItem('@device_components').catch(() => {});
     }
   },
 
@@ -279,17 +292,18 @@ export const useSitesStore = create<SitesState>((set, get) => ({
   clearSites: async () => {
     try {
       // AsyncStorage'dan site verilerini de temizle
-      await AsyncStorage.multiRemove(['@user_homes', '@selected_home']);
+      await AsyncStorage.multiRemove(['@user_homes', '@selected_home', '@device_components', '@device_components_cache']);
     } catch (error) {
       // Silent error handling
     }
-    
+
     set({
       sites: [],
       sitesDashboard: null,
       currentSite: null,
       selectedSite: null,
       selectedSiteDevice: null,
+      deviceComponents: null,
       paginatedSites: null,
       isLoading: false,
       error: null,

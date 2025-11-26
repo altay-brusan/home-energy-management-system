@@ -3,6 +3,7 @@ import { View, Text, ActivityIndicator } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useI18n } from '../../../../../hooks/useI18n';
 import { useDashboardRefresh } from '../../../../../hooks/useDashboardRefresh';
+import { dashboardService } from '../../../../../api/services/dashboardService';
 import { mobileDashboardService } from '../../../../../api/services/mobileDashboardService';
 import { useThemeStore } from '../../../../../store/themeStore';
 import { getThemeColors } from '../../../../../theme/constants';
@@ -29,13 +30,13 @@ const BatteryStateCard: React.FC<BatteryStateCardProps> = ({ deviceId }) => {
     try {
       setLoading(true);
 
-      // Fetch battery component (for SOC) and power metrics (for battery power) in parallel
-      const [batteryComponent, powerMetrics] = await Promise.all([
-        mobileDashboardService.getBatteryComponent(deviceId),
+      // Fetch SOC from new service and power metrics in parallel
+      const [socValue, powerMetrics] = await Promise.all([
+        dashboardService.getDeviceSoc(deviceId),
         mobileDashboardService.getPowerMetrics(deviceId, 'today').catch(() => null),
       ]);
 
-      setSoc(batteryComponent.soc || 0);
+      setSoc(socValue || 0);
 
       // Get latest battery power from power metrics
       if (powerMetrics && powerMetrics.data && powerMetrics.data.length > 0) {
@@ -84,11 +85,11 @@ const BatteryStateCard: React.FC<BatteryStateCardProps> = ({ deviceId }) => {
   const isDischarging = batteryPower > 0;
   const isIdle = batteryPower === 0;
 
-  let statusText = 'Idle';
+  let statusText = t('batteryStateCard.status.idle');
   if (isCharging) {
-    statusText = 'Charging';
+    statusText = t('batteryStateCard.status.charging');
   } else if (isDischarging) {
-    statusText = 'Discharging';
+    statusText = t('batteryStateCard.status.discharging');
   }
 
   // Determine progress bar color based on SOC level and state
@@ -109,7 +110,7 @@ const BatteryStateCard: React.FC<BatteryStateCardProps> = ({ deviceId }) => {
   return (
     <Animated.View entering={FadeInDown.delay(300).duration(600)} style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Battery State of Charge</Text>
+        <Text style={styles.title}>{t('batteryStateCard.title')}</Text>
         <Text style={[styles.percentage, { color: progressColor }]}>
           {Math.round(soc)}%
         </Text>

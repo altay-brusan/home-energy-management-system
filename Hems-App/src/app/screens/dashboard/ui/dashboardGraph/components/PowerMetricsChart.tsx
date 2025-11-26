@@ -150,8 +150,8 @@ export default function PowerMetricsChart({ COLORS }: Props) {
   // Render the iOS chart with SVG
   const renderChart = () => {
     const chartWidth = 350;
-    const chartHeight = 280; // Reduced from 300
-    const padding = { top: 20, right: 20, bottom: 30, left: 10 }; // Reduced bottom from 55 to 30
+    const chartHeight = 350;
+    const padding = { top: 20, right: 20, bottom: 80, left: 10 };
     const innerWidth = chartWidth - padding.left - padding.right;
     const innerHeight = chartHeight - padding.top - padding.bottom;
 
@@ -250,7 +250,8 @@ export default function PowerMetricsChart({ COLORS }: Props) {
       if (showSolar) allValues.push(point.solarPower);
       if (showBattery) allValues.push(point.batteryPower);
       if (showGrid) allValues.push(point.gridPower);
-      if (showLoad) allValues.push(point.loadPower);
+      // Load values should be negative for Y-axis range calculation
+      if (showLoad) allValues.push(-Math.abs(point.loadPower));
     });
 
     const minValue = Math.min(...allValues, 0);
@@ -271,7 +272,11 @@ export default function PowerMetricsChart({ COLORS }: Props) {
       return data.map(point => {
         const hour = getHourFromTimestamp(point.timestamp);
         const x = padding.left + getTimeToXPosition(hour, sunriseHour, sunsetHour, innerWidth);
-        const value = point[valueKey] as number;
+        let value = point[valueKey] as number;
+        // Load values should be shown as negative (consumption below x-axis)
+        if (valueKey === 'loadPower') {
+          value = -Math.abs(value);
+        }
         const y = padding.top + innerHeight - ((value - yMin) / yRange) * innerHeight;
         return { x, y, value };
       });
@@ -527,6 +532,8 @@ export default function PowerMetricsChart({ COLORS }: Props) {
           {/* X-axis labels (selected hours) */}
           {[0, 6, 12, 18, 23].map(hour => {
             const x = padding.left + getTimeToXPosition(hour, sunriseHour, sunsetHour, innerWidth);
+            // For 00:00, use "start" anchor to prevent left edge cut-off
+            const textAnchor = hour === 0 ? 'start' : 'middle';
             return (
               <SvgText
                 key={`x-label-${hour}`}
@@ -534,7 +541,7 @@ export default function PowerMetricsChart({ COLORS }: Props) {
                 y={padding.top + innerHeight + 15}
                 fontSize={10}
                 fill={COLORS.textSoft}
-                textAnchor="middle"
+                textAnchor={textAnchor}
               >
                 {`${hour.toString().padStart(2, '0')}:00`}
               </SvgText>

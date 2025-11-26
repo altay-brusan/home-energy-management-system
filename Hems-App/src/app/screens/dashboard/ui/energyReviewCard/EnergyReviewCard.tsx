@@ -2,6 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, LayoutChangeEvent, ActivityIndicator, PanResponder, TouchableOpacity } from 'react-native';
 import Svg, { Line, Circle, Path, Text as SvgText, Rect, G } from 'react-native-svg';
 import Animated, { FadeInUp } from 'react-native-reanimated';
+import { useNavigation } from '@react-navigation/native';
 import { useI18n } from '../../../../../hooks/useI18n';
 import { useThemeStore } from '../../../../../store/themeStore';
 import { getThemeColors } from '../../../../../theme/constants';
@@ -70,6 +71,7 @@ const generateMockData = (): EnergyReviewData => {
 };
 
 export default function EnergyReviewCard() {
+  const navigation = useNavigation<any>();
   const mode = useThemeStore(s => s.mode);
   const isDark = mode === 'dark';
   const COLORS = getThemeColors(isDark);
@@ -235,8 +237,7 @@ export default function EnergyReviewCard() {
   }, [maxValue, chartHeight, centerY, yScale]);
 
   const handleHistoryPress = () => {
-    // TODO: Navigate to historical data screen or show modal
-    console.log('History pressed - EnergyReviewCard');
+    navigation.navigate('EnergyRevenueDetail');
   };
 
   return (
