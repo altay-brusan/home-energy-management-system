@@ -12,9 +12,11 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<ThingsBoardConnectorService> _logger;
+    private readonly IConfiguration _configuration;
     private readonly string _baseUrl;
-    private readonly string _apiToken;
     private readonly JsonSerializerOptions _jsonOptions;
+    private string? _cachedToken;
+    private DateTime _tokenExpiry = DateTime.MinValue;
 
     public ThingsBoardConnectorService(
         HttpClient httpClient,
@@ -23,12 +25,10 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
     {
         _httpClient = httpClient;
         _logger = logger;
+        _configuration = configuration;
 
         _baseUrl = configuration["ThingsBoard:BaseUrl"]
             ?? throw new InvalidOperationException("ThingsBoard:BaseUrl not configured");
-
-        _apiToken = configuration["ThingsBoard:ApiToken"]
-            ?? throw new InvalidOperationException("ThingsBoard:ApiToken not configured");
 
         _jsonOptions = new JsonSerializerOptions
         {
@@ -40,11 +40,73 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
         {
             _httpClient.BaseAddress = new Uri(_baseUrl);
         }
+    }
 
-        if (!_httpClient.DefaultRequestHeaders.Contains("X-Authorization"))
+    // ============ AUTHENTICATION ============
+
+    private async Task<string> GetAuthTokenAsync(CancellationToken cancellationToken = default)
+    {
+        // Check if we have a valid cached token
+        if (!string.IsNullOrEmpty(_cachedToken) && DateTime.UtcNow < _tokenExpiry)
         {
-            _httpClient.DefaultRequestHeaders.Add("X-Authorization", $"Bearer {_apiToken}");
+            return _cachedToken;
         }
+
+        // Try to get token from configuration first (pre-configured JWT)
+        var configToken = _configuration["ThingsBoard:ApiToken"];
+        if (!string.IsNullOrEmpty(configToken))
+        {
+            _cachedToken = configToken;
+            _tokenExpiry = DateTime.UtcNow.AddHours(24); // Assume long-lived token
+            _logger.LogInformation("Using pre-configured ThingsBoard API token");
+            return _cachedToken;
+        }
+
+        // Otherwise, login with username/password
+        var username = _configuration["ThingsBoard:Username"]
+            ?? throw new InvalidOperationException("ThingsBoard:Username not configured");
+        var password = _configuration["ThingsBoard:Password"]
+            ?? throw new InvalidOperationException("ThingsBoard:Password not configured");
+
+        _logger.LogInformation("Authenticating to ThingsBoard with username/password");
+
+        var loginPayload = new { username, password };
+        var json = JsonSerializer.Serialize(loginPayload, _jsonOptions);
+        using var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        var response = await _httpClient.PostAsync("/api/auth/login", content, cancellationToken);
+        
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new InvalidOperationException($"ThingsBoard authentication failed: {response.StatusCode} - {error}");
+        }
+
+        var responseJson = await response.Content.ReadAsStringAsync(cancellationToken);
+        var doc = JsonDocument.Parse(responseJson);
+        
+        if (!doc.RootElement.TryGetProperty("token", out var tokenProp))
+        {
+            throw new InvalidOperationException("Login succeeded but 'token' field not found in response");
+        }
+
+        _cachedToken = tokenProp.GetString()
+            ?? throw new InvalidOperationException("Token is null");
+        
+        // JWT tokens from TB are typically valid for a few hours
+        _tokenExpiry = DateTime.UtcNow.AddHours(1);
+        
+        _logger.LogInformation("Successfully authenticated to ThingsBoard");
+        return _cachedToken;
+    }
+
+    private async Task EnsureAuthenticatedAsync(CancellationToken cancellationToken = default)
+    {
+        var token = await GetAuthTokenAsync(cancellationToken);
+        
+        // Update authorization header
+        _httpClient.DefaultRequestHeaders.Remove("X-Authorization");
+        _httpClient.DefaultRequestHeaders.Add("X-Authorization", $"Bearer {token}");
     }
 
     // ============ DEVICE CRUD OPERATIONS ============
@@ -55,6 +117,8 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
     {
         try
         {
+            await EnsureAuthenticatedAsync(cancellationToken);
+            
             _logger.LogInformation("Creating device in ThingsBoard: {DeviceName}", request.Name);
 
             // Step 1: Create the device
@@ -62,7 +126,7 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
             {
                 name = request.Name,
                 label = request.Label,
-                deviceProfileName = request.DeviceProfileName
+                type = "default" // Optional device type
             };
 
             var createResponse = await PostAsync<TbDeviceResponse>(
@@ -109,6 +173,8 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
     {
         try
         {
+            await EnsureAuthenticatedAsync(cancellationToken);
+            
             _logger.LogInformation("Updating device in ThingsBoard: {DeviceId}", deviceId);
 
             // Get existing device first
@@ -149,6 +215,8 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
     {
         try
         {
+            await EnsureAuthenticatedAsync(cancellationToken);
+            
             _logger.LogInformation("Deleting device from ThingsBoard: {DeviceId}", deviceId);
 
             var url = $"/api/device/{deviceId}";
@@ -179,6 +247,8 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
     {
         try
         {
+            await EnsureAuthenticatedAsync(cancellationToken);
+            
             // Try QR code first
             if (!string.IsNullOrWhiteSpace(qrCode))
             {
@@ -217,6 +287,8 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
     {
         try
         {
+            await EnsureAuthenticatedAsync(cancellationToken);
+            
             var device = await GetDeviceByIdInternalAsync(deviceId, cancellationToken);
             if (device == null) return null;
 
@@ -245,6 +317,8 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
     {
         try
         {
+            await EnsureAuthenticatedAsync(cancellationToken);
+            
             _logger.LogInformation("Saving attributes for device: {DeviceId}", deviceId);
 
             var url = $"/api/plugins/telemetry/DEVICE/{deviceId}/attributes/SERVER_SCOPE";
@@ -267,6 +341,8 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
     {
         try
         {
+            await EnsureAuthenticatedAsync(cancellationToken);
+            
             var url = $"/api/plugins/telemetry/DEVICE/{deviceId}/values/attributes/SERVER_SCOPE";
             if (!string.IsNullOrWhiteSpace(keys))
             {
@@ -297,6 +373,8 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
     {
         try
         {
+            await EnsureAuthenticatedAsync(cancellationToken);
+            
             var url = $"/api/plugins/telemetry/DEVICE/{deviceId}/SERVER_SCOPE?keys={Uri.EscapeDataString(keys)}";
             var response = await _httpClient.DeleteAsync(url, cancellationToken);
             return response.IsSuccessStatusCode;
@@ -318,6 +396,8 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
     {
         try
         {
+            await EnsureAuthenticatedAsync(cancellationToken);
+            
             var url = $"/api/plugins/telemetry/DEVICE/{deviceId}/timeseries/ANY";
             
             var payload = timestamp.HasValue
@@ -341,6 +421,8 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
     {
         try
         {
+            await EnsureAuthenticatedAsync(cancellationToken);
+            
             var url = $"/api/plugins/telemetry/DEVICE/{deviceId}/values/timeseries";
             if (!string.IsNullOrWhiteSpace(keys))
             {
@@ -382,6 +464,8 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
     {
         try
         {
+            await EnsureAuthenticatedAsync(cancellationToken);
+            
             var url = $"/api/plugins/telemetry/DEVICE/{deviceId}/values/timeseries" +
                      $"?keys={Uri.EscapeDataString(keys)}" +
                      $"&startTs={startTs}" +
@@ -421,6 +505,8 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
     {
         try
         {
+            await EnsureAuthenticatedAsync(cancellationToken);
+            
             _logger.LogInformation("Sending one-way RPC to device: {DeviceId}, Method: {Method}", deviceId, method);
 
             var url = $"/api/plugins/rpc/oneway/{deviceId}";
@@ -445,6 +531,8 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
     {
         try
         {
+            await EnsureAuthenticatedAsync(cancellationToken);
+            
             _logger.LogInformation("Sending two-way RPC to device: {DeviceId}, Method: {Method}", deviceId, method);
 
             var url = $"/api/plugins/rpc/twoway/{deviceId}?timeout={timeoutMs}";
