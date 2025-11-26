@@ -50,3 +50,26 @@ export interface CriticalNotification {
   isProcessed: boolean;
 }
 
+// PowerFlow Stream Types
+export interface PowerFlowDto {
+  deviceId: string;
+  timestamp: string;
+  gridPower: number;          // Watts (+ = importing, - = exporting)
+  solarPower: number;         // Watts
+  batteryPower: number;       // Watts (+ = charging, - = discharging)
+  loadPower: number;          // Watts
+  batterySOC: number;         // Percentage (0-100)
+  batteryStatus?: 'charging' | 'discharging' | 'idle';
+  gridStatus?: 'importing' | 'exporting' | 'idle';
+}
+
+export interface PowerFlowStreamOptions {
+  deviceId: string;
+  intervalSeconds?: number;   // Default: 5 seconds
+  onData: (data: PowerFlowDto) => void;
+  onError?: (error: Error) => void;
+  onComplete?: () => void;
+}
+
+export type PowerFlowStreamState = 'idle' | 'streaming' | 'error' | 'completed';
+

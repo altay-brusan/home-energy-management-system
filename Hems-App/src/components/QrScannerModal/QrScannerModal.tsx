@@ -7,6 +7,7 @@ import {
   Platform,
 } from 'react-native';
 import { Camera, useCameraDevice, useCodeScanner } from 'react-native-vision-camera';
+import { useTranslation } from 'react-i18next';
 import { getQrScannerModalStyles } from './QrScannerModal.styles';
 
 interface QrScannerModalProps {
@@ -20,8 +21,9 @@ export default function QrScannerModal ({
   onClose,
   onScan,
 }: QrScannerModalProps) {
+  const { t } = useTranslation();
   const styles = getQrScannerModalStyles();
-  
+
   const device = useCameraDevice('back');
 
   const [hasPermission, setHasPermission] = useState<boolean>(false);
@@ -66,7 +68,7 @@ export default function QrScannerModal ({
       hardwareAccelerated
     >
       <View style={styles.container}>
-        <Text style={styles.title}>QR Kod Tara</Text>
+        <Text style={styles.title}>{t('qrScanner.title')}</Text>
 
         {canShowCamera ? (
           <View style={styles.cameraWrap}>
@@ -82,16 +84,16 @@ export default function QrScannerModal ({
           <View style={styles.stateBox}>
             {!hasPermission ? (
               <Text style={styles.stateText}>
-                Kamera izni gerekli. Lütfen ayarlardan izin verin.
+                {t('qrScanner.permissionRequired')}
               </Text>
             ) : !device ? (
-              <Text style={styles.stateText}>Kamera yükleniyor…</Text>
+              <Text style={styles.stateText}>{t('qrScanner.cameraLoading')}</Text>
             ) : null}
           </View>
         )}
 
         <Pressable style={styles.closeBtn} onPress={onClose}>
-          <Text style={styles.closeText}>Kapat</Text>
+          <Text style={styles.closeText}>{t('qrScanner.close')}</Text>
         </Pressable>
       </View>
     </Modal>

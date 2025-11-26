@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import { getThemeColors, SPACING } from '../../../theme/constants';
+import { getDesignTokens, SPACING } from '../../../theme/constants';
 import { useThemeStore } from '../../../store/themeStore';
 
 export function getBadgeStyles() {
   const mode = useThemeStore.getState().mode;
   const isDark = mode === 'dark';
-  const COLORS = getThemeColors(isDark);
+  const tokens = getDesignTokens(isDark);
 
   return StyleSheet.create({
     badge: {
@@ -13,23 +13,53 @@ export function getBadgeStyles() {
       paddingVertical: SPACING.xs / 2,
       borderRadius: 12,
       alignSelf: 'flex-start',
+      borderWidth: 1,
     },
     text: {
       fontSize: 12,
       fontWeight: '600',
-      color: COLORS.white,
+    },
+    default: {
+      backgroundColor: tokens.badge.defaultBg,
+      borderColor: tokens.badge.defaultBorder,
+    },
+    defaultText: {
+      color: tokens.badge.defaultText,
+    },
+    primary: {
+      backgroundColor: tokens.badge.primaryBg,
+      borderColor: tokens.badge.primaryBorder,
+    },
+    primaryText: {
+      color: tokens.badge.primaryText,
     },
     success: {
-      backgroundColor: '#10b981',
+      backgroundColor: tokens.badge.successBg,
+      borderColor: tokens.badge.successBorder,
+    },
+    successText: {
+      color: tokens.badge.successText,
     },
     warning: {
-      backgroundColor: '#f59e0b',
+      backgroundColor: tokens.badge.warningBg,
+      borderColor: tokens.badge.warningBorder,
+    },
+    warningText: {
+      color: tokens.badge.warningText,
     },
     error: {
-      backgroundColor: '#ef4444',
+      backgroundColor: tokens.badge.errorBg,
+      borderColor: tokens.badge.errorBorder,
+    },
+    errorText: {
+      color: tokens.badge.errorText,
     },
     info: {
-      backgroundColor: COLORS.accent,
+      backgroundColor: tokens.badge.infoBg,
+      borderColor: tokens.badge.infoBorder,
+    },
+    infoText: {
+      color: tokens.badge.infoText,
     },
   });
 }

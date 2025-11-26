@@ -1,9 +1,9 @@
 import FontAwesome from "@react-native-vector-icons/fontawesome";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { ArrowLeft, Sun, Wifi, Zap } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   Image,
   Pressable,
@@ -11,23 +11,38 @@ import {
   ScrollView,
   StatusBar,
   Text,
+  TouchableOpacity,
   View
 } from "react-native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import LinearGradient from 'react-native-linear-gradient';
+import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { mobileDashboardService } from "../../../api/services/mobileDashboardService";
 import { sitesService } from "../../../api/services/sitesService";
+import { ConnectedDeviceCard } from "../../../components/ui/ConnectedDeviceCard";
+import { DeviceInfoCard } from "../../../components/ui/DeviceInfoCard";
 import { useDeviceLiveData } from "../../../hooks/useDeviceLiveData";
 import { useI18n } from "../../../hooks/useI18n";
 import { useRoles } from "../../../hooks/useRoles";
 import { useSelectedSiteUtils } from "../../../hooks/useSelectedSite";
 import { useThemeStore } from "../../../store/themeStore";
+import { useSitesStore } from "../../../store/sitesStore";
 import { getThemeColors, SPACING } from "../../../theme/constants";
 import { getStyles } from "./DeviceDetail.styles";
-import BatteryDetailBottomSheet from "./ui/BatteryDetailBottomSheet";
-import DeviceBadge from "./ui/DeviceBadge";
-import GridCard from "./ui/GridCard";
+import { DeviceDetailSkeleton } from "./DeviceDetailSkeleton";
 
-export default function DeviceDetail () {
+// PV Icon from EnergyFlowRadial
+const PVIcon: React.FC<{ color: string; size?: number }> = ({ color, size = 32 }) => (
+  <Svg width={size} height={size} viewBox="0 0 27.32 27.74">
+    <Path
+      d="M13.24,1.05V.41c0-.23.19-.41.42-.41s.42.19.42.41v.64c0,.23-.19.41-.42.41s-.42-.19-.42-.41ZM9.53,2.92c.08.08.19.12.3.12s.21-.04.3-.12c.16-.16.16-.43,0-.59l-.46-.45c-.16-.16-.43-.16-.59,0-.16.16-.16.43,0,.59l.46.45ZM7.6,6.83h.65c.23,0,.42-.19.42-.41s-.19-.41-.42-.41h-.65c-.23,0-.42.19-.42.41s.19.41.42.41ZM17.49,3.04c.11,0,.21-.04.3-.12l.46-.45c.16-.16.16-.43,0-.59-.16-.16-.43-.16-.59,0l-.46.45c-.16.16-.16.43,0,.59.08.08.19.12.3.12ZM19.08,6.83h.65c.23,0,.42-.19.42-.41s-.19-.41-.42-.41h-.65c-.23,0-.42.19-.42.41s.19.41.42.41ZM26.99,21.03c-.31.4-.78.62-1.28.62h-.96v.53c0,1.01-.83,1.84-1.86,1.84h-7.96v1.21h3.71c.63,0,1.14.51,1.14,1.13v.95c0,.23-.19.41-.42.41H7.97c-.23,0-.42-.19-.42-.41v-.95c0-.62.51-1.13,1.14-1.13h3.71v-1.21h-7.96c-1.02,0-1.86-.83-1.86-1.84v-.53h-.96c-.51,0-.97-.23-1.28-.62-.31-.4-.41-.9-.28-1.38l2.63-9.92c.19-.7.83-1.19,1.57-1.19h5.89c-.39-.63-.61-1.36-.61-2.12,0-2.25,1.85-4.08,4.13-4.08s4.13,1.83,4.13,4.08c0,.76-.21,1.49-.61,2.12h5.89c.73,0,1.38.49,1.57,1.19l2.63,9.92c.13.48.03.99-.28,1.38h0ZM13.24,20.83v-4.05h-5.36l-.54,4.05h5.9ZM1.9,15.95h5.24l.42-3.2H2.75l-.85,3.2ZM7.99,15.95h5.25v-3.2h-4.83l-.42,3.2h0ZM8.86,9.36l-.34,2.56h4.72v-2.56h-4.38ZM14.08,9.36v2.56h4.72l-.34-2.56h-4.38ZM14.08,20.83h5.9l-.54-4.05h-5.36v4.05ZM19.33,15.95l-.42-3.2h-4.83v3.2h5.25ZM20.18,15.95h5.24l-.85-3.2h-4.81l.42,3.2ZM23.07,9.36h-3.76l.34,2.56h4.7l-.53-1.98c-.09-.34-.4-.57-.75-.57h0ZM11.18,8.53h4.97c.52-.59.8-1.34.8-2.12,0-1.79-1.47-3.25-3.29-3.25s-3.29,1.46-3.29,3.25c0,.79.29,1.53.8,2.12h0ZM2.97,11.92h4.7l.34-2.56h-3.76c-.35,0-.66.24-.75.57l-.53,1.98h0ZM1.62,20.83h1.37s0,0,0,0,0,0,0,0h3.48l.54-4.05H1.68l-.82,3.08c-.06.23-.01.48.14.67.15.19.37.3.62.3h0ZM18.63,26.08h-4.12s0,0,0,0,0,0,0,0h-1.66s0,0,0,0,0,0,0,0h-4.12c-.17,0-.3.13-.3.3v.53h10.54v-.53c0-.16-.13-.3-.3-.3h0ZM14.08,24.03h-.84v1.21h.84v-1.21ZM23.9,21.66H3.42s0,.53,0,.53c0,.56.46,1.01,1.02,1.01h18.44c.56,0,1.02-.45,1.02-1.01v-.53h0ZM26.45,19.86l-.82-3.08h-5.35l.54,4.05h3.48s0,0,0,0,0,0,0,0h1.37c.24,0,.47-.11.62-.3.15-.19.2-.43.14-.67h0Z"
+      fill={color}
+    />
+  </Svg>
+);
+
+export default function DeviceDetail() {
   const navigation = useNavigation<any>();
   const isDark = useThemeStore((s) => s.mode) === "dark";
   const COLORS = getThemeColors(isDark);
@@ -54,12 +69,9 @@ export default function DeviceDetail () {
   const [setupId, setSetupId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [batterySheetVisible, setBatterySheetVisible] = useState(false);
-  const [selectedBattery, setSelectedBattery] = useState<any>(null);
   const [inverterData, setInverterData] = useState<any>(null);
 
-  const { data: batteryData, isFetching: isFetchingLive, fetchLiveData } =
-    useDeviceLiveData(deviceId);
+  const { fetchLiveData } = useDeviceLiveData(deviceId);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -69,61 +81,92 @@ export default function DeviceDetail () {
 
   const fetchDeviceComponents = useCallback(async () => {
     try {
-      setLoading(true);
+      // PERFORMANCE: Cache'ten instant yükle
+      try {
+        const cachedData = await AsyncStorage.getItem('@device_components_cache');
+        if (cachedData) {
+          const parsed = JSON.parse(cachedData);
+          setComponents(parsed.components || []);
+          setDeviceId(parsed.deviceId || null);
+          setSetupId(parsed.setupId || null);
+          setLoading(false); // Cache varsa loading kapat
+        } else {
+          setLoading(true); // Cache yoksa skeleton göster
+        }
+      } catch {
+        setLoading(true);
+      }
 
-      const sitesData = await sitesService.getUserSites();
-      const siteId = sitesData?.siteList?.[0]?.id;
-
-      if (!siteId) {setComponents([]);
+      // selectedSite kontrolü
+      if (!selectedSite?.id) {
+        setComponents([]);
+        setLoading(false);
         return;
       }
 
-      const setupRes = await mobileDashboardService.getSetupDevice(siteId);
+      // API çağrıları - cache varsa background'da güncelle
+      const setupRes = await mobileDashboardService.getSetupDevice(selectedSite.id);
       const device = setupRes?.device;
-      if (!device?.id) {setComponents([]);
+      if (!device?.id) {
+        setComponents([]);
+        setLoading(false);
         return;
       }
 
       setDeviceId(device.id);
       setSetupId(setupRes?.setupId || null);
 
-      const withDataRes = await mobileDashboardService.getDeviceWithData(device.id);
+      const deviceData = await mobileDashboardService.getDeviceWithData(device.id);
 
-      const comps = withDataRes?.components?.map((c: any) => ({
+      const comps = deviceData?.components?.map((c: any) => ({
         id: c.componentId,
         name: c.componentName,
         modelNumber: c.serialNumber || "—",
         isDeleted: false,
         componentData: c.componentData || 0,
+        description: c.description || "",
       }));
 
       setComponents(comps || []);
-    } catch (err) {setComponents([]);
+
+      // Cache'e kaydet (background)
+      AsyncStorage.setItem('@device_components_cache', JSON.stringify({
+        components: comps || [],
+        deviceId: device.id,
+        setupId: setupRes?.setupId || null,
+        timestamp: Date.now(),
+      })).catch(() => {});
+
+    } catch (err) {
+      setComponents([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedSite]);
 
   useEffect(() => {
     fetchDeviceComponents();
   }, [fetchDeviceComponents]);
-  useEffect(() => {
-    const loadInverterLiveData = async () => {
-      const inverterComp = components.find((c) =>
-        c.name.toLowerCase().includes("inverter")
-      );
-      if (inverterComp) {
-        const data = await fetchLiveData(inverterComp);
-        if (data && data["Active Power"] !== undefined) {
-          setInverterData(data);
-        }
-      }
-    };
 
-    if (components.length > 0) {
-      loadInverterLiveData();
-    }
-  }, [components]);
+  // PERFORMANCE: Inverter live data'yı sayfa açılışında yükleme
+  // Sadece gerektiğinde (manuel refresh veya kullanıcı istediğinde) yükle
+  // useEffect(() => {
+  //   const loadInverterLiveData = async () => {
+  //     const inverterComp = components.find((c) =>
+  //       c.name.toLowerCase().includes("inverter")
+  //     );
+  //     if (inverterComp) {
+  //       const data = await fetchLiveData(inverterComp);
+  //       if (data && data["Active Power"] !== undefined) {
+  //         setInverterData(data);
+  //       }
+  //     }
+  //   };
+  //
+  //   if (components.length > 0) {
+  //     loadInverterLiveData();
+  //   }
+  // }, [components]);
 
   useEffect(() => {
     Animated.parallel([
@@ -141,27 +184,17 @@ export default function DeviceDetail () {
     ]).start();
   }, []);
 
-  const handleOpenBattery = async (component: any) => {
-    setSelectedBattery(component);
-    setBatterySheetVisible(true);
-    await fetchLiveData(component);
+  const navigateToInverterDetail = () => {
+    const inverterComp = components.find((c) =>
+      c.name.toLowerCase().includes("inverter")
+    );
+    if (inverterComp) {
+      navigation.navigate("InverterDetail", { componentId: inverterComp.id });
+    }
   };
 
-  const handleRestartDevice = () => {
-    Alert.alert(
-      t("deviceDetail.battery.restart"),
-      t("deviceDetail.confirmRestart"),
-      [
-        { text: t("common.cancel"), style: "cancel" },
-        {
-          text: t("deviceDetail.confirmStart"),
-          style: "destructive",
-          onPress: () => {
-            Alert.alert(t("deviceDetail.actionStarted"), t("deviceDetail.deviceRestarting"));
-          },
-        },
-      ]
-    );
+  const navigateToBatteryList = () => {
+    navigation.navigate("BatteryList", { deviceId });
   };
 
   const navigateToDetailScreen = (componentId: string) => {
@@ -172,43 +205,49 @@ export default function DeviceDetail () {
       case "gateway":
         navigation.navigate("GatewayDetail");
         break;
+      case "smartmeter":
+        navigation.navigate("SmartMeterDetail");
+        break;
       default:
         break;
     }
   };
 
-  if (loading) {
-    return (
-      <View
-        style={[
-          styles.container,
-          { justifyContent: "center", alignItems: "center" },
-        ]}
-      >
-        <ActivityIndicator size="large" color={COLORS.accent} />
-        <Text style={{ color: COLORS.textSoft, marginTop: 10 }}>
-          {t("common.loading")}
-        </Text>
-      </View>
-    );
-  }
-  const bmsComp = components.find(c =>
-    c.name.toLowerCase().includes("bms")
-  );
-
   const inverterComp = components.find(c =>
     c.name.toLowerCase().includes("inverter")
   );
 
-  // 🔹 SOC ve total power değerleri
-  const socValue = bmsComp?.componentData || 0;
+  const batteryComps = components.filter(c =>
+    c.name.toLowerCase().includes("battery") && !c.name.toLowerCase().includes("bms")
+  );
 
-  const totalPower = inverterData?.["Active Power"] || 0;const leftComponents = components.filter((_, i) => i % 2 === 0);
-  const rightComponents = components.filter((_, i) => i % 2 === 1);
+  const batteryCount = batteryComps.length;
+  const batterySubtitle = batteryCount > 0
+    ? t("deviceDetail.battery.packCount", { count: batteryCount })
+    : t("deviceDetail.battery.noBatteries");
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: isDark ? 'rgba(28, 34, 43, 1)' : 'rgba(243, 243, 245, 1)' }]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
+
+      {/* Gradient Background at Top - Only for light mode */}
+      {!isDark && (
+        <LinearGradient
+          colors={['rgba(118, 192, 253, 0.48)', 'rgba(243, 243, 245, 1)']}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 300,
+            zIndex: 0,
+          }}
+        />
+      )}
+
+      {/* Header - Her zaman göster (cached) */}
       <Animated.View
         style={[
           styles.header,
@@ -219,25 +258,59 @@ export default function DeviceDetail () {
           },
         ]}
       >
-        <View style={[styles.headerContent, { flexDirection: "row", alignItems: "center" }]}>
-          <Pressable
-            style={{ padding: 8, zIndex: 2 }}
-            onPress={() => navigation.goBack()}
-          >
-            <FontAwesome name="chevron-left" size={16} color={COLORS.textSoft} />
-          </Pressable>
+        <View style={[styles.headerContent, { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+            <Pressable
+              style={{ paddingVertical: 8, paddingRight: 8, marginLeft: -4 }}
+              onPress={() => navigation.goBack()}
+            >
+              <ArrowLeft size={26} color={COLORS.textSoft} strokeWidth={2.5} />
+            </Pressable>
 
-          <View style={{ flex: 1, alignItems: "center", marginRight: 32 }}>
-            <Text style={[styles.headerTitle, { textAlign: "center" }]}>
+            <Text style={styles.headerTitle}>
               {t("deviceDetail.title")}
             </Text>
           </View>
+
+          {/* Notification Icon */}
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Notifications')}
+            style={{ padding: 8 }}
+          >
+            <View style={{ position: 'relative' }}>
+              <Svg width={20} height={25} viewBox="0 0 57.03 72">
+                <Path
+                  d="M7.53,62.8h10.2c.8,5.2,5.3,9.2,10.8,9.2s10-4,10.8-9.2h10.2c2.1,0,4.1-.9,5.6-2.5,1.4-1.6,2.1-3.7,1.9-5.8-.2-1.8-1.8-5.9-4.8-12.8-.4-1-.9-2.2-1.2-2.7v-10.8c0-11.7-8.8-21.6-20-22.8v-2.9c0-1.4-1.1-2.5-2.5-2.5s-2.5,1.1-2.5,2.5v2.9c-4.9.5-9.5,2.7-13.1,6.2-4.4,4.3-6.9,10-6.9,16.2v11.2c-.2.5-.7,1.7-1.2,2.7C1.83,48.6.23,52.6.03,54.5c-.2,2.1.5,4.2,1.9,5.8,1.5,1.6,3.5,2.5,5.6,2.5ZM28.53,67c-2.7,0-5-1.8-5.7-4.2h11.5c-.8,2.4-3.1,4.2-5.8,4.2ZM9.43,43.7c1.5-3.5,1.6-3.6,1.6-4.3v-11.6c0-4.8,1.9-9.3,5.3-12.6,3.3-3.2,7.6-4.9,12.1-4.9h.6c9.3.3,16.9,8.4,16.9,18v11.2c0,.7.1.8,1.6,4.3,1.2,2.7,4.3,9.8,4.4,11.3.1.7-.2,1.4-.6,1.9-.5.5-1.1.8-1.9.8H7.53c-.7,0-1.4-.3-1.9-.8s-.7-1.2-.6-1.9c.2-1.5,3.3-8.7,4.4-11.4Z"
+                  fill={COLORS.textSoft}
+                />
+              </Svg>
+              {/* Red Badge */}
+              <View
+                style={{
+                  position: 'absolute',
+                  top: -2,
+                  right: -2,
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: '#FF3B30',
+                  borderWidth: 1.5,
+                  borderColor: COLORS.dark,
+                }}
+              />
+            </View>
+          </TouchableOpacity>
         </View>
       </Animated.View>
 
+      {/* Content - Skeleton veya gerçek içerik */}
+      {loading ? (
+        <DeviceDetailSkeleton />
+      ) : (
+
       <ScrollView
         contentContainerStyle={{
-          paddingBottom: insets.bottom + SPACING.lg,
+          paddingBottom: insets.bottom + 100,
         }}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -248,140 +321,80 @@ export default function DeviceDetail () {
           />
         }
       >
-        <View style={[styles.heroCard, { marginTop: insets.top + 72 }]}>
-          <View style={styles.headerRow}>
-            <View>
-              <Text style={styles.title}>NetZr</Text>
-              <Text style={[styles.statLabel, { marginTop: 4 }]}>
-                {t("deviceDetail.totalComponents", { count: components.length })}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.visualWrap}>
+        {/* Top Section: Device Image + Info Cards */}
+        <View style={[styles.topSection, { marginTop: insets.top + 80 }]}>
+          {/* Left: Device Image */}
+          <View style={styles.deviceImageContainer}>
             <Image
               source={require("../../../assets/images/device-image.png")}
-              style={styles.visualImg}
+              style={styles.deviceImage}
               resizeMode="contain"
             />
           </View>
 
-          <View style={styles.badgesBelowRow}>
-            <View style={styles.badgesCol}>
-              {leftComponents.map((comp) => (
-                <DeviceBadge
-                  key={comp.id}
-                  COLORS={COLORS}
-                  title={String(t(`deviceNames.${comp.name.toLowerCase()}`, { defaultValue: comp.name }))}
+          {/* Right: Info Cards Stack */}
+          <View style={styles.infoCardsStack}>
+            {/* Inverter Card */}
+            {inverterComp && (
+              <DeviceInfoCard
+                title={t("deviceDetail.inverter.title")}
+                subtitle={inverterComp.description || t("deviceDetail.inverter.subtitle")}
+                icon={<Zap size={24} color={COLORS.accent} />}
+                status="online"
+                onPress={navigateToInverterDetail}
+                style={{ flex: 1 }}
+              />
+            )}
 
-                  subtitle={""}
-                  value={comp.componentData ? comp.componentData.toFixed(2).toString() : "0"}
-
-                  icon={
-                    comp.name.toLowerCase().includes("inverter")
-                      ? "bolt"
-                      : comp.name.toLowerCase().includes("bms")
-                        ? "microchip"
-                        : "battery-full"
-                  }
-                  status={comp.isDeleted ? "inactive" : "normal"}
-                  onPress={() => handleOpenBattery(comp)}
-                />
-              ))}
-            </View>
-            <View style={styles.badgesCol}>
-              {rightComponents.map((comp) => (
-                <DeviceBadge
-                  key={comp.id}
-                  COLORS={COLORS}
-                  title={String(t(`deviceNames.${comp.name.toLowerCase()}`, { defaultValue: comp.name }))}
-
-                  subtitle={""}
-                  value={comp.componentData ? comp.componentData.toFixed(2).toString() : "0"}
-                  icon={
-                    comp.name.toLowerCase().includes("inverter")
-                      ? "bolt"
-                      : comp.name.toLowerCase().includes("bms")
-                        ? "microchip"
-                        : "battery-full"
-                  }
-                  status={comp.isDeleted ? "inactive" : "normal"}
-                  align="right"
-                  onPress={() => handleOpenBattery(comp)}
-                />
-              ))}
-            </View>
+            {/* Battery Card */}
+            <DeviceInfoCard
+              title={t("deviceDetail.battery.title")}
+              subtitle={batterySubtitle}
+              icon={<FontAwesome name="battery-full" size={24} color={COLORS.success} />}
+              status={batteryCount > 0 ? "online" : "offline"}
+              onPress={navigateToBatteryList}
+              style={{ flex: 1 }}
+            />
           </View>
         </View>
 
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <FontAwesome name="bolt" size={18} color={COLORS.accent} />
-            <Text style={styles.statValue}>{(totalPower).toFixed(2)} kW</Text>
-            <Text style={styles.statLabel}>{t("deviceDetail.dailyProduction")}</Text>
-          </View>
+        {/* Connected Devices Section */}
+        <View style={styles.connectedDevicesSection}>
+          <Text style={[styles.sectionTitle, { color: COLORS.text }]}>
+            {t("deviceDetail.connectedDevices.title")}
+          </Text>
 
-          <View style={styles.statCard}>
-            <FontAwesome name="battery-full" size={18} color={COLORS.success} />
-            <Text style={styles.statValue}>{socValue.toFixed(0)}%</Text>
-            <Text style={styles.statLabel}>{t("deviceDetail.batteryCharge")}</Text>
-          </View>
-
-    <View style={styles.statCard}>
-  <FontAwesome name="plug" size={18} color={COLORS.textSoft} />
-
-  <Text
-    style={[styles.statValue, { textAlign: 'center', marginTop: 6 }]}
-    numberOfLines={1}
-    adjustsFontSizeToFit
-    minimumFontScale={0.75} // gerekirse %75’e kadar küçültür
-  >
-    {t("deviceList.onGrid")}
-  </Text>
-
-  <Text
-    style={[
-      styles.statLabel,
-      { textAlign: 'center', alignSelf: 'center', marginTop: 6 },
-    ]}
-  >
-    {t("deviceDetail.connection")}
-  </Text>
-</View>
-
-        </View>
-
-
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>{t("deviceDetail.devicesTitle")}</Text>
-          <View style={styles.gridRow}>
-            <GridCard
-              COLORS={COLORS}
+          <View style={styles.connectedDevicesList}>
+            {/* Solar Panel Card */}
+            <ConnectedDeviceCard
               title={t("deviceDetail.pvPanel.title")}
-              subtitle="—"
-              icon="sun-o"
+              description={t("deviceDetail.pvPanel.description")}
+              icon={<PVIcon color="#F59E0B" size={28} />}
+              iconBackgroundColor="#FEF3C7"
               onPress={() => navigateToDetailScreen("pvpanel")}
             />
-            <GridCard
-              COLORS={COLORS}
+
+            {/* Energy Gateway Card */}
+            <ConnectedDeviceCard
               title={t("deviceDetail.gateway.title")}
-              subtitle={t("deviceDetail.gateway.subtitle")}
-              icon="exchange"
+              description={t("deviceDetail.gateway.description")}
+              icon={<Wifi size={28} color="#3B82F6" />}
+              iconBackgroundColor="#DBEAFE"
               onPress={() => navigateToDetailScreen("gateway")}
+            />
+
+            {/* Smart Meter Card */}
+            <ConnectedDeviceCard
+              title={t("deviceDetail.smartMeter.title")}
+              description={t("deviceDetail.smartMeter.description")}
+              icon={<Zap size={28} color="#10B981" />}
+              iconBackgroundColor="#D1FAE5"
+              onPress={() => navigateToDetailScreen("smartmeter")}
             />
           </View>
         </View>
       </ScrollView>
-
-      <BatteryDetailBottomSheet
-        visible={batterySheetVisible}
-        onClose={() => setBatterySheetVisible(false)}
-        onRestart={handleRestartDevice}
-        loading={isFetchingLive}
-        deviceName={selectedBattery?.name || "Battery"}
-        batteryData={batteryData || {}}
-        
-      />
+      )}
     </View>
   );
 }

@@ -1,5 +1,5 @@
 export const API_CONFIG = {
-  BASE_URL: 'https://hems-api.pentaunity.com/api',
+  BASE_URL: 'https://hems-api-dev.oklidis.com.tr/api',
   TIMEOUT: 30000,
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000,
@@ -80,6 +80,7 @@ export const ENDPOINTS = {
     POWER_METRICS: '/MobileDashboard/graphs/PowerMetrics',
     BATTERY: '/MobileDashboard/graphs/Battery',
     CHARGE_DISCHARGE: '/MobileDashboard/graphs/ChargeDischarge',
+    GRID_PERFORMANCE: '/MobileDashboard/graphs/GridPerformance',
   },
   ROLES: {
     GET_ALL: '/RoleManagement',

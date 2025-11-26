@@ -117,7 +117,7 @@ Persist edilen başlıca anahtarlar:
   npm run android    # Android emulator/device
   ```
 - **Betikler:** `npm run lint` (ESLint), `npm test` (Jest), `npx pod-install` (postinstall).
-- **Ortam Değişkenleri:** `API_CONFIG.BASE_URL` değeri `https://hems-api.pentaunity.com/api` olarak yapılandırılmıştır. Gerekirse `.env` veya `react-native-dotenv` ile override edilebilir.
+- **Ortam Değişkenleri:** `API_CONFIG.BASE_URL` değeri `https://hems-api-dev.oklidis.com.tr/api` olarak yapılandırılmıştır. Gerekirse `.env` veya `react-native-dotenv` ile override edilebilir.
 - **Kod Standartları:** ESLint & Prettier ile uyumlu; store ve servis isimlendirmelerinde domain bazlı yaklaşım izlenir.
 
 ## 13. Test & Kalite

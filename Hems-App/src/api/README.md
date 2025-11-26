@@ -232,7 +232,7 @@ const { sites } = useSitesStore();
 
 2. **API Base URL (.env):**
    ```env
-   API_BASE_URL=https://hems-api.pentaunity.com/api
+   API_BASE_URL=https://hems-api-dev.oklidis.com.tr/api
    ```
 
 3. **Login Screen Entegrasyonu:**

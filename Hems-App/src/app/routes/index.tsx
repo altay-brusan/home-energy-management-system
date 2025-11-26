@@ -1,4 +1,3 @@
-import FontAwesome from '@react-native-vector-icons/fontawesome';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import {
   DarkTheme,
@@ -10,6 +9,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, View } from 'react-native';
+import { Home, Smartphone, User, Shield, Settings, Bell } from 'lucide-react-native';
 import { apiClient } from '../../api/client/apiClient';
 import { invitationsService } from '../../api/services/devicesharingService';
 import { InvitationModal } from '../../components/InvitationModal/InvitationModal';
@@ -49,9 +49,15 @@ import {
 } from '../screens';
 import { AdminPage } from '../screens/adminPage';
 import DashboardScreen from '../screens/dashboard/DashboardScreen';
+import PowerMetricsDetailScreen from '../screens/powerMetricsDetail/PowerMetricsDetailScreen';
+import EnergyRevenueDetailScreen from '../screens/energyRevenueDetail/EnergyRevenueDetailScreen';
 import DeviceDetail from '../screens/deviceDetail/DeviceDetail';
 import GatewayDetailScreen from '../screens/deviceDetail/GatewayDetailScreen';
 import PVPanelDetailScreen from '../screens/deviceDetail/PVPanelDetailScreen';
+import BatteryListScreen from '../screens/deviceDetail/BatteryListScreen';
+import BatteryPackDetailScreen from '../screens/deviceDetail/BatteryPackDetailScreen';
+import InverterDetailScreen from '../screens/deviceDetail/InverterDetailScreen';
+import SmartMeterDetailScreen from '../screens/deviceDetail/SmartMeterDetailScreen';
 import DeviceAddScreen from '../screens/devices/DeviceAddScreen';
 import { EnergyProfileScreen } from '../screens/energyProfile';
 import { BatteryLevelSettingsScreen } from "../screens/energyProfile/ui/BatteryLevel";
@@ -69,6 +75,7 @@ import FaultsScreen from '../screens/profile/FaultsScreen/FaultsScreen';
 import TroubleShootingScreen from '../screens/profile/TroubleShooting/TroubleShootingScreen';
 import SignUpScreen from '../screens/signup/SignUpScreen';
 import TrashScreen from '../screens/trashscreen/TrashScreen';
+import { CustomTabBar } from '../../components/CustomTabBar';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
@@ -109,15 +116,11 @@ function TabNavigator () {
     <Tab.Navigator
       key={navigatorKey}
       initialRouteName={isAdminUser ? 'Admin' : 'Dashboard'}
+      tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: COLORS.accent,
         tabBarInactiveTintColor: COLORS.slate400,
-        tabBarStyle: {
-          backgroundColor: COLORS.surface,
-          borderTopWidth: 1,
-          borderTopColor: COLORS.border,
-        },
       }}
     >
       {/* Admin kullanıcı ev seçmemişse sadece Admin ve Profile tab'larını göster */}
@@ -129,7 +132,7 @@ function TabNavigator () {
             options={{
               tabBarLabel: t('tabs.dashboard'),
               tabBarIcon: ({ color, size }) => (
-                <FontAwesome name="home" color={color} size={size} />
+                <Home color={color} size={size} strokeWidth={2} />
               ),
             }}
           />
@@ -139,17 +142,7 @@ function TabNavigator () {
             options={{
               tabBarLabel: t('tabs.device'),
               tabBarIcon: ({ color, size }) => (
-                <FontAwesome name="server" color={color} size={size} />
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="Notifications"
-            component={NotificationScreen}
-            options={{
-              tabBarLabel: t('tabs.notifications'),
-              tabBarIcon: ({ color, size }) => (
-                <FontAwesome name="bell" color={color} size={size} />
+                <Smartphone color={color} size={size} strokeWidth={2} />
               ),
             }}
           />
@@ -163,7 +156,19 @@ function TabNavigator () {
         options={{
           tabBarLabel: t('tabs.profile'),
           tabBarIcon: ({ color, size }) => (
-            <FontAwesome name="user" color={color} size={size} />
+            <User color={color} size={size} strokeWidth={2} />
+          ),
+        }}
+      />
+
+      {/* Settings tab'ı her zaman göster */}
+      <Tab.Screen
+        name="Settings"
+        component={EnergyProfileScreen}
+        options={{
+          tabBarLabel: t('tabs.settings'),
+          tabBarIcon: ({ color, size }) => (
+            <Settings color={color} size={size} strokeWidth={2} />
           ),
         }}
       />
@@ -176,7 +181,7 @@ function TabNavigator () {
           options={{
             tabBarLabel: ('Admin'),
             tabBarIcon: ({ color, size }) => (
-              <FontAwesome name="cog" color={color} size={size} />
+              <Shield color={color} size={size} strokeWidth={2} />
             ),
           }}
         />
@@ -317,8 +322,23 @@ export function RootNavigator () {
             <Stack.Screen name="DeviceSetup" component={DeviceSetupScreen} />
             <Stack.Screen name="DeviceAdd" component={DeviceAddScreen} />
             <Stack.Screen
+              name="PowerMetricsDetail"
+              component={PowerMetricsDetailScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="EnergyRevenueDetail"
+              component={EnergyRevenueDetailScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
               name="Trash"
               component={TrashScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="Notifications"
+              component={NotificationScreen}
               options={{ animation: 'slide_from_right' }}
             />
             <Stack.Screen
@@ -334,6 +354,26 @@ export function RootNavigator () {
             <Stack.Screen
               name="GatewayDetail"
               component={GatewayDetailScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="BatteryList"
+              component={BatteryListScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="BatteryPackDetail"
+              component={BatteryPackDetailScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="InverterDetail"
+              component={InverterDetailScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="SmartMeterDetail"
+              component={SmartMeterDetailScreen}
               options={{ animation: 'slide_from_right' }}
             />
             <Stack.Screen

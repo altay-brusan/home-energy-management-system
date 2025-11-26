@@ -54,5 +54,35 @@ export function getDashboardWeatherStyles(COLORS: Record<string, string>) {
       marginTop: 2,
       flexShrink: 1,
     },
+    metricsContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      gap: SPACING.md,
+      marginTop: SPACING.md,
+    },
+    metricCard: {
+      backgroundColor: COLORS.bgShadeLight,
+      borderRadius: 12,
+      padding: SPACING.md,
+      flex: 1,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: COLORS.border,
+    },
+    metricLabel: {
+      fontSize: TYPOGRAPHY.xs,
+      fontWeight: '600',
+      color: COLORS.textSoft,
+      opacity: 0.7,
+      marginBottom: 4,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    metricValue: {
+      fontSize: TYPOGRAPHY.md,
+      fontWeight: '700',
+      color: COLORS.accent,
+      textAlign: 'center',
+    },
   });
 }

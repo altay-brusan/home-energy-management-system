@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import i18n from '../../lib/i18n';
 import { toast } from '../../utils/toast';
+import { useErrorStore } from '../../store/errorStore';
 import { AccessTokenResponse, RefreshRequest } from '../types/auth.types';
 import { ApiError } from '../types/common.types';
 import { API_CONFIG, ENDPOINTS } from './config';
@@ -57,6 +58,15 @@ class ApiClient {
           this.abortControllers.push(abortController);
         }
 
+        // Debug logging
+        const fullUrl = `${config.baseURL || ''}${config.url || ''}`;
+        const params = config.params;
+        console.log('🌐 [API Request]', {
+          method: config.method?.toUpperCase(),
+          url: fullUrl,
+          params: params,
+          hasToken: !!token,
+        });
 
         return config;
       },
@@ -388,7 +398,34 @@ class ApiClient {
       }
     }
 
-    toast.error(message, title);
+    // Kritik hatalar (500+, network error) için errorStore kullan
+    // errorStore otomatik olarak kritik hata olup olmadığını kontrol edecek
+    if (apiError.status >= 500 || apiError.status === 0) {
+      // ApiError'u AppError formatına çevir
+      let appError;
+      if (apiError.status === 0) {
+        // Network error
+        appError = {
+          code: 'NETWORK',
+          status: 0,
+          message: message,
+          retriable: true,
+        };
+      } else {
+        // Server error (500+)
+        appError = {
+          code: 'SERVER',
+          status: apiError.status,
+          message: message,
+          retriable: true,
+        };
+      }
+
+      useErrorStore.getState().show(appError);
+    } else {
+      // Normal hatalar için toast göster
+      toast.error(message, title);
+    }
   }
 
   private translateBackendMessage (backendMessage: string, url?: string): string {

@@ -6,16 +6,8 @@ export function getDashboardModeCardStyles(COLORS: Record<string, string>) {
         widget: {
             backgroundColor: COLORS.surface,
             borderRadius: 12,
-            padding: SPACING.lg,
-            paddingVertical: SPACING.xl,
-            marginBottom: 24,
-            borderWidth: 1,
-            borderColor: COLORS.border,
-            shadowColor: COLORS.black,
-            shadowOpacity: 0.06,
-            shadowRadius: 6,
-            shadowOffset: { width: 0, height: 2 },
-            elevation: 1,
+            padding: SPACING.md,
+            marginBottom: 12,
         },
         headerRow: {
             flexDirection: 'row',

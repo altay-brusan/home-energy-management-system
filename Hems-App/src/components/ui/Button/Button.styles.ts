@@ -1,11 +1,11 @@
 import { StyleSheet } from 'react-native';
-import { getThemeColors, SPACING } from '../../../theme/constants';
+import { getDesignTokens, SPACING } from '../../../theme/constants';
 import { useThemeStore } from '../../../store/themeStore';
 
 export function getButtonStyles () {
   const mode = useThemeStore.getState().mode;
   const isDark = mode === 'dark';
-  const COLORS = getThemeColors(isDark);
+  const tokens = getDesignTokens(isDark);
 
   return StyleSheet.create({
     button: {
@@ -15,17 +15,23 @@ export function getButtonStyles () {
       alignItems: 'center',
       justifyContent: 'center',
     },
-    primary: { backgroundColor: COLORS.accent, color: COLORS.white, },
-    secondary: { 
-      backgroundColor: isDark ? COLORS.surface : COLORS.gray200, 
-      borderWidth: 1,
-      borderColor: isDark ? COLORS.border : COLORS.slate400,
-      color: isDark ? COLORS.white : COLORS.slate900, 
+    primary: {
+      backgroundColor: tokens.button.primaryBg,
+      color: tokens.button.primaryText,
     },
-    danger: { backgroundColor: '#dc3545' },
+    secondary: {
+      backgroundColor: tokens.button.secondaryBg,
+      borderWidth: 1,
+      borderColor: tokens.button.secondaryBorder,
+      color: tokens.button.secondaryText,
+    },
+    danger: {
+      backgroundColor: tokens.button.dangerBg,
+      color: tokens.button.dangerText,
+    },
     disabled: { opacity: 0.5 },
     text: {
-      color: COLORS.white,
+      color: tokens.button.primaryText,
       fontSize: 16,
       fontWeight: '600',
       lineHeight: 16 * 1.4,

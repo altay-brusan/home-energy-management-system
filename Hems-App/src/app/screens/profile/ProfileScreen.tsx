@@ -20,7 +20,7 @@ export default function ProfileScreen ({ navigation }: any) {
   const mode = useThemeStore(s => s.mode);
   const isDark = mode === 'dark';
   const COLORS = getThemeColors(isDark);
-  const styles = makeProfileScreenStyles(COLORS);
+  const styles = makeProfileScreenStyles(COLORS, isDark);
   const insets = useSafeAreaInsets();
   const [region, setRegion] = React.useState<Region>('Europe');
   const { t } = useI18n();
@@ -153,7 +153,7 @@ const confirmLogout = async () => {
             </Text>
           </TouchableOpacity>
         </View>
-        <Text style={{ color: COLORS.slate400, marginTop: SPACING.lg }}>
+        <Text style={styles.versionText}>
           {t('settings.version')}: {pkg.version}
         </Text>
         <Modal

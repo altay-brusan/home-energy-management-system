@@ -19,20 +19,27 @@ interface LanguageSelectorProps {
   style?: any;
 }
 
-const LANGUAGES = [
+const getLanguages = (currentLang: Language) => [
   {
     id: 'tr' as Language,
     label: 'Türkçe',
     nativeLabel: 'Türkçe',
     emoji: '🇹🇷',
-    description: 'Türkiye',
+    description: currentLang === 'tr' ? 'Türkiye' : currentLang === 'nl' ? 'Turkije' : 'Turkey',
   },
   {
     id: 'en' as Language,
     label: 'English',
     nativeLabel: 'English',
     emoji: '🇺🇸',
-    description: 'United States',
+    description: currentLang === 'tr' ? 'Amerika Birleşik Devletleri' : currentLang === 'nl' ? 'Verenigde Staten' : 'United States',
+  },
+  {
+    id: 'nl' as Language,
+    label: 'Nederlands',
+    nativeLabel: 'Nederlands',
+    emoji: '🇳🇱',
+    description: currentLang === 'tr' ? 'Hollanda' : currentLang === 'nl' ? 'Nederland' : 'Netherlands',
   },
 ];
 
@@ -41,7 +48,7 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 export default function LanguageSelector({ style }: LanguageSelectorProps) {
   const [modalVisible, setModalVisible] = useState(false);
   const { language, isLoading, setLanguage } = useI18nStore();
-  
+
   const backdropAnim = useRef(new Animated.Value(0)).current;
   const translateYAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
 
@@ -50,17 +57,17 @@ export default function LanguageSelector({ style }: LanguageSelectorProps) {
   const COLORS = getThemeColors(isDark);
   const COLORS_WITH_REQUIRED = {
     ...COLORS,
-    primary: COLORS.accent, 
-    text: COLORS.textSoft, 
-    textSecondary: COLORS.slate400, 
+    primary: COLORS.accent,
+    text: COLORS.textSoft,
+    textSecondary: COLORS.slate400,
   };
   const styles = useMemo(
     () => makeLanguageSelectorStyles(COLORS_WITH_REQUIRED, isDark),
     [COLORS_WITH_REQUIRED, isDark],
   );
 
+  const LANGUAGES = useMemo(() => getLanguages(language), [language]);
   const currentLanguage = LANGUAGES.find(lang => lang.id === language);
-  const isTurkish = language === 'tr';
 
   const openModal = useCallback(() => {
     setModalVisible(true);
@@ -123,11 +130,11 @@ export default function LanguageSelector({ style }: LanguageSelectorProps) {
         <View style={styles.button}>
           <View style={styles.buttonContent}>
             <Text style={styles.emoji}>
-              {isTurkish ? '🇹🇷' : '🇺🇸'}
+              {currentLanguage?.emoji || '🇺🇸'}
             </Text>
             <View style={styles.textContainer}>
               <Text style={styles.languageText}>
-                {isTurkish ? 'TR' : 'EN'}
+                {language === 'tr' ? 'TR' : language === 'nl' ? 'NL' : 'EN'}
               </Text>
             </View>
             <View style={styles.chevron}>
@@ -156,9 +163,11 @@ export default function LanguageSelector({ style }: LanguageSelectorProps) {
               </View>
 
               <View style={styles.header}>
-                <Text style={styles.title}>Dil Seçin</Text>
+                <Text style={styles.title}>
+                  {language === 'tr' ? 'Dil Seçin' : language === 'nl' ? 'Selecteer Taal' : 'Select Language'}
+                </Text>
                 <Text style={styles.subtitle}>
-                  {isTurkish ? 'Dil tercihinizi seçin' : 'Choose your language preference'}
+                  {language === 'tr' ? 'Dil tercihinizi seçin' : language === 'nl' ? 'Kies uw taalvoorkeur' : 'Choose your language preference'}
                 </Text>
               </View>
 

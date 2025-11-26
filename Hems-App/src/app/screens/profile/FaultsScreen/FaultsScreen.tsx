@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../../../store/themeStore';
 import { getThemeColors } from '../../../../theme/constants';
 import { makeFaultsScreenStyles } from './FaultsScreen.styles';
-import FontAwesome from '@react-native-vector-icons/fontawesome';
+import { ArrowLeft } from 'lucide-react-native';
 import Button from '../../../../components/ui/Button';
 import { useFaultsStore, Fault } from '../../../../store/faultsStore';
 import { useI18n } from '../../../../hooks/useI18n';
@@ -104,7 +104,17 @@ export default function FaultsScreen({ navigation }: any) {
 
         return (
             <Pressable onPress={() => openDetail(item)} style={styles.itemPress}>
-                <View style={[styles.itemRow, { borderLeftColor: statusColors[item.status] }]}>
+                <View style={styles.itemRow}>
+                    {/* Status indicator dot - sol tarafta */}
+                    <View style={{ marginRight: 12, paddingTop: 2 }}>
+                        <View style={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: 4,
+                            backgroundColor: statusColors[item.status]
+                        }} />
+                    </View>
+
                     <View style={styles.itemContent}>
                         <View style={styles.itemHeader}>
                             <Text style={styles.itemTitle}>{item.faultType}</Text>
@@ -130,12 +140,21 @@ export default function FaultsScreen({ navigation }: any) {
 
     const ListHeader = (
         <>
+            {/* Header - Notifications benzeri */}
             <View style={styles.headerRow}>
-                <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <FontAwesome name="chevron-left" size={18} color={COLORS.textSoft} />
-                </Pressable>
-                <Text style={styles.screenTitle}>{t('troubleshooting.faultsScreen.title')}</Text>
-                <View style={{ width: 32 }} />
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                    <Pressable
+                        onPress={() => navigation.goBack()}
+                        style={{
+                            paddingVertical: 8,
+                            paddingRight: 8,
+                            marginLeft: -4
+                        }}
+                    >
+                        <ArrowLeft size={26} color={COLORS.text} strokeWidth={2.5} />
+                    </Pressable>
+                    <Text style={styles.screenTitle}>{t('troubleshooting.faultsScreen.title')}</Text>
+                </View>
             </View>
 
             <View style={styles.warrantyCard}>
@@ -149,6 +168,7 @@ export default function FaultsScreen({ navigation }: any) {
                 onPress={() => navigation.navigate('TroubleShooting')}
             />
 
+            {/* Filter Chips - Notifications benzeri */}
             <View style={styles.filterRow}>
                 {['all', 'in_progress', 'processing', 'completed'].map((key) => (
                     <Pressable
@@ -162,8 +182,6 @@ export default function FaultsScreen({ navigation }: any) {
                     </Pressable>
                 ))}
             </View>
-
-            <Text style={styles.sectionTitle}>{t('troubleshooting.faultsScreen.myFaultRecords')}</Text>
         </>
     );
 

@@ -5,6 +5,7 @@
     "chooseLanguage": "Dil tercihinizi seçin",
     "turkish": "Türkçe",
     "english": "İngilizce",
+    "dutch": "Hollandaca",
     "cancel": "İptal",
     "confirm": "Onayla",
     "save": "Kaydet",
@@ -18,7 +19,8 @@
     "back": "Geri",
     "ok": "Tamam",
     "close": "Kapat",
-    "retry": "Yeniden Dene"
+    "retry": "Yeniden Dene",
+    "serialLabel": "SN"
   },
   "invitation": {
     "title": "Ev Daveti",
@@ -223,6 +225,20 @@
       "networkErrorMessage": "Sunucuya ulaşılamıyor. Bağlantınızı kontrol edin.",
       "unknownError": "Bilinmeyen Hata",
       "unknownErrorMessage": "Beklenmeyen bir hata oluştu"
+    },
+    "maintenance": {
+      "serverError": {
+        "title": "Sunucu Bakımda",
+        "message": "Sunucularımızda şu anda bir sorun var. Lütfen daha sonra tekrar deneyin."
+      },
+      "networkError": {
+        "title": "Bağlantı Hatası",
+        "message": "Bağlantı sorunu yaşanıyor. Lütfen internet bağlantınızı kontrol edin."
+      },
+      "genericError": {
+        "title": "Bir Sorun Oluştu",
+        "message": "Beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin."
+      }
     }
   },
   "dashboard": {
@@ -236,10 +252,11 @@
     "messages": "Mesajlar"
   },
   "tabs": {
-    "dashboard": "Ana Sayfa",
+    "dashboard": "Home",
     "device": "Cihaz",
     "notifications": "Bildirimler",
-    "profile": "Profil"
+    "profile": "Profil",
+    "settings": "Ayarlar"
   },
   "profile": {
     "profile": "Profil",
@@ -392,6 +409,20 @@
     "avatar": "Avatar",
     "avatarNotImplemented": "Avatar yükleme/değiştirme bu demoda uygulanmamıştır."
   },
+  "companyInfo": {
+    "title": "Şirket Bilgileri",
+    "companyName": "Şirket Adı",
+    "address": "Adres",
+    "email": "E-posta",
+    "phone": "Telefon",
+    "regionTitle": "Bölge Bilgisi",
+    "save": "Kaydet",
+    "cancel": "İptal"
+  },
+  "modals": {
+    "selectDate": "Tarih Seç",
+    "selectRange": "Aralık Seç"
+  },
   "settings": {
     "settings": "Ayarlar",
     "settingsScreen": "Ayarlar Ekranı",
@@ -457,6 +488,27 @@
     "in": "Giriş",
     "out": "Çıkış"
   },
+  "energyFlowRadial": {
+    "title": "Anlık Enerji Akışı",
+    "loading": "Güç verileri yükleniyor...",
+    "noDevice": "Cihaz bulunamadı. Anlık güç akışını görüntülemek için lütfen cihaz ekleyin.",
+    "noData": "Güç verisi bulunamadı.",
+    "errorLoading": "Güç verileri yüklenirken hata oluştu. Lütfen tekrar deneyin.",
+    "lastUpdate": "Son güncelleme",
+    "labels": {
+      "solar": "Güneş",
+      "battery": "Batarya",
+      "grid": "Şebeke",
+      "home": "Ev"
+    }
+  },
+  "todaySummary": {
+    "title": "Bugün",
+    "gridImport": "Şebekeden Alınan",
+    "gridExport": "Şebekeye Verilen",
+    "consumption": "Tüketim",
+    "production": "Üretim"
+  },
   "dashboardGraph": {
     "productionTitle": "Enerji Üretimi",
     "consumptionTitle": "Enerji Tüketimi",
@@ -475,6 +527,30 @@
       "month": "Ay",
       "year": "Yıl"
     }
+  },
+  "energyChart": {
+    "title": "Enerji Genel Bakış",
+    "subtitle": "Üretim ve Tüketim",
+    "production": "Üretim",
+    "consumption": "Tüketim",
+    "total": "Toplam",
+    "sources": {
+      "solar": "Güneş",
+      "batteryDischarge": "Batarya Deşarj",
+      "generator": "Jeneratör",
+      "gridImport": "Şebekeden Çekiş",
+      "load": "Ev Yükü",
+      "batteryCharge": "Batarya Şarj",
+      "gridExport": "Şebekeye Satış"
+    },
+    "period": {
+      "weekly": "Haftalık",
+      "monthly": "Aylık",
+      "yearly": "Yıllık"
+    },
+    "noDevice": "Cihaz bulunamadı. Enerji verilerini görüntülemek için lütfen cihaz ekleyin.",
+    "noData": "Seçilen dönem için enerji verisi bulunamadı.",
+    "loading": "Enerji verileri yükleniyor..."
   },
   "dashboardHero": {
     "title": "Ev Enerji Durumu",
@@ -497,6 +573,18 @@
       "power": "Güç",
       "savings": "Tasarruf"
     }
+  },
+  "dashboard": {
+    "summary": "Özet",
+    "status": "Durum",
+    "saving": "Tasarruf",
+    "weather": "Hava Durumu",
+    "onGrid": "Şebeke Bağlı",
+    "off": "Kapalı",
+    "hybrid": "Hibrit",
+    "totalPower": "Toplam Güç",
+    "dailiyPower": "Günlük Güç",
+    "noDataAvailable": "Veri mevcut değil"
   },
   "dashboardMode": {
     "title": "Şu anki Mod",
@@ -571,6 +659,43 @@
        "load": "Yük"
     }
   },
+  "powerMetrics24H": {
+    "title": "Güç Ölçümleri",
+    "sunrise": "Gün Doğumu",
+    "sunset": "Gün Batımı",
+    "now": "ŞİMDİ",
+    "labels": {
+      "solar": "Güneş",
+      "battery": "Batarya",
+      "grid": "Şebeke",
+      "load": "Yük"
+    },
+    "dateFormat": {
+      "week": "Hafta {{weekNumber}}, {{year}}",
+      "month": "{{monthName}} {{year}}",
+      "year": "{{year}}"
+    },
+    "months": {
+      "january": "Ocak",
+      "february": "Şubat",
+      "march": "Mart",
+      "april": "Nisan",
+      "may": "Mayıs",
+      "june": "Haziran",
+      "july": "Temmuz",
+      "august": "Ağustos",
+      "september": "Eylül",
+      "october": "Ekim",
+      "november": "Kasım",
+      "december": "Aralık"
+    },
+    "ranges": {
+      "day": "Gün",
+      "week": "Hafta",
+      "month": "Ay",
+      "year": "Yıl"
+    }
+  },
   "dashboardBatteryChart": {
     "title": "Batarya (%)",
     "stats": {
@@ -580,6 +705,14 @@
     },
     "noDevice": "Cihaz bağlı değil",
     "noData": "Veri bulunamadı"
+  },
+  "batteryStateCard": {
+    "title": "Batarya Doluluk Oranı",
+    "status": {
+      "idle": "Boşta",
+      "charging": "Şarj Oluyor",
+      "discharging": "Deşarj Oluyor"
+    }
   },
   "dashboardChargeDischargeChart": {
     "title": "Şarj ve Deşarj Gücü (kW)",
@@ -600,6 +733,30 @@
     },
     "noDevice": "Cihaz bağlı değil",
     "noData": "Veri bulunamadı"
+  },
+  "dashboardEnergyReview": {
+    "title": "Enerji Alış/Satış",
+    "subtitle": "Grid ile 1 haftalık enerji ticareti",
+    "totalBuy": "Toplam Alış",
+    "totalSell": "Toplam Satış",
+    "net": "Net",
+    "buy": "Alış",
+    "sell": "Satış",
+    "price": "Fiyat",
+    "gridBuy": "Grid'den Alış",
+    "gridSell": "Grid'e Satış"
+  },
+  "dashboardGridPerformance": {
+    "title": "Şebeke Performansı",
+    "totalBuy": "Toplam Alış",
+    "totalSell": "Toplam Satış",
+    "netBalance": "Net Denge",
+    "month": "Ay",
+    "year": "Yıl",
+    "lifetime": "Tüm Zamanlar",
+    "buyLabel": "Şebeke Alım",
+    "sellLabel": "Şebeke Satım",
+    "noData": "Şebeke verisi mevcut değil"
   },
   "dashboardSidebar": {
     "header": "Evlerim",
@@ -636,7 +793,17 @@
     }
   },
   "dashboardScreen": {
-    "title": "Ana Ekran"
+    "title": "Ana Ekran",
+    "welcome": "Hoş Geldiniz"
+  },
+  "environmentalBenefits": {
+    "title": "Çevresel Faydalar",
+    "co2Savings": "CO₂ Tasarrufu",
+    "equivalentTrees": "Eşdeğer Ağaç",
+    "infoTitle": "Nasıl Çalışır",
+    "co2Info": "Toplam enerji tüketiminize göre hesaplanır. Kullandığınız her kWh güneş enerjisi, yaklaşık 0.25 kg CO₂ emisyonunu önler.",
+    "treesInfo": "Bir ağaç yılda yaklaşık 22 kg CO₂ emer. Bu, aynı miktarda emisyonu dengelemek için kaç ağaca ihtiyaç olduğunu gösterir.",
+    "gotIt": "Anladım"
   },
   "dashboardHelpButton": {
     "title": "Yardım"
@@ -678,7 +845,9 @@
     "markAllReadSuccess": "Tüm bildirimler okundu olarak işaretlendi",
     "markAllReadError": "Tüm bildirimler okundu olarak işaretlenemedi",
     "markAsRead": "Okundu olarak işaretlendi",
-    "markAsReadFailed": "İşaretleme başarısız"
+    "markAsReadFailed": "İşaretleme başarısız",
+    "details": "Bildirim Detayı",
+    "additionalInfo": "Ek Bilgiler"
   },
 "deviceList": {
   "title": "Cihaz",
@@ -691,13 +860,30 @@
   "title": "NetZr Cihaz Detayı",
   "loading": "Veriler Yükleniyor...",
   "totalComponents": "Toplam {{count}} bileşen bulundu",
+  "informations": "Bilgiler",
   "dailyProduction": "Günlük Üretim",
   "batteryCharge": "Batarya Şarjı",
   "connection": "Bağlantı",
   "devicesTitle": "Netzr Cihazları",
+  "inverter": {
+    "title": "İnvertör",
+    "subtitle": "Güç dönüştürme sistemi"
+  },
+  "battery": {
+    "title": "Batarya",
+    "subtitle": "Gerçek Zamanlı Bilgi",
+    "restart": "Cihazı Tekrar Başlat",
+    "packCount": "{{count}} batarya paketi dahil",
+    "packCount_plural": "{{count}} batarya paketi dahil",
+    "noBatteries": "Batarya bulunamadı"
+  },
+  "connectedDevices": {
+    "title": "Bağlı Cihazlar"
+  },
   "pvPanel": {
     "title": "PV Panel",
     "subtitle": "Gerçek zamanlı üretim ve tarihsel veriler",
+    "description": "Solar panel güç üretimi",
     "bar": "Bar",
     "area": "Alan",
     "day": "Gün",
@@ -711,6 +897,7 @@
 "gateway": {
   "title": "Enerji Geçidi",
   "subtitle": "Şebeke / Şebekesiz mod kontrolü ve ölçümler",
+  "description": "İletişim ağ geçidi",
   "goOffGrid": "Şebekesiz Moda Geç",
   "goOnGrid": "Şebekeli Moda Geç",
   "inverterSide": "İnverter Tarafı",
@@ -724,10 +911,9 @@
   "onGrid": "Şebekeye Bağlı",
   "offGrid": "Şebekesiz Modda"
 },
-  "battery": {
-    "title": "Batarya Detayı",
-    "subtitle": "Gerçek Zamanlı Bilgi",
-    "restart": "Cihazı Tekrar Başlat"
+  "smartMeter": {
+    "title": "Akıllı Sayaç",
+    "description": "Enerji tüketimi izleme"
   },
   "confirmRestart": "Cihazı şimdi yeniden başlatmak istediğinize emin misiniz?",
   "confirmStart": "Evet, Başlat",
@@ -981,7 +1167,11 @@
     "totalHomes": "Toplam Ev",
     "totalDevices": "Toplam Cihaz",
     "activeUsers": "Aktif Kullanıcılar"
-  }
+  },
+  "noDeviceTitle": "Cihaz Bulunamadı",
+  "noDeviceMessage": "Bu sitenin kayıtlı cihazı yok.",
+  "errorTitle": "Hata",
+  "errorFetchingSite": "Navigasyon başarısız oldu."
 },
 "adminHomeCard": {
   "online": "Çevrimiçi",
@@ -1156,6 +1346,7 @@
 },
 "tou": {
   "title": "Zaman Kullanımına Göre (TOU) Planlama",
+  "schedule": "Program",
   "periodSettings": "P{{index}} Ayarları",
   "periodRange": "{{index}}. Dönem ({{range}})",
   "batteryDischarge": "Batarya Deşarjı",
@@ -1228,13 +1419,102 @@
 "dashboardHeroCard": {
   "title": "Akıllı Enerji Yönetimi",
   "subtitle": "Gerçek zamanlı izleme ve kontrol"
+},
+"batteryList": {
+  "title": "Batarya Paketleri",
+  "serialNumber": "Seri Numarası",
+  "empty": "Batarya paketi bulunamadı"
+},
+"batteryDetail": {
+  "title": "Batarya Detayları",
+  "stateOfCharge": "Şarj Durumu",
+  "stats": "Batarya İstatistikleri",
+  "soh": "Sağlık Durumu (SOH)",
+  "voltage": "Voltaj",
+  "current": "Akım",
+  "cellVoltage": "Hücre Voltajı",
+  "maxCellVoltage": "Maksimum Hücre Voltajı",
+  "minCellVoltage": "Minimum Hücre Voltajı",
+  "avgCellVoltage": "Ortalama Hücre Voltajı",
+  "temperature": "Sıcaklık",
+  "maxCellTemp": "Maksimum Hücre Sıcaklığı",
+  "minCellTemp": "Minimum Hücre Sıcaklığı",
+  "avgTemp": "Ortalama Sıcaklık",
+  "deviceInfo": "Cihaz Bilgileri",
+  "model": "Model",
+  "serialNumber": "Seri Numarası",
+  "firmwareVersion": "Firmware Sürümü",
+  "lastUpdate": "Son Güncelleme"
+},
+"inverterDetail": {
+  "title": "İnvertör Detayları",
+  "activePower": "Aktif Güç",
+  "powerMetrics": "Güç Metrikleri",
+  "reactivePower": "Reaktif Güç",
+  "powerFactor": "Güç Faktörü",
+  "insulationResistance": "İzolasyon Direnci",
+  "phaseData": "Faz Verileri",
+  "phaseLabel": "Faz {{id}}",
+  "voltage": "Voltaj",
+  "current": "Akım",
+  "power": "Güç",
+  "deviceInfo": "Cihaz Bilgileri",
+  "serialNumber": "Seri Numarası",
+  "firmwareVersion": "Firmware Sürümü",
+  "startupTime": "Son Açılış Zamanı",
+  "shutdownTime": "Son Kapanış Zamanı"
+},
+"smartMeterDetail": {
+  "title": "Akıllı Sayaç",
+  "comingSoon": "Yakında",
+  "description": "Akıllı sayaç entegrasyonu ve enerji izleme özellikleri yakında kullanıma sunulacak.",
+  "features": {
+    "title": "Gelecek Özellikler",
+    "realTimeMonitoring": "Gerçek zamanlı enerji izleme",
+    "energyConsumption": "Detaylı tüketim analizi",
+    "costAnalysis": "Maliyet takibi ve optimizasyonu",
+    "historicalData": "Geçmiş veri ve trendler"
+  }
+},
+"energyRevenue": {
+  "title": "Enerji Geliri"
+},
+"energyRevenueDetail": {
+  "title": "Enerji Gelir Detayları",
+  "dateFormat": {
+    "week": "{{weekNumber}}. Hafta, {{year}}",
+    "month": "{{monthName}} {{year}}",
+    "year": "{{year}}"
+  },
+  "months": {
+    "january": "Ocak",
+    "february": "Şubat",
+    "march": "Mart",
+    "april": "Nisan",
+    "may": "Mayıs",
+    "june": "Haziran",
+    "july": "Temmuz",
+    "august": "Ağustos",
+    "september": "Eylül",
+    "october": "Ekim",
+    "november": "Kasım",
+    "december": "Aralık"
+  },
+  "ranges": {
+    "week": "Hafta",
+    "month": "Ay",
+    "year": "Yıl"
+  }
+},
+"qrScanner": {
+  "title": "QR Kod Tara",
+  "permissionRequired": "Kamera izni gerekli. Lütfen ayarlardan izin verin.",
+  "cameraLoading": "Kamera yükleniyor…",
+  "close": "Kapat"
+},
+"globalError": {
+  "title": "Hata",
+  "code": "Kod",
+  "close": "Kapat"
 }
-
-
-
-
-
-
-
-
 }

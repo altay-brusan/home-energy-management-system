@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NativeModules, Platform } from 'react-native';
 import i18n from '../lib/i18n';
 
-export type Language = 'tr' | 'en';
+export type Language = 'tr' | 'en' | 'nl';
 
 // Cihaz dilini algıla
 const getDeviceLanguage = (): Language => {
@@ -15,12 +15,15 @@ const getDeviceLanguage = (): Language => {
           NativeModules.SettingsManager?.settings?.AppleLanguages?.[0]
         : NativeModules.I18nManager?.localeIdentifier;
 
-    // Dili normalize et (tr-TR → tr, en-US → en)
+    // Dili normalize et (tr-TR → tr, en-US → en, nl-NL → nl)
     const languageCode = locale?.split(/[-_]/)[0]?.toLowerCase();
 
-    // Türkçe ise 'tr', değilse 'en'
-    return languageCode === 'tr' ? 'tr' : 'en';
-  } catch (error) {return 'en'; // Varsayılan İngilizce
+    // Desteklenen dilleri kontrol et
+    if (languageCode === 'tr') return 'tr';
+    if (languageCode === 'nl') return 'nl';
+    return 'en'; // Varsayılan İngilizce
+  } catch (error) {
+    return 'en'; // Varsayılan İngilizce
   }
 };
 

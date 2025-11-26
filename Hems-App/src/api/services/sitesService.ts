@@ -11,10 +11,17 @@ import {
 
 export const sitesService = {
   async getAll(params: GetSitesParams): Promise<PaginatedSiteList> {
+    console.log('🟢 [SitesService] GET /Sites with params:', params);
+    console.log('🟢 [SitesService] Full URL:', ENDPOINTS.SITES.GET_ALL);
+
     const response = await apiClient.get<PaginatedSiteList>(
       ENDPOINTS.SITES.GET_ALL,
       { params }
     );
+
+    console.log('🟢 [SitesService] Response status:', response.status);
+    console.log('🟢 [SitesService] Response data:', response.data);
+
     return response.data;
   },
 

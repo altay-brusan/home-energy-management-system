@@ -16,17 +16,10 @@ type Props = {
 
 export function StatusPill({ read, styles, isDark, accent, accentSoft, textMuted }: Props) {
   const { t } = useI18n();
-  
-  const bg = read
-    ? isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'
-    : accentSoft ?? (isDark ? 'rgba(29,209,161,0.12)' : 'rgba(29,209,161,0.10)');
-  const fg = read
-    ? textMuted ?? (isDark ? 'rgba(230,234,242,0.64)' : '#6B7280')
-    : accent ?? '#1DD1A1';
 
   return (
-    <View style={[styles.statusPill, { backgroundColor: bg }]}>
-      <Text style={[styles.statusPillText, { color: fg }]}>{read ? t('notifications.status.read') : t('notifications.status.unread')}</Text>
+    <View style={styles.statusPill}>
+      <Text style={styles.statusPillText}>{t('notifications.status.unread')}</Text>
     </View>
   );
 }

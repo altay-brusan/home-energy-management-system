@@ -8,7 +8,7 @@ import { dashboardService } from '../../../../../api/services/dashboardService';
 import { useSelectedSiteUtils } from '../../../../../hooks/useSelectedSite';
 import { useDashboardRefresh } from '../../../../../hooks/useDashboardRefresh';
 
-export default function DashboardWeather ({ COLORS, isDark }: DashboardWeatherProps) {
+export default function DashboardWeather ({ COLORS }: DashboardWeatherProps) {
   const styles = getDashboardWeatherStyles(COLORS);
   const { t } = useTranslation();
   const { selectedSite } = useSelectedSiteUtils();
@@ -77,10 +77,17 @@ export default function DashboardWeather ({ COLORS, isDark }: DashboardWeatherPr
         <View style={styles.contentWrapper}>
           <Text style={styles.temp}>{weather.temperature}°C</Text>
           <Text style={styles.desc}>{weather.description}</Text>
-          <Text style={styles.meta} numberOfLines={2}>
-            💧 {t('dashboardWeather.humidity')}: {weather.humidity}% {'   '}
-            💨 {t('dashboardWeather.wind')}: {weather.windSpeed.toFixed(1)} m/s
-          </Text>
+        </View>
+      </View>
+
+      <View style={styles.metricsContainer}>
+        <View style={styles.metricCard}>
+          <Text style={styles.metricLabel}>{t('dashboardWeather.humidity')}</Text>
+          <Text style={styles.metricValue}>{weather.humidity}%</Text>
+        </View>
+        <View style={styles.metricCard}>
+          <Text style={styles.metricLabel}>{t('dashboardWeather.wind')}</Text>
+          <Text style={styles.metricValue}>{weather.windSpeed.toFixed(1)} m/s</Text>
         </View>
       </View>
     </Animated.View>

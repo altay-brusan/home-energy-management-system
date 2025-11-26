@@ -14,7 +14,7 @@ export const getAdminPageStyles = (COLORS: any, isDark: boolean) => {
     },
 
     scrollContent: {
-      paddingBottom: SPACING.xxl,
+      paddingBottom: 100,
     },
 
     welcomeText: {

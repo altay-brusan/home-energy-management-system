@@ -94,3 +94,16 @@ export interface WeatherForecastDto {
   description: string;
   icon: string;
 }
+
+export interface InverterBatChannelSocDto {
+  channelId: number;
+  socPercent: number;
+}
+
+export interface SocResponseDto {
+  timestampUtc: string;
+  version: number;
+  deviceId: string;
+  inverterBatChannelSoc: InverterBatChannelSocDto[];
+  bmsSocDetails: any[];
+}

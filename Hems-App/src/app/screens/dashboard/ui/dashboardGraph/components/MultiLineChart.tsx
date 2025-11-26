@@ -8,6 +8,19 @@ import { useSelectedSiteDevice } from '../../../../../../hooks/useSelectedSiteDe
 import { useDashboardRefresh } from '../../../../../../hooks/useDashboardRefresh';
 import { mobileDashboardService, PowerMetricsResponseDto } from '../../../../../../api/services/mobileDashboardService';
 
+// History Icon Component
+const HistoryIcon: React.FC<{ color: string }> = ({ color }) => (
+  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
 type Props = { 
   COLORS: Record<string, string>;
   selectedRange?: string;
@@ -17,6 +30,7 @@ export default function PowerMetricsChart ({ COLORS, selectedRange }: Props) {
   const { t } = useTranslation();
   const { device, hasDevice } = useSelectedSiteDevice();
   const { registerRefreshCallback } = useDashboardRefresh();
+  const { width: screenWidth } = Dimensions.get('window');
 
   const [showSolar, setShowSolar] = useState(true);
   const [showBattery, setShowBattery] = useState(true);
@@ -118,6 +132,9 @@ export default function PowerMetricsChart ({ COLORS, selectedRange }: Props) {
   }, [powerMetricsData]);
 
   const styles = useMemo(() => getPowerMetricsChartStyles(COLORS, chartData.timestamps?.length || 24), [COLORS, chartData.timestamps?.length]);
+
+  // Calculate chart width (screen width - container padding - card padding)
+  const chartWidth = useMemo(() => screenWidth - (24 * 2) - (16 * 2), [screenWidth]);
 
   const getLabelInterval = (dataLength: number, timeRange?: string) => {
     if (timeRange === 'Week' && dataLength <= 7) return 1;
@@ -241,8 +258,6 @@ export default function PowerMetricsChart ({ COLORS, selectedRange }: Props) {
   };
 
   const renderIOSChart = () => {
-    const { width: screenWidth } = Dimensions.get('window');
-    const chartWidth = screenWidth - 60;
     const chartHeight = 300;
     const padding = { top: 20, right: 20, bottom: 55, left: 40 };
     const innerWidth = chartWidth - padding.left - padding.right;
@@ -307,13 +322,8 @@ export default function PowerMetricsChart ({ COLORS, selectedRange }: Props) {
     };
 
     return (
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 35 }}
-      >
-        <View style={{ width: Math.max(chartWidth, 600) }}>
-          <Svg width={Math.max(chartWidth, 600)} height={chartHeight}>
+      <View style={{ width: chartWidth }}>
+        <Svg width={chartWidth} height={chartHeight}>
             <Defs>
               <LinearGradient id="solarGradient" x1="0" y1="0" x2="0" y2="1">
                 <Stop offset="0%" stopColor="#FACC15" stopOpacity={0.7} />
@@ -389,8 +399,7 @@ export default function PowerMetricsChart ({ COLORS, selectedRange }: Props) {
               );
             })}
           </Svg>
-        </View>
-      </ScrollView>
+      </View>
     );
   };
 
@@ -405,9 +414,20 @@ export default function PowerMetricsChart ({ COLORS, selectedRange }: Props) {
     };
   }, [registerRefreshCallback, loadPowerMetricsData]);
 
+  const handleHistoryPress = () => {
+    // TODO: Navigate to historical data screen or show modal
+    console.log('History pressed - MultiLineChart');
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{t('dashboardPowerMetricsChart.title')}</Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.title}>{t('dashboardPowerMetricsChart.title')}</Text>
+        <TouchableOpacity onPress={handleHistoryPress} style={{ padding: 4 }}>
+          <HistoryIcon color={COLORS.accent} />
+        </TouchableOpacity>
+      </View>
 
       {loading ? (
         <View style={styles.loadingContainer}>
@@ -432,20 +452,9 @@ export default function PowerMetricsChart ({ COLORS, selectedRange }: Props) {
         </View>
       ) : (
         <View style={[styles.chartContainer, { minHeight: 350 }]}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={true}
-            contentContainerStyle={styles.scrollContainer}
-            style={styles.scrollView}
-          >
-            <View style={styles.chartAndHoursWrapper}>
-              <ScrollView
-                showsVerticalScrollIndicator={true}
-                contentContainerStyle={styles.verticalScrollContainer}
-                style={styles.verticalScrollView}
-              >
-                <CombinedChart
-                  style={styles.chart}
+          <View style={styles.chartAndHoursWrapper}>
+            <CombinedChart
+                  style={{ height: 400, width: chartWidth }}
                   data={data}
                   chartDescription={{ text: '', enabled: false }}
                   extraOffsets={{
@@ -530,13 +539,13 @@ export default function PowerMetricsChart ({ COLORS, selectedRange }: Props) {
                     right: { enabled: false },
                   }}
                   legend={{ enabled: false }}
-                  touchEnabled={true}
-                  dragEnabled={true}
-                  scaleEnabled={true}
-                  pinchZoom={true}
-                  doubleTapToZoomEnabled={true}
-                  highlightPerTapEnabled={true}
-                  highlightPerDragEnabled={true}
+                  touchEnabled={false}
+                  dragEnabled={false}
+                  scaleEnabled={false}
+                  pinchZoom={false}
+                  doubleTapToZoomEnabled={false}
+                  highlightPerTapEnabled={false}
+                  highlightPerDragEnabled={false}
                   animation={{
                     durationX: 1000,
                     durationY: 1000,
@@ -544,30 +553,9 @@ export default function PowerMetricsChart ({ COLORS, selectedRange }: Props) {
                     easingY: 'Linear',
                   }}
                 />
-              </ScrollView>
-            </View>
-          </ScrollView>
+          </View>
         </View>
       )}
-
-      <View style={styles.legendContainer}>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendColor, { backgroundColor: '#FACC15' }]} />
-          <Text style={styles.legendText}>{t('dashboardPowerMetricsChart.labels.solar')}</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendColor, { backgroundColor: '#22C55E' }]} />
-          <Text style={styles.legendText}>{t('dashboardPowerMetricsChart.labels.battery')}</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendColor, { backgroundColor: '#3B82F6' }]} />
-          <Text style={styles.legendText}>{t('dashboardPowerMetricsChart.labels.grid')}</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendColor, { backgroundColor: '#F59E0B' }]} />
-          <Text style={styles.legendText}>{t('dashboardPowerMetricsChart.labels.load')}</Text>
-        </View>
-      </View>
 
       <View style={styles.togglesContainer}>
         <View style={styles.togglesRow}>
