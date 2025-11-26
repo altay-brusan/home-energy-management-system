@@ -27,10 +27,14 @@ public record UpdateDeviceCommand : IRequest
 public class UpdateDeviceCommandHandler : IRequestHandler<UpdateDeviceCommand>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IThingsBoardConnectorService _tbConnector;
 
-    public UpdateDeviceCommandHandler(IApplicationDbContext context)
+    public UpdateDeviceCommandHandler(
+        IApplicationDbContext context,
+        IThingsBoardConnectorService tbConnector)
     {
         _context = context;
+        _tbConnector = tbConnector;
     }
 
     public async Task Handle(UpdateDeviceCommand request, CancellationToken cancellationToken)
@@ -40,6 +44,28 @@ public class UpdateDeviceCommandHandler : IRequestHandler<UpdateDeviceCommand>
 
         Guard.Against.NotFound(request.Id, entity);
 
+        // Update in ThingsBoard first
+        var tbUpdateRequest = new TbDeviceUpdateRequest
+        {
+            Name = request.SerialNumber ?? request.QRCode,
+            Label = $"{request.Manufacturer} {request.ModelNumber}".Trim()
+        };
+
+        await _tbConnector.UpdateDeviceAsync(entity.ThingsBoardDeviceId, tbUpdateRequest, cancellationToken);
+
+        // Update server attributes in ThingsBoard
+        var attributes = new Dictionary<string, object>
+        {
+            ["Manufacturer"] = request.Manufacturer,
+            ["ModelNumber"] = request.ModelNumber ?? string.Empty,
+            ["SerialNumber"] = request.SerialNumber ?? string.Empty,
+            ["TypeNumber"] = request.TypeNumber ?? string.Empty,
+            ["QRCode"] = request.QRCode ?? string.Empty
+        };
+        await _tbConnector.SaveDeviceAttributesAsync(entity.ThingsBoardDeviceId, attributes, cancellationToken);
+
+        // Update local database
+        entity.Name = request.SerialNumber ?? request.QRCode ?? entity.Name;
         entity.Manufacturer = request.Manufacturer;
         entity.ModelNumber = request.ModelNumber;
         entity.SerialNumber = request.SerialNumber;
