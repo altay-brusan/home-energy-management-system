@@ -130,6 +130,10 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime?>("NextCheckoutDate")
                         .HasColumnType("timestamp without time zone");
 
@@ -144,6 +148,9 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.Property<JsonDocument>("Specifications")
                         .IsRequired()
                         .HasColumnType("jsonb");
+
+                    b.Property<Guid>("ThingsBoardDeviceId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("TypeNumber")
                         .HasMaxLength(100)
