@@ -63,7 +63,7 @@ export default function EnergyPriorityCard ({
       }
     }
     if (customParam?.setupDeviceParameterValue) {
-      opModeParams["Custom"] = {
+      opModeParams.Custom = {
         id: customParam.id,
         valueId: customParam.setupDeviceParameterValue.id,
       };
@@ -98,7 +98,7 @@ export default function EnergyPriorityCard ({
       }
     }
     if (as4777Param?.setupDeviceParameterValue) {
-      gridParams["AS4777"] = {
+      gridParams.AS4777 = {
         id: as4777Param.id,
         valueId: as4777Param.setupDeviceParameterValue.id,
       };
@@ -144,7 +144,7 @@ export default function EnergyPriorityCard ({
             };
           }
           if (customParam?.setupDeviceParameterValue) {
-            tempParams["Custom"] = {
+            tempParams.Custom = {
               id: customParam.id,
               valueId: customParam.setupDeviceParameterValue.id,
             };

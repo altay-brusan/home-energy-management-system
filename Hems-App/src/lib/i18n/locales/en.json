@@ -19,7 +19,8 @@
       "back": "Back",
       "ok": "OK",
       "close": "Close",
-      "retry": "Retry"
+      "retry": "Retry",
+      "serialLabel": "SN"
     },
     "invitation": {
       "title": "Home Invitation",
@@ -208,6 +209,20 @@
         "networkErrorMessage": "Unable to reach the server. Please check your connection.",
         "unknownError": "Unknown Error",
         "unknownErrorMessage": "An unexpected error occurred"
+      },
+      "maintenance": {
+        "serverError": {
+          "title": "Server Under Maintenance",
+          "message": "Our servers are currently experiencing issues. Please try again later."
+        },
+        "networkError": {
+          "title": "Connection Error",
+          "message": "Connection issues detected. Please check your internet connection."
+        },
+        "genericError": {
+          "title": "Something Went Wrong",
+          "message": "An unexpected error occurred. Please try again later."
+        }
       }
     },
     "dashboard": {
@@ -378,6 +393,20 @@
       "avatar": "Avatar",
       "avatarNotImplemented": "Avatar upload/change not implemented in this demo."
     },
+    "companyInfo": {
+      "title": "Company Information",
+      "companyName": "Company Name",
+      "address": "Address",
+      "email": "Email",
+      "phone": "Phone",
+      "regionTitle": "Region Information",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "modals": {
+      "selectDate": "Select Date",
+      "selectRange": "Select Range"
+    },
     "settings": {
       "settings": "Settings",
       "settingsScreen": "Settings Screen",
@@ -449,7 +478,13 @@
       "noDevice": "No device found. Please add a device to view real-time power flow.",
       "noData": "No power data available.",
       "errorLoading": "Error loading power data. Please try again.",
-      "lastUpdate": "Last updated"
+      "lastUpdate": "Last updated",
+      "labels": {
+        "solar": "Solar",
+        "battery": "Battery",
+        "grid": "Grid",
+        "home": "Home"
+      }
     },
     "todaySummary": {
       "title": "Today",
@@ -611,7 +646,39 @@
     "powerMetrics24H": {
       "title": "Power Metrics",
       "sunrise": "Sunrise",
-      "sunset": "Sunset"
+      "sunset": "Sunset",
+      "now": "NOW",
+      "labels": {
+        "solar": "Solar",
+        "battery": "Battery",
+        "grid": "Grid",
+        "load": "Load"
+      },
+      "dateFormat": {
+        "week": "Week {{weekNumber}}, {{year}}",
+        "month": "{{monthName}} {{year}}",
+        "year": "{{year}}"
+      },
+      "months": {
+        "january": "January",
+        "february": "February",
+        "march": "March",
+        "april": "April",
+        "may": "May",
+        "june": "June",
+        "july": "July",
+        "august": "August",
+        "september": "September",
+        "october": "October",
+        "november": "November",
+        "december": "December"
+      },
+      "ranges": {
+        "day": "Day",
+        "week": "Week",
+        "month": "Month",
+        "year": "Year"
+      }
     },
     "dashboardBatteryChart": {
       "title": "Battery (%)",
@@ -622,6 +689,14 @@
       },
       "noDevice": "No device connected",
       "noData": "No data available"
+    },
+    "batteryStateCard": {
+      "title": "Battery State of Charge",
+      "status": {
+        "idle": "Idle",
+        "charging": "Charging",
+        "discharging": "Discharging"
+      }
     },
     "dashboardChargeDischargeChart": {
       "title": "Charge & Discharge Power (kW)",
@@ -787,9 +862,25 @@
     "batteryCharge": "Battery Charge",
     "connection": "Connection",
     "devicesTitle": "NetZr Devices",
+    "inverter": {
+      "title": "Inverter",
+      "subtitle": "Power conversion system"
+    },
+    "battery": {
+      "title": "Battery",
+      "subtitle": "Real-Time Information",
+      "restart": "Restart Device",
+      "packCount": "{{count}} battery pack included",
+      "packCount_plural": "{{count}} battery packs included",
+      "noBatteries": "No batteries available"
+    },
+    "connectedDevices": {
+      "title": "Connected Devices"
+    },
     "pvPanel": {
       "title": "PV Panel",
       "subtitle": "Real-time production and historical data",
+      "description": "Solar panel power generation",
       "bar": "Bar",
       "area": "Area",
       "day": "Day",
@@ -803,6 +894,7 @@
     "gateway": {
       "title": "Energy Gateway",
       "subtitle": "Grid/Off Grid control and measurements",
+      "description": "Communication gateway",
       "goOffGrid": "Go Off Grid",
       "goOnGrid": "Go On Grid",
       "inverterSide": "Inverter Side",
@@ -816,10 +908,9 @@
       "onGrid": "On Grid",
       "offGrid": "Off Grid Mode"
     },
-    "battery": {
-      "title": "Battery Detail",
-      "subtitle": "Real-Time Information",
-      "restart": "Restart Device"
+    "smartMeter": {
+      "title": "Smart Meter",
+      "description": "Energy consumption monitoring"
     },
     "confirmRestart": "Are you sure you want to restart the device now?",
     "confirmStart": "Yes, Restart",
@@ -1073,7 +1164,11 @@
       "totalHomes": "Total Homes",
       "totalDevices": "Total Devices",
       "activeUsers": "Active Users"
-    }
+    },
+    "noDeviceTitle": "No Device Found",
+    "noDeviceMessage": "This site has no registered device.",
+    "errorTitle": "Error",
+    "errorFetchingSite": "Failed to navigate."
   },
   "adminHomeCard": {
     "online": "Online",
@@ -1321,5 +1416,102 @@
   "dashboardHeroCard": {
     "title": "Smart Energy Management",
     "subtitle": "Real-time monitoring and control"
+  },
+  "batteryList": {
+    "title": "Battery Packs",
+    "serialNumber": "Serial Number",
+    "empty": "No battery packs found"
+  },
+  "batteryDetail": {
+    "title": "Battery Details",
+    "stateOfCharge": "State of Charge",
+    "stats": "Battery Statistics",
+    "soh": "State of Health (SOH)",
+    "voltage": "Voltage",
+    "current": "Current",
+    "cellVoltage": "Cell Voltage",
+    "maxCellVoltage": "Max Cell Voltage",
+    "minCellVoltage": "Min Cell Voltage",
+    "avgCellVoltage": "Average Cell Voltage",
+    "temperature": "Temperature",
+    "maxCellTemp": "Max Cell Temperature",
+    "minCellTemp": "Min Cell Temperature",
+    "avgTemp": "Average Temperature",
+    "deviceInfo": "Device Information",
+    "model": "Model",
+    "serialNumber": "Serial Number",
+    "firmwareVersion": "Firmware Version",
+    "lastUpdate": "Last Update"
+  },
+  "inverterDetail": {
+    "title": "Inverter Details",
+    "activePower": "Active Power",
+    "powerMetrics": "Power Metrics",
+    "reactivePower": "Reactive Power",
+    "powerFactor": "Power Factor",
+    "insulationResistance": "Insulation Resistance",
+    "phaseData": "Phase Data",
+    "phaseLabel": "Phase {{id}}",
+    "voltage": "Voltage",
+    "current": "Current",
+    "power": "Power",
+    "deviceInfo": "Device Information",
+    "serialNumber": "Serial Number",
+    "firmwareVersion": "Firmware Version",
+    "startupTime": "Last Startup Time",
+    "shutdownTime": "Last Shutdown Time"
+  },
+  "smartMeterDetail": {
+    "title": "Smart Meter",
+    "comingSoon": "Coming Soon",
+    "description": "Smart meter integration and energy monitoring features will be available soon.",
+    "features": {
+      "title": "Upcoming Features",
+      "realTimeMonitoring": "Real-time energy monitoring",
+      "energyConsumption": "Detailed consumption analysis",
+      "costAnalysis": "Cost tracking and optimization",
+      "historicalData": "Historical data and trends"
+    }
+  },
+  "energyRevenue": {
+    "title": "Energy Revenue"
+  },
+  "energyRevenueDetail": {
+    "title": "Energy Revenue Details",
+    "dateFormat": {
+      "week": "Week {{weekNumber}}, {{year}}",
+      "month": "{{monthName}} {{year}}",
+      "year": "{{year}}"
+    },
+    "months": {
+      "january": "January",
+      "february": "February",
+      "march": "March",
+      "april": "April",
+      "may": "May",
+      "june": "June",
+      "july": "July",
+      "august": "August",
+      "september": "September",
+      "october": "October",
+      "november": "November",
+      "december": "December"
+    },
+    "ranges": {
+      "week": "Week",
+      "month": "Month",
+      "year": "Year"
+    }
+  },
+  "qrScanner": {
+    "title": "Scan QR Code",
+    "permissionRequired": "Camera permission required. Please grant permission in settings.",
+    "cameraLoading": "Camera loading…",
+    "close": "Close"
+  },
+  "globalError": {
+    "title": "Error",
+    "code": "Code",
+    "close": "Close"
   }
 }

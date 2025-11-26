@@ -7,10 +7,12 @@ import { Calendar } from 'react-native-calendars';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LocaleConfig } from 'react-native-calendars';
 import { useSelectedSiteDevice } from '../../../hooks/useSelectedSiteDevice';
 import { useDashboardRefresh } from '../../../hooks/useDashboardRefresh';
 import { powerMetrics24HService } from '../../../api/services/powerMetrics24HService';
 import { useThemeStore } from '../../../store/themeStore';
+import { useI18nStore } from '../../../store/i18nStore';
 import { getThemeColors, SPACING } from '../../../theme/constants';
 import { getPowerMetricsDetailStyles } from './PowerMetricsDetailScreen.styles';
 import StackedBarChart from '../../../components/charts/StackedBarChart';
@@ -33,6 +35,31 @@ const BUTTON_COLORS = {
   load: '#A855F7',     // Load purple
 };
 
+// Configure calendar locales
+LocaleConfig.locales['tr'] = {
+  monthNames: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'],
+  monthNamesShort: ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'],
+  dayNames: ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'],
+  dayNamesShort: ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'],
+  today: 'Bugün'
+};
+
+LocaleConfig.locales['nl'] = {
+  monthNames: ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'],
+  monthNamesShort: ['Jan', 'Feb', 'Mrt', 'Apr', 'Mei', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'],
+  dayNames: ['Zondag', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag'],
+  dayNamesShort: ['Zo', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za'],
+  today: 'Vandaag'
+};
+
+LocaleConfig.locales['en'] = {
+  monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+  monthNamesShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+  dayNames: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+  dayNamesShort: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+  today: 'Today'
+};
+
 export default function PowerMetricsDetailScreen() {
   const { t } = useTranslation();
   const navigation = useNavigation();
@@ -43,6 +70,12 @@ export default function PowerMetricsDetailScreen() {
   const styles = useMemo(() => getPowerMetricsDetailStyles(COLORS, isDark), [COLORS, isDark]);
   const { device, hasDevice } = useSelectedSiteDevice();
   const { registerRefreshCallback } = useDashboardRefresh();
+  const language = useI18nStore(s => s.language);
+
+  // Set calendar locale based on current language
+  useEffect(() => {
+    LocaleConfig.defaultLocale = language;
+  }, [language]);
 
   // Toggle states for each power metric
   const [showSolar, setShowSolar] = useState(true);
@@ -232,18 +265,26 @@ export default function PowerMetricsDetailScreen() {
   };
 
   const formatDate = (date: Date) => {
-    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'];
+    const monthKeys = ['january', 'february', 'march', 'april', 'may', 'june',
+      'july', 'august', 'september', 'october', 'november', 'december'];
 
     switch (selectedRange) {
       case 'Day':
         return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
       case 'Week':
-        return `Week ${getWeekNumber(date)}, ${date.getFullYear()}`;
+        return t('powerMetrics24H.dateFormat.week', {
+          weekNumber: getWeekNumber(date),
+          year: date.getFullYear()
+        });
       case 'Month':
-        return `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+        return t('powerMetrics24H.dateFormat.month', {
+          monthName: t(`powerMetrics24H.months.${monthKeys[date.getMonth()]}`),
+          year: date.getFullYear()
+        });
       case 'Year':
-        return `${date.getFullYear()}`;
+        return t('powerMetrics24H.dateFormat.year', {
+          year: date.getFullYear()
+        });
       default:
         return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
     }
@@ -512,7 +553,8 @@ export default function PowerMetricsDetailScreen() {
       if (showSolar) allValues.push(point.solarPower);
       if (showBattery) allValues.push(point.batteryPower);
       if (showGrid) allValues.push(point.gridPower);
-      if (showLoad) allValues.push(point.loadPower);
+      // Load values should be negative for Y-axis range calculation
+      if (showLoad) allValues.push(-Math.abs(point.loadPower));
     });
 
     const minValue = Math.min(...allValues, 0);
@@ -530,7 +572,11 @@ export default function PowerMetricsDetailScreen() {
       return data.map((point: any) => {
         const hour = getHourFromTimestamp(point.timestamp);
         const x = padding.left + getTimeToXPosition(hour, sunriseHour, sunsetHour, innerWidth);
-        const value = point[valueKey] as number;
+        let value = point[valueKey] as number;
+        // Load values should be shown as negative (consumption below x-axis)
+        if (valueKey === 'loadPower') {
+          value = -Math.abs(value);
+        }
         const y = padding.top + innerHeight - ((value - yMin) / yRange) * innerHeight;
         return { x, y, value };
       });
@@ -625,7 +671,7 @@ export default function PowerMetricsDetailScreen() {
             return (
               <>
                 <Line x1={currentTimeX} y1={padding.top} x2={currentTimeX} y2={padding.top + innerHeight} stroke="#EF4444" strokeWidth={1} opacity={0.7} />
-                <SvgText x={currentTimeX} y={padding.top - 5} fontSize={9} fill="#EF4444" fontWeight="700" textAnchor="middle">NOW</SvgText>
+                <SvgText x={currentTimeX} y={padding.top - 5} fontSize={9} fill="#EF4444" fontWeight="700" textAnchor="middle">{t('powerMetrics24H.now')}</SvgText>
               </>
             );
           })()}
@@ -667,6 +713,8 @@ export default function PowerMetricsDetailScreen() {
           {/* X-axis labels (selected hours) */}
           {[0, 6, 12, 18, 23].map(hour => {
             const x = padding.left + getTimeToXPosition(hour, sunriseHour, sunsetHour, innerWidth);
+            // For 00:00, use "start" anchor to prevent left edge cut-off
+            const textAnchor = hour === 0 ? 'start' : 'middle';
             return (
               <SvgText
                 key={`x-label-${hour}`}
@@ -674,7 +722,7 @@ export default function PowerMetricsDetailScreen() {
                 y={padding.top + innerHeight + 15}
                 fontSize={10}
                 fill={COLORS.textSoft}
-                textAnchor="middle"
+                textAnchor={textAnchor}
               >
                 {`${hour.toString().padStart(2, '0')}:00`}
               </SvgText>
@@ -704,7 +752,7 @@ export default function PowerMetricsDetailScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: POWER_COLORS.solar }} />
-                  <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '500' }}>Solar</Text>
+                  <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '500' }}>{t('powerMetrics24H.labels.solar')}</Text>
                 </View>
                 <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '700' }}>
                   {(selectedDataPoint.solarPower / 1000).toFixed(2)} kW
@@ -715,7 +763,7 @@ export default function PowerMetricsDetailScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: POWER_COLORS.battery }} />
-                  <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '500' }}>Battery</Text>
+                  <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '500' }}>{t('powerMetrics24H.labels.battery')}</Text>
                 </View>
                 <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '700' }}>
                   {(selectedDataPoint.batteryPower / 1000).toFixed(2)} kW
@@ -726,7 +774,7 @@ export default function PowerMetricsDetailScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: POWER_COLORS.grid }} />
-                  <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '500' }}>Grid</Text>
+                  <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '500' }}>{t('powerMetrics24H.labels.grid')}</Text>
                 </View>
                 <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '700' }}>
                   {(selectedDataPoint.gridPower / 1000).toFixed(2)} kW
@@ -737,7 +785,7 @@ export default function PowerMetricsDetailScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: POWER_COLORS.load }} />
-                  <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '500' }}>Load</Text>
+                  <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '500' }}>{t('powerMetrics24H.labels.load')}</Text>
                 </View>
                 <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '700' }}>
                   {(selectedDataPoint.loadPower / 1000).toFixed(2)} kW
@@ -801,7 +849,7 @@ export default function PowerMetricsDetailScreen() {
           style={styles.rangeSelector}
           onPress={() => setIsRangePickerVisible(true)}
         >
-          <Text style={styles.rangeText}>{selectedRange}</Text>
+          <Text style={styles.rangeText}>{t(`powerMetrics24H.ranges.${selectedRange.toLowerCase()}`)}</Text>
           <ChevronDown size={16} color={COLORS.textSoft} strokeWidth={2.5} />
         </TouchableOpacity>
       </View>
@@ -834,7 +882,7 @@ export default function PowerMetricsDetailScreen() {
                   )}
                 </View>
                 <Text style={[styles.toggleButtonLabel, { color: COLORS.textSoft }]}>
-                  Solar
+                  {t('powerMetrics24H.labels.solar')}
                 </Text>
               </TouchableOpacity>
 
@@ -851,7 +899,7 @@ export default function PowerMetricsDetailScreen() {
                   )}
                 </View>
                 <Text style={[styles.toggleButtonLabel, { color: COLORS.textSoft }]}>
-                  Battery
+                  {t('powerMetrics24H.labels.battery')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -870,7 +918,7 @@ export default function PowerMetricsDetailScreen() {
                   )}
                 </View>
                 <Text style={[styles.toggleButtonLabel, { color: COLORS.textSoft }]}>
-                  Grid
+                  {t('powerMetrics24H.labels.grid')}
                 </Text>
               </TouchableOpacity>
 
@@ -887,7 +935,7 @@ export default function PowerMetricsDetailScreen() {
                   )}
                 </View>
                 <Text style={[styles.toggleButtonLabel, { color: COLORS.textSoft }]}>
-                  Load
+                  {t('powerMetrics24H.labels.load')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -897,7 +945,7 @@ export default function PowerMetricsDetailScreen() {
         {powerMetricsData && (
           <View style={styles.sunInfoContainer}>
             <View style={styles.sunInfoItem}>
-              <Text style={styles.sunInfoLabel}>Sunrise</Text>
+              <Text style={styles.sunInfoLabel}>{t('powerMetrics24H.sunrise')}</Text>
               <Text style={styles.sunInfoTime}>
                 {new Date(powerMetricsData.sunriseTime).toLocaleTimeString('en-US', {
                   hour: '2-digit',
@@ -907,7 +955,7 @@ export default function PowerMetricsDetailScreen() {
               </Text>
             </View>
             <View style={styles.sunInfoItem}>
-              <Text style={styles.sunInfoLabel}>Sunset</Text>
+              <Text style={styles.sunInfoLabel}>{t('powerMetrics24H.sunset')}</Text>
               <Text style={styles.sunInfoTime}>
                 {new Date(powerMetricsData.sunsetTime).toLocaleTimeString('en-US', {
                   hour: '2-digit',
@@ -934,7 +982,7 @@ export default function PowerMetricsDetailScreen() {
         >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Date</Text>
+              <Text style={styles.modalTitle}>{t('modals.selectDate')}</Text>
               <TouchableOpacity onPress={() => setIsDatePickerVisible(false)}>
                 <Icon name="close" size={24} color={COLORS.textSoft} />
               </TouchableOpacity>
@@ -983,7 +1031,7 @@ export default function PowerMetricsDetailScreen() {
         >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Range</Text>
+              <Text style={styles.modalTitle}>{t('modals.selectRange')}</Text>
               <TouchableOpacity onPress={() => setIsRangePickerVisible(false)}>
                 <Icon name="close" size={24} color={COLORS.textSoft} />
               </TouchableOpacity>
@@ -1005,7 +1053,7 @@ export default function PowerMetricsDetailScreen() {
                     styles.rangeOptionText,
                     selectedRange === range && styles.rangeOptionTextActive
                   ]}>
-                    {range}
+                    {t(`powerMetrics24H.ranges.${range.toLowerCase()}`)}
                   </Text>
                   {selectedRange === range && (
                     <Icon name="check" size={20} color={COLORS.accent} />

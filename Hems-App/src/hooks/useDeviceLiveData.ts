@@ -6,18 +6,14 @@ export function useDeviceLiveData(deviceId: string | null) {
   const [data, setData] = useState<any>(null);
 
   const fetchLiveData = async (component: any) => {
-    if (!deviceId) return null;
+    if (!deviceId || !component?.id) return null;
     setIsFetching(true);
     try {
-      const devWithData = await mobileDashboardService.getDeviceWithData(deviceId);
-      const target = devWithData?.components?.find(
-        (c: any) => c.componentId === component.id
-      );
-      if (!target) throw new Error("Bileşen bulunamadı");
-
+      // PERFORMANCE FIX: Duplicate getDeviceWithData() çağrısı kaldırıldı
+      // Component bilgisi zaten DeviceDetail'den geliyor
       const liveData = await mobileDashboardService.getComponentLiveData(
         deviceId,
-        target.componentId
+        component.id
       );
       const d = liveData.data || {};
       let parsed: any = {};
@@ -45,7 +41,7 @@ export function useDeviceLiveData(deviceId: string | null) {
     MinVoltageOfBatteryCluster: d["Min Voltage Of Battery Cluster"] ?? 0,
     TotalChargeCapacity: d["Total Charge Capacity"] ?? 0,
     TotalDischargeCapacity: d["Total Discharge Capacity"] ?? 0,
-    DateTime: d["DateTime"] ?? "-",
+    DateTime: d.DateTime ?? "-",
     DeviceSerialNumber: d["Device Serial Number"] ?? "-",
     FirmwareVersion: d["Firmware Version"] ?? "-",
   };
@@ -59,9 +55,17 @@ export function useDeviceLiveData(deviceId: string | null) {
           cells.reduce((a: number, c: any) => a + (c.CellTemperature || 0), 0) /
             (cells.length || 1) || 0;
 
+        // SOC can be either:
+        // 1. An array of cells: d.SOC = [{CellVoltage, CellTemperature}, ...]
+        // 2. A number: d.StateOfCharge or d.SOC as number
+        const isSocArray = Array.isArray(d.SOC);
+        const socValue = isSocArray
+          ? (component.componentData ?? 0)
+          : (d.StateOfCharge ?? d.SOC ?? component.componentData ?? 0);
+
         parsed = {
           type: "battery",
-         soc: component.componentData ?? 0,
+          soc: socValue,
           soh: d.SOH ?? "-",
           voltage: d.BatteryPackVoltage ?? 0,
           current: d.BatteryCurrent ?? 0,

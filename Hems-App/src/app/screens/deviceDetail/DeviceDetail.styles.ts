@@ -17,7 +17,7 @@ export function getStyles (COLORS: Record<string, string>) {
       left: 0,
       right: 0,
       zIndex: 10,
-      backgroundColor: COLORS.dark,
+      backgroundColor: 'transparent',
     },
     headerContent: {
       flexDirection: 'row',
@@ -27,9 +27,10 @@ export function getStyles (COLORS: Record<string, string>) {
       paddingVertical: isSmall ? SPACING.xs : SPACING.sm,
     },
     headerTitle: {
-      fontSize: TYPOGRAPHY.md,
+      fontSize: 26,
       fontWeight: '700',
       color: COLORS.textSoft,
+      letterSpacing: -0.5,
     },
     backButton: {
       width: 36,
@@ -148,15 +149,16 @@ export function getStyles (COLORS: Record<string, string>) {
     },
     statValue: {
       fontSize: TYPOGRAPHY.md,
-      fontWeight: '800',
+      fontWeight: '700',
       color: COLORS.textSoft,
       marginTop: 6,
     },
     statLabel: {
       fontSize: 11,
+      fontWeight: '400',
       color: COLORS.slate400,
-   marginTop: 6, 
-      
+   marginTop: 6,
+
     },
 
     sectionContainer: {
@@ -165,7 +167,7 @@ export function getStyles (COLORS: Record<string, string>) {
     },
     sectionTitle: {
       fontSize: TYPOGRAPHY.lg,
-      fontWeight: '800',
+      fontWeight: '700',
       color: COLORS.textSoft,
       marginBottom: SPACING.sm,
       paddingLeft: 4,
@@ -183,6 +185,46 @@ export function getStyles (COLORS: Record<string, string>) {
       columnGap: SPACING.sm,
       rowGap: SPACING.sm,
       flexWrap: 'wrap',
+    },
+
+    // New styles for redesigned layout
+    topSection: {
+      flexDirection: isSmall ? 'column' : 'row',
+      paddingHorizontal: isSmall ? SPACING.sm : SPACING.md,
+      gap: SPACING.md,
+      marginBottom: SPACING.md,
+      alignItems: 'stretch',
+    },
+    deviceImageContainer: {
+      flex: isSmall ? 1 : 0.45,
+      backgroundColor: COLORS.surface,
+      borderRadius: 16,
+      padding: SPACING.md,
+      borderWidth: 0,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    deviceImage: {
+      width: '100%',
+      height: isSmall ? 140 : 180,
+      marginBottom: SPACING.sm,
+    },
+    deviceTitle: {
+      fontSize: TYPOGRAPHY.md,
+      fontWeight: '700',
+      textAlign: 'center',
+    },
+    infoCardsStack: {
+      flex: isSmall ? 1 : 0.52,
+      gap: SPACING.sm,
+      justifyContent: 'space-between',
+    },
+    connectedDevicesSection: {
+      paddingHorizontal: isSmall ? SPACING.sm : SPACING.md,
+      marginTop: SPACING.sm,
+    },
+    connectedDevicesList: {
+      gap: SPACING.sm,
     },
     sankeyContainer: {
       backgroundColor: COLORS.surface,
@@ -255,12 +297,12 @@ export function getStyles (COLORS: Record<string, string>) {
     },
     sheetTitle: {
       fontSize: TYPOGRAPHY.lg,
-      fontWeight: '800',
+      fontWeight: '700',
       color: COLORS.textSoft,
     },
     sheetValue: {
       fontSize: TYPOGRAPHY.xl,
-      fontWeight: '800',
+      fontWeight: '700',
       color: COLORS.textSoft,
       marginTop: 4,
     },
@@ -371,12 +413,13 @@ export const gridStyles = StyleSheet.create({
     position: 'relative',
   },
   title: {
-    fontWeight: '800',
+    fontWeight: '700',
     fontSize: TYPOGRAPHY.md,
   },
   subtitle: {
     marginTop: 4,
     fontSize: TYPOGRAPHY.sm,
+    fontWeight: '400',
   },
 iconContainer: {
   position: 'absolute',

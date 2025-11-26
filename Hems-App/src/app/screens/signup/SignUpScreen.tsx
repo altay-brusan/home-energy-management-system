@@ -109,7 +109,7 @@ export default function SignUpScreen () {
               >
                 <Card variant="elevated" padding={24} style={styles.card}>
                   <View style={styles.cardInner}>
-                    <Text style={styles.brand}>Sign Up</Text>
+                    <Text style={styles.brand}>{t('auth.signUp')}</Text>
                     <SignUpFormFields
                       control={control}
                       errors={errors}

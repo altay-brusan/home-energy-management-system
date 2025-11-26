@@ -16,7 +16,6 @@ import { getThemeColors, SPACING } from '../../../theme/constants';
 import { getDashboardStyles } from './DashboardScreen.styles';
 import SignalRStatus from './ui/SignalRStatus';
 import DashboardDevices from './ui/dashboardDevices/DashboardDevices';
-import DashboardFlowChart from './ui/dashboardFlowChart';
 import DashboardGraph from './ui/dashboardGraph/DashboardGraph';
 import BatteryChart from './ui/dashboardGraph/components/BatteryChart';
 import BatterySOCPriceChart from './ui/dashboardGraph/components/BatterySOCPriceChart';
@@ -140,7 +139,7 @@ export default function DashboardScreen (): JSX.Element {
       }, 100);
     } catch (error) {setRefreshing(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [refreshAll]);
 
   // Loading state - device bilgisi yüklenene kadar bekle
@@ -257,10 +256,6 @@ export default function DashboardScreen (): JSX.Element {
           isDark={isDark}
         /> */}
         {/* <BatterySOHChart
-          COLORS={COLORS}
-          isDark={isDark}
-        /> */}
-        {/* <DashboardFlowChart
           COLORS={COLORS}
           isDark={isDark}
         /> */}

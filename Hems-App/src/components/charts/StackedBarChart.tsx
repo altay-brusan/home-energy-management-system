@@ -93,9 +93,18 @@ const StackedBarChart: React.FC<StackedBarChartProps> = ({
   // Zero line Y position
   const zeroY = padding.top + innerHeight - ((0 - yMin) / yRange) * innerHeight;
 
-  // Bar width calculation
-  const barWidth = Math.max(10, (innerWidth / data.length) * 0.7);
+  // Bar width calculation with 6px spacing (3px on each side)
   const barSpacing = innerWidth / data.length;
+
+  // Weekly and Yearly views get narrower bars for better appearance
+  const baseBarWidth = Math.max(10, barSpacing - 6);
+  const barWidth = data.length === 7 ? baseBarWidth * 0.35 :
+                   data.length === 12 ? baseBarWidth * 0.45 :
+                   baseBarWidth;
+
+  // Dynamic border radius based on view type
+  // Week view (7 days) gets larger radius for better appearance
+  const borderRadius = data.length === 7 ? 12 : 4;
 
   // Convert value to Y coordinate
   const valueToY = (value: number) => {
@@ -171,6 +180,8 @@ const StackedBarChart: React.FC<StackedBarChartProps> = ({
             width={barWidth}
             height={barHeight}
             fill={colors.solar}
+            rx={borderRadius}
+            ry={borderRadius}
           />
         );
         positiveY -= barHeight;
@@ -186,6 +197,8 @@ const StackedBarChart: React.FC<StackedBarChartProps> = ({
             width={barWidth}
             height={barHeight}
             fill={colors.battery}
+            rx={borderRadius}
+            ry={borderRadius}
           />
         );
         positiveY -= barHeight;
@@ -201,6 +214,8 @@ const StackedBarChart: React.FC<StackedBarChartProps> = ({
             width={barWidth}
             height={barHeight}
             fill={colors.grid}
+            rx={borderRadius}
+            ry={borderRadius}
           />
         );
         positiveY -= barHeight;
@@ -220,6 +235,8 @@ const StackedBarChart: React.FC<StackedBarChartProps> = ({
             width={barWidth}
             height={barHeight}
             fill={colors.load}
+            rx={borderRadius}
+            ry={borderRadius}
           />
         );
         negativeY += barHeight;
@@ -235,6 +252,8 @@ const StackedBarChart: React.FC<StackedBarChartProps> = ({
             width={barWidth}
             height={barHeight}
             fill="#16A34A"
+            rx={borderRadius}
+            ry={borderRadius}
           />
         );
         negativeY += barHeight;
@@ -250,6 +269,8 @@ const StackedBarChart: React.FC<StackedBarChartProps> = ({
             width={barWidth}
             height={barHeight}
             fill="#8B5CF6"
+            rx={borderRadius}
+            ry={borderRadius}
           />
         );
         negativeY += barHeight;

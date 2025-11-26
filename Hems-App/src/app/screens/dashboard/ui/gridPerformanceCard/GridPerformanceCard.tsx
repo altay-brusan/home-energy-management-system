@@ -56,6 +56,7 @@ const GridPerformanceCard: React.FC<GridPerformanceCardProps> = ({ deviceId }) =
       setLoading(true);
 
       // Fetch all 3 periods in parallel
+      // Servis artık mock veri döndürüyor (USE_MOCK_DATA = true olduğu sürece)
       const [monthResponse, yearResponse, lifetimeResponse] = await Promise.all([
         gridPerformanceService.getGridPerformance(deviceId, 'monthly'),
         gridPerformanceService.getGridPerformance(deviceId, 'yearly'),
@@ -78,6 +79,10 @@ const GridPerformanceCard: React.FC<GridPerformanceCardProps> = ({ deviceId }) =
       });
     } catch (err: any) {
       console.error('Error fetching grid performance:', err);
+      // Hata durumunda varsayılan değerler
+      setMonthData({ buy: 0, sell: 0 });
+      setYearData({ buy: 0, sell: 0 });
+      setLifetimeData({ buy: 0, sell: 0 });
     } finally {
       setLoading(false);
     }

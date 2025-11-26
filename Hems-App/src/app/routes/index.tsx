@@ -50,9 +50,14 @@ import {
 import { AdminPage } from '../screens/adminPage';
 import DashboardScreen from '../screens/dashboard/DashboardScreen';
 import PowerMetricsDetailScreen from '../screens/powerMetricsDetail/PowerMetricsDetailScreen';
+import EnergyRevenueDetailScreen from '../screens/energyRevenueDetail/EnergyRevenueDetailScreen';
 import DeviceDetail from '../screens/deviceDetail/DeviceDetail';
 import GatewayDetailScreen from '../screens/deviceDetail/GatewayDetailScreen';
 import PVPanelDetailScreen from '../screens/deviceDetail/PVPanelDetailScreen';
+import BatteryListScreen from '../screens/deviceDetail/BatteryListScreen';
+import BatteryPackDetailScreen from '../screens/deviceDetail/BatteryPackDetailScreen';
+import InverterDetailScreen from '../screens/deviceDetail/InverterDetailScreen';
+import SmartMeterDetailScreen from '../screens/deviceDetail/SmartMeterDetailScreen';
 import DeviceAddScreen from '../screens/devices/DeviceAddScreen';
 import { EnergyProfileScreen } from '../screens/energyProfile';
 import { BatteryLevelSettingsScreen } from "../screens/energyProfile/ui/BatteryLevel";
@@ -322,6 +327,11 @@ export function RootNavigator () {
               options={{ animation: 'slide_from_right' }}
             />
             <Stack.Screen
+              name="EnergyRevenueDetail"
+              component={EnergyRevenueDetailScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
               name="Trash"
               component={TrashScreen}
               options={{ animation: 'slide_from_right' }}
@@ -344,6 +354,26 @@ export function RootNavigator () {
             <Stack.Screen
               name="GatewayDetail"
               component={GatewayDetailScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="BatteryList"
+              component={BatteryListScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="BatteryPackDetail"
+              component={BatteryPackDetailScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="InverterDetail"
+              component={InverterDetailScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="SmartMeterDetail"
+              component={SmartMeterDetailScreen}
               options={{ animation: 'slide_from_right' }}
             />
             <Stack.Screen

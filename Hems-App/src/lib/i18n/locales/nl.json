@@ -19,7 +19,8 @@
       "back": "Terug",
       "ok": "OK",
       "close": "Sluiten",
-      "retry": "Opnieuw proberen"
+      "retry": "Opnieuw proberen",
+      "serialLabel": "SN"
     },
     "invitation": {
       "title": "Woninguitnodiging",
@@ -378,6 +379,20 @@
       "avatar": "Avatar",
       "avatarNotImplemented": "Avatar uploaden/wijzigen niet geïmplementeerd in deze demo."
     },
+    "companyInfo": {
+      "title": "Bedrijfsinformatie",
+      "companyName": "Bedrijfsnaam",
+      "address": "Adres",
+      "email": "E-mail",
+      "phone": "Telefoon",
+      "regionTitle": "Regio Informatie",
+      "save": "Opslaan",
+      "cancel": "Annuleren"
+    },
+    "modals": {
+      "selectDate": "Datum Selecteren",
+      "selectRange": "Bereik Selecteren"
+    },
     "settings": {
       "settings": "Instellingen",
       "settingsScreen": "Instellingen Scherm",
@@ -449,12 +464,18 @@
       "noDevice": "Geen apparaat gevonden. Voeg een apparaat toe om real-time energiestroom te bekijken.",
       "noData": "Geen vermogensgegevens beschikbaar.",
       "errorLoading": "Fout bij het laden van vermogensgegevens. Probeer het opnieuw.",
-      "lastUpdate": "Laatst bijgewerkt"
+      "lastUpdate": "Laatst bijgewerkt",
+      "labels": {
+        "solar": "Zonne-energie",
+        "battery": "Batterij",
+        "grid": "Net",
+        "home": "Woning"
+      }
     },
     "todaySummary": {
       "title": "Vandaag",
-      "gridImport": "Net Import",
-      "gridExport": "Net Export",
+      "gridImport": "Net Invoer",
+      "gridExport": "Net Uitvoer",
       "consumption": "Verbruik",
       "production": "Productie"
     },
@@ -466,6 +487,7 @@
       "average": "Gemiddeld",
       "noDevice": "Geen apparaat gevonden. Voeg een apparaat toe om productiegegevens te bekijken.",
       "noData": "Geen productiegegevens beschikbaar voor de geselecteerde periode.",
+      "loading": "Vermogensgegevens laden...",
       "chartType": {
         "bar": "Staaf",
         "area": "Gebied"
@@ -608,6 +630,43 @@
         "load": "Belasting"
       }
     },
+    "powerMetrics24H": {
+      "title": "Vermogen Statistieken",
+      "sunrise": "Zonsopgang",
+      "sunset": "Zonsondergang",
+      "now": "NU",
+      "labels": {
+        "solar": "Zonne-energie",
+        "battery": "Batterij",
+        "grid": "Net",
+        "load": "Belasting"
+      },
+      "dateFormat": {
+        "week": "Week {{weekNumber}}, {{year}}",
+        "month": "{{monthName}} {{year}}",
+        "year": "{{year}}"
+      },
+      "months": {
+        "january": "Januari",
+        "february": "Februari",
+        "march": "Maart",
+        "april": "April",
+        "may": "Mei",
+        "june": "Juni",
+        "july": "Juli",
+        "august": "Augustus",
+        "september": "September",
+        "october": "Oktober",
+        "november": "November",
+        "december": "December"
+      },
+      "ranges": {
+        "day": "Dag",
+        "week": "Week",
+        "month": "Maand",
+        "year": "Jaar"
+      }
+    },
     "dashboardBatteryChart": {
       "title": "Batterij (%)",
       "stats": {
@@ -617,6 +676,14 @@
       },
       "noDevice": "Geen apparaat verbonden",
       "noData": "Geen gegevens beschikbaar"
+    },
+    "batteryStateCard": {
+      "title": "Batterij Laadtoestand",
+      "status": {
+        "idle": "Inactief",
+        "charging": "Opladen",
+        "discharging": "Ontladen"
+      }
     },
     "dashboardChargeDischargeChart": {
       "title": "Opladen & Ontladen Vermogen (kW)",
@@ -775,13 +842,30 @@
       "title": "NetZr Apparaatdetails",
       "loading": "Gegevens laden...",
       "totalComponents": "Totaal {{count}} componenten gevonden",
+      "informations": "Informatie",
       "dailyProduction": "Dagelijkse Productie",
       "batteryCharge": "Batterij Opladen",
       "connection": "Verbinding",
       "devicesTitle": "NetZr Apparaten",
+      "inverter": {
+        "title": "Omvormer",
+        "subtitle": "Vermogen conversie systeem"
+      },
+      "battery": {
+        "title": "Batterij",
+        "subtitle": "Real-Time Informatie",
+        "restart": "Apparaat Herstarten",
+        "packCount": "{{count}} batterijpakket inbegrepen",
+        "packCount_plural": "{{count}} batterijpakketten inbegrepen",
+        "noBatteries": "Geen batterijen beschikbaar"
+      },
+      "connectedDevices": {
+        "title": "Verbonden Apparaten"
+      },
       "pvPanel": {
         "title": "PV Paneel",
         "subtitle": "Real-time productie en historische gegevens",
+        "description": "Zonnepaneel energieopwekking",
         "bar": "Staaf",
         "area": "Gebied",
         "day": "Dag",
@@ -795,6 +879,7 @@
       "gateway": {
         "title": "Energie Gateway",
         "subtitle": "Net/Off Grid besturing en metingen",
+        "description": "Communicatie gateway",
         "goOffGrid": "Ga Off Grid",
         "goOnGrid": "Ga Op Net",
         "inverterSide": "Omvormer Zijde",
@@ -808,10 +893,9 @@
         "onGrid": "Op Net",
         "offGrid": "Off Grid Modus"
       },
-      "battery": {
-        "title": "Batterijdetails",
-        "subtitle": "Real-Time Informatie",
-        "restart": "Apparaat Herstarten"
+      "smartMeter": {
+        "title": "Slimme Meter",
+        "description": "Energieverbruik monitoring"
       },
       "confirmRestart": "Weet u zeker dat u het apparaat nu wilt herstarten?",
       "confirmStart": "Ja, Herstarten",
@@ -1059,7 +1143,11 @@
         "totalHomes": "Totaal Woningen",
         "totalDevices": "Totaal Apparaten",
         "activeUsers": "Actieve Gebruikers"
-      }
+      },
+      "noDeviceTitle": "Geen Apparaat Gevonden",
+      "noDeviceMessage": "Deze woning heeft geen geregistreerd apparaat.",
+      "errorTitle": "Fout",
+      "errorFetchingSite": "Navigatie mislukt."
     },
     "adminHomeCard": {
       "online": "Online",
@@ -1306,5 +1394,102 @@
     "dashboardHeroCard": {
       "title": "Slim Energiebeheer",
       "subtitle": "Real-time monitoring en regeling"
-    }
+    },
+    "batteryList": {
+      "title": "Batterijpakketten",
+      "serialNumber": "Serienummer",
+      "empty": "Geen batterijpakketten gevonden"
+    },
+    "batteryDetail": {
+      "title": "Batterij Details",
+      "stateOfCharge": "Laadtoestand",
+      "stats": "Batterij Statistieken",
+      "soh": "Gezondheid Toestand (SOH)",
+      "voltage": "Spanning",
+      "current": "Stroom",
+      "cellVoltage": "Cel Spanning",
+      "maxCellVoltage": "Max Cel Spanning",
+      "minCellVoltage": "Min Cel Spanning",
+      "avgCellVoltage": "Gemiddelde Cel Spanning",
+      "temperature": "Temperatuur",
+      "maxCellTemp": "Max Cel Temperatuur",
+      "minCellTemp": "Min Cel Temperatuur",
+      "avgTemp": "Gemiddelde Temperatuur",
+      "deviceInfo": "Apparaat Informatie",
+      "model": "Model",
+      "serialNumber": "Serienummer",
+      "firmwareVersion": "Firmware Versie",
+      "lastUpdate": "Laatst Bijgewerkt"
+    },
+    "inverterDetail": {
+      "title": "Omvormer Details",
+      "activePower": "Actief Vermogen",
+      "powerMetrics": "Vermogen Statistieken",
+      "reactivePower": "Reactief Vermogen",
+      "powerFactor": "Vermogensfactor",
+      "insulationResistance": "Isolatieweerstand",
+      "phaseData": "Fasegegevens",
+      "phaseLabel": "Fase {{id}}",
+      "voltage": "Spanning",
+      "current": "Stroom",
+      "power": "Vermogen",
+      "deviceInfo": "Apparaat Informatie",
+      "serialNumber": "Serienummer",
+      "firmwareVersion": "Firmware Versie",
+      "startupTime": "Laatste Opstarttijd",
+      "shutdownTime": "Laatste Afsluit Tijd"
+    },
+    "smartMeterDetail": {
+      "title": "Slimme Meter",
+      "comingSoon": "Binnenkort Beschikbaar",
+      "description": "Slimme meter integratie en energie monitoring functies komen binnenkort beschikbaar.",
+      "features": {
+        "title": "Aankomende Functies",
+        "realTimeMonitoring": "Real-time energie monitoring",
+        "energyConsumption": "Gedetailleerde verbruiksanalyse",
+        "costAnalysis": "Kosten tracking en optimalisatie",
+        "historicalData": "Historische gegevens en trends"
+      }
+    },
+    "energyRevenue": {
+      "title": "Energie Opbrengst"
+    },
+    "energyRevenueDetail": {
+      "title": "Energie Opbrengst Details",
+      "dateFormat": {
+        "week": "Week {{weekNumber}}, {{year}}",
+        "month": "{{monthName}} {{year}}",
+        "year": "{{year}}"
+      },
+      "months": {
+        "january": "Januari",
+        "february": "Februari",
+        "march": "Maart",
+        "april": "April",
+        "may": "Mei",
+        "june": "Juni",
+        "july": "Juli",
+        "august": "Augustus",
+        "september": "September",
+        "october": "Oktober",
+        "november": "November",
+        "december": "December"
+      },
+      "ranges": {
+        "week": "Week",
+        "month": "Maand",
+        "year": "Jaar"
+      }
+  },
+  "qrScanner": {
+    "title": "QR-code scannen",
+    "permissionRequired": "Cameramachtiging vereist. Geef toestemming in instellingen.",
+    "cameraLoading": "Camera wordt geladen…",
+    "close": "Sluiten"
+  },
+  "globalError": {
+    "title": "Fout",
+    "code": "Code",
+    "close": "Sluiten"
   }
+}

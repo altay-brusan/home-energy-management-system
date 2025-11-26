@@ -8,7 +8,7 @@ import { useSelectedSiteDevice } from '../../../../../hooks/useSelectedSiteDevic
 import { useThemeStore } from '../../../../../store/themeStore';
 import { getThemeColors } from '../../../../../theme/constants';
 import mockPowerService, { RealTimePowerResponseDto } from '../../../../../api/services/mockPowerService';
-import { mobileDashboardService } from '../../../../../api/services/mobileDashboardService';
+import { dashboardService } from '../../../../../api/services/dashboardService';
 import { EnergyNode, AnimatedFlowLine, CenterHub } from './components';
 import { createStyles } from './EnergyFlowRadial.styles';
 
@@ -61,13 +61,13 @@ export const EnergyFlowRadial: React.FC = () => {
       setError(null);
 
       // Fetch mock power data and real battery SOC in parallel
-      const [powerData, batteryComponent] = await Promise.all([
+      const [powerData, socValue] = await Promise.all([
         mockPowerService.getCurrentPower(device.id),
-        mobileDashboardService.getBatteryComponent(device.id).catch(() => null),
+        dashboardService.getDeviceSoc(device.id).catch(() => null),
       ]);
 
       setPowerData(powerData);
-      setBatterySoc(batteryComponent?.soc);
+      setBatterySoc(socValue ?? undefined);
     } catch (err) {
       console.error('Error loading power data:', err);
       setError(t('energyFlowRadial.errorLoading'));
@@ -222,7 +222,7 @@ export const EnergyFlowRadial: React.FC = () => {
           type="pv"
           power={Math.abs(powerData.pv.power)}
           active={powerData.pv.active}
-          label="Solar"
+          label={t('energyFlowRadial.labels.solar')}
           style={{
             position: 'absolute',
             left: centerX - NODE_SIZE / 2,
@@ -235,7 +235,7 @@ export const EnergyFlowRadial: React.FC = () => {
           type="battery"
           power={Math.abs(powerData.battery.power)}
           active={powerData.battery.active}
-          label="Battery"
+          label={t('energyFlowRadial.labels.battery')}
           soc={batterySoc}
           style={{
             position: 'absolute',
@@ -249,7 +249,7 @@ export const EnergyFlowRadial: React.FC = () => {
           type="grid"
           power={Math.abs(powerData.grid.power)}
           active={powerData.grid.active}
-          label="Grid"
+          label={t('energyFlowRadial.labels.grid')}
           style={{
             position: 'absolute',
             left: centerX + OFFSET - NODE_SIZE / 2,
@@ -262,7 +262,7 @@ export const EnergyFlowRadial: React.FC = () => {
           type="load"
           power={Math.abs(powerData.load.power)}
           active={powerData.load.active}
-          label="Home"
+          label={t('energyFlowRadial.labels.home')}
           labelPosition="bottom"
           style={{
             position: 'absolute',
