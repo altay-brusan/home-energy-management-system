@@ -42,7 +42,16 @@ public class CreateDeviceCommandTests
             CalibrationDate = DateTime.Now
         };
 
-        var handler = new CreateDeviceCommandHandler(_context.Object, _user.Object, _timeProvider);
+        var mockTbConnector = new Mock<IThingsBoardConnectorService>();
+        mockTbConnector.Setup(x => x.CreateDeviceAsync(It.IsAny<TbDeviceCreateRequest>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TbDeviceCreateResult
+            {
+                DeviceId = Guid.NewGuid(),
+                Name = "SN123456",
+                Label = "OTTOMOTIVE MODEL-001"
+            });
+
+        var handler = new CreateDeviceCommandHandler(_context.Object, _user.Object, _timeProvider, mockTbConnector.Object);
 
         // Act
         var result = await handler.Handle(command, CancellationToken.None);
@@ -51,6 +60,7 @@ public class CreateDeviceCommandTests
         Assert.That(result, Is.Not.EqualTo(Guid.Empty));
         _dbSet.Verify(x => x.Add(It.IsAny<Device>()), Times.Once);
         _context.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        mockTbConnector.Verify(x => x.CreateDeviceAsync(It.IsAny<TbDeviceCreateRequest>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 }
 
