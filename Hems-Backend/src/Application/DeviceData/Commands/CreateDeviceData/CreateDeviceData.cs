@@ -26,7 +26,7 @@ public class CreateDeviceDataCommandHandler : IRequestHandler<CreateDeviceDataCo
         var entity = new Hems_Backend.Domain.Entities.DeviceData
         {
             DataType = request.DataType,
-            DeviceId = request.DeviceId,
+            ThingsBoardDeviceId = request.DeviceId,
             RequestDate = request.RequestDate,
             Data = request.Data
         };

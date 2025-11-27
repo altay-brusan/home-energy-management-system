@@ -44,7 +44,7 @@ public class GetEnergyProductionQueryHandler : IRequestHandler<GetEnergyProducti
         var endOfDay = startOfDay.AddDays(1);
 
         var dailyData = await _context.DeviceEnergyData
-            .Where(x => x.DeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == deviceId && 
                        x.DataDateTime >= startOfDay &&
                        x.DataDateTime < endOfDay &&
                        x.DataType == "DailyCumulativeEnergyData")
@@ -98,7 +98,7 @@ public class GetEnergyProductionQueryHandler : IRequestHandler<GetEnergyProducti
             var dayEnd = dayStart.AddDays(1);
 
             var lifetimeData = await _context.DeviceEnergyData
-                .Where(x => x.DeviceId == deviceId && 
+                .Where(x => x.ThingsBoardDeviceId == deviceId && 
                            x.DataDateTime >= dayStart &&
                            x.DataDateTime < dayEnd &&
                            x.DataType == "LifetimeEnergyData")
@@ -133,7 +133,7 @@ public class GetEnergyProductionQueryHandler : IRequestHandler<GetEnergyProducti
         var endOfDay = startOfDay.AddDays(1);
         
         var todayData = await _context.DeviceEnergyData
-            .Where(x => x.DeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == deviceId && 
                        x.DataDateTime >= startOfDay &&
                        x.DataDateTime < endOfDay &&
                        x.DataType == "DailyCumulativeEnergyData")
@@ -191,7 +191,7 @@ public class GetEnergyProductionQueryHandler : IRequestHandler<GetEnergyProducti
                 var dayEnd = dayStart.AddDays(1);
                 
                 var todayData = await _context.DeviceEnergyData
-                    .Where(x => x.DeviceId == deviceId && 
+                    .Where(x => x.ThingsBoardDeviceId == deviceId && 
                                x.DataDateTime >= dayStart &&
                                x.DataDateTime < dayEnd &&
                                x.DataType == "DailyCumulativeEnergyData")
@@ -215,7 +215,7 @@ public class GetEnergyProductionQueryHandler : IRequestHandler<GetEnergyProducti
                 var dayEnd = dayStart.AddDays(1);
                 
                 var lifetimeData = await _context.DeviceEnergyData
-                    .Where(x => x.DeviceId == deviceId && 
+                    .Where(x => x.ThingsBoardDeviceId == deviceId && 
                                x.DataDateTime >= dayStart &&
                                x.DataDateTime < dayEnd &&
                                x.DataType == "LifetimeEnergyData")
@@ -259,7 +259,7 @@ public class GetEnergyProductionQueryHandler : IRequestHandler<GetEnergyProducti
         var yearStartUtc = DateTime.SpecifyKind(yearStart, DateTimeKind.Utc);
 
         var monthlyData = await _context.DeviceEnergyData
-            .Where(x => x.DeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == deviceId && 
                        x.DataDateTime >= yearStartUtc &&
                        x.DataType == "LifetimeEnergyData")
             .ToListAsync();

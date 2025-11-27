@@ -65,7 +65,7 @@ public class DeviceOnlyAuthorizationHandler : AuthorizationHandler<DeviceOnlyReq
             }
 
             // Device bilgilerini context'e ekle
-            httpContext.Items["DeviceId"] = validationResult.DeviceId;
+            httpContext.Items["ThingsBoardDeviceId"] = validationResult.DeviceId;
             httpContext.Items["DeviceName"] = validationResult.DeviceName;
             httpContext.Items["IsDeviceRequest"] = true;
 
@@ -80,7 +80,7 @@ public class DeviceOnlyAuthorizationHandler : AuthorizationHandler<DeviceOnlyReq
             var deviceIdentity = new System.Security.Claims.ClaimsIdentity(deviceClaims, "Device");
             context.User.AddIdentity(deviceIdentity);
 
-            _logger.LogDebug("Device authorization successful: {DeviceId} ({DeviceName})", 
+            _logger.LogDebug("Device authorization successful: {ThingsBoardDeviceId} ({DeviceName})", 
                 validationResult.DeviceId, validationResult.DeviceName);
 
             context.Succeed(requirement);

@@ -69,7 +69,7 @@ public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDevice
         // Aynı device, datetime ve data type için kayıt var mı kontrol et
         var existingRecord = await _context.DeviceEnergyData
             .FirstOrDefaultAsync(x => 
-                x.DeviceId == request.DeviceId && 
+                x.ThingsBoardDeviceId == request.DeviceId && 
                 x.DataDateTime == request.DataDateTime && 
                 x.DataType == request.DataType, 
                 cancellationToken);
@@ -100,7 +100,7 @@ public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDevice
             // Yeni kayıt oluştur - DataType'a göre Today veya Total değerini kullan
             var energyData = new DeviceEnergyData
             {
-                DeviceId = request.DeviceId,
+                ThingsBoardDeviceId = request.DeviceId,
                 DataDateTime = request.DataDateTime,
                 DataType = request.DataType,
                 

@@ -48,7 +48,7 @@ public class GetEnergyDataQueryHandler : IRequestHandler<GetEnergyDataQuery, Ene
         CancellationToken cancellationToken)
     {
         var query = _context.DeviceEnergyData
-            .Where(x => x.DeviceId == deviceId);
+            .Where(x => x.ThingsBoardDeviceId == deviceId);
 
         if (isEndDateToday)
         {

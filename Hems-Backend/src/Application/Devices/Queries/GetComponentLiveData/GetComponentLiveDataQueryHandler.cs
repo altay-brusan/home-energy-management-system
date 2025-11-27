@@ -106,7 +106,7 @@ public class GetComponentLiveDataQueryHandler : IRequestHandler<GetComponentLive
             }
             var deviceData = new Hems_Backend.Domain.Entities.DeviceData
             {
-                DeviceId = request.DeviceId,
+                ThingsBoardDeviceId = request.DeviceId,
                 RequestDate = DateTime.UtcNow,
                 DataType = dataType,
                 Data = JsonDocument.Parse(responseContent),

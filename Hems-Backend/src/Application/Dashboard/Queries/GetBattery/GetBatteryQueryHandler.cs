@@ -33,7 +33,7 @@ public class GetBatteryQueryHandler : IRequestHandler<GetBatteryQuery, BatteryRe
 
         // Bugünün BatteryClusterData verilerini çek
         var batteryData = await _context.DeviceData
-            .Where(x => x.DeviceId == request.DeviceId && 
+            .Where(x => x.ThingsBoardDeviceId == request.DeviceId && 
                        x.RequestDate.Date == todayUtc.Date &&
                        x.DataType == "BatteryClusterData")
             .OrderBy(x => x.RequestDate)

@@ -33,7 +33,7 @@ public class GetHeroQueryHandler : IRequestHandler<GetHeroQuery, HeroResponseDto
 
         // Bugünün son hourly verisini al
         var lastHourlyData = await _context.DeviceEnergyData
-            .Where(x => x.DeviceId == request.DeviceId && 
+            .Where(x => x.ThingsBoardDeviceId == request.DeviceId && 
                        x.DataDateTime >= startOfDay &&
                        x.DataDateTime < endOfDay &&
                        x.DataType == "DailyCumulativeEnergyData")
@@ -64,7 +64,7 @@ public class GetHeroQueryHandler : IRequestHandler<GetHeroQuery, HeroResponseDto
 
         // Current Power için bir önceki veriyi al
         var previousHourlyData = await _context.DeviceEnergyData
-            .Where(x => x.DeviceId == request.DeviceId && 
+            .Where(x => x.ThingsBoardDeviceId == request.DeviceId && 
                        x.DataDateTime >= startOfDay &&
                        x.DataDateTime < endOfDay &&
                        x.DataType == "DailyCumulativeEnergyData" &&

@@ -102,7 +102,7 @@ public class DeviceJwtService : IDeviceJwtService
             var accessToken = _tokenHandler.WriteToken(token);
             var refreshToken = GenerateRefreshToken();
 
-            _logger.LogInformation("Generated JWT token for device: {DeviceId} ({DeviceName})", 
+            _logger.LogInformation("Generated JWT token for device: {ThingsBoardDeviceId} ({DeviceName})", 
                 deviceId, deviceName);
 
             return new DeviceJwtResult
@@ -116,7 +116,7 @@ public class DeviceJwtService : IDeviceJwtService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating JWT token for device: {DeviceId}", deviceId);
+            _logger.LogError(ex, "Error generating JWT token for device: {ThingsBoardDeviceId}", deviceId);
             throw;
         }
     }
