@@ -12,7 +12,7 @@ public class DeviceEnergyDataConfiguration : IEntityTypeConfiguration<DeviceEner
 
         builder.HasKey(x => x.Id);
 
-        builder.Property(x => x.DeviceId)
+        builder.Property(x => x.ThingsBoardDeviceId)
             .IsRequired();
 
         builder.Property(x => x.DataDateTime)
@@ -44,17 +44,18 @@ public class DeviceEnergyDataConfiguration : IEntityTypeConfiguration<DeviceEner
         builder.Property(x => x.LoadEnergyKWh)
             .HasPrecision(18, 3);
 
-        // Foreign Key
+        // Foreign Key - ThingsBoardDeviceId in DeviceEnergyData references ThingsBoardDeviceId in Device table
         builder.HasOne(x => x.Device)
             .WithMany()
-            .HasForeignKey(x => x.DeviceId)
+            .HasForeignKey(x => x.ThingsBoardDeviceId)
+            .HasPrincipalKey(d => d.ThingsBoardDeviceId)
             .OnDelete(DeleteBehavior.Cascade);
 
         // Indexes
-        builder.HasIndex(x => x.DeviceId);
+        builder.HasIndex(x => x.ThingsBoardDeviceId);
         builder.HasIndex(x => x.DataDateTime);
         builder.HasIndex(x => x.DataType);
-        builder.HasIndex(x => new { x.DeviceId, x.DataDateTime, x.DataType })
+        builder.HasIndex(x => new { x.ThingsBoardDeviceId, x.DataDateTime, x.DataType })
             .IsUnique();
     }
 }

@@ -16,7 +16,7 @@ public class DeviceDataConfiguration : IEntityTypeConfiguration<Hems_Backend.Dom
             .IsRequired()
             .HasMaxLength(100);
 
-        builder.Property(x => x.DeviceId)
+        builder.Property(x => x.ThingsBoardDeviceId)
             .IsRequired();
 
         builder.Property(x => x.RequestDate)
@@ -27,7 +27,7 @@ public class DeviceDataConfiguration : IEntityTypeConfiguration<Hems_Backend.Dom
             .HasColumnType("jsonb");
 
         // Performance indexes for high-frequency queries
-        builder.HasIndex(x => x.DeviceId)
+        builder.HasIndex(x => x.ThingsBoardDeviceId)
             .HasDatabaseName("IX_DeviceData_DeviceId");
 
         builder.HasIndex(x => x.RequestDate)
@@ -37,16 +37,17 @@ public class DeviceDataConfiguration : IEntityTypeConfiguration<Hems_Backend.Dom
             .HasDatabaseName("IX_DeviceData_DataType");
 
         // Composite index for common query patterns
-        builder.HasIndex(x => new { x.DeviceId, x.RequestDate })
+        builder.HasIndex(x => new { x.ThingsBoardDeviceId, x.RequestDate })
             .HasDatabaseName("IX_DeviceData_DeviceId_RequestDate");
 
-        builder.HasIndex(x => new { x.DeviceId, x.DataType, x.RequestDate })
+        builder.HasIndex(x => new { x.ThingsBoardDeviceId, x.DataType, x.RequestDate })
             .HasDatabaseName("IX_DeviceData_DeviceId_DataType_RequestDate");
 
-        // Foreign key relationship
+        // Foreign key relationship - ThingsBoardDeviceId in DeviceData references Id in Device table
         builder.HasOne(x => x.Device)
             .WithMany()
-            .HasForeignKey(x => x.DeviceId)
+            .HasForeignKey(x => x.ThingsBoardDeviceId)
+            .HasPrincipalKey(d => d.ThingsBoardDeviceId)
             .OnDelete(DeleteBehavior.Cascade);
 
         // Audit fields
