@@ -148,7 +148,7 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
             }
 
             _logger.LogInformation(
-                "Device created successfully in ThingsBoard. DeviceId: {DeviceId}, Name: {DeviceName}",
+                "Device created successfully in ThingsBoard. ThingsBoardDeviceId: {ThingsBoardDeviceId}, Name: {DeviceName}",
                 deviceId, request.Name);
 
             return new TbDeviceCreateResult
@@ -175,13 +175,13 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
         {
             await EnsureAuthenticatedAsync(cancellationToken);
             
-            _logger.LogInformation("Updating device in ThingsBoard: {DeviceId}", deviceId);
+            _logger.LogInformation("Updating device in ThingsBoard: {ThingsBoardDeviceId}", deviceId);
 
             // Get existing device first
             var existingDevice = await GetDeviceByIdInternalAsync(deviceId, cancellationToken);
             if (existingDevice == null)
             {
-                _logger.LogWarning("Device not found in ThingsBoard: {DeviceId}", deviceId);
+                _logger.LogWarning("Device not found in ThingsBoard: {ThingsBoardDeviceId}", deviceId);
                 return false;
             }
 
@@ -199,12 +199,12 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
                 updatePayload,
                 cancellationToken);
 
-            _logger.LogInformation("Device updated successfully in ThingsBoard: {DeviceId}", deviceId);
+            _logger.LogInformation("Device updated successfully in ThingsBoard: {ThingsBoardDeviceId}", deviceId);
             return response != null;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating device in ThingsBoard: {DeviceId}", deviceId);
+            _logger.LogError(ex, "Error updating device in ThingsBoard: {ThingsBoardDeviceId}", deviceId);
             return false;
         }
     }
@@ -217,25 +217,25 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
         {
             await EnsureAuthenticatedAsync(cancellationToken);
             
-            _logger.LogInformation("Deleting device from ThingsBoard: {DeviceId}", deviceId);
+            _logger.LogInformation("Deleting device from ThingsBoard: {ThingsBoardDeviceId}", deviceId);
 
             var url = $"/api/device/{deviceId}";
             var response = await _httpClient.DeleteAsync(url, cancellationToken);
 
             if (response.IsSuccessStatusCode)
             {
-                _logger.LogInformation("Device deleted successfully from ThingsBoard: {DeviceId}", deviceId);
+                _logger.LogInformation("Device deleted successfully from ThingsBoard: {ThingsBoardDeviceId}", deviceId);
                 return true;
             }
 
             _logger.LogWarning(
-                "Failed to delete device from ThingsBoard. DeviceId: {DeviceId}, StatusCode: {StatusCode}",
+                "Failed to delete device from ThingsBoard. ThingsBoardDeviceId: {ThingsBoardDeviceId}, StatusCode: {StatusCode}",
                 deviceId, response.StatusCode);
             return false;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting device from ThingsBoard: {DeviceId}", deviceId);
+            _logger.LogError(ex, "Error deleting device from ThingsBoard: {ThingsBoardDeviceId}", deviceId);
             return false;
         }
     }
@@ -255,7 +255,7 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
                 var byQr = await FindDeviceByNameAsync(qrCode, cancellationToken);
                 if (byQr != null)
                 {
-                    _logger.LogInformation("Found device by QR code: {QrCode} -> {DeviceId}", qrCode, byQr.Id);
+                    _logger.LogInformation("Found device by QR code: {QrCode} -> {ThingsBoardDeviceId}", qrCode, byQr.Id);
                     return byQr;
                 }
             }
@@ -266,7 +266,7 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
                 var bySerial = await FindDeviceByNameAsync(serialNumber, cancellationToken);
                 if (bySerial != null)
                 {
-                    _logger.LogInformation("Found device by serial: {Serial} -> {DeviceId}", serialNumber, bySerial.Id);
+                    _logger.LogInformation("Found device by serial: {Serial} -> {ThingsBoardDeviceId}", serialNumber, bySerial.Id);
                     return bySerial;
                 }
             }
@@ -303,7 +303,7 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting device by ID: {DeviceId}", deviceId);
+            _logger.LogError(ex, "Error getting device by ID: {ThingsBoardDeviceId}", deviceId);
             return null;
         }
     }
@@ -319,17 +319,17 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
         {
             await EnsureAuthenticatedAsync(cancellationToken);
             
-            _logger.LogInformation("Saving attributes for device: {DeviceId}", deviceId);
+            _logger.LogInformation("Saving attributes for device: {ThingsBoardDeviceId}", deviceId);
 
             var url = $"/api/plugins/telemetry/DEVICE/{deviceId}/attributes/SERVER_SCOPE";
             var response = await PostAsync<object>(url, attributes, cancellationToken);
 
-            _logger.LogInformation("Attributes saved successfully for device: {DeviceId}", deviceId);
+            _logger.LogInformation("Attributes saved successfully for device: {ThingsBoardDeviceId}", deviceId);
             return response != null;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error saving attributes for device: {DeviceId}", deviceId);
+            _logger.LogError(ex, "Error saving attributes for device: {ThingsBoardDeviceId}", deviceId);
             return false;
         }
     }
@@ -361,7 +361,7 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting attributes for device: {DeviceId}", deviceId);
+            _logger.LogError(ex, "Error getting attributes for device: {ThingsBoardDeviceId}", deviceId);
             return null;
         }
     }
@@ -381,7 +381,7 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting attributes for device: {DeviceId}", deviceId);
+            _logger.LogError(ex, "Error deleting attributes for device: {ThingsBoardDeviceId}", deviceId);
             return false;
         }
     }
@@ -409,7 +409,7 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error saving telemetry for device: {DeviceId}", deviceId);
+            _logger.LogError(ex, "Error saving telemetry for device: {ThingsBoardDeviceId}", deviceId);
             return false;
         }
     }
@@ -449,7 +449,7 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting latest telemetry for device: {DeviceId}", deviceId);
+            _logger.LogError(ex, "Error getting latest telemetry for device: {ThingsBoardDeviceId}", deviceId);
             return null;
         }
     }
@@ -490,7 +490,7 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting time series telemetry for device: {DeviceId}", deviceId);
+            _logger.LogError(ex, "Error getting time series telemetry for device: {ThingsBoardDeviceId}", deviceId);
             return null;
         }
     }
@@ -507,7 +507,7 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
         {
             await EnsureAuthenticatedAsync(cancellationToken);
             
-            _logger.LogInformation("Sending one-way RPC to device: {DeviceId}, Method: {Method}", deviceId, method);
+            _logger.LogInformation("Sending one-way RPC to device: {ThingsBoardDeviceId}, Method: {Method}", deviceId, method);
 
             var url = $"/api/plugins/rpc/oneway/{deviceId}";
             var payload = new { method, @params = parameters };
@@ -517,7 +517,7 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error sending one-way RPC to device: {DeviceId}, Method: {Method}", deviceId, method);
+            _logger.LogError(ex, "Error sending one-way RPC to device: {ThingsBoardDeviceId}, Method: {Method}", deviceId, method);
             return false;
         }
     }
@@ -533,7 +533,7 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
         {
             await EnsureAuthenticatedAsync(cancellationToken);
             
-            _logger.LogInformation("Sending two-way RPC to device: {DeviceId}, Method: {Method}", deviceId, method);
+            _logger.LogInformation("Sending two-way RPC to device: {ThingsBoardDeviceId}, Method: {Method}", deviceId, method);
 
             var url = $"/api/plugins/rpc/twoway/{deviceId}?timeout={timeoutMs}";
             var payload = new { method, @params = parameters };
@@ -553,7 +553,7 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error sending two-way RPC to device: {DeviceId}, Method: {Method}", deviceId, method);
+            _logger.LogError(ex, "Error sending two-way RPC to device: {ThingsBoardDeviceId}, Method: {Method}", deviceId, method);
             return new TbRpcResponse { Success = false, Error = ex.Message };
         }
     }
