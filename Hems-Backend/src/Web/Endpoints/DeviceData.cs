@@ -36,14 +36,14 @@ public class DeviceData : EndpointGroupBase
     ILogger<DeviceData> logger,
     CancellationToken ct)
     {
-        logger.LogInformation("🔌 Live PowerFlow requested for DeviceId {DeviceId}", deviceId);
+        logger.LogInformation("🔌 Live PowerFlow requested for ThingsBoardDeviceId {ThingsBoardDeviceId}", deviceId);
 
         // Call our RPC-based service (TB -> Node-RED -> inverter)
         var dto = await powerFlowService.GetPowerFlowAsync(deviceId, ct);
 
         if (dto == null)
         {
-            logger.LogWarning("PowerFlow could not be retrieved for DeviceId {DeviceId}", deviceId);
+            logger.LogWarning("PowerFlow could not be retrieved for ThingsBoardDeviceId {ThingsBoardDeviceId}", deviceId);
             return Results.Problem(
                 detail: "PowerFlow could not be retrieved (TB RPC failed or device offline).",
                 statusCode: StatusCodes.Status502BadGateway);
@@ -140,7 +140,7 @@ private async Task<IResult> ProcessTelemetry(
             }
         }
 
-        // 3) DeviceId comes from data.DeviceId (string → Guid)
+        // 3) ThingsBoardDeviceId comes from data.ThingsBoardDeviceId (string → Guid)
         var deviceIdResult = TryParseDeviceId(dataElement, logger);
         if (deviceIdResult.Error != null)
         {
@@ -178,7 +178,7 @@ private static (Guid DeviceId, IResult? Error) TryParseDeviceId(
         JsonElement dataElement,
         ILogger<DeviceData> logger)
     {
-        if (!dataElement.TryGetProperty("DeviceId", out var devIdEl))
+        if (!dataElement.TryGetProperty("ThingsBoardDeviceId", out var devIdEl))
         {
             return (Guid.Empty, null);
         }
@@ -186,14 +186,14 @@ private static (Guid DeviceId, IResult? Error) TryParseDeviceId(
         var devIdStr = devIdEl.GetString();
         if (string.IsNullOrWhiteSpace(devIdStr))
         {
-            logger.LogWarning("DeviceId is null or empty, using Guid.Empty");
-            return (Guid.Empty, Results.Problem("Missing 'DeviceId' in data", statusCode: 400));
+            logger.LogWarning("ThingsBoardDeviceId is null or empty, using Guid.Empty");
+            return (Guid.Empty, Results.Problem("Missing 'ThingsBoardDeviceId' in data", statusCode: 400));
         }
 
         if (!Guid.TryParse(devIdStr, out var deviceId))
         {
-            logger.LogWarning("DeviceId '{DeviceId}' is not a valid Guid, using Guid.Empty", devIdStr);
-            return (Guid.Empty, Results.Problem("Invalid 'DeviceId' format", statusCode: 400));
+            logger.LogWarning("ThingsBoardDeviceId '{ThingsBoardDeviceId}' is not a valid Guid, using Guid.Empty", devIdStr);
+            return (Guid.Empty, Results.Problem("Invalid 'ThingsBoardDeviceId' format", statusCode: 400));
         }
 
         return (deviceId, null);
