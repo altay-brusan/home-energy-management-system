@@ -279,9 +279,6 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<Guid>("DeviceId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("timestamp with time zone");
 
@@ -292,21 +289,24 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.Property<DateTime>("RequestDate")
                         .HasColumnType("timestamp without time zone");
 
+                    b.Property<Guid>("ThingsBoardDeviceId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("DataType")
                         .HasDatabaseName("IX_DeviceData_DataType");
 
-                    b.HasIndex("DeviceId")
-                        .HasDatabaseName("IX_DeviceData_DeviceId");
-
                     b.HasIndex("RequestDate")
                         .HasDatabaseName("IX_DeviceData_RequestDate");
 
-                    b.HasIndex("DeviceId", "RequestDate")
+                    b.HasIndex("ThingsBoardDeviceId")
+                        .HasDatabaseName("IX_DeviceData_DeviceId");
+
+                    b.HasIndex("ThingsBoardDeviceId", "RequestDate")
                         .HasDatabaseName("IX_DeviceData_DeviceId_RequestDate");
 
-                    b.HasIndex("DeviceId", "DataType", "RequestDate")
+                    b.HasIndex("ThingsBoardDeviceId", "DataType", "RequestDate")
                         .HasDatabaseName("IX_DeviceData_DeviceId_DataType_RequestDate");
 
                     b.ToTable("DeviceData", (string)null);
@@ -342,9 +342,6 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
-                    b.Property<Guid>("DeviceId")
-                        .HasColumnType("uuid");
-
                     b.Property<double?>("GeneratorEnergyKWh")
                         .HasPrecision(18, 3)
                         .HasColumnType("double precision");
@@ -371,6 +368,9 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .HasPrecision(18, 3)
                         .HasColumnType("double precision");
 
+                    b.Property<Guid>("ThingsBoardDeviceId")
+                        .HasColumnType("uuid");
+
                     b.Property<decimal?>("WeatherTemperature")
                         .HasColumnType("numeric");
 
@@ -383,9 +383,9 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
 
                     b.HasIndex("DataType");
 
-                    b.HasIndex("DeviceId");
+                    b.HasIndex("ThingsBoardDeviceId");
 
-                    b.HasIndex("DeviceId", "DataDateTime", "DataType")
+                    b.HasIndex("ThingsBoardDeviceId", "DataDateTime", "DataType")
                         .IsUnique();
 
                     b.ToTable("DeviceEnergyData", (string)null);
@@ -1412,7 +1412,8 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                 {
                     b.HasOne("Hems_Backend.Domain.Entities.Device", "Device")
                         .WithMany()
-                        .HasForeignKey("DeviceId")
+                        .HasForeignKey("ThingsBoardDeviceId")
+                        .HasPrincipalKey("ThingsBoardDeviceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1423,7 +1424,8 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                 {
                     b.HasOne("Hems_Backend.Domain.Entities.Device", "Device")
                         .WithMany()
-                        .HasForeignKey("DeviceId")
+                        .HasForeignKey("ThingsBoardDeviceId")
+                        .HasPrincipalKey("ThingsBoardDeviceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
