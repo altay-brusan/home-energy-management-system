@@ -9,7 +9,7 @@ namespace Hems_Backend.Domain.Entities;
 public class DeviceEnergyData : BaseAuditableEntity
 {
     [Required]
-    public Guid DeviceId { get; set; }
+    public Guid ThingsBoardDeviceId { get; set; }
     
     [Required]
     public DateTime DataDateTime { get; set; }
