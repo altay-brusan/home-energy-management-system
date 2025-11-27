@@ -121,44 +121,7 @@ export default function AdminPage () {
         },
       };
 
-      console.log('🔍 [AdminPage] Fetching sites with params:', requestParams);
-
       const res = await adminService.getAdminSites(requestParams);
-
-      console.log('✅ [AdminPage] API Response:', {
-        itemsCount: res.items?.length,
-        totalCount: res.totalCount,
-        pageNumber: res.pageNumber,
-        pageSize: res.pageSize,
-        items: res.items,
-      });
-
-      // DEBUG: Test without country filter to see all sites
-      console.log('🔍 [AdminPage] Testing: Fetching ALL sites without country filter...');
-      const allSitesRes = await adminService.getAdminSites({
-        pageNumber: 1,
-        pageSize: 100,
-        filters: {},
-      });
-
-      console.log('✅ [AdminPage] ALL Sites Response:', {
-        totalCount: allSitesRes.totalCount,
-        itemsCount: allSitesRes.items?.length,
-        countries: allSitesRes.items?.map((s: any) => s.country).filter((c: any, i: number, arr: any[]) => arr.indexOf(c) === i),
-        firstFewSites: allSitesRes.items?.slice(0, 5).map((s: any) => ({
-          id: s.id,
-          name: s.name,
-          country: s.country,
-          city: s.city,
-        })),
-      });
-
-      // Show results
-      Alert.alert(
-        'DEBUG: Türkiye Sites',
-        `Türkiye için: ${res.totalCount} site\n\nToplam (tüm ülkeler): ${allSitesRes.totalCount} site\n\nÜlkeler: ${allSitesRes.items?.map((s: any) => s.country).filter((c: any, i: number, arr: any[]) => arr.indexOf(c) === i).join(', ') || 'none'}`,
-        [{ text: 'OK' }]
-      );
 
       const allFilteredHomes = res.items || [];
       setHomes(allFilteredHomes);
@@ -167,14 +130,6 @@ export default function AdminPage () {
       const totalDevices = allFilteredHomes.filter((home: any) => home.hasDevice).length;
       setTotalDeviceCount(totalDevices);
     } catch (err: any) {
-      console.error('❌ [AdminPage] Error fetching sites:', err);
-
-      Alert.alert(
-        'DEBUG: Error',
-        `Error: ${err?.message || 'unknown'}\nStatus: ${err?.response?.status || 'N/A'}`,
-        [{ text: 'OK' }]
-      );
-
       setHomes([]);
       setTotalCount(0);
       setTotalDeviceCount(0);
@@ -427,7 +382,7 @@ export default function AdminPage () {
           </>
         )}
 
-        {/* DEBUG: PowerFlow Streaming Test */}
+        {/* PowerFlow Streaming Test */}
         <View style={{ marginTop: 24, paddingBottom: 40 }}>
           <PowerFlowDebug />
         </View>

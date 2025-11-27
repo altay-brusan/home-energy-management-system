@@ -7,7 +7,9 @@ The PowerFlow streaming system allows real-time power flow data updates from dev
 **Files:**
 - `src/services/powerFlowService.ts` - SignalR streaming service
 - `src/hooks/usePowerFlowStream.ts` - React hook for components
-- `src/api/types/signalR.types.ts` - TypeScript types
+- `src/api/types/signalR.types.ts` - TypeScript types (PowerFlowDto)
+
+**Hub URL:** `https://hems-api-dev.oklidis.com.tr/powerFlowHub`
 
 ## Architecture
 
@@ -77,11 +79,11 @@ export const InverterDetailScreen = ({ route }) => {
 
   return (
     <View>
-      <Text>Grid Power: {powerFlow.gridPower} W</Text>
-      <Text>Solar Power: {powerFlow.solarPower} W</Text>
-      <Text>Battery Power: {powerFlow.batteryPower} W</Text>
-      <Text>Load Power: {powerFlow.loadPower} W</Text>
-      <Text>Battery SOC: {powerFlow.batterySOC}%</Text>
+      <Text>Solar Power: {powerFlow.solarPowerKw} kW</Text>
+      <Text>Grid Power: {powerFlow.gridPowerKw} kW</Text>
+      <Text>Load Power: {powerFlow.loadPowerKw} kW</Text>
+      <Text>Battery Power: {powerFlow.batteryPowerKw} kW</Text>
+      <Text>Generator Power: {powerFlow.generatorPowerKw} kW</Text>
 
       {isStreaming && <Text>🔴 Live</Text>}
     </View>

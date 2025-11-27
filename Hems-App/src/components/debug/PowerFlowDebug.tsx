@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 
 import { usePowerFlowStream } from '../../hooks/usePowerFlowStream';
 
 export const PowerFlowDebug = () => {
-  const [deviceId, setDeviceId] = useState('');
+  const [deviceId, setDeviceId] = useState('725dabc0-c6bf-11f0-a84b-2f34a5f564b4');
   const [isEnabled, setIsEnabled] = useState(false);
 
   const {
@@ -53,7 +53,7 @@ export const PowerFlowDebug = () => {
       {/* Controls */}
       <View style={styles.buttonRow}>
         <TouchableOpacity
-          style={[styles.button, styles.startButton]}
+          style={[styles.button, styles.startButton, isStreaming && styles.buttonDisabled]}
           onPress={handleStart}
           disabled={isStreaming}
         >
@@ -63,7 +63,7 @@ export const PowerFlowDebug = () => {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.button, styles.stopButton]}
+          style={[styles.button, styles.stopButton, !isStreaming && styles.buttonDisabled]}
           onPress={handleStop}
           disabled={!isStreaming}
         >
@@ -102,27 +102,27 @@ export const PowerFlowDebug = () => {
         <View style={styles.dataBox}>
           <Text style={styles.dataTitle}>⚡ Live PowerFlow Data</Text>
           <Text style={styles.dataText}>Device ID: {powerFlow.deviceId}</Text>
-          <Text style={styles.dataText}>Timestamp: {new Date(powerFlow.timestamp).toLocaleTimeString()}</Text>
+          <Text style={styles.dataText}>Updated: {new Date().toLocaleTimeString()}</Text>
           <View style={styles.separator} />
-          <Text style={styles.dataText}>🔌 Grid Power: {powerFlow.gridPower.toFixed(2)} W</Text>
-          <Text style={styles.dataText}>☀️ Solar Power: {powerFlow.solarPower.toFixed(2)} W</Text>
-          <Text style={styles.dataText}>🔋 Battery Power: {powerFlow.batteryPower.toFixed(2)} W</Text>
-          <Text style={styles.dataText}>💡 Load Power: {powerFlow.loadPower.toFixed(2)} W</Text>
+          <Text style={styles.dataText}>☀️ Solar: {powerFlow.solarPowerKw.toFixed(3)} kW</Text>
+          <Text style={styles.dataText}>🔌 Grid: {powerFlow.gridPowerKw.toFixed(3)} kW</Text>
+          <Text style={styles.dataText}>💡 Load: {powerFlow.loadPowerKw.toFixed(3)} kW</Text>
+          <Text style={styles.dataText}>🔋 Battery: {powerFlow.batteryPowerKw.toFixed(3)} kW</Text>
+          <Text style={styles.dataText}>⚙️ Generator: {powerFlow.generatorPowerKw.toFixed(3)} kW</Text>
           <View style={styles.separator} />
-          <Text style={styles.dataText}>🔋 Battery SOC: {powerFlow.batterySOC.toFixed(1)}%</Text>
-          {powerFlow.batteryStatus && (
-            <Text style={styles.dataText}>Battery Status: {powerFlow.batteryStatus}</Text>
-          )}
-          {powerFlow.gridStatus && (
-            <Text style={styles.dataText}>Grid Status: {powerFlow.gridStatus}</Text>
-          )}
+          <Text style={styles.dataText}>
+            Battery: {powerFlow.batteryPowerKw > 0 ? '⬆️ Charging' : powerFlow.batteryPowerKw < 0 ? '⬇️ Discharging' : '⏸️ Idle'}
+          </Text>
+          <Text style={styles.dataText}>
+            Grid: {powerFlow.gridPowerKw > 0 ? '⬇️ Importing' : powerFlow.gridPowerKw < 0 ? '⬆️ Exporting' : '⏸️ Idle'}
+          </Text>
         </View>
       )}
 
       {/* Console Logs */}
       <View style={styles.infoBox}>
         <Text style={styles.infoText}>
-          💡 Tip: Check console logs for detailed stream events
+          💡 Check console logs for detailed stream events
         </Text>
       </View>
     </ScrollView>
@@ -139,6 +139,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 16,
     textAlign: 'center',
+    color: '#333',
   },
   inputGroup: {
     marginBottom: 16,
@@ -156,6 +157,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 14,
+    color: '#333',
   },
   buttonRow: {
     flexDirection: 'row',
@@ -174,6 +176,9 @@ const styles = StyleSheet.create({
   stopButton: {
     backgroundColor: '#f44336',
   },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
   buttonText: {
     color: 'white',
     fontWeight: 'bold',
@@ -189,6 +194,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 8,
+    color: '#333',
   },
   statusText: {
     fontSize: 14,

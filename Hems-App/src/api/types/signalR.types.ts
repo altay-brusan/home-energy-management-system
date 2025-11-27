@@ -51,16 +51,14 @@ export interface CriticalNotification {
 }
 
 // PowerFlow Stream Types
+// Must match backend PowerFlowDto exactly!
 export interface PowerFlowDto {
-  deviceId: string;
-  timestamp: string;
-  gridPower: number;          // Watts (+ = importing, - = exporting)
-  solarPower: number;         // Watts
-  batteryPower: number;       // Watts (+ = charging, - = discharging)
-  loadPower: number;          // Watts
-  batterySOC: number;         // Percentage (0-100)
-  batteryStatus?: 'charging' | 'discharging' | 'idle';
-  gridStatus?: 'importing' | 'exporting' | 'idle';
+  deviceId: string;              // Backend: Guid (serialized as string in JSON)
+  solarPowerKw: number;          // Backend: SolarPowerKw (double) - in kilowatts
+  gridPowerKw: number;           // Backend: GridPowerKw (double) - in kilowatts
+  loadPowerKw: number;           // Backend: LoadPowerKw (double) - in kilowatts
+  batteryPowerKw: number;        // Backend: BatteryPowerKw (double) - in kilowatts
+  generatorPowerKw: number;      // Backend: GeneratorPowerKw (double) - in kilowatts
 }
 
 export interface PowerFlowStreamOptions {

@@ -83,14 +83,16 @@ class PowerFlowService {
                         const freshToken = await this.getAccessToken();
                         return freshToken || '';
                     },
+                    timeout: 300000, // 5 minutes
                 })
-                .withServerTimeout(120000)
-                .withKeepAliveInterval(15000)
-                .configureLogging(LogLevel.None)
+                .withServerTimeout(300000) // 5 minutes
+                .withKeepAliveInterval(15000) // 15 seconds
+                .configureLogging(LogLevel.Information) // Enable logging to see errors
                 .withAutomaticReconnect({
                     nextRetryDelayInMilliseconds: (retryContext) => {
+                        console.log(`🔄 [PowerFlowService] Reconnecting... Attempt ${retryContext.previousRetryCount + 1}`);
                         const delay = Math.min(
-                            2000 * Math.pow(2, retryContext.previousRetryCount),
+                            1000 * Math.pow(2, retryContext.previousRetryCount),
                             30000
                         );
                         return delay;
@@ -105,9 +107,13 @@ class PowerFlowService {
             this.notifyConnectionState('Connected');
             this.isConnecting = false;
 
-        } catch (error) {
+        } catch (error: any) {
             this.isConnecting = false;
             this.notifyConnectionState('Failed');
+            console.error('❌ [PowerFlowService] Connection failed:', {
+                error: error?.message || error,
+                stack: error?.stack,
+            });
             throw error;
         }
     }
@@ -150,13 +156,24 @@ class PowerFlowService {
 
             const subscription = stream.subscribe({
                 next: (data: PowerFlowDto) => {
+                    console.log('✅ [PowerFlowService] Data received:', {
+                        deviceId: data.deviceId,
+                        solar: data.solarPowerKw,
+                        battery: data.batteryPowerKw,
+                        grid: data.gridPowerKw,
+                        load: data.loadPowerKw,
+                    });
                     try {
                         onData(data);
                     } catch (error) {
-                        console.error('Error in onData callback:', error);
+                        console.error('❌ [PowerFlowService] Error in onData callback:', error);
                     }
                 },
                 error: (error: any) => {
+                    console.error('❌ [PowerFlowService] Stream error:', {
+                        deviceId,
+                        error: error?.message || error,
+                    });
                     this.activeStreams.delete(deviceId);
                     if (onError) {
                         onError(error instanceof Error ? error : new Error(String(error)));
@@ -178,9 +195,14 @@ class PowerFlowService {
             });
 
             // Return cleanup function
+            console.log('✅ [PowerFlowService] Stream started successfully for device:', deviceId);
             return () => this.stopStream(deviceId);
 
-        } catch (error) {
+        } catch (error: any) {
+            console.error('❌ [PowerFlowService] Failed to start stream:', {
+                deviceId,
+                error: error?.message || error,
+            });
             throw error;
         }
     }
@@ -244,25 +266,28 @@ class PowerFlowService {
         if (!this.connection) return;
 
         this.connection.onclose(async (error) => {
+            console.warn('⚠️ [PowerFlowService] Connection closed:', error?.message || 'No error');
             this.notifyConnectionState('Disconnected');
             // Clear all active streams on connection close
             this.activeStreams.clear();
         });
 
         this.connection.onreconnecting((error) => {
+            console.log('🔄 [PowerFlowService] Reconnecting...', error?.message || '');
             this.notifyConnectionState('Reconnecting');
         });
 
         this.connection.onreconnected(async (connectionId) => {
+            console.log('✅ [PowerFlowService] Reconnected with ID:', connectionId);
             this.notifyConnectionState('Connected');
 
             // Restart all active streams after reconnection
             const streamsToRestart = Array.from(this.activeStreams.values());
             this.activeStreams.clear();
 
+            console.log(`🔄 [PowerFlowService] Need to restart ${streamsToRestart.length} streams`);
             for (const stream of streamsToRestart) {
                 // Note: The original callbacks are lost, streams need to be restarted by hooks
-                console.warn(`Stream for device ${stream.deviceId} needs to be restarted after reconnection`);
             }
         });
     }

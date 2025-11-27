@@ -7,9 +7,9 @@ import { useDashboardRefresh } from '../../../../../hooks/useDashboardRefresh';
 import { useSelectedSiteDevice } from '../../../../../hooks/useSelectedSiteDevice';
 import { useThemeStore } from '../../../../../store/themeStore';
 import { getThemeColors } from '../../../../../theme/constants';
-import mockPowerService, { RealTimePowerResponseDto } from '../../../../../api/services/mockPowerService';
+import { usePowerFlowStream } from '../../../../../hooks/usePowerFlowStream';
 import { dashboardService } from '../../../../../api/services/dashboardService';
-import { EnergyNode, AnimatedFlowLine, CenterHub } from './components';
+import { AnimatedFlowLine, CenterHub } from './components';
 import { createStyles } from './EnergyFlowRadial.styles';
 
 // Layout constants
@@ -40,106 +40,143 @@ export const EnergyFlowRadial: React.FC = () => {
   const { device, hasDevice } = useSelectedSiteDevice();
   const { registerRefreshCallback } = useDashboardRefresh();
 
-  const [loading, setLoading] = useState(true);
-  const [powerData, setPowerData] = useState<RealTimePowerResponseDto | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [batterySoc, setBatterySoc] = useState<number | undefined>(undefined);
+  const [dataToRender, setDataToRender] = useState<any>(null);
+
+  // Use static device ID for now
+  const deviceIdToUse = '725dabc0-c6bf-11f0-a84b-2f34a5f564b4';
+
+  // PowerFlow streaming hook
+  const {
+    powerFlow,
+    isStreaming,
+    streamState,
+    error: streamError,
+  } = usePowerFlowStream({
+    deviceId: deviceIdToUse,
+    intervalSeconds: 5,
+    enabled: true,
+  });
+
+  // Force update when powerFlow changes
+  useEffect(() => {
+    if (powerFlow) {
+      console.log('🔵 [EnergyFlowRadial] Updating dataToRender:', {
+        solar: powerFlow.solarPowerKw,
+        battery: powerFlow.batteryPowerKw,
+        grid: powerFlow.gridPowerKw,
+        load: powerFlow.loadPowerKw,
+      });
+      setDataToRender({ ...powerFlow });
+    }
+  }, [powerFlow]);
 
   // Calculate center position
   const centerX = CONTAINER_WIDTH / 2;
   const centerY = CONTAINER_HEIGHT / 2 + 12; // Add small offset for labels
 
-  // Load power data and battery SOC
-  const loadPowerData = useCallback(async () => {
-    if (!hasDevice || !device?.id) {
-      setLoading(false);
-      return;
-    }
-
+  // Load battery SOC (separate from power flow stream)
+  const loadBatterySoc = useCallback(async () => {
     try {
-      setLoading(true);
-      setError(null);
-
-      // Fetch mock power data and real battery SOC in parallel
-      const [powerData, socValue] = await Promise.all([
-        mockPowerService.getCurrentPower(device.id),
-        dashboardService.getDeviceSoc(device.id).catch(() => null),
-      ]);
-
-      setPowerData(powerData);
+      const socValue = await dashboardService.getDeviceSoc(deviceIdToUse);
       setBatterySoc(socValue ?? undefined);
     } catch (err) {
-      console.error('Error loading power data:', err);
-      setError(t('energyFlowRadial.errorLoading'));
-      setPowerData(null);
-      setBatterySoc(undefined);
-    } finally {
-      setLoading(false);
+      // Silent error - SOC is optional
     }
-  }, [hasDevice, device?.id, t]);
+  }, [deviceIdToUse]);
 
-  // Initial load
+  // Load SOC initially and on refresh
   useEffect(() => {
-    loadPowerData();
-  }, [loadPowerData]);
+    loadBatterySoc();
+  }, [loadBatterySoc]);
 
-  // Register refresh callback
+  // Register refresh callback for SOC
   useEffect(() => {
-    const unregister = registerRefreshCallback(loadPowerData);
+    const unregister = registerRefreshCallback(loadBatterySoc);
     return () => unregister();
-  }, [registerRefreshCallback, loadPowerData]);
-
-  // Auto-refresh every 5 seconds (simulating real-time updates)
-  useEffect(() => {
-    if (!hasDevice || !device?.id) return;
-
-    const interval = setInterval(() => {
-      loadPowerData();
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [hasDevice, device?.id, loadPowerData]);
+  }, [registerRefreshCallback, loadBatterySoc]);
 
   // Render states
-  if (!hasDevice) {
-    return (
-      <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>{t('energyFlowRadial.noDevice')}</Text>
-        </View>
-      </Animated.View>
-    );
-  }
+  // Disabled for testing with static device ID
+  // if (!hasDevice) {
+  //   return (
+  //     <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
+  //       <View style={styles.emptyContainer}>
+  //         <Text style={styles.emptyText}>{t('energyFlowRadial.noDevice')}</Text>
+  //       </View>
+  //     </Animated.View>
+  //   );
+  // }
 
-  if (loading && !powerData) {
-    return (
-      <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.accent} />
-          <Text style={styles.loadingText}>{t('energyFlowRadial.loading')}</Text>
-        </View>
-      </Animated.View>
-    );
-  }
-
-  if (error || !powerData) {
-    return (
-      <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>
-            {error || t('energyFlowRadial.noData')}
-          </Text>
-        </View>
-      </Animated.View>
-    );
-  }
+  // Use default values if no data yet
+  const finalData = dataToRender || {
+    solarPowerKw: 0,
+    batteryPowerKw: 0,
+    gridPowerKw: 0,
+    loadPowerKw: 0,
+    generatorPowerKw: 0,
+    deviceId: '',
+  };
 
   // Use accent color for flow lines
   const flowColor = COLORS.accent;
   const baseLineColor = isDark ? '#374151' : '#CBD5E1'; // Dark gray for dark mode
 
+  console.log('🎨 [EnergyFlowRadial] Rendering with dataToRender:', {
+    solar: finalData.solarPowerKw,
+    battery: finalData.batteryPowerKw,
+    grid: finalData.gridPowerKw,
+    load: finalData.loadPowerKw,
+    batteryAbs: Math.abs(finalData.batteryPowerKw),
+    loadAbs: Math.abs(finalData.loadPowerKw),
+  });
+
+  console.log('🎨 [EnergyFlowRadial] About to render nodes with keys:', {
+    pvKey: `pv-${finalData.solarPowerKw}`,
+    batteryKey: `battery-${finalData.batteryPowerKw}`,
+    gridKey: `grid-${finalData.gridPowerKw}`,
+    loadKey: `load-${finalData.loadPowerKw}`,
+  });
+
   return (
-    <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
+    <View style={styles.card}>
+      {/* Live Streaming Indicator */}
+      {isStreaming && (
+        <View
+          style={{
+            position: 'absolute',
+            top: 12,
+            right: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.8)',
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+            borderRadius: 12,
+            zIndex: 10,
+          }}
+        >
+          <View
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: 3,
+              backgroundColor: '#22C55E', // Green
+              marginRight: 6,
+            }}
+          />
+          <Text
+            style={{
+              fontSize: 10,
+              color: COLORS.textSoft,
+              fontWeight: '600',
+            }}
+          >
+            LIVE
+          </Text>
+        </View>
+      )}
+
       <View style={[styles.diagramContainer, { width: CONTAINER_WIDTH, height: CONTAINER_HEIGHT }]}>
         {/* SVG Layer for flow lines */}
         <Svg
@@ -148,8 +185,7 @@ export const EnergyFlowRadial: React.FC = () => {
           style={styles.svgContainer}
         >
           {/* PV to Center (Top -> Center) */}
-          {/* PV: power > 0 means generating (output), flow from PV to Center */}
-          {powerData.pv.active && powerData.pv.power > 0 && (
+          {finalData.solarPowerKw > 0.001 && (
             <AnimatedFlowLine
               startX={centerX}
               startY={centerY - OFFSET + NODE_SIZE / 2}
@@ -163,14 +199,13 @@ export const EnergyFlowRadial: React.FC = () => {
           )}
 
           {/* Battery to/from Center (Left <-> Center) */}
-          {/* Battery: power > 0 = discharging (Battery -> Center), power < 0 = charging (Center -> Battery) */}
-          {powerData.battery.active && Math.abs(powerData.battery.power) > 0 && (
+          {Math.abs(finalData.batteryPowerKw) > 0.001 && (
             <AnimatedFlowLine
               startX={centerX - OFFSET + NODE_SIZE / 2}
               startY={centerY}
               endX={centerX - CENTER_SIZE / 2}
               endY={centerY}
-              direction={powerData.battery.power > 0 ? 'forward' : 'backward'}
+              direction={finalData.batteryPowerKw > 0 ? 'forward' : 'backward'}
               active={true}
               color={flowColor}
               baseColor={baseLineColor}
@@ -178,14 +213,13 @@ export const EnergyFlowRadial: React.FC = () => {
           )}
 
           {/* Grid to/from Center (Right <-> Center) */}
-          {/* Grid: power > 0 = exporting (Center -> Grid), power < 0 = importing (Grid -> Center) */}
-          {powerData.grid.active && Math.abs(powerData.grid.power) > 0 && (
+          {Math.abs(finalData.gridPowerKw) > 0.001 && (
             <AnimatedFlowLine
               startX={centerX + CENTER_SIZE / 2}
               startY={centerY}
               endX={centerX + OFFSET - NODE_SIZE / 2}
               endY={centerY}
-              direction={powerData.grid.power > 0 ? 'forward' : 'backward'}
+              direction={finalData.gridPowerKw > 0 ? 'forward' : 'backward'}
               active={true}
               color={flowColor}
               baseColor={baseLineColor}
@@ -193,8 +227,7 @@ export const EnergyFlowRadial: React.FC = () => {
           )}
 
           {/* Center to Load (Center -> Bottom) */}
-          {/* Load: power < 0 means consuming (Center -> Load) */}
-          {powerData.load.active && powerData.load.power < 0 && (
+          {finalData.loadPowerKw > 0.001 && (
             <AnimatedFlowLine
               startX={centerX}
               startY={centerY + CENTER_SIZE / 2}
@@ -218,60 +251,119 @@ export const EnergyFlowRadial: React.FC = () => {
         />
 
         {/* PV Node - Top */}
-        <EnergyNode
-          type="pv"
-          power={Math.abs(powerData.pv.power)}
-          active={powerData.pv.active}
-          label={t('energyFlowRadial.labels.solar')}
-          style={{
-            position: 'absolute',
-            left: centerX - NODE_SIZE / 2,
-            top: centerY - OFFSET - NODE_SIZE / 2,
-          }}
-        />
+        <View style={{ position: 'absolute', left: centerX - NODE_SIZE / 2, top: centerY - OFFSET - NODE_SIZE / 2 }}>
+          <Text style={{ position: 'absolute', top: -24, left: 0, right: 0, fontSize: 14, fontWeight: '500', textAlign: 'center', color: COLORS.textSoft }}>
+            {t('energyFlowRadial.labels.solar')}
+          </Text>
+          <View
+            style={{
+              width: 100,
+              height: 100,
+              borderRadius: 16,
+              backgroundColor: isDark ? COLORS.surface : '#FFFFFF',
+              borderColor: finalData.solarPowerKw >= 0.001 ? `${COLORS.accent}40` : COLORS.border,
+              borderWidth: 4,
+              opacity: finalData.solarPowerKw >= 0.001 ? 1 : 0.4,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text style={{ fontSize: 18, fontWeight: '700', color: finalData.solarPowerKw >= 0.001 ? COLORS.text : COLORS.slate400 }}>
+              {finalData.solarPowerKw.toFixed(3)}
+            </Text>
+            <Text style={{ fontSize: 12, marginTop: 2, color: finalData.solarPowerKw >= 0.001 ? COLORS.textSoft : COLORS.border }}>
+              kW
+            </Text>
+          </View>
+        </View>
 
         {/* Battery Node - Left */}
-        <EnergyNode
-          type="battery"
-          power={Math.abs(powerData.battery.power)}
-          active={powerData.battery.active}
-          label={t('energyFlowRadial.labels.battery')}
-          soc={batterySoc}
-          style={{
-            position: 'absolute',
-            left: centerX - OFFSET - NODE_SIZE / 2,
-            top: centerY - NODE_SIZE / 2,
-          }}
-        />
+        <View style={{ position: 'absolute', left: centerX - OFFSET - NODE_SIZE / 2, top: centerY - NODE_SIZE / 2 }}>
+          <Text style={{ position: 'absolute', top: -24, left: 0, right: 0, fontSize: 14, fontWeight: '500', textAlign: 'center', color: COLORS.textSoft }}>
+            {t('energyFlowRadial.labels.battery')}
+          </Text>
+          <View
+            style={{
+              width: 100,
+              height: 100,
+              borderRadius: 16,
+              backgroundColor: isDark ? COLORS.surface : '#FFFFFF',
+              borderColor: Math.abs(finalData.batteryPowerKw) >= 0.001 ? `${COLORS.accent}40` : COLORS.border,
+              borderWidth: 4,
+              opacity: Math.abs(finalData.batteryPowerKw) >= 0.001 ? 1 : 0.4,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text style={{ fontSize: 18, fontWeight: '700', color: Math.abs(finalData.batteryPowerKw) >= 0.001 ? COLORS.text : COLORS.slate400 }}>
+              {Math.abs(finalData.batteryPowerKw).toFixed(3)}
+            </Text>
+            <Text style={{ fontSize: 12, marginTop: 2, color: Math.abs(finalData.batteryPowerKw) >= 0.001 ? COLORS.textSoft : COLORS.border }}>
+              kW
+            </Text>
+          </View>
+          {batterySoc !== undefined && (
+            <Text style={{ position: 'absolute', bottom: -26, left: 0, right: 0, fontSize: 12, fontWeight: '600', textAlign: 'center', color: COLORS.textSoft, opacity: 0.8 }}>
+              SOC: {Math.round(batterySoc)}%
+            </Text>
+          )}
+        </View>
 
         {/* Grid Node - Right */}
-        <EnergyNode
-          type="grid"
-          power={Math.abs(powerData.grid.power)}
-          active={powerData.grid.active}
-          label={t('energyFlowRadial.labels.grid')}
-          style={{
-            position: 'absolute',
-            left: centerX + OFFSET - NODE_SIZE / 2,
-            top: centerY - NODE_SIZE / 2,
-          }}
-        />
+        <View style={{ position: 'absolute', left: centerX + OFFSET - NODE_SIZE / 2, top: centerY - NODE_SIZE / 2 }}>
+          <Text style={{ position: 'absolute', top: -24, left: 0, right: 0, fontSize: 14, fontWeight: '500', textAlign: 'center', color: COLORS.textSoft }}>
+            {t('energyFlowRadial.labels.grid')}
+          </Text>
+          <View
+            style={{
+              width: 100,
+              height: 100,
+              borderRadius: 16,
+              backgroundColor: isDark ? COLORS.surface : '#FFFFFF',
+              borderColor: Math.abs(finalData.gridPowerKw) >= 0.001 ? `${COLORS.accent}40` : COLORS.border,
+              borderWidth: 4,
+              opacity: Math.abs(finalData.gridPowerKw) >= 0.001 ? 1 : 0.4,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text style={{ fontSize: 18, fontWeight: '700', color: Math.abs(finalData.gridPowerKw) >= 0.001 ? COLORS.text : COLORS.slate400 }}>
+              {Math.abs(finalData.gridPowerKw).toFixed(3)}
+            </Text>
+            <Text style={{ fontSize: 12, marginTop: 2, color: Math.abs(finalData.gridPowerKw) >= 0.001 ? COLORS.textSoft : COLORS.border }}>
+              kW
+            </Text>
+          </View>
+        </View>
 
         {/* Load Node - Bottom */}
-        <EnergyNode
-          type="load"
-          power={Math.abs(powerData.load.power)}
-          active={powerData.load.active}
-          label={t('energyFlowRadial.labels.home')}
-          labelPosition="bottom"
-          style={{
-            position: 'absolute',
-            left: centerX - NODE_SIZE / 2,
-            top: centerY + OFFSET - NODE_SIZE / 2,
-          }}
-        />
+        <View style={{ position: 'absolute', left: centerX - NODE_SIZE / 2, top: centerY + OFFSET - NODE_SIZE / 2 }}>
+          <View
+            style={{
+              width: 100,
+              height: 100,
+              borderRadius: 16,
+              backgroundColor: isDark ? COLORS.surface : '#FFFFFF',
+              borderColor: Math.abs(finalData.loadPowerKw) >= 0.001 ? `${COLORS.accent}40` : COLORS.border,
+              borderWidth: 4,
+              opacity: Math.abs(finalData.loadPowerKw) >= 0.001 ? 1 : 0.4,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text style={{ fontSize: 18, fontWeight: '700', color: Math.abs(finalData.loadPowerKw) >= 0.001 ? COLORS.text : COLORS.slate400 }}>
+              {Math.abs(finalData.loadPowerKw).toFixed(3)}
+            </Text>
+            <Text style={{ fontSize: 12, marginTop: 2, color: Math.abs(finalData.loadPowerKw) >= 0.001 ? COLORS.textSoft : COLORS.border }}>
+              kW
+            </Text>
+          </View>
+          <Text style={{ position: 'absolute', bottom: -24, left: 0, right: 0, fontSize: 14, fontWeight: '500', textAlign: 'center', color: COLORS.textSoft }}>
+            {t('energyFlowRadial.labels.home')}
+          </Text>
+        </View>
       </View>
-    </Animated.View>
+    </View>
   );
 };
 
