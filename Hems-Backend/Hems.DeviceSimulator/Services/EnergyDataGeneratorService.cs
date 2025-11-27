@@ -49,7 +49,7 @@ public class EnergyDataGeneratorService : IEnergyDataGeneratorService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating daily cumulative data for device {DeviceId}", deviceId);
+            _logger.LogError(ex, "Error generating daily cumulative data for device {ThingsBoardDeviceId}", deviceId);
             return GenerateRandomDailyData(deviceId, timestamp);
         }
     }
@@ -82,7 +82,7 @@ public class EnergyDataGeneratorService : IEnergyDataGeneratorService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating lifetime data for device {DeviceId}", deviceId);
+            _logger.LogError(ex, "Error generating lifetime data for device {ThingsBoardDeviceId}", deviceId);
             return GenerateRandomLifetimeData(deviceId, timestamp);
         }
     }

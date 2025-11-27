@@ -108,11 +108,11 @@ public class EnergyDataJobService : IEnergyDataJobService
                     TimeZone = TimeZoneInfo.Utc
                 });
 
-            _logger.LogInformation("📅 Scheduled hourly energy data job for device {DeviceId}", deviceId);
+            _logger.LogInformation("📅 Scheduled hourly energy data job for device {ThingsBoardDeviceId}", deviceId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error scheduling hourly energy data job for device {DeviceId}", deviceId);
+            _logger.LogError(ex, "Error scheduling hourly energy data job for device {ThingsBoardDeviceId}", deviceId);
         }
         
         return Task.CompletedTask;
@@ -134,11 +134,11 @@ public class EnergyDataJobService : IEnergyDataJobService
                     TimeZone = TimeZoneInfo.Utc
                 });
 
-            _logger.LogInformation("📅 Scheduled midnight lifetime data job for device {DeviceId}", deviceId);
+            _logger.LogInformation("📅 Scheduled midnight lifetime data job for device {ThingsBoardDeviceId}", deviceId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error scheduling midnight lifetime data job for device {DeviceId}", deviceId);
+            _logger.LogError(ex, "Error scheduling midnight lifetime data job for device {ThingsBoardDeviceId}", deviceId);
         }
         
         return Task.CompletedTask;
@@ -154,11 +154,11 @@ public class EnergyDataJobService : IEnergyDataJobService
             _recurringJobManager.RemoveIfExists(hourlyJobId);
             _recurringJobManager.RemoveIfExists(lifetimeJobId);
             
-            _logger.LogInformation("🗑️ Removed energy data collection jobs for device {DeviceId}", deviceId);
+            _logger.LogInformation("🗑️ Removed energy data collection jobs for device {ThingsBoardDeviceId}", deviceId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error removing energy data collection jobs for device {DeviceId}", deviceId);
+            _logger.LogError(ex, "Error removing energy data collection jobs for device {ThingsBoardDeviceId}", deviceId);
         }
         
         return Task.CompletedTask;
@@ -169,7 +169,7 @@ public class EnergyDataJobService : IEnergyDataJobService
     {
         try
         {
-            _logger.LogDebug("🔄 Executing hourly energy data job for device {DeviceId}", deviceId);
+            _logger.LogDebug("🔄 Executing hourly energy data job for device {ThingsBoardDeviceId}", deviceId);
 
             // JSON'dan günlük veri çek
             var dailyData = await _energyDataGenerator.GenerateDailyCumulativeDataAsync(deviceId, DateTime.UtcNow);
@@ -177,11 +177,11 @@ public class EnergyDataJobService : IEnergyDataJobService
             // Ana sisteme gönder
             await SendEnergyDataAsync(deviceId, dailyData, "DailyCumulativeEnergyData");
 
-            _logger.LogDebug("✅ Hourly energy data job completed for device {DeviceId}", deviceId);
+            _logger.LogDebug("✅ Hourly energy data job completed for device {ThingsBoardDeviceId}", deviceId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in hourly energy data job for device {DeviceId}", deviceId);
+            _logger.LogError(ex, "Error in hourly energy data job for device {ThingsBoardDeviceId}", deviceId);
             throw; // Hangfire retry mekanizması için
         }
     }
@@ -191,7 +191,7 @@ public class EnergyDataJobService : IEnergyDataJobService
     {
         try
         {
-            _logger.LogDebug("🔄 Executing midnight lifetime data job for device {DeviceId}", deviceId);
+            _logger.LogDebug("🔄 Executing midnight lifetime data job for device {ThingsBoardDeviceId}", deviceId);
 
             // JSON'dan lifetime veri çek
             var lifetimeData = await _energyDataGenerator.GenerateLifetimeDataAsync(deviceId, DateTime.UtcNow);
@@ -199,11 +199,11 @@ public class EnergyDataJobService : IEnergyDataJobService
             // Ana sisteme gönder
             await SendEnergyDataAsync(deviceId, lifetimeData, "LifetimeEnergyData");
 
-            _logger.LogDebug("✅ Midnight lifetime data job completed for device {DeviceId}", deviceId);
+            _logger.LogDebug("✅ Midnight lifetime data job completed for device {ThingsBoardDeviceId}", deviceId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in midnight lifetime data job for device {DeviceId}", deviceId);
+            _logger.LogError(ex, "Error in midnight lifetime data job for device {ThingsBoardDeviceId}", deviceId);
             throw; // Hangfire retry mekanizması için
         }
     }
@@ -290,7 +290,7 @@ public class EnergyDataJobService : IEnergyDataJobService
             var token = await GetDeviceTokenAsync(deviceId);
             if (string.IsNullOrEmpty(token))
             {
-                _logger.LogError("No token available for device {DeviceId}", deviceId);
+                _logger.LogError("No token available for device {ThingsBoardDeviceId}", deviceId);
                 return;
             }
 
@@ -334,17 +334,17 @@ public class EnergyDataJobService : IEnergyDataJobService
             
             if (response.IsSuccessStatusCode)
             {
-                _logger.LogDebug("✅ Energy data sent successfully for device {DeviceId} ({DataType})", deviceId, dataType);
+                _logger.LogDebug("✅ Energy data sent successfully for device {ThingsBoardDeviceId} ({DataType})", deviceId, dataType);
             }
             else
             {
-                _logger.LogError("❌ Failed to send energy data for device {DeviceId} ({DataType}): {StatusCode}",
+                _logger.LogError("❌ Failed to send energy data for device {ThingsBoardDeviceId} ({DataType}): {StatusCode}",
                     deviceId, dataType, response.StatusCode);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error sending energy data for device {DeviceId} ({DataType})", deviceId, dataType);
+            _logger.LogError(ex, "Error sending energy data for device {ThingsBoardDeviceId} ({DataType})", deviceId, dataType);
         }
     }
 
@@ -414,7 +414,7 @@ public class EnergyDataJobService : IEnergyDataJobService
 
             if (device == null || string.IsNullOrEmpty(device.SerialNumber))
             {
-                _logger.LogError("❌ Device {DeviceId} not found or SerialNumber is empty", deviceId);
+                _logger.LogError("❌ Device {ThingsBoardDeviceId} not found or SerialNumber is empty", deviceId);
                 return string.Empty;
             }
 
@@ -440,19 +440,19 @@ public class EnergyDataJobService : IEnergyDataJobService
                 if (!string.IsNullOrEmpty(loginResponse?.accessToken))
                 {
                     _deviceTokens[deviceId] = loginResponse.accessToken;
-                    _logger.LogInformation("✅ Device {DeviceId} ({SerialNumber}) logged in successfully for energy data",
+                    _logger.LogInformation("✅ Device {ThingsBoardDeviceId} ({SerialNumber}) logged in successfully for energy data",
                         deviceId, device.SerialNumber);
                     return loginResponse.accessToken;
                 }
             }
             
-            _logger.LogError("❌ Login failed for device {DeviceId} ({SerialNumber}): {StatusCode}",
+            _logger.LogError("❌ Login failed for device {ThingsBoardDeviceId} ({SerialNumber}): {StatusCode}",
                 deviceId, device.SerialNumber, response.StatusCode);
             return string.Empty;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during login for device {DeviceId} for energy data", deviceId);
+            _logger.LogError(ex, "Error during login for device {ThingsBoardDeviceId} for energy data", deviceId);
             return string.Empty;
         }
     }

@@ -34,7 +34,7 @@ public class DataGeneratorService : IDataGeneratorService
 
     public async Task<object> GenerateLiveDataForComponentAsync(Guid deviceId, Guid componentId)
     {
-        _logger.LogInformation("🔍 Fetching component from database: DeviceId={DeviceId}, ComponentId={ComponentId}", 
+        _logger.LogInformation("🔍 Fetching component from database: ThingsBoardDeviceId={ThingsBoardDeviceId}, ComponentId={ComponentId}", 
             deviceId, componentId);
 
         // Component'i database'den çek
@@ -45,9 +45,9 @@ public class DataGeneratorService : IDataGeneratorService
 
         if (component == null)
         {
-            _logger.LogWarning("❌ Component not found: DeviceId={DeviceId}, ComponentId={ComponentId}", 
+            _logger.LogWarning("❌ Component not found: ThingsBoardDeviceId={ThingsBoardDeviceId}, ComponentId={ComponentId}", 
                 deviceId, componentId);
-            throw new ArgumentException($"Component not found: DeviceId={deviceId}, ComponentId={componentId}");
+            throw new ArgumentException($"Component not found: ThingsBoardDeviceId={deviceId}, ComponentId={componentId}");
         }
 
         _logger.LogInformation("✅ Component found: Type={DeviceType}, SerialNumber={SerialNumber}", 

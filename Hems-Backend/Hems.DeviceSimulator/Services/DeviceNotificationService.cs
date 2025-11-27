@@ -180,12 +180,12 @@ public class DeviceNotificationJobService : IDeviceNotificationJobService
                 () => SendDeviceNotificationJob(deviceId),
                 cronExpression);
             
-            _logger.LogInformation("📅 Scheduled notification job for device {DeviceId} every 5 minutes", 
+            _logger.LogInformation("📅 Scheduled notification job for device {ThingsBoardDeviceId} every 5 minutes", 
                 deviceId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error scheduling notification job for device {DeviceId}", deviceId);
+            _logger.LogError(ex, "Error scheduling notification job for device {ThingsBoardDeviceId}", deviceId);
         }
         
         return Task.CompletedTask;
@@ -199,11 +199,11 @@ public class DeviceNotificationJobService : IDeviceNotificationJobService
             
             _recurringJobManager.RemoveIfExists(jobId);
             
-            _logger.LogInformation("🗑️ Removed notification job for device {DeviceId}", deviceId);
+            _logger.LogInformation("🗑️ Removed notification job for device {ThingsBoardDeviceId}", deviceId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error removing notification job for device {DeviceId}", deviceId);
+            _logger.LogError(ex, "Error removing notification job for device {ThingsBoardDeviceId}", deviceId);
         }
         
         return Task.CompletedTask;
@@ -260,7 +260,7 @@ public class DeviceNotificationJobService : IDeviceNotificationJobService
     {
         try
         {
-            _logger.LogDebug("🔔 Executing notification job for device {DeviceId}", deviceId);
+            _logger.LogDebug("🔔 Executing notification job for device {ThingsBoardDeviceId}", deviceId);
 
             // Device bilgilerini al
             var device = await _context.Devices
@@ -271,7 +271,7 @@ public class DeviceNotificationJobService : IDeviceNotificationJobService
 
             if (device?.SetupDevice?.Setup?.Site == null)
             {
-                _logger.LogWarning("Device {DeviceId} not found or not assigned to any site", deviceId);
+                _logger.LogWarning("Device {ThingsBoardDeviceId} not found or not assigned to any site", deviceId);
                 return;
             }
 
@@ -282,7 +282,7 @@ public class DeviceNotificationJobService : IDeviceNotificationJobService
             var token = await GetDeviceTokenAsync(deviceId);
             if (string.IsNullOrEmpty(token))
             {
-                _logger.LogError("No token available for device {DeviceId}", deviceId);
+                _logger.LogError("No token available for device {ThingsBoardDeviceId}", deviceId);
                 return;
             }
 
@@ -312,18 +312,18 @@ public class DeviceNotificationJobService : IDeviceNotificationJobService
             
             if (response.IsSuccessStatusCode)
             {
-                _logger.LogInformation("📤 Sent notification {NotificationCode} for device {DeviceId} in site {SiteId}", 
+                _logger.LogInformation("📤 Sent notification {NotificationCode} for device {ThingsBoardDeviceId} in site {SiteId}", 
                     notificationType.Code, deviceId, siteId);
             }
             else
             {
-                _logger.LogWarning("⚠️ Failed to send notification for device {DeviceId}. Status: {StatusCode}", 
+                _logger.LogWarning("⚠️ Failed to send notification for device {ThingsBoardDeviceId}. Status: {StatusCode}", 
                     deviceId, response.StatusCode);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Error sending notification for device {DeviceId}", deviceId);
+            _logger.LogError(ex, "❌ Error sending notification for device {ThingsBoardDeviceId}", deviceId);
             throw; // Hangfire retry için throw et
         }
     }
@@ -347,7 +347,7 @@ public class DeviceNotificationJobService : IDeviceNotificationJobService
 
             if (device == null || string.IsNullOrEmpty(device.SerialNumber))
             {
-                _logger.LogError("Device {DeviceId} not found or has no serial number", deviceId);
+                _logger.LogError("Device {ThingsBoardDeviceId} not found or has no serial number", deviceId);
                 return string.Empty;
             }
 
@@ -373,17 +373,17 @@ public class DeviceNotificationJobService : IDeviceNotificationJobService
                 if (loginResponse != null && !string.IsNullOrEmpty(loginResponse.accessToken))
                 {
                     _deviceTokens[deviceId] = loginResponse.accessToken;
-                    _logger.LogInformation("🔑 Device {DeviceId} logged in successfully", deviceId);
+                    _logger.LogInformation("🔑 Device {ThingsBoardDeviceId} logged in successfully", deviceId);
                     return loginResponse.accessToken;
                 }
             }
 
-            _logger.LogError("❌ Failed to login device {DeviceId}: {StatusCode}", deviceId, response.StatusCode);
+            _logger.LogError("❌ Failed to login device {ThingsBoardDeviceId}: {StatusCode}", deviceId, response.StatusCode);
             return string.Empty;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error logging in device {DeviceId}", deviceId);
+            _logger.LogError(ex, "Error logging in device {ThingsBoardDeviceId}", deviceId);
             return string.Empty;
         }
     }
