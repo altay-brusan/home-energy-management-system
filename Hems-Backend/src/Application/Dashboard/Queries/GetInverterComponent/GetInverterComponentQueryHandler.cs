@@ -91,7 +91,7 @@ public class GetInverterComponentQueryHandler : IRequestHandler<GetInverterCompo
     private double CalculateNetPower(DeviceEnergyData data)
     {
         // Solar (PV) + Battery (deşarj) + Grid + Generator - Battery (şarj) - Load - Grid
-        var positiveEnergy = (data.PvEnergyKWh ?? 0) + 
+        var positiveEnergy = (data.PvTotalEnergyKWh ?? 0) + 
                            (data.BatteryDischargeEnergyKWh ?? 0) + 
                            (data.GridImportEnergyKWh ?? 0) + 
                            (data.GeneratorEnergyKWh ?? 0);
@@ -106,7 +106,7 @@ public class GetInverterComponentQueryHandler : IRequestHandler<GetInverterCompo
     private double CalculatePositiveEnergyOnly(DeviceEnergyData data)
     {
         // Sadece pozitif enerjileri topla: Solar (PV) + Battery (deşarj) + Grid + Generator
-        return (data.PvEnergyKWh ?? 0) + 
+        return (data.PvTotalEnergyKWh ?? 0) + 
                (data.BatteryDischargeEnergyKWh ?? 0) + 
                (data.GridImportEnergyKWh ?? 0) + 
                (data.GeneratorEnergyKWh ?? 0);
