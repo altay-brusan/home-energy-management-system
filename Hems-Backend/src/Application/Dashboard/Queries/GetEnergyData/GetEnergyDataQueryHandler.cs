@@ -98,7 +98,7 @@ public class GetEnergyDataQueryHandler : IRequestHandler<GetEnergyDataQuery, Ene
             LoadEnergyKWh = 0.0
         }, (acc, data) => new
         {
-            PvEnergyKWh = acc.PvEnergyKWh + (data.PvEnergyKWh ?? 0),
+            PvEnergyKWh = acc.PvEnergyKWh + (data.PvTotalEnergyKWh ?? 0),
             GridImportEnergyKWh = acc.GridImportEnergyKWh + (data.GridImportEnergyKWh ?? 0),
             GridExportEnergyKWh = acc.GridExportEnergyKWh + (data.GridExportEnergyKWh ?? 0),
             GeneratorEnergyKWh = acc.GeneratorEnergyKWh + (data.GeneratorEnergyKWh ?? 0),
