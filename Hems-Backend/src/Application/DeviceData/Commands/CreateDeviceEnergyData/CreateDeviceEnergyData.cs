@@ -104,9 +104,6 @@ public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDevice
                 DataDateTime = request.DataDateTime,
                 DataType = request.DataType,
                 MessageType = MessageTypes.Telemetry,
-                Kind = request.DataType == DataTypes.DailyCumulativeEnergy 
-                    ? MessageKinds.DailyEnergyFlowState 
-                    : MessageKinds.TotalEnergyFlowState,
                 PhaseType = PhaseTypes.SinglePhase,
                 
                 PvTotalEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.PvEnergyKWhToday : request.PvEnergyKWhTotal,
