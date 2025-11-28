@@ -56,7 +56,7 @@ public class GetEnergyProductionQueryHandler : IRequestHandler<GetEnergyProducti
             .Select(g => new Hems_Backend.Application.Common.Models.EnergyProductionDataPoint
             {
                 Timestamp = $"{g.Key:00}:00",
-                Value = Math.Round((g.OrderByDescending(x => x.DataDateTime).First().PvEnergyKWh ?? 0) + (g.OrderByDescending(x => x.DataDateTime).First().GeneratorEnergyKWh ?? 0), 3),
+                Value = Math.Round((g.OrderByDescending(x => x.DataDateTime).First().PvTotalEnergyKWh ?? 0) + (g.OrderByDescending(x => x.DataDateTime).First().GeneratorEnergyKWh ?? 0), 3),
                 Unit = "kWh"
             })
             .OrderBy(x => x.Timestamp)
@@ -121,7 +121,7 @@ public class GetEnergyProductionQueryHandler : IRequestHandler<GetEnergyProducti
                 dataPoints.Add(new Hems_Backend.Application.Common.Models.EnergyProductionDataPoint
                 {
                     Timestamp = dayName,
-                    Value = Math.Round((lifetimeData.PvEnergyKWh ?? 0) + (lifetimeData.GeneratorEnergyKWh ?? 0), 3),
+                    Value = Math.Round((lifetimeData.PvTotalEnergyKWh ?? 0) + (lifetimeData.GeneratorEnergyKWh ?? 0), 3),
                     Unit = "kWh"
                 });
             }
@@ -145,7 +145,7 @@ public class GetEnergyProductionQueryHandler : IRequestHandler<GetEnergyProducti
             dataPoints.Add(new Hems_Backend.Application.Common.Models.EnergyProductionDataPoint
             {
                 Timestamp = $"Day {today.Day}",
-                Value = Math.Round((todayData.PvEnergyKWh ?? 0) + (todayData.GeneratorEnergyKWh ?? 0), 3),
+                Value = Math.Round((todayData.PvTotalEnergyKWh ?? 0) + (todayData.GeneratorEnergyKWh ?? 0), 3),
                 Unit = "kWh"
             });
         }
@@ -203,7 +203,7 @@ public class GetEnergyProductionQueryHandler : IRequestHandler<GetEnergyProducti
                     dataPoints.Add(new Hems_Backend.Application.Common.Models.EnergyProductionDataPoint
                     {
                         Timestamp = $"Day {day.Day}",
-                        Value = Math.Round((todayData.PvEnergyKWh ?? 0) + (todayData.GeneratorEnergyKWh ?? 0), 3),
+                        Value = Math.Round((todayData.PvTotalEnergyKWh ?? 0) + (todayData.GeneratorEnergyKWh ?? 0), 3),
                         Unit = "kWh"
                     });
                 }
@@ -226,7 +226,7 @@ public class GetEnergyProductionQueryHandler : IRequestHandler<GetEnergyProducti
                     dataPoints.Add(new Hems_Backend.Application.Common.Models.EnergyProductionDataPoint
                     {
                         Timestamp = $"Day {day.Day}",
-                        Value = Math.Round((lifetimeData.PvEnergyKWh ?? 0) + (lifetimeData.GeneratorEnergyKWh ?? 0), 3),
+                        Value = Math.Round((lifetimeData.PvTotalEnergyKWh ?? 0) + (lifetimeData.GeneratorEnergyKWh ?? 0), 3),
                         Unit = "kWh"
                     });
                 }
@@ -284,7 +284,7 @@ public class GetEnergyProductionQueryHandler : IRequestHandler<GetEnergyProducti
                     12 => "December",
                     _ => $"Month {g.Key}"
                 },
-                Value = Math.Round((g.OrderByDescending(x => x.DataDateTime).First().PvEnergyKWh ?? 0) + (g.OrderByDescending(x => x.DataDateTime).First().GeneratorEnergyKWh ?? 0), 3),
+                Value = Math.Round((g.OrderByDescending(x => x.DataDateTime).First().PvTotalEnergyKWh ?? 0) + (g.OrderByDescending(x => x.DataDateTime).First().GeneratorEnergyKWh ?? 0), 3),
                 Unit = "kWh"
             })
             .OrderBy(x => x.Timestamp)
