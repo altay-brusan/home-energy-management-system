@@ -59,6 +59,9 @@ public static class DependencyInjection
         builder.Services.AddMemoryCache();
         builder.Services.AddScoped<IDeviceMappingService, DeviceMappingService>();
         
+        // Telemetry Deduplication Service
+        builder.Services.AddScoped<ITelemetryDeduplicationService, TelemetryDeduplicationService>();
+        
         // ThingsBoard Services
         builder.Services.AddHttpClient<IThingsBoardConnectorService, ThingsBoardConnectorService>();
         
