@@ -497,19 +497,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
         return new PowerMetricsResponseDto
         {
             Range = range,
-            Data = new List<Hems_Backend.Application.Common.Models.PowerMetricsDataPoint>(),
-            Statistics = new PowerMetricsStatistics
-            {
-                AverageSolarPower = 0,
-                PeakSolarPower = 0,
-                AverageGridPower = 0,
-                PeakGridPower = 0,
-                AverageBatteryPower = 0,
-                PeakBatteryPower = 0,
-                AverageLoadPower = 0,
-                PeakLoadPower = 0,
-                Unit = "kWh"
-            }
+            Data = new List<Hems_Backend.Application.Common.Models.PowerMetricsDataPoint>()
         };
     }
 
@@ -529,19 +517,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
         return new PowerMetricsResponseDto
         {
             Range = range,
-            Data = dataPoints,
-            Statistics = new PowerMetricsStatistics
-            {
-                AverageSolarPower = allSolarPowers.Count > 0 ? Math.Round(allSolarPowers.Average(), 3) : 0,
-                PeakSolarPower = allSolarPowers.Count > 0 ? Math.Round(allSolarPowers.Max(), 3) : 0,
-                AverageGridPower = allGridPowers.Count > 0 ? Math.Round(allGridPowers.Average(), 3) : 0,
-                PeakGridPower = allGridPowers.Count > 0 ? Math.Round(allGridPowers.Max(), 3) : 0,
-                AverageBatteryPower = allBatteryPowers.Count > 0 ? Math.Round(allBatteryPowers.Average(), 3) : 0,
-                PeakBatteryPower = allBatteryPowers.Count > 0 ? Math.Round(allBatteryPowers.Max(), 3) : 0,
-                AverageLoadPower = allLoadPowers.Count > 0 ? Math.Round(allLoadPowers.Average(), 3) : 0,
-                PeakLoadPower = allLoadPowers.Count > 0 ? Math.Round(allLoadPowers.Max(), 3) : 0,
-                Unit = "kWh"
-            }
+            Data = dataPoints           
         };
     }
 
