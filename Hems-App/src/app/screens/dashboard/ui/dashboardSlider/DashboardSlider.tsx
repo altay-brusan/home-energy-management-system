@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { View, ScrollView, Dimensions, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
-import { EnergyFlowRadial } from '../energyFlowRadial';
+import { PowerFlowDiagram } from '../powerFlowDiagram';
 import { DashboardSummaryCard } from '../dashboardSummaryCard';
 import { useThemeStore } from '../../../../../store/themeStore';
 import { getThemeColors, SPACING } from '../../../../../theme/constants';
@@ -43,7 +43,7 @@ export const DashboardSlider: React.FC<DashboardSliderProps> = ({ deviceId }) =>
       >
         {/* Slide 1: Energy Flow Radial */}
         <View style={[styles.slide, { width: SLIDE_WIDTH }]}>
-          <EnergyFlowRadial />
+          <PowerFlowDiagram />
         </View>
 
         {/* Slide 2: Dashboard Summary Card */}

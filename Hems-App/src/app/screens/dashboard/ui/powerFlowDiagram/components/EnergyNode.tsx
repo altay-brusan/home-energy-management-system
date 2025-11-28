@@ -70,14 +70,19 @@ const iconMap = {
 
 /**
  * Format power value for display
- * Simply show the kW value as is with 3 decimals
+ * - Below 1 kW: show as Watts (e.g., 854 W)
+ * - 1 kW and above: show as kW with 2 decimals (e.g., 1.85 kW)
  */
-const formatPower = (kw: number): string => {
-  return kw.toFixed(3);
-};
-
-const getPowerUnit = (kw: number): string => {
-  return 'kW';
+const formatPower = (kw: number): { value: string; unit: string } => {
+  const absKw = Math.abs(kw);
+  if (absKw < 1) {
+    // Convert to Watts and round to integer
+    const watts = Math.round(absKw * 1000);
+    return { value: String(watts), unit: 'W' };
+  } else {
+    // Round to 2 decimal places
+    return { value: absKw.toFixed(2), unit: 'kW' };
+  }
 };
 
 export const EnergyNode: React.FC<EnergyNodeProps> = ({
@@ -97,17 +102,9 @@ export const EnergyNode: React.FC<EnergyNodeProps> = ({
   const Icon = iconMap[type];
   const nodeColor = COLORS.accent; // Use primary accent color for all nodes
 
-  const displayUnit = unit || getPowerUnit(power);
-  const formattedPower = formatPower(power);
-
-  // Debug
-  if (type === 'battery' || type === 'load') {
-    console.log(`[EnergyNode ${type}]`, {
-      powerInput: power,
-      formatted: formattedPower,
-      unit: displayUnit,
-    });
-  }
+  const formatted = formatPower(power);
+  const displayUnit = unit || formatted.unit;
+  const formattedPower = formatted.value;
 
   return (
     <View style={style}>

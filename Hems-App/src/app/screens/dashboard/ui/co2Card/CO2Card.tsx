@@ -4,7 +4,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import Svg, { Path, Circle, G } from 'react-native-svg';
 import { useI18n } from '../../../../../hooks/useI18n';
 import { useDashboardRefresh } from '../../../../../hooks/useDashboardRefresh';
-import { mobileDashboardService } from '../../../../../api/services/mobileDashboardService';
+// import { mobileDashboardService } from '../../../../../api/services/mobileDashboardService'; // TODO: API entegrasyonu yapılacak
 import { useThemeStore } from '../../../../../store/themeStore';
 import { getThemeColors } from '../../../../../theme/constants';
 import { createStyles } from './CO2Card.styles';
@@ -73,28 +73,20 @@ const CO2Card: React.FC<CO2CardProps> = ({ deviceId }) => {
       return;
     }
 
-    try {
-      setLoading(true);
+    // TODO: Statik veri - API entegrasyonu yapılacak
+    // Önceki kod:
+    // const batteryComponent = await mobileDashboardService.getBatteryComponent(deviceId);
+    // const totalLoad = batteryComponent.total || 0;
+    // const co2SavedKg = totalLoad * 0.25;
+    // const trees = co2SavedKg / 22;
 
-      // Fetch battery component to get total load (lifetime)
-      const batteryComponent = await mobileDashboardService.getBatteryComponent(deviceId);
+    // Statik demo veriler
+    const staticCo2Saved = 125.5; // kg
+    const staticTreesEquivalent = 5.7; // ağaç
 
-      // Formula 1: P = Total Load (lifetime) × 0.25
-      const totalLoad = batteryComponent.total || 0;
-      const co2SavedKg = totalLoad * 0.25;
-
-      // Formula 2: Trees = CO2 / 22 (based on 45/22 from requirements)
-      const trees = co2SavedKg / 22;
-
-      setCo2Saved(Math.round(co2SavedKg * 100) / 100); // Round to 2 decimals
-      setTreesEquivalent(Math.round(trees * 10) / 10); // Round to 1 decimal
-    } catch (error) {
-      console.error('Error fetching CO2 data:', error);
-      setCo2Saved(0);
-      setTreesEquivalent(0);
-    } finally {
-      setLoading(false);
-    }
+    setCo2Saved(staticCo2Saved);
+    setTreesEquivalent(staticTreesEquivalent);
+    setLoading(false);
   }, [deviceId]);
 
   const { registerRefreshCallback } = useDashboardRefresh();

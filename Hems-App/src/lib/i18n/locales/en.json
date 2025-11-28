@@ -478,6 +478,8 @@
       "noDevice": "No device found. Please add a device to view real-time power flow.",
       "noData": "No power data available.",
       "errorLoading": "Error loading power data. Please try again.",
+      "connectionError": "Unable to connect to real-time data stream. Please check your connection.",
+      "connecting": "Connecting to real-time data...",
       "lastUpdate": "Last updated",
       "labels": {
         "solar": "Solar",

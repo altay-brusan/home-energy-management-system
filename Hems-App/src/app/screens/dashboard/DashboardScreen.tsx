@@ -1,7 +1,7 @@
 import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 import React, { JSX, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Image, Platform, RefreshControl, SafeAreaView, ScrollView, Text, View, TouchableOpacity } from 'react-native';
+import { Platform, RefreshControl, SafeAreaView, ScrollView, Text, View, TouchableOpacity } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
@@ -14,26 +14,15 @@ import { useSelectedSiteDevice } from '../../../hooks/useSelectedSiteDevice';
 import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors, SPACING } from '../../../theme/constants';
 import { getDashboardStyles } from './DashboardScreen.styles';
-import SignalRStatus from './ui/SignalRStatus';
-import DashboardDevices from './ui/dashboardDevices/DashboardDevices';
 import DashboardGraph from './ui/dashboardGraph/DashboardGraph';
-import BatteryChart from './ui/dashboardGraph/components/BatteryChart';
-import BatterySOCPriceChart from './ui/dashboardGraph/components/BatterySOCPriceChart';
-import BatterySOHChart from './ui/dashboardGraph/components/BatterySOHChart';
 import ChargeDischargeChart from './ui/dashboardGraph/components/ChargeDischargeChart';
-import MultiLineChart from './ui/dashboardGraph/components/MultiLineChart';
-import DashboardHelpButton from './ui/dashboardHelpButton/DashboardHelpButton';
-import DashboardHeroImage from './ui/dashboardHeroImage';
 import { DashboardModeCard } from './ui/dashboardModeCard';
 import Sidebar from "./ui/dashboardSideBar/Sidebar";
-import { DashboardSummaryCard } from './ui/dashboardSummaryCard';
 import { BatteryStateCard } from './ui/batteryStateCard';
 import { CO2Card } from './ui/co2Card';
 import EnergyReviewCard from './ui/energyReviewCard';
-import EnergyChart from './ui/energyChart/EnergyChart';
 import { GridPerformanceCard } from './ui/gridPerformanceCard';
-import DashboardWelcomeCard from './ui/dashboardWelcomeCard/DashboardWelcomeCard';
-import { EnergyFlowRadial } from './ui/energyFlowRadial';
+import { PowerFlowDiagram } from './ui/powerFlowDiagram';
 import { TodaySummary } from './ui/todaySummary';
 import { WeatherStatus } from './ui/weatherStatus';
 
@@ -48,7 +37,6 @@ export default function DashboardScreen (): JSX.Element {
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [selectedRange, setSelectedRange] = useState<Range>('Day');
-  const [selectedBatteryIndex, setSelectedBatteryIndex] = useState<number | null>(null);
   const [selectedChargeIndex, setSelectedChargeIndex] = useState<number | null>(null);
   const route = useRoute();
   const navigation = useNavigation<any>();
@@ -127,7 +115,6 @@ export default function DashboardScreen (): JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdminUser]);
 
-  const handleHelp = (): void => { };
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -172,13 +159,6 @@ export default function DashboardScreen (): JSX.Element {
         />
       )}
 
-      {/* <ShareButton
-        color={COLORS.accent}
-        backgroundColor={COLORS.dark}
-        top={insets.top + 8}
-        right={16}
-        COLORS={COLORS}
-      /> */}
       <ScrollView
         contentContainerStyle={[
           styles.container,
@@ -242,43 +222,16 @@ export default function DashboardScreen (): JSX.Element {
           </TouchableOpacity>
         </View>
         <WeatherStatus deviceId={device?.id} />
-        <EnergyFlowRadial />
+        <PowerFlowDiagram />
         <TodaySummary />
-        {/* <DashboardSummaryCard deviceId={device?.id} /> */}
         <BatteryStateCard deviceId={device?.id} />
-        {/* <EnergyChart /> */}
-        {/* <DashboardWelcomeCard isDark={isDark} COLORS={COLORS} /> */}
-        {/* <DashboardHeroImage COLORS={COLORS} /> */}
         <DashboardModeCard COLORS={COLORS} />
-
-        {/* <BatterySOCPriceChart
-          COLORS={COLORS}
-          isDark={isDark}
-        /> */}
-        {/* <BatterySOHChart
-          COLORS={COLORS}
-          isDark={isDark}
-        /> */}
-
         <DashboardGraph
           COLORS={COLORS}
           isDark={isDark}
           selectedRange={selectedRange}
           setSelectedRange={setSelectedRange}
         />
-
-
-        {/* <BatteryChart
-          COLORS={COLORS}
-          selectedIndex={selectedBatteryIndex}
-          setSelectedIndex={setSelectedBatteryIndex}
-        /> */}
-
-        {/* <MultiLineChart
-          COLORS={COLORS}
-          selectedRange={selectedRange}
-        /> */}
-
         <GridPerformanceCard deviceId={device?.id} />
 
         <EnergyReviewCard />
@@ -290,17 +243,6 @@ export default function DashboardScreen (): JSX.Element {
         />
 
         <CO2Card deviceId={device?.id} />
-
-        {/* <DashboardDevices COLORS={COLORS} /> */}
-
-        {/* SignalR Connection Status 
-        <SignalRStatus COLORS={COLORS} />
-*/}
-
-        {/*
-  <DashboardNotifications COLORS={COLORS} /> */}
-
-        {/* <DashboardHelpButton COLORS={COLORS} onPress={handleHelp} /> */}
       </ScrollView>
     </SafeAreaView>
   );

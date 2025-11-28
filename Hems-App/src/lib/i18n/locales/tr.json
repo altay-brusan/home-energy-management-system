@@ -494,6 +494,8 @@
     "noDevice": "Cihaz bulunamadı. Anlık güç akışını görüntülemek için lütfen cihaz ekleyin.",
     "noData": "Güç verisi bulunamadı.",
     "errorLoading": "Güç verileri yüklenirken hata oluştu. Lütfen tekrar deneyin.",
+    "connectionError": "Gerçek zamanlı veri akışına bağlanılamadı. Lütfen bağlantınızı kontrol edin.",
+    "connecting": "Gerçek zamanlı veriye bağlanılıyor...",
     "lastUpdate": "Son güncelleme",
     "labels": {
       "solar": "Güneş",

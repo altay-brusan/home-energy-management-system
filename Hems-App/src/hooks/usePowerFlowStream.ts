@@ -141,6 +141,14 @@ export const usePowerFlowStream = (options: UsePowerFlowStreamOptions): UsePower
         return () => subscription?.remove();
     }, [deviceId, enabled, startStream, stopStream]);
 
+    // Clear cached data when deviceId changes
+    useEffect(() => {
+        // Reset state when device changes
+        setPowerFlow(null);
+        setError(null);
+        setStreamState('idle');
+    }, [deviceId]);
+
     // Start/stop stream when deviceId or enabled changes
     useEffect(() => {
         if (deviceId && enabled && isAppActive.current) {
