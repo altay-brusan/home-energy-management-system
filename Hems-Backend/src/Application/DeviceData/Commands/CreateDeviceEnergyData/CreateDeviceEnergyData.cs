@@ -49,16 +49,16 @@ public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDevice
 
     public async Task<int> Handle(CreateDeviceEnergyDataCommand request, CancellationToken cancellationToken)
     {
-        // Device'ı ve Site bilgilerini al
+        // Device'ı ve Site bilgilerini al (DeviceId is actually ThingsBoardDeviceId)
         var device = await _context.Devices
             .Include(d => d.SetupDevice!)
             .ThenInclude(sd => sd.Setup!)
             .ThenInclude(s => s.Site!)
-            .FirstOrDefaultAsync(d => d.Id == request.DeviceId && !d.IsDeleted, cancellationToken);
+            .FirstOrDefaultAsync(d => d.ThingsBoardDeviceId == request.DeviceId && !d.IsDeleted, cancellationToken);
 
         if (device == null)
         {
-            throw new ArgumentException($"Device with ID {request.DeviceId} not found.");
+            throw new ArgumentException($"Device with ThingsBoardDeviceId {request.DeviceId} not found.");
         }
 
         var site = device.SetupDevice?.Setup?.Site;
