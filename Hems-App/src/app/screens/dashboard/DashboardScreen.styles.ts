@@ -16,7 +16,6 @@ export function getDashboardStyles (COLORS: Record<string, string>) {
             justifyContent: 'space-between',
             marginBottom: SPACING.sm,
             width: '100%',
-            paddingHorizontal: SPACING.sm,
         },
         screenTitle: {
             fontSize: TYPOGRAPHY.xxxl,

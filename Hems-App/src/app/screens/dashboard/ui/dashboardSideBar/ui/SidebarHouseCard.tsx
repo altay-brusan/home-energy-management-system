@@ -2,7 +2,6 @@ import React from "react";
 import { TouchableOpacity, View, Text, Image } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import Card from "../../../../../../components/ui/Card/Card";
 import { useTranslation } from "react-i18next";
 
 type RootStackParamList = {
@@ -33,34 +32,25 @@ export function SidebarHouseCard({ house, isDark, selected, onSelect, styles }: 
   };
 
   return (
-    <TouchableOpacity activeOpacity={0.9} onPress={handlePress}>
-      <Card
-        style={[styles.houseCard, selected && styles.houseCardActive]}
-        variant="elevated"
-      >
-        <Image
-          source={
-            isDark
-              ? require("../../../../../../assets/images/energy_home.bg.png")
-              : require("../../../../../../assets/images/energy_home.png")
-          }
-          style={styles.houseImageFull}
-          resizeMode="contain"
-        />
-
-        <View style={styles.badgeContainer}>
+    <TouchableOpacity activeOpacity={0.85} onPress={handlePress}>
+      <View style={[styles.houseCard, selected && styles.houseCardActive]}>
+        <View style={styles.houseCardContent}>
           <View style={styles.radioOuter}>
             {selected && <View style={styles.radioInner} />}
           </View>
-          <Text style={styles.badgeText}>{house.name}</Text>
-        </View>
-
-        {house.isEmpty && (
-          <View style={styles.noDeviceBadge}>
-               <Text style={styles.noDeviceBadgeText}>{t("dashboardSidebar.noDevice")}</Text>
+          <View style={{ flex: 1, marginLeft: 12 }}>
+            <Text style={styles.badgeText}>{house.name}</Text>
+            {house.address && (
+              <Text style={styles.addressText}>{house.address}</Text>
+            )}
           </View>
-        )}
-      </Card>
+          {house.isEmpty && (
+            <View style={styles.noDeviceBadge}>
+              <Text style={styles.noDeviceBadgeText}>{t("dashboardSidebar.noDevice")}</Text>
+            </View>
+          )}
+        </View>
+      </View>
     </TouchableOpacity>
   );
 }

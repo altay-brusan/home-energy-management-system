@@ -1,13 +1,10 @@
 import React, { useState, forwardRef, useImperativeHandle, useEffect } from "react";
 import {
-  Text,
   TouchableOpacity,
   Animated,
   Dimensions,
   ScrollView,
 } from "react-native";
-import MaterialIcons from '@react-native-vector-icons/material-icons';
-
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useThemeStore } from "../../../../../store/themeStore";
@@ -89,17 +86,6 @@ const Sidebar = forwardRef((props, ref) => {
     
   return (
     <>
-      <TouchableOpacity
-        onPress={toggleSidebar}
-        style={styles.centerToggleButton}
-        activeOpacity={0.8}
-      >
-        <MaterialIcons
-          name={isOpen ? "close" : "home"}
-          size={24}
-          color={isDark ? COLORS.accent : '#3B82F6'}
-        />
-      </TouchableOpacity>
       {isOpen && (
         <>
           <TouchableOpacity
@@ -118,8 +104,6 @@ const Sidebar = forwardRef((props, ref) => {
             >
               <SidebarHeader styles={styles} />
 
-              <SidebarAddButton styles={styles} navigation={navigation} />
-
               {houses.map((house) => (
                 <SidebarHouseCard
                   key={house.id}
@@ -133,6 +117,8 @@ const Sidebar = forwardRef((props, ref) => {
                   styles={styles}
                 />
               ))}
+
+              <SidebarAddButton styles={styles} navigation={navigation} />
             </ScrollView>
           </Animated.View>
         </>

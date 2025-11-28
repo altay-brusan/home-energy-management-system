@@ -8,9 +8,6 @@ export function getDashboardWelcomeCardStyles (
 ) {
   const isNarrow = width < 380;
   const isSmall = width < 340;
-  const imageSize = isNarrow ? 72 : 88;
-  const titleSize = isSmall ? TYPOGRAPHY.md : isNarrow ? TYPOGRAPHY.lg : TYPOGRAPHY.xxl;
-  const subtitleSize = isSmall ? TYPOGRAPHY.xs : isNarrow ? TYPOGRAPHY.xs : TYPOGRAPHY.md;
   const lastSyncSize = isSmall ? TYPOGRAPHY.xs : TYPOGRAPHY.sm;
   const metricLabelSize = isSmall ? 10 : 11;
   const metricValueSize = isSmall ? 12 : isNarrow ? TYPOGRAPHY.sm : 14;
@@ -18,14 +15,13 @@ export function getDashboardWelcomeCardStyles (
     root: {
       width: '100%',
       alignSelf: 'stretch',
-      alignItems: isNarrow ? 'center' : 'center',
+      alignItems: 'center',
       marginBottom: SPACING.xs,
       marginTop: SPACING.md,
-      paddingVertical: isNarrow ? SPACING.lg : SPACING.xl + 8,
-      paddingTop: isNarrow ? SPACING.xl : SPACING.xxl,
+      paddingVertical: SPACING.lg,
       backgroundColor: isDark ? COLORS.surface : COLORS.accentGlow,
       borderRadius: 22,
-      flexDirection: isNarrow ? 'column' : 'row',
+      flexDirection: 'row',
       paddingHorizontal: SPACING.lg,
       shadowColor: COLORS.accent,
       shadowOpacity: 0.14,
@@ -36,47 +32,19 @@ export function getDashboardWelcomeCardStyles (
       borderWidth: isDark ? 1 : 0,
       borderColor: isDark ? COLORS.border : 'transparent',
     },
-    image: {
-      width: imageSize,
-      height: imageSize,
-      borderRadius: 20,
-      marginRight: isNarrow ? 0 : SPACING.lg,
-      marginBottom: isNarrow ? SPACING.md : 0,
-      borderWidth: 2,
-      borderColor: COLORS.accent,
-      backgroundColor: isDark ? COLORS.bgShadeDark : COLORS.gray100,
-    },
-    title: {
-      fontSize: titleSize,
-      fontWeight: 'bold',
-      color: isDark ? COLORS.white : COLORS.slate900,
-      marginBottom: 2,
-      letterSpacing: 0.2,
-      flexShrink: 1,
-      flexWrap: 'wrap',
-      textAlign: isNarrow ? 'center' : 'left',
-      alignSelf: isNarrow ? 'center' : 'auto',
-      lineHeight: titleSize + 2,
-      maxWidth: '100%',
-    },
-    subtitle: {
-      color: isDark ? COLORS.slate400 : COLORS.slate700,
-      fontSize: subtitleSize,
-      marginBottom: 6,
-      flexShrink: 1,
-      flexWrap: 'wrap',
-      textAlign: isNarrow ? 'center' : 'left',
-      lineHeight: subtitleSize + 2,
-      maxWidth: '100%',
+    logoContainer: {
+      marginRight: SPACING.lg,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     statusRow: {
       flexDirection: 'row',
       gap: SPACING.sm,
       alignItems: 'center',
-      justifyContent: isNarrow ? 'center' : 'flex-start',
-      alignSelf: isNarrow ? 'stretch' : 'auto',
+      justifyContent: 'flex-start',
+      alignSelf: 'auto',
       flexWrap: 'wrap',
-      marginTop: 4,
+      marginBottom: SPACING.xs,
     },
     lastSync: {
       color: COLORS.textSoft,
@@ -87,14 +55,12 @@ export function getDashboardWelcomeCardStyles (
       flex: 1,
       minWidth: 0,
       alignSelf: 'stretch',
-      paddingHorizontal: isNarrow ? SPACING.md : 0,
-      alignItems: isNarrow ? 'center' : 'flex-start',
-      marginTop: isNarrow ? SPACING.xs : 0,
+      alignItems: 'flex-start',
+      justifyContent: 'center',
     },
     metricsRow: {
       flexDirection: 'row',
-      marginTop: 8,
-      justifyContent: isNarrow ? 'center' : 'flex-start',
+      justifyContent: 'flex-start',
       flexWrap: 'wrap',
     },
     metricPill: {
