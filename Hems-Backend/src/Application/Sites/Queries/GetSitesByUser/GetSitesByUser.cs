@@ -57,7 +57,7 @@ public class GetSitesByUserQueryHandler : IRequestHandler<GetSitesByUserQuery, S
                 if (lastEnergyData != null)
                 {
                     
-                    var sources = (lastEnergyData.PvEnergyKWh ?? 0) + 
+                    var sources = (lastEnergyData.PvTotalEnergyKWh ?? 0) + 
                                  (lastEnergyData.BatteryDischargeEnergyKWh ?? 0) + 
                                  (lastEnergyData.GridImportEnergyKWh ?? 0) + 
                                  (lastEnergyData.GeneratorEnergyKWh ?? 0);
