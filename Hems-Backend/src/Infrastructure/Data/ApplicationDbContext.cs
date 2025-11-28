@@ -31,6 +31,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     
     public DbSet<DeviceEnergyData> DeviceEnergyData => Set<DeviceEnergyData>();
 
+    public DbSet<DevicePowerData> DevicePowerData => Set<DevicePowerData>();
+
+    public DbSet<DeviceWeatherData> DeviceWeatherData => Set<DeviceWeatherData>();
+
     public DbSet<Invitation> Invitations => Set<Invitation>();
 
     public DbSet<Notification> Notifications => Set<Notification>();
