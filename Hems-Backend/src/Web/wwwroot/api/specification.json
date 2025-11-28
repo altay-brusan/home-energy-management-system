@@ -304,6 +304,52 @@
         }
       }
     },
+    "/api/DeviceData/DailyEnergyFlow": {
+      "post": {
+        "tags": [
+          "DeviceData"
+        ],
+        "operationId": "ReceiveDailyEnergyFlowTelemetry",
+        "requestBody": {
+          "x-name": "body",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/DeviceData/TotalEnergyFlow": {
+      "post": {
+        "tags": [
+          "DeviceData"
+        ],
+        "operationId": "ReceiveTotalEnergyFlowTelemetry",
+        "requestBody": {
+          "x-name": "body",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/DeviceData": {
       "get": {
         "tags": [
