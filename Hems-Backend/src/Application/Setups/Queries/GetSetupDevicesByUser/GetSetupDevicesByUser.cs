@@ -53,7 +53,7 @@ public class GetSetupDevicesByUserQueryHandler : IRequestHandler<GetSetupDevices
                 SiteName = sd.Setup.Site.Name,
                 Device = new DeviceDto
                 {
-                    Id = sd.Device.ThingsBoardDeviceId,
+                    Id = sd.Device.Id,
                     Manufacturer = sd.Device.Manufacturer,
                     ModelNumber = sd.Device.ModelNumber,
                     SerialNumber = sd.Device.SerialNumber,
