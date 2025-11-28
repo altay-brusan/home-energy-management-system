@@ -354,6 +354,11 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .HasPrecision(18, 3)
                         .HasColumnType("double precision");
 
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
                     b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("timestamp with time zone");
 
@@ -364,29 +369,50 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .HasPrecision(18, 3)
                         .HasColumnType("double precision");
 
-                    b.Property<double?>("PvEnergyKWh")
+                    b.Property<string>("MessageType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("PhaseType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("SinglePhase");
+
+                    b.Property<double?>("PvMppt1EnergyKWh")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("PvMppt2EnergyKWh")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("PvMppt3EnergyKWh")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("PvMppt4EnergyKWh")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("PvTotalEnergyKWh")
                         .HasPrecision(18, 3)
                         .HasColumnType("double precision");
 
                     b.Property<Guid>("ThingsBoardDeviceId")
                         .HasColumnType("uuid");
 
-                    b.Property<decimal?>("WeatherTemperature")
-                        .HasColumnType("numeric");
-
-                    b.Property<string>("WeatherTemperatureCondition")
-                        .HasColumnType("text");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("DataDateTime");
-
-                    b.HasIndex("DataType");
+                    b.HasIndex("DataDateTime")
+                        .HasDatabaseName("IX_DeviceEnergyData_DataDateTime");
 
                     b.HasIndex("ThingsBoardDeviceId");
 
                     b.HasIndex("ThingsBoardDeviceId", "DataDateTime", "DataType")
-                        .IsUnique();
+                        .HasDatabaseName("IX_DeviceEnergyData_ThingsBoardDeviceId_DataDateTime_DataType");
 
                     b.ToTable("DeviceEnergyData", (string)null);
                 });
@@ -515,6 +541,170 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.HasIndex("IsActive");
 
                     b.ToTable("DeviceNotificationTypes");
+                });
+
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.DevicePowerData", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<double?>("BatteryPowerW")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("DataDateTime")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<double?>("GeneratorTotalPowerW")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("GridTotalPowerW")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<double?>("LoadTotalPowerW")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("MessageType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("PhaseType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("SinglePhase");
+
+                    b.Property<double?>("PvMppt1PowerW")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("PvMppt2PowerW")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("PvMppt3PowerW")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("PvMppt4PowerW")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("PvTotalPowerW")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("double precision");
+
+                    b.Property<Guid>("ThingsBoardDeviceId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DataDateTime")
+                        .HasDatabaseName("IX_DevicePowerData_DataDateTime");
+
+                    b.HasIndex("ThingsBoardDeviceId");
+
+                    b.HasIndex("ThingsBoardDeviceId", "DataDateTime", "MessageType")
+                        .HasDatabaseName("IX_DevicePowerData_ThingsBoardDeviceId_DataDateTime_MessageType");
+
+                    b.ToTable("DevicePowerData", (string)null);
+                });
+
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceWeatherData", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal?>("CloudCover")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<string>("Condition")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("DataDateTime")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<decimal?>("Humidity")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<decimal?>("Pressure")
+                        .HasPrecision(8, 2)
+                        .HasColumnType("numeric(8,2)");
+
+                    b.Property<decimal?>("Temperature")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<string>("TemperatureCondition")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("ThingsBoardDeviceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal?>("UvIndex")
+                        .HasPrecision(4, 2)
+                        .HasColumnType("numeric(4,2)");
+
+                    b.Property<string>("WindDirection")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<decimal?>("WindSpeed")
+                        .HasPrecision(6, 2)
+                        .HasColumnType("numeric(6,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ThingsBoardDeviceId");
+
+                    b.HasIndex("ThingsBoardDeviceId", "DataDateTime")
+                        .HasDatabaseName("IX_DeviceWeatherData_ThingsBoardDeviceId_DataDateTime");
+
+                    b.ToTable("DeviceWeatherData", (string)null);
                 });
 
             modelBuilder.Entity("Hems_Backend.Domain.Entities.ExternalDevice", b =>
@@ -1465,6 +1655,30 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.Navigation("SetupDevice");
 
                     b.Navigation("Site");
+                });
+
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.DevicePowerData", b =>
+                {
+                    b.HasOne("Hems_Backend.Domain.Entities.Device", "Device")
+                        .WithMany()
+                        .HasForeignKey("ThingsBoardDeviceId")
+                        .HasPrincipalKey("ThingsBoardDeviceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Device");
+                });
+
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceWeatherData", b =>
+                {
+                    b.HasOne("Hems_Backend.Domain.Entities.Device", "Device")
+                        .WithMany()
+                        .HasForeignKey("ThingsBoardDeviceId")
+                        .HasPrincipalKey("ThingsBoardDeviceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Device");
                 });
 
             modelBuilder.Entity("Hems_Backend.Domain.Entities.ExternalDevice", b =>
