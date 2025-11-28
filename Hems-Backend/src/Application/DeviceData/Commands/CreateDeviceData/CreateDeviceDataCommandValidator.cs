@@ -36,11 +36,12 @@ public class CreateDeviceDataCommandValidator : AbstractValidator<CreateDeviceDa
 
     private async Task<bool> BeValidDevice(Guid deviceId, CancellationToken cancellationToken)
     {
+        // Check if the ThingsBoardDeviceId exists in the Devices table
         return await _context.Devices
             .Include(d => d.SetupDevice!)
                 .ThenInclude(sd => sd.Setup!)
                 .ThenInclude(s => s.Site!)
-            .AnyAsync(d => d.Id == deviceId && !d.IsDeleted, cancellationToken);
+            .AnyAsync(d => d.ThingsBoardDeviceId == deviceId && !d.IsDeleted, cancellationToken);
     }
 
     private static bool BeValidJsonSize(JsonDocument data)

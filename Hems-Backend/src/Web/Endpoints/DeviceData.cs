@@ -154,13 +154,26 @@ private async Task<IResult> ProcessEnergyFlowTelemetry(
             }
         }
 
-        // 3) Parse ThingsBoardDeviceId
-        var deviceIdResult = TryParseDeviceId(dataElement, logger);
-        if (deviceIdResult.Error != null)
+        // 3) Parse ThingsBoardDeviceId from root level "deviceId" field
+        Guid deviceId = Guid.Empty;
+        if (body.TryGetProperty("deviceId", out var deviceIdElement))
         {
-            return deviceIdResult.Error;
+            var deviceIdStr = deviceIdElement.GetString();
+            if (!string.IsNullOrWhiteSpace(deviceIdStr) && Guid.TryParse(deviceIdStr, out var parsedDeviceId))
+            {
+                deviceId = parsedDeviceId;
+            }
+            else
+            {
+                logger.LogWarning("Invalid deviceId format: {DeviceId}", deviceIdStr);
+                return Results.Problem("Invalid 'deviceId' format", statusCode: 400);
+            }
         }
-        var deviceId = deviceIdResult.DeviceId;
+        else
+        {
+            logger.LogWarning("Missing deviceId in root level");
+            return Results.Problem("Missing 'deviceId' in request", statusCode: 400);
+        }
 
         // 4) Parse energy values based on structure
         double? pvTotalEnergy = null;
@@ -355,13 +368,26 @@ private async Task<IResult> ProcessTelemetry(
             }
         }
 
-        // 3) ThingsBoardDeviceId comes from data.ThingsBoardDeviceId (string → Guid)
-        var deviceIdResult = TryParseDeviceId(dataElement, logger);
-        if (deviceIdResult.Error != null)
+        // 3) ThingsBoardDeviceId comes from root level "deviceId" field (string → Guid)
+        Guid deviceId = Guid.Empty;
+        if (body.TryGetProperty("deviceId", out var deviceIdElement))
         {
-            return deviceIdResult.Error;
+            var deviceIdStr = deviceIdElement.GetString();
+            if (!string.IsNullOrWhiteSpace(deviceIdStr) && Guid.TryParse(deviceIdStr, out var parsedDeviceId))
+            {
+                deviceId = parsedDeviceId;
+            }
+            else
+            {
+                logger.LogWarning("Invalid deviceId format: {DeviceId}", deviceIdStr);
+                return Results.Problem("Invalid 'deviceId' format", statusCode: 400);
+            }
         }
-        var deviceId = deviceIdResult.DeviceId;
+        else
+        {
+            logger.LogWarning("Missing deviceId in root level");
+            return Results.Problem("Missing 'deviceId' in request", statusCode: 400);
+        }
 
         // 4) Store the whole inner data object as JsonDocument
         var dataJson = JsonDocument.Parse(dataElement.GetRawText());
