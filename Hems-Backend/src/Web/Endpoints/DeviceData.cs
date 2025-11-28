@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using System.Text.Json;
+using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Application.DeviceData.Commands.BulkCreateDeviceData;
 using Hems_Backend.Application.DeviceData.Commands.CreateDeviceData;
@@ -91,40 +92,45 @@ public class DeviceData : EndpointGroupBase
 public async Task<IResult> ReceiveBatterySocTelemetry(
     [FromBody] JsonElement body,
     ILogger<DeviceData> logger,
-    ISender sender)
+    ISender sender,
+    ITelemetryDeduplicationService deduplicationService)
 {
-    return await ProcessTelemetry(body, "BatterySoc", logger, sender);
+    return await ProcessTelemetry(body, "BatterySoc", logger, sender, deduplicationService);
 }
 
 public async Task<IResult> ReceivePowerFlowTelemetry(
     [FromBody] JsonElement body,
     ILogger<DeviceData> logger,
-    ISender sender)
+    ISender sender,
+    ITelemetryDeduplicationService deduplicationService)
 {
-    return await ProcessTelemetry(body, "PowerFlow", logger, sender);
+    return await ProcessTelemetry(body, "PowerFlow", logger, sender, deduplicationService);
 }
 
 public async Task<IResult> ReceiveDailyEnergyFlowTelemetry(
     [FromBody] JsonElement body,
     ILogger<DeviceData> logger,
-    ISender sender)
+    ISender sender,
+    ITelemetryDeduplicationService deduplicationService)
 {
-    return await ProcessEnergyFlowTelemetry(body, DataTypes.DailyCumulativeEnergy, logger, sender);
+    return await ProcessEnergyFlowTelemetry(body, DataTypes.DailyCumulativeEnergy, logger, sender, deduplicationService);
 }
 
 public async Task<IResult> ReceiveTotalEnergyFlowTelemetry(
     [FromBody] JsonElement body,
     ILogger<DeviceData> logger,
-    ISender sender)
+    ISender sender,
+    ITelemetryDeduplicationService deduplicationService)
 {
-    return await ProcessEnergyFlowTelemetry(body, DataTypes.LifetimeEnergy, logger, sender);
+    return await ProcessEnergyFlowTelemetry(body, DataTypes.LifetimeEnergy, logger, sender, deduplicationService);
 }
 
 private async Task<IResult> ProcessEnergyFlowTelemetry(
     JsonElement body,
     string dataType,
     ILogger<DeviceData> logger,
-    ISender sender)
+    ISender sender,
+    ITelemetryDeduplicationService deduplicationService)
 {
     try
     {
@@ -175,7 +181,23 @@ private async Task<IResult> ProcessEnergyFlowTelemetry(
             return Results.Problem("Missing 'deviceId' in request", statusCode: 400);
         }
 
-        // 4) Parse energy values based on structure
+        // 4) Check for duplicate telemetry
+        var shouldProcess = await deduplicationService.ShouldProcessTelemetryAsync(deviceId, dataType, dataDateTime);
+        if (!shouldProcess)
+        {
+            logger.LogInformation(
+                "⏭️ Skipping duplicate {DataType} telemetry for device {DeviceId} at {Timestamp}",
+                dataType, deviceId, dataDateTime);
+            return Results.Ok(new
+            {
+                message = $"{dataType} telemetry skipped (duplicate)",
+                deviceId = deviceId,
+                dataDateTime = dataDateTime,
+                duplicate = true
+            });
+        }
+
+        // 5) Parse energy values based on structure
         double? pvTotalEnergy = null;
         double? pvMppt1Energy = null;
         double? pvMppt2Energy = null;
@@ -334,7 +356,8 @@ private async Task<IResult> ProcessTelemetry(
     JsonElement body,
     string dataType,
     ILogger<DeviceData> logger,
-    ISender sender)
+    ISender sender,
+    ITelemetryDeduplicationService deduplicationService)
 {
     try
     {
@@ -389,7 +412,22 @@ private async Task<IResult> ProcessTelemetry(
             return Results.Problem("Missing 'deviceId' in request", statusCode: 400);
         }
 
-        // 4) Store the whole inner data object as JsonDocument
+        // 4) Check for duplicate telemetry
+        var shouldProcess = await deduplicationService.ShouldProcessTelemetryAsync(deviceId, dataType, requestDate);
+        if (!shouldProcess)
+        {
+            logger.LogInformation(
+                "⏭️ Skipping duplicate {DataType} telemetry for device {DeviceId} at {Timestamp}",
+                dataType, deviceId, requestDate);
+            return Results.Ok(new
+            {
+                message = $"{dataType} telemetry skipped (duplicate)",
+                id = 0,
+                duplicate = true
+            });
+        }
+
+        // 5) Store the whole inner data object as JsonDocument
         var dataJson = JsonDocument.Parse(dataElement.GetRawText());
 
         var command = new CreateDeviceDataCommand
