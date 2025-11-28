@@ -53,6 +53,7 @@ public class GetDevicesWithComponentsQueryHandler : IRequestHandler<GetDevicesWi
             Device = new DeviceDto
             {
                 Id = device.Id,
+                ThingsBoardDeviceId = device.ThingsBoardDeviceId,
                 Manufacturer = device.Manufacturer,
                 ModelNumber = device.ModelNumber,
                 SerialNumber = device.SerialNumber,

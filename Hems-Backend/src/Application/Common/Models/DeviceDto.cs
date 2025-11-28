@@ -6,6 +6,7 @@ namespace Hems_Backend.Application.Common.Models;
 public class DeviceDto
 {
     public Guid Id { get; set; }
+    public Guid? ThingsBoardDeviceId { get; set; }
     public string Manufacturer { get; set; } = string.Empty;
     public string? ModelNumber { get; set; }
     public string? SerialNumber { get; set; }
