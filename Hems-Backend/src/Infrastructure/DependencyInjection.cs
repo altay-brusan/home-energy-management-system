@@ -55,6 +55,9 @@ public static class DependencyInjection
         builder.Services.AddHttpClient<IWeatherService, WeatherApiService>();
         builder.Services.AddScoped<IWeatherService, WeatherApiService>();
         
+        // ThingsBoard Services
+        builder.Services.AddHttpClient<IThingsBoardConnectorService, ThingsBoardConnectorService>();
+        
         // Device Authorization
         builder.Services.AddScoped<IAuthorizationHandler, DeviceOnlyAuthorizationHandler>();
         

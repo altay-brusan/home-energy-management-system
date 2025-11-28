@@ -61,7 +61,7 @@ public class CreateDeviceDataCommandTests
         
         var createdEntity = deviceDataList.First();
         Assert.That(createdEntity.DataType, Is.EqualTo("temperature_sensor"));
-        Assert.That(createdEntity.DeviceId, Is.EqualTo(deviceId));
+        Assert.That(createdEntity.ThingsBoardDeviceId, Is.EqualTo(deviceId));
         Assert.That(createdEntity.RequestDate, Is.EqualTo(requestDate));
         Assert.That(createdEntity.Data.RootElement.GetRawText(), Is.EqualTo(data.RootElement.GetRawText()));
         
@@ -121,7 +121,7 @@ public class CreateDeviceDataCommandTests
         
         var createdEntity = deviceDataList.First();
         Assert.That(createdEntity.DataType, Is.EqualTo("battery_info"));
-        Assert.That(createdEntity.DeviceId, Is.EqualTo(deviceId));
+        Assert.That(createdEntity.ThingsBoardDeviceId, Is.EqualTo(deviceId));
         Assert.That(createdEntity.RequestDate, Is.EqualTo(requestDate));
         
         // Verify JSON data structure
@@ -184,7 +184,7 @@ public class CreateDeviceDataCommandTests
         
         var createdEntity = deviceDataList.First();
         Assert.That(createdEntity.DataType, Is.EqualTo("inverter_realtime_info"));
-        Assert.That(createdEntity.DeviceId, Is.EqualTo(deviceId));
+        Assert.That(createdEntity.ThingsBoardDeviceId, Is.EqualTo(deviceId));
         Assert.That(createdEntity.RequestDate, Is.EqualTo(requestDate));
         
         // Verify JSON data structure

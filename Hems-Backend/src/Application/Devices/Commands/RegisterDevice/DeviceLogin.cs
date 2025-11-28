@@ -65,7 +65,7 @@ public class DeviceLoginCommandHandler : IRequestHandler<DeviceLoginCommand, Dev
 
             if (device.IsDeleted)
             {
-                _logger.LogWarning("Deleted device attempted login: {DeviceId}", device.Id);
+                _logger.LogWarning("Deleted device attempted login: {ThingsBoardDeviceId}", device.Id);
                 
                 return new DeviceLoginResult
                 {
@@ -78,7 +78,7 @@ public class DeviceLoginCommandHandler : IRequestHandler<DeviceLoginCommand, Dev
             var deviceName = $"{device.Manufacturer} {device.ModelNumber}";
             var jwtResult = await _deviceJwtService.GenerateTokenAsync(device.Id, deviceName);
 
-            _logger.LogInformation("Device logged in successfully: {DeviceId} ({DeviceName})", 
+            _logger.LogInformation("Device logged in successfully: {ThingsBoardDeviceId} ({DeviceName})", 
                 device.Id, deviceName);
 
             return new DeviceLoginResult

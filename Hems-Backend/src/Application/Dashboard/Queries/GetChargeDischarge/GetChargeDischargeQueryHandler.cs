@@ -33,7 +33,7 @@ public class GetChargeDischargeQueryHandler : IRequestHandler<GetChargeDischarge
 
         // Bugünün DailyCumulativeEnergyData verilerini çek
         var energyData = await _context.DeviceEnergyData
-            .Where(x => x.DeviceId == request.DeviceId && 
+            .Where(x => x.ThingsBoardDeviceId == request.DeviceId && 
                        x.DataDateTime >= startOfDay &&
                        x.DataDateTime < endOfDay &&
                        x.DataType == "DailyCumulativeEnergyData")

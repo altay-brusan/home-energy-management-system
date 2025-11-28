@@ -19,6 +19,11 @@ public class GetSetupByIdQueryHandler : IRequestHandler<GetSetupByIdQuery, Setup
         _mapper = mapper;
     }
 
+    /// <summary>
+    /// Handles the GetSetupByIdQuery.
+    /// Note: this handler uses <c>FindAsync</c> and therefore does NOT load the related <c>SetupDevice</c> navigation property.
+    /// The returned <see cref="SetupDto"/> will have <c>SetupDevice == null</c> unless the query explicitly loads that navigation (e.g. using Include/ProjectTo).
+    /// </summary>
     public async Task<SetupDto?> Handle(GetSetupByIdQuery request, CancellationToken cancellationToken)
     {
         var setup = await _context.Setups

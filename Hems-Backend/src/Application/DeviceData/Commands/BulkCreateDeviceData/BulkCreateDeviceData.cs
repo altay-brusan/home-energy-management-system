@@ -99,7 +99,7 @@ public class BulkCreateDeviceDataCommandHandler : IRequestHandler<BulkCreateDevi
                         var entity = new Hems_Backend.Domain.Entities.DeviceData
                         {
                             DataType = item.DataType,
-                            DeviceId = item.DeviceId,
+                            ThingsBoardDeviceId = item.DeviceId,
                             RequestDate = item.RequestDate,
                             Data = item.Data
                         };
@@ -109,7 +109,7 @@ public class BulkCreateDeviceDataCommandHandler : IRequestHandler<BulkCreateDevi
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Error processing device data item for device {DeviceId}", item.DeviceId);
+                        _logger.LogError(ex, "Error processing device data item for device {ThingsBoardDeviceId}", item.DeviceId);
                         errors.Add($"Error processing device {item.DeviceId}: {ex.Message}");
                         failureCount++;
                     }

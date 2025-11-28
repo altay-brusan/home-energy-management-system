@@ -146,7 +146,7 @@ public class DeviceController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error scheduling device {DeviceId}", deviceId);
+            _logger.LogError(ex, "Error scheduling device {ThingsBoardDeviceId}", deviceId);
             return StatusCode(500, new { error = "Failed to schedule device", details = ex.Message });
         }
     }
@@ -173,7 +173,7 @@ public class DeviceController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error unscheduling device {DeviceId}", deviceId);
+            _logger.LogError(ex, "Error unscheduling device {ThingsBoardDeviceId}", deviceId);
             return StatusCode(500, new { error = "Failed to unschedule device", details = ex.Message });
         }
     }
@@ -232,7 +232,7 @@ public class DeviceController : ControllerBase
     {
         try
         {
-            _logger.LogInformation("📡 Live data request received for DeviceId: {DeviceId}, ComponentId: {ComponentId}", 
+            _logger.LogInformation("📡 Live data request received for ThingsBoardDeviceId: {ThingsBoardDeviceId}, ComponentId: {ComponentId}", 
                 request.DeviceId, request.ComponentId);
 
             // Service layer'da component'i çek ve live data oluştur
@@ -250,7 +250,7 @@ public class DeviceController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Error generating live data for DeviceId: {DeviceId}, ComponentId: {ComponentId}", 
+            _logger.LogError(ex, "❌ Error generating live data for ThingsBoardDeviceId: {ThingsBoardDeviceId}, ComponentId: {ComponentId}", 
                 request.DeviceId, request.ComponentId);
             return StatusCode(500, new { error = ex.Message });
         }

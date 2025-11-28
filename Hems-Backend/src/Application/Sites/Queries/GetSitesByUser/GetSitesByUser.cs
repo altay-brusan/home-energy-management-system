@@ -47,7 +47,7 @@ public class GetSitesByUserQueryHandler : IRequestHandler<GetSitesByUserQuery, S
                 var endOfDay = startOfDay.AddDays(1);
                 
                 var lastEnergyData = await _context.DeviceEnergyData
-                    .Where(x => x.DeviceId == deviceId && 
+                    .Where(x => x.ThingsBoardDeviceId == deviceId && 
                                x.DataType == "DailyCumulativeEnergyData" &&
                                x.DataDateTime >= startOfDay &&
                                x.DataDateTime < endOfDay)
@@ -57,7 +57,7 @@ public class GetSitesByUserQueryHandler : IRequestHandler<GetSitesByUserQuery, S
                 if (lastEnergyData != null)
                 {
                     
-                    var sources = (lastEnergyData.PvEnergyKWh ?? 0) + 
+                    var sources = (lastEnergyData.PvTotalEnergyKWh ?? 0) + 
                                  (lastEnergyData.BatteryDischargeEnergyKWh ?? 0) + 
                                  (lastEnergyData.GridImportEnergyKWh ?? 0) + 
                                  (lastEnergyData.GeneratorEnergyKWh ?? 0);

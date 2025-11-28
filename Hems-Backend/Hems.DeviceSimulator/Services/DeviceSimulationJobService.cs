@@ -130,12 +130,12 @@ public class DeviceSimulationJobService : IDeviceSimulationJobService
                     TimeZone = TimeZoneInfo.Utc
                 });
 
-            _logger.LogInformation("📅 Scheduled recurring job for device {DeviceId} every 5 minutes", 
+            _logger.LogInformation("📅 Scheduled recurring job for device {ThingsBoardDeviceId} every 5 minutes", 
                 deviceId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error scheduling job for device {DeviceId}", deviceId);
+            _logger.LogError(ex, "Error scheduling job for device {ThingsBoardDeviceId}", deviceId);
         }
         
         return Task.CompletedTask;
@@ -148,11 +148,11 @@ public class DeviceSimulationJobService : IDeviceSimulationJobService
             var jobId = $"device-simulation-{deviceId}";
             _recurringJobManager.RemoveIfExists(jobId);
             
-            _logger.LogInformation("🗑️ Removed recurring job for device {DeviceId}", deviceId);
+            _logger.LogInformation("🗑️ Removed recurring job for device {ThingsBoardDeviceId}", deviceId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error removing job for device {DeviceId}", deviceId);
+            _logger.LogError(ex, "Error removing job for device {ThingsBoardDeviceId}", deviceId);
         }
         
         return Task.CompletedTask;
@@ -163,13 +163,13 @@ public class DeviceSimulationJobService : IDeviceSimulationJobService
     {
         try
         {
-            _logger.LogDebug("🔄 Executing simulation job for device {DeviceId}", deviceId);
+            _logger.LogDebug("🔄 Executing simulation job for device {ThingsBoardDeviceId}", deviceId);
 
             // Device'ı ve component'lerini çek
             var device = await GetDeviceWithComponentsAsync(deviceId);
             if (device == null)
             {
-                _logger.LogWarning("Device {DeviceId} not found, removing job", deviceId);
+                _logger.LogWarning("Device {ThingsBoardDeviceId} not found, removing job", deviceId);
                 await UnscheduleDeviceSimulationAsync(deviceId);
                 return;
             }
@@ -187,11 +187,11 @@ public class DeviceSimulationJobService : IDeviceSimulationJobService
                 await SendDeviceDataAsync(device, data);
             }
 
-            _logger.LogDebug("✅ Simulation job completed for device {DeviceId}", deviceId);
+            _logger.LogDebug("✅ Simulation job completed for device {ThingsBoardDeviceId}", deviceId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error in simulation job for device {DeviceId}", deviceId);
+            _logger.LogError(ex, "Error in simulation job for device {ThingsBoardDeviceId}", deviceId);
             throw; // Hangfire retry mekanizması için
         }
     }
@@ -203,7 +203,7 @@ public class DeviceSimulationJobService : IDeviceSimulationJobService
             var token = await GetDeviceTokenAsync(device);
             if (string.IsNullOrEmpty(token))
             {
-                _logger.LogError("No token available for device {DeviceId}", device.Device.Id);
+                _logger.LogError("No token available for device {ThingsBoardDeviceId}", device.Device.Id);
                 return;
             }
 
@@ -230,17 +230,17 @@ public class DeviceSimulationJobService : IDeviceSimulationJobService
             
             if (response.IsSuccessStatusCode)
             {
-                _logger.LogDebug("✅ Data sent successfully for device {DeviceId}", device.Device.Id);
+                _logger.LogDebug("✅ Data sent successfully for device {ThingsBoardDeviceId}", device.Device.Id);
             }
             else
             {
-                _logger.LogError("❌ Failed to send data for device {DeviceId}: {StatusCode}",
+                _logger.LogError("❌ Failed to send data for device {ThingsBoardDeviceId}: {StatusCode}",
                     device.Device.Id, response.StatusCode);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error sending data for device {DeviceId}", device.Device.Id);
+            _logger.LogError(ex, "Error sending data for device {ThingsBoardDeviceId}", device.Device.Id);
         }
     }
 
@@ -327,7 +327,7 @@ public class DeviceSimulationJobService : IDeviceSimulationJobService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting device {DeviceId} from database", deviceId);
+            _logger.LogError(ex, "Error getting device {ThingsBoardDeviceId} from database", deviceId);
             return null;
         }
     }
@@ -348,7 +348,7 @@ public class DeviceSimulationJobService : IDeviceSimulationJobService
         {
             if (device == null || string.IsNullOrEmpty(device.Device.SerialNumber))
             {
-                _logger.LogError("❌ Device {DeviceId} not found or SerialNumber is empty", device!.Device.SerialNumber);
+                _logger.LogError("❌ Device {ThingsBoardDeviceId} not found or SerialNumber is empty", device!.Device.SerialNumber);
                 return string.Empty;
             }
 
@@ -374,19 +374,19 @@ public class DeviceSimulationJobService : IDeviceSimulationJobService
                 if (!string.IsNullOrEmpty(loginResponse?.accessToken))
                 {
                     _deviceTokens[device.Device.Id] = loginResponse.accessToken;
-                    _logger.LogInformation("✅ Device {DeviceId} ({SerialNumber}) logged in successfully",
+                    _logger.LogInformation("✅ Device {ThingsBoardDeviceId} ({SerialNumber}) logged in successfully",
                         device.Device.Id, device.Device.SerialNumber);
                     return loginResponse.accessToken;
                 }
             }
             
-            _logger.LogError("❌ Login failed for device {DeviceId} ({SerialNumber}): {StatusCode}",
+            _logger.LogError("❌ Login failed for device {ThingsBoardDeviceId} ({SerialNumber}): {StatusCode}",
                 device.Device.Id, device.Device.SerialNumber, response.StatusCode);
             return string.Empty;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during login for device {DeviceId}", device.Device.Id);
+            _logger.LogError(ex, "Error during login for device {ThingsBoardDeviceId}", device.Device.Id);
             return string.Empty;
         }
     }

@@ -20,12 +20,18 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
     private readonly IApplicationDbContext _context;
     private readonly IUser _user;
     private readonly TimeProvider _timeProvider;
+    private readonly IThingsBoardConnectorService _tbConnector;
 
-    public CreateSetupCommandHandler(IApplicationDbContext context, IUser user, TimeProvider timeProvider)
+    public CreateSetupCommandHandler(
+        IApplicationDbContext context, 
+        IUser user, 
+        TimeProvider timeProvider,
+        IThingsBoardConnectorService tbConnector)
     {
         _context = context;
         _user = user;
         _timeProvider = timeProvider;
+        _tbConnector = tbConnector;
     }
 
     public async Task<Guid> Handle(CreateSetupCommand request, CancellationToken cancellationToken)
@@ -58,18 +64,24 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
         Device? device = null;
         if (!string.IsNullOrEmpty(request.DeviceQRCode) || !string.IsNullOrEmpty(request.DeviceSerialNumber))
         {
-            // QR Code ile device bulma
-            if (!string.IsNullOrEmpty(request.DeviceQRCode))
+            // Ask ThingsBoard to find the device
+            var tbDevice = await _tbConnector.FindDeviceAsync(
+                request.DeviceSerialNumber,
+                request.DeviceQRCode,
+                cancellationToken);
+
+            if (tbDevice == null)
             {
-                device = await _context.Devices
-                    .FirstOrDefaultAsync(d => d.QRCode == request.DeviceQRCode && !d.IsDeleted, cancellationToken);
+                var deviceIdentifier = !string.IsNullOrEmpty(request.DeviceQRCode) 
+                    ? $"QR Code: {request.DeviceQRCode}" 
+                    : $"Serial Number: {request.DeviceSerialNumber}";
+                
+                throw new ArgumentException($"Device not found in ThingsBoard with {deviceIdentifier}");
             }
-            // Serial Number ile device bulma
-            else if (!string.IsNullOrEmpty(request.DeviceSerialNumber))
-            {
-                device = await _context.Devices
-                    .FirstOrDefaultAsync(d => d.SerialNumber == request.DeviceSerialNumber && !d.IsDeleted, cancellationToken);
-            }
+
+            // Check if device exists in local database
+            device = await _context.Devices
+                .FirstOrDefaultAsync(d => d.ThingsBoardDeviceId == tbDevice.Id && !d.IsDeleted, cancellationToken);
 
             // Device bulunamazsa hata ver
             if (device == null)

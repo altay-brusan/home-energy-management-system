@@ -1,35 +1,51 @@
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Hems_Backend.Domain.Entities;
 
 /// <summary>
-/// Device'ların enerji verilerini saklayan tablo
+/// Device energy data (cumulative kWh)
+/// Stores DailyEnergyFlowState and TotalEnergyFlowState telemetry
 /// </summary>
 public class DeviceEnergyData : BaseAuditableEntity
 {
     [Required]
-    public Guid DeviceId { get; set; }
+    public Guid ThingsBoardDeviceId { get; set; }
     
     [Required]
     public DateTime DataDateTime { get; set; }
     
     [Required]
     [MaxLength(50)]
-    public string DataType { get; set; } = string.Empty; // "DailyCumulativeEnergyData" veya "LifetimeEnergyData"
+    public string DataType { get; set; } = string.Empty; // "DailyCumulativeEnergyData" or "LifetimeEnergyData"
     
-    // Enerji değerleri (kWh) - DataType'a göre günlük veya toplam değer
-    public double? PvEnergyKWh { get; set; }
-    public double? GridImportEnergyKWh { get; set; }
-    public double? GridExportEnergyKWh { get; set; }
-    public double? GeneratorEnergyKWh { get; set; }
-    public double? BatteryDischargeEnergyKWh { get; set; }
-    public double? BatteryChargeEnergyKWh { get; set; }
+    [Required]
+    [MaxLength(50)]
+    public string MessageType { get; set; } = string.Empty; // "Telemetry"
+    
+    [Required]
+    [MaxLength(20)]
+    public string PhaseType { get; set; } = "SinglePhase"; // "SinglePhase" or "ThreePhase"
+    
+    // Load Energy (kWh)
     public double? LoadEnergyKWh { get; set; }
     
-    // Hava durumu bilgileri
-    public decimal? WeatherTemperature { get; set; }
-    public string? WeatherTemperatureCondition { get; set; }
+    // Grid Energy (kWh)
+    public double? GridImportEnergyKWh { get; set; }
+    public double? GridExportEnergyKWh { get; set; }
+    
+    // PV Energy (kWh) - Total and per MPPT
+    public double? PvTotalEnergyKWh { get; set; }
+    public double? PvMppt1EnergyKWh { get; set; }
+    public double? PvMppt2EnergyKWh { get; set; }
+    public double? PvMppt3EnergyKWh { get; set; }
+    public double? PvMppt4EnergyKWh { get; set; }
+    
+    // Battery Energy (kWh)
+    public double? BatteryChargeEnergyKWh { get; set; }
+    public double? BatteryDischargeEnergyKWh { get; set; }
+    
+    // Generator Energy (kWh)
+    public double? GeneratorEnergyKWh { get; set; }
     
     // Navigation Properties
     public Device Device { get; set; } = null!;

@@ -37,7 +37,7 @@ public class SaveDeviceDataCommandHandler : IRequestHandler<SaveDeviceDataComman
         {
             var deviceData = new DeviceDataEntity
             {
-                DeviceId = request.DeviceId,
+                ThingsBoardDeviceId = request.DeviceId,
                 DataType = request.DataType,
                 Data = request.Data,
                 RequestDate = request.RequestDate,

@@ -6,6 +6,8 @@ namespace Hems_Backend.Domain.Entities;
 
 public class Device : BaseGuidAuditableEntity
 {
+    public Guid ThingsBoardDeviceId { get; set; }
+    public string Name { get; set; } = string.Empty;
     public string Manufacturer { get; set; } = string.Empty;
     public string? ModelNumber { get; set; }
     public string? SerialNumber { get; set; }

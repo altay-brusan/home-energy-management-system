@@ -51,7 +51,7 @@ public class GetInverterComponentQueryHandler : IRequestHandler<GetInverterCompo
     {
         // Son 2 hourly veriyi al (power hesaplamak için)
         var hourlyData = await _context.DeviceEnergyData
-            .Where(x => x.DeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == deviceId && 
                        x.DataType == "DailyCumulativeEnergyData")
             .OrderByDescending(x => x.DataDateTime)
             .Take(2)
@@ -91,7 +91,7 @@ public class GetInverterComponentQueryHandler : IRequestHandler<GetInverterCompo
     private double CalculateNetPower(DeviceEnergyData data)
     {
         // Solar (PV) + Battery (deşarj) + Grid + Generator - Battery (şarj) - Load - Grid
-        var positiveEnergy = (data.PvEnergyKWh ?? 0) + 
+        var positiveEnergy = (data.PvTotalEnergyKWh ?? 0) + 
                            (data.BatteryDischargeEnergyKWh ?? 0) + 
                            (data.GridImportEnergyKWh ?? 0) + 
                            (data.GeneratorEnergyKWh ?? 0);
@@ -106,7 +106,7 @@ public class GetInverterComponentQueryHandler : IRequestHandler<GetInverterCompo
     private double CalculatePositiveEnergyOnly(DeviceEnergyData data)
     {
         // Sadece pozitif enerjileri topla: Solar (PV) + Battery (deşarj) + Grid + Generator
-        return (data.PvEnergyKWh ?? 0) + 
+        return (data.PvTotalEnergyKWh ?? 0) + 
                (data.BatteryDischargeEnergyKWh ?? 0) + 
                (data.GridImportEnergyKWh ?? 0) + 
                (data.GeneratorEnergyKWh ?? 0);
@@ -119,7 +119,7 @@ public class GetInverterComponentQueryHandler : IRequestHandler<GetInverterCompo
         var endOfDay = startOfDay.AddDays(1);
         
         var todayData = await _context.DeviceEnergyData
-            .Where(x => x.DeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == deviceId && 
                        x.DataDateTime >= startOfDay &&
                        x.DataDateTime < endOfDay &&
                        x.DataType == "DailyCumulativeEnergyData")
@@ -135,7 +135,7 @@ public class GetInverterComponentQueryHandler : IRequestHandler<GetInverterCompo
     private async Task<double> GetTotalInverterEnergyAsync(Guid deviceId, CancellationToken cancellationToken)
     {
         var totalData = await _context.DeviceEnergyData
-            .Where(x => x.DeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == deviceId && 
                        x.DataType == "LifetimeEnergyData")
             .OrderByDescending(x => x.DataDateTime)
             .FirstOrDefaultAsync(cancellationToken);

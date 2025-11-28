@@ -50,7 +50,7 @@ public class GetBatteryComponentQueryHandler : IRequestHandler<GetBatteryCompone
     private async Task<double> GetSOCFromBatteryClusterDataAsync(Guid deviceId, CancellationToken cancellationToken)
     {
         var batteryData = await _context.DeviceData
-            .Where(x => x.DeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == deviceId && 
                        x.DataType == "BatteryClusterData")
             .OrderByDescending(x => x.RequestDate)
             .FirstOrDefaultAsync(cancellationToken);
@@ -82,7 +82,7 @@ public class GetBatteryComponentQueryHandler : IRequestHandler<GetBatteryCompone
         var endOfDay = startOfDay.AddDays(1);
         
         var todayData = await _context.DeviceEnergyData
-            .Where(x => x.DeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == deviceId && 
                        x.DataDateTime >= startOfDay &&
                        x.DataDateTime < endOfDay &&
                        x.DataType == "DailyCumulativeEnergyData")
@@ -95,7 +95,7 @@ public class GetBatteryComponentQueryHandler : IRequestHandler<GetBatteryCompone
     private async Task<double> GetTotalBatteryChargeAsync(Guid deviceId, CancellationToken cancellationToken)
     {
         var totalData = await _context.DeviceEnergyData
-            .Where(x => x.DeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == deviceId && 
                        x.DataType == "LifetimeEnergyData")
             .SumAsync(x => x.BatteryChargeEnergyKWh ?? 0, cancellationToken);
 

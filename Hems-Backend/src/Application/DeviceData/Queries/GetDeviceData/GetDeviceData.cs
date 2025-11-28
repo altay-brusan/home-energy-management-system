@@ -43,7 +43,7 @@ public class GetDeviceDataQueryHandler : IRequestHandler<GetDeviceDataQuery, Pag
 
         if (request.DeviceId.HasValue)
         {
-            query = query.Where(x => x.DeviceId == request.DeviceId.Value);
+            query = query.Where(x => x.ThingsBoardDeviceId == request.DeviceId.Value);
         }
 
         if (!string.IsNullOrEmpty(request.DataType))
@@ -57,7 +57,7 @@ public class GetDeviceDataQueryHandler : IRequestHandler<GetDeviceDataQuery, Pag
             {
                 Id = x.Id,
                 DataType = x.DataType,
-                DeviceId = x.DeviceId,
+                DeviceId = x.ThingsBoardDeviceId,
                 RequestDate = x.RequestDate,
                 Data = x.Data,
                 Created = x.Created,

@@ -30,7 +30,7 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
 
         // Önce toplam veri miktarını kontrol et
         var totalDataCount = await _context.DeviceData
-            .Where(x => x.DeviceId == request.DeviceId && 
+            .Where(x => x.ThingsBoardDeviceId == request.DeviceId && 
                        x.DataType == "BatteryData")
             .CountAsync(cancellationToken);
 
@@ -236,7 +236,7 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
         // Son 24 saatteki tüm veriler
         var startDate = DateTime.SpecifyKind(DateTime.UtcNow.AddDays(-1), DateTimeKind.Utc);
         return await _context.DeviceData
-            .Where(x => x.DeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == deviceId && 
                        x.RequestDate >= startDate &&
                        x.DataType == "BatteryData")
             .OrderBy(x => x.RequestDate)
@@ -255,7 +255,7 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
             var endOfDay = startOfDay.AddDays(1);
             
             var lastDataOfDay = await _context.DeviceData
-                .Where(x => x.DeviceId == deviceId && 
+                .Where(x => x.ThingsBoardDeviceId == deviceId && 
                            x.RequestDate >= startOfDay &&
                            x.RequestDate < endOfDay &&
                            x.DataType == "BatteryData")
@@ -283,7 +283,7 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
             var endOfDay = startOfDay.AddDays(1);
             
             var lastDataOfDay = await _context.DeviceData
-                .Where(x => x.DeviceId == deviceId && 
+                .Where(x => x.ThingsBoardDeviceId == deviceId && 
                            x.RequestDate >= startOfDay &&
                            x.RequestDate < endOfDay &&
                            x.DataType == "BatteryData")
@@ -311,7 +311,7 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
             var endOfMonth = DateTime.SpecifyKind(startOfMonth.AddMonths(1), DateTimeKind.Utc);
             
             var lastDataOfMonth = await _context.DeviceData
-                .Where(x => x.DeviceId == deviceId && 
+                .Where(x => x.ThingsBoardDeviceId == deviceId && 
                            x.RequestDate >= startOfMonth &&
                            x.RequestDate < endOfMonth &&
                            x.DataType == "BatteryData")

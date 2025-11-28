@@ -9,10 +9,14 @@ public record DeleteDeviceCommand(Guid Id) : IRequest;
 public class DeleteDeviceCommandHandler : IRequestHandler<DeleteDeviceCommand>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IThingsBoardConnectorService _tbConnector;
 
-    public DeleteDeviceCommandHandler(IApplicationDbContext context)
+    public DeleteDeviceCommandHandler(
+        IApplicationDbContext context,
+        IThingsBoardConnectorService tbConnector)
     {
         _context = context;
+        _tbConnector = tbConnector;
     }
 
     public async Task Handle(DeleteDeviceCommand request, CancellationToken cancellationToken)
@@ -22,6 +26,10 @@ public class DeleteDeviceCommandHandler : IRequestHandler<DeleteDeviceCommand>
 
         Guard.Against.NotFound(request.Id, entity);
 
+        // Delete from ThingsBoard first
+        await _tbConnector.DeleteDeviceAsync(entity.ThingsBoardDeviceId, cancellationToken);
+
+        // Then delete from local database
         _context.Devices.Remove(entity);
 
         await _context.SaveChangesAsync(cancellationToken);

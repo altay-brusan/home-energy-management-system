@@ -1,4 +1,5 @@
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Domain.Constants;
 using Hems_Backend.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,12 @@ public record CreateDeviceEnergyDataCommand : IRequest<int>
     public double? BatteryDischargeEnergyKWhTotal { get; init; }
     public double? BatteryChargeEnergyKWhTotal { get; init; }
     public double? LoadEnergyKWhTotal { get; init; }
+    
+    // MPPT individual values
+    public double? PvMppt1EnergyKWh { get; init; }
+    public double? PvMppt2EnergyKWh { get; init; }
+    public double? PvMppt3EnergyKWh { get; init; }
+    public double? PvMppt4EnergyKWh { get; init; }
 }
 
 public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDeviceEnergyDataCommand, int>
@@ -69,7 +76,7 @@ public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDevice
         // Aynı device, datetime ve data type için kayıt var mı kontrol et
         var existingRecord = await _context.DeviceEnergyData
             .FirstOrDefaultAsync(x => 
-                x.DeviceId == request.DeviceId && 
+                x.ThingsBoardDeviceId == request.DeviceId && 
                 x.DataDateTime == request.DataDateTime && 
                 x.DataType == request.DataType, 
                 cancellationToken);
@@ -77,20 +84,13 @@ public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDevice
         if (existingRecord != null)
         {
             // Mevcut kaydı güncelle - DataType'a göre Today veya Total değerini kullan
-            existingRecord.PvEnergyKWh = request.DataType == "DailyCumulativeEnergyData" ? request.PvEnergyKWhToday : request.PvEnergyKWhTotal;
-            existingRecord.GridImportEnergyKWh = request.DataType == "DailyCumulativeEnergyData" ? request.GridImportEnergyKWhToday : request.GridImportEnergyKWhTotal;
-            existingRecord.GridExportEnergyKWh = request.DataType == "DailyCumulativeEnergyData" ? request.GridExportEnergyKWhToday : request.GridExportEnergyKWhTotal;
-            existingRecord.GeneratorEnergyKWh = request.DataType == "DailyCumulativeEnergyData" ? request.GeneratorEnergyKWhToday : request.GeneratorEnergyKWhTotal;
-            existingRecord.BatteryDischargeEnergyKWh = request.DataType == "DailyCumulativeEnergyData" ? request.BatteryDischargeEnergyKWhToday : request.BatteryDischargeEnergyKWhTotal;
-            existingRecord.BatteryChargeEnergyKWh = request.DataType == "DailyCumulativeEnergyData" ? request.BatteryChargeEnergyKWhToday : request.BatteryChargeEnergyKWhTotal;
-            existingRecord.LoadEnergyKWh = request.DataType == "DailyCumulativeEnergyData" ? request.LoadEnergyKWhToday : request.LoadEnergyKWhTotal;
-            
-            // Hava durumu bilgilerini güncelle
-            if (currentWeather != null)
-            {
-                existingRecord.WeatherTemperature = currentWeather.Temperature;
-                existingRecord.WeatherTemperatureCondition = currentWeather.Description;
-            }
+            existingRecord.PvTotalEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.PvEnergyKWhToday : request.PvEnergyKWhTotal;
+            existingRecord.GridImportEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.GridImportEnergyKWhToday : request.GridImportEnergyKWhTotal;
+            existingRecord.GridExportEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.GridExportEnergyKWhToday : request.GridExportEnergyKWhTotal;
+            existingRecord.GeneratorEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.GeneratorEnergyKWhToday : request.GeneratorEnergyKWhTotal;
+            existingRecord.BatteryDischargeEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.BatteryDischargeEnergyKWhToday : request.BatteryDischargeEnergyKWhTotal;
+            existingRecord.BatteryChargeEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.BatteryChargeEnergyKWhToday : request.BatteryChargeEnergyKWhTotal;
+            existingRecord.LoadEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.LoadEnergyKWhToday : request.LoadEnergyKWhTotal;
             
             existingRecord.LastModified = DateTime.UtcNow;
             existingRecord.LastModifiedBy = "DeviceSimulator";
@@ -100,21 +100,23 @@ public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDevice
             // Yeni kayıt oluştur - DataType'a göre Today veya Total değerini kullan
             var energyData = new DeviceEnergyData
             {
-                DeviceId = request.DeviceId,
+                ThingsBoardDeviceId = request.DeviceId,
                 DataDateTime = request.DataDateTime,
                 DataType = request.DataType,
+                MessageType = MessageTypes.Telemetry,
+                PhaseType = PhaseTypes.SinglePhase,
                 
-                PvEnergyKWh = request.DataType == "DailyCumulativeEnergyData" ? request.PvEnergyKWhToday : request.PvEnergyKWhTotal,
-                GridImportEnergyKWh = request.DataType == "DailyCumulativeEnergyData" ? request.GridImportEnergyKWhToday : request.GridImportEnergyKWhTotal,
-                GridExportEnergyKWh = request.DataType == "DailyCumulativeEnergyData" ? request.GridExportEnergyKWhToday : request.GridExportEnergyKWhTotal,
-                GeneratorEnergyKWh = request.DataType == "DailyCumulativeEnergyData" ? request.GeneratorEnergyKWhToday : request.GeneratorEnergyKWhTotal,
-                BatteryDischargeEnergyKWh = request.DataType == "DailyCumulativeEnergyData" ? request.BatteryDischargeEnergyKWhToday : request.BatteryDischargeEnergyKWhTotal,
-                BatteryChargeEnergyKWh = request.DataType == "DailyCumulativeEnergyData" ? request.BatteryChargeEnergyKWhToday : request.BatteryChargeEnergyKWhTotal,
-                LoadEnergyKWh = request.DataType == "DailyCumulativeEnergyData" ? request.LoadEnergyKWhToday : request.LoadEnergyKWhTotal,
-                
-                // Hava durumu bilgilerini ekle
-                WeatherTemperature = currentWeather?.Temperature,
-                WeatherTemperatureCondition = currentWeather?.Description,
+                PvTotalEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.PvEnergyKWhToday : request.PvEnergyKWhTotal,
+                PvMppt1EnergyKWh = request.PvMppt1EnergyKWh,
+                PvMppt2EnergyKWh = request.PvMppt2EnergyKWh,
+                PvMppt3EnergyKWh = request.PvMppt3EnergyKWh,
+                PvMppt4EnergyKWh = request.PvMppt4EnergyKWh,
+                GridImportEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.GridImportEnergyKWhToday : request.GridImportEnergyKWhTotal,
+                GridExportEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.GridExportEnergyKWhToday : request.GridExportEnergyKWhTotal,
+                GeneratorEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.GeneratorEnergyKWhToday : request.GeneratorEnergyKWhTotal,
+                BatteryDischargeEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.BatteryDischargeEnergyKWhToday : request.BatteryDischargeEnergyKWhTotal,
+                BatteryChargeEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.BatteryChargeEnergyKWhToday : request.BatteryChargeEnergyKWhTotal,
+                LoadEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.LoadEnergyKWhToday : request.LoadEnergyKWhTotal,
                 
                 Created = DateTime.UtcNow,
                 CreatedBy = "DeviceSimulator"

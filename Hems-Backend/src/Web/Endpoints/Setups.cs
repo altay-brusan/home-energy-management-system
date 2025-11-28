@@ -37,6 +37,14 @@ public class Setups : EndpointGroupBase
         return await sender.Send(query);
     }
 
+    /// <summary>
+    /// Get a setup by id.
+    /// NOTE: This endpoint does NOT return the nested device details by default — <c>SetupDto.SetupDevice</c> will be null unless the implementation
+    /// explicitly loads the related SetupDevice (for example by using Include or AutoMapper's ProjectTo to fetch the nested data).
+    /// </summary>
+    /// <param name="sender">Mediator</param>
+    /// <param name="id">Setup id</param>
+    /// <returns>The requested Setup; device details are not included by default</returns>
     [Authorize(Policies.AdminOnly)]
     public async Task<SetupDto?> GetSetup(
         ISender sender,

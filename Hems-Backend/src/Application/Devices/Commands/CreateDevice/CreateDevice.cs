@@ -41,20 +41,47 @@ public class CreateDeviceCommandHandler : IRequestHandler<CreateDeviceCommand, G
     private readonly IApplicationDbContext _context;
     private readonly IUser _user;
     private readonly TimeProvider _timeProvider;
+    private readonly IThingsBoardConnectorService _tbConnector;
 
-    public CreateDeviceCommandHandler(IApplicationDbContext context, IUser user, TimeProvider timeProvider)
+    public CreateDeviceCommandHandler(
+        IApplicationDbContext context, 
+        IUser user, 
+        TimeProvider timeProvider,
+        IThingsBoardConnectorService tbConnector)
     {
         _context = context;
         _user = user;
         _timeProvider = timeProvider;
+        _tbConnector = tbConnector;
     }
 
     public async Task<Guid> Handle(CreateDeviceCommand request, CancellationToken cancellationToken)
     {
         var utcNow = _timeProvider.GetUtcNow();
         
+        // Step 1: Create device in ThingsBoard first
+        var tbDeviceRequest = new TbDeviceCreateRequest
+        {
+            Name = request.SerialNumber ?? request.QRCode ?? Guid.NewGuid().ToString(),
+            Label = $"{request.Manufacturer} {request.ModelNumber}".Trim(),
+            DeviceProfileName = "default",
+            ServerAttributes = new Dictionary<string, object>
+            {
+                ["Manufacturer"] = request.Manufacturer,
+                ["ModelNumber"] = request.ModelNumber ?? string.Empty,
+                ["SerialNumber"] = request.SerialNumber ?? string.Empty,
+                ["TypeNumber"] = request.TypeNumber ?? string.Empty,
+                ["QRCode"] = request.QRCode ?? string.Empty
+            }
+        };
+
+        var tbResult = await _tbConnector.CreateDeviceAsync(tbDeviceRequest, cancellationToken);
+        
+        // Step 2: Create device in local database with TB device ID
         var entity = new Device
         {
+            ThingsBoardDeviceId = tbResult.DeviceId,
+            Name = tbResult.Name,
             Manufacturer = request.Manufacturer,
             ModelNumber = request.ModelNumber,
             SerialNumber = request.SerialNumber,

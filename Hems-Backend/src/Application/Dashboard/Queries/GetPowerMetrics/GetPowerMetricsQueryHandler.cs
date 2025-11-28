@@ -44,7 +44,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
         var endOfDay = startOfDay.AddDays(1);
 
         var energyData = await _context.DeviceEnergyData
-            .Where(x => x.DeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == deviceId && 
                        x.DataDateTime >= startOfDay &&
                        x.DataDateTime < endOfDay &&
                        x.DataType == "DailyCumulativeEnergyData")
@@ -78,7 +78,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
             .Select(g => new Hems_Backend.Application.Common.Models.PowerMetricsDataPoint
             {
                 Timestamp = $"{g.Key:00}:00",
-                SolarPower = Math.Round(g.OrderByDescending(x => x.DataDateTime).First().PvEnergyKWh ?? 0, 3),
+                SolarPower = Math.Round(g.OrderByDescending(x => x.DataDateTime).First().PvTotalEnergyKWh ?? 0, 3),
                 GridPower = Math.Round((g.OrderByDescending(x => x.DataDateTime).First().GridImportEnergyKWh ?? 0) - 
                                       (g.OrderByDescending(x => x.DataDateTime).First().GridExportEnergyKWh ?? 0), 3),
                 BatteryPower = Math.Round((g.OrderByDescending(x => x.DataDateTime).First().BatteryChargeEnergyKWh ?? 0) - 
@@ -131,7 +131,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
             var dayEnd = dayStart.AddDays(1);
 
             var lifetimeData = await _context.DeviceEnergyData
-                .Where(x => x.DeviceId == deviceId && 
+                .Where(x => x.ThingsBoardDeviceId == deviceId && 
                            x.DataDateTime >= dayStart &&
                            x.DataDateTime < dayEnd &&
                            x.DataType == "LifetimeEnergyData")
@@ -142,7 +142,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
                 dataPoints.Add(new Hems_Backend.Application.Common.Models.PowerMetricsDataPoint
                 {
                     Timestamp = $"Day {day.Day}",
-                    SolarPower = Math.Round(lifetimeData.PvEnergyKWh ?? 0, 3),
+                    SolarPower = Math.Round(lifetimeData.PvTotalEnergyKWh ?? 0, 3),
                     GridPower = Math.Round((lifetimeData.GridImportEnergyKWh ?? 0) - (lifetimeData.GridExportEnergyKWh ?? 0), 3),
                     BatteryPower = Math.Round((lifetimeData.BatteryChargeEnergyKWh ?? 0) - (lifetimeData.BatteryDischargeEnergyKWh ?? 0), 3),
                     LoadPower = Math.Round(lifetimeData.LoadEnergyKWh ?? 0, 3),
@@ -157,7 +157,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
         var endOfDay = startOfDay.AddDays(1);
         
         var todayData = await _context.DeviceEnergyData
-            .Where(x => x.DeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == deviceId && 
                        x.DataDateTime >= startOfDay &&
                        x.DataDateTime < endOfDay &&
                        x.DataType == "DailyCumulativeEnergyData")
@@ -169,7 +169,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
             dataPoints.Add(new Hems_Backend.Application.Common.Models.PowerMetricsDataPoint
             {
                 Timestamp = $"Day {today.Day}",
-                SolarPower = Math.Round(todayData.PvEnergyKWh ?? 0, 3),
+                SolarPower = Math.Round(todayData.PvTotalEnergyKWh ?? 0, 3),
                 GridPower = Math.Round((todayData.GridImportEnergyKWh ?? 0) - (todayData.GridExportEnergyKWh ?? 0), 3),
                 BatteryPower = Math.Round((todayData.BatteryChargeEnergyKWh ?? 0) - (todayData.BatteryDischargeEnergyKWh ?? 0), 3),
                 LoadPower = Math.Round(todayData.LoadEnergyKWh ?? 0, 3),
@@ -219,7 +219,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
             var endOfDay = startOfDay.AddDays(1);
 
             var lifetimeData = await _context.DeviceEnergyData
-                .Where(x => x.DeviceId == deviceId && 
+                .Where(x => x.ThingsBoardDeviceId == deviceId && 
                            x.DataDateTime >= startOfDay &&
                            x.DataDateTime < endOfDay &&
                            x.DataType == "LifetimeEnergyData")
@@ -230,7 +230,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
                 dataPoints.Add(new Hems_Backend.Application.Common.Models.PowerMetricsDataPoint
                 {
                     Timestamp = $"Day {day.Day}",
-                    SolarPower = Math.Round(lifetimeData.PvEnergyKWh ?? 0, 3),
+                    SolarPower = Math.Round(lifetimeData.PvTotalEnergyKWh ?? 0, 3),
                     GridPower = Math.Round((lifetimeData.GridImportEnergyKWh ?? 0) - (lifetimeData.GridExportEnergyKWh ?? 0), 3),
                     BatteryPower = Math.Round((lifetimeData.BatteryChargeEnergyKWh ?? 0) - (lifetimeData.BatteryDischargeEnergyKWh ?? 0), 3),
                     LoadPower = Math.Round(lifetimeData.LoadEnergyKWh ?? 0, 3),
@@ -281,7 +281,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
             var endOfMonth = startOfMonth.AddMonths(1);
 
             var lifetimeData = await _context.DeviceEnergyData
-                .Where(x => x.DeviceId == deviceId && 
+                .Where(x => x.ThingsBoardDeviceId == deviceId && 
                            x.DataDateTime >= startOfMonth &&
                            x.DataDateTime < endOfMonth &&
                            x.DataType == "LifetimeEnergyData")
@@ -292,7 +292,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
                 dataPoints.Add(new Hems_Backend.Application.Common.Models.PowerMetricsDataPoint
                 {
                     Timestamp = $"Month {month.Month}",
-                    SolarPower = Math.Round(lifetimeData.PvEnergyKWh ?? 0, 3),
+                    SolarPower = Math.Round(lifetimeData.PvTotalEnergyKWh ?? 0, 3),
                     GridPower = Math.Round((lifetimeData.GridImportEnergyKWh ?? 0) - (lifetimeData.GridExportEnergyKWh ?? 0), 3),
                     BatteryPower = Math.Round((lifetimeData.BatteryChargeEnergyKWh ?? 0) - (lifetimeData.BatteryDischargeEnergyKWh ?? 0), 3),
                     LoadPower = Math.Round(lifetimeData.LoadEnergyKWh ?? 0, 3),

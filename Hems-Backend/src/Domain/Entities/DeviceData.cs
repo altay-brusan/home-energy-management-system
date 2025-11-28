@@ -7,7 +7,7 @@ public class DeviceData : BaseAuditableEntity
 {
     public string DataType { get; set; } = string.Empty;
     
-    public Guid DeviceId { get; set; }
+    public Guid ThingsBoardDeviceId { get; set; }
     
     public DateTime RequestDate { get; set; }
     

@@ -85,7 +85,7 @@ public class GetDeviceWithDataQueryHandler : IRequestHandler<GetDeviceWithDataQu
     private async Task<object?> GetBMSDataAsync(Guid deviceId, CancellationToken cancellationToken)
     {
         var batteryData = await _context.DeviceData
-            .Where(x => x.DeviceId == deviceId && x.DataType == "BatteryClusterData")
+            .Where(x => x.ThingsBoardDeviceId == deviceId && x.DataType == "BatteryClusterData")
             .OrderByDescending(x => x.RequestDate)
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -140,7 +140,7 @@ public class GetDeviceWithDataQueryHandler : IRequestHandler<GetDeviceWithDataQu
     private async Task<object?> GetInverterDataAsync(Guid deviceId, CancellationToken cancellationToken)
     {
         var energyData = await _context.DeviceEnergyData
-            .Where(x => x.DeviceId == deviceId)
+            .Where(x => x.ThingsBoardDeviceId == deviceId)
             .OrderByDescending(x => x.DataDateTime)
             .Take(2)
             .ToListAsync(cancellationToken);

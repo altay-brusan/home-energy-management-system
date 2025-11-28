@@ -33,7 +33,7 @@ public class GetHeroQueryHandler : IRequestHandler<GetHeroQuery, HeroResponseDto
 
         // Bugünün son hourly verisini al
         var lastHourlyData = await _context.DeviceEnergyData
-            .Where(x => x.DeviceId == request.DeviceId && 
+            .Where(x => x.ThingsBoardDeviceId == request.DeviceId && 
                        x.DataDateTime >= startOfDay &&
                        x.DataDateTime < endOfDay &&
                        x.DataType == "DailyCumulativeEnergyData")
@@ -59,12 +59,12 @@ public class GetHeroQueryHandler : IRequestHandler<GetHeroQuery, HeroResponseDto
         // Today Energy: Son verinin toplam enerji değeri
         var todayEnergy = (lastHourlyData.GridImportEnergyKWh ?? 0) + 
                          (lastHourlyData.GeneratorEnergyKWh ?? 0) + 
-                         (lastHourlyData.PvEnergyKWh ?? 0) + 
+                         (lastHourlyData.PvTotalEnergyKWh ?? 0) + 
                          (lastHourlyData.BatteryChargeEnergyKWh ?? 0);
 
         // Current Power için bir önceki veriyi al
         var previousHourlyData = await _context.DeviceEnergyData
-            .Where(x => x.DeviceId == request.DeviceId && 
+            .Where(x => x.ThingsBoardDeviceId == request.DeviceId && 
                        x.DataDateTime >= startOfDay &&
                        x.DataDateTime < endOfDay &&
                        x.DataType == "DailyCumulativeEnergyData" &&
@@ -77,7 +77,7 @@ public class GetHeroQueryHandler : IRequestHandler<GetHeroQuery, HeroResponseDto
         {
             var previousEnergy = (previousHourlyData.GridImportEnergyKWh ?? 0) + 
                                (previousHourlyData.GeneratorEnergyKWh ?? 0) + 
-                               (previousHourlyData.PvEnergyKWh ?? 0) + 
+                               (previousHourlyData.PvTotalEnergyKWh ?? 0) + 
                                (previousHourlyData.BatteryChargeEnergyKWh ?? 0);
 
             // kWh farkını kW'ya çevir (1 saat = 1 kW)
