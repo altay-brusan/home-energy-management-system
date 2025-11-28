@@ -354,11 +354,6 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .HasPrecision(18, 3)
                         .HasColumnType("double precision");
 
-                    b.Property<string>("Kind")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
                     b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("timestamp with time zone");
 
