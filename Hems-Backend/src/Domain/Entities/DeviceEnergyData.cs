@@ -16,15 +16,11 @@ public class DeviceEnergyData : BaseAuditableEntity
     
     [Required]
     [MaxLength(50)]
-    public string DataType { get; set; } = string.Empty; // "Daily" or "Lifetime"
+    public string DataType { get; set; } = string.Empty; // "DailyCumulativeEnergyData" or "LifetimeEnergyData"
     
     [Required]
     [MaxLength(50)]
     public string MessageType { get; set; } = string.Empty; // "Telemetry"
-    
-    [Required]
-    [MaxLength(50)]
-    public string Kind { get; set; } = string.Empty; // "DailyEnergyFlowState" or "TotalEnergyFlowState"
     
     [Required]
     [MaxLength(20)]
