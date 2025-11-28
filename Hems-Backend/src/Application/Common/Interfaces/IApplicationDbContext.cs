@@ -25,6 +25,10 @@ public interface IApplicationDbContext
     
     DbSet<DeviceEnergyData> DeviceEnergyData { get; }
 
+    DbSet<DevicePowerData> DevicePowerData { get; }
+
+    DbSet<DeviceWeatherData> DeviceWeatherData { get; }
+
     DbSet<Invitation> Invitations { get; }
 
     DbSet<Notification> Notifications { get; }
