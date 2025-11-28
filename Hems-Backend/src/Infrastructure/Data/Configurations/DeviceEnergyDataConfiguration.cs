@@ -26,10 +26,6 @@ public class DeviceEnergyDataConfiguration : IEntityTypeConfiguration<DeviceEner
             .IsRequired()
             .HasMaxLength(50);
 
-        builder.Property(x => x.Kind)
-            .IsRequired()
-            .HasMaxLength(50);
-
         builder.Property(x => x.PhaseType)
             .IsRequired()
             .HasMaxLength(20)
