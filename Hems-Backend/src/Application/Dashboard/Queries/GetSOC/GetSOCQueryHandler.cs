@@ -12,25 +12,34 @@ public class GetSOCQueryHandler : IRequestHandler<GetSOCQuery, SOCResponseDto>
 {
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
+    private readonly IDeviceMappingService _deviceMapping;
 
-    public GetSOCQueryHandler(IApplicationDbContext context, ISender sender)
+    public GetSOCQueryHandler(IApplicationDbContext context, ISender sender, IDeviceMappingService deviceMapping)
     {
         _context = context;
         _sender = sender;
+        _deviceMapping = deviceMapping;
     }
 
     public async Task<SOCResponseDto> Handle(GetSOCQuery request, CancellationToken cancellationToken)
     {
-        // Device access check
+        // Device access check (uses local DeviceId)
         var hasAccess = await _sender.Send(new CheckDeviceAccessQuery { DeviceId = request.DeviceId }, cancellationToken);
         if (!hasAccess)
         {
             throw new UnauthorizedAccessException("Device access denied");
         }
 
-        // Query the latest BatterySoc data for the device
+        // Map local DeviceId to ThingsBoardDeviceId for querying telemetry data
+        var thingsBoardDeviceId = await _deviceMapping.GetThingsBoardDeviceIdAsync(request.DeviceId, cancellationToken);
+        if (thingsBoardDeviceId == null)
+        {
+            throw new ArgumentException($"Device with ID {request.DeviceId} not found or has no ThingsBoard mapping.");
+        }
+
+        // Query the latest BatterySoc data for the device using ThingsBoardDeviceId
         var latestSocData = await _context.DeviceData
-            .Where(dd => dd.ThingsBoardDeviceId == request.DeviceId && dd.DataType == "BatterySoc")
+            .Where(dd => dd.ThingsBoardDeviceId == thingsBoardDeviceId && dd.DataType == "BatterySoc")
             .OrderByDescending(dd => dd.RequestDate)
             .FirstOrDefaultAsync(cancellationToken);
 

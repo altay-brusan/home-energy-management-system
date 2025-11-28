@@ -38,9 +38,9 @@ public class CheckDeviceAccessQueryHandler : IRequestHandler<CheckDeviceAccessQu
         }
 
         // Normal kullanıcılar sadece kendi device'larına veya paylaşılan device'lara erişebilir
-        // DeviceId is actually ThingsBoardDeviceId, so we need to check against Device.ThingsBoardDeviceId
+        // DeviceId is the local database ID, not ThingsBoardDeviceId
         var hasAccess = await _context.SetupDevices
-            .AnyAsync(sd => _context.Devices.Any(d => d.Id == sd.DeviceId && d.ThingsBoardDeviceId == request.DeviceId) && 
+            .AnyAsync(sd => sd.DeviceId == request.DeviceId && 
                            _context.Setups.Any(s => s.Id == sd.SetupId && 
                                                   _context.Sites.Any(site => site.Id == s.SiteId && 
                                                                            (site.CreatedBy == _user.Id || 

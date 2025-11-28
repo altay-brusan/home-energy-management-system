@@ -13,11 +13,13 @@ public class GetDeviceWithDataQueryHandler : IRequestHandler<GetDeviceWithDataQu
 {
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
+    private readonly IDeviceMappingService _deviceMapping;
 
-    public GetDeviceWithDataQueryHandler(IApplicationDbContext context, ISender sender)
+    public GetDeviceWithDataQueryHandler(IApplicationDbContext context, ISender sender, IDeviceMappingService deviceMapping)
     {
         _context = context;
         _sender = sender;
+        _deviceMapping = deviceMapping;
     }
 
     public async Task<DeviceWithDataResponseDto> Handle(GetDeviceWithDataQuery request, CancellationToken cancellationToken)
@@ -27,6 +29,13 @@ public class GetDeviceWithDataQueryHandler : IRequestHandler<GetDeviceWithDataQu
         if (!hasAccess)
         {
             throw new UnauthorizedAccessException("Device access denied");
+        }
+
+        // Map local DeviceId to ThingsBoardDeviceId
+        var thingsBoardDeviceId = await _deviceMapping.GetThingsBoardDeviceIdAsync(request.DeviceId, cancellationToken);
+        if (thingsBoardDeviceId == null)
+        {
+            throw new ArgumentException($"Device with ID {request.DeviceId} not found or has no ThingsBoard mapping.");
         }
 
         // Device ve ilişkili verileri al
@@ -51,13 +60,13 @@ public class GetDeviceWithDataQueryHandler : IRequestHandler<GetDeviceWithDataQu
             switch (deviceComponent.DeviceType)
             {
                 case DeviceType.BMS:
-                    componentData = await GetBMSDataAsync(device.Id, cancellationToken);
+                    componentData = await GetBMSDataAsync(thingsBoardDeviceId.Value, cancellationToken);
                     break;
                 case DeviceType.Battery:
                     componentData = await GetBatteryDataAsync(deviceComponent.SerialNumber ?? "", cancellationToken);
                     break;
                 case DeviceType.Invertor:
-                    componentData = await GetInverterDataAsync(device.Id, cancellationToken);
+                    componentData = await GetInverterDataAsync(thingsBoardDeviceId.Value, cancellationToken);
                     break;
             }
 
@@ -82,10 +91,10 @@ public class GetDeviceWithDataQueryHandler : IRequestHandler<GetDeviceWithDataQu
         };
     }
 
-    private async Task<object?> GetBMSDataAsync(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<object?> GetBMSDataAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         var batteryData = await _context.DeviceData
-            .Where(x => x.ThingsBoardDeviceId == deviceId && x.DataType == "BatteryClusterData")
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && x.DataType == "BatteryClusterData")
             .OrderByDescending(x => x.RequestDate)
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -137,10 +146,10 @@ public class GetDeviceWithDataQueryHandler : IRequestHandler<GetDeviceWithDataQu
         return null;
     }
 
-    private async Task<object?> GetInverterDataAsync(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<object?> GetInverterDataAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         var energyData = await _context.DeviceEnergyData
-            .Where(x => x.ThingsBoardDeviceId == deviceId)
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId)
             .OrderByDescending(x => x.DataDateTime)
             .Take(2)
             .ToListAsync(cancellationToken);

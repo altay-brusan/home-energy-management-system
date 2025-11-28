@@ -4807,11 +4807,6 @@
             "type": "string",
             "format": "guid"
           },
-          "thingsBoardDeviceId": {
-            "type": "string",
-            "format": "guid",
-            "nullable": true
-          },
           "manufacturer": {
             "type": "string"
           },
