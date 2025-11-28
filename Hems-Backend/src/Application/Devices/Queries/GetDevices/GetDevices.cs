@@ -47,6 +47,7 @@ public class GetDevicesQueryHandler : IRequestHandler<GetDevicesQuery, Paginated
             .Select(x => new DeviceDto
             {
                 Id = x.Id,
+                ThingsBoardDeviceId = x.ThingsBoardDeviceId,
                 Manufacturer = x.Manufacturer,
                 ModelNumber = x.ModelNumber,
                 SerialNumber = x.SerialNumber,
