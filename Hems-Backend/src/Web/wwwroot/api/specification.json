@@ -5814,9 +5814,6 @@
             "items": {
               "$ref": "#/components/schemas/PowerMetricsDataPoint"
             }
-          },
-          "statistics": {
-            "$ref": "#/components/schemas/PowerMetricsStatistics"
           }
         }
       },
@@ -5840,47 +5837,6 @@
             "format": "double"
           },
           "loadPower": {
-            "type": "number",
-            "format": "double"
-          },
-          "unit": {
-            "type": "string"
-          }
-        }
-      },
-      "PowerMetricsStatistics": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "averageSolarPower": {
-            "type": "number",
-            "format": "double"
-          },
-          "peakSolarPower": {
-            "type": "number",
-            "format": "double"
-          },
-          "averageGridPower": {
-            "type": "number",
-            "format": "double"
-          },
-          "peakGridPower": {
-            "type": "number",
-            "format": "double"
-          },
-          "averageBatteryPower": {
-            "type": "number",
-            "format": "double"
-          },
-          "peakBatteryPower": {
-            "type": "number",
-            "format": "double"
-          },
-          "averageLoadPower": {
-            "type": "number",
-            "format": "double"
-          },
-          "peakLoadPower": {
             "type": "number",
             "format": "double"
           },
