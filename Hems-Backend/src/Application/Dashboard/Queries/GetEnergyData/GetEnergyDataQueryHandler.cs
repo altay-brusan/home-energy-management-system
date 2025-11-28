@@ -11,11 +11,13 @@ public class GetEnergyDataQueryHandler : IRequestHandler<GetEnergyDataQuery, Ene
 {
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
+    private readonly IDeviceMappingService _deviceMapping;
 
-    public GetEnergyDataQueryHandler(IApplicationDbContext context, ISender sender)
+    public GetEnergyDataQueryHandler(IApplicationDbContext context, ISender sender, IDeviceMappingService deviceMapping)
     {
         _context = context;
         _sender = sender;
+        _deviceMapping = deviceMapping;
     }
 
     public async Task<EnergyFlowResponseDto> Handle(GetEnergyDataQuery request, CancellationToken cancellationToken)
@@ -28,27 +30,34 @@ public class GetEnergyDataQueryHandler : IRequestHandler<GetEnergyDataQuery, Ene
             throw new UnauthorizedAccessException("Bu cihaza erişim yetkiniz bulunmamaktadır.");
         }
 
+        // Map local DeviceId to ThingsBoardDeviceId
+        var thingsBoardDeviceId = await _deviceMapping.GetThingsBoardDeviceIdAsync(request.DeviceId, cancellationToken);
+        if (thingsBoardDeviceId == null)
+        {
+            throw new ArgumentException($"Device with ID {request.DeviceId} not found or has no ThingsBoard mapping.");
+        }
+
         var today = DateTime.UtcNow.Date;
         var isEndDateToday = request.EndDate.Date == today;
         
-        // DateTime'ları UTC'ye çevir
+        // DateTime'ı UTC'ye çevir
         var startDate = DateTime.SpecifyKind(request.StartDate, DateTimeKind.Utc);
         var endDate = DateTime.SpecifyKind(request.EndDate, DateTimeKind.Utc);
 
-        var energyData = await GetEnergyDataAsync(request.DeviceId, startDate, endDate, isEndDateToday, cancellationToken);
+        var energyData = await GetEnergyDataAsync(thingsBoardDeviceId.Value, startDate, endDate, isEndDateToday, cancellationToken);
         
         return CalculateEnergyFlowResponseDto(energyData, request.EndDate);
     }
 
     private async Task<List<DeviceEnergyData>> GetEnergyDataAsync(
-        Guid deviceId, 
+        Guid thingsBoardDeviceId, 
         DateTime startDate, 
         DateTime endDate, 
         bool isEndDateToday, 
         CancellationToken cancellationToken)
     {
         var query = _context.DeviceEnergyData
-            .Where(x => x.ThingsBoardDeviceId == deviceId);
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId);
 
         if (isEndDateToday)
         {

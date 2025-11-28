@@ -12,11 +12,13 @@ public class GetBatteryQueryHandler : IRequestHandler<GetBatteryQuery, BatteryRe
 {
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
+    private readonly IDeviceMappingService _deviceMapping;
 
-    public GetBatteryQueryHandler(IApplicationDbContext context, ISender sender)
+    public GetBatteryQueryHandler(IApplicationDbContext context, ISender sender, IDeviceMappingService deviceMapping)
     {
         _context = context;
         _sender = sender;
+        _deviceMapping = deviceMapping;
     }
 
     public async Task<BatteryResponseDto> Handle(GetBatteryQuery request, CancellationToken cancellationToken)
@@ -28,12 +30,19 @@ public class GetBatteryQueryHandler : IRequestHandler<GetBatteryQuery, BatteryRe
             throw new UnauthorizedAccessException("Bu cihaza erişim yetkiniz bulunmamaktadır.");
         }
 
+        // Map local DeviceId to ThingsBoardDeviceId
+        var thingsBoardDeviceId = await _deviceMapping.GetThingsBoardDeviceIdAsync(request.DeviceId, cancellationToken);
+        if (thingsBoardDeviceId == null)
+        {
+            throw new ArgumentException($"Device with ID {request.DeviceId} not found or has no ThingsBoard mapping.");
+        }
+
         var today = DateTime.UtcNow.Date;
         var todayUtc = DateTime.SpecifyKind(today, DateTimeKind.Utc);
 
         // Bugünün BatteryClusterData verilerini çek
         var batteryData = await _context.DeviceData
-            .Where(x => x.ThingsBoardDeviceId == request.DeviceId && 
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId.Value && 
                        x.RequestDate.Date == todayUtc.Date &&
                        x.DataType == "BatteryClusterData")
             .OrderBy(x => x.RequestDate)

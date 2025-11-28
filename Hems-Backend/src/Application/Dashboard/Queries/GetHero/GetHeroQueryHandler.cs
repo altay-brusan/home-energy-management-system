@@ -11,11 +11,13 @@ public class GetHeroQueryHandler : IRequestHandler<GetHeroQuery, HeroResponseDto
 {
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
+    private readonly IDeviceMappingService _deviceMapping;
 
-    public GetHeroQueryHandler(IApplicationDbContext context, ISender sender)
+    public GetHeroQueryHandler(IApplicationDbContext context, ISender sender, IDeviceMappingService deviceMapping)
     {
         _context = context;
         _sender = sender;
+        _deviceMapping = deviceMapping;
     }
 
     public async Task<HeroResponseDto> Handle(GetHeroQuery request, CancellationToken cancellationToken)
@@ -27,13 +29,20 @@ public class GetHeroQueryHandler : IRequestHandler<GetHeroQuery, HeroResponseDto
             throw new UnauthorizedAccessException("Device access denied");
         }
 
+        // Map local DeviceId to ThingsBoardDeviceId
+        var thingsBoardDeviceId = await _deviceMapping.GetThingsBoardDeviceIdAsync(request.DeviceId, cancellationToken);
+        if (thingsBoardDeviceId == null)
+        {
+            throw new ArgumentException($"Device with ID {request.DeviceId} not found or has no ThingsBoard mapping.");
+        }
+
         var utcNow = DateTime.UtcNow;
         var startOfDay = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 0, 0, 0, DateTimeKind.Utc);
         var endOfDay = startOfDay.AddDays(1);
 
         // Bugünün son hourly verisini al
         var lastHourlyData = await _context.DeviceEnergyData
-            .Where(x => x.ThingsBoardDeviceId == request.DeviceId && 
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId.Value && 
                        x.DataDateTime >= startOfDay &&
                        x.DataDateTime < endOfDay &&
                        x.DataType == "DailyCumulativeEnergyData")
@@ -64,7 +73,7 @@ public class GetHeroQueryHandler : IRequestHandler<GetHeroQuery, HeroResponseDto
 
         // Current Power için bir önceki veriyi al
         var previousHourlyData = await _context.DeviceEnergyData
-            .Where(x => x.ThingsBoardDeviceId == request.DeviceId && 
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId.Value && 
                        x.DataDateTime >= startOfDay &&
                        x.DataDateTime < endOfDay &&
                        x.DataType == "DailyCumulativeEnergyData" &&

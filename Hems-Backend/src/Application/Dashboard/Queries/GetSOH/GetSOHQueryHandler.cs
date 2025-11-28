@@ -12,11 +12,13 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
 {
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
+    private readonly IDeviceMappingService _deviceMapping;
 
-    public GetSOHQueryHandler(IApplicationDbContext context, ISender sender)
+    public GetSOHQueryHandler(IApplicationDbContext context, ISender sender, IDeviceMappingService deviceMapping)
     {
         _context = context;
         _sender = sender;
+        _deviceMapping = deviceMapping;
     }
 
     public async Task<SOHResponseDto> Handle(GetSOHQuery request, CancellationToken cancellationToken)
@@ -28,9 +30,16 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
             throw new UnauthorizedAccessException("Device access denied");
         }
 
+        // Map local DeviceId to ThingsBoardDeviceId
+        var thingsBoardDeviceId = await _deviceMapping.GetThingsBoardDeviceIdAsync(request.DeviceId, cancellationToken);
+        if (thingsBoardDeviceId == null)
+        {
+            throw new ArgumentException($"Device with ID {request.DeviceId} not found or has no ThingsBoard mapping.");
+        }
+
         // Önce toplam veri miktarını kontrol et
         var totalDataCount = await _context.DeviceData
-            .Where(x => x.ThingsBoardDeviceId == request.DeviceId && 
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId.Value && 
                        x.DataType == "BatteryData")
             .CountAsync(cancellationToken);
 
@@ -219,31 +228,31 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
         };
     }
 
-    private async Task<List<Hems_Backend.Domain.Entities.DeviceData>> GetDataByRange(Guid deviceId, string range, CancellationToken cancellationToken)
+    private async Task<List<Hems_Backend.Domain.Entities.DeviceData>> GetDataByRange(Guid thingsBoardDeviceId, string range, CancellationToken cancellationToken)
     {
         return range switch
         {
-            "Day" => await GetDayData(deviceId, cancellationToken),
-            "Week" => await GetWeekData(deviceId, cancellationToken),
-            "Month" => await GetMonthData(deviceId, cancellationToken),
-            "Year" => await GetYearData(deviceId, cancellationToken),
-            _ => await GetDayData(deviceId, cancellationToken)
+            "Day" => await GetDayData(thingsBoardDeviceId, cancellationToken),
+            "Week" => await GetWeekData(thingsBoardDeviceId, cancellationToken),
+            "Month" => await GetMonthData(thingsBoardDeviceId, cancellationToken),
+            "Year" => await GetYearData(thingsBoardDeviceId, cancellationToken),
+            _ => await GetDayData(thingsBoardDeviceId, cancellationToken)
         };
     }
 
-    private async Task<List<Hems_Backend.Domain.Entities.DeviceData>> GetDayData(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<List<Hems_Backend.Domain.Entities.DeviceData>> GetDayData(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         // Son 24 saatteki tüm veriler
         var startDate = DateTime.SpecifyKind(DateTime.UtcNow.AddDays(-1), DateTimeKind.Utc);
         return await _context.DeviceData
-            .Where(x => x.ThingsBoardDeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
                        x.RequestDate >= startDate &&
                        x.DataType == "BatteryData")
             .OrderBy(x => x.RequestDate)
             .ToListAsync(cancellationToken);
     }
 
-    private async Task<List<Hems_Backend.Domain.Entities.DeviceData>> GetWeekData(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<List<Hems_Backend.Domain.Entities.DeviceData>> GetWeekData(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         // Son 7 günün her gününden son veri
         var result = new List<Hems_Backend.Domain.Entities.DeviceData>();
@@ -255,7 +264,7 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
             var endOfDay = startOfDay.AddDays(1);
             
             var lastDataOfDay = await _context.DeviceData
-                .Where(x => x.ThingsBoardDeviceId == deviceId && 
+                .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
                            x.RequestDate >= startOfDay &&
                            x.RequestDate < endOfDay &&
                            x.DataType == "BatteryData")
@@ -271,7 +280,7 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
         return result.OrderBy(x => x.RequestDate).ToList();
     }
 
-    private async Task<List<Hems_Backend.Domain.Entities.DeviceData>> GetMonthData(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<List<Hems_Backend.Domain.Entities.DeviceData>> GetMonthData(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         // Son 30 günün her gününden son veri
         var result = new List<Hems_Backend.Domain.Entities.DeviceData>();
@@ -283,7 +292,7 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
             var endOfDay = startOfDay.AddDays(1);
             
             var lastDataOfDay = await _context.DeviceData
-                .Where(x => x.ThingsBoardDeviceId == deviceId && 
+                .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
                            x.RequestDate >= startOfDay &&
                            x.RequestDate < endOfDay &&
                            x.DataType == "BatteryData")
@@ -299,7 +308,7 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
         return result.OrderBy(x => x.RequestDate).ToList();
     }
 
-    private async Task<List<Hems_Backend.Domain.Entities.DeviceData>> GetYearData(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<List<Hems_Backend.Domain.Entities.DeviceData>> GetYearData(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         // Son 12 ayın her ayından son veri
         var result = new List<Hems_Backend.Domain.Entities.DeviceData>();
@@ -311,7 +320,7 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
             var endOfMonth = DateTime.SpecifyKind(startOfMonth.AddMonths(1), DateTimeKind.Utc);
             
             var lastDataOfMonth = await _context.DeviceData
-                .Where(x => x.ThingsBoardDeviceId == deviceId && 
+                .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
                            x.RequestDate >= startOfMonth &&
                            x.RequestDate < endOfMonth &&
                            x.DataType == "BatteryData")

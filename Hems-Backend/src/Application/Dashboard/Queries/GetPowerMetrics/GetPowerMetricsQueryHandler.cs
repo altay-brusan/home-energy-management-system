@@ -12,29 +12,38 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
 {
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
+    private readonly IDeviceMappingService _deviceMapping;
 
-    public GetPowerMetricsQueryHandler(IApplicationDbContext context, ISender sender)
+    public GetPowerMetricsQueryHandler(IApplicationDbContext context, ISender sender, IDeviceMappingService deviceMapping)
     {
         _context = context;
         _sender = sender;
+        _deviceMapping = deviceMapping;
     }
 
     public async Task<PowerMetricsResponseDto> Handle(GetPowerMetricsQuery request, CancellationToken cancellationToken)
     {
-        // Device access kontrolü
+        // Device access kontrolü (uses local DeviceId)
         var hasAccess = await _sender.Send(new CheckDeviceAccessQuery { DeviceId = request.DeviceId }, cancellationToken);
         if (!hasAccess)
         {
             throw new UnauthorizedAccessException("Device access denied");
         }
 
+        // Map local DeviceId to ThingsBoardDeviceId
+        var thingsBoardDeviceId = await _deviceMapping.GetThingsBoardDeviceIdAsync(request.DeviceId, cancellationToken);
+        if (thingsBoardDeviceId == null)
+        {
+            throw new ArgumentException($"Device with ID {request.DeviceId} not found or has no ThingsBoard mapping.");
+        }
+
         return request.Period.ToLower() switch
         {
-            "daily" => await GetDailyPowerMetricsAsync(request.DeviceId, cancellationToken),
-            "weekly" => await GetWeeklyPowerMetricsAsync(request.DeviceId, cancellationToken),
-            "monthly" => await GetMonthlyPowerMetricsAsync(request.DeviceId, cancellationToken),
-            "yearly" => await GetYearlyPowerMetricsAsync(request.DeviceId, cancellationToken),
-            _ => await GetDailyPowerMetricsAsync(request.DeviceId, cancellationToken)
+            "daily" => await GetDailyPowerMetricsAsync(thingsBoardDeviceId.Value, cancellationToken),
+            "weekly" => await GetWeeklyPowerMetricsAsync(thingsBoardDeviceId.Value, cancellationToken),
+            "monthly" => await GetMonthlyPowerMetricsAsync(thingsBoardDeviceId.Value, cancellationToken),
+            "yearly" => await GetYearlyPowerMetricsAsync(thingsBoardDeviceId.Value, cancellationToken),
+            _ => await GetDailyPowerMetricsAsync(thingsBoardDeviceId.Value, cancellationToken)
         };
     }
 
@@ -43,7 +52,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
     /// Returns individual 5-minute samples with timestamp and delta energy
     /// Each delta represents energy produced/consumed in that 5-minute period
     /// </summary>
-    private async Task<PowerMetricsResponseDto> GetDailyPowerMetricsAsync(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<PowerMetricsResponseDto> GetDailyPowerMetricsAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         var utcNow = DateTime.UtcNow;
         var startOfDay = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 0, 0, 0, DateTimeKind.Utc);
@@ -51,7 +60,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
 
         // Get all cumulative energy samples for today (5-min intervals)
         var energyData = await _context.DeviceEnergyData
-            .Where(x => x.ThingsBoardDeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
                        x.DataDateTime >= startOfDay &&
                        x.DataDateTime < endOfDay &&
                        x.DataType == DataTypes.DailyCumulativeEnergy)
@@ -89,7 +98,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
     /// Weekly metrics: Calculate daily energy deltas from lifetime energy samples
     /// Falls back to DailyCumulativeEnergy for current day if lifetime sample not available
     /// </summary>
-    private async Task<PowerMetricsResponseDto> GetWeeklyPowerMetricsAsync(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<PowerMetricsResponseDto> GetWeeklyPowerMetricsAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         var today = DateTime.UtcNow.Date;
         var weekStart = today.AddDays(-(int)today.DayOfWeek);
@@ -97,7 +106,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
 
         // Get all lifetime energy samples for the week
         var lifetimeData = await _context.DeviceEnergyData
-            .Where(x => x.ThingsBoardDeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
                        x.DataDateTime >= weekStartUtc &&
                        x.DataType == DataTypes.LifetimeEnergy)
             .OrderBy(x => x.DataDateTime)
@@ -124,7 +133,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
             // If current day and no lifetime sample exists, use DailyCumulativeEnergy
             if (dayDelta == null && day.Date == today)
             {
-                dayDelta = await GetCurrentDayEnergyFromDailyData(deviceId, cancellationToken);
+                dayDelta = await GetCurrentDayEnergyFromDailyData(thingsBoardDeviceId, cancellationToken);
             }
 
             if (dayDelta != null)
@@ -148,7 +157,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
     /// Monthly metrics: Calculate daily energy deltas from lifetime energy samples
     /// Falls back to DailyCumulativeEnergy for current day if lifetime sample not available
     /// </summary>
-    private async Task<PowerMetricsResponseDto> GetMonthlyPowerMetricsAsync(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<PowerMetricsResponseDto> GetMonthlyPowerMetricsAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         var today = DateTime.UtcNow.Date;
         var monthStart = new DateTime(today.Year, today.Month, 1);
@@ -157,7 +166,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
 
         // Get all lifetime energy samples for the month
         var lifetimeData = await _context.DeviceEnergyData
-            .Where(x => x.ThingsBoardDeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
                        x.DataDateTime >= monthStartUtc &&
                        x.DataDateTime < monthEnd &&
                        x.DataType == DataTypes.LifetimeEnergy)
@@ -188,7 +197,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
             // If current day and no lifetime sample exists, use DailyCumulativeEnergy
             if (dayDelta == null && day.Date == today)
             {
-                dayDelta = await GetCurrentDayEnergyFromDailyData(deviceId, cancellationToken);
+                dayDelta = await GetCurrentDayEnergyFromDailyData(thingsBoardDeviceId, cancellationToken);
             }
 
             if (dayDelta != null)
@@ -212,7 +221,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
     /// Yearly metrics: Calculate monthly energy aggregates from lifetime energy samples
     /// Falls back to DailyCumulativeEnergy for current month if lifetime samples not available
     /// </summary>
-    private async Task<PowerMetricsResponseDto> GetYearlyPowerMetricsAsync(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<PowerMetricsResponseDto> GetYearlyPowerMetricsAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         var today = DateTime.UtcNow.Date;
         var yearStart = new DateTime(today.Year, 1, 1);
@@ -221,7 +230,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
 
         // Get all lifetime energy samples for the year
         var lifetimeData = await _context.DeviceEnergyData
-            .Where(x => x.ThingsBoardDeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
                        x.DataDateTime >= yearStartUtc &&
                        x.DataDateTime < yearEnd &&
                        x.DataType == DataTypes.LifetimeEnergy)
@@ -250,7 +259,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
             // If current month and no sufficient lifetime samples, use DailyCumulativeEnergy
             if ((!monthDeltas.Any() || month == today.Month) && today.Month == month)
             {
-                var currentMonthDelta = await GetCurrentMonthEnergyFromDailyData(deviceId, cancellationToken);
+                var currentMonthDelta = await GetCurrentMonthEnergyFromDailyData(thingsBoardDeviceId, cancellationToken);
                 if (currentMonthDelta != null)
                 {
                     monthDeltas.Add(currentMonthDelta);
@@ -423,7 +432,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
     /// Get current day's total energy from DailyCumulativeEnergy
     /// Uses the last sample of the day (most recent cumulative value)
     /// </summary>
-    private async Task<DeviceEnergyData?> GetCurrentDayEnergyFromDailyData(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<DeviceEnergyData?> GetCurrentDayEnergyFromDailyData(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         var utcNow = DateTime.UtcNow;
         var startOfDay = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 0, 0, 0, DateTimeKind.Utc);
@@ -431,7 +440,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
 
         // Get the most recent cumulative sample (represents total energy from midnight to now)
         return await _context.DeviceEnergyData
-            .Where(x => x.ThingsBoardDeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
                        x.DataDateTime >= startOfDay &&
                        x.DataDateTime < endOfDay &&
                        x.DataType == DataTypes.DailyCumulativeEnergy)
@@ -442,14 +451,14 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
     /// <summary>
     /// Get current month's total energy by summing all deltas from DailyCumulativeEnergy
     /// </summary>
-    private async Task<DeviceEnergyData?> GetCurrentMonthEnergyFromDailyData(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<DeviceEnergyData?> GetCurrentMonthEnergyFromDailyData(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         var today = DateTime.UtcNow.Date;
         var monthStart = new DateTime(today.Year, today.Month, 1, 0, 0, 0, DateTimeKind.Utc);
         var monthEnd = monthStart.AddMonths(1);
 
         var dailyData = await _context.DeviceEnergyData
-            .Where(x => x.ThingsBoardDeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
                        x.DataDateTime >= monthStart &&
                        x.DataDateTime < monthEnd &&
                        x.DataType == DataTypes.DailyCumulativeEnergy)
@@ -468,7 +477,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
         // Sum all daily totals
         return new DeviceEnergyData
         {
-            ThingsBoardDeviceId = deviceId,
+            ThingsBoardDeviceId = thingsBoardDeviceId,
             DataDateTime = today,
             DataType = DataTypes.DailyCumulativeEnergy,
             

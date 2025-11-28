@@ -44,7 +44,23 @@ else
 }
 
 app.UseHealthChecks("/health");
-app.UseHttpsRedirection();
+
+// Allow HTTP for ThingsBoard telemetry endpoints, require HTTPS for all other endpoints
+app.Use(async (context, next) =>
+{
+    // Skip HTTPS redirection for DeviceData endpoints (ThingsBoard integration)
+    if (!context.Request.Path.StartsWithSegments("/api/DeviceData"))
+    {
+        if (!context.Request.IsHttps && !app.Environment.IsDevelopment())
+        {
+            var httpsUrl = $"https://{context.Request.Host}{context.Request.Path}{context.Request.QueryString}";
+            context.Response.Redirect(httpsUrl, permanent: true);
+            return;
+        }
+    }
+    await next();
+});
+
 app.UseStaticFiles();
 
 // Use custom exception handler instead of developer exception page

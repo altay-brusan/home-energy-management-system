@@ -11,11 +11,13 @@ public class GetBatteryComponentQueryHandler : IRequestHandler<GetBatteryCompone
 {
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
+    private readonly IDeviceMappingService _deviceMapping;
 
-    public GetBatteryComponentQueryHandler(IApplicationDbContext context, ISender sender)
+    public GetBatteryComponentQueryHandler(IApplicationDbContext context, ISender sender, IDeviceMappingService deviceMapping)
     {
         _context = context;
         _sender = sender;
+        _deviceMapping = deviceMapping;
     }
 
     public async Task<BatteryComponentDto> Handle(GetBatteryComponentQuery request, CancellationToken cancellationToken)
@@ -27,17 +29,24 @@ public class GetBatteryComponentQueryHandler : IRequestHandler<GetBatteryCompone
             throw new UnauthorizedAccessException("Bu cihaza erişim yetkiniz bulunmamaktadır.");
         }
 
+        // Map local DeviceId to ThingsBoardDeviceId
+        var thingsBoardDeviceId = await _deviceMapping.GetThingsBoardDeviceIdAsync(request.DeviceId, cancellationToken);
+        if (thingsBoardDeviceId == null)
+        {
+            throw new ArgumentException($"Device with ID {request.DeviceId} not found or has no ThingsBoard mapping.");
+        }
+
         var today = DateTime.UtcNow.Date;
         var todayUtc = DateTime.SpecifyKind(today, DateTimeKind.Utc);
 
         // 1. SOC - Son BatteryClusterData'dan
-        var soc = await GetSOCFromBatteryClusterDataAsync(request.DeviceId, cancellationToken);
+        var soc = await GetSOCFromBatteryClusterDataAsync(thingsBoardDeviceId.Value, cancellationToken);
 
         // 2. Today - Bugünün son DailyCumulativeEnergyData'sından
-        var todayCharge = await GetTodayBatteryChargeAsync(request.DeviceId, todayUtc, cancellationToken);
+        var todayCharge = await GetTodayBatteryChargeAsync(thingsBoardDeviceId.Value, todayUtc, cancellationToken);
 
         // 3. Total - Tüm LifetimeEnergyData'ların toplamı
-        var totalCharge = await GetTotalBatteryChargeAsync(request.DeviceId, cancellationToken);
+        var totalCharge = await GetTotalBatteryChargeAsync(thingsBoardDeviceId.Value, cancellationToken);
 
         return new BatteryComponentDto
         {
@@ -47,10 +56,10 @@ public class GetBatteryComponentQueryHandler : IRequestHandler<GetBatteryCompone
         };
     }
 
-    private async Task<double> GetSOCFromBatteryClusterDataAsync(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<double> GetSOCFromBatteryClusterDataAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         var batteryData = await _context.DeviceData
-            .Where(x => x.ThingsBoardDeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
                        x.DataType == "BatteryClusterData")
             .OrderByDescending(x => x.RequestDate)
             .FirstOrDefaultAsync(cancellationToken);
@@ -75,14 +84,14 @@ public class GetBatteryComponentQueryHandler : IRequestHandler<GetBatteryCompone
         return 0;
     }
 
-    private async Task<double> GetTodayBatteryChargeAsync(Guid deviceId, DateTime todayUtc, CancellationToken cancellationToken)
+    private async Task<double> GetTodayBatteryChargeAsync(Guid thingsBoardDeviceId, DateTime todayUtc, CancellationToken cancellationToken)
     {
         var utcNow = DateTime.UtcNow;
         var startOfDay = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 0, 0, 0, DateTimeKind.Utc);
         var endOfDay = startOfDay.AddDays(1);
         
         var todayData = await _context.DeviceEnergyData
-            .Where(x => x.ThingsBoardDeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
                        x.DataDateTime >= startOfDay &&
                        x.DataDateTime < endOfDay &&
                        x.DataType == "DailyCumulativeEnergyData")
@@ -92,10 +101,10 @@ public class GetBatteryComponentQueryHandler : IRequestHandler<GetBatteryCompone
         return todayData?.BatteryChargeEnergyKWh ?? 0;
     }
 
-    private async Task<double> GetTotalBatteryChargeAsync(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<double> GetTotalBatteryChargeAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         var totalData = await _context.DeviceEnergyData
-            .Where(x => x.ThingsBoardDeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
                        x.DataType == "LifetimeEnergyData")
             .SumAsync(x => x.BatteryChargeEnergyKWh ?? 0, cancellationToken);
 

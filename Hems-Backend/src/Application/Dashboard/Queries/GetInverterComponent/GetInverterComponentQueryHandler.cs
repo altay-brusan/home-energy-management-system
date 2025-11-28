@@ -10,11 +10,13 @@ public class GetInverterComponentQueryHandler : IRequestHandler<GetInverterCompo
 {
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
+    private readonly IDeviceMappingService _deviceMapping;
 
-    public GetInverterComponentQueryHandler(IApplicationDbContext context, ISender sender)
+    public GetInverterComponentQueryHandler(IApplicationDbContext context, ISender sender, IDeviceMappingService deviceMapping)
     {
         _context = context;
         _sender = sender;
+        _deviceMapping = deviceMapping;
     }
 
     public async Task<InverterComponentDto> Handle(GetInverterComponentQuery request, CancellationToken cancellationToken)
@@ -26,17 +28,24 @@ public class GetInverterComponentQueryHandler : IRequestHandler<GetInverterCompo
             throw new UnauthorizedAccessException("Bu cihaza erişim yetkiniz bulunmamaktadır.");
         }
 
+        // Map local DeviceId to ThingsBoardDeviceId
+        var thingsBoardDeviceId = await _deviceMapping.GetThingsBoardDeviceIdAsync(request.DeviceId, cancellationToken);
+        if (thingsBoardDeviceId == null)
+        {
+            throw new ArgumentException($"Device with ID {request.DeviceId} not found or has no ThingsBoard mapping.");
+        }
+
         var today = DateTime.UtcNow.Date;
         var todayUtc = DateTime.SpecifyKind(today, DateTimeKind.Utc);
 
         // 1. Power - Son hourly veriden power hesapla
-        var (power, powerUnit) = await CalculatePowerFromHourlyDataAsync(request.DeviceId, cancellationToken);
+        var (power, powerUnit) = await CalculatePowerFromHourlyDataAsync(thingsBoardDeviceId.Value, cancellationToken);
 
         // 2. Today - Bugünün son DailyCumulativeEnergyData'sından
-        var todayEnergy = await GetTodayInverterEnergyAsync(request.DeviceId, todayUtc, cancellationToken);
+        var todayEnergy = await GetTodayInverterEnergyAsync(thingsBoardDeviceId.Value, todayUtc, cancellationToken);
 
         // 3. Total - Son LifetimeEnergyData'dan
-        var totalEnergy = await GetTotalInverterEnergyAsync(request.DeviceId, cancellationToken);
+        var totalEnergy = await GetTotalInverterEnergyAsync(thingsBoardDeviceId.Value, cancellationToken);
 
         return new InverterComponentDto
         {
@@ -47,11 +56,11 @@ public class GetInverterComponentQueryHandler : IRequestHandler<GetInverterCompo
         };
     }
 
-    private async Task<(double power, string unit)> CalculatePowerFromHourlyDataAsync(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<(double power, string unit)> CalculatePowerFromHourlyDataAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         // Son 2 hourly veriyi al (power hesaplamak için)
         var hourlyData = await _context.DeviceEnergyData
-            .Where(x => x.ThingsBoardDeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
                        x.DataType == "DailyCumulativeEnergyData")
             .OrderByDescending(x => x.DataDateTime)
             .Take(2)
@@ -112,14 +121,14 @@ public class GetInverterComponentQueryHandler : IRequestHandler<GetInverterCompo
                (data.GeneratorEnergyKWh ?? 0);
     }
 
-    private async Task<double> GetTodayInverterEnergyAsync(Guid deviceId, DateTime todayUtc, CancellationToken cancellationToken)
+    private async Task<double> GetTodayInverterEnergyAsync(Guid thingsBoardDeviceId, DateTime todayUtc, CancellationToken cancellationToken)
     {
         var utcNow = DateTime.UtcNow;
         var startOfDay = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 0, 0, 0, DateTimeKind.Utc);
         var endOfDay = startOfDay.AddDays(1);
         
         var todayData = await _context.DeviceEnergyData
-            .Where(x => x.ThingsBoardDeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
                        x.DataDateTime >= startOfDay &&
                        x.DataDateTime < endOfDay &&
                        x.DataType == "DailyCumulativeEnergyData")
@@ -132,10 +141,10 @@ public class GetInverterComponentQueryHandler : IRequestHandler<GetInverterCompo
         return CalculatePositiveEnergyOnly(todayData);
     }
 
-    private async Task<double> GetTotalInverterEnergyAsync(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<double> GetTotalInverterEnergyAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         var totalData = await _context.DeviceEnergyData
-            .Where(x => x.ThingsBoardDeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
                        x.DataType == "LifetimeEnergyData")
             .OrderByDescending(x => x.DataDateTime)
             .FirstOrDefaultAsync(cancellationToken);

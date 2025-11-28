@@ -11,11 +11,13 @@ public class GetEnergyConsumptionQueryHandler : IRequestHandler<GetEnergyConsump
 {
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
+    private readonly IDeviceMappingService _deviceMapping;
 
-    public GetEnergyConsumptionQueryHandler(IApplicationDbContext context, ISender sender)
+    public GetEnergyConsumptionQueryHandler(IApplicationDbContext context, ISender sender, IDeviceMappingService deviceMapping)
     {
         _context = context;
         _sender = sender;
+        _deviceMapping = deviceMapping;
     }
 
     public async Task<EnergyConsumptionResponseDto> Handle(GetEnergyConsumptionQuery request, CancellationToken cancellationToken)
@@ -27,24 +29,31 @@ public class GetEnergyConsumptionQueryHandler : IRequestHandler<GetEnergyConsump
             throw new UnauthorizedAccessException("Bu cihaza erişim yetkiniz bulunmamaktadır.");
         }
 
+        // Map local DeviceId to ThingsBoardDeviceId
+        var thingsBoardDeviceId = await _deviceMapping.GetThingsBoardDeviceIdAsync(request.DeviceId, cancellationToken);
+        if (thingsBoardDeviceId == null)
+        {
+            throw new ArgumentException($"Device with ID {request.DeviceId} not found or has no ThingsBoard mapping.");
+        }
+
         return request.Period.ToLower() switch
         {
-            "daily" => await GetDailyConsumptionAsync(request.DeviceId, cancellationToken),
-            "weekly" => await GetWeeklyConsumptionAsync(request.DeviceId, cancellationToken),
-            "monthly" => await GetMonthlyConsumptionAsync(request.DeviceId, cancellationToken),
-            "yearly" => await GetYearlyConsumptionAsync(request.DeviceId, cancellationToken),
+            "daily" => await GetDailyConsumptionAsync(thingsBoardDeviceId.Value, cancellationToken),
+            "weekly" => await GetWeeklyConsumptionAsync(thingsBoardDeviceId.Value, cancellationToken),
+            "monthly" => await GetMonthlyConsumptionAsync(thingsBoardDeviceId.Value, cancellationToken),
+            "yearly" => await GetYearlyConsumptionAsync(thingsBoardDeviceId.Value, cancellationToken),
             _ => throw new ArgumentException("Geçersiz period. daily, weekly, monthly veya yearly olmalı.")
         };
     }
 
-    private async Task<EnergyConsumptionResponseDto> GetDailyConsumptionAsync(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<EnergyConsumptionResponseDto> GetDailyConsumptionAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         var utcNow = DateTime.UtcNow;
         var startOfDay = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 0, 0, 0, DateTimeKind.Utc);
         var endOfDay = startOfDay.AddDays(1);
 
         var dailyData = await _context.DeviceEnergyData
-            .Where(x => x.ThingsBoardDeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
                        x.DataDateTime >= startOfDay &&
                        x.DataDateTime < endOfDay &&
                        x.DataType == "DailyCumulativeEnergyData")
@@ -81,7 +90,7 @@ public class GetEnergyConsumptionQueryHandler : IRequestHandler<GetEnergyConsump
         };
     }
 
-    private async Task<EnergyConsumptionResponseDto> GetWeeklyConsumptionAsync(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<EnergyConsumptionResponseDto> GetWeeklyConsumptionAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         var today = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Turkey Standard Time")).Date;
         var weekStart = today.AddDays(-(int)today.DayOfWeek); // Pazartesi
@@ -98,7 +107,7 @@ public class GetEnergyConsumptionQueryHandler : IRequestHandler<GetEnergyConsump
             var endOfDay = startOfDay.AddDays(1);
 
             var lifetimeData = await _context.DeviceEnergyData
-                .Where(x => x.ThingsBoardDeviceId == deviceId && 
+                .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
                            x.DataDateTime >= startOfDay &&
                            x.DataDateTime < endOfDay &&
                            x.DataType == "LifetimeEnergyData")
@@ -133,7 +142,7 @@ public class GetEnergyConsumptionQueryHandler : IRequestHandler<GetEnergyConsump
         var endOfDay2 = startOfDay2.AddDays(1);
         
         var todayData = await _context.DeviceEnergyData
-            .Where(x => x.ThingsBoardDeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
                        x.DataDateTime >= startOfDay2 &&
                        x.DataDateTime < endOfDay2 &&
                        x.DataType == "DailyCumulativeEnergyData")
@@ -169,7 +178,7 @@ public class GetEnergyConsumptionQueryHandler : IRequestHandler<GetEnergyConsump
         };
     }
 
-    private async Task<EnergyConsumptionResponseDto> GetMonthlyConsumptionAsync(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<EnergyConsumptionResponseDto> GetMonthlyConsumptionAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         var today = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Turkey Standard Time")).Date;
         var monthStart = new DateTime(today.Year, today.Month, 1);
@@ -191,7 +200,7 @@ public class GetEnergyConsumptionQueryHandler : IRequestHandler<GetEnergyConsump
                 var dayEnd = dayStart.AddDays(1);
                 
                 var todayData = await _context.DeviceEnergyData
-                    .Where(x => x.ThingsBoardDeviceId == deviceId && 
+                    .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
                                x.DataDateTime >= dayStart &&
                                x.DataDateTime < dayEnd &&
                                x.DataType == "DailyCumulativeEnergyData")
@@ -215,7 +224,7 @@ public class GetEnergyConsumptionQueryHandler : IRequestHandler<GetEnergyConsump
                 var dayEnd = dayStart.AddDays(1);
                 
                 var lifetimeData = await _context.DeviceEnergyData
-                    .Where(x => x.ThingsBoardDeviceId == deviceId && 
+                    .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
                                x.DataDateTime >= dayStart &&
                                x.DataDateTime < dayEnd &&
                                x.DataType == "LifetimeEnergyData")
@@ -252,14 +261,14 @@ public class GetEnergyConsumptionQueryHandler : IRequestHandler<GetEnergyConsump
         };
     }
 
-    private async Task<EnergyConsumptionResponseDto> GetYearlyConsumptionAsync(Guid deviceId, CancellationToken cancellationToken)
+    private async Task<EnergyConsumptionResponseDto> GetYearlyConsumptionAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         var today = DateTime.UtcNow.Date;
         var yearStart = new DateTime(today.Year, 1, 1);
         var yearStartUtc = DateTime.SpecifyKind(yearStart, DateTimeKind.Utc);
 
         var monthlyData = await _context.DeviceEnergyData
-            .Where(x => x.ThingsBoardDeviceId == deviceId && 
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
                        x.DataDateTime >= yearStartUtc &&
                        x.DataType == "LifetimeEnergyData")
             .ToListAsync();

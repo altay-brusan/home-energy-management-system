@@ -11,11 +11,13 @@ public class GetChargeDischargeQueryHandler : IRequestHandler<GetChargeDischarge
 {
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
+    private readonly IDeviceMappingService _deviceMapping;
 
-    public GetChargeDischargeQueryHandler(IApplicationDbContext context, ISender sender)
+    public GetChargeDischargeQueryHandler(IApplicationDbContext context, ISender sender, IDeviceMappingService deviceMapping)
     {
         _context = context;
         _sender = sender;
+        _deviceMapping = deviceMapping;
     }
 
     public async Task<ChargeDischargeResponseDto> Handle(GetChargeDischargeQuery request, CancellationToken cancellationToken)
@@ -27,13 +29,20 @@ public class GetChargeDischargeQueryHandler : IRequestHandler<GetChargeDischarge
             throw new UnauthorizedAccessException("Bu cihaza erişim yetkiniz bulunmamaktadır.");
         }
 
+        // Map local DeviceId to ThingsBoardDeviceId
+        var thingsBoardDeviceId = await _deviceMapping.GetThingsBoardDeviceIdAsync(request.DeviceId, cancellationToken);
+        if (thingsBoardDeviceId == null)
+        {
+            throw new ArgumentException($"Device with ID {request.DeviceId} not found or has no ThingsBoard mapping.");
+        }
+
         var utcNow = DateTime.UtcNow;
         var startOfDay = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 0, 0, 0, DateTimeKind.Utc);
         var endOfDay = startOfDay.AddDays(1);
 
         // Bugünün DailyCumulativeEnergyData verilerini çek
         var energyData = await _context.DeviceEnergyData
-            .Where(x => x.ThingsBoardDeviceId == request.DeviceId && 
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId.Value && 
                        x.DataDateTime >= startOfDay &&
                        x.DataDateTime < endOfDay &&
                        x.DataType == "DailyCumulativeEnergyData")
