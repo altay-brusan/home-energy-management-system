@@ -22,8 +22,21 @@ public class DeviceEnergyDataConfiguration : IEntityTypeConfiguration<DeviceEner
             .IsRequired()
             .HasMaxLength(50);
 
-        // Enerji değerleri (kWh) - DataType'a göre günlük veya toplam değer
-        builder.Property(x => x.PvEnergyKWh)
+        builder.Property(x => x.MessageType)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Property(x => x.Kind)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        builder.Property(x => x.PhaseType)
+            .IsRequired()
+            .HasMaxLength(20)
+            .HasDefaultValue("SinglePhase");
+
+        // Energy values (kWh)
+        builder.Property(x => x.LoadEnergyKWh)
             .HasPrecision(18, 3);
 
         builder.Property(x => x.GridImportEnergyKWh)
@@ -32,19 +45,31 @@ public class DeviceEnergyDataConfiguration : IEntityTypeConfiguration<DeviceEner
         builder.Property(x => x.GridExportEnergyKWh)
             .HasPrecision(18, 3);
 
-        builder.Property(x => x.GeneratorEnergyKWh)
+        builder.Property(x => x.PvTotalEnergyKWh)
             .HasPrecision(18, 3);
 
-        builder.Property(x => x.BatteryDischargeEnergyKWh)
+        builder.Property(x => x.PvMppt1EnergyKWh)
+            .HasPrecision(18, 3);
+
+        builder.Property(x => x.PvMppt2EnergyKWh)
+            .HasPrecision(18, 3);
+
+        builder.Property(x => x.PvMppt3EnergyKWh)
+            .HasPrecision(18, 3);
+
+        builder.Property(x => x.PvMppt4EnergyKWh)
             .HasPrecision(18, 3);
 
         builder.Property(x => x.BatteryChargeEnergyKWh)
             .HasPrecision(18, 3);
 
-        builder.Property(x => x.LoadEnergyKWh)
+        builder.Property(x => x.BatteryDischargeEnergyKWh)
             .HasPrecision(18, 3);
 
-        // Foreign Key - ThingsBoardDeviceId in DeviceEnergyData references ThingsBoardDeviceId in Device table
+        builder.Property(x => x.GeneratorEnergyKWh)
+            .HasPrecision(18, 3);
+
+        // Foreign Key - ThingsBoardDeviceId references Device.ThingsBoardDeviceId
         builder.HasOne(x => x.Device)
             .WithMany()
             .HasForeignKey(x => x.ThingsBoardDeviceId)
@@ -53,9 +78,11 @@ public class DeviceEnergyDataConfiguration : IEntityTypeConfiguration<DeviceEner
 
         // Indexes
         builder.HasIndex(x => x.ThingsBoardDeviceId);
-        builder.HasIndex(x => x.DataDateTime);
-        builder.HasIndex(x => x.DataType);
+        
         builder.HasIndex(x => new { x.ThingsBoardDeviceId, x.DataDateTime, x.DataType })
-            .IsUnique();
+            .HasDatabaseName("IX_DeviceEnergyData_ThingsBoardDeviceId_DataDateTime_DataType");
+
+        builder.HasIndex(x => x.DataDateTime)
+            .HasDatabaseName("IX_DeviceEnergyData_DataDateTime");
     }
 }
