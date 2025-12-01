@@ -160,7 +160,7 @@ public class DataGeneratorService : IDataGeneratorService
                 CurrentPack = jsonBMSData.CurrentPack,
                 MaxVoltageOfBatteryCluster = jsonBMSData.MaxVoltageOfBatteryCluster,
                 MinVoltageOfBatteryCluster = jsonBMSData.MinVoltageOfBatteryCluster,
-                SOC = jsonBMSData.SOC,
+                Soc = jsonBMSData.Soc,
                 TotalChargeCapacity = jsonBMSData.TotalChargeCapacity,
                 TotalDischargeCapacity = jsonBMSData.TotalDischargeCapacity,
                 DateTime = timestamp.ToString("yyyy-MM-dd HH:mm:ss")
@@ -191,9 +191,9 @@ public class DataGeneratorService : IDataGeneratorService
             {
                 BatteryPackVoltage = jsonBatteryData.BatteryPackVoltage,
                 BatteryCurrent = jsonBatteryData.BatteryCurrent,
-                SOH = jsonBatteryData.SOH.FirstOrDefault(), // İlk SOH değerini al
-                SOCCumulative = jsonBatteryData.SOCCumulative, // SOC Cumulative array'ini direkt al
-                SOC = jsonBatteryData.SOC.Select(cell => new BatteryCell
+                Soh = jsonBatteryData.Soh.FirstOrDefault(), // İlk SOH değerini al
+                SocCumulative = jsonBatteryData.SocCumulative, // SOC Cumulative array'ini direkt al
+                Soc = jsonBatteryData.Soc.Select(cell => new BatteryCell
                 {
                     CellNumber = cell.CellNumber,
                     CellVoltage = cell.CellVoltage,
@@ -243,8 +243,8 @@ public class DataGeneratorService : IDataGeneratorService
         {
             BatteryPackVoltage = GenerateRandomValue(48.0, 60.0), // Batarya paketi voltajı
             BatteryCurrent = GenerateRandomValue(-50.0, 50.0), // Şarj/deşarj akımı
-            SOH = GenerateRandomValue(80.0, 100.0), // State of Health (%)
-            SOC = cells,
+            Soh = GenerateRandomValue(80.0, 100.0), // State of Health (%)
+            Soc = cells,
             TotalChargeCapacity = "1.38 KW",
             TotalDischargeAmount = GenerateRandomValue(0.0, 1000.0),
             MaxCellVoltage = maxVoltage,
@@ -267,7 +267,7 @@ public class DataGeneratorService : IDataGeneratorService
             CurrentPack = GenerateRandomValue(-100.0, 100.0),
             MaxVoltageOfBatteryCluster = GenerateRandomValue(4.2, 4.5),
             MinVoltageOfBatteryCluster = GenerateRandomValue(3.0, 3.5),
-            SOC = GenerateRandomValue(20.0, 100.0),
+            Soc = GenerateRandomValue(20.0, 100.0),
             TotalChargeCapacity = GenerateRandomValue(50.0, 100.0),
             TotalDischargeCapacity = GenerateRandomValue(45.0, 95.0),
             DateTime = timestamp.ToString("yyyy-MM-dd HH:mm:ss")
@@ -361,9 +361,9 @@ public class BatteryData
 {
     public double BatteryPackVoltage { get; set; }
     public double BatteryCurrent { get; set; }
-    public double SOH { get; set; }
-    public List<double> SOCCumulative { get; set; } = new();
-    public List<BatteryCell> SOC { get; set; } = new();
+    public double Soh { get; set; }
+    public List<double> SocCumulative { get; set; } = new();
+    public List<BatteryCell> Soc { get; set; } = new();
     public string TotalChargeCapacity { get; set; } = string.Empty;
     public double TotalDischargeAmount { get; set; }
     public double MaxCellVoltage { get; set; }
@@ -389,7 +389,7 @@ public class BatteryClusterData
     public double CurrentPack { get; set; }
     public double MaxVoltageOfBatteryCluster { get; set; }
     public double MinVoltageOfBatteryCluster { get; set; }
-    public double SOC { get; set; }
+    public double Soc { get; set; }
     public double TotalChargeCapacity { get; set; }
     public double TotalDischargeCapacity { get; set; }
     public string DateTime { get; set; } = string.Empty;

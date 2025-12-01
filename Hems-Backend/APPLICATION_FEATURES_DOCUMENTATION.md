@@ -85,28 +85,28 @@ Bu dokümantasyon, HEMS Backend projesinin Application katmanındaki tüm featur
 ---
 
 #### GetSOC (State of Charge)
-**Dosya Yolu:** `Dashboard/Queries/GetSOC/GetSOCQuery.cs`
+**Dosya Yolu:** `Dashboard/Queries/GetSoc/GetSocQuery.cs`
 
 **Açıklama:** Bataryanın şarj durumunu (State of Charge) getiren query'dir. Bataryanın ne kadar dolu olduğunu gösterir.
 
 **Parametreler:**
 - `DeviceId` (Guid): Device'ın benzersiz kimliği
 
-**Return Type:** `SOCResponseDto`
+**Return Type:** `SocResponseDto`
 
 **Kullanım Senaryosu:** Dashboard'da batarya şarj seviyesini yüzde olarak göstermek için kullanılır.
 
 ---
 
 #### GetSOH (State of Health)
-**Dosya Yolu:** `Dashboard/Queries/GetSOH/GetSOHQuery.cs`
+**Dosya Yolu:** `Dashboard/Queries/GetSoh/GetSohQuery.cs`
 
 **Açıklama:** Bataryanın sağlık durumunu (State of Health) getiren query'dir. Bataryanın kullanım ömrü ve sağlığı hakkında bilgi verir.
 
 **Parametreler:**
 - `DeviceId` (Guid): Device'ın benzersiz kimliği
 
-**Return Type:** `SOHResponseDto`
+**Return Type:** `SohResponseDto`
 
 **Kullanım Senaryosu:** Dashboard'da batarya sağlık durumunu göstermek için kullanılır.
 

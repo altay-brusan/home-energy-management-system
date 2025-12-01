@@ -40,7 +40,7 @@ public class GetBatteryComponentQueryHandler : IRequestHandler<GetBatteryCompone
         var todayUtc = DateTime.SpecifyKind(today, DateTimeKind.Utc);
 
         // 1. SOC - Son BatteryClusterData'dan
-        var soc = await GetSOCFromBatteryClusterDataAsync(thingsBoardDeviceId.Value, cancellationToken);
+        var soc = await GetSocFromBatteryClusterDataAsync(thingsBoardDeviceId.Value, cancellationToken);
 
         // 2. Today - Bugünün son DailyCumulativeEnergyData'sından
         var todayCharge = await GetTodayBatteryChargeAsync(thingsBoardDeviceId.Value, todayUtc, cancellationToken);
@@ -50,13 +50,13 @@ public class GetBatteryComponentQueryHandler : IRequestHandler<GetBatteryCompone
 
         return new BatteryComponentDto
         {
-            SOC = Math.Round(soc, 3),
+            Soc = Math.Round(soc, 3),
             Today = Math.Round(todayCharge, 3),
             Total = Math.Round(totalCharge, 3)
         };
     }
 
-    private async Task<double> GetSOCFromBatteryClusterDataAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
+    private async Task<double> GetSocFromBatteryClusterDataAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         var batteryData = await _context.DeviceData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
@@ -70,7 +70,7 @@ public class GetBatteryComponentQueryHandler : IRequestHandler<GetBatteryCompone
         try
         {
             var jsonData = batteryData.Data.RootElement;
-            if (jsonData.TryGetProperty("SOC", out var socElement) && 
+            if (jsonData.TryGetProperty("Soc", out var socElement) && 
                 socElement.ValueKind == JsonValueKind.Number)
             {
                 return socElement.GetDouble();

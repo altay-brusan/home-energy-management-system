@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Text.Json;
 using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Application.Common.Models;
@@ -39,7 +39,7 @@ public class DeviceData : EndpointGroupBase
     ILogger<DeviceData> logger,
     CancellationToken ct)
     {
-        logger.LogInformation("🔌 Live PowerFlow requested for ThingsBoardDeviceId {ThingsBoardDeviceId}", deviceId);
+        logger.LogInformation("?? Live PowerFlow requested for ThingsBoardDeviceId {ThingsBoardDeviceId}", deviceId);
 
         // Call our RPC-based service (TB -> Node-RED -> inverter)
         var dto = await powerFlowService.GetPowerFlowAsync(deviceId, ct);
@@ -135,7 +135,7 @@ private async Task<IResult> ProcessEnergyFlowTelemetry(
     try
     {
         logger.LogInformation(
-            "📊 {DataType} energy flow telemetry received at {UtcNow}",
+            "?? {DataType} energy flow telemetry received at {UtcNow}",
             dataType,
             DateTime.UtcNow);
 
@@ -186,7 +186,7 @@ private async Task<IResult> ProcessEnergyFlowTelemetry(
         if (!shouldProcess)
         {
             logger.LogInformation(
-                "⏭️ Skipping duplicate {DataType} telemetry for device {DeviceId} at {Timestamp}",
+                "?? Skipping duplicate {DataType} telemetry for device {DeviceId} at {Timestamp}",
                 dataType, deviceId, dataDateTime);
             return Results.Ok(new
             {
@@ -362,7 +362,7 @@ private async Task<IResult> ProcessTelemetry(
     try
     {
         logger.LogInformation(
-            "📥 {DataType} telemetry received at {UtcNow}",
+            "?? {DataType} telemetry received at {UtcNow}",
             dataType,
             DateTime.UtcNow);
 
@@ -391,7 +391,7 @@ private async Task<IResult> ProcessTelemetry(
             }
         }
 
-        // 3) ThingsBoardDeviceId comes from root level "deviceId" field (string → Guid)
+        // 3) ThingsBoardDeviceId comes from root level "deviceId" field (string ? Guid)
         Guid deviceId = Guid.Empty;
         if (body.TryGetProperty("deviceId", out var deviceIdElement))
         {
@@ -417,7 +417,7 @@ private async Task<IResult> ProcessTelemetry(
         if (!shouldProcess)
         {
             logger.LogInformation(
-                "⏭️ Skipping duplicate {DataType} telemetry for device {DeviceId} at {Timestamp}",
+                "?? Skipping duplicate {DataType} telemetry for device {DeviceId} at {Timestamp}",
                 dataType, deviceId, requestDate);
             return Results.Ok(new
             {

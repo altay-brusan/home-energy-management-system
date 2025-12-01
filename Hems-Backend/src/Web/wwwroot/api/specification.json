@@ -1410,7 +1410,7 @@
         ]
       }
     },
-    "/api/MobileDashboard/graphs/SOC": {
+    "/api/MobileDashboard/graphs/Soc": {
       "get": {
         "tags": [
           "MobileDashboard"
@@ -1434,7 +1434,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SOCResponseDto"
+                  "$ref": "#/components/schemas/SocResponseDto"
                 }
               }
             }
@@ -1447,7 +1447,7 @@
         ]
       }
     },
-    "/api/MobileDashboard/graphs/SOH": {
+    "/api/MobileDashboard/graphs/Soh": {
       "get": {
         "tags": [
           "MobileDashboard"
@@ -1471,7 +1471,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SOHResponseDto"
+                  "$ref": "#/components/schemas/SohResponseDto"
                 }
               }
             }
@@ -5421,7 +5421,7 @@
           }
         }
       },
-      "SOCResponseDto": {
+      "SocResponseDto": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -5481,7 +5481,7 @@
           }
         }
       },
-      "SOHResponseDto": {
+      "SohResponseDto": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -5491,15 +5491,15 @@
           "data": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/SOHDataPoint"
+              "$ref": "#/components/schemas/SohDataPoint"
             }
           },
           "statistics": {
-            "$ref": "#/components/schemas/SOHStatistics"
+            "$ref": "#/components/schemas/SohStatistics"
           }
         }
       },
-      "SOHDataPoint": {
+      "SohDataPoint": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -5515,7 +5515,7 @@
           }
         }
       },
-      "SOHStatistics": {
+      "SohStatistics": {
         "type": "object",
         "additionalProperties": false,
         "properties": {

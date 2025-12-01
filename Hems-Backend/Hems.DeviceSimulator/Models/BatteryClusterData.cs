@@ -16,8 +16,8 @@ public class BatteryClusterData
     [JsonPropertyName("Min Voltage Of Battery Cluster")]
     public double MinVoltageOfBatteryCluster { get; set; }
     
-    [JsonPropertyName("SOC")]
-    public double SOC { get; set; }
+    [JsonPropertyName("Soc")]
+    public double Soc { get; set; }
     
     [JsonPropertyName("Total Charge Capacity")]
     public double TotalChargeCapacity { get; set; }

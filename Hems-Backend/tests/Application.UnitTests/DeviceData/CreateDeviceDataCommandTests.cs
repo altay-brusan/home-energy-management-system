@@ -78,8 +78,8 @@ public class CreateDeviceDataCommandTests
         var batteryData = JsonDocument.Parse(@"{
             ""Battery Pack Voltage"": 48.5,
             ""Battery Current"": 25.3,
-            ""SOH"": 95.2,
-            ""SOC"": [
+            ""Soh"": 95.2,
+            ""Soc"": [
                 {
                     ""Cell Number"": 1,
                     ""Cell Voltage"": 3.65,
@@ -128,7 +128,7 @@ public class CreateDeviceDataCommandTests
         var jsonData = createdEntity.Data.RootElement;
         Assert.That(jsonData.GetProperty("Battery Pack Voltage").GetDouble(), Is.EqualTo(48.5));
         Assert.That(jsonData.GetProperty("Battery Current").GetDouble(), Is.EqualTo(25.3));
-        Assert.That(jsonData.GetProperty("SOH").GetDouble(), Is.EqualTo(95.2));
+        Assert.That(jsonData.GetProperty("Soh").GetDouble(), Is.EqualTo(95.2));
         Assert.That(jsonData.GetProperty("Device Model").GetString(), Is.EqualTo("BMS-48V-100Ah"));
     }
 

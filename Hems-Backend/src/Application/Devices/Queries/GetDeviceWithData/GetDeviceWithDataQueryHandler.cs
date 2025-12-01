@@ -103,7 +103,7 @@ public class GetDeviceWithDataQueryHandler : IRequestHandler<GetDeviceWithDataQu
         try
         {
             // Direkt SOC değerini al, JSON parse etme
-            return batteryData.Data.RootElement.GetProperty("SOC").GetDouble();
+            return batteryData.Data.RootElement.GetProperty("Soc").GetDouble();
         }
         catch
         {
@@ -126,9 +126,9 @@ public class GetDeviceWithDataQueryHandler : IRequestHandler<GetDeviceWithDataQu
                 if (data.Data.RootElement.TryGetProperty("DeviceSerialNumber", out var sn) && 
                     sn.GetString() == serialNumber)
                 {
-                    if (data.Data.RootElement.TryGetProperty("SOCCumulative", out var socCumulative))
+                    if (data.Data.RootElement.TryGetProperty("SocCumulative", out var SocCumulative))
                     {
-                        var socArray = socCumulative.EnumerateArray()
+                        var socArray = SocCumulative.EnumerateArray()
                             .Select(x => x.GetDouble())
                             .ToList();
                         
