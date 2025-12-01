@@ -144,7 +144,7 @@ export interface EnergyConsumptionStatistics {
 export interface PowerMetricsResponseDto {
   range: string;
   data: PowerMetricsDataPoint[];
-  statistics: PowerMetricsStatistics;
+  statistics?: PowerMetricsStatistics;
 }
 
 export interface PowerMetricsDataPoint {

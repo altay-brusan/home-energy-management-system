@@ -6,7 +6,7 @@ import { getPowerMetricsChartStyles } from './PowerMetricsChart.styles';
 import { useTranslation } from 'react-i18next';
 import { useSelectedSiteDevice } from '../../../../../../hooks/useSelectedSiteDevice';
 import { useDashboardRefresh } from '../../../../../../hooks/useDashboardRefresh';
-import { powerMetrics24HService } from '../../../../../../api/services/powerMetrics24HService';
+import { mobileDashboardService, PowerMetricsResponseDto } from '../../../../../../api/services/mobileDashboardService';
 
 // History Icon Component
 const HistoryIcon: React.FC<{ color: string }> = ({ color }) => (
@@ -47,7 +47,7 @@ export default function PowerMetricsChart({ COLORS }: Props) {
   const [showGrid, setShowGrid] = useState(true);
   const [showLoad, setShowLoad] = useState(true);
 
-  const [powerMetricsData, setPowerMetricsData] = useState<any>(null);
+  const [powerMetricsData, setPowerMetricsData] = useState<PowerMetricsResponseDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [touchX, setTouchX] = useState<number | null>(null);
   const [selectedDataPoint, setSelectedDataPoint] = useState<any>(null);
@@ -62,9 +62,9 @@ export default function PowerMetricsChart({ COLORS }: Props) {
     }
     setLoading(true);
     try {
-      // Fetch 24H power metrics (15-minute intervals, up to now)
-      const data = await powerMetrics24HService.getPowerMetrics24H(device.id);
-      console.log('✅ Power Metrics loaded:', data.data.length, 'points');
+      // Fetch daily power metrics (00:00 to 24:00)
+      const data = await mobileDashboardService.getPowerMetrics(device.id, 'daily');
+      console.log('✅ Power Metrics loaded:', data.data?.length || 0, 'points');
       setPowerMetricsData(data);
     } catch (error) {
       console.error('Failed to load power metrics:', error);
@@ -93,45 +93,25 @@ export default function PowerMetricsChart({ COLORS }: Props) {
     return () => clearInterval(interval);
   }, [loadPowerMetricsData]);
 
-  // Calculate non-linear X-axis mapping
-  const getTimeToXPosition = useCallback((hour: number, sunriseHour: number, sunsetHour: number, width: number): number => {
-    // Allocate 60% of chart width to sunrise-sunset period, 40% to night hours
-    const daytimeRatio = 0.6;
-    const nighttimeRatio = 0.4;
-
-    const dayLength = sunsetHour - sunriseHour;
-    const nightLength = 24 - dayLength;
-
-    if (hour >= sunriseHour && hour <= sunsetHour) {
-      // Daytime hours - expanded
-      const hoursFromSunrise = hour - sunriseHour;
-      const positionInDay = hoursFromSunrise / dayLength;
-      const nightBeforeWidth = (sunriseHour / nightLength) * nighttimeRatio * width;
-      return nightBeforeWidth + positionInDay * daytimeRatio * width;
-    } else if (hour < sunriseHour) {
-      // Night hours before sunrise - compressed
-      const positionInNight = hour / sunriseHour;
-      return positionInNight * (sunriseHour / nightLength) * nighttimeRatio * width;
-    } else {
-      // Night hours after sunset - compressed
-      const hoursAfterSunset = hour - sunsetHour;
-      const nightAfterLength = 24 - sunsetHour;
-      const positionInNight = hoursAfterSunset / nightAfterLength;
-      const beforeWidth = (sunriseHour / nightLength) * nighttimeRatio * width + daytimeRatio * width;
-      return beforeWidth + positionInNight * (nightAfterLength / nightLength) * nighttimeRatio * width;
-    }
+  // Linear X-axis mapping (simple 0-24 hour scale)
+  const getTimeToXPosition = useCallback((hour: number, width: number): number => {
+    return (hour / 24) * width;
   }, []);
 
-  // Parse hour from ISO timestamp
+  // Parse hour from "HH:mm" timestamp format
   const getHourFromTimestamp = (timestamp: string): number => {
-    const date = new Date(timestamp);
-    return date.getHours() + date.getMinutes() / 60;
+    const parts = timestamp.split(':');
+    if (parts.length >= 2) {
+      const hours = parseInt(parts[0], 10);
+      const minutes = parseInt(parts[1], 10);
+      return hours + minutes / 60;
+    }
+    return 0;
   };
 
-  // Format time for display
+  // Format time for display (already in HH:mm format)
   const formatTime = (timestamp: string): string => {
-    const date = new Date(timestamp);
-    return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    return timestamp;
   };
 
   // Create straight line path (no smoothing)
@@ -159,15 +139,12 @@ export default function PowerMetricsChart({ COLORS }: Props) {
     const findNearestDataPoint = (x: number) => {
       if (!powerMetricsData?.data) return;
 
-      const sunriseHour = getHourFromTimestamp(powerMetricsData.sunriseTime);
-      const sunsetHour = getHourFromTimestamp(powerMetricsData.sunsetTime);
-
       let nearestPoint = null;
       let minDistance = Infinity;
 
       powerMetricsData.data.forEach((point: any) => {
         const hour = getHourFromTimestamp(point.timestamp);
-        const pointX = padding.left + getTimeToXPosition(hour, sunriseHour, sunsetHour, innerWidth);
+        const pointX = padding.left + getTimeToXPosition(hour, innerWidth);
         const distance = Math.abs(pointX - x);
 
         if (distance < minDistance) {
@@ -183,12 +160,10 @@ export default function PowerMetricsChart({ COLORS }: Props) {
     const getMaxTouchX = () => {
       if (!powerMetricsData?.data || powerMetricsData.data.length === 0) return padding.left + innerWidth;
 
-      const sunriseHour = getHourFromTimestamp(powerMetricsData.sunriseTime);
-      const sunsetHour = getHourFromTimestamp(powerMetricsData.sunsetTime);
       const lastPoint = powerMetricsData.data[powerMetricsData.data.length - 1];
       const lastHour = getHourFromTimestamp(lastPoint.timestamp);
 
-      return padding.left + getTimeToXPosition(lastHour, sunriseHour, sunsetHour, innerWidth);
+      return padding.left + getTimeToXPosition(lastHour, innerWidth);
     };
 
     const maxTouchX = getMaxTouchX();
@@ -223,7 +198,7 @@ export default function PowerMetricsChart({ COLORS }: Props) {
       },
     });
 
-    if (!powerMetricsData || !powerMetricsData.data.length) {
+    if (!powerMetricsData || !powerMetricsData.data || !powerMetricsData.data.length) {
       return (
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>{t('common.noData', 'No data available')}</Text>
@@ -234,14 +209,13 @@ export default function PowerMetricsChart({ COLORS }: Props) {
     // Data is already filtered by service (up to current time)
     const dataToShow = powerMetricsData.data;
 
-    // Get sunrise/sunset from service
-    const sunriseHour = getHourFromTimestamp(powerMetricsData.sunriseTime);
-    const sunsetHour = getHourFromTimestamp(powerMetricsData.sunsetTime);
+    // Default sunrise/sunset hours (6:00 and 18:00)
+    const sunriseHour = 6;
+    const sunsetHour = 18;
 
     console.log('📊 Chart Data:', {
       totalPoints: dataToShow.length,
-      sunrise: sunriseHour,
-      sunset: sunsetHour
+      range: powerMetricsData.range
     });
 
     // Collect all values to determine Y-axis range
@@ -271,7 +245,7 @@ export default function PowerMetricsChart({ COLORS }: Props) {
     const mapDataToPoints = (data: typeof powerMetricsData.data, valueKey: keyof typeof data[0]) => {
       return data.map(point => {
         const hour = getHourFromTimestamp(point.timestamp);
-        const x = padding.left + getTimeToXPosition(hour, sunriseHour, sunsetHour, innerWidth);
+        const x = padding.left + getTimeToXPosition(hour, innerWidth);
         let value = point[valueKey] as number;
         // Load values should be shown as negative (consumption below x-axis)
         if (valueKey === 'loadPower') {
@@ -298,8 +272,8 @@ export default function PowerMetricsChart({ COLORS }: Props) {
     };
 
     // Calculate sunrise/sunset X positions for markers
-    const sunriseX = padding.left + getTimeToXPosition(sunriseHour, sunriseHour, sunsetHour, innerWidth);
-    const sunsetX = padding.left + getTimeToXPosition(sunsetHour, sunriseHour, sunsetHour, innerWidth);
+    const sunriseX = padding.left + getTimeToXPosition(sunriseHour, innerWidth);
+    const sunsetX = padding.left + getTimeToXPosition(sunsetHour, innerWidth);
 
     return (
       <View {...panResponder.panHandlers}>
@@ -353,7 +327,7 @@ export default function PowerMetricsChart({ COLORS }: Props) {
 
           {/* Vertical grid lines */}
           {[0, 6, 12, 18, 24].map(hour => {
-            const x = padding.left + getTimeToXPosition(hour === 24 ? 23.99 : hour, sunriseHour, sunsetHour, innerWidth);
+            const x = padding.left + getTimeToXPosition(hour === 24 ? 23.99 : hour, innerWidth);
             return (
               <Line
                 key={`v-grid-${hour}`}
@@ -396,7 +370,7 @@ export default function PowerMetricsChart({ COLORS }: Props) {
           {(() => {
             const now = new Date();
             const currentTime = now.getHours() + now.getMinutes() / 60;
-            const currentTimeX = padding.left + getTimeToXPosition(currentTime, sunriseHour, sunsetHour, innerWidth);
+            const currentTimeX = padding.left + getTimeToXPosition(currentTime, innerWidth);
             return (
               <>
                 <Line
@@ -531,7 +505,7 @@ export default function PowerMetricsChart({ COLORS }: Props) {
 
           {/* X-axis labels (selected hours) */}
           {[0, 6, 12, 18, 23].map(hour => {
-            const x = padding.left + getTimeToXPosition(hour, sunriseHour, sunsetHour, innerWidth);
+            const x = padding.left + getTimeToXPosition(hour, innerWidth);
             // For 00:00, use "start" anchor to prevent left edge cut-off
             const textAnchor = hour === 0 ? 'start' : 'middle';
             return (
@@ -575,7 +549,7 @@ export default function PowerMetricsChart({ COLORS }: Props) {
                   <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '500' }}>Solar</Text>
                 </View>
                 <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '700' }}>
-                  {(selectedDataPoint.solarPower / 1000).toFixed(2)} kW
+                  {selectedDataPoint.solarPower?.toFixed(2) || '0.00'} kWh
                 </Text>
               </View>
             )}
@@ -586,7 +560,7 @@ export default function PowerMetricsChart({ COLORS }: Props) {
                   <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '500' }}>Battery</Text>
                 </View>
                 <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '700' }}>
-                  {(selectedDataPoint.batteryPower / 1000).toFixed(2)} kW
+                  {selectedDataPoint.batteryPower?.toFixed(2) || '0.00'} kWh
                 </Text>
               </View>
             )}
@@ -597,7 +571,7 @@ export default function PowerMetricsChart({ COLORS }: Props) {
                   <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '500' }}>Grid</Text>
                 </View>
                 <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '700' }}>
-                  {(selectedDataPoint.gridPower / 1000).toFixed(2)} kW
+                  {selectedDataPoint.gridPower?.toFixed(2) || '0.00'} kWh
                 </Text>
               </View>
             )}
@@ -608,7 +582,7 @@ export default function PowerMetricsChart({ COLORS }: Props) {
                   <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '500' }}>Load</Text>
                 </View>
                 <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '700' }}>
-                  {(selectedDataPoint.loadPower / 1000).toFixed(2)} kW
+                  {selectedDataPoint.loadPower?.toFixed(2) || '0.00'} kWh
                 </Text>
               </View>
             )}
