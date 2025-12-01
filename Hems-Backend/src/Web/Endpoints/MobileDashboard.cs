@@ -1,17 +1,18 @@
 using Hems_Backend.Application.Common.Models;
+using Hems_Backend.Application.Dashboard.Queries.GetBattery;
+using Hems_Backend.Application.Dashboard.Queries.GetBatteryComponent;
+using Hems_Backend.Application.Dashboard.Queries.GetChargeDischarge;
+using Hems_Backend.Application.Dashboard.Queries.GetEnergyConsumption;
 using Hems_Backend.Application.Dashboard.Queries.GetEnergyData;
 using Hems_Backend.Application.Dashboard.Queries.GetEnergyProduction;
-using Hems_Backend.Application.Dashboard.Queries.GetEnergyConsumption;
-using Hems_Backend.Application.Dashboard.Queries.GetPowerMetrics;
-using Hems_Backend.Application.Dashboard.Queries.GetBattery;
-using Hems_Backend.Application.Dashboard.Queries.GetChargeDischarge;
-using Hems_Backend.Application.Dashboard.Queries.GetBatteryComponent;
-using Hems_Backend.Application.Dashboard.Queries.GetInverterComponent;
 using Hems_Backend.Application.Dashboard.Queries.GetHero;
+using Hems_Backend.Application.Dashboard.Queries.GetInverterComponent;
+using Hems_Backend.Application.Dashboard.Queries.GetPowerMetrics;
 using Hems_Backend.Application.Dashboard.Queries.GetSoc;
 using Hems_Backend.Application.Dashboard.Queries.GetSoh;
-using Hems_Backend.Application.Devices.Queries.GetDeviceWithData;
+using Hems_Backend.Application.Dashboard.Queries.GetTodayEnergySummary;
 using Hems_Backend.Application.Devices.Queries.GetComponentLiveData;
+using Hems_Backend.Application.Devices.Queries.GetDeviceWithData;
 using Hems_Backend.Web.Infrastructure;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -28,6 +29,7 @@ public class MobileDashboard : EndpointGroupBase
             .MapGet(Hero, "hero")
             .MapGet(SOC, "Soc")
             .MapGet(SOH, "Soh")
+            .MapGet(TodayEnergySummary, "TodayEnergySummary")
             .MapGet(GetDeviceWithData, "device/GetWithData")
             .MapGet(GetComponentLiveData, "device/component/getComponentLiveData")
             .MapGet(EnergyFlow, "graphs/EnergyFlow")
@@ -78,6 +80,21 @@ public class MobileDashboard : EndpointGroupBase
 
         return await sender.Send(query);
     }
+
+
+    [Authorize]
+    public async Task<DailyEnergySummaryDto> TodayEnergySummary(
+    ISender sender,
+    [FromQuery] Guid deviceId)
+    {
+        var query = new GetDailyEnergySummaryQuery
+        {
+            DeviceId = deviceId
+        };
+
+        return await sender.Send(query);
+    }
+
 
     [Authorize]
     public async Task<DeviceWithDataResponseDto> GetDeviceWithData(
