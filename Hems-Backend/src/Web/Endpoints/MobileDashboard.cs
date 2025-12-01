@@ -172,7 +172,7 @@ public class MobileDashboard : EndpointGroupBase
     }
 
     [Authorize]
-    public async Task<PowerMetricsResponseDto> PowerMetrics(
+    public async Task<PowerEnergyMetricsResponseDto> PowerMetrics(
         ISender sender,
         [FromQuery] Guid deviceId,
         [FromQuery] string period)

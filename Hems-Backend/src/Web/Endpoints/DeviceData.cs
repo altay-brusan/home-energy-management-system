@@ -104,7 +104,7 @@ public async Task<IResult> ReceivePowerFlowTelemetry(
     ISender sender,
     ITelemetryDeduplicationService deduplicationService)
 {
-    return await ProcessTelemetry(body, "PowerFlow", logger, sender, deduplicationService);
+    return await ProcessTelemetry(body, DataTypes.PowerFlow, logger, sender, deduplicationService);
 }
 
 public async Task<IResult> ReceiveDailyEnergyFlowTelemetry(

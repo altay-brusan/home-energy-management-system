@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Hems_Backend.Application.Dashboard.Queries.GetPowerMetrics;
 
-public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery, PowerMetricsResponseDto>
+public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery, PowerEnergyMetricsResponseDto>
 {
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
@@ -21,7 +21,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
         _deviceMapping = deviceMapping;
     }
 
-    public async Task<PowerMetricsResponseDto> Handle(GetPowerMetricsQuery request, CancellationToken cancellationToken)
+    public async Task<PowerEnergyMetricsResponseDto> Handle(GetPowerMetricsQuery request, CancellationToken cancellationToken)
     {
         // Device access kontrolü (uses local DeviceId)
         var hasAccess = await _sender.Send(new CheckDeviceAccessQuery { DeviceId = request.DeviceId }, cancellationToken);
@@ -52,7 +52,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
     /// Returns individual 5-minute samples with timestamp and delta energy
     /// Each delta represents energy produced/consumed in that 5-minute period
     /// </summary>
-    private async Task<PowerMetricsResponseDto> GetDailyPowerMetricsAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
+    private async Task<PowerEnergyMetricsResponseDto> GetDailyPowerMetricsAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         var utcNow = DateTime.UtcNow;
         var startOfDay = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 0, 0, 0, DateTimeKind.Utc);
@@ -63,7 +63,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
                        x.DataDateTime >= startOfDay &&
                        x.DataDateTime < endOfDay &&
-                       x.DataType == DataTypes.DailyCumulativeEnergy)
+                       x.DataType == DataTypes.PowerFlow)
             .OrderBy(x => x.DataDateTime)
             .ToListAsync(cancellationToken);
 
@@ -73,14 +73,14 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
         }
 
         // Calculate deltas between consecutive samples
-        var energyDeltas = CalculateEnergyDeltas(energyData);
+        //var energyDeltas = CalculateEnergyDeltas(energyData);
 
         // Apply interpolation for missing data (if gaps > 5 minutes)
-        energyDeltas = InterpolateGaps(energyDeltas, TimeSpan.FromMinutes(5));
+        var energyDeltas = InterpolateGaps(energyData, TimeSpan.FromMinutes(5));
 
         // Convert each delta to a data point with its timestamp
         var dataPoints = energyDeltas
-            .Select(x => new Hems_Backend.Application.Common.Models.PowerMetricsDataPoint
+            .Select(x => new PowerEnergyMetricsDataPoint
             {
                 Timestamp = x.DataDateTime.ToString("HH:mm"),
                 SolarPower = Math.Round(x.PvTotalEnergyKWh ?? 0, 3),
@@ -98,7 +98,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
     /// Weekly metrics: Calculate daily energy deltas from lifetime energy samples
     /// Falls back to DailyCumulativeEnergy for current day if lifetime sample not available
     /// </summary>
-    private async Task<PowerMetricsResponseDto> GetWeeklyPowerMetricsAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
+    private async Task<PowerEnergyMetricsResponseDto> GetWeeklyPowerMetricsAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         var today = DateTime.UtcNow.Date;
         var weekStart = today.AddDays(-(int)today.DayOfWeek);
@@ -118,7 +118,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
         // Apply interpolation for missing days
         energyDeltas = InterpolateGaps(energyDeltas, TimeSpan.FromDays(1));
 
-        var dataPoints = new List<Hems_Backend.Application.Common.Models.PowerMetricsDataPoint>();
+        var dataPoints = new List<Hems_Backend.Application.Common.Models.PowerEnergyMetricsDataPoint>();
 
         // Group by day
         for (int i = 0; i < 7; i++)
@@ -138,7 +138,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
 
             if (dayDelta != null)
             {
-                dataPoints.Add(new Hems_Backend.Application.Common.Models.PowerMetricsDataPoint
+                dataPoints.Add(new Hems_Backend.Application.Common.Models.PowerEnergyMetricsDataPoint
                 {
                     Timestamp = $"{day:MMM dd}",
                     SolarPower = Math.Round(dayDelta.PvTotalEnergyKWh ?? 0, 3),
@@ -157,7 +157,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
     /// Monthly metrics: Calculate daily energy deltas from lifetime energy samples
     /// Falls back to DailyCumulativeEnergy for current day if lifetime sample not available
     /// </summary>
-    private async Task<PowerMetricsResponseDto> GetMonthlyPowerMetricsAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
+    private async Task<PowerEnergyMetricsResponseDto> GetMonthlyPowerMetricsAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         var today = DateTime.UtcNow.Date;
         var monthStart = new DateTime(today.Year, today.Month, 1);
@@ -179,7 +179,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
         // Apply interpolation for missing days
         energyDeltas = InterpolateGaps(energyDeltas, TimeSpan.FromDays(1));
 
-        var dataPoints = new List<Hems_Backend.Application.Common.Models.PowerMetricsDataPoint>();
+        var dataPoints = new List<Hems_Backend.Application.Common.Models.PowerEnergyMetricsDataPoint>();
 
         // Group by day
         var daysInMonth = DateTime.DaysInMonth(today.Year, today.Month);
@@ -202,7 +202,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
 
             if (dayDelta != null)
             {
-                dataPoints.Add(new Hems_Backend.Application.Common.Models.PowerMetricsDataPoint
+                dataPoints.Add(new Hems_Backend.Application.Common.Models.PowerEnergyMetricsDataPoint
                 {
                     Timestamp = $"Day {i}",
                     SolarPower = Math.Round(dayDelta.PvTotalEnergyKWh ?? 0, 3),
@@ -221,7 +221,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
     /// Yearly metrics: Calculate monthly energy aggregates from lifetime energy samples
     /// Falls back to DailyCumulativeEnergy for current month if lifetime samples not available
     /// </summary>
-    private async Task<PowerMetricsResponseDto> GetYearlyPowerMetricsAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
+    private async Task<PowerEnergyMetricsResponseDto> GetYearlyPowerMetricsAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         var today = DateTime.UtcNow.Date;
         var yearStart = new DateTime(today.Year, 1, 1);
@@ -243,7 +243,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
         // Apply interpolation for missing days
         energyDeltas = InterpolateGaps(energyDeltas, TimeSpan.FromDays(1));
 
-        var dataPoints = new List<Hems_Backend.Application.Common.Models.PowerMetricsDataPoint>();
+        var dataPoints = new List<Hems_Backend.Application.Common.Models.PowerEnergyMetricsDataPoint>();
 
         // Group by month
         for (int month = 1; month <= 12; month++)
@@ -268,7 +268,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
 
             if (monthDeltas.Any())
             {
-                dataPoints.Add(new Hems_Backend.Application.Common.Models.PowerMetricsDataPoint
+                dataPoints.Add(new Hems_Backend.Application.Common.Models.PowerEnergyMetricsDataPoint
                 {
                     Timestamp = new DateTime(today.Year, month, 1).ToString("MMM"),
                     SolarPower = Math.Round(monthDeltas.Sum(x => x.PvTotalEnergyKWh ?? 0), 3),
@@ -501,19 +501,19 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
     /// <summary>
     /// Create empty response when no data available
     /// </summary>
-    private PowerMetricsResponseDto CreateEmptyResponse(string range)
+    private PowerEnergyMetricsResponseDto CreateEmptyResponse(string range)
     {
-        return new PowerMetricsResponseDto
+        return new PowerEnergyMetricsResponseDto
         {
             Range = range,
-            Data = new List<Hems_Backend.Application.Common.Models.PowerMetricsDataPoint>()
+            Data = new List<Hems_Backend.Application.Common.Models.PowerEnergyMetricsDataPoint>()
         };
     }
 
     /// <summary>
     /// Create response with calculated statistics
     /// </summary>
-    private PowerMetricsResponseDto CreateResponse(string range, List<Hems_Backend.Application.Common.Models.PowerMetricsDataPoint> dataPoints)
+    private PowerEnergyMetricsResponseDto CreateResponse(string range, List<Hems_Backend.Application.Common.Models.PowerEnergyMetricsDataPoint> dataPoints)
     {
         if (!dataPoints.Any())
             return CreateEmptyResponse(range);
@@ -523,7 +523,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
         var allBatteryPowers = dataPoints.Select(x => x.BatteryPower).ToList();
         var allLoadPowers = dataPoints.Select(x => x.LoadPower).ToList();
 
-        return new PowerMetricsResponseDto
+        return new PowerEnergyMetricsResponseDto
         {
             Range = range,
             Data = dataPoints           
