@@ -1410,7 +1410,7 @@
         ]
       }
     },
-    "/api/MobileDashboard/graphs/Soc": {
+    "/api/MobileDashboard/Soc": {
       "get": {
         "tags": [
           "MobileDashboard"
@@ -1447,7 +1447,7 @@
         ]
       }
     },
-    "/api/MobileDashboard/graphs/Soh": {
+    "/api/MobileDashboard/Soh": {
       "get": {
         "tags": [
           "MobileDashboard"
@@ -1472,6 +1472,43 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SohResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/MobileDashboard/TodayEnergySummary": {
+      "get": {
+        "tags": [
+          "MobileDashboard"
+        ],
+        "operationId": "TodayEnergySummary",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailyEnergySummaryDto"
                 }
               }
             }
@@ -5529,6 +5566,40 @@
           },
           "unit": {
             "type": "string"
+          }
+        }
+      },
+      "DailyEnergySummaryDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "dataDateTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "gridImport": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "gridExport": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "consumption": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "production": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
           }
         }
       },
