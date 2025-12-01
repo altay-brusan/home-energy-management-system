@@ -416,7 +416,7 @@ public class Sites : EndpointGroupBase
    - GetEnergyProduction → Üretim grafiği
    - GetEnergyConsumption → Tüketim grafiği
    - GetBattery → Batarya durumu
-   - GetSOC/GetSOH → Batarya sağlığı
+   - GetSoc/GetSoh → Batarya sağlığı
 ```
 
 #### Senaryo 3: Bildirim İzleme
@@ -834,8 +834,8 @@ Dashboard
    │
    └─► Batarya Bilgileri
          ├─► GetBattery
-         ├─► GetSOC (State of Charge)
-         ├─► GetSOH (State of Health)
+         ├─► GetSoc (State of Charge)
+         ├─► GetSoh (State of Health)
          └─► GetChargeDischarge
 ```
 

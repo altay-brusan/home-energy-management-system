@@ -1,90 +1,90 @@
-﻿# 🚀 HEMS Backend API - Teknik Dokümantasyon
+# ?? HEMS Backend API - Teknik Dok�mantasyon
 
-HEMS Backend, Clean Architecture prensiplerine uygun olarak geliştirilmiş .NET 9.0 tabanlı bir REST API'sidir. Bu dokümantasyon, backend sisteminin teknik detaylarını, kurulum sürecini ve kullanımını açıklar.
+HEMS Backend, Clean Architecture prensiplerine uygun olarak gelistirilmis .NET 9.0 tabanli bir REST API'sidir. Bu dok�mantasyon, backend sisteminin teknik detaylarini, kurulum s�recini ve kullanimini a�iklar.
 
-## 📋 İçindekiler
+## ?? I�indekiler
 
-- [🏗️ Sistem Mimarisi](#️-sistem-mimarisi)
-- [🚀 Kurulum ve Çalıştırma](#-kurulum-ve-çalıştırma)
-- [⚙️ Konfigürasyon](#️-konfigürasyon)
-- [🔧 Backend Bileşenleri](#-backend-bileşenleri)
-- [📡 API Endpoints](#-api-endpoints)
-- [🎮 Device Simulator](#-device-simulator)
-- [📡 SignalR Hub](#-signalr-hub)
-- [🧪 Test ve Deployment](#-test-ve-deployment)
+- [??? Sistem Mimarisi](#?-sistem-mimarisi)
+- [?? Kurulum ve �alistirma](#-kurulum-ve-�alistirma)
+- [?? Konfig�rasyon](#?-konfig�rasyon)
+- [?? Backend Bilesenleri](#-backend-bilesenleri)
+- [?? API Endpoints](#-api-endpoints)
+- [?? Device Simulator](#-device-simulator)
+- [?? SignalR Hub](#-signalr-hub)
+- [?? Test ve Deployment](#-test-ve-deployment)
 
-## 🏗️ Sistem Mimarisi
+## ??? Sistem Mimarisi
 
-Backend sistemi Clean Architecture prensiplerine uygun 4 katmanlı yapıda organize edilmiştir:
+Backend sistemi Clean Architecture prensiplerine uygun 4 katmanli yapida organize edilmistir:
 
 ```
-📁 Hems-Backend/
-├── 🎯 Domain/           # İş mantığı ve varlıklar
-├── 🔧 Application/     # Use case'ler ve CQRS
-├── 🏗️ Infrastructure/  # Veri erişimi ve harici servisler
-├── 🌐 Web/             # API endpoints ve middleware
-├── 🎮 DeviceSimulator/ # Cihaz simülasyon servisi
-└── 🧪 tests/           # Test projeleri
+?? Hems-Backend/
++-- ?? Domain/           # Is mantigi ve varliklar
++-- ?? Application/     # Use case'ler ve CQRS
++-- ??? Infrastructure/  # Veri erisimi ve harici servisler
++-- ?? Web/             # API endpoints ve middleware
++-- ?? DeviceSimulator/ # Cihaz sim�lasyon servisi
++-- ?? tests/           # Test projeleri
 ```
 
-### 🎯 Domain Katmanı (`src/Domain/`)
+### ?? Domain Katmani (`src/Domain/`)
 - **Entities**: Device, Site, User, DeviceComponent, DeviceData vb.
 - **Enums**: DeviceType, NotificationType, UserRole vb.
 - **ValueObjects**: Email, PhoneNumber vb.
-- **Events**: Domain olayları
+- **Events**: Domain olaylari
 
-### 🔧 Application Katmanı (`src/Application/`)
+### ?? Application Katmani (`src/Application/`)
 - **Commands**: CreateDevice, UpdateSite, DeleteUser vb. (CQRS)
 - **Queries**: GetSites, GetDevices, GetDeviceData vb. (CQRS)
-- **Handlers**: Command/Query handler'ları
-- **Validators**: FluentValidation ile input doğrulama
+- **Handlers**: Command/Query handler'lari
+- **Validators**: FluentValidation ile input dogrulama
 - **DTOs**: Veri transfer nesneleri
 
-### 🏗️ Infrastructure Katmanı (`src/Infrastructure/`)
+### ??? Infrastructure Katmani (`src/Infrastructure/`)
 - **Data**: Entity Framework Core ile PostgreSQL entegrasyonu
-- **Identity**: ASP.NET Core Identity ile kullanıcı yönetimi
-- **Services**: SMTP email, Weather API entegrasyonları
-- **Migrations**: Veritabanı migration'ları
+- **Identity**: ASP.NET Core Identity ile kullanici y�netimi
+- **Services**: SMTP email, Weather API entegrasyonlari
+- **Migrations**: Veritabani migration'lari
 
-### 🌐 Web Katmanı (`src/Web/`)
+### ?? Web Katmani (`src/Web/`)
 - **Endpoints**: Minimal API endpoint'leri
 - **Hubs**: SignalR DeviceNotificationHub
 - **Middleware**: GlobalExceptionMiddleware, DeviceDataRateLimitMiddleware
 - **Configuration**: DependencyInjection, Program.cs
 
-## 🚀 Kurulum ve Çalıştırma
+## ?? Kurulum ve �alistirma
 
-### 📋 Sistem Gereksinimleri
+### ?? Sistem Gereksinimleri
 
 #### Minimum Sunucu Gereksinimleri:
-- **CPU**: 2 core (4 core önerilen)
-- **RAM**: 4GB (8GB önerilen)
-- **Disk**: 20GB boş alan
+- **CPU**: 2 core (4 core �nerilen)
+- **RAM**: 4GB (8GB �nerilen)
+- **Disk**: 20GB bos alan
 - **OS**: Ubuntu 20.04+ / Windows Server 2019+ / CentOS 8+
-- **Network**: 80, 443, 5432 portları açık
+- **Network**: 80, 443, 5432 portlari a�ik
 
-#### Yazılım Gereksinimleri:
-- **.NET 9.0 Runtime** (sunucu için)
-- **PostgreSQL 12+** veritabanı
-- **Nginx** (reverse proxy için)
-- **Systemd** (Linux servis yönetimi için)
+#### Yazilim Gereksinimleri:
+- **.NET 9.0 Runtime** (sunucu i�in)
+- **PostgreSQL 12+** veritabani
+- **Nginx** (reverse proxy i�in)
+- **Systemd** (Linux servis y�netimi i�in)
 
-### 🔧 Development Kurulumu
+### ?? Development Kurulumu
 
-#### 1. Projeyi Klonlayın
+#### 1. Projeyi Klonlayin
 ```bash
 git clone <repository-url>
 cd Hems-Backend
 ```
 
-#### 2. Veritabanını Hazırlayın
+#### 2. Veritabanini Hazirlayin
 ```bash
-# PostgreSQL servisini başlatın
+# PostgreSQL servisini baslatin
 # Windows: net start postgresql-x64-14
 # Linux: sudo systemctl start postgresql
 ```
 
-#### 3. Bağlantı String'ini Güncelleyin
+#### 3. Baglanti String'ini G�ncelleyin
 `src/Web/appsettings.Development.json`:
 ```json
 {
@@ -94,31 +94,31 @@ cd Hems-Backend
 }
 ```
 
-#### 4. Paketleri Yükleyin ve Çalıştırın
+#### 4. Paketleri Y�kleyin ve �alistirin
 ```bash
-# Ana API'yi başlatın
+# Ana API'yi baslatin
 dotnet restore
 cd src/Web
 dotnet ef database update
 dotnet run
 
-# Device Simulator'ı başlatın (ayrı terminal)
+# Device Simulator'i baslatin (ayri terminal)
 cd Hems.DeviceSimulator
 dotnet run
 ```
 
-### 🌐 Erişim Adresleri
+### ?? Erisim Adresleri
 - **Ana API**: https://localhost:7164
 - **Swagger UI**: https://localhost:7164/api
 - **Device Simulator**: https://localhost:5001
 - **Hangfire Dashboard**: https://localhost:5001/hangfire
 
-### 🖥️ Production Sunucu Kurulumu
+### ??? Production Sunucu Kurulumu
 
-#### 1. Sunucu Hazırlığı (Ubuntu 20.04+)
+#### 1. Sunucu Hazirligi (Ubuntu 20.04+)
 
 ```bash
-# Sistem güncellemesi
+# Sistem g�ncellemesi
 sudo apt update && sudo apt upgrade -y
 
 # .NET 9.0 Runtime kurulumu
@@ -133,7 +133,7 @@ sudo apt install -y postgresql postgresql-contrib
 # Nginx kurulumu
 sudo apt install -y nginx
 
-# Firewall ayarları
+# Firewall ayarlari
 sudo ufw allow 22
 sudo ufw allow 80
 sudo ufw allow 443
@@ -141,47 +141,47 @@ sudo ufw allow 5432
 sudo ufw enable
 ```
 
-#### 2. PostgreSQL Veritabanı Kurulumu
+#### 2. PostgreSQL Veritabani Kurulumu
 
 ```bash
-# PostgreSQL servisini başlat
+# PostgreSQL servisini baslat
 sudo systemctl start postgresql
 sudo systemctl enable postgresql
 
-# Veritabanı ve kullanıcı oluştur
+# Veritabani ve kullanici olustur
 sudo -u postgres psql
 ```
 
-PostgreSQL içinde:
+PostgreSQL i�inde:
 ```sql
--- Veritabanı oluştur
+-- Veritabani olustur
 CREATE DATABASE hems;
 
--- Kullanıcı oluştur
+-- Kullanici olustur
 CREATE USER hems_user WITH PASSWORD 'secure_password_here';
 
 -- Yetkileri ver
 GRANT ALL PRIVILEGES ON DATABASE hems TO hems_user;
 GRANT ALL ON SCHEMA public TO hems_user;
 
--- Çık
+-- �ik
 \q
 ```
 
-#### 3. Uygulama Dosyalarını Sunucuya Kopyalama
+#### 3. Uygulama Dosyalarini Sunucuya Kopyalama
 
 ```bash
-# Proje dosyalarını sunucuya kopyala
+# Proje dosyalarini sunucuya kopyala
 scp -r ./Hems-Backend user@your-server:/opt/
 
-# Sunucuda dizin oluştur
+# Sunucuda dizin olustur
 sudo mkdir -p /opt/hems
 sudo chown -R www-data:www-data /opt/hems
 ```
 
-#### 4. Production Konfigürasyonu
+#### 4. Production Konfig�rasyonu
 
-`/opt/hems/appsettings.Production.json` oluştur:
+`/opt/hems/appsettings.Production.json` olustur:
 ```json
 {
   "ConnectionStrings": {
@@ -212,9 +212,9 @@ sudo chown -R www-data:www-data /opt/hems
 }
 ```
 
-#### 5. Systemd Servis Dosyaları
+#### 5. Systemd Servis Dosyalari
 
-Ana API için `/etc/systemd/system/hems-api.service`:
+Ana API i�in `/etc/systemd/system/hems-api.service`:
 ```ini
 [Unit]
 Description=HEMS Backend API
@@ -237,7 +237,7 @@ Environment=ASPNETCORE_URLS=http://localhost:5000
 WantedBy=multi-user.target
 ```
 
-Device Simulator için `/etc/systemd/system/hems-simulator.service`:
+Device Simulator i�in `/etc/systemd/system/hems-simulator.service`:
 ```ini
 [Unit]
 Description=HEMS Device Simulator
@@ -260,7 +260,7 @@ Environment=ASPNETCORE_URLS=http://localhost:5001
 WantedBy=multi-user.target
 ```
 
-#### 6. Nginx Reverse Proxy Konfigürasyonu
+#### 6. Nginx Reverse Proxy Konfig�rasyonu
 
 `/etc/nginx/sites-available/hems`:
 ```nginx
@@ -315,41 +315,41 @@ server {
 }
 ```
 
-#### 7. SSL Sertifikası (Let's Encrypt)
+#### 7. SSL Sertifikasi (Let's Encrypt)
 
 ```bash
 # Certbot kurulumu
 sudo apt install -y certbot python3-certbot-nginx
 
-# SSL sertifikası al
+# SSL sertifikasi al
 sudo certbot --nginx -d your-domain.com
 
 # Otomatik yenileme
 sudo crontab -e
-# Şu satırı ekle:
+# Su satiri ekle:
 # 0 12 * * * /usr/bin/certbot renew --quiet
 ```
 
-#### 8. Servisleri Başlatma
+#### 8. Servisleri Baslatma
 
 ```bash
-# Nginx konfigürasyonunu aktif et
+# Nginx konfig�rasyonunu aktif et
 sudo ln -s /etc/nginx/sites-available/hems /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 
-# Migration çalıştır
+# Migration �alistir
 cd /opt/hems/src/Web
 sudo -u www-data dotnet ef database update
 
-# Servisleri başlat
+# Servisleri baslat
 sudo systemctl daemon-reload
 sudo systemctl enable hems-api
 sudo systemctl enable hems-simulator
 sudo systemctl start hems-api
 sudo systemctl start hems-simulator
 
-# Durum kontrolü
+# Durum kontrol�
 sudo systemctl status hems-api
 sudo systemctl status hems-simulator
 ```
@@ -357,14 +357,14 @@ sudo systemctl status hems-simulator
 #### 9. Monitoring ve Logging
 
 ```bash
-# Log dosyalarını izle
+# Log dosyalarini izle
 sudo journalctl -u hems-api -f
 sudo journalctl -u hems-simulator -f
 
-# Servis durumlarını kontrol et
+# Servis durumlarini kontrol et
 sudo systemctl status hems-api hems-simulator postgresql nginx
 
-# Disk kullanımını kontrol et
+# Disk kullanimini kontrol et
 df -h
 du -sh /opt/hems/
 ```
@@ -378,17 +378,17 @@ BACKUP_DIR="/opt/backups/hems"
 DATE=$(date +%Y%m%d_%H%M%S)
 mkdir -p $BACKUP_DIR
 
-# Veritabanı backup
+# Veritabani backup
 pg_dump -h localhost -U hems_user hems > $BACKUP_DIR/hems_backup_$DATE.sql
 
-# Eski backup'ları temizle (7 günden eski)
+# Eski backup'lari temizle (7 g�nden eski)
 find $BACKUP_DIR -name "*.sql" -mtime +7 -delete
 
 # Cron job ekle
 # 0 2 * * * /opt/scripts/hems_backup.sh
 ```
 
-### 🔧 Windows Server Kurulumu
+### ?? Windows Server Kurulumu
 
 #### 1. IIS ve .NET Hosting Bundle
 
@@ -405,10 +405,10 @@ Enable-WindowsOptionalFeature -Online -FeatureName IIS-WebServerRole, IIS-WebSer
 ```powershell
 # PostgreSQL Windows installer indir
 # https://www.postgresql.org/download/windows/
-# Kurulum sırasında port 5432, password belirle
+# Kurulum sirasinda port 5432, password belirle
 ```
 
-#### 3. Windows Service Olarak Çalıştırma
+#### 3. Windows Service Olarak �alistirma
 
 ```powershell
 # NSSM (Non-Sucking Service Manager) kur
@@ -427,9 +427,9 @@ nssm set HemsSimulator AppEnvironmentExtra ASPNETCORE_ENVIRONMENT=Production
 nssm start HemsSimulator
 ```
 
-## ⚙️ Konfigürasyon
+## ?? Konfig�rasyon
 
-### 🔐 JWT Kimlik Doğrulama
+### ?? JWT Kimlik Dogrulama
 ```json
 {
   "JwtSettings": {
@@ -441,7 +441,7 @@ nssm start HemsSimulator
 }
 ```
 
-### 📧 SMTP Email Servisi
+### ?? SMTP Email Servisi
 ```json
 {
   "SmtpSettings": {
@@ -456,7 +456,7 @@ nssm start HemsSimulator
 }
 ```
 
-### 🌤️ Weather API Entegrasyonu
+### ??? Weather API Entegrasyonu
 ```json
 {
   "WeatherApi": {
@@ -466,7 +466,7 @@ nssm start HemsSimulator
 }
 ```
 
-### 🎮 Device Simulator Ayarları
+### ?? Device Simulator Ayarlari
 ```json
 {
   "DeviceSimulator": {
@@ -480,66 +480,66 @@ nssm start HemsSimulator
 }
 ```
 
-## 🔧 Backend Bileşenleri
+## ?? Backend Bilesenleri
 
-### 🎮 Device Simulator (`Hems.DeviceSimulator/`)
+### ?? Device Simulator (`Hems.DeviceSimulator/`)
 
-Device Simulator, gerçek cihazların davranışını simüle eden ayrı bir .NET servisidir.
+Device Simulator, ger�ek cihazlarin davranisini sim�le eden ayri bir .NET servisidir.
 
-#### Teknik Özellikler:
-- **Hangfire**: Zamanlanmış görevler için background job processing
-- **PostgreSQL Storage**: Hangfire job storage için PostgreSQL
-- **HTTP Client**: Ana API'ye veri gönderimi
-- **JSON Data Generation**: Gerçekçi cihaz verisi üretimi
+#### Teknik �zellikler:
+- **Hangfire**: Zamanlanmis g�revler i�in background job processing
+- **PostgreSQL Storage**: Hangfire job storage i�in PostgreSQL
+- **HTTP Client**: Ana API'ye veri g�nderimi
+- **JSON Data Generation**: Ger�ek�i cihaz verisi �retimi
 
-#### Servis Yapısı:
+#### Servis Yapisi:
 ```
 Hems.DeviceSimulator/
-├── Controllers/
-│   └── DeviceController.cs      # API endpoints
-├── Services/
-│   ├── DeviceSimulationJobService.cs    # Ana simülasyon servisi
-│   ├── EnergyDataJobService.cs          # Enerji verisi servisi
-│   ├── DeviceNotificationJobService.cs   # Bildirim simülasyonu
-│   ├── DataGeneratorService.cs          # Veri üretimi
-│   └── JsonDataService.cs              # JSON veri servisi
-├── Models/
-│   ├── BatteryDataJson.cs
-│   ├── InverterData.cs
-│   └── EnergyFlowData.cs
-└── DataJsonFiles/               # Simülasyon verileri
-    ├── Battery/
-    ├── BMS/
-    └── Inverter/
++-- Controllers/
+�   +-- DeviceController.cs      # API endpoints
++-- Services/
+�   +-- DeviceSimulationJobService.cs    # Ana sim�lasyon servisi
+�   +-- EnergyDataJobService.cs          # Enerji verisi servisi
+�   +-- DeviceNotificationJobService.cs   # Bildirim sim�lasyonu
+�   +-- DataGeneratorService.cs          # Veri �retimi
+�   +-- JsonDataService.cs              # JSON veri servisi
++-- Models/
+�   +-- BatteryDataJson.cs
+�   +-- InverterData.cs
+�   +-- EnergyFlowData.cs
++-- DataJsonFiles/               # Sim�lasyon verileri
+    +-- Battery/
+    +-- BMS/
+    +-- Inverter/
 ```
 
 #### API Endpoints:
 ```http
-POST /api/device/start           # Simülasyonu başlat
-POST /api/device/stop            # Simülasyonu durdur
-GET  /api/device/status          # Durum kontrolü
-POST /api/device/schedule/{id}   # Belirli cihazı zamanla
-POST /api/device/takeLiveData    # Canlı veri üret
+POST /api/device/start           # Sim�lasyonu baslat
+POST /api/device/stop            # Sim�lasyonu durdur
+GET  /api/device/status          # Durum kontrol�
+POST /api/device/schedule/{id}   # Belirli cihazi zamanla
+POST /api/device/takeLiveData    # Canli veri �ret
 ```
 
-### 📡 SignalR Hub (`src/Web/Hubs/DeviceNotificationHub.cs`)
+### ?? SignalR Hub (`src/Web/Hubs/DeviceNotificationHub.cs`)
 
-Gerçek zamanlı bildirim sistemi için SignalR hub'ı.
+Ger�ek zamanli bildirim sistemi i�in SignalR hub'i.
 
-#### Teknik Özellikler:
-- **Authorization**: JWT token tabanlı kimlik doğrulama
-- **Group Management**: Site ve cihaz bazlı grup yönetimi
-- **Access Control**: Kullanıcı yetki kontrolü
+#### Teknik �zellikler:
+- **Authorization**: JWT token tabanli kimlik dogrulama
+- **Group Management**: Site ve cihaz bazli grup y�netimi
+- **Access Control**: Kullanici yetki kontrol�
 
-#### Hub Metodları:
+#### Hub Metodlari:
 ```csharp
-// Site grubuna katılma
+// Site grubuna katilma
 JoinSiteGroup(Guid siteId)
 
-// Cihaz grubuna katılma  
+// Cihaz grubuna katilma  
 JoinDeviceGroup(Guid deviceId)
 
-// Gruplardan çıkma
+// Gruplardan �ikma
 LeaveSiteGroup(Guid siteId)
 LeaveDeviceGroup(Guid deviceId)
 ```
@@ -553,23 +553,23 @@ public interface IDeviceNotificationHubClient
 }
 ```
 
-### 🏗️ Infrastructure Servisleri
+### ??? Infrastructure Servisleri
 
 #### SMTP Email Service (`src/Infrastructure/Services/SmtpEmailSender.cs`)
 - **SMTP Configuration**: Gmail SMTP entegrasyonu
-- **Template Support**: HTML email template desteği
-- **Async Operations**: Asenkron email gönderimi
+- **Template Support**: HTML email template destegi
+- **Async Operations**: Asenkron email g�nderimi
 
 #### Weather API Service
 - **External API Integration**: WeatherAPI.com entegrasyonu
 - **Caching**: API response caching
-- **Error Handling**: API hata yönetimi
+- **Error Handling**: API hata y�netimi
 
-## 📡 API Endpoints
+## ?? API Endpoints
 
-### 🔐 Kimlik Doğrulama (`src/Web/Endpoints/Auth.cs`)
+### ?? Kimlik Dogrulama (`src/Web/Endpoints/Auth.cs`)
 
-#### Kullanıcı Girişi
+#### Kullanici Girisi
 ```http
 POST /api/auth/login
 Content-Type: application/json
@@ -580,7 +580,7 @@ Content-Type: application/json
 }
 ```
 
-#### Cihaz Girişi
+#### Cihaz Girisi
 ```http
 POST /api/devices/login
 Content-Type: application/json
@@ -590,9 +590,9 @@ Content-Type: application/json
 }
 ```
 
-### 🏠 Site Yönetimi (`src/Web/Endpoints/Sites.cs`)
+### ?? Site Y�netimi (`src/Web/Endpoints/Sites.cs`)
 
-#### Site Oluşturma
+#### Site Olusturma
 ```http
 POST /api/sites
 Authorization: Bearer {token}
@@ -600,7 +600,7 @@ Content-Type: application/json
 
 {
   "name": "Evim",
-  "address": "İstanbul, Türkiye",
+  "address": "Istanbul, T�rkiye",
   "latitude": 41.0082,
   "longitude": 28.9784
 }
@@ -612,7 +612,7 @@ GET /api/sites
 Authorization: Bearer {token}
 ```
 
-### 🔧 Cihaz Yönetimi (`src/Web/Endpoints/Devices.cs`)
+### ?? Cihaz Y�netimi (`src/Web/Endpoints/Devices.cs`)
 
 #### Cihaz Ekleme
 ```http
@@ -628,9 +628,9 @@ Content-Type: application/json
 }
 ```
 
-### 📊 Veri Gönderimi (`src/Web/Endpoints/DeviceData.cs`)
+### ?? Veri G�nderimi (`src/Web/Endpoints/DeviceData.cs`)
 
-#### Cihaz Verisi Gönderme
+#### Cihaz Verisi G�nderme
 ```http
 POST /api/deviceData
 Authorization: Bearer {device_token}
@@ -644,12 +644,12 @@ Content-Type: application/json
     "voltage": 48.5,
     "current": 25.3,
     "temperature": 22.1,
-    "soc": 85.2
+    "Soc": 85.2
   }
 }
 ```
 
-### 📧 Bildirim Sistemi (`src/Web/Endpoints/DeviceNotifications.cs`)
+### ?? Bildirim Sistemi (`src/Web/Endpoints/DeviceNotifications.cs`)
 
 #### Bildirim Listesi
 ```http
@@ -657,7 +657,7 @@ GET /api/deviceNotifications
 Authorization: Bearer {token}
 ```
 
-#### Bildirim Oluşturma
+#### Bildirim Olusturma
 ```http
 POST /api/deviceNotifications
 Authorization: Bearer {token}
@@ -665,13 +665,13 @@ Content-Type: application/json
 
 {
   "deviceId": "device-guid",
-  "title": "Yüksek Sıcaklık Uyarısı",
-  "message": "Batarya sıcaklığı kritik seviyede",
+  "title": "Y�ksek Sicaklik Uyarisi",
+  "message": "Batarya sicakligi kritik seviyede",
   "severity": "High"
 }
 ```
 
-### 📱 Mobil API (`src/Web/Endpoints/MobileDashboard.cs`)
+### ?? Mobil API (`src/Web/Endpoints/MobileDashboard.cs`)
 
 #### Mobil Dashboard Verileri
 ```http
@@ -679,36 +679,36 @@ GET /api/mobile/dashboard
 Authorization: Bearer {token}
 ```
 
-### 📈 Dashboard API (`src/Web/Endpoints/Dashboard.cs`)
+### ?? Dashboard API (`src/Web/Endpoints/Dashboard.cs`)
 
-#### Dashboard Özet Verileri
+#### Dashboard �zet Verileri
 ```http
 GET /api/dashboard/summary
 Authorization: Bearer {token}
 ```
 
-#### Enerji Akış Verileri
+#### Enerji Akis Verileri
 ```http
 GET /api/dashboard/energyFlow
 Authorization: Bearer {token}
 ```
 
-## 🧪 Test ve Deployment
+## ?? Test ve Deployment
 
-### 🧪 Test Yapısı
+### ?? Test Yapisi
 
 #### Test Projeleri:
 ```
 tests/
-├── Application.UnitTests/        # Application katmanı unit testleri
-├── Application.FunctionalTests/  # End-to-end API testleri
-├── Domain.UnitTests/            # Domain katmanı unit testleri
-└── Infrastructure.IntegrationTests/ # Infrastructure entegrasyon testleri
++-- Application.UnitTests/        # Application katmani unit testleri
++-- Application.FunctionalTests/  # End-to-end API testleri
++-- Domain.UnitTests/            # Domain katmani unit testleri
++-- Infrastructure.IntegrationTests/ # Infrastructure entegrasyon testleri
 ```
 
-#### Test Çalıştırma:
+#### Test �alistirma:
 ```bash
-# Tüm testleri çalıştır
+# T�m testleri �alistir
 dotnet test
 
 # Belirli bir test projesi
@@ -718,7 +718,7 @@ dotnet test tests/Application.UnitTests
 dotnet test --collect:"XPlat Code Coverage"
 ```
 
-### 🚀 Deployment
+### ?? Deployment
 
 #### Docker ile Deployment:
 ```dockerfile
@@ -780,7 +780,7 @@ steps:
     ArtifactName: 'drop'
 ```
 
-### 🔧 Production Konfigürasyonu
+### ?? Production Konfig�rasyonu
 
 #### Environment Variables:
 ```bash
@@ -797,18 +797,18 @@ GET /health
 
 ---
 
-## 📞 Teknik Destek
+## ?? Teknik Destek
 
-### 🐛 Hata Bildirimi
+### ?? Hata Bildirimi
 GitHub Issues kullanarak hata bildirimi yapabilirsiniz.
 
-### 💡 Özellik İsteği
-Yeni özellik önerileri için GitHub Issues'da "Feature Request" etiketi ile açın.
+### ?? �zellik Istegi
+Yeni �zellik �nerileri i�in GitHub Issues'da "Feature Request" etiketi ile a�in.
 
-### 📚 Dokümantasyon
+### ?? Dok�mantasyon
 - **Swagger UI**: https://localhost:7164/api
 - **Hangfire Dashboard**: https://localhost:5001/hangfire
 
 ---
 
-**HEMS Backend API v1.0** - Clean Architecture ile geliştirilmiş modern .NET 9.0 API'si
+**HEMS Backend API v1.0** - Clean Architecture ile gelistirilmis modern .NET 9.0 API'si

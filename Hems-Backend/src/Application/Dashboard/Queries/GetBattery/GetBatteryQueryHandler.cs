@@ -73,7 +73,7 @@ public class GetBatteryQueryHandler : IRequestHandler<GetBatteryQuery, BatteryRe
             try
             {
                 var jsonData = data.Data.RootElement;
-                if (jsonData.TryGetProperty("SOC", out var socElement) && 
+                if (jsonData.TryGetProperty("Soc", out var socElement) && 
                     socElement.ValueKind == JsonValueKind.Number)
                 {
                     var soc = Math.Round(socElement.GetDouble(), 3);
@@ -82,7 +82,7 @@ public class GetBatteryQueryHandler : IRequestHandler<GetBatteryQuery, BatteryRe
                     socDataPoints.Add(new BatteryDataPoint
                     {
                         DateTime = data.RequestDate,
-                        SOC = soc,
+                        Soc = soc,
                         Label = data.RequestDate.ToString("HH:mm")
                     });
                 }
@@ -116,16 +116,16 @@ public class GetBatteryQueryHandler : IRequestHandler<GetBatteryQuery, BatteryRe
             .Select(g => new Hems_Backend.Application.Common.Models.BatteryDataPoint
             {
                 Timestamp = $"{g.Key:00}:00",
-                Value = Math.Round(g.Max(x => x.SOC), 3), // Saatlik peak (en yüksek SOC)
+                Value = Math.Round(g.Max(x => x.Soc), 3), // Saatlik peak (en yüksek SOC)
                 Unit = "%"
             })
             .OrderBy(x => x.Timestamp)
             .ToList();
 
         // İstatistikleri hesapla
-        var averageSOC = Math.Round(allSocValues.Average(), 3);
-        var peakSOC = Math.Round(allSocValues.Max(), 3);
-        var currentSOC = Math.Round(allSocValues.Last(), 3);
+        var AverageSoc = Math.Round(allSocValues.Average(), 3);
+        var PeakSoc = Math.Round(allSocValues.Max(), 3);
+        var CurrentSoc = Math.Round(allSocValues.Last(), 3);
 
         return new BatteryResponseDto
         {
@@ -133,9 +133,9 @@ public class GetBatteryQueryHandler : IRequestHandler<GetBatteryQuery, BatteryRe
             Data = hourlyData,
             Statistics = new BatteryStatistics
             {
-                Average = averageSOC,
-                Peak = peakSOC,
-                Current = currentSOC,
+                Average = AverageSoc,
+                Peak = PeakSoc,
+                Current = CurrentSoc,
                 Unit = "%"
             }
         };
@@ -153,7 +153,7 @@ public class GetBatteryQueryHandler : IRequestHandler<GetBatteryQuery, BatteryRe
             var next = dataPoints[i + 1];
 
             // Peak: önceki ve sonraki değerlerden büyük
-            if (current.SOC > previous.SOC && current.SOC > next.SOC)
+            if (current.Soc > previous.Soc && current.Soc > next.Soc)
             {
                 peaks.Add(current);
             }
@@ -161,7 +161,7 @@ public class GetBatteryQueryHandler : IRequestHandler<GetBatteryQuery, BatteryRe
 
         // En yüksek değerleri de ekle
         var topValues = dataPoints
-            .OrderByDescending(x => x.SOC)
+            .OrderByDescending(x => x.Soc)
             .Take(3)
             .ToList();
 
@@ -181,7 +181,7 @@ public class GetBatteryQueryHandler : IRequestHandler<GetBatteryQuery, BatteryRe
             var next = dataPoints[i + 1];
 
             // Valley: önceki ve sonraki değerlerden küçük
-            if (current.SOC < previous.SOC && current.SOC < next.SOC)
+            if (current.Soc < previous.Soc && current.Soc < next.Soc)
             {
                 valleys.Add(current);
             }
@@ -189,7 +189,7 @@ public class GetBatteryQueryHandler : IRequestHandler<GetBatteryQuery, BatteryRe
 
         // En düşük değerleri de ekle
         var bottomValues = dataPoints
-            .OrderBy(x => x.SOC)
+            .OrderBy(x => x.Soc)
             .Take(3)
             .ToList();
 

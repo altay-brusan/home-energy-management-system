@@ -11,13 +11,13 @@ public class BatteryDataJson
     public double BatteryCurrent { get; set; }
     
     [JsonPropertyName("SOH")]
-    public List<double> SOH { get; set; } = new();
+    public List<double> Soh { get; set; } = new();
     
     [JsonPropertyName("SOC Cumulative")]
-    public List<double> SOCCumulative { get; set; } = new();
+    public List<double> SocCumulative { get; set; } = new();
     
-    [JsonPropertyName("SOC")]
-    public List<BatteryCellJson> SOC { get; set; } = new();
+    [JsonPropertyName("Soc")]
+    public List<BatteryCellJson> Soc { get; set; } = new();
     
     [JsonPropertyName("Total Charge Capacity")]
     public string TotalChargeCapacity { get; set; } = string.Empty;

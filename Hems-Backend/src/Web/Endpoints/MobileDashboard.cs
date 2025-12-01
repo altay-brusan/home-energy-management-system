@@ -8,8 +8,8 @@ using Hems_Backend.Application.Dashboard.Queries.GetChargeDischarge;
 using Hems_Backend.Application.Dashboard.Queries.GetBatteryComponent;
 using Hems_Backend.Application.Dashboard.Queries.GetInverterComponent;
 using Hems_Backend.Application.Dashboard.Queries.GetHero;
-using Hems_Backend.Application.Dashboard.Queries.GetSOC;
-using Hems_Backend.Application.Dashboard.Queries.GetSOH;
+using Hems_Backend.Application.Dashboard.Queries.GetSoc;
+using Hems_Backend.Application.Dashboard.Queries.GetSoh;
 using Hems_Backend.Application.Devices.Queries.GetDeviceWithData;
 using Hems_Backend.Application.Devices.Queries.GetComponentLiveData;
 using Hems_Backend.Web.Infrastructure;
@@ -26,8 +26,8 @@ public class MobileDashboard : EndpointGroupBase
         app.MapGroup(this)
             .RequireAuthorization()
             .MapGet(Hero, "hero")
-            .MapGet(SOC, "graphs/SOC")
-            .MapGet(SOH, "graphs/SOH")
+            .MapGet(SOC, "graphs/Soc")
+            .MapGet(SOH, "graphs/Soh")
             .MapGet(GetDeviceWithData, "device/GetWithData")
             .MapGet(GetComponentLiveData, "device/component/getComponentLiveData")
             .MapGet(EnergyFlow, "graphs/EnergyFlow")
@@ -54,11 +54,11 @@ public class MobileDashboard : EndpointGroupBase
     }
 
     [Authorize]
-    public async Task<SOCResponseDto> SOC(
+    public async Task<SocResponseDto> SOC(
         ISender sender,
         [FromQuery] Guid deviceId)
     {
-        var query = new GetSOCQuery
+        var query = new GetSocQuery
         {
             DeviceId = deviceId
         };
@@ -67,11 +67,11 @@ public class MobileDashboard : EndpointGroupBase
     }
 
     [Authorize]
-    public async Task<SOHResponseDto> SOH(
+    public async Task<SohResponseDto> SOH(
         ISender sender,
         [FromQuery] Guid deviceId)
     {
-        var query = new GetSOHQuery
+        var query = new GetSohQuery
         {
             DeviceId = deviceId
         };

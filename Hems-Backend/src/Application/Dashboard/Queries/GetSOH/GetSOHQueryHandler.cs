@@ -6,22 +6,22 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
-namespace Hems_Backend.Application.Dashboard.Queries.GetSOH;
+namespace Hems_Backend.Application.Dashboard.Queries.GetSoh;
 
-public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
+public class GetSohQueryHandler : IRequestHandler<GetSohQuery, SohResponseDto>
 {
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
     private readonly IDeviceMappingService _deviceMapping;
 
-    public GetSOHQueryHandler(IApplicationDbContext context, ISender sender, IDeviceMappingService deviceMapping)
+    public GetSohQueryHandler(IApplicationDbContext context, ISender sender, IDeviceMappingService deviceMapping)
     {
         _context = context;
         _sender = sender;
         _deviceMapping = deviceMapping;
     }
 
-    public async Task<SOHResponseDto> Handle(GetSOHQuery request, CancellationToken cancellationToken)
+    public async Task<SohResponseDto> Handle(GetSohQuery request, CancellationToken cancellationToken)
     {
         // Device access kontrolü
         var hasAccess = await _sender.Send(new CheckDeviceAccessQuery { DeviceId = request.DeviceId }, cancellationToken);
@@ -67,11 +67,11 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
 
         if (!batteryData.Any())
         {
-            return new SOHResponseDto
+            return new SohResponseDto
             {
                 Range = "Day",
-                Data = new List<SOHDataPoint>(),
-                Statistics = new SOHStatistics
+                Data = new List<SohDataPoint>(),
+                Statistics = new SohStatistics
                 {
                     Peak = 0,
                     Average = 0,
@@ -81,7 +81,7 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
         }
 
         // SOH değerlerini çıkar ve grupla
-        var sohDataPoints = new List<SOHDataPoint>();
+        var sohDataPoints = new List<SohDataPoint>();
         
         foreach (var data in batteryData)
         {
@@ -115,7 +115,7 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
                     _ => data.RequestDate.ToString("HH:mm")
                 };
                 
-                sohDataPoints.Add(new SOHDataPoint
+                sohDataPoints.Add(new SohDataPoint
                 {
                     Timestamp = timestamp,
                     Value = Math.Round(sohValue, 1),
@@ -131,11 +131,11 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
 
         if (!sohDataPoints.Any())
         {
-            return new SOHResponseDto
+            return new SohResponseDto
             {
                 Range = "Day",
-                Data = new List<SOHDataPoint>(),
-                Statistics = new SOHStatistics
+                Data = new List<SohDataPoint>(),
+                Statistics = new SohStatistics
                 {
                     Peak = 0,
                     Average = 0,
@@ -149,7 +149,7 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
         {
             "Day" => sohDataPoints
                 .GroupBy(x => x.Timestamp.Substring(0, 2)) // Saatlik gruplama
-                .Select(g => new SOHDataPoint
+                .Select(g => new SohDataPoint
                 {
                     Timestamp = $"{g.Key}:00",
                     Value = Math.Round(g.Average(x => x.Value), 1),
@@ -159,7 +159,7 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
                 .ToList(),
             
             "Week" => sohDataPoints
-                .Select(x => new SOHDataPoint
+                .Select(x => new SohDataPoint
                 {
                     Timestamp = x.Timestamp, // Zaten günlük veri
                     Value = x.Value,
@@ -169,7 +169,7 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
                 .ToList(),
             
             "Month" => sohDataPoints
-                .Select(x => new SOHDataPoint
+                .Select(x => new SohDataPoint
                 {
                     Timestamp = x.Timestamp, // Zaten günlük veri
                     Value = x.Value,
@@ -179,7 +179,7 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
                 .ToList(),
             
             "Year" => sohDataPoints
-                .Select(x => new SOHDataPoint
+                .Select(x => new SohDataPoint
                 {
                     Timestamp = x.Timestamp, // Zaten aylık veri
                     Value = x.Value,
@@ -196,11 +196,11 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
         var peak = allValues.Count > 0 ? allValues.Max() : 0;
         var average = allValues.Count > 0 ? allValues.Average() : 0;
 
-        return new SOHResponseDto
+        return new SohResponseDto
         {
             Range = range,
             Data = groupedData,
-            Statistics = new SOHStatistics
+            Statistics = new SohStatistics
             {
                 Peak = Math.Round(peak, 1),
                 Average = Math.Round(average, 1),
@@ -336,13 +336,13 @@ public class GetSOHQueryHandler : IRequestHandler<GetSOHQuery, SOHResponseDto>
         return result.OrderBy(x => x.RequestDate).ToList();
     }
 
-    private static SOHResponseDto CreateEmptyResponse()
+    private static SohResponseDto CreateEmptyResponse()
     {
-        return new SOHResponseDto
+        return new SohResponseDto
         {
             Range = "Day",
-            Data = new List<SOHDataPoint>(),
-            Statistics = new SOHStatistics
+            Data = new List<SohDataPoint>(),
+            Statistics = new SohStatistics
             {
                 Peak = 0,
                 Average = 0,

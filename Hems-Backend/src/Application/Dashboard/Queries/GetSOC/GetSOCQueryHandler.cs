@@ -6,22 +6,22 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
-namespace Hems_Backend.Application.Dashboard.Queries.GetSOC;
+namespace Hems_Backend.Application.Dashboard.Queries.GetSoc;
 
-public class GetSOCQueryHandler : IRequestHandler<GetSOCQuery, SOCResponseDto>
+public class GetSocQueryHandler : IRequestHandler<GetSocQuery, SocResponseDto>
 {
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
     private readonly IDeviceMappingService _deviceMapping;
 
-    public GetSOCQueryHandler(IApplicationDbContext context, ISender sender, IDeviceMappingService deviceMapping)
+    public GetSocQueryHandler(IApplicationDbContext context, ISender sender, IDeviceMappingService deviceMapping)
     {
         _context = context;
         _sender = sender;
         _deviceMapping = deviceMapping;
     }
 
-    public async Task<SOCResponseDto> Handle(GetSOCQuery request, CancellationToken cancellationToken)
+    public async Task<SocResponseDto> Handle(GetSocQuery request, CancellationToken cancellationToken)
     {
         // Device access check (uses local DeviceId)
         var hasAccess = await _sender.Send(new CheckDeviceAccessQuery { DeviceId = request.DeviceId }, cancellationToken);
@@ -46,13 +46,13 @@ public class GetSOCQueryHandler : IRequestHandler<GetSOCQuery, SOCResponseDto>
         if (latestSocData == null)
         {
             // Return empty response if no data found
-            return new SOCResponseDto
+            return new SocResponseDto
             {
                 TimestampUtc = DateTime.UtcNow.ToString("o"),
                 Version = 0,
                 DeviceId = request.DeviceId,
                 InverterBatChannelSoc = new List<InverterBatChannelSocDto>(),
-                BmsSocDetails = new List<BmsSocDetailDto>()
+                bmsSocDetails = new List<BmsSocDetailDto>()
             };
         }
 
@@ -82,7 +82,7 @@ public class GetSOCQueryHandler : IRequestHandler<GetSOCQuery, SOCResponseDto>
                 inverterChannels.Add(new InverterBatChannelSocDto
                 {
                     ChannelId = channelId,
-                    SocPercent = socPercent
+                    socPercent = socPercent
                 });
             }
         }
@@ -102,18 +102,18 @@ public class GetSOCQueryHandler : IRequestHandler<GetSOCQuery, SOCResponseDto>
                 {
                     ChannelId = channelId,
                     DeviceId = deviceId,
-                    SocPercent = socPercent
+                    socPercent = socPercent
                 });
             }
         }
 
-        return new SOCResponseDto
+        return new SocResponseDto
         {
             TimestampUtc = timestampUtc,
             Version = version,
             DeviceId = request.DeviceId,
             InverterBatChannelSoc = inverterChannels,
-            BmsSocDetails = bmsDetails
+            bmsSocDetails = bmsDetails
         };
     }
 }
