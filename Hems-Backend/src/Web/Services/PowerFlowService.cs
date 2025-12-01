@@ -24,6 +24,7 @@ public class PowerFlowService : IPowerFlowService
     private readonly IApplicationDbContext _context;
     private readonly HttpClient _httpClient;
     private readonly IThingsBoardAuthService _authService;
+    private readonly IDeviceMappingService _deviceMapping;
     private readonly string _tbBaseUrl;
     private readonly JsonSerializerOptions _jsonOptions;
 
@@ -31,11 +32,13 @@ public class PowerFlowService : IPowerFlowService
         IApplicationDbContext context,
         HttpClient httpClient,
         IConfiguration configuration,
-        IThingsBoardAuthService authService)
+        IThingsBoardAuthService authService,
+        IDeviceMappingService deviceMapping)
     {
         _context = context;
         _httpClient = httpClient;
         _authService = authService;
+        _deviceMapping = deviceMapping;
 
         _tbBaseUrl = configuration["ThingsBoard:BaseUrl"]
                      ?? "http://localhost";   // fallback for dev
@@ -48,9 +51,16 @@ public class PowerFlowService : IPowerFlowService
 
     public async Task<PowerFlowDto?> GetPowerFlowAsync(Guid deviceId, CancellationToken cancellationToken = default)
     {
-        // TEMP: TB device id hard-coded
-        var tbDeviceId = deviceId.ToString();//"725dabc0-c6bf-11f0-a84b-2f34a5f564b4";
+        // Map local deviceId to ThingsBoardDeviceId (with caching)
+        var thingsBoardDeviceId = await _deviceMapping.GetThingsBoardDeviceIdAsync(deviceId, cancellationToken);
+        
+        if (thingsBoardDeviceId == null)
+        {
+            Console.WriteLine($"Device mapping not found for deviceId: {deviceId}");
+            return null;
+        }
 
+        var tbDeviceId = thingsBoardDeviceId.Value.ToString();
         var timeoutMs = 10000;
         var url = $"{_tbBaseUrl.TrimEnd('/')}/api/plugins/rpc/twoway/{tbDeviceId}?timeout={timeoutMs}";
 
