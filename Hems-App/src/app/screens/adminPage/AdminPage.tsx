@@ -16,7 +16,6 @@ import AdminLocationSelector from "./components/AdminLocationSelector";
 import AdminSearchBar from "./components/AdminSearchBar";
 import AdminStats from "./components/AdminStats";
 import { CountryDto, CityDto } from "../../../api/types/locations.types";
-import { PowerFlowDebug } from "../../../components/debug/PowerFlowDebug";
 
 export default function AdminPage () {
   const navigation = useNavigation<any>();
@@ -382,10 +381,6 @@ export default function AdminPage () {
           </>
         )}
 
-        {/* PowerFlow Streaming Test */}
-        <View style={{ marginTop: 24, paddingBottom: 40 }}>
-          <PowerFlowDebug />
-        </View>
       </ScrollView>
     </MainLayout>
   );

@@ -68,8 +68,9 @@ export const ENDPOINTS = {
   },
   MOBILE_DASHBOARD: {
     HERO: '/MobileDashboard/hero',
-    SOC: '/MobileDashboard/graphs/SOC',
-    SOH: '/MobileDashboard/graphs/SOH',
+    SOC: '/MobileDashboard/Soc',
+    SOH: '/MobileDashboard/Soh',
+    TODAY_SUMMARY: '/MobileDashboard/TodayEnergySummary',
     GET_DEVICE_WITH_DATA: '/MobileDashboard/device/GetWithData',
     GET_COMPONENT_LIVE_DATA: '/MobileDashboard/device/component/getComponentLiveData',
     BATTERY_COMPONENT: '/MobileDashboard/graphs/Components/Battery',
