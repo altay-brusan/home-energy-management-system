@@ -1787,7 +1787,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PowerMetricsResponseDto"
+                  "$ref": "#/components/schemas/PowerEnergyMetricsResponseDto"
                 }
               }
             }
@@ -5873,7 +5873,7 @@
           }
         }
       },
-      "PowerMetricsResponseDto": {
+      "PowerEnergyMetricsResponseDto": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -5883,12 +5883,12 @@
           "data": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/PowerMetricsDataPoint"
+              "$ref": "#/components/schemas/PowerEnergyMetricsDataPoint"
             }
           }
         }
       },
-      "PowerMetricsDataPoint": {
+      "PowerEnergyMetricsDataPoint": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -5910,6 +5910,40 @@
           "loadPower": {
             "type": "number",
             "format": "double"
+          },
+          "generatorPower": {
+            "type": "number",
+            "format": "double"
+          },
+          "gridImportEnergyKWh": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "gridExportEnergyKWh": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "generatorEnergyKWh": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "batteryDischargeEnergyKWh": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "batteryChargeEnergyKWh": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "loadEnergyKWh": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
           },
           "unit": {
             "type": "string"

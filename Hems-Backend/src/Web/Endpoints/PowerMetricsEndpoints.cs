@@ -37,7 +37,7 @@ public static class PowerMetricsEndpoints
             return Results.Ok(result);
         })
         .WithName("GetPowerMetrics")
-        .Produces<PowerMetricsResponseDto>(StatusCodes.Status200OK)
+        .Produces<PowerEnergyMetricsResponseDto>(StatusCodes.Status200OK)
         .WithMetadata(new System.ObsoleteAttribute("Debug-only endpoint. Do not use in production."))
         .RequireAuthorization();
     }
