@@ -223,6 +223,15 @@ export interface InverterComponentDto {
   total: number;
 }
 
+export interface TodayEnergySummaryDto {
+  deviceId: string;
+  dataDateTime: string;
+  gridImport: number;
+  gridExport: number;
+  consumption: number;
+  production: number;
+}
+
 export const mobileDashboardService = {
   // Get hero metrics
   async getHero (deviceId: string): Promise<HeroResponseDto> {
@@ -319,6 +328,13 @@ export const mobileDashboardService = {
 
     const url = `${ENDPOINTS.SETUPS.GET_SETUP_DEVICE}?siteId=${siteId}`;
     const response = await apiClient.get(url);
+    return response.data;
+  },
+
+  // Get today's energy summary
+  async getTodaySummary (deviceId: string): Promise<TodayEnergySummaryDto> {
+    const url = `${ENDPOINTS.MOBILE_DASHBOARD.TODAY_SUMMARY}?deviceId=${deviceId}`;
+    const response = await apiClient.get<TodayEnergySummaryDto>(url);
     return response.data;
   },
 

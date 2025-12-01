@@ -8,6 +8,7 @@ import { useSelectedSiteDevice } from '../../../../../hooks/useSelectedSiteDevic
 import { useThemeStore } from '../../../../../store/themeStore';
 import { getThemeColors } from '../../../../../theme/constants';
 import { createStyles } from './TodaySummary.styles';
+import { mobileDashboardService, TodayEnergySummaryDto } from '../../../../../api/services/mobileDashboardService';
 
 // History Icon Component
 const HistoryIcon: React.FC<{ color: string }> = ({ color }) => (
@@ -158,13 +159,17 @@ export const TodaySummary: React.FC = () => {
   const { registerRefreshCallback } = useDashboardRefresh();
 
   const [loading, setLoading] = useState(false);
+  const [summaryData, setSummaryData] = useState<TodayEnergySummaryDto | null>(null);
 
-  // Mock data - replace with actual API call
-  const metrics = {
-    gridImport: { value: '12.5', unit: 'kWh' },
-    gridExport: { value: '8.3', unit: 'kWh' },
-    consumption: { value: '15.2', unit: 'kWh' },
-    production: { value: '20.6', unit: 'kWh' },
+  const formatValue = (value: number): string => {
+    if (value >= 1000) {
+      return (value / 1000).toFixed(1);
+    }
+    return value.toFixed(1);
+  };
+
+  const getUnit = (value: number): string => {
+    return value >= 1000 ? 'MWh' : 'kWh';
   };
 
   const loadTodayData = useCallback(async () => {
@@ -174,8 +179,8 @@ export const TodaySummary: React.FC = () => {
 
     try {
       setLoading(true);
-      // TODO: Fetch today's summary data from API
-      // const data = await someSummaryService.getTodaySummary(device.id);
+      const data = await mobileDashboardService.getTodaySummary(device.id);
+      setSummaryData(data);
     } catch (err) {
       console.error('Error loading today summary:', err);
     } finally {
@@ -219,15 +224,15 @@ export const TodaySummary: React.FC = () => {
         <View style={styles.row}>
           <MetricCard
             label={t('todaySummary.gridImport')}
-            value={metrics.gridImport.value}
-            unit={metrics.gridImport.unit}
+            value={formatValue(summaryData?.gridImport ?? 0)}
+            unit={getUnit(summaryData?.gridImport ?? 0)}
             color="#5EB2F7"
             icon={<GridImportIcon color="#5EB2F7" badgeBg={COLORS.surface} />}
           />
           <MetricCard
             label={t('todaySummary.gridExport')}
-            value={metrics.gridExport.value}
-            unit={metrics.gridExport.unit}
+            value={formatValue(summaryData?.gridExport ?? 0)}
+            unit={getUnit(summaryData?.gridExport ?? 0)}
             color="#5EB2F7"
             icon={<GridExportIcon color="#5EB2F7" badgeBg={COLORS.surface} />}
           />
@@ -237,15 +242,15 @@ export const TodaySummary: React.FC = () => {
         <View style={styles.row}>
           <MetricCard
             label={t('todaySummary.consumption')}
-            value={metrics.consumption.value}
-            unit={metrics.consumption.unit}
+            value={formatValue(summaryData?.consumption ?? 0)}
+            unit={getUnit(summaryData?.consumption ?? 0)}
             color="#5EB2F7"
             icon={<ConsumptionIcon color="#5EB2F7" />}
           />
           <MetricCard
             label={t('todaySummary.production')}
-            value={metrics.production.value}
-            unit={metrics.production.unit}
+            value={formatValue(summaryData?.production ?? 0)}
+            unit={getUnit(summaryData?.production ?? 0)}
             color="#5EB2F7"
             icon={<ProductionIcon color="#5EB2F7" />}
           />
