@@ -64,54 +64,145 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
             throw new ArgumentException("StartDate and EndDate are required for custom period");
         }
 
-        // Get date range based on period
-        DateTime startDate;
-        DateTime endDate;
+        List<EnergyRevenueDataPoint> dataPoints;
 
         switch (period)
         {
             case "monthly":
-                var today = DateTime.UtcNow.Date;
-                startDate = new DateTime(today.Year, today.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-                endDate = startDate.AddMonths(1);
+                dataPoints = await GetMonthlyDataAsync(thingsBoardDeviceId.Value, cancellationToken);
                 break;
             case "yearly":
-                var currentYear = DateTime.UtcNow.Date;
-                startDate = new DateTime(currentYear.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-                endDate = startDate.AddYears(1);
+                dataPoints = await GetYearlyDataAsync(thingsBoardDeviceId.Value, cancellationToken);
                 break;
             case "custom":
-                startDate = DateTime.SpecifyKind(request.StartDate!.Value.Date, DateTimeKind.Utc);
-                endDate = DateTime.SpecifyKind(request.EndDate!.Value.Date.AddDays(1), DateTimeKind.Utc);
+                dataPoints = await GetCustomRangeDataAsync(thingsBoardDeviceId.Value, request.StartDate!.Value, request.EndDate!.Value, cancellationToken);
                 break;
             default:
                 throw new ArgumentException($"Invalid period: {period}");
         }
 
-        // Query energy data for the period
-        var energyData = await _context.DeviceEnergyData
-            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId &&
-                       x.DataDateTime >= startDate &&
-                       x.DataDateTime < endDate &&
-                       x.DataType == DataTypes.DailyCumulativeEnergy)
-            .ToListAsync(cancellationToken);
-
-        // Calculate totals
-        var totalBuy = energyData.Sum(x => x.GridImportEnergyKWh ?? 0);
-        var totalSell = energyData.Sum(x => x.GridExportEnergyKWh ?? 0);
-        var netEnergy = totalSell - totalBuy;
-
-        // Calculate revenue: (Sell × SellPrice) - (Buy × BuyPrice)
-        var revenue = (totalSell * SellPricePerKWh) - (totalBuy * BuyPricePerKWh);
-
         return new EnergyRevenueDto
         {
-            Buy = Math.Round(totalBuy, 2),
-            Sell = Math.Round(totalSell, 2),
-            Net = Math.Round(netEnergy, 2),
-            Price = Math.Round(revenue, 2),
+            Period = period,
             BuyPricePerKWh = BuyPricePerKWh,
-            SellPricePerKWh = SellPricePerKWh
+            SellPricePerKWh = SellPricePerKWh,
+            Data = dataPoints
         };
+    }
+
+    /// <summary>
+    /// Get daily revenue data for the current month
+    /// </summary>
+    private async Task<List<EnergyRevenueDataPoint>> GetMonthlyDataAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
+    {
+        var today = DateTime.UtcNow.Date;
+        var monthStart = new DateTime(today.Year, today.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var monthEnd = monthStart.AddMonths(1);
+
+        var dailyData = await _context.DeviceEnergyData
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId &&
+                       x.DataDateTime >= monthStart &&
+                       x.DataDateTime < monthEnd &&
+                       x.DataType == DataTypes.DailyCumulativeEnergy)
+            .OrderBy(x => x.DataDateTime)
+            .ToListAsync(cancellationToken);
+
+        return dailyData.Select(d =>
+        {
+            var buy = d.GridImportEnergyKWh ?? 0;
+            var sell = d.GridExportEnergyKWh ?? 0;
+            var net = sell - buy;
+            var price = (sell * SellPricePerKWh) - (buy * BuyPricePerKWh);
+
+            return new EnergyRevenueDataPoint
+            {
+                Timestamp = d.DataDateTime.ToString("yyyy-MM-dd"),
+                Buy = Math.Round(buy, 2),
+                Sell = Math.Round(sell, 2),
+                Net = Math.Round(net, 2),
+                Price = Math.Round(price, 2)
+            };
+        }).ToList();
+    }
+
+    /// <summary>
+    /// Get monthly aggregated revenue data for the current year
+    /// </summary>
+    private async Task<List<EnergyRevenueDataPoint>> GetYearlyDataAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
+    {
+        var today = DateTime.UtcNow.Date;
+        var yearStart = new DateTime(today.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var yearEnd = yearStart.AddYears(1);
+
+        var dailyData = await _context.DeviceEnergyData
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId &&
+                       x.DataDateTime >= yearStart &&
+                       x.DataDateTime < yearEnd &&
+                       x.DataType == DataTypes.DailyCumulativeEnergy)
+            .OrderBy(x => x.DataDateTime)
+            .ToListAsync(cancellationToken);
+
+        // Group by month and sum the values
+        var monthlyData = dailyData
+            .GroupBy(d => new { d.DataDateTime.Year, d.DataDateTime.Month })
+            .Select(g =>
+            {
+                var buy = g.Sum(d => d.GridImportEnergyKWh ?? 0);
+                var sell = g.Sum(d => d.GridExportEnergyKWh ?? 0);
+                var net = sell - buy;
+                var price = (sell * SellPricePerKWh) - (buy * BuyPricePerKWh);
+
+                return new EnergyRevenueDataPoint
+                {
+                    Timestamp = $"{g.Key.Year}-{g.Key.Month:D2}",
+                    Buy = Math.Round(buy, 2),
+                    Sell = Math.Round(sell, 2),
+                    Net = Math.Round(net, 2),
+                    Price = Math.Round(price, 2)
+                };
+            })
+            .OrderBy(d => d.Timestamp)
+            .ToList();
+
+        return monthlyData;
+    }
+
+    /// <summary>
+    /// Get daily revenue data for a custom date range
+    /// </summary>
+    private async Task<List<EnergyRevenueDataPoint>> GetCustomRangeDataAsync(
+        Guid thingsBoardDeviceId,
+        DateTime startDate,
+        DateTime endDate,
+        CancellationToken cancellationToken)
+    {
+        // Ensure dates are in UTC and normalized to start of day
+        var rangeStart = DateTime.SpecifyKind(startDate.Date, DateTimeKind.Utc);
+        var rangeEnd = DateTime.SpecifyKind(endDate.Date.AddDays(1), DateTimeKind.Utc); // Include the end date
+
+        var dailyData = await _context.DeviceEnergyData
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId &&
+                       x.DataDateTime >= rangeStart &&
+                       x.DataDateTime < rangeEnd &&
+                       x.DataType == DataTypes.DailyCumulativeEnergy)
+            .OrderBy(x => x.DataDateTime)
+            .ToListAsync(cancellationToken);
+
+        return dailyData.Select(d =>
+        {
+            var buy = d.GridImportEnergyKWh ?? 0;
+            var sell = d.GridExportEnergyKWh ?? 0;
+            var net = sell - buy;
+            var price = (sell * SellPricePerKWh) - (buy * BuyPricePerKWh);
+
+            return new EnergyRevenueDataPoint
+            {
+                Timestamp = d.DataDateTime.ToString("yyyy-MM-dd"),
+                Buy = Math.Round(buy, 2),
+                Sell = Math.Round(sell, 2),
+                Net = Math.Round(net, 2),
+                Price = Math.Round(price, 2)
+            };
+        }).ToList();
     }
 }
