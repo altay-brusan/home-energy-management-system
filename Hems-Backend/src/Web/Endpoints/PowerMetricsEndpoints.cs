@@ -18,7 +18,7 @@ public static class PowerMetricsEndpoints
     {
         var group = app.MapGroup("/api").WithTags("Dashboard");
 
-        // DEBUG: Exposes GetPowerMetricsQuery via HTTP for debugging only.
+        // DEBUG: Exposes GetPowerAndEnergyMetricsQuery via HTTP for debugging only.
         // Do not use in production environments.
         group.MapGet("/powerMetrics", async (
             ISender sender,
@@ -26,7 +26,7 @@ public static class PowerMetricsEndpoints
             string? period,
             CancellationToken cancellationToken) =>
         {
-            var query = new GetPowerMetricsQuery
+            var query = new GetPowerAndEnergyMetricsQuery
             {
                 DeviceId = deviceId,
                 Period = period ?? "daily"
@@ -37,7 +37,7 @@ public static class PowerMetricsEndpoints
             return Results.Ok(result);
         })
         .WithName("GetPowerMetrics")
-        .Produces<PowerEnergyMetricsResponseDto>(StatusCodes.Status200OK)
+        .Produces<PowerAndEnergyMetricsResponseDto>(StatusCodes.Status200OK)
         .WithMetadata(new System.ObsoleteAttribute("Debug-only endpoint. Do not use in production."))
         .RequireAuthorization();
     }

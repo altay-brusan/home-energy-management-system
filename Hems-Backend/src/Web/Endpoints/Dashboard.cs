@@ -20,7 +20,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Hems_Backend.Web.Endpoints;
 
-public class MobileDashboard : EndpointGroupBase
+public class Dashboard : EndpointGroupBase
 {
     public override void Map(WebApplication app)
     {
@@ -30,12 +30,12 @@ public class MobileDashboard : EndpointGroupBase
             .MapGet(SOC, "Soc")
             .MapGet(SOH, "Soh")
             .MapGet(TodayEnergySummary, "TodayEnergySummary")
+            .MapGet(PowerAndEnergyMetrics, "PowerAndEnergyMetrics")
             .MapGet(GetDeviceWithData, "device/GetWithData")
             .MapGet(GetComponentLiveData, "device/component/getComponentLiveData")
             .MapGet(EnergyFlow, "graphs/EnergyFlow")
             .MapGet(EnergyProduction, "graphs/EnergyProduction")
             .MapGet(EnergyConsumption, "graphs/EnergyConsumption")
-            .MapGet(PowerMetrics, "graphs/PowerMetrics")
             .MapGet(Battery, "graphs/Battery")
             .MapGet(ChargeDischarge, "graphs/ChargeDischarge")
             .MapGet(BatteryComponent, "graphs/Components/Battery")
@@ -172,12 +172,12 @@ public class MobileDashboard : EndpointGroupBase
     }
 
     [Authorize]
-    public async Task<PowerEnergyMetricsResponseDto> PowerMetrics(
+    public async Task<PowerAndEnergyMetricsResponseDto> PowerAndEnergyMetrics(
         ISender sender,
         [FromQuery] Guid deviceId,
         [FromQuery] string period)
     {
-        var query = new GetPowerMetricsQuery
+        var query = new GetPowerAndEnergyMetricsQuery
         {
             DeviceId = deviceId,
             Period = period
