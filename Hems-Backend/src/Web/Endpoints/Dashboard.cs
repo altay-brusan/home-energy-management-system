@@ -5,6 +5,7 @@ using Hems_Backend.Application.Dashboard.Queries.GetChargeDischarge;
 using Hems_Backend.Application.Dashboard.Queries.GetEnergyConsumption;
 using Hems_Backend.Application.Dashboard.Queries.GetEnergyData;
 using Hems_Backend.Application.Dashboard.Queries.GetEnergyProduction;
+using Hems_Backend.Application.Dashboard.Queries.GetGridPerformanceSummary;
 using Hems_Backend.Application.Dashboard.Queries.GetHero;
 using Hems_Backend.Application.Dashboard.Queries.GetInverterComponent;
 using Hems_Backend.Application.Dashboard.Queries.GetPowerMetrics;
@@ -30,6 +31,7 @@ public class Dashboard : EndpointGroupBase
             .MapGet(SOC, "Soc")
             .MapGet(SOH, "Soh")
             .MapGet(TodayEnergySummary, "TodayEnergySummary")
+            .MapGet(GridPerformanceSummary, "GridPerformanceSummary")
             .MapGet(PowerAndEnergyMetrics, "PowerAndEnergyMetrics")
             .MapGet(GetDeviceWithData, "device/GetWithData")
             .MapGet(GetComponentLiveData, "device/component/getComponentLiveData")
@@ -231,6 +233,19 @@ public class Dashboard : EndpointGroupBase
         [FromQuery] Guid deviceId)
     {
         var query = new GetInverterComponentQuery
+        {
+            DeviceId = deviceId
+        };
+
+        return await sender.Send(query);
+    }
+
+    [Authorize]
+    public async Task<GridPerformanceSummaryDto> GridPerformanceSummary(
+        ISender sender,
+        [FromQuery] Guid deviceId)
+    {
+        var query = new GetGridPerformanceSummaryQuery
         {
             DeviceId = deviceId
         };

@@ -214,6 +214,43 @@
         ]
       }
     },
+    "/api/Dashboard/GridPerformanceSummary": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "operationId": "GridPerformanceSummary",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GridPerformanceSummaryDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/Dashboard/PowerAndEnergyMetrics": {
       "get": {
         "tags": [
@@ -4519,6 +4556,39 @@
             "type": "number",
             "format": "double",
             "nullable": true
+          }
+        }
+      },
+      "GridPerformanceSummaryDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "month": {
+            "$ref": "#/components/schemas/GridEnergyPeriodDto"
+          },
+          "year": {
+            "$ref": "#/components/schemas/GridEnergyPeriodDto"
+          },
+          "lifetime": {
+            "$ref": "#/components/schemas/GridEnergyPeriodDto"
+          }
+        }
+      },
+      "GridEnergyPeriodDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "gridImport": {
+            "type": "number",
+            "format": "double"
+          },
+          "gridExport": {
+            "type": "number",
+            "format": "double"
+          },
+          "netGrid": {
+            "type": "number",
+            "format": "double"
           }
         }
       },
