@@ -61,8 +61,8 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
         // Get all cumulative energy samples for today (5-min intervals)
         var energyData = await _context.DeviceEnergyData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
-                       x.DataDateTime >= startOfDay &&
-                       x.DataDateTime < endOfDay &&
+                       x.Created >= startOfDay &&
+                       x.Created < endOfDay &&
                        x.DataType == DataTypes.PowerFlow)
             .OrderBy(x => x.DataDateTime)
             .ToListAsync(cancellationToken);
