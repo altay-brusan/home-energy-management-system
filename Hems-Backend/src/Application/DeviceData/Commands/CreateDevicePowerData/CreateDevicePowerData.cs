@@ -53,63 +53,105 @@ public class CreateDevicePowerDataCommandHandler : IRequestHandler<CreateDeviceP
             throw new ArgumentException($"Device with ThingsBoardDeviceId {request.DeviceId} not found.");
         }
 
-        // Check for existing record with same device, datetime and data type
-        var existingRecord = await _context.DevicePowerData
-            .FirstOrDefaultAsync(x => 
-                x.ThingsBoardDeviceId == request.DeviceId && 
-                x.DataDateTime == request.DataDateTime && 
-                x.DataType == request.DataType, 
+        // Define duplicate detection threshold (in seconds)
+        const int duplicateThresholdSeconds = 30; // Consider messages within 30 seconds as potential duplicates
+
+        // Check for exact match first (most common case)
+        var exactMatch = await _context.DevicePowerData
+            .FirstOrDefaultAsync(x =>
+                x.ThingsBoardDeviceId == request.DeviceId &&
+                x.DataDateTime == request.DataDateTime &&
+                x.DataType == request.DataType,
                 cancellationToken);
 
-        if (existingRecord != null)
+        if (exactMatch != null)
         {
-            // Update existing record
-            existingRecord.Version = request.Version;
-            existingRecord.PvTotalPowerW = request.PvTotalPowerW;
-            existingRecord.PvMppt1PowerW = request.PvMppt1PowerW;
-            existingRecord.PvMppt2PowerW = request.PvMppt2PowerW;
-            existingRecord.PvMppt3PowerW = request.PvMppt3PowerW;
-            existingRecord.PvMppt4PowerW = request.PvMppt4PowerW;
-            existingRecord.GridTotalPowerW = request.GridTotalPowerW;
-            existingRecord.LoadTotalPowerW = request.LoadTotalPowerW;
-            existingRecord.BatteryPowerW = request.BatteryPowerW;
-            existingRecord.GeneratorTotalPowerW = request.GeneratorTotalPowerW;
-            existingRecord.LastModified = DateTime.UtcNow;
-            existingRecord.LastModifiedBy = "DeviceSimulator";
-            
-            await _context.SaveChangesAsync(cancellationToken);
-            return existingRecord.Id;
-        }
-        else
-        {
-            // Create new record
-            var powerData = new DevicePowerData
-            {
-                ThingsBoardDeviceId = request.DeviceId,
-                DataDateTime = request.DataDateTime,
-                DataType = request.DataType,
-                MessageType = MessageTypes.Telemetry,
-                PhaseType = PhaseTypes.SinglePhase,
-                Version = request.Version,
-                
-                PvTotalPowerW = request.PvTotalPowerW,
-                PvMppt1PowerW = request.PvMppt1PowerW,
-                PvMppt2PowerW = request.PvMppt2PowerW,
-                PvMppt3PowerW = request.PvMppt3PowerW,
-                PvMppt4PowerW = request.PvMppt4PowerW,
-                GridTotalPowerW = request.GridTotalPowerW,
-                LoadTotalPowerW = request.LoadTotalPowerW,
-                BatteryPowerW = request.BatteryPowerW,
-                GeneratorTotalPowerW = request.GeneratorTotalPowerW,
-                
-                Created = DateTime.UtcNow,
-                CreatedBy = "DeviceSimulator"
-            };
+            // Update existing record with exact timestamp
+            exactMatch.Version = request.Version;
+            exactMatch.PvTotalPowerW = request.PvTotalPowerW;
+            exactMatch.PvMppt1PowerW = request.PvMppt1PowerW;
+            exactMatch.PvMppt2PowerW = request.PvMppt2PowerW;
+            exactMatch.PvMppt3PowerW = request.PvMppt3PowerW;
+            exactMatch.PvMppt4PowerW = request.PvMppt4PowerW;
+            exactMatch.GridTotalPowerW = request.GridTotalPowerW;
+            exactMatch.LoadTotalPowerW = request.LoadTotalPowerW;
+            exactMatch.BatteryPowerW = request.BatteryPowerW;
+            exactMatch.GeneratorTotalPowerW = request.GeneratorTotalPowerW;
+            exactMatch.LastModified = DateTime.UtcNow;
+            exactMatch.LastModifiedBy = "DeviceSimulator";
 
-            _context.DevicePowerData.Add(powerData);
             await _context.SaveChangesAsync(cancellationToken);
-            
-            return powerData.Id;
+            return exactMatch.Id;
         }
+
+        // Check for recent record with close timestamp (within threshold)
+        var timeWindowStart = request.DataDateTime.AddSeconds(-duplicateThresholdSeconds);
+        var timeWindowEnd = request.DataDateTime.AddSeconds(duplicateThresholdSeconds);
+
+        var recentRecord = await _context.DevicePowerData
+            .Where(x =>
+                x.ThingsBoardDeviceId == request.DeviceId &&
+                x.DataType == request.DataType &&
+                x.DataDateTime >= timeWindowStart &&
+                x.DataDateTime <= timeWindowEnd)
+            .OrderByDescending(x => x.DataDateTime)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (recentRecord != null)
+        {
+            // Found a duplicate within threshold - update the existing record instead of creating new
+            // This handles cases where device sends slightly different timestamps
+            recentRecord.Version = request.Version;
+            recentRecord.PvTotalPowerW = request.PvTotalPowerW;
+            recentRecord.PvMppt1PowerW = request.PvMppt1PowerW;
+            recentRecord.PvMppt2PowerW = request.PvMppt2PowerW;
+            recentRecord.PvMppt3PowerW = request.PvMppt3PowerW;
+            recentRecord.PvMppt4PowerW = request.PvMppt4PowerW;
+            recentRecord.GridTotalPowerW = request.GridTotalPowerW;
+            recentRecord.LoadTotalPowerW = request.LoadTotalPowerW;
+            recentRecord.BatteryPowerW = request.BatteryPowerW;
+            recentRecord.GeneratorTotalPowerW = request.GeneratorTotalPowerW;
+
+            // Update the timestamp to the new one if it's more recent
+            if (request.DataDateTime > recentRecord.DataDateTime)
+            {
+                recentRecord.DataDateTime = request.DataDateTime;
+            }
+
+            recentRecord.LastModified = DateTime.UtcNow;
+            recentRecord.LastModifiedBy = "DeviceSimulator";
+
+            await _context.SaveChangesAsync(cancellationToken);
+            return recentRecord.Id;
+        }
+
+        // No duplicate found - create new record
+        var powerData = new DevicePowerData
+        {
+            ThingsBoardDeviceId = request.DeviceId,
+            DataDateTime = request.DataDateTime,
+            DataType = request.DataType,
+            MessageType = MessageTypes.Telemetry,
+            PhaseType = PhaseTypes.SinglePhase,
+            Version = request.Version,
+
+            PvTotalPowerW = request.PvTotalPowerW,
+            PvMppt1PowerW = request.PvMppt1PowerW,
+            PvMppt2PowerW = request.PvMppt2PowerW,
+            PvMppt3PowerW = request.PvMppt3PowerW,
+            PvMppt4PowerW = request.PvMppt4PowerW,
+            GridTotalPowerW = request.GridTotalPowerW,
+            LoadTotalPowerW = request.LoadTotalPowerW,
+            BatteryPowerW = request.BatteryPowerW,
+            GeneratorTotalPowerW = request.GeneratorTotalPowerW,
+
+            Created = DateTime.UtcNow,
+            CreatedBy = "DeviceSimulator"
+        };
+
+        _context.DevicePowerData.Add(powerData);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return powerData.Id;
     }
 }
