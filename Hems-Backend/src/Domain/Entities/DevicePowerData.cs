@@ -16,15 +16,17 @@ public class DevicePowerData : BaseAuditableEntity
     
     [Required]
     [MaxLength(50)]
-    public string MessageType { get; set; } = string.Empty; // "Telemetry" or "RPC"
-    
+    public string DataType { get; set; } = string.Empty; // "PowerFlow"
+
     [Required]
     [MaxLength(50)]
-    public string Kind { get; set; } = string.Empty; // "PowerFlowState"
-    
+    public string MessageType { get; set; } = "Telemetry";
+
     [Required]
     [MaxLength(20)]
     public string PhaseType { get; set; } = "SinglePhase"; // "SinglePhase" or "ThreePhase"
+
+    public int? Version { get; set; }
     
     // PV Power (W)
     public double? PvTotalPowerW { get; set; }

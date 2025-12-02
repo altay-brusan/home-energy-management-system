@@ -5,6 +5,7 @@ using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Application.DeviceData.Commands.BulkCreateDeviceData;
 using Hems_Backend.Application.DeviceData.Commands.CreateDeviceData;
 using Hems_Backend.Application.DeviceData.Commands.CreateDeviceEnergyData;
+using Hems_Backend.Application.DeviceData.Commands.CreateDevicePowerData;
 using Hems_Backend.Application.DeviceData.Queries.GetDeviceData;
 using Hems_Backend.Domain.Constants;
 using Hems_Backend.Web.Infrastructure;
@@ -104,7 +105,7 @@ public async Task<IResult> ReceivePowerFlowTelemetry(
     ISender sender,
     ITelemetryDeduplicationService deduplicationService)
 {
-    return await ProcessTelemetry(body, DataTypes.PowerFlow, logger, sender, deduplicationService);
+    return await ProcessPowerFlowTelemetry(body, DataTypes.PowerFlow, logger, sender, deduplicationService);
 }
 
 public async Task<IResult> ReceiveDailyEnergyFlowTelemetry(
@@ -453,29 +454,189 @@ private async Task<IResult> ProcessTelemetry(
     }
 }
 
-private static (Guid DeviceId, IResult? Error) TryParseDeviceId(
-        JsonElement dataElement,
-        ILogger<DeviceData> logger)
+private async Task<IResult> ProcessPowerFlowTelemetry(
+    JsonElement body,
+    string dataType,
+    ILogger<DeviceData> logger,
+    ISender sender,
+    ITelemetryDeduplicationService deduplicationService)
+{
+    try
     {
-        if (!dataElement.TryGetProperty("ThingsBoardDeviceId", out var devIdEl))
+        logger.LogInformation(
+            "?? {DataType} power flow telemetry received at {UtcNow}",
+            dataType,
+            DateTime.UtcNow);
+
+        // 1) Get the inner "data" object
+        if (!body.TryGetProperty("data", out var dataElement) ||
+            dataElement.ValueKind != JsonValueKind.Object)
         {
-            return (Guid.Empty, null);
+            logger.LogWarning("Received telemetry without 'data' object");
+            return Results.Problem("Missing 'data' object", statusCode: 400);
         }
 
-        var devIdStr = devIdEl.GetString();
-        if (string.IsNullOrWhiteSpace(devIdStr))
+        // 2) Parse timestampUtc
+        DateTime dataDateTime = DateTime.UtcNow;
+        if (dataElement.TryGetProperty("timestampUtc", out var tsEl))
         {
-            logger.LogWarning("ThingsBoardDeviceId is null or empty, using Guid.Empty");
-            return (Guid.Empty, Results.Problem("Missing 'ThingsBoardDeviceId' in data", statusCode: 400));
+            var tsStr = tsEl.GetString();
+            if (!string.IsNullOrWhiteSpace(tsStr) &&
+                DateTime.TryParse(tsStr, CultureInfo.InvariantCulture,
+                    DateTimeStyles.AdjustToUniversal, out var parsed))
+            {
+                dataDateTime = parsed;
+            }
         }
 
-        if (!Guid.TryParse(devIdStr, out var deviceId))
+        // 3) Parse ThingsBoardDeviceId from root level "deviceId" field
+        Guid deviceId = Guid.Empty;
+        if (body.TryGetProperty("deviceId", out var deviceIdElement))
         {
-            logger.LogWarning("ThingsBoardDeviceId '{ThingsBoardDeviceId}' is not a valid Guid, using Guid.Empty", devIdStr);
-            return (Guid.Empty, Results.Problem("Invalid 'ThingsBoardDeviceId' format", statusCode: 400));
+            var deviceIdStr = deviceIdElement.GetString();
+            if (!string.IsNullOrWhiteSpace(deviceIdStr) && Guid.TryParse(deviceIdStr, out var parsedDeviceId))
+            {
+                deviceId = parsedDeviceId;
+            }
+            else
+            {
+                logger.LogWarning("Invalid deviceId format: {DeviceId}", deviceIdStr);
+                return Results.Problem("Invalid 'deviceId' format", statusCode: 400);
+            }
+        }
+        else
+        {
+            logger.LogWarning("Missing deviceId in root level");
+            return Results.Problem("Missing 'deviceId' in request", statusCode: 400);
         }
 
-        return (deviceId, null);
+        // 4) Check for duplicate telemetry
+        var shouldProcess = await deduplicationService.ShouldProcessTelemetryAsync(deviceId, dataType, dataDateTime);
+        if (!shouldProcess)
+        {
+            logger.LogInformation(
+                "?? Skipping duplicate {DataType} telemetry for device {DeviceId} at {Timestamp}",
+                dataType, deviceId, dataDateTime);
+            return Results.Ok(new
+            {
+                message = $"{dataType} telemetry skipped (duplicate)",
+                deviceId = deviceId,
+                dataDateTime = dataDateTime,
+                duplicate = true
+            });
+        }
+
+        // 5) Parse version
+        int? version = null;
+        if (dataElement.TryGetProperty("version", out var versionEl))
+        {
+            version = versionEl.GetInt32();
+        }
+
+        // 6) Parse power values
+        double? pvTotalPowerW = null;
+        double? pvMppt1PowerW = null;
+        double? pvMppt2PowerW = null;
+        double? pvMppt3PowerW = null;
+        double? pvMppt4PowerW = null;
+        double? gridTotalPowerW = null;
+        double? loadTotalPowerW = null;
+        double? batteryPowerW = null;
+        double? generatorTotalPowerW = null;
+
+        // Parse PV power
+        if (dataElement.TryGetProperty("pv", out var pvElement))
+        {
+            if (pvElement.TryGetProperty("totalPowerW", out var pvTotalEl))
+            {
+                pvTotalPowerW = pvTotalEl.GetDouble();
+            }
+
+            // Parse MPPT array
+            if (pvElement.TryGetProperty("mppt", out var mpptArray) &&
+                mpptArray.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var mppt in mpptArray.EnumerateArray())
+                {
+                    if (mppt.TryGetProperty("id", out var idEl) &&
+                        mppt.TryGetProperty("powerW", out var powerEl))
+                    {
+                        var id = idEl.GetInt32();
+                        var power = powerEl.GetDouble();
+
+                        switch (id)
+                        {
+                            case 1: pvMppt1PowerW = power; break;
+                            case 2: pvMppt2PowerW = power; break;
+                            case 3: pvMppt3PowerW = power; break;
+                            case 4: pvMppt4PowerW = power; break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Parse Grid power
+        if (dataElement.TryGetProperty("grid", out var gridElement) &&
+            gridElement.TryGetProperty("totalPowerW", out var gridPowerEl))
+        {
+            gridTotalPowerW = gridPowerEl.GetDouble();
+        }
+
+        // Parse Load power
+        if (dataElement.TryGetProperty("load", out var loadElement) &&
+            loadElement.TryGetProperty("totalPowerW", out var loadPowerEl))
+        {
+            loadTotalPowerW = loadPowerEl.GetDouble();
+        }
+
+        // Parse Battery power
+        if (dataElement.TryGetProperty("battery", out var batteryElement) &&
+            batteryElement.TryGetProperty("powerW", out var batteryPowerEl))
+        {
+            batteryPowerW = batteryPowerEl.GetDouble();
+        }
+
+        // Parse Generator power
+        if (dataElement.TryGetProperty("generator", out var generatorElement) &&
+            generatorElement.TryGetProperty("totalPowerW", out var generatorPowerEl))
+        {
+            generatorTotalPowerW = generatorPowerEl.GetDouble();
+        }
+
+        // Create command for DevicePowerData table
+        var command = new CreateDevicePowerDataCommand
+        {
+            DeviceId = deviceId,
+            DataDateTime = dataDateTime,
+            DataType = dataType,
+            Version = version,
+            PvTotalPowerW = pvTotalPowerW,
+            PvMppt1PowerW = pvMppt1PowerW,
+            PvMppt2PowerW = pvMppt2PowerW,
+            PvMppt3PowerW = pvMppt3PowerW,
+            PvMppt4PowerW = pvMppt4PowerW,
+            GridTotalPowerW = gridTotalPowerW,
+            LoadTotalPowerW = loadTotalPowerW,
+            BatteryPowerW = batteryPowerW,
+            GeneratorTotalPowerW = generatorTotalPowerW
+        };
+
+        var createdId = await sender.Send(command);
+
+        return Results.Ok(new
+        {
+            message = $"{dataType} power flow telemetry received",
+            id = createdId,
+            deviceId = deviceId,
+            dataDateTime = dataDateTime
+        });
     }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error handling {DataType} power flow telemetry", dataType);
+        return Results.Problem(detail: ex.Message, statusCode: 500);
+    }
+}
 
 }

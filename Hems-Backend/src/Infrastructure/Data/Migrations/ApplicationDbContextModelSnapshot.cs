@@ -559,6 +559,11 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.Property<DateTime>("DataDateTime")
                         .HasColumnType("timestamp without time zone");
 
+                    b.Property<string>("DataType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
                     b.Property<double?>("GeneratorTotalPowerW")
                         .HasPrecision(18, 3)
                         .HasColumnType("double precision");
@@ -566,11 +571,6 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.Property<double?>("GridTotalPowerW")
                         .HasPrecision(18, 3)
                         .HasColumnType("double precision");
-
-                    b.Property<string>("Kind")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
 
                     b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("timestamp with time zone");
@@ -617,6 +617,9 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.Property<Guid>("ThingsBoardDeviceId")
                         .HasColumnType("uuid");
 
+                    b.Property<int?>("Version")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("DataDateTime")
@@ -624,8 +627,8 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
 
                     b.HasIndex("ThingsBoardDeviceId");
 
-                    b.HasIndex("ThingsBoardDeviceId", "DataDateTime", "MessageType")
-                        .HasDatabaseName("IX_DevicePowerData_ThingsBoardDeviceId_DataDateTime_MessageType");
+                    b.HasIndex("ThingsBoardDeviceId", "DataDateTime", "DataType")
+                        .HasDatabaseName("IX_DevicePowerData_ThingsBoardDeviceId_DataDateTime_DataType");
 
                     b.ToTable("DevicePowerData", (string)null);
                 });
