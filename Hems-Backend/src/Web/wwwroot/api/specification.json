@@ -4532,12 +4532,12 @@
           "data": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/PowerEnergyMetricsDataPoint"
+              "$ref": "#/components/schemas/PowerAndEnergyMetricsDataPoint"
             }
           }
         }
       },
-      "PowerEnergyMetricsDataPoint": {
+      "PowerAndEnergyMetricsDataPoint": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
