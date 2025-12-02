@@ -251,6 +251,72 @@
         ]
       }
     },
+    "/api/Dashboard/GridPerformance": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "operationId": "GridPerformance",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 2
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 3
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 4
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GridPerformanceResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/Dashboard/PowerAndEnergyMetrics": {
       "get": {
         "tags": [
@@ -4585,8 +4651,36 @@
           "gridExport": {
             "type": "number",
             "format": "double"
+          }
+        }
+      },
+      "GridPerformanceResponseDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "period": {
+            "type": "string"
           },
-          "netGrid": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GridPerformanceDataPoint"
+            }
+          }
+        }
+      },
+      "GridPerformanceDataPoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "timestamp": {
+            "type": "string"
+          },
+          "gridImport": {
+            "type": "number",
+            "format": "double"
+          },
+          "gridExport": {
             "type": "number",
             "format": "double"
           }
