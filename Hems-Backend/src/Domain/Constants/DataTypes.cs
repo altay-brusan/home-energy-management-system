@@ -24,29 +24,6 @@ public static class DataTypes
 }
 
 /// <summary>
-/// Constants for Kind field values (message classification)
-/// </summary>
-public static class MessageKinds
-{
-    // Power related
-    public const string PowerFlowState = "PowerFlowState";
-    
-    // Energy related
-    public const string DailyEnergyFlowState = "DailyEnergyFlowState";
-    public const string TotalEnergyFlowState = "TotalEnergyFlowState";
-    
-    // Component states
-    public const string PvState = "PvState";
-    public const string PvDeviceState = "PvDeviceState";
-    public const string BatterySocState = "BatterySocState";
-    public const string BatterySohState = "BatterySohState";
-    public const string LoadDeviceState = "LoadDeviceState";
-    public const string GeneratorDeviceState = "GeneratorDeviceState";
-    public const string InverterDeviceState = "InverterDeviceState";
-    public const string InverterAlarmState = "InverterAlarmState";
-}
-
-/// <summary>
 /// Constants for MessageType field values
 /// </summary>
 public static class MessageTypes
