@@ -1,6 +1,6 @@
 namespace Hems_Backend.Application.Common.Models;
 
-public record PowerEnergyMetricsResponseDto
+public record PowerAndEnergyMetricsResponseDto
 {
     public string Range { get; init; } = string.Empty;
     public List<PowerEnergyMetricsDataPoint> Data { get; init; } = new();   

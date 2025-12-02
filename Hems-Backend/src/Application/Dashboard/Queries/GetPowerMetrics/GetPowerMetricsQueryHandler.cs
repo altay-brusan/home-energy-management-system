@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Hems_Backend.Application.Dashboard.Queries.GetPowerMetrics;
 
-public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery, PowerEnergyMetricsResponseDto>
+public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerAndEnergyMetricsQuery, PowerAndEnergyMetricsResponseDto>
 {
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
@@ -21,7 +21,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
         _deviceMapping = deviceMapping;
     }
 
-    public async Task<PowerEnergyMetricsResponseDto> Handle(GetPowerMetricsQuery request, CancellationToken cancellationToken)
+    public async Task<PowerAndEnergyMetricsResponseDto> Handle(GetPowerAndEnergyMetricsQuery request, CancellationToken cancellationToken)
     {
         // Device access kontrolü (uses local DeviceId)
         var hasAccess = await _sender.Send(new CheckDeviceAccessQuery { DeviceId = request.DeviceId }, cancellationToken);
@@ -39,11 +39,11 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
 
         return request.Period.ToLower() switch
         {
-            "daily" => await GetDailyPowerMetricsAsync(thingsBoardDeviceId.Value, cancellationToken),
-            "weekly" => await GetWeeklyPowerMetricsAsync(thingsBoardDeviceId.Value, cancellationToken),
-            "monthly" => await GetMonthlyPowerMetricsAsync(thingsBoardDeviceId.Value, cancellationToken),
-            "yearly" => await GetYearlyPowerMetricsAsync(thingsBoardDeviceId.Value, cancellationToken),
-            _ => await GetDailyPowerMetricsAsync(thingsBoardDeviceId.Value, cancellationToken)
+            "daily" => await GetDailyMetricsAsync(thingsBoardDeviceId.Value, cancellationToken),
+            "weekly" => await GetWeeklyMetricsAsync(thingsBoardDeviceId.Value, cancellationToken),
+            "monthly" => await GetMonthlyMetricsAsync(thingsBoardDeviceId.Value, cancellationToken),
+            "yearly" => await GetYearlyMetricsAsync(thingsBoardDeviceId.Value, cancellationToken),
+            _ => await GetDailyMetricsAsync(thingsBoardDeviceId.Value, cancellationToken)
         };
     }
 
@@ -52,7 +52,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
     /// Returns individual 5-minute samples with timestamp and delta energy
     /// Each delta represents energy produced/consumed in that 5-minute period
     /// </summary>
-    private async Task<PowerEnergyMetricsResponseDto> GetDailyPowerMetricsAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
+    private async Task<PowerAndEnergyMetricsResponseDto> GetDailyMetricsAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         var utcNow = DateTime.UtcNow;
         var startOfDay = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 0, 0, 0, DateTimeKind.Utc);
@@ -98,7 +98,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
     /// Weekly metrics: Calculate daily energy deltas from lifetime energy samples
     /// Falls back to DailyCumulativeEnergy for current day if lifetime sample not available
     /// </summary>
-    private async Task<PowerEnergyMetricsResponseDto> GetWeeklyPowerMetricsAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
+    private async Task<PowerAndEnergyMetricsResponseDto> GetWeeklyMetricsAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         var today = DateTime.UtcNow.Date;
         var weekStart = today.AddDays(-(int)today.DayOfWeek);
@@ -157,7 +157,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
     /// Monthly metrics: Calculate daily energy deltas from lifetime energy samples
     /// Falls back to DailyCumulativeEnergy for current day if lifetime sample not available
     /// </summary>
-    private async Task<PowerEnergyMetricsResponseDto> GetMonthlyPowerMetricsAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
+    private async Task<PowerAndEnergyMetricsResponseDto> GetMonthlyMetricsAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         var today = DateTime.UtcNow.Date;
         var monthStart = new DateTime(today.Year, today.Month, 1);
@@ -221,7 +221,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
     /// Yearly metrics: Calculate monthly energy aggregates from lifetime energy samples
     /// Falls back to DailyCumulativeEnergy for current month if lifetime samples not available
     /// </summary>
-    private async Task<PowerEnergyMetricsResponseDto> GetYearlyPowerMetricsAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
+    private async Task<PowerAndEnergyMetricsResponseDto> GetYearlyMetricsAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
         var today = DateTime.UtcNow.Date;
         var yearStart = new DateTime(today.Year, 1, 1);
@@ -501,9 +501,9 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
     /// <summary>
     /// Create empty response when no data available
     /// </summary>
-    private PowerEnergyMetricsResponseDto CreateEmptyResponse(string range)
+    private PowerAndEnergyMetricsResponseDto CreateEmptyResponse(string range)
     {
-        return new PowerEnergyMetricsResponseDto
+        return new PowerAndEnergyMetricsResponseDto
         {
             Range = range,
             Data = new List<Hems_Backend.Application.Common.Models.PowerEnergyMetricsDataPoint>()
@@ -513,7 +513,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
     /// <summary>
     /// Create response with calculated statistics
     /// </summary>
-    private PowerEnergyMetricsResponseDto CreateResponse(string range, List<Hems_Backend.Application.Common.Models.PowerEnergyMetricsDataPoint> dataPoints)
+    private PowerAndEnergyMetricsResponseDto CreateResponse(string range, List<Hems_Backend.Application.Common.Models.PowerEnergyMetricsDataPoint> dataPoints)
     {
         if (!dataPoints.Any())
             return CreateEmptyResponse(range);
@@ -523,7 +523,7 @@ public class GetPowerMetricsQueryHandler : IRequestHandler<GetPowerMetricsQuery,
         var allBatteryPowers = dataPoints.Select(x => x.BatteryPower).ToList();
         var allLoadPowers = dataPoints.Select(x => x.LoadPower).ToList();
 
-        return new PowerEnergyMetricsResponseDto
+        return new PowerAndEnergyMetricsResponseDto
         {
             Range = range,
             Data = dataPoints           
