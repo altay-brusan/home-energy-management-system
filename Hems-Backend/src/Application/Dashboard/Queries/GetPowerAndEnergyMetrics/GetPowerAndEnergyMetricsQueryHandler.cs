@@ -135,7 +135,7 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
             {
                 dataPoints.Add(new PowerAndEnergyMetricsDataPoint
                 {
-                    Timestamp = $"{day:MMM dd}",
+                    Timestamp = day.ToString("yyyy-MM-dd"),
 
                     // Energy values in "Power" fields (kWh despite field names)
                     SolarPower = Math.Round(dayEnergy.PvTotalEnergyKWh ?? 0, 3),
@@ -203,7 +203,7 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
             {
                 dataPoints.Add(new PowerAndEnergyMetricsDataPoint
                 {
-                    Timestamp = $"Day {i}",
+                    Timestamp = day.ToString("yyyy-MM-dd"),
 
                     // Energy values in "Power" fields (kWh despite field names)
                     SolarPower = Math.Round(dayEnergy.PvTotalEnergyKWh ?? 0, 3),
@@ -280,7 +280,7 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
 
                 dataPoints.Add(new PowerAndEnergyMetricsDataPoint
                 {
-                    Timestamp = new DateTime(today.Year, month, 1).ToString("MMM"),
+                    Timestamp = new DateTime(today.Year, month, 1).ToString("yyyy-MM"),
 
                     // Energy values in "Power" fields (kWh despite field names)
                     SolarPower = Math.Round(monthlyPvEnergy, 3),
