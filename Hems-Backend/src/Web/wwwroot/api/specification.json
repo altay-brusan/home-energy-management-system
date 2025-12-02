@@ -4756,6 +4756,32 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "period": {
+            "type": "string"
+          },
+          "buyPricePerKWh": {
+            "type": "number",
+            "format": "double"
+          },
+          "sellPricePerKWh": {
+            "type": "number",
+            "format": "double"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EnergyRevenueDataPoint"
+            }
+          }
+        }
+      },
+      "EnergyRevenueDataPoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "timestamp": {
+            "type": "string"
+          },
           "buy": {
             "type": "number",
             "format": "double"
@@ -4769,14 +4795,6 @@
             "format": "double"
           },
           "price": {
-            "type": "number",
-            "format": "double"
-          },
-          "buyPricePerKWh": {
-            "type": "number",
-            "format": "double"
-          },
-          "sellPricePerKWh": {
             "type": "number",
             "format": "double"
           }
