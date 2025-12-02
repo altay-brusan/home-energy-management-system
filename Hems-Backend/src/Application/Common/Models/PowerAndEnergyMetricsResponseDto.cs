@@ -3,10 +3,10 @@ namespace Hems_Backend.Application.Common.Models;
 public record PowerAndEnergyMetricsResponseDto
 {
     public string Range { get; init; } = string.Empty;
-    public List<PowerEnergyMetricsDataPoint> Data { get; init; } = new();   
+    public List<PowerAndEnergyMetricsDataPoint> Data { get; init; } = new();   
 }
 
-public record PowerEnergyMetricsDataPoint
+public record PowerAndEnergyMetricsDataPoint
 {
     public string Timestamp { get; init; } = string.Empty;
     public double SolarPower { get; init; }
