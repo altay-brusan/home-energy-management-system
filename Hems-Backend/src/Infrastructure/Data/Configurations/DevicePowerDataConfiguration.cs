@@ -18,11 +18,11 @@ public class DevicePowerDataConfiguration : IEntityTypeConfiguration<DevicePower
         builder.Property(x => x.DataDateTime)
             .IsRequired();
 
-        builder.Property(x => x.MessageType)
+        builder.Property(x => x.DataType)
             .IsRequired()
             .HasMaxLength(50);
 
-        builder.Property(x => x.Kind)
+        builder.Property(x => x.MessageType)
             .IsRequired()
             .HasMaxLength(50);
 
@@ -30,6 +30,8 @@ public class DevicePowerDataConfiguration : IEntityTypeConfiguration<DevicePower
             .IsRequired()
             .HasMaxLength(20)
             .HasDefaultValue("SinglePhase");
+
+        builder.Property(x => x.Version);
 
         // Power values (W)
         builder.Property(x => x.PvTotalPowerW)
@@ -69,8 +71,8 @@ public class DevicePowerDataConfiguration : IEntityTypeConfiguration<DevicePower
         // Indexes
         builder.HasIndex(x => x.ThingsBoardDeviceId);
         
-        builder.HasIndex(x => new { x.ThingsBoardDeviceId, x.DataDateTime, x.MessageType })
-            .HasDatabaseName("IX_DevicePowerData_ThingsBoardDeviceId_DataDateTime_MessageType");
+        builder.HasIndex(x => new { x.ThingsBoardDeviceId, x.DataDateTime, x.DataType })
+            .HasDatabaseName("IX_DevicePowerData_ThingsBoardDeviceId_DataDateTime_DataType");
 
         builder.HasIndex(x => x.DataDateTime)
             .HasDatabaseName("IX_DevicePowerData_DataDateTime");
