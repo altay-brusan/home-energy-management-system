@@ -317,6 +317,72 @@
         ]
       }
     },
+    "/api/Dashboard/EnergyRevenue": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "operationId": "EnergyRevenue",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 2
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 3
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 4
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnergyRevenueDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/Dashboard/PowerAndEnergyMetrics": {
       "get": {
         "tags": [
@@ -4681,6 +4747,36 @@
             "format": "double"
           },
           "gridExport": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "EnergyRevenueDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "buy": {
+            "type": "number",
+            "format": "double"
+          },
+          "sell": {
+            "type": "number",
+            "format": "double"
+          },
+          "net": {
+            "type": "number",
+            "format": "double"
+          },
+          "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "buyPricePerKWh": {
+            "type": "number",
+            "format": "double"
+          },
+          "sellPricePerKWh": {
             "type": "number",
             "format": "double"
           }
