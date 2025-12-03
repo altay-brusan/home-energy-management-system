@@ -5,6 +5,7 @@ using Hems_Backend.Domain.Constants;
 using Hems_Backend.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace Hems_Backend.Application.Dashboard.Queries.GetPowerMetrics;
 
@@ -45,11 +46,11 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
 
         return request.Period.ToLower() switch
         {
-            "daily" => await GetDailyMetricsAsync(request.DeviceId, thingsBoardDeviceId.Value, cancellationToken),
-            "weekly" => await GetWeeklyMetricsAsync(request.DeviceId, thingsBoardDeviceId.Value, cancellationToken),
-            "monthly" => await GetMonthlyMetricsAsync(request.DeviceId, thingsBoardDeviceId.Value, cancellationToken),
-            "yearly" => await GetYearlyMetricsAsync(request.DeviceId, thingsBoardDeviceId.Value, cancellationToken),
-            _ => await GetDailyMetricsAsync(request.DeviceId, thingsBoardDeviceId.Value, cancellationToken)
+            "day" => await GetDailyMetricsAsync(request.DeviceId, thingsBoardDeviceId.Value, request.Date!.Value, cancellationToken),
+            "week" => await GetWeeklyMetricsAsync(request.DeviceId, thingsBoardDeviceId.Value, request.Year!.Value, request.Week!.Value, cancellationToken),
+            "month" => await GetMonthlyMetricsAsync(request.DeviceId, thingsBoardDeviceId.Value, request.Year!.Value, request.Month!.Value, cancellationToken),
+            "year" => await GetYearlyMetricsAsync(request.DeviceId, thingsBoardDeviceId.Value, request.Year!.Value, cancellationToken),
+            _ => throw new ArgumentException($"Invalid period: {request.Period}. Must be one of: day, week, month, year")
         };
     }
 
@@ -59,11 +60,10 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
     /// Interpolates power values for missing samples
     /// Uses device local timezone for accurate time-based queries
     /// </summary>
-    private async Task<PowerAndEnergyMetricsResponseDto> GetDailyMetricsAsync(Guid deviceId, Guid thingsBoardDeviceId, CancellationToken cancellationToken)
+    private async Task<PowerAndEnergyMetricsResponseDto> GetDailyMetricsAsync(Guid deviceId, Guid thingsBoardDeviceId, DateOnly date, CancellationToken cancellationToken)
     {
-        // Get current time in device's local timezone
-        var deviceNow = await _timezoneService.ConvertUtcToDeviceTimeAsync(deviceId, DateTime.UtcNow, cancellationToken);
-        var startOfDay = new DateTime(deviceNow.Year, deviceNow.Month, deviceNow.Day, 0, 0, 0, DateTimeKind.Unspecified);
+        // Convert the provided date to device's local timezone
+        var startOfDay = new DateTime(date.Year, date.Month, date.Day, 0, 0, 0, DateTimeKind.Unspecified);
         var endOfDay = startOfDay.AddDays(1);
 
         // Get all power samples for today (5-min intervals) from DevicePowerData
@@ -110,12 +110,10 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
     /// Interpolates energy values for missing days
     /// Uses device local timezone for accurate time-based queries
     /// </summary>
-    private async Task<PowerAndEnergyMetricsResponseDto> GetWeeklyMetricsAsync(Guid deviceId, Guid thingsBoardDeviceId, CancellationToken cancellationToken)
+    private async Task<PowerAndEnergyMetricsResponseDto> GetWeeklyMetricsAsync(Guid deviceId, Guid thingsBoardDeviceId, int year, int week, CancellationToken cancellationToken)
     {
-        // Get current time in device's local timezone
-        var deviceNow = await _timezoneService.ConvertUtcToDeviceTimeAsync(deviceId, DateTime.UtcNow, cancellationToken);
-        var today = deviceNow.Date;
-        var weekStart = today.AddDays(-(int)today.DayOfWeek);
+        // Calculate the start and end dates for the given ISO week
+        var weekStart = ISOWeek.ToDateTime(year, week, DayOfWeek.Monday);
         var weekStartLocal = DateTime.SpecifyKind(weekStart, DateTimeKind.Unspecified);
         var weekEnd = weekStartLocal.AddDays(7);
 
@@ -138,7 +136,7 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
         for (int i = 0; i < 7; i++)
         {
             var day = weekStart.AddDays(i);
-            var dayStart = new DateTime(day.Year, day.Month, day.Day, 0, 0, 0, DateTimeKind.Utc);
+            var dayStart = new DateTime(day.Year, day.Month, day.Day, 0, 0, 0, DateTimeKind.Unspecified);
             var dayEnd = dayStart.AddDays(1);
 
             // Find the daily cumulative energy for this day (after interpolation)
@@ -179,12 +177,10 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
     /// Interpolates energy values for missing days
     /// Uses device local timezone for accurate time-based queries
     /// </summary>
-    private async Task<PowerAndEnergyMetricsResponseDto> GetMonthlyMetricsAsync(Guid deviceId, Guid thingsBoardDeviceId, CancellationToken cancellationToken)
+    private async Task<PowerAndEnergyMetricsResponseDto> GetMonthlyMetricsAsync(Guid deviceId, Guid thingsBoardDeviceId, int year, int month, CancellationToken cancellationToken)
     {
-        // Get current time in device's local timezone
-        var deviceNow = await _timezoneService.ConvertUtcToDeviceTimeAsync(deviceId, DateTime.UtcNow, cancellationToken);
-        var today = deviceNow.Date;
-        var monthStart = new DateTime(today.Year, today.Month, 1);
+        // Calculate the start and end dates for the given month
+        var monthStart = new DateTime(year, month, 1);
         var monthStartLocal = DateTime.SpecifyKind(monthStart, DateTimeKind.Unspecified);
         var monthEnd = monthStart.AddMonths(1);
 
@@ -204,13 +200,12 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
         var dataPoints = new List<PowerAndEnergyMetricsDataPoint>();
 
         // Process each day of the month
-        var daysInMonth = DateTime.DaysInMonth(today.Year, today.Month);
+        var daysInMonth = DateTime.DaysInMonth(year, month);
         for (int i = 1; i <= daysInMonth; i++)
         {
-            var day = new DateTime(today.Year, today.Month, i);
-            if (day > today) break; // Don't include future days
+            var day = new DateTime(year, month, i);
 
-            var dayStart = new DateTime(day.Year, day.Month, day.Day, 0, 0, 0, DateTimeKind.Utc);
+            var dayStart = new DateTime(day.Year, day.Month, day.Day, 0, 0, 0, DateTimeKind.Unspecified);
             var dayEnd = dayStart.AddDays(1);
 
             // Find the daily cumulative energy for this day (after interpolation)
@@ -251,12 +246,10 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
     /// Interpolates energy values for missing days before aggregation
     /// Uses device local timezone for accurate time-based queries
     /// </summary>
-    private async Task<PowerAndEnergyMetricsResponseDto> GetYearlyMetricsAsync(Guid deviceId, Guid thingsBoardDeviceId, CancellationToken cancellationToken)
+    private async Task<PowerAndEnergyMetricsResponseDto> GetYearlyMetricsAsync(Guid deviceId, Guid thingsBoardDeviceId, int year, CancellationToken cancellationToken)
     {
-        // Get current time in device's local timezone
-        var deviceNow = await _timezoneService.ConvertUtcToDeviceTimeAsync(deviceId, DateTime.UtcNow, cancellationToken);
-        var today = deviceNow.Date;
-        var yearStart = new DateTime(today.Year, 1, 1);
+        // Calculate the start and end dates for the given year
+        var yearStart = new DateTime(year, 1, 1);
         var yearStartLocal = DateTime.SpecifyKind(yearStart, DateTimeKind.Unspecified);
         var yearEnd = yearStart.AddYears(1);
 
@@ -278,9 +271,7 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
         // Process each month
         for (int month = 1; month <= 12; month++)
         {
-            if (month > today.Month && today.Year == yearStart.Year) break; // Don't include future months
-
-            var monthStart = new DateTime(today.Year, month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var monthStart = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Unspecified);
             var monthEnd = monthStart.AddMonths(1);
 
             // Get all daily energy data for this month (after interpolation)
@@ -301,7 +292,7 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
 
                 dataPoints.Add(new PowerAndEnergyMetricsDataPoint
                 {
-                    Timestamp = new DateTime(today.Year, month, 1).ToString("yyyy-MM"),
+                    Timestamp = new DateTime(year, month, 1).ToString("yyyy-MM"),
 
                     // Energy values in "Power" fields (kWh despite field names)
                     SolarPower = Math.Round(monthlyPvEnergy, 3),
