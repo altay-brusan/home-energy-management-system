@@ -66,43 +66,6 @@
         ]
       }
     },
-    "/api/Dashboard/hero": {
-      "get": {
-        "tags": [
-          "Dashboard"
-        ],
-        "operationId": "Hero",
-        "parameters": [
-          {
-            "name": "deviceId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HeroResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
     "/api/Dashboard/Soc": {
       "get": {
         "tags": [
@@ -408,6 +371,46 @@
               "type": "string"
             },
             "x-position": 2
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "nullable": true
+            },
+            "x-position": 3
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "nullable": true
+            },
+            "x-position": 4
+          },
+          {
+            "name": "week",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "nullable": true
+            },
+            "x-position": 5
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "nullable": true
+            },
+            "x-position": 6
           }
         ],
         "responses": {
@@ -513,155 +516,6 @@
         ]
       }
     },
-    "/api/Dashboard/graphs/EnergyFlow": {
-      "get": {
-        "tags": [
-          "Dashboard"
-        ],
-        "operationId": "EnergyFlow",
-        "parameters": [
-          {
-            "name": "deviceId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          },
-          {
-            "name": "startDate",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            },
-            "x-position": 2
-          },
-          {
-            "name": "endDate",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            },
-            "x-position": 3
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EnergyFlowResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/Dashboard/graphs/EnergyProduction": {
-      "get": {
-        "tags": [
-          "Dashboard"
-        ],
-        "operationId": "EnergyProduction",
-        "parameters": [
-          {
-            "name": "deviceId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          },
-          {
-            "name": "period",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 2
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EnergyProductionResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/Dashboard/graphs/EnergyConsumption": {
-      "get": {
-        "tags": [
-          "Dashboard"
-        ],
-        "operationId": "EnergyConsumption",
-        "parameters": [
-          {
-            "name": "deviceId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          },
-          {
-            "name": "period",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 2
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EnergyConsumptionResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
     "/api/Dashboard/graphs/Battery": {
       "get": {
         "tags": [
@@ -687,43 +541,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BatteryResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/Dashboard/graphs/ChargeDischarge": {
-      "get": {
-        "tags": [
-          "Dashboard"
-        ],
-        "operationId": "ChargeDischarge",
-        "parameters": [
-          {
-            "name": "deviceId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ChargeDischargeResponseDto"
                 }
               }
             }
@@ -4511,41 +4328,6 @@
           }
         }
       },
-      "HeroResponseDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "title": {
-            "type": "string"
-          },
-          "subtitle": {
-            "type": "string"
-          },
-          "metrics": {
-            "$ref": "#/components/schemas/HeroMetrics"
-          }
-        }
-      },
-      "HeroMetrics": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "todayEnergy": {
-            "type": "number",
-            "format": "double"
-          },
-          "currentPower": {
-            "type": "number",
-            "format": "double"
-          },
-          "lastSync": {
-            "type": "string"
-          },
-          "unit": {
-            "type": "string"
-          }
-        }
-      },
       "SocResponseDto": {
         "type": "object",
         "additionalProperties": false,
@@ -4945,208 +4727,6 @@
           }
         }
       },
-      "EnergyFlowResponseDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "date": {
-            "type": "string"
-          },
-          "range": {
-            "type": "string"
-          },
-          "sources": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EnergySource"
-            }
-          },
-          "destinations": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EnergyDestination"
-            }
-          },
-          "flows": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EnergyFlow"
-            }
-          }
-        }
-      },
-      "EnergySource": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "label": {
-            "type": "string"
-          },
-          "value": {
-            "type": "number",
-            "format": "double"
-          },
-          "percentage": {
-            "type": "number",
-            "format": "double"
-          },
-          "color": {
-            "type": "string"
-          }
-        }
-      },
-      "EnergyDestination": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "label": {
-            "type": "string"
-          },
-          "value": {
-            "type": "number",
-            "format": "double"
-          },
-          "percentage": {
-            "type": "number",
-            "format": "double"
-          },
-          "color": {
-            "type": "string"
-          }
-        }
-      },
-      "EnergyFlow": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "source": {
-            "type": "string"
-          },
-          "target": {
-            "type": "string"
-          },
-          "value": {
-            "type": "number",
-            "format": "double"
-          }
-        }
-      },
-      "EnergyProductionResponseDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "range": {
-            "type": "string"
-          },
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EnergyProductionDataPoint"
-            }
-          },
-          "statistics": {
-            "$ref": "#/components/schemas/EnergyProductionStatistics"
-          }
-        }
-      },
-      "EnergyProductionDataPoint": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "timestamp": {
-            "type": "string"
-          },
-          "value": {
-            "type": "number",
-            "format": "double"
-          },
-          "unit": {
-            "type": "string"
-          }
-        }
-      },
-      "EnergyProductionStatistics": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "total": {
-            "type": "number",
-            "format": "double"
-          },
-          "peak": {
-            "type": "number",
-            "format": "double"
-          },
-          "average": {
-            "type": "number",
-            "format": "double"
-          },
-          "unit": {
-            "type": "string"
-          }
-        }
-      },
-      "EnergyConsumptionResponseDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "range": {
-            "type": "string"
-          },
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EnergyConsumptionDataPoint"
-            }
-          },
-          "statistics": {
-            "$ref": "#/components/schemas/EnergyConsumptionStatistics"
-          }
-        }
-      },
-      "EnergyConsumptionDataPoint": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "timestamp": {
-            "type": "string"
-          },
-          "value": {
-            "type": "number",
-            "format": "double"
-          },
-          "unit": {
-            "type": "string"
-          }
-        }
-      },
-      "EnergyConsumptionStatistics": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "total": {
-            "type": "number",
-            "format": "double"
-          },
-          "peak": {
-            "type": "number",
-            "format": "double"
-          },
-          "average": {
-            "type": "number",
-            "format": "double"
-          },
-          "unit": {
-            "type": "string"
-          }
-        }
-      },
       "BatteryResponseDto": {
         "type": "object",
         "additionalProperties": false,
@@ -5194,77 +4774,6 @@
             "format": "double"
           },
           "current": {
-            "type": "number",
-            "format": "double"
-          },
-          "unit": {
-            "type": "string"
-          }
-        }
-      },
-      "ChargeDischargeResponseDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "range": {
-            "type": "string"
-          },
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ChargeDischargeDataPoint"
-            }
-          },
-          "statistics": {
-            "$ref": "#/components/schemas/ChargeDischargeStatistics"
-          }
-        }
-      },
-      "ChargeDischargeDataPoint": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "timestamp": {
-            "type": "string"
-          },
-          "chargeValue": {
-            "type": "number",
-            "format": "double"
-          },
-          "dischargeValue": {
-            "type": "number",
-            "format": "double"
-          },
-          "unit": {
-            "type": "string"
-          }
-        }
-      },
-      "ChargeDischargeStatistics": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "averageCharge": {
-            "type": "number",
-            "format": "double"
-          },
-          "peakCharge": {
-            "type": "number",
-            "format": "double"
-          },
-          "currentCharge": {
-            "type": "number",
-            "format": "double"
-          },
-          "averageDischarge": {
-            "type": "number",
-            "format": "double"
-          },
-          "peakDischarge": {
-            "type": "number",
-            "format": "double"
-          },
-          "currentDischarge": {
             "type": "number",
             "format": "double"
           },

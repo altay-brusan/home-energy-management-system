@@ -1,14 +1,14 @@
 using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Application.Dashboard.Queries.GetBattery;
 using Hems_Backend.Application.Dashboard.Queries.GetBatteryComponent;
-using Hems_Backend.Application.Dashboard.Queries.GetChargeDischarge;
-using Hems_Backend.Application.Dashboard.Queries.GetEnergyConsumption;
-using Hems_Backend.Application.Dashboard.Queries.GetEnergyData;
-using Hems_Backend.Application.Dashboard.Queries.GetEnergyProduction;
+//using Hems_Backend.Application.Dashboard.Queries.GetChargeDischarge;
+//using Hems_Backend.Application.Dashboard.Queries.GetEnergyConsumption;
+//using Hems_Backend.Application.Dashboard.Queries.GetEnergyData;
+//using Hems_Backend.Application.Dashboard.Queries.GetEnergyProduction;
 using Hems_Backend.Application.Dashboard.Queries.GetEnergyRevenue;
 using Hems_Backend.Application.Dashboard.Queries.GetGridPerformance;
 using Hems_Backend.Application.Dashboard.Queries.GetGridPerformanceSummary;
-using Hems_Backend.Application.Dashboard.Queries.GetHero;
+//using Hems_Backend.Application.Dashboard.Queries.GetHero;
 using Hems_Backend.Application.Dashboard.Queries.GetInverterComponent;
 using Hems_Backend.Application.Dashboard.Queries.GetPowerMetrics;
 using Hems_Backend.Application.Dashboard.Queries.GetSoc;
@@ -29,7 +29,7 @@ public class Dashboard : EndpointGroupBase
     {
         app.MapGroup(this)
             .RequireAuthorization()
-            .MapGet(Hero, "hero")
+            //.MapGet(Hero, "hero")
             .MapGet(SOC, "Soc")
             .MapGet(SOH, "Soh")
             .MapGet(TodayEnergySummary, "TodayEnergySummary")
@@ -39,27 +39,27 @@ public class Dashboard : EndpointGroupBase
             .MapGet(PowerAndEnergyMetrics, "PowerAndEnergyMetrics")
             .MapGet(GetDeviceWithData, "device/GetWithData")
             .MapGet(GetComponentLiveData, "device/component/getComponentLiveData")
-            .MapGet(EnergyFlow, "graphs/EnergyFlow")
-            .MapGet(EnergyProduction, "graphs/EnergyProduction")
-            .MapGet(EnergyConsumption, "graphs/EnergyConsumption")
+            //.MapGet(EnergyFlow, "graphs/EnergyFlow")
+            //.MapGet(EnergyProduction, "graphs/EnergyProduction")
+            //.MapGet(EnergyConsumption, "graphs/EnergyConsumption")
             .MapGet(Battery, "graphs/Battery")
-            .MapGet(ChargeDischarge, "graphs/ChargeDischarge")
+            //.MapGet(ChargeDischarge, "graphs/ChargeDischarge")
             .MapGet(BatteryComponent, "graphs/Components/Battery")
             .MapGet(InverterComponent, "graphs/Components/Inverter");
     }
 
-    [Authorize]
-    public async Task<HeroResponseDto> Hero(
-        ISender sender,
-        [FromQuery] Guid deviceId)
-    {
-        var query = new GetHeroQuery
-        {
-            DeviceId = deviceId
-        };
+    //[Authorize]
+    //public async Task<HeroResponseDto> Hero(
+    //    ISender sender,
+    //    [FromQuery] Guid deviceId)
+    //{
+    //    var query = new GetHeroQuery
+    //    {
+    //        DeviceId = deviceId
+    //    };
 
-        return await sender.Send(query);
-    }
+    //    return await sender.Send(query);
+    //}
 
     [Authorize]
     public async Task<SocResponseDto> SOC(
@@ -130,63 +130,71 @@ public class Dashboard : EndpointGroupBase
         return await sender.Send(query);
     }
 
-    [Authorize]
-    public async Task<EnergyFlowResponseDto> EnergyFlow(
-        ISender sender,
-        [FromQuery] Guid deviceId,
-        [FromQuery] DateTime startDate,
-        [FromQuery] DateTime endDate)
-    {
-        var query = new GetEnergyDataQuery
-        {
-            DeviceId = deviceId,
-            StartDate = startDate,
-            EndDate = endDate
-        };
+    //[Authorize]
+    //public async Task<EnergyFlowResponseDto> EnergyFlow(
+    //    ISender sender,
+    //    [FromQuery] Guid deviceId,
+    //    [FromQuery] DateTime startDate,
+    //    [FromQuery] DateTime endDate)
+    //{
+    //    var query = new GetEnergyDataQuery
+    //    {
+    //        DeviceId = deviceId,
+    //        StartDate = startDate,
+    //        EndDate = endDate
+    //    };
 
-        return await sender.Send(query);
-    }
+    //    return await sender.Send(query);
+    //}
 
-    [Authorize]
-    public async Task<EnergyProductionResponseDto> EnergyProduction(
-        ISender sender,
-        [FromQuery] Guid deviceId,
-        [FromQuery] string period)
-    {
-        var query = new GetEnergyProductionQuery
-        {
-            DeviceId = deviceId,
-            Period = period
-        };
+    //[Authorize]
+    //public async Task<EnergyProductionResponseDto> EnergyProduction(
+    //    ISender sender,
+    //    [FromQuery] Guid deviceId,
+    //    [FromQuery] string period)
+    //{
+    //    var query = new GetEnergyProductionQuery
+    //    {
+    //        DeviceId = deviceId,
+    //        Period = period
+    //    };
 
-        return await sender.Send(query);
-    }
+    //    return await sender.Send(query);
+    //}
 
-    [Authorize]
-    public async Task<EnergyConsumptionResponseDto> EnergyConsumption(
-        ISender sender,
-        [FromQuery] Guid deviceId,
-        [FromQuery] string period)
-    {
-        var query = new GetEnergyConsumptionQuery
-        {
-            DeviceId = deviceId,
-            Period = period
-        };
+    //[Authorize]
+    //public async Task<EnergyConsumptionResponseDto> EnergyConsumption(
+    //    ISender sender,
+    //    [FromQuery] Guid deviceId,
+    //    [FromQuery] string period)
+    //{
+    //    var query = new GetEnergyConsumptionQuery
+    //    {
+    //        DeviceId = deviceId,
+    //        Period = period
+    //    };
 
-        return await sender.Send(query);
-    }
+    //    return await sender.Send(query);
+    //}
 
     [Authorize]
     public async Task<PowerAndEnergyMetricsResponseDto> PowerAndEnergyMetrics(
         ISender sender,
         [FromQuery] Guid deviceId,
-        [FromQuery] string period)
+        [FromQuery] string period,
+        [FromQuery] DateOnly? date = null,
+        [FromQuery] int? year = null,
+        [FromQuery] int? week = null,
+        [FromQuery] int? month = null)
     {
         var query = new GetPowerAndEnergyMetricsQuery
         {
             DeviceId = deviceId,
-            Period = period
+            Period = period,
+            Date = date,
+            Year = year,
+            Week = week,
+            Month = month
         };
 
         return await sender.Send(query);
@@ -205,18 +213,18 @@ public class Dashboard : EndpointGroupBase
         return await sender.Send(query);
     }
 
-    [Authorize]
-    public async Task<ChargeDischargeResponseDto> ChargeDischarge(
-        ISender sender,
-        [FromQuery] Guid deviceId)
-    {
-        var query = new GetChargeDischargeQuery
-        {
-            DeviceId = deviceId
-        };
+    //[Authorize]
+    //public async Task<ChargeDischargeResponseDto> ChargeDischarge(
+    //    ISender sender,
+    //    [FromQuery] Guid deviceId)
+    //{
+    //    var query = new GetChargeDischargeQuery
+    //    {
+    //        DeviceId = deviceId
+    //    };
 
-        return await sender.Send(query);
-    }
+    //    return await sender.Send(query);
+    //}
 
     [Authorize]
     public async Task<BatteryComponentDto> BatteryComponent(

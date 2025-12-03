@@ -61,7 +61,10 @@ public static class DependencyInjection
         
         // Telemetry Deduplication Service
         builder.Services.AddScoped<ITelemetryDeduplicationService, TelemetryDeduplicationService>();
-        
+
+        // Timezone Service with caching
+        builder.Services.AddScoped<ITimezoneService, TimezoneService>();
+
         // ThingsBoard Services
         builder.Services.AddHttpClient<IThingsBoardConnectorService, ThingsBoardConnectorService>();
         
