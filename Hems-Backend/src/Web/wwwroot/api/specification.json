@@ -66,43 +66,6 @@
         ]
       }
     },
-    "/api/Dashboard/hero": {
-      "get": {
-        "tags": [
-          "Dashboard"
-        ],
-        "operationId": "Hero",
-        "parameters": [
-          {
-            "name": "deviceId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HeroResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
     "/api/Dashboard/Soc": {
       "get": {
         "tags": [
@@ -4508,41 +4471,6 @@
           "deviceName": {
             "type": "string",
             "nullable": true
-          }
-        }
-      },
-      "HeroResponseDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "title": {
-            "type": "string"
-          },
-          "subtitle": {
-            "type": "string"
-          },
-          "metrics": {
-            "$ref": "#/components/schemas/HeroMetrics"
-          }
-        }
-      },
-      "HeroMetrics": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "todayEnergy": {
-            "type": "number",
-            "format": "double"
-          },
-          "currentPower": {
-            "type": "number",
-            "format": "double"
-          },
-          "lastSync": {
-            "type": "string"
-          },
-          "unit": {
-            "type": "string"
           }
         }
       },

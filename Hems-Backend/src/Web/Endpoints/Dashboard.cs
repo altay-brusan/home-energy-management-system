@@ -8,7 +8,7 @@ using Hems_Backend.Application.Dashboard.Queries.GetEnergyProduction;
 using Hems_Backend.Application.Dashboard.Queries.GetEnergyRevenue;
 using Hems_Backend.Application.Dashboard.Queries.GetGridPerformance;
 using Hems_Backend.Application.Dashboard.Queries.GetGridPerformanceSummary;
-using Hems_Backend.Application.Dashboard.Queries.GetHero;
+//using Hems_Backend.Application.Dashboard.Queries.GetHero;
 using Hems_Backend.Application.Dashboard.Queries.GetInverterComponent;
 using Hems_Backend.Application.Dashboard.Queries.GetPowerMetrics;
 using Hems_Backend.Application.Dashboard.Queries.GetSoc;
@@ -29,7 +29,7 @@ public class Dashboard : EndpointGroupBase
     {
         app.MapGroup(this)
             .RequireAuthorization()
-            .MapGet(Hero, "hero")
+            //.MapGet(Hero, "hero")
             .MapGet(SOC, "Soc")
             .MapGet(SOH, "Soh")
             .MapGet(TodayEnergySummary, "TodayEnergySummary")
@@ -48,18 +48,18 @@ public class Dashboard : EndpointGroupBase
             .MapGet(InverterComponent, "graphs/Components/Inverter");
     }
 
-    [Authorize]
-    public async Task<HeroResponseDto> Hero(
-        ISender sender,
-        [FromQuery] Guid deviceId)
-    {
-        var query = new GetHeroQuery
-        {
-            DeviceId = deviceId
-        };
+    //[Authorize]
+    //public async Task<HeroResponseDto> Hero(
+    //    ISender sender,
+    //    [FromQuery] Guid deviceId)
+    //{
+    //    var query = new GetHeroQuery
+    //    {
+    //        DeviceId = deviceId
+    //    };
 
-        return await sender.Send(query);
-    }
+    //    return await sender.Send(query);
+    //}
 
     [Authorize]
     public async Task<SocResponseDto> SOC(
