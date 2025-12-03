@@ -1,7 +1,7 @@
 using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Application.Dashboard.Queries.GetBattery;
 using Hems_Backend.Application.Dashboard.Queries.GetBatteryComponent;
-using Hems_Backend.Application.Dashboard.Queries.GetChargeDischarge;
+//using Hems_Backend.Application.Dashboard.Queries.GetChargeDischarge;
 using Hems_Backend.Application.Dashboard.Queries.GetEnergyConsumption;
 using Hems_Backend.Application.Dashboard.Queries.GetEnergyData;
 using Hems_Backend.Application.Dashboard.Queries.GetEnergyProduction;
@@ -43,7 +43,7 @@ public class Dashboard : EndpointGroupBase
             .MapGet(EnergyProduction, "graphs/EnergyProduction")
             .MapGet(EnergyConsumption, "graphs/EnergyConsumption")
             .MapGet(Battery, "graphs/Battery")
-            .MapGet(ChargeDischarge, "graphs/ChargeDischarge")
+            //.MapGet(ChargeDischarge, "graphs/ChargeDischarge")
             .MapGet(BatteryComponent, "graphs/Components/Battery")
             .MapGet(InverterComponent, "graphs/Components/Inverter");
     }
@@ -205,18 +205,18 @@ public class Dashboard : EndpointGroupBase
         return await sender.Send(query);
     }
 
-    [Authorize]
-    public async Task<ChargeDischargeResponseDto> ChargeDischarge(
-        ISender sender,
-        [FromQuery] Guid deviceId)
-    {
-        var query = new GetChargeDischargeQuery
-        {
-            DeviceId = deviceId
-        };
+    //[Authorize]
+    //public async Task<ChargeDischargeResponseDto> ChargeDischarge(
+    //    ISender sender,
+    //    [FromQuery] Guid deviceId)
+    //{
+    //    var query = new GetChargeDischargeQuery
+    //    {
+    //        DeviceId = deviceId
+    //    };
 
-        return await sender.Send(query);
-    }
+    //    return await sender.Send(query);
+    //}
 
     [Authorize]
     public async Task<BatteryComponentDto> BatteryComponent(
