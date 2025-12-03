@@ -13,12 +13,18 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
     private readonly IDeviceMappingService _deviceMapping;
+    private readonly ITimezoneService _timezoneService;
 
-    public GetPowerAndEnergyMetricsQueryHandler(IApplicationDbContext context, ISender sender, IDeviceMappingService deviceMapping)
+    public GetPowerAndEnergyMetricsQueryHandler(
+        IApplicationDbContext context,
+        ISender sender,
+        IDeviceMappingService deviceMapping,
+        ITimezoneService timezoneService)
     {
         _context = context;
         _sender = sender;
         _deviceMapping = deviceMapping;
+        _timezoneService = timezoneService;
     }
 
     public async Task<PowerAndEnergyMetricsResponseDto> Handle(GetPowerAndEnergyMetricsQuery request, CancellationToken cancellationToken)
@@ -39,11 +45,11 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
 
         return request.Period.ToLower() switch
         {
-            "daily" => await GetDailyMetricsAsync(thingsBoardDeviceId.Value, cancellationToken),
-            "weekly" => await GetWeeklyMetricsAsync(thingsBoardDeviceId.Value, cancellationToken),
-            "monthly" => await GetMonthlyMetricsAsync(thingsBoardDeviceId.Value, cancellationToken),
-            "yearly" => await GetYearlyMetricsAsync(thingsBoardDeviceId.Value, cancellationToken),
-            _ => await GetDailyMetricsAsync(thingsBoardDeviceId.Value, cancellationToken)
+            "daily" => await GetDailyMetricsAsync(request.DeviceId, thingsBoardDeviceId.Value, cancellationToken),
+            "weekly" => await GetWeeklyMetricsAsync(request.DeviceId, thingsBoardDeviceId.Value, cancellationToken),
+            "monthly" => await GetMonthlyMetricsAsync(request.DeviceId, thingsBoardDeviceId.Value, cancellationToken),
+            "yearly" => await GetYearlyMetricsAsync(request.DeviceId, thingsBoardDeviceId.Value, cancellationToken),
+            _ => await GetDailyMetricsAsync(request.DeviceId, thingsBoardDeviceId.Value, cancellationToken)
         };
     }
 
@@ -51,14 +57,17 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
     /// Daily metrics: Return power data from 5-minute samples
     /// Uses DevicePowerData table which stores instantaneous power readings
     /// Interpolates power values for missing samples
+    /// Uses device local timezone for accurate time-based queries
     /// </summary>
-    private async Task<PowerAndEnergyMetricsResponseDto> GetDailyMetricsAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
+    private async Task<PowerAndEnergyMetricsResponseDto> GetDailyMetricsAsync(Guid deviceId, Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
-        var utcNow = DateTime.UtcNow;
-        var startOfDay = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 0, 0, 0, DateTimeKind.Utc);
+        // Get current time in device's local timezone
+        var deviceNow = await _timezoneService.ConvertUtcToDeviceTimeAsync(deviceId, DateTime.UtcNow, cancellationToken);
+        var startOfDay = new DateTime(deviceNow.Year, deviceNow.Month, deviceNow.Day, 0, 0, 0, DateTimeKind.Unspecified);
         var endOfDay = startOfDay.AddDays(1);
 
         // Get all power samples for today (5-min intervals) from DevicePowerData
+        // DataDateTime is in device local time, so we compare with device local time ranges
         var powerData = await _context.DevicePowerData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId &&
                        x.DataDateTime >= startOfDay &&
@@ -99,18 +108,22 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
     /// Weekly metrics: Use daily cumulative energy data (end-of-day snapshots)
     /// Each day shows the total energy produced/consumed for that day from DailyCumulativeEnergy
     /// Interpolates energy values for missing days
+    /// Uses device local timezone for accurate time-based queries
     /// </summary>
-    private async Task<PowerAndEnergyMetricsResponseDto> GetWeeklyMetricsAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
+    private async Task<PowerAndEnergyMetricsResponseDto> GetWeeklyMetricsAsync(Guid deviceId, Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
-        var today = DateTime.UtcNow.Date;
+        // Get current time in device's local timezone
+        var deviceNow = await _timezoneService.ConvertUtcToDeviceTimeAsync(deviceId, DateTime.UtcNow, cancellationToken);
+        var today = deviceNow.Date;
         var weekStart = today.AddDays(-(int)today.DayOfWeek);
-        var weekStartUtc = DateTime.SpecifyKind(weekStart, DateTimeKind.Utc);
-        var weekEnd = weekStartUtc.AddDays(7);
+        var weekStartLocal = DateTime.SpecifyKind(weekStart, DateTimeKind.Unspecified);
+        var weekEnd = weekStartLocal.AddDays(7);
 
         // Get all DailyCumulativeEnergy samples for the week (one sample per day)
+        // DataDateTime is in device local time
         var dailyEnergyData = await _context.DeviceEnergyData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId &&
-                       x.DataDateTime >= weekStartUtc &&
+                       x.DataDateTime >= weekStartLocal &&
                        x.DataDateTime < weekEnd &&
                        x.DataType == DataTypes.DailyCumulativeEnergy)
             .OrderBy(x => x.DataDateTime)
@@ -164,18 +177,22 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
     /// Monthly metrics: Use daily cumulative energy data (end-of-day snapshots)
     /// Each day shows the total energy produced/consumed for that day from DailyCumulativeEnergy
     /// Interpolates energy values for missing days
+    /// Uses device local timezone for accurate time-based queries
     /// </summary>
-    private async Task<PowerAndEnergyMetricsResponseDto> GetMonthlyMetricsAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
+    private async Task<PowerAndEnergyMetricsResponseDto> GetMonthlyMetricsAsync(Guid deviceId, Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
-        var today = DateTime.UtcNow.Date;
+        // Get current time in device's local timezone
+        var deviceNow = await _timezoneService.ConvertUtcToDeviceTimeAsync(deviceId, DateTime.UtcNow, cancellationToken);
+        var today = deviceNow.Date;
         var monthStart = new DateTime(today.Year, today.Month, 1);
-        var monthStartUtc = DateTime.SpecifyKind(monthStart, DateTimeKind.Utc);
+        var monthStartLocal = DateTime.SpecifyKind(monthStart, DateTimeKind.Unspecified);
         var monthEnd = monthStart.AddMonths(1);
 
         // Get all DailyCumulativeEnergy samples for the month
+        // DataDateTime is in device local time
         var dailyEnergyData = await _context.DeviceEnergyData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId &&
-                       x.DataDateTime >= monthStartUtc &&
+                       x.DataDateTime >= monthStartLocal &&
                        x.DataDateTime < monthEnd &&
                        x.DataType == DataTypes.DailyCumulativeEnergy)
             .OrderBy(x => x.DataDateTime)
@@ -232,18 +249,22 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
     /// Yearly metrics: Aggregate monthly energy from DailyCumulativeEnergy samples
     /// Sums all daily energy values for each month
     /// Interpolates energy values for missing days before aggregation
+    /// Uses device local timezone for accurate time-based queries
     /// </summary>
-    private async Task<PowerAndEnergyMetricsResponseDto> GetYearlyMetricsAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
+    private async Task<PowerAndEnergyMetricsResponseDto> GetYearlyMetricsAsync(Guid deviceId, Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
-        var today = DateTime.UtcNow.Date;
+        // Get current time in device's local timezone
+        var deviceNow = await _timezoneService.ConvertUtcToDeviceTimeAsync(deviceId, DateTime.UtcNow, cancellationToken);
+        var today = deviceNow.Date;
         var yearStart = new DateTime(today.Year, 1, 1);
-        var yearStartUtc = DateTime.SpecifyKind(yearStart, DateTimeKind.Utc);
+        var yearStartLocal = DateTime.SpecifyKind(yearStart, DateTimeKind.Unspecified);
         var yearEnd = yearStart.AddYears(1);
 
         // Get all DailyCumulativeEnergy samples for the year
+        // DataDateTime is in device local time
         var dailyEnergyData = await _context.DeviceEnergyData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId &&
-                       x.DataDateTime >= yearStartUtc &&
+                       x.DataDateTime >= yearStartLocal &&
                        x.DataDateTime < yearEnd &&
                        x.DataType == DataTypes.DailyCumulativeEnergy)
             .OrderBy(x => x.DataDateTime)
