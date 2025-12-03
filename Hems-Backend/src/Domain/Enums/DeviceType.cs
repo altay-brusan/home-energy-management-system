@@ -5,7 +5,8 @@ public enum DeviceType
     MPPS = 1,
     Invertor = 2,
     BMS = 3,
-    Battery = 4
+    Battery = 4\
+
 }
 
 
