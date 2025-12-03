@@ -16,7 +16,7 @@ public class DeviceComponents : EndpointGroupBase
     {
         app.MapGroup(this)
             .RequireAuthorization()
-            .MapGet(GetDeviceComponentsByDeviceId, "device/{deviceId}")
+            .MapGet(GetDeviceComponentsByDeviceId, "Device/{deviceId}")
             .MapGet(GetDeviceComponent, "{id}")
             .MapPost(CreateDeviceComponent)
             .MapPut(UpdateDeviceComponent, "{id}")
