@@ -627,7 +627,7 @@
         ]
       }
     },
-    "/api/DeviceComponents/device/{deviceId}": {
+    "/api/DeviceComponents/Device/{deviceId}": {
       "get": {
         "tags": [
           "DeviceComponents"
