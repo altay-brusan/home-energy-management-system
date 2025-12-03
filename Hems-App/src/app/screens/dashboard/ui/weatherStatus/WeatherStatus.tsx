@@ -9,6 +9,7 @@ import { useSelectedSiteUtils } from '../../../../../hooks/useSelectedSite';
 import { useThemeStore } from '../../../../../store/themeStore';
 import { getThemeColors } from '../../../../../theme/constants';
 import { createStyles } from './WeatherStatus.styles';
+import type { WeatherForecastDto } from '../../../../../api/types/dashboard.types';
 
 interface WeatherStatusProps {
   deviceId?: string;
@@ -24,11 +25,34 @@ export const WeatherStatus: React.FC<WeatherStatusProps> = ({ deviceId }) => {
   const styles = createStyles(COLORS);
   const { selectedSite } = useSelectedSiteUtils();
 
-  const [weather, setWeather] = useState<any>(null);
+  const [weather, setWeather] = useState<WeatherForecastDto | null>(null);
   const [status, setStatus] = useState<StatusType>('onGrid');
   const { registerRefreshCallback } = useDashboardRefresh();
 
-  const fetchData = useCallback(async () => {
+  // Fetch weather separately
+  const fetchWeather = useCallback(async () => {
+    if (!selectedSite?.id) {
+      return;
+    }
+
+    try {
+      const weatherData = await dashboardService.getWeatherForecast(selectedSite.id);
+      if (weatherData && weatherData.length > 0) {
+        setWeather(weatherData[0]);
+      } else {
+        setWeather(null);
+      }
+    } catch (error: any) {
+      // Canceled errors'ı silent handle et
+      if (error?.message?.includes('canceled') || error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED') {
+        return;
+      }
+      setWeather(null);
+    }
+  }, [selectedSite?.id]);
+
+  // Fetch status from energy flow
+  const fetchStatus = useCallback(async () => {
     if (!deviceId) {
       return;
     }
@@ -41,22 +65,12 @@ export const WeatherStatus: React.FC<WeatherStatusProps> = ({ deviceId }) => {
       const endDate = new Date(today);
       endDate.setHours(23, 59, 59, 999);
 
-      // Fetch energy flow data and weather in parallel
-      const [energyFlow, weatherData] = await Promise.all([
-        mobileDashboardService.getEnergyFlow(
-          deviceId,
-          startDate.toISOString(),
-          endDate.toISOString()
-        ),
-        selectedSite?.id ? dashboardService.getWeatherForecast(selectedSite.id).catch(() => null) : Promise.resolve(null)
-      ]);
-
-      // Set weather data
-      if (weatherData && weatherData.length > 0) {
-        setWeather(weatherData[0]);
-      } else {
-        setWeather(null);
-      }
+      // Fetch energy flow data
+      const energyFlow = await mobileDashboardService.getEnergyFlow(
+        deviceId,
+        startDate.toISOString(),
+        endDate.toISOString()
+      );
 
       // Calculate status
       if (energyFlow && energyFlow.sources) {
@@ -73,21 +87,33 @@ export const WeatherStatus: React.FC<WeatherStatusProps> = ({ deviceId }) => {
         }
         setStatus(newStatus);
       }
-    } catch (error) {
-      console.error('Error loading weather/status data:', error);
+    } catch (error: any) {
+      // Canceled errors'ı silent handle et
+      if (error?.message?.includes('canceled') || error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED') {
+        return;
+      }
     }
-  }, [deviceId, selectedSite?.id]);
+  }, [deviceId]);
 
-  // Initial load
+  // Load weather
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchWeather();
+  }, [fetchWeather]);
 
-  // Register refresh callback
+  // Load status
   useEffect(() => {
-    const unregister = registerRefreshCallback(fetchData);
-    return () => unregister();
-  }, [registerRefreshCallback, fetchData]);
+    fetchStatus();
+  }, [fetchStatus]);
+
+  // Register refresh callbacks
+  useEffect(() => {
+    const unregisterWeather = registerRefreshCallback(fetchWeather);
+    const unregisterStatus = registerRefreshCallback(fetchStatus);
+    return () => {
+      unregisterWeather();
+      unregisterStatus();
+    };
+  }, [registerRefreshCallback, fetchWeather, fetchStatus]);
 
   if (!deviceId) {
     return null;

@@ -19,14 +19,14 @@ export const dashboardService = {
     return response.data;
   },
   async getWeatherForecast(siteId: string): Promise<WeatherForecastDto[]> {
-  const url = `${ENDPOINTS.DASHBOARD.GET_WEATHER_FORECAST}/${siteId}`;
+  const url = ENDPOINTS.DASHBOARD.GET_WEATHER_FORECAST.replace(':siteId', siteId);
   const response = await apiClient.get<WeatherForecastDto[]>(url);
   return response.data;
 },
 
   async getDeviceSoc(deviceId: string): Promise<number | null> {
     const response = await apiClient.get<SocResponseDto>(
-      ENDPOINTS.MOBILE_DASHBOARD.SOC,
+      ENDPOINTS.DASHBOARD.SOC,
       {
         params: { deviceId }
       }

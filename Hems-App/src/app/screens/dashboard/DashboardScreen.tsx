@@ -14,8 +14,7 @@ import { useSelectedSiteDevice } from '../../../hooks/useSelectedSiteDevice';
 import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors, SPACING } from '../../../theme/constants';
 import { getDashboardStyles } from './DashboardScreen.styles';
-import DashboardGraph from './ui/dashboardGraph/DashboardGraph';
-import ChargeDischargeChart from './ui/dashboardGraph/components/ChargeDischargeChart';
+import PowerAndEnergyMetrics from './ui/powerAndEnergyMetrics/PowerAndEnergyMetrics';
 import { DashboardModeCard } from './ui/dashboardModeCard';
 import Sidebar from "./ui/dashboardSideBar/Sidebar";
 import { BatteryStateCard } from './ui/batteryStateCard';
@@ -71,7 +70,6 @@ export default function DashboardScreen (): JSX.Element {
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [selectedRange, setSelectedRange] = useState<Range>('Day');
-  const [selectedChargeIndex, setSelectedChargeIndex] = useState<number | null>(null);
   const route = useRoute();
   const navigation = useNavigation<any>();
   const { isAdmin, hasRole } = useRoles();
@@ -291,7 +289,7 @@ export default function DashboardScreen (): JSX.Element {
         <TodaySummary />
         <BatteryStateCard deviceId={device?.id} />
         <DashboardModeCard COLORS={COLORS} />
-        <DashboardGraph
+        <PowerAndEnergyMetrics
           COLORS={COLORS}
           isDark={isDark}
           selectedRange={selectedRange}
@@ -300,12 +298,6 @@ export default function DashboardScreen (): JSX.Element {
         <GridPerformanceCard deviceId={device?.id} />
 
         <EnergyReviewCard />
-
-        <ChargeDischargeChart
-          COLORS={COLORS}
-          selectedIndex={selectedChargeIndex}
-          setSelectedIndex={setSelectedChargeIndex}
-        />
 
         <CO2Card deviceId={device?.id} />
       </ScrollView>

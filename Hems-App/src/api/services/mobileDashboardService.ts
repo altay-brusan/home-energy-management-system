@@ -242,91 +242,91 @@ export interface TodayEnergySummaryDto {
 export const mobileDashboardService = {
   // Get hero metrics
   async getHero (deviceId: string): Promise<HeroResponseDto> {
-    const url = `${ENDPOINTS.MOBILE_DASHBOARD.HERO}?deviceId=${deviceId}`;
+    const url = `${ENDPOINTS.DASHBOARD.HERO}?deviceId=${deviceId}`;
     const response = await apiClient.get<HeroResponseDto>(url);
     return response.data;
   },
 
   // Get SOC data
   async getSOC (deviceId: string): Promise<SOCResponseDto> {
-    const url = `${ENDPOINTS.MOBILE_DASHBOARD.SOC}?deviceId=${deviceId}`;
+    const url = `${ENDPOINTS.DASHBOARD.SOC}?deviceId=${deviceId}`;
     const response = await apiClient.get<SOCResponseDto>(url);
     return response.data;
   },
 
   // Get SOH data
   async getSOH (deviceId: string): Promise<SOHResponseDto> {
-    const url = `${ENDPOINTS.MOBILE_DASHBOARD.SOH}?deviceId=${deviceId}`;
+    const url = `${ENDPOINTS.DASHBOARD.SOH}?deviceId=${deviceId}`;
     const response = await apiClient.get<SOHResponseDto>(url);
     return response.data;
   },
 
   // Get device with data
   async getDeviceWithData (deviceId: string): Promise<DeviceWithDataResponseDto> {
-    const url = `${ENDPOINTS.MOBILE_DASHBOARD.GET_DEVICE_WITH_DATA}?deviceId=${deviceId}`;
+    const url = `${ENDPOINTS.DASHBOARD.GET_DEVICE_WITH_DATA}?deviceId=${deviceId}`;
     const response = await apiClient.get<DeviceWithDataResponseDto>(url);
     return response.data;
   },
 
   // Get component live data
   async getComponentLiveData (deviceId: string, componentId: string): Promise<GetComponentLiveDataResponse> {
-    const url = `${ENDPOINTS.MOBILE_DASHBOARD.GET_COMPONENT_LIVE_DATA}?deviceId=${deviceId}&componentId=${componentId}`;
+    const url = `${ENDPOINTS.DASHBOARD.GET_COMPONENT_LIVE_DATA}?deviceId=${deviceId}&componentId=${componentId}`;
     const response = await apiClient.get<GetComponentLiveDataResponse>(url);
     return response.data;
   },
 
   // Get energy flow data
   async getEnergyFlow (deviceId: string, startDate: string, endDate: string): Promise<EnergyFlowResponseDto> {
-    const url = `${ENDPOINTS.MOBILE_DASHBOARD.ENERGY_FLOW}?deviceId=${deviceId}&startDate=${startDate}&endDate=${endDate}`;
+    const url = `${ENDPOINTS.DASHBOARD.ENERGY_FLOW}?deviceId=${deviceId}&startDate=${startDate}&endDate=${endDate}`;
     const response = await apiClient.get<EnergyFlowResponseDto>(url);
     return response.data;
   },
 
   // Get energy production data
   async getEnergyProduction (deviceId: string, period: string): Promise<EnergyProductionResponseDto> {
-    const url = `${ENDPOINTS.MOBILE_DASHBOARD.ENERGY_PRODUCTION}?deviceId=${deviceId}&period=${period}`;
+    const url = `${ENDPOINTS.DASHBOARD.ENERGY_PRODUCTION}?deviceId=${deviceId}&period=${period}`;
     const response = await apiClient.get<EnergyProductionResponseDto>(url);
     return response.data;
   },
 
   // Get energy consumption data
   async getEnergyConsumption (deviceId: string, period: string): Promise<EnergyConsumptionResponseDto> {
-    const url = `${ENDPOINTS.MOBILE_DASHBOARD.ENERGY_CONSUMPTION}?deviceId=${deviceId}&period=${period}`;
+    const url = `${ENDPOINTS.DASHBOARD.ENERGY_CONSUMPTION}?deviceId=${deviceId}&period=${period}`;
     const response = await apiClient.get<EnergyConsumptionResponseDto>(url);
     return response.data;
   },
 
   // Get power metrics
   async getPowerMetrics (deviceId: string, period: string): Promise<PowerMetricsResponseDto> {
-    const url = `${ENDPOINTS.MOBILE_DASHBOARD.POWER_METRICS}?deviceId=${deviceId}&period=${period}`;
+    const url = `${ENDPOINTS.DASHBOARD.POWER_METRICS}?deviceId=${deviceId}&period=${period}`;
     const response = await apiClient.get<PowerMetricsResponseDto>(url);
     return response.data;
   },
 
   // Get battery data
   async getBattery (deviceId: string): Promise<BatteryResponseDto> {
-    const url = `${ENDPOINTS.MOBILE_DASHBOARD.BATTERY}?deviceId=${deviceId}`;
+    const url = `${ENDPOINTS.DASHBOARD.BATTERY}?deviceId=${deviceId}`;
     const response = await apiClient.get<BatteryResponseDto>(url);
     return response.data;
   },
 
   // Get charge discharge data
   async getChargeDischarge (deviceId: string): Promise<ChargeDischargeResponseDto> {
-    const url = `${ENDPOINTS.MOBILE_DASHBOARD.CHARGE_DISCHARGE}?deviceId=${deviceId}`;
+    const url = `${ENDPOINTS.DASHBOARD.CHARGE_DISCHARGE}?deviceId=${deviceId}`;
     const response = await apiClient.get<ChargeDischargeResponseDto>(url);
     return response.data;
   },
 
   // Get battery component data
   async getBatteryComponent (deviceId: string): Promise<BatteryComponentDto> {
-    const url = `${ENDPOINTS.MOBILE_DASHBOARD.BATTERY_COMPONENT}?deviceId=${deviceId}`;
+    const url = `${ENDPOINTS.DASHBOARD.BATTERY_COMPONENT}?deviceId=${deviceId}`;
     const response = await apiClient.get<BatteryComponentDto>(url);
     return response.data;
   },
 
   // Get inverter component data
   async getInverterComponent (deviceId: string): Promise<InverterComponentDto> {
-    const url = `${ENDPOINTS.MOBILE_DASHBOARD.INVERTER_COMPONENT}?deviceId=${deviceId}`;
+    const url = `${ENDPOINTS.DASHBOARD.INVERTER_COMPONENT}?deviceId=${deviceId}`;
     const response = await apiClient.get<InverterComponentDto>(url);
     return response.data;
   },
@@ -340,7 +340,7 @@ export const mobileDashboardService = {
 
   // Get today's energy summary
   async getTodaySummary (deviceId: string): Promise<TodayEnergySummaryDto> {
-    const url = `${ENDPOINTS.MOBILE_DASHBOARD.TODAY_SUMMARY}?deviceId=${deviceId}`;
+    const url = `${ENDPOINTS.DASHBOARD.TODAY_SUMMARY}?deviceId=${deviceId}`;
     const response = await apiClient.get<TodayEnergySummaryDto>(url);
     return response.data;
   },

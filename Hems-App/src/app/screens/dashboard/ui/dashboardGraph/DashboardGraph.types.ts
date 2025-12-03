@@ -8,3 +8,4 @@ export interface DashboardGraphProps {
   selectedRange: Range;
   setSelectedRange: Dispatch<SetStateAction<Range>>;
 }
+

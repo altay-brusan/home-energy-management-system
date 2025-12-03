@@ -101,7 +101,7 @@ export const gridPerformanceService = {
     // TODO: Backend hazır olduğunda aşağıdaki kod bloğunu aktif et
     /*
     try {
-      const url = `${ENDPOINTS.MOBILE_DASHBOARD.GRID_PERFORMANCE}?deviceId=${deviceId}&period=${period}`;
+      const url = `${ENDPOINTS.DASHBOARD.GRID_PERFORMANCE}?deviceId=${deviceId}&period=${period}`;
       const response = await apiClient.get<GridPerformanceResponseDto>(url);
       return response.data;
     } catch (error: any) {
