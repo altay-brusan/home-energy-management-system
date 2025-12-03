@@ -4,7 +4,7 @@ using Hems_Backend.Application.Devices.Commands.DeleteDevice;
 using Hems_Backend.Application.Devices.Commands.RegisterDevice;
 using Hems_Backend.Application.Devices.Commands.UpdateDevice;
 using Hems_Backend.Application.Devices.Queries.GetDeviceById;
-using Hems_Backend.Application.Devices.Queries.GetDevices;
+//using Hems_Backend.Application.Devices.Queries.GetDevices;
 using Hems_Backend.Domain.Constants;
 using Hems_Backend.Web.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
@@ -22,7 +22,7 @@ public class Devices : EndpointGroupBase
         // Admin endpoints (require authorization)
         app.MapGroup(this)
             .RequireAuthorization()
-            .MapGet(GetDevices)
+            //.MapGet(GetDevices)
             .MapGet(GetDevice, "{id}")
             .MapPost(CreateDevice)
             .MapPut(UpdateDevice, "{id}")
@@ -36,13 +36,13 @@ public class Devices : EndpointGroupBase
         return await sender.Send(command);
     }
 
-    [Authorize(Policies.AdminOnly)]
-    public async Task<PaginatedList<DeviceDto>> GetDevices(
-        ISender sender,
-        [AsParameters] GetDevicesQuery query)
-    {
-        return await sender.Send(query);
-    }
+    //[Authorize(Policies.AdminOnly)]
+    //public async Task<PaginatedList<DeviceDto>> GetDevices(
+    //    ISender sender,
+    //    [AsParameters] GetDevicesQuery query)
+    //{
+    //    return await sender.Send(query);
+    //}
 
     [Authorize(Policies.AdminOnly)]
     public async Task<DeviceDto?> GetDevice(
