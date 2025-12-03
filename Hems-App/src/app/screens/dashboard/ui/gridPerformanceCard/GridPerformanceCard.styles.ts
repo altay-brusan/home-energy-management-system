@@ -4,75 +4,81 @@ import { TYPOGRAPHY, SPACING } from '../../../../../theme/constants';
 export const createStyles = (COLORS: Record<string, string>) => {
   return StyleSheet.create({
     container: {
-      backgroundColor: COLORS.surface,
-      borderRadius: 12,
-      padding: SPACING.md,
-      marginBottom: SPACING.sm,
+      marginBottom: 12,
     },
     header: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: SPACING.lg,
+      marginBottom: SPACING.md,
     },
     title: {
       fontSize: TYPOGRAPHY.lg,
       fontWeight: '700',
       color: COLORS.textSoft,
     },
-    // 3 Columns Layout
-    columnsContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
+    historyButton: {
+      padding: SPACING.xs,
+    },
+    gridContainer: {
       gap: SPACING.sm,
     },
-    column: {
+    columnHeadersRow: {
+      flexDirection: 'row',
+      gap: SPACING.sm,
+      marginTop: SPACING.sm,
+    },
+    columnHeader: {
       flex: 1,
       alignItems: 'center',
     },
-    valueBox: {
-      width: '100%',
+    columnHeaderText: {
+      fontSize: TYPOGRAPHY.xs,
+      fontWeight: '600',
+      color: COLORS.textSoft,
+      textTransform: 'uppercase',
+    },
+    row: {
+      flexDirection: 'row',
+      gap: SPACING.sm,
+    },
+    metricCard: {
+      flex: 1,
       backgroundColor: COLORS.surface,
       borderRadius: 12,
       padding: SPACING.md,
       alignItems: 'center',
-      borderWidth: 1,
-      borderColor: COLORS.border,
-      minHeight: 80,
       justifyContent: 'center',
+      minHeight: 90,
     },
-    valueLabel: {
-      fontSize: 10,
-      color: COLORS.textSoft,
-      opacity: 0.7,
-      marginBottom: SPACING.xs,
+    metricLabel: {
+      fontSize: TYPOGRAPHY.xs,
       fontWeight: '600',
+      color: COLORS.textSoft,
+      marginBottom: 8,
+      textAlign: 'center',
       textTransform: 'uppercase',
     },
-    valueNumber: {
+    metricValueContainer: {
+      alignItems: 'center',
+    },
+    metricValue: {
       fontSize: TYPOGRAPHY.xl,
       fontWeight: '700',
-      marginBottom: 2,
     },
-    valueUnit: {
-      fontSize: 9,
-      color: COLORS.textSoft,
-      opacity: 0.6,
+    metricUnit: {
+      fontSize: TYPOGRAPHY.xs,
       fontWeight: '500',
+      color: COLORS.textSoft,
+      marginTop: 2,
     },
-    divider: {
-      width: '80%',
-      height: 1,
-      backgroundColor: COLORS.border,
-      marginVertical: SPACING.sm,
-      opacity: 0.5,
-    },
-    columnLabel: {
-      fontSize: TYPOGRAPHY.sm,
+    periodLabel: {
+      fontSize: 10,
       fontWeight: '600',
       color: COLORS.textSoft,
-      marginTop: SPACING.md,
-      textAlign: 'center',
+      opacity: 0.7,
+      marginBottom: 4,
+      textTransform: 'uppercase',
     },
     // Loading State
     loadingContainer: {

@@ -121,7 +121,7 @@ const GridPerformanceCard: React.FC<GridPerformanceCardProps> = ({ deviceId }) =
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>{t('dashboardGridPerformance.title')}</Text>
-        <TouchableOpacity onPress={handleHistoryPress} style={{ padding: 4 }}>
+        <TouchableOpacity onPress={handleHistoryPress} style={styles.historyButton}>
           <HistoryIcon color={COLORS.accent} />
         </TouchableOpacity>
       </View>
@@ -131,74 +131,90 @@ const GridPerformanceCard: React.FC<GridPerformanceCardProps> = ({ deviceId }) =
           <ActivityIndicator size="large" color={COLORS.accent} />
         </View>
       ) : (
-        <View style={styles.columnsContainer}>
-          {/* Month Column */}
-          <View style={styles.column}>
-            <View style={styles.valueBox}>
-              <Text style={styles.valueLabel}>{t('dashboardEnergyReview.buy')}</Text>
-              <Text style={[styles.valueNumber, styles.buyColor]}>
-                {formatNumber(monthData.buy)}
-              </Text>
-              <Text style={styles.valueUnit}>kWh</Text>
+        <View style={styles.gridContainer}>
+          {/* Row 1: Buy (Month, Year, Lifetime) */}
+          <View style={styles.row}>
+            {/* Month Buy */}
+            <View style={styles.metricCard}>
+              <Text style={styles.metricLabel}>{t('dashboardEnergyReview.buy')}</Text>
+              <View style={styles.metricValueContainer}>
+                <Text style={[styles.metricValue, styles.buyColor]}>
+                  {formatNumber(monthData.buy)}
+                </Text>
+                <Text style={styles.metricUnit}>kWh</Text>
+              </View>
             </View>
 
-            <View style={styles.divider} />
-
-            <View style={styles.valueBox}>
-              <Text style={styles.valueLabel}>{t('dashboardEnergyReview.sell')}</Text>
-              <Text style={[styles.valueNumber, styles.sellColor]}>
-                {formatNumber(monthData.sell)}
-              </Text>
-              <Text style={styles.valueUnit}>kWh</Text>
+            {/* Year Buy */}
+            <View style={styles.metricCard}>
+              <Text style={styles.metricLabel}>{t('dashboardEnergyReview.buy')}</Text>
+              <View style={styles.metricValueContainer}>
+                <Text style={[styles.metricValue, styles.buyColor]}>
+                  {formatNumber(yearData.buy)}
+                </Text>
+                <Text style={styles.metricUnit}>kWh</Text>
+              </View>
             </View>
 
-            <Text style={styles.columnLabel}>{t('dashboardGridPerformance.month')}</Text>
+            {/* Lifetime Buy */}
+            <View style={styles.metricCard}>
+              <Text style={styles.metricLabel}>{t('dashboardEnergyReview.buy')}</Text>
+              <View style={styles.metricValueContainer}>
+                <Text style={[styles.metricValue, styles.buyColor]}>
+                  {formatNumber(lifetimeData.buy)}
+                </Text>
+                <Text style={styles.metricUnit}>kWh</Text>
+              </View>
+            </View>
           </View>
 
-          {/* Year Column */}
-          <View style={styles.column}>
-            <View style={styles.valueBox}>
-              <Text style={styles.valueLabel}>{t('dashboardEnergyReview.buy')}</Text>
-              <Text style={[styles.valueNumber, styles.buyColor]}>
-                {formatNumber(yearData.buy)}
-              </Text>
-              <Text style={styles.valueUnit}>kWh</Text>
+          {/* Row 2: Sell (Month, Year, Lifetime) */}
+          <View style={styles.row}>
+            {/* Month Sell */}
+            <View style={styles.metricCard}>
+              <Text style={styles.metricLabel}>{t('dashboardEnergyReview.sell')}</Text>
+              <View style={styles.metricValueContainer}>
+                <Text style={[styles.metricValue, styles.sellColor]}>
+                  {formatNumber(monthData.sell)}
+                </Text>
+                <Text style={styles.metricUnit}>kWh</Text>
+              </View>
             </View>
 
-            <View style={styles.divider} />
-
-            <View style={styles.valueBox}>
-              <Text style={styles.valueLabel}>{t('dashboardEnergyReview.sell')}</Text>
-              <Text style={[styles.valueNumber, styles.sellColor]}>
-                {formatNumber(yearData.sell)}
-              </Text>
-              <Text style={styles.valueUnit}>kWh</Text>
+            {/* Year Sell */}
+            <View style={styles.metricCard}>
+              <Text style={styles.metricLabel}>{t('dashboardEnergyReview.sell')}</Text>
+              <View style={styles.metricValueContainer}>
+                <Text style={[styles.metricValue, styles.sellColor]}>
+                  {formatNumber(yearData.sell)}
+                </Text>
+                <Text style={styles.metricUnit}>kWh</Text>
+              </View>
             </View>
 
-            <Text style={styles.columnLabel}>{t('dashboardGridPerformance.year')}</Text>
+            {/* Lifetime Sell */}
+            <View style={styles.metricCard}>
+              <Text style={styles.metricLabel}>{t('dashboardEnergyReview.sell')}</Text>
+              <View style={styles.metricValueContainer}>
+                <Text style={[styles.metricValue, styles.sellColor]}>
+                  {formatNumber(lifetimeData.sell)}
+                </Text>
+                <Text style={styles.metricUnit}>kWh</Text>
+              </View>
+            </View>
           </View>
 
-          {/* Lifetime Column */}
-          <View style={styles.column}>
-            <View style={styles.valueBox}>
-              <Text style={styles.valueLabel}>{t('dashboardEnergyReview.buy')}</Text>
-              <Text style={[styles.valueNumber, styles.buyColor]}>
-                {formatNumber(lifetimeData.buy)}
-              </Text>
-              <Text style={styles.valueUnit}>kWh</Text>
+          {/* Column Headers - Bottom */}
+          <View style={styles.columnHeadersRow}>
+            <View style={styles.columnHeader}>
+              <Text style={styles.columnHeaderText}>{t('dashboardGridPerformance.month')}</Text>
             </View>
-
-            <View style={styles.divider} />
-
-            <View style={styles.valueBox}>
-              <Text style={styles.valueLabel}>{t('dashboardEnergyReview.sell')}</Text>
-              <Text style={[styles.valueNumber, styles.sellColor]}>
-                {formatNumber(lifetimeData.sell)}
-              </Text>
-              <Text style={styles.valueUnit}>kWh</Text>
+            <View style={styles.columnHeader}>
+              <Text style={styles.columnHeaderText}>{t('dashboardGridPerformance.year')}</Text>
             </View>
-
-            <Text style={styles.columnLabel}>{t('dashboardGridPerformance.lifetime')}</Text>
+            <View style={styles.columnHeader}>
+              <Text style={styles.columnHeaderText}>{t('dashboardGridPerformance.lifetime')}</Text>
+            </View>
           </View>
         </View>
       )}
