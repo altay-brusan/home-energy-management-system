@@ -40,8 +40,28 @@ export const dashboardService = {
     return null;
   },
 
-  async getPowerAndEnergyMetrics(deviceId: string, period: string, date: string): Promise<PowerMetricsResponseDto> {
-    const url = `${ENDPOINTS.DASHBOARD.POWER_AND_ENERGY_METRICS}?deviceId=${deviceId}&period=${period}&date=${date}`;
+  async getPowerAndEnergyMetrics(
+    deviceId: string,
+    period: 'day' | 'week' | 'month' | 'year',
+    dateOrYear: string,  // date for day (YYYY-MM-DD), year for others (YYYY)
+    weekOrMonth?: number  // week number (1-52) or month number (1-12)
+  ): Promise<PowerMetricsResponseDto> {
+    let url: string;
+
+    if (period === 'day') {
+      // Day: ?deviceId=xxx&period=day&date=2025-12-03
+      url = `${ENDPOINTS.DASHBOARD.POWER_AND_ENERGY_METRICS}?deviceId=${deviceId}&period=${period}&date=${dateOrYear}`;
+    } else if (period === 'week') {
+      // Week: ?deviceId=xxx&period=week&year=2025&week=49
+      url = `${ENDPOINTS.DASHBOARD.POWER_AND_ENERGY_METRICS}?deviceId=${deviceId}&period=${period}&year=${dateOrYear}&week=${weekOrMonth}`;
+    } else if (period === 'month') {
+      // Month: ?deviceId=xxx&period=month&year=2025&month=12
+      url = `${ENDPOINTS.DASHBOARD.POWER_AND_ENERGY_METRICS}?deviceId=${deviceId}&period=${period}&year=${dateOrYear}&month=${weekOrMonth}`;
+    } else {
+      // Year: ?deviceId=xxx&period=year&year=2025
+      url = `${ENDPOINTS.DASHBOARD.POWER_AND_ENERGY_METRICS}?deviceId=${deviceId}&period=${period}&year=${dateOrYear}`;
+    }
+
     const response = await apiClient.get<PowerMetricsResponseDto>(url);
     return response.data;
   },

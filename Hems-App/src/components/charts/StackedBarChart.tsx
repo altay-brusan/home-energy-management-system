@@ -67,25 +67,50 @@ const StackedBarChart: React.FC<StackedBarChartProps> = ({
       let positive = 0;
       let negative = 0;
 
-      // Sum positive values (stacked)
-      if (visibility.solar && point.solarEnergy > 0) positive += point.solarEnergy;
-      if (visibility.battery && point.batteryEnergy > 0) positive += point.batteryEnergy;
-      if (visibility.grid && point.gridEnergy > 0) positive += point.gridEnergy;
+      // Check if we have new energy fields (Week/Month/Year views)
+      const hasNewFields = point.gridImportEnergy !== undefined ||
+                           point.gridExportEnergy !== undefined ||
+                           point.generatorEnergy !== undefined ||
+                           point.batteryDischargeEnergy !== undefined ||
+                           point.batteryChargeEnergy !== undefined;
 
-      // Sum negative values (stacked)
-      if (visibility.load) negative += Math.abs(point.loadEnergy);
-      if (visibility.battery && point.batteryEnergy < 0) negative += Math.abs(point.batteryEnergy);
-      if (visibility.grid && point.gridEnergy < 0) negative += Math.abs(point.gridEnergy);
+      if (hasNewFields) {
+        // New API fields (Week/Month/Year)
+        // Above x-axis (positive)
+        if (visibility.grid && point.gridExportEnergy) positive += point.gridExportEnergy;
+        if (visibility.battery && point.batteryDischargeEnergy) positive += point.batteryDischargeEnergy;
+        if (visibility.solar && point.solarEnergy > 0) positive += point.solarEnergy;
+
+        // Below x-axis (negative)
+        if (visibility.grid && point.gridImportEnergy) negative += point.gridImportEnergy;
+        if (point.generatorEnergy) negative += point.generatorEnergy;
+        if (visibility.battery && point.batteryChargeEnergy) negative += point.batteryChargeEnergy;
+        if (visibility.load) negative += Math.abs(point.loadEnergy);
+      } else {
+        // Old aggregated fields (Day view - not used in stacked bar charts anymore)
+        // Sum positive values (stacked)
+        if (visibility.solar && point.solarEnergy > 0) positive += point.solarEnergy;
+        if (visibility.battery && point.batteryEnergy > 0) positive += point.batteryEnergy;
+        if (visibility.grid && point.gridEnergy > 0) positive += point.gridEnergy;
+
+        // Sum negative values (stacked)
+        if (visibility.load) negative += Math.abs(point.loadEnergy);
+        if (visibility.battery && point.batteryEnergy < 0) negative += Math.abs(point.batteryEnergy);
+        if (visibility.grid && point.gridEnergy < 0) negative += Math.abs(point.gridEnergy);
+      }
 
       maxPositive = Math.max(maxPositive, positive);
       maxNegative = Math.max(maxNegative, negative);
     });
 
-    // Add 10% padding
-    const paddedMax = maxPositive * 1.1 || 10;
-    const paddedMin = -(maxNegative * 1.1 || 10);
+    // Add 10% padding to both sides
+    const paddedPositive = maxPositive * 1.1 || 10;
+    const paddedNegative = maxNegative * 1.1 || 10;
 
-    return { min: paddedMin, max: paddedMax, range: paddedMax - paddedMin };
+    // Make sure both sides are equal to keep x-axis in the middle
+    const maxAbsolute = Math.max(paddedPositive, paddedNegative);
+
+    return { min: -maxAbsolute, max: maxAbsolute, range: maxAbsolute * 2 };
   };
 
   const { min: yMin, max: yMax, range: yRange } = calculateDomain();
@@ -96,11 +121,11 @@ const StackedBarChart: React.FC<StackedBarChartProps> = ({
   // Bar width calculation with 6px spacing (3px on each side)
   const barSpacing = innerWidth / data.length;
 
-  // Weekly and Yearly views get narrower bars for better appearance
+  // Make bars thinner - especially for weekly view (7 bars)
   const baseBarWidth = Math.max(10, barSpacing - 6);
-  const barWidth = data.length === 7 ? baseBarWidth * 0.35 :
-                   data.length === 12 ? baseBarWidth * 0.45 :
-                   baseBarWidth;
+  const barWidth = data.length === 7 ? baseBarWidth * 0.25 :  // Much thinner for weekly
+                   data.length === 12 ? baseBarWidth * 0.35 : // Thinner for yearly
+                   baseBarWidth * 0.6; // Thinner for monthly
 
   // Dynamic border radius based on view type
   // Week view (7 days) gets larger radius for better appearance
@@ -164,116 +189,270 @@ const StackedBarChart: React.FC<StackedBarChartProps> = ({
   // Render stacked bars
   const renderBars = () => {
     return data.map((point, index) => {
+      // Check if this data point has any actual data (skip empty placeholders)
+      const hasAnyData = point.solarEnergy > 0 ||
+                         point.loadEnergy > 0 ||
+                         (point.gridImportEnergy && point.gridImportEnergy > 0) ||
+                         (point.gridExportEnergy && point.gridExportEnergy > 0) ||
+                         (point.generatorEnergy && point.generatorEnergy > 0) ||
+                         (point.batteryDischargeEnergy && point.batteryDischargeEnergy > 0) ||
+                         (point.batteryChargeEnergy && point.batteryChargeEnergy > 0) ||
+                         point.batteryEnergy !== 0 ||
+                         point.gridEnergy !== 0;
+
+      // If no data, skip rendering bars (but keep the space)
+      if (!hasAnyData) {
+        return null;
+      }
+
       const x = padding.left + index * barSpacing + (barSpacing - barWidth) / 2;
+
+      // Check if we have new energy fields (Week/Month/Year views)
+      const hasNewFields = point.gridImportEnergy !== undefined ||
+                           point.gridExportEnergy !== undefined ||
+                           point.generatorEnergy !== undefined ||
+                           point.batteryDischargeEnergy !== undefined ||
+                           point.batteryChargeEnergy !== undefined;
 
       // Positive stack (from zero upwards)
       let positiveY = zeroY;
       const positiveBars: React.ReactElement[] = [];
 
-      if (visibility.solar && point.solarEnergy > 0) {
-        const barHeight = Math.abs(valueToY(point.solarEnergy) - zeroY);
-        positiveBars.push(
-          <Rect
-            key={`solar-${index}`}
-            x={x}
-            y={positiveY - barHeight}
-            width={barWidth}
-            height={barHeight}
-            fill={colors.solar}
-            rx={borderRadius}
-            ry={borderRadius}
-          />
-        );
-        positiveY -= barHeight;
-      }
+      if (hasNewFields) {
+        // New API fields - Week/Month/Year views
+        // Above x-axis: gridExportEnergy, batteryDischargeEnergy, solarEnergy
 
-      if (visibility.battery && point.batteryEnergy > 0) {
-        const barHeight = Math.abs(valueToY(point.batteryEnergy) - zeroY);
-        positiveBars.push(
-          <Rect
-            key={`battery-discharge-${index}`}
-            x={x}
-            y={positiveY - barHeight}
-            width={barWidth}
-            height={barHeight}
-            fill={colors.battery}
-            rx={borderRadius}
-            ry={borderRadius}
-          />
-        );
-        positiveY -= barHeight;
-      }
+        if (visibility.solar && point.solarEnergy > 0) {
+          const barHeight = Math.abs(valueToY(point.solarEnergy) - zeroY);
+          positiveBars.push(
+            <Rect
+              key={`solar-${index}`}
+              x={x}
+              y={positiveY - barHeight}
+              width={barWidth}
+              height={barHeight}
+              fill={colors.solar}
+              rx={borderRadius}
+              ry={borderRadius}
+            />
+          );
+          positiveY -= barHeight;
+        }
 
-      if (visibility.grid && point.gridEnergy > 0) {
-        const barHeight = Math.abs(valueToY(point.gridEnergy) - zeroY);
-        positiveBars.push(
-          <Rect
-            key={`grid-import-${index}`}
-            x={x}
-            y={positiveY - barHeight}
-            width={barWidth}
-            height={barHeight}
-            fill={colors.grid}
-            rx={borderRadius}
-            ry={borderRadius}
-          />
-        );
-        positiveY -= barHeight;
+        if (visibility.battery && point.batteryDischargeEnergy) {
+          const barHeight = Math.abs(valueToY(point.batteryDischargeEnergy) - zeroY);
+          positiveBars.push(
+            <Rect
+              key={`battery-discharge-${index}`}
+              x={x}
+              y={positiveY - barHeight}
+              width={barWidth}
+              height={barHeight}
+              fill={colors.battery}
+              rx={borderRadius}
+              ry={borderRadius}
+            />
+          );
+          positiveY -= barHeight;
+        }
+
+        if (visibility.grid && point.gridExportEnergy) {
+          const barHeight = Math.abs(valueToY(point.gridExportEnergy) - zeroY);
+          positiveBars.push(
+            <Rect
+              key={`grid-export-${index}`}
+              x={x}
+              y={positiveY - barHeight}
+              width={barWidth}
+              height={barHeight}
+              fill="#8B5CF6"
+              rx={borderRadius}
+              ry={borderRadius}
+            />
+          );
+          positiveY -= barHeight;
+        }
+      } else {
+        // Old aggregated fields (fallback - not used for Week/Month/Year)
+        if (visibility.solar && point.solarEnergy > 0) {
+          const barHeight = Math.abs(valueToY(point.solarEnergy) - zeroY);
+          positiveBars.push(
+            <Rect
+              key={`solar-${index}`}
+              x={x}
+              y={positiveY - barHeight}
+              width={barWidth}
+              height={barHeight}
+              fill={colors.solar}
+              rx={borderRadius}
+              ry={borderRadius}
+            />
+          );
+          positiveY -= barHeight;
+        }
+
+        if (visibility.battery && point.batteryEnergy > 0) {
+          const barHeight = Math.abs(valueToY(point.batteryEnergy) - zeroY);
+          positiveBars.push(
+            <Rect
+              key={`battery-discharge-${index}`}
+              x={x}
+              y={positiveY - barHeight}
+              width={barWidth}
+              height={barHeight}
+              fill={colors.battery}
+              rx={borderRadius}
+              ry={borderRadius}
+            />
+          );
+          positiveY -= barHeight;
+        }
+
+        if (visibility.grid && point.gridEnergy > 0) {
+          const barHeight = Math.abs(valueToY(point.gridEnergy) - zeroY);
+          positiveBars.push(
+            <Rect
+              key={`grid-import-${index}`}
+              x={x}
+              y={positiveY - barHeight}
+              width={barWidth}
+              height={barHeight}
+              fill={colors.grid}
+              rx={borderRadius}
+              ry={borderRadius}
+            />
+          );
+          positiveY -= barHeight;
+        }
       }
 
       // Negative stack (from zero downwards)
       let negativeY = zeroY;
       const negativeBars: React.ReactElement[] = [];
 
-      if (visibility.load) {
-        const barHeight = Math.abs(valueToY(-point.loadEnergy) - zeroY);
-        negativeBars.push(
-          <Rect
-            key={`load-${index}`}
-            x={x}
-            y={negativeY}
-            width={barWidth}
-            height={barHeight}
-            fill={colors.load}
-            rx={borderRadius}
-            ry={borderRadius}
-          />
-        );
-        negativeY += barHeight;
-      }
+      if (hasNewFields) {
+        // New API fields - Week/Month/Year views
+        // Below x-axis: gridImportEnergy, generatorEnergy, batteryChargeEnergy, loadEnergy
 
-      if (visibility.battery && point.batteryEnergy < 0) {
-        const barHeight = Math.abs(valueToY(point.batteryEnergy) - zeroY);
-        negativeBars.push(
-          <Rect
-            key={`battery-charge-${index}`}
-            x={x}
-            y={negativeY}
-            width={barWidth}
-            height={barHeight}
-            fill="#16A34A"
-            rx={borderRadius}
-            ry={borderRadius}
-          />
-        );
-        negativeY += barHeight;
-      }
+        if (visibility.load && point.loadEnergy) {
+          const barHeight = Math.abs(valueToY(-point.loadEnergy) - zeroY);
+          negativeBars.push(
+            <Rect
+              key={`load-${index}`}
+              x={x}
+              y={negativeY}
+              width={barWidth}
+              height={barHeight}
+              fill={colors.load}
+              rx={borderRadius}
+              ry={borderRadius}
+            />
+          );
+          negativeY += barHeight;
+        }
 
-      if (visibility.grid && point.gridEnergy < 0) {
-        const barHeight = Math.abs(valueToY(point.gridEnergy) - zeroY);
-        negativeBars.push(
-          <Rect
-            key={`grid-export-${index}`}
-            x={x}
-            y={negativeY}
-            width={barWidth}
-            height={barHeight}
-            fill="#8B5CF6"
-            rx={borderRadius}
-            ry={borderRadius}
-          />
-        );
-        negativeY += barHeight;
+        if (visibility.battery && point.batteryChargeEnergy) {
+          const barHeight = Math.abs(valueToY(-point.batteryChargeEnergy) - zeroY);
+          negativeBars.push(
+            <Rect
+              key={`battery-charge-${index}`}
+              x={x}
+              y={negativeY}
+              width={barWidth}
+              height={barHeight}
+              fill="#16A34A"
+              rx={borderRadius}
+              ry={borderRadius}
+            />
+          );
+          negativeY += barHeight;
+        }
+
+        if (point.generatorEnergy) {
+          const barHeight = Math.abs(valueToY(-point.generatorEnergy) - zeroY);
+          negativeBars.push(
+            <Rect
+              key={`generator-${index}`}
+              x={x}
+              y={negativeY}
+              width={barWidth}
+              height={barHeight}
+              fill="#F59E0B"
+              rx={borderRadius}
+              ry={borderRadius}
+            />
+          );
+          negativeY += barHeight;
+        }
+
+        if (visibility.grid && point.gridImportEnergy) {
+          const barHeight = Math.abs(valueToY(-point.gridImportEnergy) - zeroY);
+          negativeBars.push(
+            <Rect
+              key={`grid-import-${index}`}
+              x={x}
+              y={negativeY}
+              width={barWidth}
+              height={barHeight}
+              fill={colors.grid}
+              rx={borderRadius}
+              ry={borderRadius}
+            />
+          );
+          negativeY += barHeight;
+        }
+      } else {
+        // Old aggregated fields (fallback)
+        if (visibility.load) {
+          const barHeight = Math.abs(valueToY(-point.loadEnergy) - zeroY);
+          negativeBars.push(
+            <Rect
+              key={`load-${index}`}
+              x={x}
+              y={negativeY}
+              width={barWidth}
+              height={barHeight}
+              fill={colors.load}
+              rx={borderRadius}
+              ry={borderRadius}
+            />
+          );
+          negativeY += barHeight;
+        }
+
+        if (visibility.battery && point.batteryEnergy < 0) {
+          const barHeight = Math.abs(valueToY(point.batteryEnergy) - zeroY);
+          negativeBars.push(
+            <Rect
+              key={`battery-charge-${index}`}
+              x={x}
+              y={negativeY}
+              width={barWidth}
+              height={barHeight}
+              fill="#16A34A"
+              rx={borderRadius}
+              ry={borderRadius}
+            />
+          );
+          negativeY += barHeight;
+        }
+
+        if (visibility.grid && point.gridEnergy < 0) {
+          const barHeight = Math.abs(valueToY(point.gridEnergy) - zeroY);
+          negativeBars.push(
+            <Rect
+              key={`grid-export-${index}`}
+              x={x}
+              y={negativeY}
+              width={barWidth}
+              height={barHeight}
+              fill="#8B5CF6"
+              rx={borderRadius}
+              ry={borderRadius}
+            />
+          );
+          negativeY += barHeight;
+        }
       }
 
       return [...positiveBars, ...negativeBars];
@@ -424,96 +603,192 @@ const StackedBarChart: React.FC<StackedBarChartProps> = ({
         </Svg>
 
         {/* Floating tooltip */}
-        {touchX !== null && selectedDataPoint && (
-          <View
-            style={{
-              position: 'absolute',
-              top: 10,
-              left: Math.max(10, Math.min(touchX - 100, chartWidth - 210)),
-              backgroundColor: cardBgColor,
-              borderRadius: 12,
-              padding: 14,
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.25,
-              shadowRadius: 3.84,
-              elevation: 5,
-              minWidth: 200,
-              borderWidth: 1,
-              borderColor: 'rgba(255, 255, 255, 0.1)',
-            }}
-          >
-            <Text style={{ color: textColor, fontSize: 13, fontWeight: '700', marginBottom: 8 }}>
-              {formatTooltipDate(selectedDataPoint.timestamp, selectedDataPoint.label)}
-            </Text>
-            {visibility.solar && selectedDataPoint.solarEnergy > 0 && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.solar }} />
-                  <Text style={{ color: textColor, fontSize: 12, fontWeight: '500' }}>Solar</Text>
-                </View>
-                <Text style={{ color: textColor, fontSize: 12, fontWeight: '700' }}>
-                  {selectedDataPoint.solarEnergy.toFixed(2)} kWh
-                </Text>
-              </View>
-            )}
-            {visibility.battery && selectedDataPoint.batteryEnergy > 0 && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.battery }} />
-                  <Text style={{ color: textColor, fontSize: 12, fontWeight: '500' }}>Battery Discharged</Text>
-                </View>
-                <Text style={{ color: textColor, fontSize: 12, fontWeight: '700' }}>
-                  {selectedDataPoint.batteryEnergy.toFixed(2)} kWh
-                </Text>
-              </View>
-            )}
-            {visibility.battery && selectedDataPoint.batteryEnergy < 0 && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#16A34A' }} />
-                  <Text style={{ color: textColor, fontSize: 12, fontWeight: '500' }}>Battery Charged</Text>
-                </View>
-                <Text style={{ color: textColor, fontSize: 12, fontWeight: '700' }}>
-                  {Math.abs(selectedDataPoint.batteryEnergy).toFixed(2)} kWh
-                </Text>
-              </View>
-            )}
-            {visibility.grid && selectedDataPoint.gridEnergy > 0 && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.grid }} />
-                  <Text style={{ color: textColor, fontSize: 12, fontWeight: '500' }}>Grid Imported</Text>
-                </View>
-                <Text style={{ color: textColor, fontSize: 12, fontWeight: '700' }}>
-                  {selectedDataPoint.gridEnergy.toFixed(2)} kWh
-                </Text>
-              </View>
-            )}
-            {visibility.grid && selectedDataPoint.gridEnergy < 0 && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#8B5CF6' }} />
-                  <Text style={{ color: textColor, fontSize: 12, fontWeight: '500' }}>Grid Exported</Text>
-                </View>
-                <Text style={{ color: textColor, fontSize: 12, fontWeight: '700' }}>
-                  {Math.abs(selectedDataPoint.gridEnergy).toFixed(2)} kWh
-                </Text>
-              </View>
-            )}
-            {visibility.load && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.load }} />
-                  <Text style={{ color: textColor, fontSize: 12, fontWeight: '500' }}>Load</Text>
-                </View>
-                <Text style={{ color: textColor, fontSize: 12, fontWeight: '700' }}>
-                  {selectedDataPoint.loadEnergy.toFixed(2)} kWh
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
+        {touchX !== null && selectedDataPoint && (() => {
+          // Check if we have new energy fields
+          const hasNewFields = selectedDataPoint.gridImportEnergy !== undefined ||
+                               selectedDataPoint.gridExportEnergy !== undefined ||
+                               selectedDataPoint.generatorEnergy !== undefined ||
+                               selectedDataPoint.batteryDischargeEnergy !== undefined ||
+                               selectedDataPoint.batteryChargeEnergy !== undefined;
+
+          return (
+            <View
+              style={{
+                position: 'absolute',
+                top: 10,
+                left: Math.max(10, Math.min(touchX - 100, chartWidth - 210)),
+                backgroundColor: cardBgColor,
+                borderRadius: 12,
+                padding: 14,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.25,
+                shadowRadius: 3.84,
+                elevation: 5,
+                minWidth: 200,
+                borderWidth: 1,
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+              }}
+            >
+              <Text style={{ color: textColor, fontSize: 13, fontWeight: '700', marginBottom: 8 }}>
+                {formatTooltipDate(selectedDataPoint.timestamp, selectedDataPoint.label)}
+              </Text>
+
+              {hasNewFields ? (
+                <>
+                  {/* New API fields - Week/Month/Year */}
+                  {visibility.solar && selectedDataPoint.solarEnergy > 0 && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.solar }} />
+                        <Text style={{ color: textColor, fontSize: 12, fontWeight: '500' }}>Solar</Text>
+                      </View>
+                      <Text style={{ color: textColor, fontSize: 12, fontWeight: '700' }}>
+                        {selectedDataPoint.solarEnergy.toFixed(2)} kWh
+                      </Text>
+                    </View>
+                  )}
+                  {visibility.battery && selectedDataPoint.batteryDischargeEnergy && selectedDataPoint.batteryDischargeEnergy > 0 && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.battery }} />
+                        <Text style={{ color: textColor, fontSize: 12, fontWeight: '500' }}>Battery Discharged</Text>
+                      </View>
+                      <Text style={{ color: textColor, fontSize: 12, fontWeight: '700' }}>
+                        {selectedDataPoint.batteryDischargeEnergy.toFixed(2)} kWh
+                      </Text>
+                    </View>
+                  )}
+                  {visibility.grid && selectedDataPoint.gridExportEnergy && selectedDataPoint.gridExportEnergy > 0 && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#8B5CF6' }} />
+                        <Text style={{ color: textColor, fontSize: 12, fontWeight: '500' }}>Grid Exported</Text>
+                      </View>
+                      <Text style={{ color: textColor, fontSize: 12, fontWeight: '700' }}>
+                        {selectedDataPoint.gridExportEnergy.toFixed(2)} kWh
+                      </Text>
+                    </View>
+                  )}
+                  {visibility.grid && selectedDataPoint.gridImportEnergy && selectedDataPoint.gridImportEnergy > 0 && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.grid }} />
+                        <Text style={{ color: textColor, fontSize: 12, fontWeight: '500' }}>Grid Imported</Text>
+                      </View>
+                      <Text style={{ color: textColor, fontSize: 12, fontWeight: '700' }}>
+                        {selectedDataPoint.gridImportEnergy.toFixed(2)} kWh
+                      </Text>
+                    </View>
+                  )}
+                  {selectedDataPoint.generatorEnergy && selectedDataPoint.generatorEnergy > 0 && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#F59E0B' }} />
+                        <Text style={{ color: textColor, fontSize: 12, fontWeight: '500' }}>Generator</Text>
+                      </View>
+                      <Text style={{ color: textColor, fontSize: 12, fontWeight: '700' }}>
+                        {selectedDataPoint.generatorEnergy.toFixed(2)} kWh
+                      </Text>
+                    </View>
+                  )}
+                  {visibility.battery && selectedDataPoint.batteryChargeEnergy && selectedDataPoint.batteryChargeEnergy > 0 && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#16A34A' }} />
+                        <Text style={{ color: textColor, fontSize: 12, fontWeight: '500' }}>Battery Charged</Text>
+                      </View>
+                      <Text style={{ color: textColor, fontSize: 12, fontWeight: '700' }}>
+                        {selectedDataPoint.batteryChargeEnergy.toFixed(2)} kWh
+                      </Text>
+                    </View>
+                  )}
+                  {visibility.load && selectedDataPoint.loadEnergy > 0 && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.load }} />
+                        <Text style={{ color: textColor, fontSize: 12, fontWeight: '500' }}>Load</Text>
+                      </View>
+                      <Text style={{ color: textColor, fontSize: 12, fontWeight: '700' }}>
+                        {selectedDataPoint.loadEnergy.toFixed(2)} kWh
+                      </Text>
+                    </View>
+                  )}
+                </>
+              ) : (
+                <>
+                  {/* Old aggregated fields - fallback */}
+                  {visibility.solar && selectedDataPoint.solarEnergy > 0 && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.solar }} />
+                        <Text style={{ color: textColor, fontSize: 12, fontWeight: '500' }}>Solar</Text>
+                      </View>
+                      <Text style={{ color: textColor, fontSize: 12, fontWeight: '700' }}>
+                        {selectedDataPoint.solarEnergy.toFixed(2)} kWh
+                      </Text>
+                    </View>
+                  )}
+                  {visibility.battery && selectedDataPoint.batteryEnergy > 0 && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.battery }} />
+                        <Text style={{ color: textColor, fontSize: 12, fontWeight: '500' }}>Battery Discharged</Text>
+                      </View>
+                      <Text style={{ color: textColor, fontSize: 12, fontWeight: '700' }}>
+                        {selectedDataPoint.batteryEnergy.toFixed(2)} kWh
+                      </Text>
+                    </View>
+                  )}
+                  {visibility.battery && selectedDataPoint.batteryEnergy < 0 && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#16A34A' }} />
+                        <Text style={{ color: textColor, fontSize: 12, fontWeight: '500' }}>Battery Charged</Text>
+                      </View>
+                      <Text style={{ color: textColor, fontSize: 12, fontWeight: '700' }}>
+                        {Math.abs(selectedDataPoint.batteryEnergy).toFixed(2)} kWh
+                      </Text>
+                    </View>
+                  )}
+                  {visibility.grid && selectedDataPoint.gridEnergy > 0 && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.grid }} />
+                        <Text style={{ color: textColor, fontSize: 12, fontWeight: '500' }}>Grid Imported</Text>
+                      </View>
+                      <Text style={{ color: textColor, fontSize: 12, fontWeight: '700' }}>
+                        {selectedDataPoint.gridEnergy.toFixed(2)} kWh
+                      </Text>
+                    </View>
+                  )}
+                  {visibility.grid && selectedDataPoint.gridEnergy < 0 && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#8B5CF6' }} />
+                        <Text style={{ color: textColor, fontSize: 12, fontWeight: '500' }}>Grid Exported</Text>
+                      </View>
+                      <Text style={{ color: textColor, fontSize: 12, fontWeight: '700' }}>
+                        {Math.abs(selectedDataPoint.gridEnergy).toFixed(2)} kWh
+                      </Text>
+                    </View>
+                  )}
+                  {visibility.load && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.load }} />
+                        <Text style={{ color: textColor, fontSize: 12, fontWeight: '500' }}>Load</Text>
+                      </View>
+                      <Text style={{ color: textColor, fontSize: 12, fontWeight: '700' }}>
+                        {selectedDataPoint.loadEnergy.toFixed(2)} kWh
+                      </Text>
+                    </View>
+                  )}
+                </>
+              )}
+            </View>
+          );
+        })()}
       </View>
 
       {/* Legend */}

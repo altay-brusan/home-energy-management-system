@@ -40,6 +40,12 @@ export interface AggregatedEnergyDataPoint {
   batteryEnergy: number; // kWh (net: positive = discharge, negative = charge)
   gridEnergy: number; // kWh (net: positive = import, negative = export)
   loadEnergy: number; // kWh (always positive)
+  // New fields for Week/Month/Year views (from Dashboard API)
+  gridImportEnergy?: number; // kWh (always positive) - below x-axis
+  gridExportEnergy?: number; // kWh (always positive) - above x-axis
+  generatorEnergy?: number; // kWh (always positive) - below x-axis
+  batteryDischargeEnergy?: number; // kWh (always positive) - above x-axis
+  batteryChargeEnergy?: number; // kWh (always positive) - below x-axis
 }
 
 /**

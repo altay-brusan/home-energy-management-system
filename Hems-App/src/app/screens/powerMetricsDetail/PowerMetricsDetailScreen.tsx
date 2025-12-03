@@ -131,50 +131,170 @@ export default function PowerMetricsDetailScreen() {
           break;
         }
         case 'Week': {
-          const weekData = await powerMetrics24HService.getPowerMetricsForWeek(device.id, selectedDate);
-          // Calculate Monday of the week
-          const dayOfWeek = selectedDate.getDay();
-          const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-          const monday = new Date(selectedDate);
-          monday.setDate(selectedDate.getDate() + mondayOffset);
-          monday.setHours(0, 0, 0, 0);
+          // Week view uses stacked bar chart with kWh data
+          // Format: ?period=week&year=2025&week=49
+          const year = selectedDate.getFullYear().toString();
+          const weekNumber = getWeekNumber(selectedDate);
 
-          aggregated = aggregateToWeekDays(weekData, monday);
+          const data = await dashboardService.getPowerAndEnergyMetrics(device.id, 'week', year, weekNumber);
           setPowerMetricsData(null); // No sunrise/sunset for week view
-          console.log('Aggregated Data (Week):', {
-            range: selectedRange,
-            dataPoints: aggregated.length,
-            selectedDate: selectedDate.toISOString(),
-            monday: monday.toISOString()
+
+          // Create a map of API data by day of week
+          const dataByDay = new Map<number, any>();
+          data.data.forEach((point: any) => {
+            const date = new Date(point.timestamp);
+            const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+            dataByDay.set(dayOfWeek, point);
+          });
+
+          // Create 7 data points (Monday to Sunday), with empty data for missing days
+          const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+          aggregated = [];
+
+          for (let i = 0; i < 7; i++) {
+            const dayOfWeek = i === 6 ? 0 : i + 1; // Convert: 0=Mon, 1=Tue, ..., 6=Sun
+            const apiData = dataByDay.get(dayOfWeek);
+
+            if (apiData) {
+              // Has data
+              aggregated.push({
+                timestamp: apiData.timestamp,
+                label: dayLabels[i],
+                solarEnergy: apiData.solarEnergyKWh || 0,
+                batteryEnergy: 0,
+                gridEnergy: 0,
+                loadEnergy: apiData.loadEnergyKWh || 0,
+                gridImportEnergy: apiData.gridImportEnergyKWh || 0,
+                gridExportEnergy: apiData.gridExportEnergyKWh || 0,
+                generatorEnergy: apiData.generatorEnergyKWh || 0,
+                batteryDischargeEnergy: apiData.batteryDischargeEnergyKWh || 0,
+                batteryChargeEnergy: apiData.batteryChargeEnergyKWh || 0,
+              });
+            } else {
+              // No data - empty placeholder
+              aggregated.push({
+                timestamp: '',
+                label: dayLabels[i],
+                solarEnergy: 0,
+                batteryEnergy: 0,
+                gridEnergy: 0,
+                loadEnergy: 0,
+                gridImportEnergy: 0,
+                gridExportEnergy: 0,
+                generatorEnergy: 0,
+                batteryDischargeEnergy: 0,
+                batteryChargeEnergy: 0,
+              });
+            }
+          }
+
+          console.log('Power Metrics Data (Week):', {
+            totalDataPoints: data.data.length,
+            aggregatedPoints: aggregated.length,
+            range: data.range,
+            year,
+            weekNumber
           });
           break;
         }
         case 'Month': {
-          const monthData = await powerMetrics24HService.getPowerMetricsForMonth(device.id, selectedDate);
-          const year = selectedDate.getFullYear();
-          const month = selectedDate.getMonth();
+          // Month view uses stacked bar chart with kWh data
+          // Format: ?period=month&year=2025&month=12
+          const year = selectedDate.getFullYear().toString();
+          const month = selectedDate.getMonth() + 1; // JavaScript months are 0-indexed, API expects 1-12
 
-          aggregated = aggregateToMonthDays(monthData, year, month);
+          const data = await dashboardService.getPowerAndEnergyMetrics(device.id, 'month', year, month);
           setPowerMetricsData(null); // No sunrise/sunset for month view
-          console.log('Aggregated Data (Month):', {
-            range: selectedRange,
-            dataPoints: aggregated.length,
-            selectedDate: selectedDate.toISOString(),
+
+          // Create a map of API data by day number
+          const dataByDay = new Map<number, any>();
+          data.data.forEach((point: any) => {
+            const date = new Date(point.timestamp);
+            const dayNumber = date.getDate(); // 1-31
+            dataByDay.set(dayNumber, point);
+          });
+
+          // Calculate how many days in this month
+          const yearNum = parseInt(year);
+          const daysInMonth = new Date(yearNum, month, 0).getDate();
+
+          // Create data points for all days in the month
+          aggregated = [];
+          for (let day = 1; day <= daysInMonth; day++) {
+            const apiData = dataByDay.get(day);
+
+            if (apiData) {
+              // Has data
+              aggregated.push({
+                timestamp: apiData.timestamp,
+                label: day.toString(),
+                solarEnergy: apiData.solarEnergyKWh || 0,
+                batteryEnergy: 0,
+                gridEnergy: 0,
+                loadEnergy: apiData.loadEnergyKWh || 0,
+                gridImportEnergy: apiData.gridImportEnergyKWh || 0,
+                gridExportEnergy: apiData.gridExportEnergyKWh || 0,
+                generatorEnergy: apiData.generatorEnergyKWh || 0,
+                batteryDischargeEnergy: apiData.batteryDischargeEnergyKWh || 0,
+                batteryChargeEnergy: apiData.batteryChargeEnergyKWh || 0,
+              });
+            } else {
+              // No data - empty placeholder
+              aggregated.push({
+                timestamp: '',
+                label: day.toString(),
+                solarEnergy: 0,
+                batteryEnergy: 0,
+                gridEnergy: 0,
+                loadEnergy: 0,
+                gridImportEnergy: 0,
+                gridExportEnergy: 0,
+                generatorEnergy: 0,
+                batteryDischargeEnergy: 0,
+                batteryChargeEnergy: 0,
+              });
+            }
+          }
+
+          console.log('Power Metrics Data (Month):', {
+            totalDataPoints: data.data.length,
+            aggregatedPoints: aggregated.length,
+            daysInMonth,
+            range: data.range,
             year,
             month
           });
           break;
         }
         case 'Year': {
-          const yearData = await powerMetrics24HService.getPowerMetricsForYear(device.id, selectedDate);
-          const year = selectedDate.getFullYear();
+          // Year view uses stacked bar chart with kWh data
+          // Format: ?period=year&year=2025
+          const year = selectedDate.getFullYear().toString();
 
-          aggregated = aggregateToMonths(yearData, year);
+          const data = await dashboardService.getPowerAndEnergyMetrics(device.id, 'year', year);
           setPowerMetricsData(null); // No sunrise/sunset for year view
-          console.log('Aggregated Data (Year):', {
-            range: selectedRange,
-            dataPoints: aggregated.length,
-            selectedDate: selectedDate.toISOString(),
+          // Map API data to aggregated format for StackedBarChart with month labels
+          const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          aggregated = data.data.map((point: any) => {
+            const date = new Date(point.timestamp);
+            const monthIndex = date.getMonth(); // 0-11
+            return {
+              timestamp: point.timestamp,
+              label: monthLabels[monthIndex],
+              solarEnergy: point.solarEnergyKWh || 0,
+              batteryEnergy: 0,
+              gridEnergy: 0,
+              loadEnergy: point.loadEnergyKWh || 0,
+              gridImportEnergy: point.gridImportEnergyKWh || 0,
+              gridExportEnergy: point.gridExportEnergyKWh || 0,
+              generatorEnergy: point.generatorEnergyKWh || 0,
+              batteryDischargeEnergy: point.batteryDischargeEnergyKWh || 0,
+              batteryChargeEnergy: point.batteryChargeEnergyKWh || 0,
+            };
+          });
+          console.log('Power Metrics Data (Year):', {
+            totalDataPoints: data.data.length,
+            range: data.range,
             year
           });
           break;
