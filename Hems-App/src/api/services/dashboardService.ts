@@ -1,6 +1,7 @@
 import apiClient from '../client/apiClient';
 import { ENDPOINTS } from '../client/config';
 import { MobileDashboardDto, WeatherForecastDto, SocResponseDto } from '../types/dashboard.types';
+import { PowerMetricsResponseDto } from './mobileDashboardService';
 
 export const dashboardService = {
   async getDashboard(): Promise<MobileDashboardDto> {
@@ -37,6 +38,12 @@ export const dashboardService = {
     }
 
     return null;
+  },
+
+  async getPowerAndEnergyMetrics(deviceId: string, period: string): Promise<PowerMetricsResponseDto> {
+    const url = `${ENDPOINTS.DASHBOARD.POWER_AND_ENERGY_METRICS}?deviceId=${deviceId}&period=${period}`;
+    const response = await apiClient.get<PowerMetricsResponseDto>(url);
+    return response.data;
   },
 };
 

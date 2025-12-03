@@ -6,7 +6,8 @@ import { getPowerMetricsChartStyles } from './PowerMetricsChart.styles';
 import { useTranslation } from 'react-i18next';
 import { useSelectedSiteDevice } from '../../../../../../hooks/useSelectedSiteDevice';
 import { useDashboardRefresh } from '../../../../../../hooks/useDashboardRefresh';
-import { mobileDashboardService, PowerMetricsResponseDto } from '../../../../../../api/services/mobileDashboardService';
+import { dashboardService } from '../../../../../../api/services/dashboardService';
+import { PowerMetricsResponseDto } from '../../../../../../api/services/mobileDashboardService';
 
 // History Icon Component
 const HistoryIcon: React.FC<{ color: string }> = ({ color }) => (
@@ -62,8 +63,8 @@ export default function PowerMetricsChart({ COLORS }: Props) {
     }
     setLoading(true);
     try {
-      // Fetch daily power metrics (00:00 to 24:00)
-      const data = await mobileDashboardService.getPowerMetrics(device.id, 'daily');
+      // Fetch daily power metrics from new Dashboard endpoint
+      const data = await dashboardService.getPowerAndEnergyMetrics(device.id, 'daily');
       console.log('✅ Power Metrics loaded:', data.data?.length || 0, 'points');
       setPowerMetricsData(data);
     } catch (error) {
@@ -549,7 +550,7 @@ export default function PowerMetricsChart({ COLORS }: Props) {
                   <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '500' }}>Solar</Text>
                 </View>
                 <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '700' }}>
-                  {selectedDataPoint.solarPower?.toFixed(2) || '0.00'} kWh
+                  {selectedDataPoint.solarPower?.toFixed(0) || '0'} W
                 </Text>
               </View>
             )}
@@ -560,7 +561,7 @@ export default function PowerMetricsChart({ COLORS }: Props) {
                   <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '500' }}>Battery</Text>
                 </View>
                 <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '700' }}>
-                  {selectedDataPoint.batteryPower?.toFixed(2) || '0.00'} kWh
+                  {selectedDataPoint.batteryPower?.toFixed(0) || '0'} W
                 </Text>
               </View>
             )}
@@ -571,7 +572,7 @@ export default function PowerMetricsChart({ COLORS }: Props) {
                   <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '500' }}>Grid</Text>
                 </View>
                 <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '700' }}>
-                  {selectedDataPoint.gridPower?.toFixed(2) || '0.00'} kWh
+                  {selectedDataPoint.gridPower?.toFixed(0) || '0'} W
                 </Text>
               </View>
             )}
@@ -582,7 +583,7 @@ export default function PowerMetricsChart({ COLORS }: Props) {
                   <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '500' }}>Load</Text>
                 </View>
                 <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '700' }}>
-                  {selectedDataPoint.loadPower?.toFixed(2) || '0.00'} kWh
+                  {selectedDataPoint.loadPower?.toFixed(0) || '0'} W
                 </Text>
               </View>
             )}

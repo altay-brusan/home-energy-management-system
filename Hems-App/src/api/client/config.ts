@@ -65,6 +65,7 @@ export const ENDPOINTS = {
     GET_MOBILE: '/MobileDashboard/mobile/get-dashboard',
     GET_COMPONENT_DATA: '/MobileDashboard/mobile/device/:deviceId/component/:componentId/data',
     GET_WEATHER_FORECAST: '/WeatherForecasts',
+    POWER_AND_ENERGY_METRICS: '/Dashboard/PowerAndEnergyMetrics',
   },
   MOBILE_DASHBOARD: {
     HERO: '/MobileDashboard/hero',

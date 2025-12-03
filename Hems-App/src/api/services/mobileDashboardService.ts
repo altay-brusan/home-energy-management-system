@@ -153,6 +153,13 @@ export interface PowerMetricsDataPoint {
   gridPower: number;
   batteryPower: number;
   loadPower: number;
+  generatorPower: number;
+  gridImportEnergyKWh: number | null;
+  gridExportEnergyKWh: number | null;
+  generatorEnergyKWh: number | null;
+  batteryDischargeEnergyKWh: number | null;
+  batteryChargeEnergyKWh: number | null;
+  loadEnergyKWh: number | null;
   unit: string;
 }
 
