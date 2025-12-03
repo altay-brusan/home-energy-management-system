@@ -40,8 +40,8 @@ export const dashboardService = {
     return null;
   },
 
-  async getPowerAndEnergyMetrics(deviceId: string, period: string): Promise<PowerMetricsResponseDto> {
-    const url = `${ENDPOINTS.DASHBOARD.POWER_AND_ENERGY_METRICS}?deviceId=${deviceId}&period=${period}`;
+  async getPowerAndEnergyMetrics(deviceId: string, period: string, date: string): Promise<PowerMetricsResponseDto> {
+    const url = `${ENDPOINTS.DASHBOARD.POWER_AND_ENERGY_METRICS}?deviceId=${deviceId}&period=${period}&date=${date}`;
     const response = await apiClient.get<PowerMetricsResponseDto>(url);
     return response.data;
   },

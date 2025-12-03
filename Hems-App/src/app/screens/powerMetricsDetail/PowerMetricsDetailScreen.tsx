@@ -11,6 +11,7 @@ import { LocaleConfig } from 'react-native-calendars';
 import { useSelectedSiteDevice } from '../../../hooks/useSelectedSiteDevice';
 import { useDashboardRefresh } from '../../../hooks/useDashboardRefresh';
 import { powerMetrics24HService } from '../../../api/services/powerMetrics24HService';
+import { dashboardService } from '../../../api/services/dashboardService';
 import { useThemeStore } from '../../../store/themeStore';
 import { useI18nStore } from '../../../store/i18nStore';
 import { getThemeColors, SPACING } from '../../../theme/constants';
@@ -115,15 +116,17 @@ export default function PowerMetricsDetailScreen() {
 
       switch (selectedRange) {
         case 'Day': {
-          // Day view uses line chart with raw 15-minute data
-          const data = await powerMetrics24HService.getPowerMetrics24H(device.id, selectedDate);
+          // Day view uses line chart with raw data
+          // Format date as YYYY-MM-DD for API
+          const dateString = selectedDate.toISOString().split('T')[0];
+
+          const data = await dashboardService.getPowerAndEnergyMetrics(device.id, 'day', dateString);
           setPowerMetricsData(data);
           // No aggregation needed for day view
           console.log('Power Metrics Data (Day):', {
             totalDataPoints: data.data.length,
-            firstTimestamp: data.data[0]?.timestamp,
-            lastTimestamp: data.data[data.data.length - 1]?.timestamp,
-            selectedDate: selectedDate.toISOString()
+            range: data.range,
+            selectedDate: dateString
           });
           break;
         }
@@ -237,13 +240,28 @@ export default function PowerMetricsDetailScreen() {
   }, []);
 
   const getHourFromTimestamp = (timestamp: string): number => {
-    const date = new Date(timestamp);
-    return date.getHours() + date.getMinutes() / 60;
+    // Handle both formats: "HH:mm" (new API) and full ISO date (old API)
+    if (timestamp.includes(':') && !timestamp.includes('T')) {
+      // New format: "04:18"
+      const [hours, minutes] = timestamp.split(':').map(Number);
+      return hours + minutes / 60;
+    } else {
+      // Old format: full ISO date
+      const date = new Date(timestamp);
+      return date.getHours() + date.getMinutes() / 60;
+    }
   };
 
   const formatTime = (timestamp: string): string => {
-    const date = new Date(timestamp);
-    return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    // Handle both formats: "HH:mm" (new API) and full ISO date (old API)
+    if (timestamp.includes(':') && !timestamp.includes('T')) {
+      // New format: "04:18" - already formatted
+      return timestamp;
+    } else {
+      // Old format: full ISO date
+      const date = new Date(timestamp);
+      return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    }
   };
 
   const createStraightPath = useCallback((points: { x: number; y: number }[]): string => {
@@ -295,9 +313,11 @@ export default function PowerMetricsDetailScreen() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const newDate = new Date(selectedDate);
+    newDate.setHours(0, 0, 0, 0);
 
     if (selectedRange === 'Day') {
       newDate.setDate(newDate.getDate() + 1);
+      // Allow navigating up to and including today
       return newDate.getTime() <= today.getTime();
     } else if (selectedRange === 'Week') {
       newDate.setDate(newDate.getDate() + 7);
@@ -470,8 +490,8 @@ export default function PowerMetricsDetailScreen() {
     const findNearestDataPoint = (x: number) => {
       if (!powerMetricsData?.data) return;
 
-      const sunriseHour = getHourFromTimestamp(powerMetricsData.sunriseTime);
-      const sunsetHour = getHourFromTimestamp(powerMetricsData.sunsetTime);
+      const sunriseHour = powerMetricsData.sunriseTime ? getHourFromTimestamp(powerMetricsData.sunriseTime) : 6;
+      const sunsetHour = powerMetricsData.sunsetTime ? getHourFromTimestamp(powerMetricsData.sunsetTime) : 18;
 
       let nearestPoint = null;
       let minDistance = Infinity;
@@ -493,8 +513,8 @@ export default function PowerMetricsDetailScreen() {
     const getMaxTouchX = () => {
       if (!powerMetricsData?.data || powerMetricsData.data.length === 0) return padding.left + innerWidth;
 
-      const sunriseHour = getHourFromTimestamp(powerMetricsData.sunriseTime);
-      const sunsetHour = getHourFromTimestamp(powerMetricsData.sunsetTime);
+      const sunriseHour = powerMetricsData.sunriseTime ? getHourFromTimestamp(powerMetricsData.sunriseTime) : 6;
+      const sunsetHour = powerMetricsData.sunsetTime ? getHourFromTimestamp(powerMetricsData.sunsetTime) : 18;
       const lastPoint = powerMetricsData.data[powerMetricsData.data.length - 1];
       const lastHour = getHourFromTimestamp(lastPoint.timestamp);
 
@@ -545,8 +565,9 @@ export default function PowerMetricsDetailScreen() {
     }
 
     const dataToShow = powerMetricsData.data;
-    const sunriseHour = getHourFromTimestamp(powerMetricsData.sunriseTime);
-    const sunsetHour = getHourFromTimestamp(powerMetricsData.sunsetTime);
+    // Use default sunrise/sunset times if not provided by API (6:00 and 18:00)
+    const sunriseHour = powerMetricsData.sunriseTime ? getHourFromTimestamp(powerMetricsData.sunriseTime) : 6;
+    const sunsetHour = powerMetricsData.sunsetTime ? getHourFromTimestamp(powerMetricsData.sunsetTime) : 18;
 
     const allValues: number[] = [];
     dataToShow.forEach((point: any) => {
@@ -755,7 +776,7 @@ export default function PowerMetricsDetailScreen() {
                   <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '500' }}>{t('powerMetrics24H.labels.solar')}</Text>
                 </View>
                 <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '700' }}>
-                  {(selectedDataPoint.solarPower / 1000).toFixed(2)} kW
+                  {selectedDataPoint.solarPower?.toFixed(0) || '0'} W
                 </Text>
               </View>
             )}
@@ -766,7 +787,7 @@ export default function PowerMetricsDetailScreen() {
                   <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '500' }}>{t('powerMetrics24H.labels.battery')}</Text>
                 </View>
                 <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '700' }}>
-                  {(selectedDataPoint.batteryPower / 1000).toFixed(2)} kW
+                  {selectedDataPoint.batteryPower?.toFixed(0) || '0'} W
                 </Text>
               </View>
             )}
@@ -777,7 +798,7 @@ export default function PowerMetricsDetailScreen() {
                   <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '500' }}>{t('powerMetrics24H.labels.grid')}</Text>
                 </View>
                 <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '700' }}>
-                  {(selectedDataPoint.gridPower / 1000).toFixed(2)} kW
+                  {selectedDataPoint.gridPower?.toFixed(0) || '0'} W
                 </Text>
               </View>
             )}
@@ -788,7 +809,7 @@ export default function PowerMetricsDetailScreen() {
                   <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '500' }}>{t('powerMetrics24H.labels.load')}</Text>
                 </View>
                 <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '700' }}>
-                  {(selectedDataPoint.loadPower / 1000).toFixed(2)} kW
+                  {selectedDataPoint.loadPower?.toFixed(0) || '0'} W
                 </Text>
               </View>
             )}

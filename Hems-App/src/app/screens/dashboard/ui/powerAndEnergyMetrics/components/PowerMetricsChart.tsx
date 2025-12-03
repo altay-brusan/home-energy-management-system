@@ -63,9 +63,12 @@ export default function PowerMetricsChart({ COLORS }: Props) {
     }
     setLoading(true);
     try {
-      // Fetch daily power metrics from new Dashboard endpoint
-      const data = await dashboardService.getPowerAndEnergyMetrics(device.id, 'daily');
-      console.log('✅ Power Metrics loaded:', data.data?.length || 0, 'points');
+      // Get today's date in YYYY-MM-DD format
+      const today = new Date().toISOString().split('T')[0];
+
+      // Fetch daily power metrics from Dashboard endpoint
+      const data = await dashboardService.getPowerAndEnergyMetrics(device.id, 'day', today);
+      console.log('✅ Power Metrics loaded:', data.data?.length || 0, 'points for', today);
       setPowerMetricsData(data);
     } catch (error) {
       console.error('Failed to load power metrics:', error);
