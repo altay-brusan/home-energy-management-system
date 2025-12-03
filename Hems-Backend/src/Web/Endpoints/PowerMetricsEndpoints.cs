@@ -24,12 +24,20 @@ public static class PowerMetricsEndpoints
             ISender sender,
             Guid deviceId,
             string? period,
+            DateOnly? date,
+            int? year,
+            int? week,
+            int? month,
             CancellationToken cancellationToken) =>
         {
             var query = new GetPowerAndEnergyMetricsQuery
             {
                 DeviceId = deviceId,
-                Period = period ?? "daily"
+                Period = period ?? "day",
+                Date = date,
+                Year = year,
+                Week = week,
+                Month = month
             };
 
             var result = await sender.Send(query, cancellationToken);

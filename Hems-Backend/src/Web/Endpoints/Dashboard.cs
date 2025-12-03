@@ -181,12 +181,20 @@ public class Dashboard : EndpointGroupBase
     public async Task<PowerAndEnergyMetricsResponseDto> PowerAndEnergyMetrics(
         ISender sender,
         [FromQuery] Guid deviceId,
-        [FromQuery] string period)
+        [FromQuery] string period,
+        [FromQuery] DateOnly? date = null,
+        [FromQuery] int? year = null,
+        [FromQuery] int? week = null,
+        [FromQuery] int? month = null)
     {
         var query = new GetPowerAndEnergyMetricsQuery
         {
             DeviceId = deviceId,
-            Period = period
+            Period = period,
+            Date = date,
+            Year = year,
+            Week = week,
+            Month = month
         };
 
         return await sender.Send(query);
