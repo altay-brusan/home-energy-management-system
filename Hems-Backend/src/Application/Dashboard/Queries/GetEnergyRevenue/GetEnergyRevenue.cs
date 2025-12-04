@@ -115,8 +115,9 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
     }
 
     /// <summary>
-    /// Get hourly revenue data for a single day (24 data points)
+    /// Get hourly revenue data for a single day (up to 24 data points, stops at current hour if today)
     /// Calculates revenue from PowerFlow data (5-minute intervals)
+    /// Returns empty array if no data exists for this day
     /// </summary>
     private async Task<List<EnergyRevenueDataPoint>> GetDayDataAsync(Guid thingsBoardDeviceId, DateOnly date, CancellationToken cancellationToken)
     {
@@ -132,13 +133,33 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
             .OrderBy(x => x.DataDateTime)
             .ToListAsync(cancellationToken);
 
+        // If no data exists for this period, return empty array
+        if (!powerFlowData.Any())
+        {
+            return new List<EnergyRevenueDataPoint>();
+        }
+
         // Apply interpolation for missing data (if gaps > 5 minutes)
         var interpolatedData = InterpolatePowerFlowGaps(powerFlowData, TimeSpan.FromMinutes(5));
 
         var result = new List<EnergyRevenueDataPoint>();
+        var now = DateTime.UtcNow;
+        var today = DateTime.UtcNow.Date;
 
-        // Generate 24 hourly data points
-        for (int hour = 0; hour < 24; hour++)
+        // Determine last hour to include (don't include future hours)
+        int lastHour = 23;
+        if (dayStart.Date == today)
+        {
+            lastHour = now.Hour; // Stop at current hour if today
+        }
+        else if (dayStart.Date > today)
+        {
+            // Future date - return empty array
+            return new List<EnergyRevenueDataPoint>();
+        }
+
+        // Generate hourly data points up to lastHour
+        for (int hour = 0; hour <= lastHour; hour++)
         {
             var hourStart = dayStart.AddHours(hour);
             var hourEnd = hourStart.AddHours(1);
@@ -261,7 +282,8 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
     }
 
     /// <summary>
-    /// Get daily revenue data for a specific week (7 days)
+    /// Get daily revenue data for a specific week (up to 7 days, stops at today)
+    /// Returns empty array if no data exists for this week
     /// </summary>
     private async Task<List<EnergyRevenueDataPoint>> GetWeekDataAsync(Guid thingsBoardDeviceId, int year, int week, CancellationToken cancellationToken)
     {
@@ -278,17 +300,31 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
             .OrderBy(x => x.DataDateTime)
             .ToListAsync(cancellationToken);
 
+        // If no data exists for this period, return empty array
+        if (!dailyData.Any())
+        {
+            return new List<EnergyRevenueDataPoint>();
+        }
+
         // Group by date and take the most recent entry for each day
         var latestDailyData = dailyData
             .GroupBy(d => d.DataDateTime.Date)
             .Select(g => g.OrderByDescending(d => d.DataDateTime).First())
             .ToDictionary(d => d.DataDateTime.Date);
 
-        // Generate all 7 days in the week
         var result = new List<EnergyRevenueDataPoint>();
+        var today = DateTime.UtcNow.Date;
+
+        // Generate days in the week up to today (don't include future days)
         for (int i = 0; i < 7; i++)
         {
             var currentDate = weekStartUtc.AddDays(i);
+
+            // Skip future dates
+            if (currentDate.Date > today)
+            {
+                break;
+            }
 
             if (latestDailyData.TryGetValue(currentDate.Date, out var data))
             {
@@ -324,7 +360,8 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
     }
 
     /// <summary>
-    /// Get daily revenue data for a specific month
+    /// Get daily revenue data for a specific month (stops at today if current month)
+    /// Returns empty array if no data exists for this month
     /// </summary>
     private async Task<List<EnergyRevenueDataPoint>> GetMonthDataAsync(Guid thingsBoardDeviceId, int year, int month, CancellationToken cancellationToken)
     {
@@ -339,17 +376,26 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
             .OrderBy(x => x.DataDateTime)
             .ToListAsync(cancellationToken);
 
+        // If no data exists for this period, return empty array
+        if (!dailyData.Any())
+        {
+            return new List<EnergyRevenueDataPoint>();
+        }
+
         // Group by date and take the most recent entry for each day
         var latestDailyData = dailyData
             .GroupBy(d => d.DataDateTime.Date)
             .Select(g => g.OrderByDescending(d => d.DataDateTime).First())
             .ToDictionary(d => d.DataDateTime.Date);
 
-        // Generate all days in the month
         var result = new List<EnergyRevenueDataPoint>();
+        var today = DateTime.UtcNow.Date;
         var currentDate = monthStart;
         var daysInMonth = DateTime.DaysInMonth(year, month);
-        var lastDate = monthStart.AddDays(daysInMonth - 1);
+        var lastDateInMonth = monthStart.AddDays(daysInMonth - 1);
+
+        // Don't include future dates - stop at today if this is current or future month
+        var lastDate = lastDateInMonth < today ? lastDateInMonth : today;
 
         while (currentDate <= lastDate)
         {
@@ -389,7 +435,8 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
     }
 
     /// <summary>
-    /// Get monthly aggregated revenue data for a specific year
+    /// Get monthly aggregated revenue data for a specific year (stops at current month if current year)
+    /// Returns empty array if no data exists for this year
     /// </summary>
     private async Task<List<EnergyRevenueDataPoint>> GetYearDataAsync(Guid thingsBoardDeviceId, int year, CancellationToken cancellationToken)
     {
@@ -403,6 +450,12 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
                        x.DataType == DataTypes.DailyCumulativeEnergy)
             .OrderBy(x => x.DataDateTime)
             .ToListAsync(cancellationToken);
+
+        // If no data exists for this period, return empty array
+        if (!dailyData.Any())
+        {
+            return new List<EnergyRevenueDataPoint>();
+        }
 
         // Group by date and take the most recent entry for each day
         var latestDailyData = dailyData
@@ -421,12 +474,27 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
             })
             .ToDictionary(x => x.Month);
 
-        // Generate all 12 months of the specified year
         var result = new List<EnergyRevenueDataPoint>();
+        var today = DateTime.UtcNow.Date;
+        var currentYear = today.Year;
+        var currentMonth = today.Month;
 
-        for (int currentMonth = 1; currentMonth <= 12; currentMonth++)
+        // Determine last month to include (don't include future months)
+        int lastMonth = 12;
+        if (year == currentYear)
         {
-            if (monthlyData.TryGetValue(currentMonth, out var data))
+            lastMonth = currentMonth; // Stop at current month if this year
+        }
+        else if (year > currentYear)
+        {
+            // Future year - return empty array
+            return new List<EnergyRevenueDataPoint>();
+        }
+
+        // Generate months up to lastMonth
+        for (int month = 1; month <= lastMonth; month++)
+        {
+            if (monthlyData.TryGetValue(month, out var data))
             {
                 var buy = data.Buy;
                 var sell = data.Sell;
@@ -435,7 +503,7 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
 
                 result.Add(new EnergyRevenueDataPoint
                 {
-                    Timestamp = $"{year}-{currentMonth:D2}",
+                    Timestamp = $"{year}-{month:D2}",
                     Buy = Math.Round(buy, 2),
                     Sell = Math.Round(sell, 2),
                     Net = Math.Round(net, 2),
@@ -447,7 +515,7 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
                 // No data for this month, add zeros
                 result.Add(new EnergyRevenueDataPoint
                 {
-                    Timestamp = $"{year}-{currentMonth:D2}",
+                    Timestamp = $"{year}-{month:D2}",
                     Buy = 0,
                     Sell = 0,
                     Net = 0,
