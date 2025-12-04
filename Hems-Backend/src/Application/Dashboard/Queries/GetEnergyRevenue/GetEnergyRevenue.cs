@@ -107,7 +107,13 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
             .OrderBy(x => x.DataDateTime)
             .ToListAsync(cancellationToken);
 
-        return dailyData.Select(d =>
+        // Group by date and take the most recent entry for each day
+        var latestDailyData = dailyData
+            .GroupBy(d => d.DataDateTime.Date)
+            .Select(g => g.OrderByDescending(d => d.DataDateTime).First())
+            .OrderBy(d => d.DataDateTime);
+
+        return latestDailyData.Select(d =>
         {
             var buy = d.GridImportEnergyKWh ?? 0;
             var sell = d.GridExportEnergyKWh ?? 0;
@@ -142,8 +148,13 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
             .OrderBy(x => x.DataDateTime)
             .ToListAsync(cancellationToken);
 
+        // Group by date and take the most recent entry for each day
+        var latestDailyData = dailyData
+            .GroupBy(d => d.DataDateTime.Date)
+            .Select(g => g.OrderByDescending(d => d.DataDateTime).First());
+
         // Group by month and sum the values
-        var monthlyData = dailyData
+        var monthlyData = latestDailyData
             .GroupBy(d => new { d.DataDateTime.Year, d.DataDateTime.Month })
             .Select(g =>
             {
@@ -188,7 +199,13 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
             .OrderBy(x => x.DataDateTime)
             .ToListAsync(cancellationToken);
 
-        return dailyData.Select(d =>
+        // Group by date and take the most recent entry for each day
+        var latestDailyData = dailyData
+            .GroupBy(d => d.DataDateTime.Date)
+            .Select(g => g.OrderByDescending(d => d.DataDateTime).First())
+            .OrderBy(d => d.DataDateTime);
+
+        return latestDailyData.Select(d =>
         {
             var buy = d.GridImportEnergyKWh ?? 0;
             var sell = d.GridExportEnergyKWh ?? 0;
