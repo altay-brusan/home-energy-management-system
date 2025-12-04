@@ -79,7 +79,8 @@ export const ENDPOINTS = {
     POWER_METRICS: '/Dashboard/graphs/PowerMetrics',
     BATTERY: '/Dashboard/graphs/Battery',
     CHARGE_DISCHARGE: '/Dashboard/graphs/ChargeDischarge',
-    GRID_PERFORMANCE: '/Dashboard/graphs/GridPerformance',
+    GRID_PERFORMANCE: '/Dashboard/GridPerformance',
+    GRID_PERFORMANCE_SUMMARY: '/Dashboard/GridPerformanceSummary',
     GET_WEATHER_FORECAST: '/WeatherForecasts/:siteId',
   },
   ROLES: {

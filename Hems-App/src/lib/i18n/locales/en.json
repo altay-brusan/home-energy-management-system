@@ -744,6 +744,10 @@
       "sellLabel": "Grid Sell",
       "noData": "No grid data available"
     },
+    "gridPerformanceDetail": {
+      "selectStartDate": "Start Date",
+      "selectEndDate": "End Date"
+    },
     "dashboardSidebar": {
       "header": "My Houses",
       "addButton": "Add House",

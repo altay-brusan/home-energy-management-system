@@ -4,8 +4,8 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useI18n } from '../../../../../hooks/useI18n';
 import { useDashboardRefresh } from '../../../../../hooks/useDashboardRefresh';
 import { dashboardService } from '../../../../../api/services/dashboardService';
-import { mobileDashboardService } from '../../../../../api/services/mobileDashboardService';
 import { useThemeStore } from '../../../../../store/themeStore';
+import { usePowerFlowStore } from '../../../../../store/powerFlowStore';
 import { getThemeColors } from '../../../../../theme/constants';
 import { createStyles } from './BatteryStateCard.styles';
 import { BatteryStateCardProps } from './BatteryStateCard.types';
@@ -19,7 +19,9 @@ const BatteryStateCard: React.FC<BatteryStateCardProps> = ({ deviceId }) => {
 
   const [loading, setLoading] = useState(true);
   const [soc, setSoc] = useState<number>(0);
-  const [batteryPower, setBatteryPower] = useState<number>(0);
+
+  // Get live battery power from PowerFlowDiagram
+  const batteryPowerKw = usePowerFlowStore(s => s.batteryPowerKw);
 
   const fetchBatteryData = useCallback(async () => {
     if (!deviceId) {
@@ -30,25 +32,12 @@ const BatteryStateCard: React.FC<BatteryStateCardProps> = ({ deviceId }) => {
     try {
       setLoading(true);
 
-      // Fetch SOC from new service and power metrics in parallel
-      const [socValue, powerMetrics] = await Promise.all([
-        dashboardService.getDeviceSoc(deviceId),
-        mobileDashboardService.getPowerMetrics(deviceId, 'today').catch(() => null),
-      ]);
-
+      // Fetch SOC only (battery power comes from PowerFlowDiagram via store)
+      const socValue = await dashboardService.getDeviceSoc(deviceId);
       setSoc(socValue || 0);
-
-      // Get latest battery power from power metrics
-      if (powerMetrics && powerMetrics.data && powerMetrics.data.length > 0) {
-        const latestData = powerMetrics.data[powerMetrics.data.length - 1];
-        setBatteryPower(latestData.batteryPower || 0);
-      } else {
-        setBatteryPower(0);
-      }
     } catch (error) {
       console.error('Error fetching battery data:', error);
       setSoc(0);
-      setBatteryPower(0);
     } finally {
       setLoading(false);
     }
@@ -80,10 +69,12 @@ const BatteryStateCard: React.FC<BatteryStateCardProps> = ({ deviceId }) => {
     );
   }
 
-  // Determine battery state
-  const isCharging = batteryPower < 0;
-  const isDischarging = batteryPower > 0;
-  const isIdle = batteryPower === 0;
+  // Determine battery state based on live battery power from PowerFlowDiagram
+  // Battery power: negative = charging, positive = discharging, zero or near-zero = idle
+  const IDLE_THRESHOLD = 0.01; // kW threshold for idle state
+  const isCharging = batteryPowerKw < -IDLE_THRESHOLD;
+  const isDischarging = batteryPowerKw > IDLE_THRESHOLD;
+  const isIdle = Math.abs(batteryPowerKw) <= IDLE_THRESHOLD;
 
   let statusText = t('batteryStateCard.status.idle');
   if (isCharging) {

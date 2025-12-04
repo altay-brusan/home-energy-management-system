@@ -760,6 +760,10 @@
     "sellLabel": "Şebeke Satım",
     "noData": "Şebeke verisi mevcut değil"
   },
+  "gridPerformanceDetail": {
+    "selectStartDate": "Başlangıç Tarihi",
+    "selectEndDate": "Bitiş Tarihi"
+  },
   "dashboardSidebar": {
     "header": "Evlerim",
     "addButton": "Ev Ekle",

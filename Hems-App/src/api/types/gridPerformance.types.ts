@@ -1,18 +1,27 @@
 // Grid Performance API Types
 
-export type GridPeriod = 'monthly' | 'yearly' | 'lifetime';
+export type GridPeriod = 'monthly' | 'yearly' | 'lifetime' | 'custom';
 
 export interface GridPerformanceResponseDto {
-  period: GridPeriod;
+  period: string;
   data: GridDataPoint[];
-  statistics: GridStatistics;
+  total?: GridTotalData;
+  statistics?: GridStatistics;
 }
 
 export interface GridDataPoint {
   timestamp: string;
-  buyEnergy: number; // Grid'den alınan enerji (kWh)
-  sellEnergy: number; // Grid'e satılan enerji (kWh)
-  unit: string;
+  gridImport: number; // Grid'den alınan enerji (kWh)
+  gridExport: number; // Grid'e satılan enerji (kWh)
+  // Backward compatibility
+  buyEnergy?: number; // Grid'den alınan enerji (kWh)
+  sellEnergy?: number; // Grid'e satılan enerji (kWh)
+  unit?: string;
+}
+
+export interface GridTotalData {
+  totalGridImport: number;
+  totalGridExport: number;
 }
 
 export interface GridStatistics {
@@ -30,4 +39,16 @@ export interface GridStatistics {
 export interface GetGridPerformanceRequest {
   deviceId: string;
   period: GridPeriod;
+}
+
+// Grid Performance Summary API Types
+export interface GridPerformancePeriodSummary {
+  gridImport: number; // Grid'den alınan enerji (kWh)
+  gridExport: number; // Grid'e satılan enerji (kWh)
+}
+
+export interface GridPerformanceSummaryResponseDto {
+  month: GridPerformancePeriodSummary;
+  year: GridPerformancePeriodSummary;
+  lifetime: GridPerformancePeriodSummary;
 }

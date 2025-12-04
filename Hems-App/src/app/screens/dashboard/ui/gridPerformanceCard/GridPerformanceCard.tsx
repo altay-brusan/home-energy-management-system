@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
+import { useNavigation } from '@react-navigation/native';
 import { useThemeStore } from '../../../../../store/themeStore';
 import { getThemeColors } from '../../../../../theme/constants';
 import { useI18n } from '../../../../../hooks/useI18n';
@@ -37,6 +38,7 @@ const GridPerformanceCard: React.FC<GridPerformanceCardProps> = ({ deviceId }) =
   const isDark = mode === 'dark';
   const COLORS = getThemeColors(isDark);
   const { t } = useI18n();
+  const navigation = useNavigation();
   const styles = createStyles(COLORS);
 
   // State
@@ -55,30 +57,25 @@ const GridPerformanceCard: React.FC<GridPerformanceCardProps> = ({ deviceId }) =
     try {
       setLoading(true);
 
-      // Fetch all 3 periods in parallel
-      // Servis artık mock veri döndürüyor (USE_MOCK_DATA = true olduğu sürece)
-      const [monthResponse, yearResponse, lifetimeResponse] = await Promise.all([
-        gridPerformanceService.getGridPerformance(deviceId, 'monthly'),
-        gridPerformanceService.getGridPerformance(deviceId, 'yearly'),
-        gridPerformanceService.getGridPerformance(deviceId, 'lifetime'),
-      ]);
+      // Fetch summary data from the new API endpoint
+      const summaryResponse = await gridPerformanceService.getGridPerformanceSummary(deviceId);
 
       setMonthData({
-        buy: monthResponse.statistics.totalBuy,
-        sell: monthResponse.statistics.totalSell,
+        buy: summaryResponse.month.gridImport,
+        sell: summaryResponse.month.gridExport,
       });
 
       setYearData({
-        buy: yearResponse.statistics.totalBuy,
-        sell: yearResponse.statistics.totalSell,
+        buy: summaryResponse.year.gridImport,
+        sell: summaryResponse.year.gridExport,
       });
 
       setLifetimeData({
-        buy: lifetimeResponse.statistics.totalBuy,
-        sell: lifetimeResponse.statistics.totalSell,
+        buy: summaryResponse.lifetime.gridImport,
+        sell: summaryResponse.lifetime.gridExport,
       });
     } catch (err: any) {
-      console.error('Error fetching grid performance:', err);
+      console.error('Error fetching grid performance summary:', err);
       // Hata durumunda varsayılan değerler
       setMonthData({ buy: 0, sell: 0 });
       setYearData({ buy: 0, sell: 0 });
@@ -108,8 +105,7 @@ const GridPerformanceCard: React.FC<GridPerformanceCardProps> = ({ deviceId }) =
   };
 
   const handleHistoryPress = () => {
-    // TODO: Navigate to historical data screen or show modal
-    console.log('History pressed - GridPerformanceCard');
+    navigation.navigate('GridPerformanceDetail' as never);
   };
 
   if (!deviceId) {

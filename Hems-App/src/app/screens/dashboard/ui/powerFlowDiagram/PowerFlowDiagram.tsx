@@ -6,6 +6,7 @@ import { useI18n } from '../../../../../hooks/useI18n';
 import { useDashboardRefresh } from '../../../../../hooks/useDashboardRefresh';
 import { useSelectedSiteDevice } from '../../../../../hooks/useSelectedSiteDevice';
 import { useThemeStore } from '../../../../../store/themeStore';
+import { usePowerFlowStore } from '../../../../../store/powerFlowStore';
 import { getThemeColors } from '../../../../../theme/constants';
 import { usePowerFlowStream } from '../../../../../hooks/usePowerFlowStream';
 import { dashboardService } from '../../../../../api/services/dashboardService';
@@ -98,6 +99,7 @@ export const PowerFlowDiagram: React.FC = () => {
 
   const { device, hasDevice } = useSelectedSiteDevice();
   const { registerRefreshCallback } = useDashboardRefresh();
+  const { setBatteryPowerKw } = usePowerFlowStore();
 
   const [batterySoc, setBatterySoc] = useState<number | undefined>(undefined);
   const [dataToRender, setDataToRender] = useState<any>(null);
@@ -136,8 +138,10 @@ export const PowerFlowDiagram: React.FC = () => {
         load: powerFlow.loadPowerKw,
       });
       setDataToRender({ ...powerFlow });
+      // Update battery power in store for BatteryStateCard
+      setBatteryPowerKw(powerFlow.batteryPowerKw || 0);
     }
-  }, [powerFlow]);
+  }, [powerFlow, setBatteryPowerKw]);
 
   // Calculate center position
   const centerX = CONTAINER_WIDTH / 2;

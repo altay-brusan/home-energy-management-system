@@ -50,6 +50,7 @@ import {
 import { AdminPage } from '../screens/adminPage';
 import DashboardScreen from '../screens/dashboard/DashboardScreen';
 import PowerMetricsDetailScreen from '../screens/powerMetricsDetail/PowerMetricsDetailScreen';
+import GridPerformanceDetailScreen from '../screens/gridPerformanceDetail/GridPerformanceDetailScreen';
 import EnergyRevenueDetailScreen from '../screens/energyRevenueDetail/EnergyRevenueDetailScreen';
 import DeviceDetail from '../screens/deviceDetail/DeviceDetail';
 import GatewayDetailScreen from '../screens/deviceDetail/GatewayDetailScreen';
@@ -324,6 +325,11 @@ export function RootNavigator () {
             <Stack.Screen
               name="PowerMetricsDetail"
               component={PowerMetricsDetailScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="GridPerformanceDetail"
+              component={GridPerformanceDetailScreen}
               options={{ animation: 'slide_from_right' }}
             />
             <Stack.Screen

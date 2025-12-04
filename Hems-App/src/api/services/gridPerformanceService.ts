@@ -1,10 +1,11 @@
-// import apiClient from '../client/apiClient'; // Will be used when backend is ready
-// import { ENDPOINTS } from '../client/config'; // Will be used when backend is ready
+import apiClient from '../client/apiClient';
+import { ENDPOINTS } from '../client/config';
 import {
   GridPerformanceResponseDto,
   GridPeriod,
   GridDataPoint,
   GridStatistics,
+  GridPerformanceSummaryResponseDto,
 } from '../types/gridPerformance.types';
 
 // Mock veri kontrolü için flag - production'da false olacak
@@ -83,35 +84,63 @@ export const gridPerformanceService = {
   /**
    * Get grid performance data for a device
    * @param deviceId - Device ID
-   * @param period - Time period: 'monthly' | 'yearly' | 'lifetime'
+   * @param period - Time period: 'monthly' | 'yearly' | 'custom'
+   * @param startDate - Start date for custom period (YYYY-MM-DD)
+   * @param endDate - End date for custom period (YYYY-MM-DD)
    * @returns Grid performance data with buy/sell metrics
    */
   async getGridPerformance(
     deviceId: string,
-    period: GridPeriod
+    period: 'monthly' | 'yearly' | 'custom',
+    startDate?: string,
+    endDate?: string
   ): Promise<GridPerformanceResponseDto> {
-    // Mock veri kullan
-    if (USE_MOCK_DATA) {
-      // Simüle edilmiş gecikme
-      await new Promise(resolve => setTimeout(resolve, 500));
-      return this.generateMockGridPerformance(period);
-    }
-
-    // Backend endpoint'i henüz yok, direkt fallback kullan
-    // TODO: Backend hazır olduğunda aşağıdaki kod bloğunu aktif et
-    /*
     try {
-      const url = `${ENDPOINTS.DASHBOARD.GRID_PERFORMANCE}?deviceId=${deviceId}&period=${period}`;
-      const response = await apiClient.get<GridPerformanceResponseDto>(url);
-      return response.data;
-    } catch (error: any) {
-      console.log('GridPerformance endpoint error, using PowerMetrics fallback');
-      return this.getGridPerformanceFromPowerMetrics(deviceId, period);
-    }
-    */
+      let url = `${ENDPOINTS.DASHBOARD.GRID_PERFORMANCE}?deviceId=${deviceId}&period=${period}`;
 
-    // Şimdilik direkt fallback kullan
-    return this.getGridPerformanceFromPowerMetrics(deviceId, period);
+      // Custom period için tarih parametrelerini ekle
+      if (period === 'custom' && startDate && endDate) {
+        url += `&startDate=${startDate}&endDate=${endDate}`;
+      }
+
+      const response = await apiClient.get<GridPerformanceResponseDto>(url);
+
+      // Normalize response - convert gridImport/gridExport to buyEnergy/sellEnergy for backward compatibility
+      const normalizedData = response.data.data.map(point => ({
+        ...point,
+        buyEnergy: point.gridImport ?? point.buyEnergy ?? 0,
+        sellEnergy: point.gridExport ?? point.sellEnergy ?? 0,
+      }));
+
+      // Use total values if available, otherwise calculate from statistics or data
+      const totalBuy = response.data.total?.totalGridImport ??
+                       response.data.statistics?.totalBuy ??
+                       normalizedData.reduce((sum, p) => sum + (p.buyEnergy ?? 0), 0);
+
+      const totalSell = response.data.total?.totalGridExport ??
+                        response.data.statistics?.totalSell ??
+                        normalizedData.reduce((sum, p) => sum + (p.sellEnergy ?? 0), 0);
+
+      return {
+        ...response.data,
+        data: normalizedData,
+        statistics: {
+          totalBuy,
+          totalSell,
+          netBalance: totalSell - totalBuy,
+          averageBuy: normalizedData.length > 0 ? totalBuy / normalizedData.length : 0,
+          averageSell: normalizedData.length > 0 ? totalSell / normalizedData.length : 0,
+          peakBuy: Math.max(...normalizedData.map(p => p.buyEnergy ?? 0)),
+          peakSell: Math.max(...normalizedData.map(p => p.sellEnergy ?? 0)),
+          unit: normalizedData[0]?.unit || 'kWh',
+        }
+      };
+    } catch (error: any) {
+      console.error('GridPerformance endpoint error:', error);
+      // Hata durumunda mock data döndür
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return this.generateMockGridPerformance(period as GridPeriod);
+    }
   },
 
   /**
@@ -191,5 +220,23 @@ export const gridPerformanceService = {
       data: gridDataPoints,
       statistics,
     };
+  },
+
+  /**
+   * Get grid performance summary for a device (month, year, lifetime)
+   * @param deviceId - Device ID
+   * @returns Grid performance summary data with gridImport and gridExport for each period
+   */
+  async getGridPerformanceSummary(
+    deviceId: string
+  ): Promise<GridPerformanceSummaryResponseDto> {
+    try {
+      const url = `${ENDPOINTS.DASHBOARD.GRID_PERFORMANCE_SUMMARY}?deviceId=${deviceId}`;
+      const response = await apiClient.get<GridPerformanceSummaryResponseDto>(url);
+      return response.data;
+    } catch (error: any) {
+      console.error('GridPerformanceSummary endpoint error:', error);
+      throw error;
+    }
   },
 };

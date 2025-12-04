@@ -26,7 +26,8 @@ export const createStyles = (COLORS: Record<string, string>) => {
     columnHeadersRow: {
       flexDirection: 'row',
       gap: SPACING.sm,
-      marginTop: SPACING.sm,
+      marginTop: 4,
+      marginBottom: SPACING.md,
     },
     columnHeader: {
       flex: 1,
@@ -55,7 +56,7 @@ export const createStyles = (COLORS: Record<string, string>) => {
       fontSize: TYPOGRAPHY.xs,
       fontWeight: '600',
       color: COLORS.textSoft,
-      marginBottom: 8,
+      marginBottom: 4,
       textAlign: 'center',
       textTransform: 'uppercase',
     },
