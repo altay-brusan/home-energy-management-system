@@ -101,7 +101,13 @@ public class GetGridPerformanceQueryHandler : IRequestHandler<GetGridPerformance
             .OrderBy(x => x.DataDateTime)
             .ToListAsync(cancellationToken);
 
-        return dailyData.Select(d => new GridPerformanceDataPoint
+        // Group by date and take the most recent entry for each day
+        var latestDailyData = dailyData
+            .GroupBy(d => d.DataDateTime.Date)
+            .Select(g => g.OrderByDescending(d => d.DataDateTime).First())
+            .OrderBy(d => d.DataDateTime);
+
+        return latestDailyData.Select(d => new GridPerformanceDataPoint
         {
             Timestamp = d.DataDateTime.ToString("yyyy-MM-dd"),
             GridImport = Math.Round(d.GridImportEnergyKWh ?? 0, 2),
@@ -126,8 +132,13 @@ public class GetGridPerformanceQueryHandler : IRequestHandler<GetGridPerformance
             .OrderBy(x => x.DataDateTime)
             .ToListAsync(cancellationToken);
 
+        // Group by date and take the most recent entry for each day
+        var latestDailyData = dailyData
+            .GroupBy(d => d.DataDateTime.Date)
+            .Select(g => g.OrderByDescending(d => d.DataDateTime).First());
+
         // Group by month and sum the values
-        var monthlyData = dailyData
+        var monthlyData = latestDailyData
             .GroupBy(d => new { d.DataDateTime.Year, d.DataDateTime.Month })
             .Select(g => new GridPerformanceDataPoint
             {
@@ -162,7 +173,13 @@ public class GetGridPerformanceQueryHandler : IRequestHandler<GetGridPerformance
             .OrderBy(x => x.DataDateTime)
             .ToListAsync(cancellationToken);
 
-        return dailyData.Select(d => new GridPerformanceDataPoint
+        // Group by date and take the most recent entry for each day
+        var latestDailyData = dailyData
+            .GroupBy(d => d.DataDateTime.Date)
+            .Select(g => g.OrderByDescending(d => d.DataDateTime).First())
+            .OrderBy(d => d.DataDateTime);
+
+        return latestDailyData.Select(d => new GridPerformanceDataPoint
         {
             Timestamp = d.DataDateTime.ToString("yyyy-MM-dd"),
             GridImport = Math.Round(d.GridImportEnergyKWh ?? 0, 2),
