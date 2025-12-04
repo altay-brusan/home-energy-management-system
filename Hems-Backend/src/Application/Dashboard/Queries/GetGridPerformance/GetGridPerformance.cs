@@ -85,7 +85,7 @@ public class GetGridPerformanceQueryHandler : IRequestHandler<GetGridPerformance
     }
 
     /// <summary>
-    /// Get daily grid data for the current month
+    /// Get aggregated grid data for the current month
     /// </summary>
     private async Task<List<GridPerformanceDataPoint>> GetMonthlyDataAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
@@ -105,18 +105,25 @@ public class GetGridPerformanceQueryHandler : IRequestHandler<GetGridPerformance
         var latestDailyData = dailyData
             .GroupBy(d => d.DataDateTime.Date)
             .Select(g => g.OrderByDescending(d => d.DataDateTime).First())
-            .OrderBy(d => d.DataDateTime);
+            .ToList();
 
-        return latestDailyData.Select(d => new GridPerformanceDataPoint
+        // Return single aggregated data point for the entire month
+        var totalImport = latestDailyData.Sum(d => d.GridImportEnergyKWh ?? 0);
+        var totalExport = latestDailyData.Sum(d => d.GridExportEnergyKWh ?? 0);
+
+        return new List<GridPerformanceDataPoint>
         {
-            Timestamp = d.DataDateTime.ToString("yyyy-MM-dd"),
-            GridImport = Math.Round(d.GridImportEnergyKWh ?? 0, 2),
-            GridExport = Math.Round(d.GridExportEnergyKWh ?? 0, 2)
-        }).ToList();
+            new GridPerformanceDataPoint
+            {
+                Timestamp = $"{monthStart:yyyy-MM}",
+                GridImport = Math.Round(totalImport, 2),
+                GridExport = Math.Round(totalExport, 2)
+            }
+        };
     }
 
     /// <summary>
-    /// Get monthly aggregated grid data for the current year
+    /// Get aggregated grid data for the current year
     /// </summary>
     private async Task<List<GridPerformanceDataPoint>> GetYearlyDataAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
@@ -135,25 +142,26 @@ public class GetGridPerformanceQueryHandler : IRequestHandler<GetGridPerformance
         // Group by date and take the most recent entry for each day
         var latestDailyData = dailyData
             .GroupBy(d => d.DataDateTime.Date)
-            .Select(g => g.OrderByDescending(d => d.DataDateTime).First());
-
-        // Group by month and sum the values
-        var monthlyData = latestDailyData
-            .GroupBy(d => new { d.DataDateTime.Year, d.DataDateTime.Month })
-            .Select(g => new GridPerformanceDataPoint
-            {
-                Timestamp = $"{g.Key.Year}-{g.Key.Month:D2}",
-                GridImport = Math.Round(g.Sum(d => d.GridImportEnergyKWh ?? 0), 2),
-                GridExport = Math.Round(g.Sum(d => d.GridExportEnergyKWh ?? 0), 2)
-            })
-            .OrderBy(d => d.Timestamp)
+            .Select(g => g.OrderByDescending(d => d.DataDateTime).First())
             .ToList();
 
-        return monthlyData;
+        // Return single aggregated data point for the entire year
+        var totalImport = latestDailyData.Sum(d => d.GridImportEnergyKWh ?? 0);
+        var totalExport = latestDailyData.Sum(d => d.GridExportEnergyKWh ?? 0);
+
+        return new List<GridPerformanceDataPoint>
+        {
+            new GridPerformanceDataPoint
+            {
+                Timestamp = $"{yearStart:yyyy}",
+                GridImport = Math.Round(totalImport, 2),
+                GridExport = Math.Round(totalExport, 2)
+            }
+        };
     }
 
     /// <summary>
-    /// Get daily grid data for a custom date range
+    /// Get aggregated grid data for a custom date range
     /// </summary>
     private async Task<List<GridPerformanceDataPoint>> GetCustomRangeDataAsync(
         Guid thingsBoardDeviceId,
@@ -177,13 +185,20 @@ public class GetGridPerformanceQueryHandler : IRequestHandler<GetGridPerformance
         var latestDailyData = dailyData
             .GroupBy(d => d.DataDateTime.Date)
             .Select(g => g.OrderByDescending(d => d.DataDateTime).First())
-            .OrderBy(d => d.DataDateTime);
+            .ToList();
 
-        return latestDailyData.Select(d => new GridPerformanceDataPoint
+        // Return single aggregated data point for the entire custom range
+        var totalImport = latestDailyData.Sum(d => d.GridImportEnergyKWh ?? 0);
+        var totalExport = latestDailyData.Sum(d => d.GridExportEnergyKWh ?? 0);
+
+        return new List<GridPerformanceDataPoint>
         {
-            Timestamp = d.DataDateTime.ToString("yyyy-MM-dd"),
-            GridImport = Math.Round(d.GridImportEnergyKWh ?? 0, 2),
-            GridExport = Math.Round(d.GridExportEnergyKWh ?? 0, 2)
-        }).ToList();
+            new GridPerformanceDataPoint
+            {
+                Timestamp = $"{rangeStart:yyyy-MM-dd} to {endDate:yyyy-MM-dd}",
+                GridImport = Math.Round(totalImport, 2),
+                GridExport = Math.Round(totalExport, 2)
+            }
+        };
     }
 }
