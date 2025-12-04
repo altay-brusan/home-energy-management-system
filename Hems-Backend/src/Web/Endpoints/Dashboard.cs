@@ -10,6 +10,7 @@ using Hems_Backend.Application.Dashboard.Queries.GetGridPerformance;
 using Hems_Backend.Application.Dashboard.Queries.GetGridPerformanceSummary;
 //using Hems_Backend.Application.Dashboard.Queries.GetHero;
 using Hems_Backend.Application.Dashboard.Queries.GetInverterComponent;
+using Hems_Backend.Application.Dashboard.Queries.GetLifetimeEnergy;
 using Hems_Backend.Application.Dashboard.Queries.GetPowerMetrics;
 using Hems_Backend.Application.Dashboard.Queries.GetSoc;
 using Hems_Backend.Application.Dashboard.Queries.GetSoh;
@@ -36,6 +37,7 @@ public class Dashboard : EndpointGroupBase
             .MapGet(GridPerformanceSummary, "GridPerformanceSummary")
             .MapGet(GridPerformance, "GridPerformance")
             .MapGet(EnergyRevenue, "EnergyRevenue")
+            .MapGet(LifetimeEnergy, "LifetimeEnergy")
             .MapGet(PowerAndEnergyMetrics, "PowerAndEnergyMetrics")
             .MapGet(GetDeviceWithData, "device/GetWithData")
             .MapGet(GetComponentLiveData, "device/component/getComponentLiveData")
@@ -298,6 +300,19 @@ public class Dashboard : EndpointGroupBase
             Period = period,
             StartDate = startDate,
             EndDate = endDate
+        };
+
+        return await sender.Send(query);
+    }
+
+    [Authorize]
+    public async Task<LifetimeEnergyDto?> LifetimeEnergy(
+        ISender sender,
+        [FromQuery] Guid deviceId)
+    {
+        var query = new GetLifetimeEnergyQuery
+        {
+            DeviceId = deviceId
         };
 
         return await sender.Send(query);
