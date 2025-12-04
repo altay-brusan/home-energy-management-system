@@ -346,6 +346,43 @@
         ]
       }
     },
+    "/api/Dashboard/LifetimeEnergy": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "operationId": "LifetimeEnergy",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LifetimeEnergyDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/Dashboard/PowerAndEnergyMetrics": {
       "get": {
         "tags": [
@@ -4545,6 +4582,9 @@
             "items": {
               "$ref": "#/components/schemas/EnergyRevenueDataPoint"
             }
+          },
+          "total": {
+            "$ref": "#/components/schemas/EnergyRevenueTotal"
           }
         }
       },
@@ -4568,6 +4608,42 @@
             "format": "double"
           },
           "price": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "EnergyRevenueTotal": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "buyPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "sellPrice": {
+            "type": "number",
+            "format": "double"
+          },
+          "netPrice": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "LifetimeEnergyDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "gridImport": {
+            "type": "number",
+            "format": "double"
+          },
+          "gridExport": {
             "type": "number",
             "format": "double"
           }
