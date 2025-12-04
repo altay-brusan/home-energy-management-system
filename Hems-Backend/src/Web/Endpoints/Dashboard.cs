@@ -291,15 +291,19 @@ public class Dashboard : EndpointGroupBase
         ISender sender,
         [FromQuery] Guid deviceId,
         [FromQuery] string period,
-        [FromQuery] DateTime? startDate = null,
-        [FromQuery] DateTime? endDate = null)
+        [FromQuery] DateOnly? date = null,
+        [FromQuery] int? year = null,
+        [FromQuery] int? week = null,
+        [FromQuery] int? month = null)
     {
         var query = new GetEnergyRevenueQuery
         {
             DeviceId = deviceId,
             Period = period,
-            StartDate = startDate,
-            EndDate = endDate
+            Date = date,
+            Year = year,
+            Week = week,
+            Month = month
         };
 
         return await sender.Send(query);

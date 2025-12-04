@@ -4,15 +4,27 @@ using Hems_Backend.Application.Devices.Queries.CheckDeviceAccess;
 using Hems_Backend.Domain.Constants;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace Hems_Backend.Application.Dashboard.Queries.GetEnergyRevenue;
 
 public record GetEnergyRevenueQuery : IRequest<EnergyRevenueDto>
 {
     public Guid DeviceId { get; init; }
-    public string Period { get; init; } = string.Empty; // "monthly", "yearly", "custom"
-    public DateTime? StartDate { get; init; }
-    public DateTime? EndDate { get; init; }
+    public string Period { get; init; } = string.Empty; // day, week, month, year
+
+    // For period=day: ISO date format (e.g., 2025-12-03)
+    public DateOnly? Date { get; init; }
+
+    // For period=week: year and week number (e.g., year=2025&week=49)
+    public int? Year { get; init; }
+    public int? Week { get; init; }
+
+    // For period=month: year and month (e.g., year=2025&month=12)
+    public int? Month { get; init; }
+
+    // For period=year: just year (e.g., year=2025)
+    // Year property is already defined above and shared with week/month
 }
 
 public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuery, EnergyRevenueDto>
@@ -51,34 +63,33 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
             throw new ArgumentException($"Device with ID {request.DeviceId} not found or has no ThingsBoard mapping.");
         }
 
-        // Validate period
         var period = request.Period.ToLower();
-        if (period != "monthly" && period != "yearly" && period != "custom")
-        {
-            throw new ArgumentException("Period must be 'monthly', 'yearly', or 'custom'");
-        }
-
-        // Validate custom range
-        if (period == "custom" && (!request.StartDate.HasValue || !request.EndDate.HasValue))
-        {
-            throw new ArgumentException("StartDate and EndDate are required for custom period");
-        }
-
         List<EnergyRevenueDataPoint> dataPoints;
 
         switch (period)
         {
-            case "monthly":
-                dataPoints = await GetMonthlyDataAsync(thingsBoardDeviceId.Value, cancellationToken);
+            case "day":
+                if (!request.Date.HasValue)
+                    throw new ArgumentException("Date is required for period 'day'");
+                dataPoints = await GetDayDataAsync(thingsBoardDeviceId.Value, request.Date.Value, cancellationToken);
                 break;
-            case "yearly":
-                dataPoints = await GetYearlyDataAsync(thingsBoardDeviceId.Value, cancellationToken);
+            case "week":
+                if (!request.Year.HasValue || !request.Week.HasValue)
+                    throw new ArgumentException("Year and Week are required for period 'week'");
+                dataPoints = await GetWeekDataAsync(thingsBoardDeviceId.Value, request.Year.Value, request.Week.Value, cancellationToken);
                 break;
-            case "custom":
-                dataPoints = await GetCustomRangeDataAsync(thingsBoardDeviceId.Value, request.StartDate!.Value, request.EndDate!.Value, cancellationToken);
+            case "month":
+                if (!request.Year.HasValue || !request.Month.HasValue)
+                    throw new ArgumentException("Year and Month are required for period 'month'");
+                dataPoints = await GetMonthDataAsync(thingsBoardDeviceId.Value, request.Year.Value, request.Month.Value, cancellationToken);
+                break;
+            case "year":
+                if (!request.Year.HasValue)
+                    throw new ArgumentException("Year is required for period 'year'");
+                dataPoints = await GetYearDataAsync(thingsBoardDeviceId.Value, request.Year.Value, cancellationToken);
                 break;
             default:
-                throw new ArgumentException($"Invalid period: {period}");
+                throw new ArgumentException($"Invalid period: {period}. Must be one of: day, week, month, year");
         }
 
         // Calculate totals in EUR
@@ -104,12 +115,220 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
     }
 
     /// <summary>
-    /// Get daily revenue data for the current month
+    /// Get hourly revenue data for a single day (24 data points)
+    /// Calculates revenue from PowerFlow data (5-minute intervals)
     /// </summary>
-    private async Task<List<EnergyRevenueDataPoint>> GetMonthlyDataAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
+    private async Task<List<EnergyRevenueDataPoint>> GetDayDataAsync(Guid thingsBoardDeviceId, DateOnly date, CancellationToken cancellationToken)
     {
-        var today = DateTime.UtcNow.Date;
-        var monthStart = new DateTime(today.Year, today.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var dayStart = new DateTime(date.Year, date.Month, date.Day, 0, 0, 0, DateTimeKind.Utc);
+        var dayEnd = dayStart.AddDays(1);
+
+        // Get all PowerFlow data for the day (5-minute intervals)
+        var powerFlowData = await _context.DevicePowerData
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId &&
+                       x.DataDateTime >= dayStart &&
+                       x.DataDateTime < dayEnd &&
+                       x.DataType == DataTypes.PowerFlow)
+            .OrderBy(x => x.DataDateTime)
+            .ToListAsync(cancellationToken);
+
+        // Apply interpolation for missing data (if gaps > 5 minutes)
+        var interpolatedData = InterpolatePowerFlowGaps(powerFlowData, TimeSpan.FromMinutes(5));
+
+        var result = new List<EnergyRevenueDataPoint>();
+
+        // Generate 24 hourly data points
+        for (int hour = 0; hour < 24; hour++)
+        {
+            var hourStart = dayStart.AddHours(hour);
+            var hourEnd = hourStart.AddHours(1);
+
+            // Get all power samples for this hour
+            var hourSamples = interpolatedData
+                .Where(x => x.DataDateTime >= hourStart && x.DataDateTime < hourEnd)
+                .ToList();
+
+            double buyEnergyKWh = 0;
+            double sellEnergyKWh = 0;
+
+            if (hourSamples.Any())
+            {
+                // Calculate energy from power samples
+                // Energy (kWh) = Power (W) * Time (hours) / 1000
+                // For 5-minute intervals: kWh = W * (5/60) / 1000 = W * 0.0833... / 1000
+                const double timeIntervalHours = 5.0 / 60.0; // 5 minutes = 0.0833... hours
+
+                foreach (var sample in hourSamples)
+                {
+                    var gridPowerW = sample.GridTotalPowerW ?? 0;
+
+                    if (gridPowerW > 0)
+                    {
+                        // Positive power = importing from grid (buying)
+                        buyEnergyKWh += (gridPowerW * timeIntervalHours) / 1000.0;
+                    }
+                    else if (gridPowerW < 0)
+                    {
+                        // Negative power = exporting to grid (selling)
+                        sellEnergyKWh += (Math.Abs(gridPowerW) * timeIntervalHours) / 1000.0;
+                    }
+                }
+            }
+
+            // Calculate revenue for this hour
+            var net = sellEnergyKWh - buyEnergyKWh;
+            var price = (sellEnergyKWh * SellPricePerKWh) - (buyEnergyKWh * BuyPricePerKWh);
+
+            result.Add(new EnergyRevenueDataPoint
+            {
+                Timestamp = hourStart.ToString("HH:mm"),
+                Buy = Math.Round(buyEnergyKWh, 3),
+                Sell = Math.Round(sellEnergyKWh, 3),
+                Net = Math.Round(net, 3),
+                Price = Math.Round(price, 2)
+            });
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Interpolate missing power flow data using simple averaging
+    /// When gaps exceed the expected sampling interval, fill with average of surrounding samples
+    /// </summary>
+    private List<Domain.Entities.DevicePowerData> InterpolatePowerFlowGaps(
+        List<Domain.Entities.DevicePowerData> data,
+        TimeSpan expectedInterval)
+    {
+        if (data.Count < 2)
+            return data;
+
+        var interpolated = new List<Domain.Entities.DevicePowerData>();
+
+        for (int i = 0; i < data.Count; i++)
+        {
+            interpolated.Add(data[i]);
+
+            // Check if there's a gap to the next sample
+            if (i < data.Count - 1)
+            {
+                var current = data[i];
+                var next = data[i + 1];
+                var gap = next.DataDateTime - current.DataDateTime;
+
+                // If gap is more than 2x expected interval, interpolate
+                if (gap > expectedInterval * 2)
+                {
+                    var missingIntervals = (int)(gap.TotalMinutes / expectedInterval.TotalMinutes) - 1;
+
+                    // Create interpolated samples
+                    for (int j = 1; j <= missingIntervals; j++)
+                    {
+                        var interpolatedSample = new Domain.Entities.DevicePowerData
+                        {
+                            ThingsBoardDeviceId = current.ThingsBoardDeviceId,
+                            DataDateTime = current.DataDateTime.AddMinutes(expectedInterval.TotalMinutes * j),
+                            DataType = current.DataType,
+                            MessageType = current.MessageType,
+                            PhaseType = current.PhaseType,
+
+                            // Simple linear interpolation (average of current and next)
+                            GridTotalPowerW = InterpolatePowerValue(current.GridTotalPowerW, next.GridTotalPowerW),
+                            PvTotalPowerW = InterpolatePowerValue(current.PvTotalPowerW, next.PvTotalPowerW),
+                            LoadTotalPowerW = InterpolatePowerValue(current.LoadTotalPowerW, next.LoadTotalPowerW),
+                            BatteryPowerW = InterpolatePowerValue(current.BatteryPowerW, next.BatteryPowerW),
+                            GeneratorTotalPowerW = InterpolatePowerValue(current.GeneratorTotalPowerW, next.GeneratorTotalPowerW)
+                        };
+
+                        interpolated.Add(interpolatedSample);
+                    }
+                }
+            }
+        }
+
+        return interpolated;
+    }
+
+    /// <summary>
+    /// Simple averaging interpolation for a single power value
+    /// </summary>
+    private double? InterpolatePowerValue(double? before, double? after)
+    {
+        if (!before.HasValue || !after.HasValue)
+            return before ?? after;
+
+        return (before.Value + after.Value) / 2.0;
+    }
+
+    /// <summary>
+    /// Get daily revenue data for a specific week (7 days)
+    /// </summary>
+    private async Task<List<EnergyRevenueDataPoint>> GetWeekDataAsync(Guid thingsBoardDeviceId, int year, int week, CancellationToken cancellationToken)
+    {
+        // Calculate the start and end dates for the given ISO week
+        var weekStart = ISOWeek.ToDateTime(year, week, DayOfWeek.Monday);
+        var weekStartUtc = DateTime.SpecifyKind(weekStart, DateTimeKind.Utc);
+        var weekEnd = weekStartUtc.AddDays(7);
+
+        var dailyData = await _context.DeviceEnergyData
+            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId &&
+                       x.DataDateTime >= weekStartUtc &&
+                       x.DataDateTime < weekEnd &&
+                       x.DataType == DataTypes.DailyCumulativeEnergy)
+            .OrderBy(x => x.DataDateTime)
+            .ToListAsync(cancellationToken);
+
+        // Group by date and take the most recent entry for each day
+        var latestDailyData = dailyData
+            .GroupBy(d => d.DataDateTime.Date)
+            .Select(g => g.OrderByDescending(d => d.DataDateTime).First())
+            .ToDictionary(d => d.DataDateTime.Date);
+
+        // Generate all 7 days in the week
+        var result = new List<EnergyRevenueDataPoint>();
+        for (int i = 0; i < 7; i++)
+        {
+            var currentDate = weekStartUtc.AddDays(i);
+
+            if (latestDailyData.TryGetValue(currentDate.Date, out var data))
+            {
+                var buy = data.GridImportEnergyKWh ?? 0;
+                var sell = data.GridExportEnergyKWh ?? 0;
+                var net = sell - buy;
+                var price = (sell * SellPricePerKWh) - (buy * BuyPricePerKWh);
+
+                result.Add(new EnergyRevenueDataPoint
+                {
+                    Timestamp = currentDate.ToString("yyyy-MM-dd"),
+                    Buy = Math.Round(buy, 2),
+                    Sell = Math.Round(sell, 2),
+                    Net = Math.Round(net, 2),
+                    Price = Math.Round(price, 2)
+                });
+            }
+            else
+            {
+                // No data for this day, add zeros
+                result.Add(new EnergyRevenueDataPoint
+                {
+                    Timestamp = currentDate.ToString("yyyy-MM-dd"),
+                    Buy = 0,
+                    Sell = 0,
+                    Net = 0,
+                    Price = 0
+                });
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Get daily revenue data for a specific month
+    /// </summary>
+    private async Task<List<EnergyRevenueDataPoint>> GetMonthDataAsync(Guid thingsBoardDeviceId, int year, int month, CancellationToken cancellationToken)
+    {
+        var monthStart = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);
         var monthEnd = monthStart.AddMonths(1);
 
         var dailyData = await _context.DeviceEnergyData
@@ -126,10 +345,11 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
             .Select(g => g.OrderByDescending(d => d.DataDateTime).First())
             .ToDictionary(d => d.DataDateTime.Date);
 
-        // Generate all days in the month up to today
+        // Generate all days in the month
         var result = new List<EnergyRevenueDataPoint>();
         var currentDate = monthStart;
-        var lastDate = today > monthEnd.AddDays(-1) ? monthEnd.AddDays(-1) : today;
+        var daysInMonth = DateTime.DaysInMonth(year, month);
+        var lastDate = monthStart.AddDays(daysInMonth - 1);
 
         while (currentDate <= lastDate)
         {
@@ -169,12 +389,11 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
     }
 
     /// <summary>
-    /// Get monthly aggregated revenue data for the current year
+    /// Get monthly aggregated revenue data for a specific year
     /// </summary>
-    private async Task<List<EnergyRevenueDataPoint>> GetYearlyDataAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
+    private async Task<List<EnergyRevenueDataPoint>> GetYearDataAsync(Guid thingsBoardDeviceId, int year, CancellationToken cancellationToken)
     {
-        var today = DateTime.UtcNow.Date;
-        var yearStart = new DateTime(today.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var yearStart = new DateTime(year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         var yearEnd = yearStart.AddYears(1);
 
         var dailyData = await _context.DeviceEnergyData
@@ -202,12 +421,10 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
             })
             .ToDictionary(x => x.Month);
 
-        // Generate all 12 months of the current year up to current month
+        // Generate all 12 months of the specified year
         var result = new List<EnergyRevenueDataPoint>();
-        var currentMonth = 1;
-        var lastMonth = today.Month;
 
-        while (currentMonth <= lastMonth)
+        for (int currentMonth = 1; currentMonth <= 12; currentMonth++)
         {
             if (monthlyData.TryGetValue(currentMonth, out var data))
             {
@@ -218,7 +435,7 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
 
                 result.Add(new EnergyRevenueDataPoint
                 {
-                    Timestamp = $"{today.Year}-{currentMonth:D2}",
+                    Timestamp = $"{year}-{currentMonth:D2}",
                     Buy = Math.Round(buy, 2),
                     Sell = Math.Round(sell, 2),
                     Net = Math.Round(net, 2),
@@ -230,84 +447,13 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
                 // No data for this month, add zeros
                 result.Add(new EnergyRevenueDataPoint
                 {
-                    Timestamp = $"{today.Year}-{currentMonth:D2}",
+                    Timestamp = $"{year}-{currentMonth:D2}",
                     Buy = 0,
                     Sell = 0,
                     Net = 0,
                     Price = 0
                 });
             }
-
-            currentMonth++;
-        }
-
-        return result;
-    }
-
-    /// <summary>
-    /// Get daily revenue data for a custom date range
-    /// </summary>
-    private async Task<List<EnergyRevenueDataPoint>> GetCustomRangeDataAsync(
-        Guid thingsBoardDeviceId,
-        DateTime startDate,
-        DateTime endDate,
-        CancellationToken cancellationToken)
-    {
-        // Ensure dates are in UTC and normalized to start of day
-        var rangeStart = DateTime.SpecifyKind(startDate.Date, DateTimeKind.Utc);
-        var rangeEnd = DateTime.SpecifyKind(endDate.Date.AddDays(1), DateTimeKind.Utc); // Include the end date
-
-        var dailyData = await _context.DeviceEnergyData
-            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId &&
-                       x.DataDateTime >= rangeStart &&
-                       x.DataDateTime < rangeEnd &&
-                       x.DataType == DataTypes.DailyCumulativeEnergy)
-            .OrderBy(x => x.DataDateTime)
-            .ToListAsync(cancellationToken);
-
-        // Group by date and take the most recent entry for each day
-        var latestDailyData = dailyData
-            .GroupBy(d => d.DataDateTime.Date)
-            .Select(g => g.OrderByDescending(d => d.DataDateTime).First())
-            .ToDictionary(d => d.DataDateTime.Date);
-
-        // Generate all days in the custom range
-        var result = new List<EnergyRevenueDataPoint>();
-        var currentDate = rangeStart;
-        var lastDate = DateTime.SpecifyKind(endDate.Date, DateTimeKind.Utc);
-
-        while (currentDate <= lastDate)
-        {
-            if (latestDailyData.TryGetValue(currentDate, out var data))
-            {
-                var buy = data.GridImportEnergyKWh ?? 0;
-                var sell = data.GridExportEnergyKWh ?? 0;
-                var net = sell - buy;
-                var price = (sell * SellPricePerKWh) - (buy * BuyPricePerKWh);
-
-                result.Add(new EnergyRevenueDataPoint
-                {
-                    Timestamp = currentDate.ToString("yyyy-MM-dd"),
-                    Buy = Math.Round(buy, 2),
-                    Sell = Math.Round(sell, 2),
-                    Net = Math.Round(net, 2),
-                    Price = Math.Round(price, 2)
-                });
-            }
-            else
-            {
-                // No data for this day, add zeros
-                result.Add(new EnergyRevenueDataPoint
-                {
-                    Timestamp = currentDate.ToString("yyyy-MM-dd"),
-                    Buy = 0,
-                    Sell = 0,
-                    Net = 0,
-                    Price = 0
-                });
-            }
-
-            currentDate = currentDate.AddDays(1);
         }
 
         return result;
