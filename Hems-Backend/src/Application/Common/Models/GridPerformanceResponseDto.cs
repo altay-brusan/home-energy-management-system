@@ -15,6 +15,11 @@ public record GridPerformanceResponseDto
     /// List of data points for the specified period
     /// </summary>
     public List<GridPerformanceDataPoint> Data { get; init; } = new();
+
+    /// <summary>
+    /// Total aggregated values for the entire period
+    /// </summary>
+    public GridPerformanceTotal Total { get; init; } = new();
 }
 
 /// <summary>
@@ -37,4 +42,21 @@ public record GridPerformanceDataPoint
     /// Energy exported to grid (sold) in kWh
     /// </summary>
     public double GridExport { get; init; }
+}
+
+/// <summary>
+/// Total aggregated values for grid performance
+/// All energy values in kWh
+/// </summary>
+public record GridPerformanceTotal
+{
+    /// <summary>
+    /// Total energy imported from grid (bought) in kWh
+    /// </summary>
+    public double TotalGridImport { get; init; }
+
+    /// <summary>
+    /// Total energy exported to grid (sold) in kWh
+    /// </summary>
+    public double TotalGridExport { get; init; }
 }

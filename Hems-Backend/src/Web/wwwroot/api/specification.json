@@ -66,43 +66,6 @@
         ]
       }
     },
-    "/api/Components/DeviceSummary": {
-      "get": {
-        "tags": [
-          "Components"
-        ],
-        "operationId": "GetDeviceSummary",
-        "parameters": [
-          {
-            "name": "deviceId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DeviceSummaryResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
     "/api/Dashboard/Soc": {
       "get": {
         "tags": [
@@ -809,6 +772,43 @@
         "responses": {
           "200": {
             "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/DeviceComponents/DeviceSummary": {
+      "get": {
+        "tags": [
+          "DeviceComponents"
+        ],
+        "operationId": "GetDeviceSummary",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceSummaryResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4302,43 +4302,6 @@
           }
         }
       },
-      "DeviceSummaryResponseDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "components": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ComponentSummaryDto"
-            }
-          }
-        }
-      },
-      "ComponentSummaryDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
-          "type": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "model": {
-            "type": "string"
-          },
-          "manufacturer": {
-            "type": "string"
-          },
-          "serialNumber": {
-            "type": "string"
-          }
-        }
-      },
       "SocResponseDto": {
         "type": "object",
         "additionalProperties": false,
@@ -4525,6 +4488,9 @@
             "items": {
               "$ref": "#/components/schemas/GridPerformanceDataPoint"
             }
+          },
+          "total": {
+            "$ref": "#/components/schemas/GridPerformanceTotal"
           }
         }
       },
@@ -4540,6 +4506,20 @@
             "format": "double"
           },
           "gridExport": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "GridPerformanceTotal": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "totalGridImport": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalGridExport": {
             "type": "number",
             "format": "double"
           }
@@ -4946,6 +4926,43 @@
           2,
           3
         ]
+      },
+      "DeviceSummaryResponseDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "components": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ComponentSummaryDto"
+            }
+          }
+        }
+      },
+      "ComponentSummaryDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "type": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "manufacturer": {
+            "type": "string"
+          },
+          "serialNumber": {
+            "type": "string"
+          }
+        }
       },
       "CreateDeviceComponentCommand": {
         "type": "object",
