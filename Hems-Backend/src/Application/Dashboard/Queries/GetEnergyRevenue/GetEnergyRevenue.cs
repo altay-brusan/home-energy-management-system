@@ -81,11 +81,12 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
                 throw new ArgumentException($"Invalid period: {period}");
         }
 
-        // Calculate totals
-        var totalBuy = dataPoints.Sum(d => d.Buy);
-        var totalSell = dataPoints.Sum(d => d.Sell);
-        var totalNet = dataPoints.Sum(d => d.Net);
-        var totalPrice = dataPoints.Sum(d => d.Price);
+        // Calculate totals in EUR
+        var totalBuyKWh = dataPoints.Sum(d => d.Buy);
+        var totalSellKWh = dataPoints.Sum(d => d.Sell);
+        var totalBuyPrice = totalBuyKWh * BuyPricePerKWh;
+        var totalSellPrice = totalSellKWh * SellPricePerKWh;
+        var totalNetPrice = totalSellPrice - totalBuyPrice;
 
         return new EnergyRevenueDto
         {
@@ -95,10 +96,9 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
             Data = dataPoints,
             Total = new EnergyRevenueTotal
             {
-                Buy = Math.Round(totalBuy, 2),
-                Sell = Math.Round(totalSell, 2),
-                Net = Math.Round(totalNet, 2),
-                Price = Math.Round(totalPrice, 2)
+                BuyPrice = Math.Round(totalBuyPrice, 2),
+                SellPrice = Math.Round(totalSellPrice, 2),
+                NetPrice = Math.Round(totalNetPrice, 2)
             }
         };
     }
