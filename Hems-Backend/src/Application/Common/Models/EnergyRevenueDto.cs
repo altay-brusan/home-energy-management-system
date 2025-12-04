@@ -24,6 +24,11 @@ public record EnergyRevenueDto
     /// List of revenue data points for the specified period
     /// </summary>
     public List<EnergyRevenueDataPoint> Data { get; init; } = new();
+
+    /// <summary>
+    /// Total aggregated values for the entire period
+    /// </summary>
+    public EnergyRevenueTotal Total { get; init; } = new();
 }
 
 /// <summary>
@@ -54,6 +59,35 @@ public record EnergyRevenueDataPoint
 
     /// <summary>
     /// Calculated revenue/cost in EUR
+    /// Formula: (Sell × SellPrice) - (Buy × BuyPrice)
+    /// Positive = revenue/profit, Negative = cost/loss
+    /// </summary>
+    public double Price { get; init; }
+}
+
+/// <summary>
+/// Total aggregated values for energy revenue
+/// </summary>
+public record EnergyRevenueTotal
+{
+    /// <summary>
+    /// Total energy purchased from grid in kWh
+    /// </summary>
+    public double Buy { get; init; }
+
+    /// <summary>
+    /// Total energy sold to grid in kWh
+    /// </summary>
+    public double Sell { get; init; }
+
+    /// <summary>
+    /// Total net energy (Sell - Buy) in kWh
+    /// Positive = net export, Negative = net import
+    /// </summary>
+    public double Net { get; init; }
+
+    /// <summary>
+    /// Total calculated revenue/cost in EUR
     /// Formula: (Sell × SellPrice) - (Buy × BuyPrice)
     /// Positive = revenue/profit, Negative = cost/loss
     /// </summary>
