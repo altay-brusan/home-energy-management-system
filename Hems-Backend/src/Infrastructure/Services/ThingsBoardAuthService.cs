@@ -1,16 +1,14 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using System.Net.Http.Json;
 using Microsoft.Extensions.Configuration;
+using Hems_Backend.Application.Common.Interfaces;
 
-namespace Hems_Backend.Web.Infrastructure;
+namespace Hems_Backend.Infrastructure.Services;
 
-public interface IThingsBoardAuthService
-{
-    Task<string> GetJwtAsync(CancellationToken ct = default);
-}
-
-
-
+/// <summary>
+/// Implementation of ThingsBoard authentication service
+/// Manages JWT token lifecycle with caching
+/// </summary>
 public class ThingsBoardAuthService : IThingsBoardAuthService
 {
     private readonly HttpClient _httpClient;
