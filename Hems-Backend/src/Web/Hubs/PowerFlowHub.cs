@@ -39,6 +39,8 @@ public class PowerFlowHub : Hub
         int intervalSeconds,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
+        Console.WriteLine($"PowerFlowHub - StreamPowerFlow started for device {deviceId}, interval: {intervalSeconds}s");
+        
         // ✅ Security: check that current user has access to this device,
         // same logic as DeviceNotificationHub.ValidateDeviceAccessAsync
         //await ValidateDeviceAccessAsync(deviceId);
@@ -56,10 +58,12 @@ public class PowerFlowHub : Hub
             try
             {
                 dto = await _powerFlowService.GetPowerFlowAsync(deviceId, cancellationToken);
+                Console.WriteLine($"PowerFlowHub - Got powerflow data for device {deviceId}: {dto != null}");
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
                 // normal shutdown
+                Console.WriteLine($"PowerFlowHub - Cancelled for device {deviceId}");
                 yield break;
             }
             catch (Exception ex)
