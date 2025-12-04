@@ -167,4 +167,35 @@ public class DeviceHeartbeatCache : IDeviceHeartbeatCache
         var cacheKey = $"{CacheKeyPrefix}{thingsBoardDeviceId}";
         return _cache.Get<DeviceHeartbeatStatus>(cacheKey);
     }
+
+    public Task AddDeviceToCacheAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken = default)
+    {
+        if (thingsBoardDeviceId == Guid.Empty)
+        {
+            _logger.LogWarning("Attempted to add empty device ID to cache");
+            return Task.CompletedTask;
+        }
+
+        // Add to the list of all active devices
+        var activeDevices = _cache.Get<List<Guid>>(AllDevicesKey) ?? new List<Guid>();
+        if (!activeDevices.Contains(thingsBoardDeviceId))
+        {
+            activeDevices.Add(thingsBoardDeviceId);
+            _cache.Set(AllDevicesKey, activeDevices, TimeSpan.FromHours(24));
+        }
+
+        // Initialize heartbeat status for the new device
+        var cacheKey = $"{CacheKeyPrefix}{thingsBoardDeviceId}";
+        var status = new DeviceHeartbeatStatus
+        {
+            ThingsBoardDeviceId = thingsBoardDeviceId,
+            LastSeen = DateTime.UtcNow,
+            IsOnline = true,
+            HeartbeatAttempts = 0
+        };
+        _cache.Set(cacheKey, status, TimeSpan.FromDays(1));
+
+        _logger.LogInformation("Added new device {DeviceId} to heartbeat cache", thingsBoardDeviceId);
+        return Task.CompletedTask;
+    }
 }
