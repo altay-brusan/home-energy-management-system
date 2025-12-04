@@ -1,0 +1,31 @@
+WifiProvisioningRequest {
+   "timestampUtc": string,
+   "version": number,
+   "DeviceId": string,
+  
+   "gatewayId": string,             // SN / MAC / your internal id
+
+  // How this update should be applied
+  "mode": "replace_all" | "append" | "forget_all",
+
+  // Country / regulatory region (optional but useful for Wi-Fi stack)
+  "countryCode": string,           // e.g. "NL", "TR", "DE"
+
+  // List of Wi-Fi profiles the gateway should know
+  "wifiProfiles": [
+    {
+      "profileId": string,         // logical name, e.g. "home_primary"
+
+      "ssid": string,              // Wi-Fi network name
+      "password": string,          // plain or already encrypted by app
+      "security": "WPA2_PSK" | "WPA3_PSK" | "OPEN",
+
+      "hidden": bool,              // true if SSID is not broadcast
+      "priority": number,          // 1 = highest priority, larger = lower
+
+      // Optional flags you might want later
+      "connectAutomatically": bool, // auto-connect on boot / reconnect
+      "metered": bool               // if you want to treat as metered (LTE hotspot, etc.)
+    }
+  ]
+}

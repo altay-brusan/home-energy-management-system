@@ -1,0 +1,22 @@
+ExternalRelayConfigState {
+  "timestampUtc": string,
+  "gatewayId": string,
+  "inverterSerialNumber": string,
+  "version": string,
+
+  // Global feature flag from inverter:
+  // Reg 178 Bit8–9 = 11 → external relay feature enabled
+  "externalRelayFeatureEnabled": bool,      // 178 Bits8–9
+
+  // Which relay bits actually exist (0..7) – reg194 is a bitmask
+  "relayBitmapRaw": number,                 // 194  Bit0–8 correspond to 8 relay positions
+
+  "relays": [
+    {
+      "relayId": number,                    // 0..7, matches bit index in 194
+      "logicalRole": "generator_start" | "alarm" | "dry_contact" | "spare",
+      "normallyOpen": bool,                 // your wiring choice
+      "description": string                 // free text, e.g. "GV – diesel start contactor"
+    }
+  ]
+}

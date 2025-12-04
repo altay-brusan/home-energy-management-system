@@ -1,0 +1,10 @@
+BatteryThresholdConfigState {
+  "timestampUtc": string,
+  "gatewayId": string,
+  "inverterSerialNumber": string,
+
+  // Capacity-based thresholds (lithium use)
+  "shutdownCapacityPercent": number,   // 115
+  "restartCapacityPercent": number,    // 116
+  "lowBatteryCapacityPercent": number  // 117
+}

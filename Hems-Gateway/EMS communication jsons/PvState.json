@@ -1,0 +1,14 @@
+PvState {
+  "timestampUtc": string,
+  "version": number,
+  "DeviceId": string,
+
+  "mppt": [
+    {
+      "pvChannelId": number,
+      "voltageV": number,    // from 676/678/680/682
+      "currentA": number,    // from 677/679/681/683
+      "powerW": number       // from 672/673/674/675
+    }
+  ]
+}

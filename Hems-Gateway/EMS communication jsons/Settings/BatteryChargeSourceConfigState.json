@@ -1,0 +1,19 @@
+BatteryChargeSourceConfigState {
+  "timestampUtc": string,
+  "gatewayId": string,
+  "inverterSerialNumber": string,
+
+  "generator": {
+    "enabled": bool,              // 129: Generator charge enable
+    "startSocPercent": number,    // 124: start charging when SOC < this
+    "chargeCurrentA": number,     // 125: generator → battery current
+    "maxRunTimeHours": number,    // 121: 0.1 h units
+    "coolingTimeHours": number    // 122: 0.1 h units
+  },
+
+  "grid": {
+    "enabled": bool,              // 130: Grid charge enable
+    "startSocPercent": number,    // 127: grid charge start SOC
+    "chargeCurrentA": number      // 128: grid charge current
+  }
+}
