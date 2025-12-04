@@ -4,9 +4,11 @@ using Hems_Backend.Application.DeviceComponents.Commands.DeleteDeviceComponent;
 using Hems_Backend.Application.DeviceComponents.Commands.UpdateDeviceComponent;
 using Hems_Backend.Application.DeviceComponents.Queries.GetDeviceComponentById;
 using Hems_Backend.Application.DeviceComponents.Queries.GetDeviceComponentsByDeviceId;
+using Hems_Backend.Application.DeviceComponents.Queries.GetDeviceSummary;
 using Hems_Backend.Domain.Constants;
 using Hems_Backend.Web.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Hems_Backend.Web.Endpoints;
 
@@ -18,6 +20,7 @@ public class DeviceComponents : EndpointGroupBase
             .RequireAuthorization()
             .MapGet(GetDeviceComponentsByDeviceId, "Device/{deviceId}")
             .MapGet(GetDeviceComponent, "{id}")
+            .MapGet(GetDeviceSummary, "DeviceSummary")
             .MapPost(CreateDeviceComponent)
             .MapPut(UpdateDeviceComponent, "{id}")
             .MapDelete(DeleteDeviceComponent, "{id}");
@@ -70,5 +73,18 @@ public class DeviceComponents : EndpointGroupBase
     {
         await sender.Send(new DeleteDeviceComponentCommand { Id = id });
         return Results.NoContent();
+    }
+
+    [Authorize]
+    public async Task<DeviceSummaryResponseDto> GetDeviceSummary(
+        ISender sender,
+        [FromQuery] Guid deviceId)
+    {
+        var query = new GetDeviceSummaryQuery
+        {
+            DeviceId = deviceId
+        };
+
+        return await sender.Send(query);
     }
 }
