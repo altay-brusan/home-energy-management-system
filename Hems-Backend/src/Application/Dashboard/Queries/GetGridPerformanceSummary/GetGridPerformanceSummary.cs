@@ -77,8 +77,14 @@ public class GetGridPerformanceSummaryQueryHandler : IRequestHandler<GetGridPerf
                        x.DataType == DataTypes.DailyCumulativeEnergy)
             .ToListAsync(cancellationToken);
 
-        var totalImport = monthlyData.Sum(x => x.GridImportEnergyKWh ?? 0);
-        var totalExport = monthlyData.Sum(x => x.GridExportEnergyKWh ?? 0);
+        // Group by date and take the most recent entry for each day to handle duplicates
+        var latestDailyData = monthlyData
+            .GroupBy(d => d.DataDateTime.Date)
+            .Select(g => g.OrderByDescending(d => d.DataDateTime).First())
+            .ToList();
+
+        var totalImport = latestDailyData.Sum(x => x.GridImportEnergyKWh ?? 0);
+        var totalExport = latestDailyData.Sum(x => x.GridExportEnergyKWh ?? 0);
 
         return new GridEnergyPeriodDto
         {
@@ -103,8 +109,14 @@ public class GetGridPerformanceSummaryQueryHandler : IRequestHandler<GetGridPerf
                        x.DataType == DataTypes.DailyCumulativeEnergy)
             .ToListAsync(cancellationToken);
 
-        var totalImport = yearlyData.Sum(x => x.GridImportEnergyKWh ?? 0);
-        var totalExport = yearlyData.Sum(x => x.GridExportEnergyKWh ?? 0);
+        // Group by date and take the most recent entry for each day to handle duplicates
+        var latestDailyData = yearlyData
+            .GroupBy(d => d.DataDateTime.Date)
+            .Select(g => g.OrderByDescending(d => d.DataDateTime).First())
+            .ToList();
+
+        var totalImport = latestDailyData.Sum(x => x.GridImportEnergyKWh ?? 0);
+        var totalExport = latestDailyData.Sum(x => x.GridExportEnergyKWh ?? 0);
 
         return new GridEnergyPeriodDto
         {
@@ -114,29 +126,24 @@ public class GetGridPerformanceSummaryQueryHandler : IRequestHandler<GetGridPerf
     }
 
     /// <summary>
-    /// Get lifetime grid energy from most recent LifetimeEnergy record
+    /// Get lifetime grid energy by summing all DailyCumulativeEnergy records
     /// </summary>
     private async Task<GridEnergyPeriodDto> GetLifetimeGridEnergyAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
     {
-        // Get the most recent lifetime energy record
-        var lifetimeRecord = await _context.DeviceEnergyData
+        // Get ALL daily cumulative energy records for this device
+        var allDailyData = await _context.DeviceEnergyData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId &&
-                       x.DataType == DataTypes.LifetimeEnergy)
-            .OrderByDescending(x => x.DataDateTime)
-            .FirstOrDefaultAsync(cancellationToken);
+                       x.DataType == DataTypes.DailyCumulativeEnergy)
+            .ToListAsync(cancellationToken);
 
-        if (lifetimeRecord == null)
-        {
-            // No lifetime data available, return zeros
-            return new GridEnergyPeriodDto
-            {
-                GridImport = 0,
-                GridExport = 0
-            };
-        }
+        // Group by date and take the most recent entry for each day to handle duplicates
+        var latestDailyData = allDailyData
+            .GroupBy(d => d.DataDateTime.Date)
+            .Select(g => g.OrderByDescending(d => d.DataDateTime).First())
+            .ToList();
 
-        var totalImport = lifetimeRecord.GridImportEnergyKWh ?? 0;
-        var totalExport = lifetimeRecord.GridExportEnergyKWh ?? 0;
+        var totalImport = latestDailyData.Sum(x => x.GridImportEnergyKWh ?? 0);
+        var totalExport = latestDailyData.Sum(x => x.GridExportEnergyKWh ?? 0);
 
         return new GridEnergyPeriodDto
         {
