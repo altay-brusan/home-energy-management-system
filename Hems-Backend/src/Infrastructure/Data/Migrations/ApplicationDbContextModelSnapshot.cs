@@ -412,6 +412,35 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.ToTable("DeviceEnergyData", (string)null);
                 });
 
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceHeartbeat", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("AttemptNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ResponseMessage")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ResponseReceivedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("ThingsBoardDeviceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DeviceHeartbeats");
+                });
+
             modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceNotification", b =>
                 {
                     b.Property<Guid>("Id")
