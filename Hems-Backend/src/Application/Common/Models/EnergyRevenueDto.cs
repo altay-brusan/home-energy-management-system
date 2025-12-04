@@ -71,25 +71,18 @@ public record EnergyRevenueDataPoint
 public record EnergyRevenueTotal
 {
     /// <summary>
-    /// Total energy purchased from grid in kWh
+    /// Total cost of energy purchased from grid in EUR
     /// </summary>
-    public double Buy { get; init; }
+    public double BuyPrice { get; init; }
 
     /// <summary>
-    /// Total energy sold to grid in kWh
+    /// Total revenue from energy sold to grid in EUR
     /// </summary>
-    public double Sell { get; init; }
+    public double SellPrice { get; init; }
 
     /// <summary>
-    /// Total net energy (Sell - Buy) in kWh
-    /// Positive = net export, Negative = net import
+    /// Net revenue/cost in EUR (SellPrice - BuyPrice)
+    /// Positive = net revenue/profit, Negative = net cost/loss
     /// </summary>
-    public double Net { get; init; }
-
-    /// <summary>
-    /// Total calculated revenue/cost in EUR
-    /// Formula: (Sell × SellPrice) - (Buy × BuyPrice)
-    /// Positive = revenue/profit, Negative = cost/loss
-    /// </summary>
-    public double Price { get; init; }
+    public double NetPrice { get; init; }
 }
