@@ -65,6 +65,11 @@ public static class DependencyInjection
         // Timezone Service with caching
         builder.Services.AddScoped<ITimezoneService, TimezoneService>();
 
+        // Device Heartbeat Services
+        builder.Services.AddSingleton<IDeviceHeartbeatCache, DeviceHeartbeatCache>();
+        builder.Services.AddHttpClient<IHeartbeatSender, HeartbeatSender>();
+        builder.Services.AddHostedService<DeviceHeartbeatMonitorService>();
+
         // ThingsBoard Services
         builder.Services.AddHttpClient<IThingsBoardConnectorService, ThingsBoardConnectorService>();
         

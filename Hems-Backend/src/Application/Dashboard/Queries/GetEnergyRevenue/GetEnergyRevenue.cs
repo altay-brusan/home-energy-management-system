@@ -124,24 +124,48 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
         var latestDailyData = dailyData
             .GroupBy(d => d.DataDateTime.Date)
             .Select(g => g.OrderByDescending(d => d.DataDateTime).First())
-            .OrderBy(d => d.DataDateTime);
+            .ToDictionary(d => d.DataDateTime.Date);
 
-        return latestDailyData.Select(d =>
+        // Generate all days in the month up to today
+        var result = new List<EnergyRevenueDataPoint>();
+        var currentDate = monthStart;
+        var lastDate = today > monthEnd.AddDays(-1) ? monthEnd.AddDays(-1) : today;
+
+        while (currentDate <= lastDate)
         {
-            var buy = d.GridImportEnergyKWh ?? 0;
-            var sell = d.GridExportEnergyKWh ?? 0;
-            var net = sell - buy;
-            var price = (sell * SellPricePerKWh) - (buy * BuyPricePerKWh);
-
-            return new EnergyRevenueDataPoint
+            if (latestDailyData.TryGetValue(currentDate, out var data))
             {
-                Timestamp = d.DataDateTime.ToString("yyyy-MM-dd"),
-                Buy = Math.Round(buy, 2),
-                Sell = Math.Round(sell, 2),
-                Net = Math.Round(net, 2),
-                Price = Math.Round(price, 2)
-            };
-        }).ToList();
+                var buy = data.GridImportEnergyKWh ?? 0;
+                var sell = data.GridExportEnergyKWh ?? 0;
+                var net = sell - buy;
+                var price = (sell * SellPricePerKWh) - (buy * BuyPricePerKWh);
+
+                result.Add(new EnergyRevenueDataPoint
+                {
+                    Timestamp = currentDate.ToString("yyyy-MM-dd"),
+                    Buy = Math.Round(buy, 2),
+                    Sell = Math.Round(sell, 2),
+                    Net = Math.Round(net, 2),
+                    Price = Math.Round(price, 2)
+                });
+            }
+            else
+            {
+                // No data for this day, add zeros
+                result.Add(new EnergyRevenueDataPoint
+                {
+                    Timestamp = currentDate.ToString("yyyy-MM-dd"),
+                    Buy = 0,
+                    Sell = 0,
+                    Net = 0,
+                    Price = 0
+                });
+            }
+
+            currentDate = currentDate.AddDays(1);
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -169,26 +193,55 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
         // Group by month and sum the values
         var monthlyData = latestDailyData
             .GroupBy(d => new { d.DataDateTime.Year, d.DataDateTime.Month })
-            .Select(g =>
+            .Select(g => new
             {
-                var buy = g.Sum(d => d.GridImportEnergyKWh ?? 0);
-                var sell = g.Sum(d => d.GridExportEnergyKWh ?? 0);
+                Year = g.Key.Year,
+                Month = g.Key.Month,
+                Buy = g.Sum(d => d.GridImportEnergyKWh ?? 0),
+                Sell = g.Sum(d => d.GridExportEnergyKWh ?? 0)
+            })
+            .ToDictionary(x => x.Month);
+
+        // Generate all 12 months of the current year up to current month
+        var result = new List<EnergyRevenueDataPoint>();
+        var currentMonth = 1;
+        var lastMonth = today.Month;
+
+        while (currentMonth <= lastMonth)
+        {
+            if (monthlyData.TryGetValue(currentMonth, out var data))
+            {
+                var buy = data.Buy;
+                var sell = data.Sell;
                 var net = sell - buy;
                 var price = (sell * SellPricePerKWh) - (buy * BuyPricePerKWh);
 
-                return new EnergyRevenueDataPoint
+                result.Add(new EnergyRevenueDataPoint
                 {
-                    Timestamp = $"{g.Key.Year}-{g.Key.Month:D2}",
+                    Timestamp = $"{today.Year}-{currentMonth:D2}",
                     Buy = Math.Round(buy, 2),
                     Sell = Math.Round(sell, 2),
                     Net = Math.Round(net, 2),
                     Price = Math.Round(price, 2)
-                };
-            })
-            .OrderBy(d => d.Timestamp)
-            .ToList();
+                });
+            }
+            else
+            {
+                // No data for this month, add zeros
+                result.Add(new EnergyRevenueDataPoint
+                {
+                    Timestamp = $"{today.Year}-{currentMonth:D2}",
+                    Buy = 0,
+                    Sell = 0,
+                    Net = 0,
+                    Price = 0
+                });
+            }
 
-        return monthlyData;
+            currentMonth++;
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -216,23 +269,47 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
         var latestDailyData = dailyData
             .GroupBy(d => d.DataDateTime.Date)
             .Select(g => g.OrderByDescending(d => d.DataDateTime).First())
-            .OrderBy(d => d.DataDateTime);
+            .ToDictionary(d => d.DataDateTime.Date);
 
-        return latestDailyData.Select(d =>
+        // Generate all days in the custom range
+        var result = new List<EnergyRevenueDataPoint>();
+        var currentDate = rangeStart;
+        var lastDate = DateTime.SpecifyKind(endDate.Date, DateTimeKind.Utc);
+
+        while (currentDate <= lastDate)
         {
-            var buy = d.GridImportEnergyKWh ?? 0;
-            var sell = d.GridExportEnergyKWh ?? 0;
-            var net = sell - buy;
-            var price = (sell * SellPricePerKWh) - (buy * BuyPricePerKWh);
-
-            return new EnergyRevenueDataPoint
+            if (latestDailyData.TryGetValue(currentDate, out var data))
             {
-                Timestamp = d.DataDateTime.ToString("yyyy-MM-dd"),
-                Buy = Math.Round(buy, 2),
-                Sell = Math.Round(sell, 2),
-                Net = Math.Round(net, 2),
-                Price = Math.Round(price, 2)
-            };
-        }).ToList();
+                var buy = data.GridImportEnergyKWh ?? 0;
+                var sell = data.GridExportEnergyKWh ?? 0;
+                var net = sell - buy;
+                var price = (sell * SellPricePerKWh) - (buy * BuyPricePerKWh);
+
+                result.Add(new EnergyRevenueDataPoint
+                {
+                    Timestamp = currentDate.ToString("yyyy-MM-dd"),
+                    Buy = Math.Round(buy, 2),
+                    Sell = Math.Round(sell, 2),
+                    Net = Math.Round(net, 2),
+                    Price = Math.Round(price, 2)
+                });
+            }
+            else
+            {
+                // No data for this day, add zeros
+                result.Add(new EnergyRevenueDataPoint
+                {
+                    Timestamp = currentDate.ToString("yyyy-MM-dd"),
+                    Buy = 0,
+                    Sell = 0,
+                    Net = 0,
+                    Price = 0
+                });
+            }
+
+            currentDate = currentDate.AddDays(1);
+        }
+
+        return result;
     }
 }

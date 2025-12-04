@@ -25,6 +25,7 @@ public class PowerFlowService : IPowerFlowService
     private readonly HttpClient _httpClient;
     private readonly IThingsBoardAuthService _authService;
     private readonly IDeviceMappingService _deviceMapping;
+    private readonly IDeviceHeartbeatCache _heartbeatCache;
     private readonly string _tbBaseUrl;
     private readonly JsonSerializerOptions _jsonOptions;
 
@@ -33,12 +34,14 @@ public class PowerFlowService : IPowerFlowService
         HttpClient httpClient,
         IConfiguration configuration,
         IThingsBoardAuthService authService,
-        IDeviceMappingService deviceMapping)
+        IDeviceMappingService deviceMapping,
+        IDeviceHeartbeatCache heartbeatCache)
     {
         _context = context;
         _httpClient = httpClient;
         _authService = authService;
         _deviceMapping = deviceMapping;
+        _heartbeatCache = heartbeatCache;
 
         _tbBaseUrl = configuration["ThingsBoard:BaseUrl"]
                      ?? "http://localhost";   // fallback for dev
@@ -88,6 +91,9 @@ public class PowerFlowService : IPowerFlowService
             stream, _jsonOptions, cancellationToken);
 
         if (rpcState == null) return null;
+
+        // Mark device as alive in heartbeat cache when powerflow data is received
+        await _heartbeatCache.MarkDeviceAliveAsync(thingsBoardDeviceId.Value, cancellationToken);
 
         return MapToPowerFlowDto(deviceId, rpcState);
     }
