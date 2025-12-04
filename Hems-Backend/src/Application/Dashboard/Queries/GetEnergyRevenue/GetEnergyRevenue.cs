@@ -115,53 +115,149 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
     }
 
     /// <summary>
-    /// Get revenue data for a single day (returns one data point for the day)
+    /// Get hourly revenue data for a single day (24 data points)
+    /// Calculates revenue from PowerFlow data (5-minute intervals)
     /// </summary>
     private async Task<List<EnergyRevenueDataPoint>> GetDayDataAsync(Guid thingsBoardDeviceId, DateOnly date, CancellationToken cancellationToken)
     {
         var dayStart = new DateTime(date.Year, date.Month, date.Day, 0, 0, 0, DateTimeKind.Utc);
         var dayEnd = dayStart.AddDays(1);
 
-        var dailyData = await _context.DeviceEnergyData
+        // Get all PowerFlow data for the day (5-minute intervals)
+        var powerFlowData = await _context.DevicePowerData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId &&
                        x.DataDateTime >= dayStart &&
                        x.DataDateTime < dayEnd &&
-                       x.DataType == DataTypes.DailyCumulativeEnergy)
-            .OrderByDescending(x => x.DataDateTime)
-            .FirstOrDefaultAsync(cancellationToken);
+                       x.DataType == DataTypes.PowerFlow)
+            .OrderBy(x => x.DataDateTime)
+            .ToListAsync(cancellationToken);
+
+        // Apply interpolation for missing data (if gaps > 5 minutes)
+        var interpolatedData = InterpolatePowerFlowGaps(powerFlowData, TimeSpan.FromMinutes(5));
 
         var result = new List<EnergyRevenueDataPoint>();
 
-        if (dailyData != null)
+        // Generate 24 hourly data points
+        for (int hour = 0; hour < 24; hour++)
         {
-            var buy = dailyData.GridImportEnergyKWh ?? 0;
-            var sell = dailyData.GridExportEnergyKWh ?? 0;
-            var net = sell - buy;
-            var price = (sell * SellPricePerKWh) - (buy * BuyPricePerKWh);
+            var hourStart = dayStart.AddHours(hour);
+            var hourEnd = hourStart.AddHours(1);
+
+            // Get all power samples for this hour
+            var hourSamples = interpolatedData
+                .Where(x => x.DataDateTime >= hourStart && x.DataDateTime < hourEnd)
+                .ToList();
+
+            double buyEnergyKWh = 0;
+            double sellEnergyKWh = 0;
+
+            if (hourSamples.Any())
+            {
+                // Calculate energy from power samples
+                // Energy (kWh) = Power (W) * Time (hours) / 1000
+                // For 5-minute intervals: kWh = W * (5/60) / 1000 = W * 0.0833... / 1000
+                const double timeIntervalHours = 5.0 / 60.0; // 5 minutes = 0.0833... hours
+
+                foreach (var sample in hourSamples)
+                {
+                    var gridPowerW = sample.GridTotalPowerW ?? 0;
+
+                    if (gridPowerW > 0)
+                    {
+                        // Positive power = importing from grid (buying)
+                        buyEnergyKWh += (gridPowerW * timeIntervalHours) / 1000.0;
+                    }
+                    else if (gridPowerW < 0)
+                    {
+                        // Negative power = exporting to grid (selling)
+                        sellEnergyKWh += (Math.Abs(gridPowerW) * timeIntervalHours) / 1000.0;
+                    }
+                }
+            }
+
+            // Calculate revenue for this hour
+            var net = sellEnergyKWh - buyEnergyKWh;
+            var price = (sellEnergyKWh * SellPricePerKWh) - (buyEnergyKWh * BuyPricePerKWh);
 
             result.Add(new EnergyRevenueDataPoint
             {
-                Timestamp = dayStart.ToString("yyyy-MM-dd"),
-                Buy = Math.Round(buy, 2),
-                Sell = Math.Round(sell, 2),
-                Net = Math.Round(net, 2),
+                Timestamp = hourStart.ToString("HH:mm"),
+                Buy = Math.Round(buyEnergyKWh, 3),
+                Sell = Math.Round(sellEnergyKWh, 3),
+                Net = Math.Round(net, 3),
                 Price = Math.Round(price, 2)
-            });
-        }
-        else
-        {
-            // No data for this day, add zeros
-            result.Add(new EnergyRevenueDataPoint
-            {
-                Timestamp = dayStart.ToString("yyyy-MM-dd"),
-                Buy = 0,
-                Sell = 0,
-                Net = 0,
-                Price = 0
             });
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Interpolate missing power flow data using simple averaging
+    /// When gaps exceed the expected sampling interval, fill with average of surrounding samples
+    /// </summary>
+    private List<Domain.Entities.DevicePowerData> InterpolatePowerFlowGaps(
+        List<Domain.Entities.DevicePowerData> data,
+        TimeSpan expectedInterval)
+    {
+        if (data.Count < 2)
+            return data;
+
+        var interpolated = new List<Domain.Entities.DevicePowerData>();
+
+        for (int i = 0; i < data.Count; i++)
+        {
+            interpolated.Add(data[i]);
+
+            // Check if there's a gap to the next sample
+            if (i < data.Count - 1)
+            {
+                var current = data[i];
+                var next = data[i + 1];
+                var gap = next.DataDateTime - current.DataDateTime;
+
+                // If gap is more than 2x expected interval, interpolate
+                if (gap > expectedInterval * 2)
+                {
+                    var missingIntervals = (int)(gap.TotalMinutes / expectedInterval.TotalMinutes) - 1;
+
+                    // Create interpolated samples
+                    for (int j = 1; j <= missingIntervals; j++)
+                    {
+                        var interpolatedSample = new Domain.Entities.DevicePowerData
+                        {
+                            ThingsBoardDeviceId = current.ThingsBoardDeviceId,
+                            DataDateTime = current.DataDateTime.AddMinutes(expectedInterval.TotalMinutes * j),
+                            DataType = current.DataType,
+                            MessageType = current.MessageType,
+                            PhaseType = current.PhaseType,
+
+                            // Simple linear interpolation (average of current and next)
+                            GridTotalPowerW = InterpolatePowerValue(current.GridTotalPowerW, next.GridTotalPowerW),
+                            PvTotalPowerW = InterpolatePowerValue(current.PvTotalPowerW, next.PvTotalPowerW),
+                            LoadTotalPowerW = InterpolatePowerValue(current.LoadTotalPowerW, next.LoadTotalPowerW),
+                            BatteryPowerW = InterpolatePowerValue(current.BatteryPowerW, next.BatteryPowerW),
+                            GeneratorTotalPowerW = InterpolatePowerValue(current.GeneratorTotalPowerW, next.GeneratorTotalPowerW)
+                        };
+
+                        interpolated.Add(interpolatedSample);
+                    }
+                }
+            }
+        }
+
+        return interpolated;
+    }
+
+    /// <summary>
+    /// Simple averaging interpolation for a single power value
+    /// </summary>
+    private double? InterpolatePowerValue(double? before, double? after)
+    {
+        if (!before.HasValue || !after.HasValue)
+            return before ?? after;
+
+        return (before.Value + after.Value) / 2.0;
     }
 
     /// <summary>
