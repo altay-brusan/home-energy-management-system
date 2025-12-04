@@ -34,6 +34,11 @@ public interface IDeviceHeartbeatCache
     /// Get device heartbeat status
     /// </summary>
     DeviceHeartbeatStatus? GetDeviceStatus(Guid thingsBoardDeviceId);
+
+    /// <summary>
+    /// Add a newly created device to the heartbeat cache
+    /// </summary>
+    Task AddDeviceToCacheAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>

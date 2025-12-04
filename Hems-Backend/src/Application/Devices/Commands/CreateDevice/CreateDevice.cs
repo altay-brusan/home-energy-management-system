@@ -42,17 +42,20 @@ public class CreateDeviceCommandHandler : IRequestHandler<CreateDeviceCommand, G
     private readonly IUser _user;
     private readonly TimeProvider _timeProvider;
     private readonly IThingsBoardConnectorService _tbConnector;
+    private readonly IDeviceHeartbeatCache _heartbeatCache;
 
     public CreateDeviceCommandHandler(
         IApplicationDbContext context, 
         IUser user, 
         TimeProvider timeProvider,
-        IThingsBoardConnectorService tbConnector)
+        IThingsBoardConnectorService tbConnector,
+        IDeviceHeartbeatCache heartbeatCache)
     {
         _context = context;
         _user = user;
         _timeProvider = timeProvider;
         _tbConnector = tbConnector;
+        _heartbeatCache = heartbeatCache;
     }
 
     public async Task<Guid> Handle(CreateDeviceCommand request, CancellationToken cancellationToken)
@@ -127,6 +130,9 @@ public class CreateDeviceCommandHandler : IRequestHandler<CreateDeviceCommand, G
         }
 
         await _context.SaveChangesAsync(cancellationToken);
+
+        // Add the newly created device to the heartbeat cache
+        await _heartbeatCache.AddDeviceToCacheAsync(entity.ThingsBoardDeviceId, cancellationToken);
 
         return entity.Id;
     }
