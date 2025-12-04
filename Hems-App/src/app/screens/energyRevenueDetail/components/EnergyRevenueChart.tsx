@@ -12,61 +12,10 @@ interface EnergyTransaction {
 interface EnergyRevenueChartProps {
   data: EnergyTransaction[];
   height: number;
-  range: 'Week' | 'Month' | 'Year';
+  range: 'Day' | 'Week' | 'Month' | 'Year';
   cardBgColor?: string;
   textColor?: string;
 }
-
-// Generate mock data - bugünden sonraki günleri dahil etme
-const generateMockData = (range: 'Week' | 'Month' | 'Year'): EnergyTransaction[] => {
-  const count = range === 'Week' ? 7 : range === 'Month' ? 30 : 12;
-  const transactions: EnergyTransaction[] = [];
-  const now = new Date();
-  now.setHours(23, 59, 59, 999); // Bugünün sonuna set et
-
-  // Başlangıç tarihini hesapla (geçmişe doğru)
-  const startDate = new Date(now);
-  if (range === 'Week' || range === 'Month') {
-    startDate.setDate(startDate.getDate() - (count - 1)); // count-1 gün geriye git
-  } else {
-    startDate.setMonth(startDate.getMonth() - (count - 1)); // count-1 ay geriye git
-  }
-  startDate.setHours(0, 0, 0, 0);
-
-  for (let i = 0; i < count; i++) {
-    let timestamp: number;
-
-    if (range === 'Week' || range === 'Month') {
-      // Günlük data
-      timestamp = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000).getTime();
-    } else {
-      // Aylık data (Year view için)
-      const monthDate = new Date(startDate);
-      monthDate.setMonth(monthDate.getMonth() + i);
-      timestamp = monthDate.getTime();
-    }
-
-    // Bugünden sonraki tarihleri ekleme
-    if (timestamp > now.getTime()) {
-      continue;
-    }
-
-    const isSunnyDay = Math.random() > 0.4;
-
-    const buy = isSunnyDay ? Math.random() * 20 + 10 : Math.random() * 40 + 30;
-    const sell = isSunnyDay ? Math.random() * 50 + 40 : Math.random() * 15 + 5;
-    const price = 0.15 + Math.random() * 0.1;
-
-    transactions.push({
-      timestamp,
-      buy,
-      sell,
-      price,
-    });
-  }
-
-  return transactions;
-};
 
 const EnergyRevenueChart: React.FC<EnergyRevenueChartProps> = ({
   data,
@@ -84,10 +33,17 @@ const EnergyRevenueChart: React.FC<EnergyRevenueChartProps> = ({
   const [touchX, setTouchX] = useState<number | null>(null);
   const [selectedDataPoint, setSelectedDataPoint] = useState<EnergyTransaction | null>(null);
 
-  // Generate mock data
+  // Check if data has any meaningful values (not all zeros)
+  const hasValidData = useMemo(() => {
+    if (!data || data.length === 0) return false;
+    // Check if any transaction has non-zero buy or sell values
+    return data.some(t => t.buy !== 0 || t.sell !== 0);
+  }, [data]);
+
+  // Use actual data (no mock data)
   const chartData = useMemo(() => {
-    return data.length > 0 ? data : generateMockData(range);
-  }, [range, data]);
+    return data;
+  }, [data]);
 
   // Calculate scale (centered at 0, like EnergyReviewCard)
   const totalItems = chartData.length;
@@ -95,7 +51,8 @@ const EnergyRevenueChart: React.FC<EnergyRevenueChartProps> = ({
   const xScale = innerWidth / totalItems;
 
   const maxValue = useMemo(() => {
-    return Math.max(...chartData.map(t => Math.max(t.buy, t.sell)));
+    const max = Math.max(...chartData.map(t => Math.max(t.buy, t.sell)));
+    return max > 0 ? max : 1; // Prevent division by zero
   }, [chartData]);
 
   const centerY = innerHeight / 2;
@@ -173,7 +130,17 @@ const EnergyRevenueChart: React.FC<EnergyRevenueChartProps> = ({
   // Generate time labels
   const timeLabels = useMemo(() => {
     const labels: { x: number; label: string }[] = [];
-    const step = range === 'Week' ? 1 : range === 'Month' ? 5 : 1;
+    let step = 1;
+
+    if (range === 'Day') {
+      step = 3; // Show every 3 hours for day view
+    } else if (range === 'Week') {
+      step = 1; // Show all days
+    } else if (range === 'Month') {
+      step = 5; // Show every 5 days
+    } else {
+      step = 1; // Show all months for year
+    }
 
     for (let i = 0; i < chartData.length; i += step) {
       const transaction = chartData[i];
@@ -181,7 +148,10 @@ const EnergyRevenueChart: React.FC<EnergyRevenueChartProps> = ({
       const x = (i + 0.5) * xScale;
 
       let label = '';
-      if (range === 'Week') {
+      if (range === 'Day') {
+        // For day view, show hour (e.g., "00:00", "03:00", etc.)
+        label = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+      } else if (range === 'Week') {
         const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         label = days[date.getDay() === 0 ? 6 : date.getDay() - 1];
       } else if (range === 'Month') {
@@ -224,7 +194,8 @@ const EnergyRevenueChart: React.FC<EnergyRevenueChartProps> = ({
     return labels;
   }, [maxValue, innerHeight, centerY, yScale]);
 
-  if (chartData.length === 0) {
+  // Show "No data available" if there's no data or all values are zero
+  if (!hasValidData) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <Text style={{ color: textColor, fontSize: 15 }}>No data available</Text>

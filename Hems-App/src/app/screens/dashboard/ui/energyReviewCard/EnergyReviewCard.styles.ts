@@ -26,6 +26,13 @@ export const createStyles = (COLORS: Record<string, string>) => {
       color: COLORS.textSoft,
       opacity: 0.7,
     },
+    priceInfo: {
+      fontSize: TYPOGRAPHY.sm,
+      fontWeight: '600',
+      color: COLORS.textSoft,
+      opacity: 0.85,
+      marginTop: SPACING.xs,
+    },
     chartContainer: {
       width: '100%',
       height: 350,

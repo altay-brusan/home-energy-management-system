@@ -707,12 +707,14 @@
     },
     "dashboardEnergyReview": {
       "title": "Energie-opbrengst",
-      "subtitle": "1 week energiehandel met Net",
+      "subtitle": "Maandelijkse energiehandel kosten en opbrengsten",
       "totalBuy": "Totaal Kopen",
       "totalSell": "Totaal Verkopen",
       "net": "Netto",
       "buy": "Kopen",
       "sell": "Verkopen",
+      "buyPrice": "Kopen",
+      "sellPrice": "Verkopen",
       "price": "Prijs",
       "gridBuy": "Kopen van Net",
       "gridSell": "Verkopen aan Net"

@@ -230,43 +230,6 @@ export const PowerFlowDiagram: React.FC = () => {
 
   return (
     <View style={styles.card}>
-      {/* Live Streaming Indicator */}
-      {isStreaming && (
-        <View
-          style={{
-            position: 'absolute',
-            top: 12,
-            right: 12,
-            flexDirection: 'row',
-            alignItems: 'center',
-            backgroundColor: isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.8)',
-            paddingHorizontal: 8,
-            paddingVertical: 4,
-            borderRadius: 12,
-            zIndex: 10,
-          }}
-        >
-          <View
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: 3,
-              backgroundColor: '#22C55E', // Green
-              marginRight: 6,
-            }}
-          />
-          <Text
-            style={{
-              fontSize: 10,
-              color: COLORS.textSoft,
-              fontWeight: '600',
-            }}
-          >
-            LIVE
-          </Text>
-        </View>
-      )}
-
       <View style={[styles.diagramContainer, { width: CONTAINER_WIDTH, height: CONTAINER_HEIGHT }]}>
         {/* SVG Layer for flow lines */}
         <Svg

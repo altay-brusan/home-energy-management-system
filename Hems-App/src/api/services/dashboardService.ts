@@ -1,6 +1,6 @@
 import apiClient from '../client/apiClient';
 import { ENDPOINTS } from '../client/config';
-import { MobileDashboardDto, WeatherForecastDto, SocResponseDto } from '../types/dashboard.types';
+import { MobileDashboardDto, WeatherForecastDto, SocResponseDto, EnergyRevenueResponseDto } from '../types/dashboard.types';
 import { PowerMetricsResponseDto } from './mobileDashboardService';
 
 export const dashboardService = {
@@ -63,6 +63,32 @@ export const dashboardService = {
     }
 
     const response = await apiClient.get<PowerMetricsResponseDto>(url);
+    return response.data;
+  },
+
+  async getEnergyRevenue(
+    deviceId: string,
+    period: 'day' | 'week' | 'month' | 'year',
+    dateOrYear: string,
+    weekOrMonth?: number
+  ): Promise<EnergyRevenueResponseDto> {
+    let url: string;
+
+    if (period === 'day') {
+      // Day: ?deviceId=xxx&period=day&date=2025-12-03
+      url = `${ENDPOINTS.DASHBOARD.ENERGY_REVENUE}?deviceId=${deviceId}&period=${period}&date=${dateOrYear}`;
+    } else if (period === 'week') {
+      // Week: ?deviceId=xxx&period=week&year=2025&week=49
+      url = `${ENDPOINTS.DASHBOARD.ENERGY_REVENUE}?deviceId=${deviceId}&period=${period}&year=${dateOrYear}&week=${weekOrMonth}`;
+    } else if (period === 'month') {
+      // Month: ?deviceId=xxx&period=month&year=2025&month=12
+      url = `${ENDPOINTS.DASHBOARD.ENERGY_REVENUE}?deviceId=${deviceId}&period=${period}&year=${dateOrYear}&month=${weekOrMonth}`;
+    } else {
+      // Year: ?deviceId=xxx&period=year&year=2025
+      url = `${ENDPOINTS.DASHBOARD.ENERGY_REVENUE}?deviceId=${deviceId}&period=${period}&year=${dateOrYear}`;
+    }
+
+    const response = await apiClient.get<EnergyRevenueResponseDto>(url);
     return response.data;
   },
 };

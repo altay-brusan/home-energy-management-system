@@ -737,13 +737,15 @@
     "noData": "Veri bulunamadı"
   },
   "dashboardEnergyReview": {
-    "title": "Enerji Alış/Satış",
-    "subtitle": "Grid ile 1 haftalık enerji ticareti",
+    "title": "Enerji Gelir/Gider",
+    "subtitle": "Aylık grid enerji alım satım maliyetleri ve gelirleri",
     "totalBuy": "Toplam Alış",
     "totalSell": "Toplam Satış",
     "net": "Net",
     "buy": "Alış",
     "sell": "Satış",
+    "buyPrice": "Alış",
+    "sellPrice": "Satış",
     "price": "Fiyat",
     "gridBuy": "Grid'den Alış",
     "gridSell": "Grid'e Satış"

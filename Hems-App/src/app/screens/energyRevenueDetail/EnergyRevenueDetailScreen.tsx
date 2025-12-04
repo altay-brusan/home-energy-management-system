@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Dimensions, Modal } from 'react-native';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { View, Text, TouchableOpacity, Dimensions, Modal, ActivityIndicator } from 'react-native';
 import { ArrowLeft, ChevronDown } from 'lucide-react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { useTranslation } from 'react-i18next';
@@ -11,6 +11,8 @@ import { getThemeColors, SPACING } from '../../../theme/constants';
 import { getEnergyRevenueDetailStyles } from './EnergyRevenueDetailScreen.styles';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import EnergyRevenueChart from './components/EnergyRevenueChart';
+import { dashboardService } from '../../../api/services/dashboardService';
+import { useSelectedSiteDevice } from '../../../hooks/useSelectedSiteDevice';
 
 // Configure calendar locales
 LocaleConfig.locales['tr'] = {
@@ -37,7 +39,7 @@ LocaleConfig.locales['en'] = {
   today: 'Today'
 };
 
-type Range = 'Week' | 'Month' | 'Year';
+type Range = 'Day' | 'Week' | 'Month' | 'Year';
 
 export default function EnergyRevenueDetailScreen() {
   const { t } = useTranslation();
@@ -55,16 +57,33 @@ export default function EnergyRevenueDetailScreen() {
   }, [language]);
 
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedRange, setSelectedRange] = useState<Range>('Week');
+  const [selectedRange, setSelectedRange] = useState<Range>('Day');
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
   const [isRangePickerVisible, setIsRangePickerVisible] = useState(false);
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [totalData, setTotalData] = useState<any>(null);
+  const { device } = useSelectedSiteDevice();
 
   const screenHeight = Dimensions.get('window').height;
 
-  // Mock data - API entegrasyonu için hazır
-  // Şimdilik chart component kendi mock data'sını üretiyor
-  // API hazır olduğunda buraya eklenecek
+  // Map UI range to API period
+  const getPeriodForRange = (range: Range): 'day' | 'week' | 'month' | 'year' => {
+    switch (range) {
+      case 'Day':
+        return 'day';
+      case 'Week':
+        return 'week';
+      case 'Month':
+        return 'month';
+      case 'Year':
+        return 'year';
+      default:
+        return 'day';
+    }
+  };
 
+  // Get week number from date
   const getWeekNumber = (date: Date) => {
     const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
     const dayNum = d.getUTCDay() || 7;
@@ -74,11 +93,80 @@ export default function EnergyRevenueDetailScreen() {
     return weekNo;
   };
 
+  // Fetch energy revenue data
+  const fetchEnergyRevenue = useCallback(async () => {
+    if (!device?.id) return;
+
+    try {
+      setLoading(true);
+      const period = getPeriodForRange(selectedRange);
+
+      let response;
+      if (period === 'day') {
+        // Day: format date as YYYY-MM-DD
+        const dateString = selectedDate.toISOString().split('T')[0];
+        response = await dashboardService.getEnergyRevenue(device.id, period, dateString);
+      } else if (period === 'week') {
+        const year = selectedDate.getFullYear().toString();
+        const weekNumber = getWeekNumber(selectedDate);
+        response = await dashboardService.getEnergyRevenue(device.id, period, year, weekNumber);
+      } else if (period === 'month') {
+        const year = selectedDate.getFullYear().toString();
+        const month = selectedDate.getMonth() + 1; // JavaScript months are 0-indexed, API expects 1-12
+        response = await dashboardService.getEnergyRevenue(device.id, period, year, month);
+      } else {
+        // year
+        const year = selectedDate.getFullYear().toString();
+        response = await dashboardService.getEnergyRevenue(device.id, period, year);
+      }
+
+      // Transform API data to chart format
+      const transformedData = response.data.map((item) => {
+        let timestamp: number;
+
+        // Handle different timestamp formats
+        if (period === 'day') {
+          // Day format: "00:00", "01:00", etc. - combine with selected date
+          const [hours, minutes] = item.timestamp.split(':').map(Number);
+          const date = new Date(selectedDate);
+          date.setHours(hours, minutes, 0, 0);
+          timestamp = date.getTime();
+        } else {
+          // Other formats: full date strings
+          timestamp = new Date(item.timestamp).getTime();
+        }
+
+        return {
+          timestamp,
+          buy: item.buy,
+          sell: item.sell,
+          price: item.price,
+        };
+      });
+
+      setChartData(transformedData);
+      setTotalData(response.total);
+    } catch (err: any) {
+      console.error('Failed to fetch energy revenue:', err);
+      setChartData([]);
+      setTotalData(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [device?.id, selectedRange, selectedDate]);
+
+  // Fetch data when device or range changes
+  useEffect(() => {
+    fetchEnergyRevenue();
+  }, [fetchEnergyRevenue]);
+
   const formatDate = (date: Date) => {
     const monthKeys = ['january', 'february', 'march', 'april', 'may', 'june',
       'july', 'august', 'september', 'october', 'november', 'december'];
 
     switch (selectedRange) {
+      case 'Day':
+        return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
       case 'Week':
         return t('energyRevenueDetail.dateFormat.week', {
           weekNumber: getWeekNumber(date),
@@ -103,17 +191,17 @@ export default function EnergyRevenueDetailScreen() {
     today.setHours(0, 0, 0, 0);
     const newDate = new Date(selectedDate);
 
-    if (selectedRange === 'Week') {
+    if (selectedRange === 'Day') {
+      newDate.setDate(newDate.getDate() + 1);
+      return newDate.getTime() <= today.getTime();
+    } else if (selectedRange === 'Week') {
       newDate.setDate(newDate.getDate() + 7);
-      // Haftanın başlangıcı bugünden sonraysa izin verme
       return newDate.getTime() <= today.getTime();
     } else if (selectedRange === 'Month') {
       newDate.setMonth(newDate.getMonth() + 1);
-      // Ayın başlangıcı bugünden sonraysa izin verme
       return newDate.getTime() <= today.getTime();
     } else if (selectedRange === 'Year') {
       newDate.setFullYear(newDate.getFullYear() + 1);
-      // Yılın başlangıcı bugünden sonraysa izin verme
       return newDate.getFullYear() <= today.getFullYear();
     }
 
@@ -126,7 +214,9 @@ export default function EnergyRevenueDetailScreen() {
     }
 
     const newDate = new Date(selectedDate);
-    if (selectedRange === 'Week') {
+    if (selectedRange === 'Day') {
+      newDate.setDate(newDate.getDate() + (direction === 'next' ? 1 : -1));
+    } else if (selectedRange === 'Week') {
       newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7));
     } else if (selectedRange === 'Month') {
       newDate.setMonth(newDate.getMonth() + (direction === 'next' ? 1 : -1));
@@ -154,7 +244,17 @@ export default function EnergyRevenueDetailScreen() {
     const primaryColor = COLORS.accent || '#1169b1';
     const selectedTextColor = COLORS.white || '#FFFFFF';
 
-    if (selectedRange === 'Week') {
+    if (selectedRange === 'Day') {
+      const dateString = selectedDate.toISOString().split('T')[0];
+      return {
+        [dateString]: {
+          startingDay: true,
+          endingDay: true,
+          color: primaryColor,
+          textColor: selectedTextColor,
+        }
+      };
+    } else if (selectedRange === 'Week') {
       const { start, end } = getWeekRange(selectedDate);
       const marked: any = {};
 
@@ -253,13 +353,19 @@ export default function EnergyRevenueDetailScreen() {
 
       {/* Chart */}
       <View style={{ flex: 1 }}>
-        <EnergyRevenueChart
-          data={[]}
-          height={chartHeight}
-          range={selectedRange}
-          cardBgColor={COLORS.cardBg}
-          textColor={COLORS.textSoft}
-        />
+        {loading ? (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <ActivityIndicator size="large" color={COLORS.accent} />
+          </View>
+        ) : (
+          <EnergyRevenueChart
+            data={chartData}
+            height={chartHeight}
+            range={selectedRange}
+            cardBgColor={COLORS.cardBg}
+            textColor={COLORS.textSoft}
+          />
+        )}
       </View>
 
       {/* Date Picker Modal */}
@@ -331,7 +437,7 @@ export default function EnergyRevenueDetailScreen() {
               </TouchableOpacity>
             </View>
             <View style={styles.rangeOptions}>
-              {(['Week', 'Month', 'Year'] as const).map((range) => (
+              {(['Day', 'Week', 'Month', 'Year'] as const).map((range) => (
                 <TouchableOpacity
                   key={range}
                   style={[

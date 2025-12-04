@@ -82,6 +82,7 @@ export const ENDPOINTS = {
     GRID_PERFORMANCE: '/Dashboard/GridPerformance',
     GRID_PERFORMANCE_SUMMARY: '/Dashboard/GridPerformanceSummary',
     GET_WEATHER_FORECAST: '/WeatherForecasts/:siteId',
+    ENERGY_REVENUE: '/Dashboard/EnergyRevenue',
   },
   ROLES: {
     GET_ALL: '/RoleManagement',

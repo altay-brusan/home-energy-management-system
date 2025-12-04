@@ -1,13 +1,16 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { View, Text, LayoutChangeEvent, ActivityIndicator, PanResponder, TouchableOpacity } from 'react-native';
-import Svg, { Line, Circle, Path, Text as SvgText, Rect, G } from 'react-native-svg';
+import Svg, { Line, Path, Text as SvgText, Rect, G } from 'react-native-svg';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import { useI18n } from '../../../../../hooks/useI18n';
 import { useThemeStore } from '../../../../../store/themeStore';
 import { getThemeColors } from '../../../../../theme/constants';
 import { createStyles } from './EnergyReviewCard.styles';
-import { EnergyTransaction, EnergyReviewData, TooltipData } from './EnergyReviewCard.types';
+import { EnergyTransaction, EnergyReviewData } from './EnergyReviewCard.types';
+import { dashboardService } from '../../../../../api/services/dashboardService';
+import { useSelectedSiteDevice } from '../../../../../hooks/useSelectedSiteDevice';
+import { useDashboardRefresh } from '../../../../../hooks/useDashboardRefresh';
 
 // History Icon Component
 const HistoryIcon: React.FC<{ color: string }> = ({ color }) => (
@@ -22,51 +25,44 @@ const HistoryIcon: React.FC<{ color: string }> = ({ color }) => (
   </Svg>
 );
 
-// Generate mock data for 30 days with daily data points
-const generateMockData = (): EnergyReviewData => {
-  const transactions: EnergyTransaction[] = [];
-  const now = new Date();
-  const monthStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+// Helper function to convert API response to component data
+const transformApiDataToEnergyReviewData = (
+  apiData: any
+): EnergyReviewData => {
+  const transactions: EnergyTransaction[] = apiData.data.map((item: any) => ({
+    timestamp: new Date(item.timestamp).getTime(),
+    buy: item.buy,
+    sell: item.sell,
+    price: item.price,
+  }));
 
-  let totalBuy = 0;
-  let totalSell = 0;
+  // Calculate date range based on transactions
+  const timestamps = transactions.map(t => t.timestamp);
+  const weekStart = new Date(Math.min(...timestamps));
+  const weekEnd = new Date(Math.max(...timestamps));
 
-  // Generate daily data for 30 days
-  for (let day = 0; day < 30; day++) {
-    const timestamp = new Date(monthStart.getTime() + day * 24 * 60 * 60 * 1000).getTime();
-
-    // Realistic daily patterns:
-    // - More buying in winter/cloudy days
-    // - More selling in sunny days when solar produces excess
-    // Add some variation to make it realistic
-    const isSunnyDay = Math.random() > 0.4; // 60% sunny days
-
-    const buy = isSunnyDay ? Math.random() * 20 + 10 : Math.random() * 40 + 30; // Less buy on sunny days
-    const sell = isSunnyDay ? Math.random() * 50 + 40 : Math.random() * 15 + 5; // More sell on sunny days
-    const price = 0.15 + Math.random() * 0.1; // Price per kWh between $0.15-$0.25
-
-    totalBuy += buy;
-    totalSell += sell;
-
-    transactions.push({
-      timestamp,
-      buy,
-      sell,
-      price,
-    });
-  }
-
+  // Use totals from API response
+  const totalBuy = transactions.reduce((sum, t) => sum + t.buy, 0);
+  const totalSell = transactions.reduce((sum, t) => sum + t.sell, 0);
   const netEnergy = totalSell - totalBuy;
-  const revenue = netEnergy * 0.18; // Average price
+  const totalBuyPrice = apiData.total.buyPrice;
+  const totalSellPrice = apiData.total.sellPrice;
+  const revenue = apiData.total.netPrice;
+  const buyPricePerKWh = apiData.buyPricePerKWh;
+  const sellPricePerKWh = apiData.sellPricePerKWh;
 
   return {
     transactions,
-    weekStart: monthStart,
-    weekEnd: now,
+    weekStart,
+    weekEnd,
     totalBuy,
     totalSell,
     netEnergy,
+    totalBuyPrice,
+    totalSellPrice,
     revenue,
+    buyPricePerKWh,
+    sellPricePerKWh,
   };
 };
 
@@ -77,18 +73,60 @@ export default function EnergyReviewCard() {
   const COLORS = getThemeColors(isDark);
   const { t, language } = useI18n();
   const styles = createStyles(COLORS);
+  const { device } = useSelectedSiteDevice();
+  const { registerRefreshCallback } = useDashboardRefresh();
 
   // Get locale for date formatting based on current language
   const locale = language === 'tr' ? 'tr-TR' : 'en-US';
 
   const [chartSize, setChartSize] = useState({ width: 0, height: 0 });
-
-  const data = useMemo(() => generateMockData(), []);
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<EnergyReviewData | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Set initial selected data to last day
-  const [selectedData, setSelectedData] = useState<EnergyTransaction | null>(
-    data.transactions[data.transactions.length - 1] || null
-  );
+  const [selectedData, setSelectedData] = useState<EnergyTransaction | null>(null);
+
+  // Fetch energy revenue data
+  const fetchEnergyRevenue = useCallback(async () => {
+    if (!device?.id) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Get current year and month for monthly data
+      const now = new Date();
+      const year = now.getFullYear().toString();
+      const month = now.getMonth() + 1; // JavaScript months are 0-indexed, API expects 1-12
+
+      const response = await dashboardService.getEnergyRevenue(device.id, 'month', year, month);
+      const transformedData = transformApiDataToEnergyReviewData(response);
+      setData(transformedData);
+
+      // Set initial selected data to last day
+      if (transformedData.transactions.length > 0) {
+        setSelectedData(transformedData.transactions[transformedData.transactions.length - 1]);
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch energy revenue data');
+    } finally {
+      setLoading(false);
+    }
+  }, [device?.id]);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchEnergyRevenue();
+  }, [fetchEnergyRevenue]);
+
+  // Register refresh callback
+  useEffect(() => {
+    const unregister = registerRefreshCallback(fetchEnergyRevenue);
+    return () => {
+      unregister();
+    };
+  }, [registerRefreshCallback, fetchEnergyRevenue]);
 
   const onLayout = useCallback((event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
@@ -100,21 +138,33 @@ export default function EnergyReviewCard() {
   const chartWidth = chartSize.width - padding.left - padding.right;
   const chartHeight = chartSize.height - padding.top - padding.bottom;
 
-  // Calculate scale for X axis (time)
-  // Show all 30 days on screen
-  const totalDays = data.transactions.length; // 30 days
-  const barWidth = Math.max(3, (chartWidth / totalDays) - 2); // Bar width with 2px gap between bars
-  const xScale = chartWidth / totalDays;
+  // Calculate chart parameters - memoize with data dependency
+  const chartParams = useMemo(() => {
+    if (!data || data.transactions.length === 0) {
+      return { barWidth: 0, xScale: 0, maxValue: 0, centerY: 0, yScale: 0 };
+    }
 
-  // Calculate scale for Y axis (energy) - centered at 0
-  const maxValue = Math.max(
-    ...data.transactions.map(t => Math.max(t.buy, t.sell))
-  );
-  const centerY = chartHeight / 2;
-  const yScale = (chartHeight / 2) / (maxValue * 1.1); // Half height for each direction
+    // Calculate scale for X axis (time)
+    const totalDays = data.transactions.length;
+    const barWidth = Math.max(3, (chartWidth / totalDays) - 2);
+    const xScale = chartWidth / totalDays;
+
+    // Calculate scale for Y axis (energy) - centered at 0
+    const maxValue = Math.max(
+      ...data.transactions.map(transaction => Math.max(transaction.buy, transaction.sell))
+    );
+    const centerY = chartHeight / 2;
+    const yScale = (chartHeight / 2) / (maxValue * 1.1);
+
+    return { barWidth, xScale, maxValue, centerY, yScale };
+  }, [data, chartWidth, chartHeight]);
+
+  const { barWidth, xScale, maxValue, centerY, yScale } = chartParams;
 
   // Calculate which bar is at the touch position
   const getBarAtPosition = useCallback((touchX: number) => {
+    if (!data) return null;
+
     // Adjust for padding
     const adjustedX = touchX - padding.left;
 
@@ -127,7 +177,7 @@ export default function EnergyReviewCard() {
     }
 
     return null;
-  }, [xScale, data.transactions, padding.left]);
+  }, [xScale, data, padding.left]);
 
   // Pan responder for interactive touch tracking
   const panResponder = useMemo(() => PanResponder.create({
@@ -153,19 +203,19 @@ export default function EnergyReviewCard() {
     onPanResponderTerminationRequest: () => true,
   }), [getBarAtPosition]);
 
-  // Generate bars for chart (all 30 days visible)
+  // Generate bars for chart (all days visible)
   const visibleBars = useMemo(() => {
-    if (chartWidth === 0 || chartHeight === 0) return [];
+    if (chartWidth === 0 || chartHeight === 0 || !data) return [];
 
-    return data.transactions.map((t, i) => {
+    return data.transactions.map((transaction, i) => {
       const x = i * xScale;
 
       // Sell bar goes up from center (positive)
-      const sellHeight = t.sell * yScale;
+      const sellHeight = transaction.sell * yScale;
       const sellY = centerY - sellHeight;
 
       // Buy bar goes down from center (negative)
-      const buyHeight = t.buy * yScale;
+      const buyHeight = transaction.buy * yScale;
       const buyY = centerY;
 
       return {
@@ -175,13 +225,14 @@ export default function EnergyReviewCard() {
         sellHeight,
         buyY,
         buyHeight,
-        transaction: t,
+        transaction,
       };
     });
-  }, [data.transactions, xScale, chartWidth, chartHeight, yScale, centerY]);
+  }, [data, xScale, chartWidth, chartHeight, yScale, centerY]);
 
-  // Generate time labels (show every 5 days for 30-day view)
+  // Generate time labels (show every 5 days for monthly view)
   const timeLabels = useMemo(() => {
+    if (!data) return [];
     const labels: { x: number; label: string }[] = [];
     for (let i = 0; i < data.transactions.length; i += 5) {
       const transaction = data.transactions[i];
@@ -196,10 +247,11 @@ export default function EnergyReviewCard() {
       });
     }
     return labels;
-  }, [data.transactions, xScale, locale]);
+  }, [data, xScale, locale]);
 
   // Generate Y-axis labels (centered at 0)
   const yLabels = useMemo(() => {
+    if (!data || maxValue === 0) return [];
     const labels: { y: number; value: string }[] = [];
     const step = maxValue / 3;
 
@@ -234,19 +286,62 @@ export default function EnergyReviewCard() {
     }
 
     return labels;
-  }, [maxValue, chartHeight, centerY, yScale]);
+  }, [data, maxValue, chartHeight, centerY, yScale]);
 
   const handleHistoryPress = () => {
     navigation.navigate('EnergyRevenueDetail');
   };
 
+  // Show loading state
+  if (loading || !data) {
+    return (
+      <Animated.View entering={FadeInUp.delay(200).duration(600)} style={styles.container}>
+        <View style={styles.header}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>{t('dashboardEnergyReview.title', 'Energy Revenue')}</Text>
+            <Text style={styles.subtitle}>
+              {t('dashboardEnergyReview.subtitle', 'Monthly grid energy trading costs and revenue')}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.accent} />
+        </View>
+      </Animated.View>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <Animated.View entering={FadeInUp.delay(200).duration(600)} style={styles.container}>
+        <View style={styles.header}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>{t('dashboardEnergyReview.title', 'Energy Revenue')}</Text>
+            <Text style={styles.subtitle}>
+              {t('dashboardEnergyReview.subtitle', 'Monthly grid energy trading costs and revenue')}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.loadingContainer}>
+          <Text style={{ color: COLORS.textSoft, textAlign: 'center' }}>
+            {error}
+          </Text>
+        </View>
+      </Animated.View>
+    );
+  }
+
   return (
     <Animated.View entering={FadeInUp.delay(200).duration(600)} style={styles.container}>
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.title}>{t('dashboardEnergyReview.title', 'Enerji Alış/Satış')}</Text>
+          <Text style={styles.title}>{t('dashboardEnergyReview.title', 'Energy Revenue')}</Text>
           <Text style={styles.subtitle}>
-            {t('dashboardEnergyReview.subtitle', 'Grid ile 30 günlük enerji ticareti')}
+            {t('dashboardEnergyReview.subtitle', 'Monthly grid energy trading costs and revenue')}
+          </Text>
+          <Text style={styles.priceInfo}>
+            {t('dashboardEnergyReview.buyPrice', 'Buy')}: {data.buyPricePerKWh.toFixed(2)} €/kWh • {t('dashboardEnergyReview.sellPrice', 'Sell')}: {data.sellPricePerKWh.toFixed(2)} €/kWh
           </Text>
         </View>
         <TouchableOpacity onPress={handleHistoryPress} style={{ padding: 4 }}>
@@ -405,27 +500,24 @@ export default function EnergyReviewCard() {
       {/* Summary Cards */}
       <View style={styles.summaryCardsContainer}>
         <View style={styles.summaryCard}>
-          <Text style={styles.summaryCardLabel}>{t('dashboardEnergyReview.totalBuy', 'Toplam Alış')}</Text>
+          <Text style={styles.summaryCardLabel}>{t('dashboardEnergyReview.totalBuy', 'Total Buy')}</Text>
           <Text style={[styles.summaryCardValue, styles.buyColor]}>
-            {data.totalBuy.toFixed(1)}
+            {data.totalBuyPrice.toFixed(2)} €
           </Text>
-          <Text style={styles.summaryCardUnit}>kWh</Text>
         </View>
 
         <View style={styles.summaryCard}>
-          <Text style={styles.summaryCardLabel}>{t('dashboardEnergyReview.totalSell', 'Toplam Satış')}</Text>
+          <Text style={styles.summaryCardLabel}>{t('dashboardEnergyReview.totalSell', 'Total Sell')}</Text>
           <Text style={[styles.summaryCardValue, styles.sellColor]}>
-            {data.totalSell.toFixed(1)}
+            {data.totalSellPrice.toFixed(2)} €
           </Text>
-          <Text style={styles.summaryCardUnit}>kWh</Text>
         </View>
 
         <View style={styles.summaryCard}>
           <Text style={styles.summaryCardLabel}>{t('dashboardEnergyReview.net', 'Net')}</Text>
-          <Text style={[styles.summaryCardValue, data.netEnergy >= 0 ? styles.sellColor : styles.buyColor]}>
-            {data.netEnergy >= 0 ? '+' : ''}{data.netEnergy.toFixed(1)}
+          <Text style={[styles.summaryCardValue, data.revenue >= 0 ? styles.sellColor : styles.buyColor]}>
+            {data.revenue >= 0 ? '+' : ''}{data.revenue.toFixed(2)} €
           </Text>
-          <Text style={styles.summaryCardUnit}>kWh</Text>
         </View>
       </View>
 

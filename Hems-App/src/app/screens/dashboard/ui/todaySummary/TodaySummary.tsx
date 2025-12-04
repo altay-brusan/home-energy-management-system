@@ -10,18 +10,6 @@ import { getThemeColors } from '../../../../../theme/constants';
 import { createStyles } from './TodaySummary.styles';
 import { mobileDashboardService, TodayEnergySummaryDto } from '../../../../../api/services/mobileDashboardService';
 
-// History Icon Component
-const HistoryIcon: React.FC<{ color: string }> = ({ color }) => (
-  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-      stroke={color}
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
 
 // Grid Import Icon (with down arrow badge at bottom-right)
 const GridImportIcon: React.FC<{ color: string; badgeBg: string }> = ({ color, badgeBg }) => (
@@ -199,10 +187,7 @@ export const TodaySummary: React.FC = () => {
     return () => unregister();
   }, [registerRefreshCallback, loadTodayData]);
 
-  const handleHistoryPress = () => {
-    // TODO: Navigate to historical data screen or show modal
-    console.log('History pressed');
-  };
+
 
   if (!hasDevice) {
     return null;
@@ -213,9 +198,7 @@ export const TodaySummary: React.FC = () => {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>{t('todaySummary.title')}</Text>
-        <TouchableOpacity onPress={handleHistoryPress} style={styles.historyButton}>
-          <HistoryIcon color={COLORS.accent} />
-        </TouchableOpacity>
+       
       </View>
 
       {/* Grid Layout - 2x2 */}

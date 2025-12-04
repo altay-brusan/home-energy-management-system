@@ -107,3 +107,25 @@ export interface SocResponseDto {
   inverterBatChannelSoc: InverterBatChannelSocDto[];
   bmsSocDetails: any[];
 }
+
+export interface EnergyRevenueDataPointDto {
+  timestamp: string;
+  buy: number;
+  sell: number;
+  net: number;
+  price: number;
+}
+
+export interface EnergyRevenueTotalDto {
+  buyPrice: number;
+  sellPrice: number;
+  netPrice: number;
+}
+
+export interface EnergyRevenueResponseDto {
+  period: 'day' | 'week' | 'month' | 'year';
+  buyPricePerKWh: number;
+  sellPricePerKWh: number;
+  data: EnergyRevenueDataPointDto[];
+  total: EnergyRevenueTotalDto;
+}

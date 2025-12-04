@@ -722,12 +722,14 @@
     },
     "dashboardEnergyReview": {
       "title": "Energy Revenue",
-      "subtitle": "1 week energy trading with Grid",
+      "subtitle": "Monthly grid energy trading costs and revenue",
       "totalBuy": "Total Buy",
       "totalSell": "Total Sell",
       "net": "Net",
       "buy": "Buy",
       "sell": "Sell",
+      "buyPrice": "Buy",
+      "sellPrice": "Sell",
       "price": "Price",
       "gridBuy": "Buy from Grid",
       "gridSell": "Sell to Grid"

@@ -12,7 +12,11 @@ export interface EnergyReviewData {
   totalBuy: number;
   totalSell: number;
   netEnergy: number; // sell - buy
-  revenue: number; // Total revenue/cost
+  totalBuyPrice: number; // Total cost of buying from grid
+  totalSellPrice: number; // Total revenue from selling to grid
+  revenue: number; // Net revenue/cost (totalSellPrice - totalBuyPrice)
+  buyPricePerKWh: number; // Price per kWh for buying from grid
+  sellPricePerKWh: number; // Price per kWh for selling to grid
 }
 
 export interface ChartDimensions {
