@@ -1,0 +1,60 @@
+InverterAdvancedFunctionConfigState {
+  "timestampUtc": "string",
+  "gatewayId": "string",
+  "inverterSerialNumber": "string",
+  "version": "string",
+
+  // Raw 16-bit advanced-function word
+  "advancedFunctionWordRaw": "number",           // 280: Microinverter export to grid cutoff (bit flags)
+
+
+  // ─────────────────────────────────────
+  // 1) Arc-fault & self-check
+  // ─────────────────────────────────────
+
+  "arcFault": {
+    "enabled": "bool",                           // 283: Solar Arc Fault Mode (0=close, 1=open)
+    "clearRequested": "bool"                     // 283: value 0x02 = arc fault clear request
+  },
+
+    "systemSelfCheckEnabled": "bool",              // 45: Self-checking time (0-360 seconds)
+
+
+  // ─────────────────────────────────────
+  // 2) Peak-shaving (note: grid peak-shaving is already represented
+  //    conceptually in SystemWorkModeConfigState.gridPeakShaving)
+  // ─────────────────────────────────────
+
+  "generatorPeakShavingEnabled": "bool",         // 280 Bit4-7: Gen peak-shaving (0=disable, 1=enable)
+  "gridPeakShavingEnabled": "bool",              // 280 Bit8-11: Grid peak-shaving (0=disable, 1=enable)
+
+  // ─────────────────────────────────────
+  // 3) Smart-load / island-mode relay
+  // ─────────────────────────────────────
+
+  "smartLoadOnGridAlwaysOn": "bool",             // 280 Bit12: On Grid always on
+  "externalRelayEnabled": "bool",                // 280 Bit13: external relay
+  "islandModeSignalEnabled": "bool",             // derived from relay config
+
+  // CT ratio and external meter phase (from "Advanced Function → CT Ratio / Ex_Meter For CT")
+  "externalMeter": {
+    "ctRatio": "number",                         // 327: CT变比 (200-8000)
+    "phase": "string"                            // 326 Bit1-3: A/B/C phase enable flags
+  },
+
+  // ─────────────────────────────────────
+  // 4) BMS / DRM behaviour
+  // ─────────────────────────────────────
+
+  "bmsErrorStopEnabled": "bool",                 // 280 Bit14: 锂电池丢失报故障使能位
+  "drmEnabled": "bool",                          // 280 Bit15: DRM使能位
+  // ─────────────────────────────────────
+  // 5) Parallel settings (screen: Advanced Function / Parallel)
+  // ─────────────────────────────────────
+
+  "parallel": {
+    "enabled": "bool",                           // 417 Bit0: Parallel Enable (1=enable, 0=disable)
+    "role": "master" | "slave" | "standalone",   // 417 Bit1: (1=Master, 0=Slave)
+    "modbusAddress": "number"                    // 417 Bit10-15: Modbus SN (0-63)
+  }
+}

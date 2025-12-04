@@ -1,0 +1,606 @@
+[
+    {
+        "id": "gridcode_tab",
+        "type": "tab",
+        "label": "GridCodeConfig",
+        "disabled": false,
+        "info": "Grid Code Config State - Read/Write\n\nRegisters:\n- 003-007: Serial Number (Read Only)\n- 039-041: Power factor, active/reactive power regulation\n- 282: Reconnection time\n- 284-290: Grid mode, frequency, voltage, limits"
+    },
+    {
+        "id": "gridcode_link_in_rpc",
+        "type": "link in",
+        "z": "gridcode_tab",
+        "name": "RPC Request",
+        "links": [
+            "rpc_gridcode_link_out"
+        ],
+        "x": 135,
+        "y": 140,
+        "wires": [
+            [
+                "gridcode_route"
+            ]
+        ]
+    },
+    {
+        "id": "gridcode_manual_read",
+        "type": "inject",
+        "z": "gridcode_tab",
+        "name": "Manual Read",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operation",
+                "v": "read",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 200,
+        "wires": [
+            [
+                "gridcode_route"
+            ]
+        ]
+    },
+    {
+        "id": "gridcode_test_write",
+        "type": "inject",
+        "z": "gridcode_tab",
+        "name": "Test Write",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operation",
+                "v": "write",
+                "vt": "str"
+            },
+            {
+                "p": "rpcParams",
+                "v": "{\"reconnectionTimeSeconds\":60}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 140,
+        "y": 260,
+        "wires": [
+            [
+                "gridcode_route"
+            ]
+        ]
+    },
+    {
+        "id": "gridcode_route",
+        "type": "function",
+        "z": "gridcode_tab",
+        "name": "Route: Read or Write?",
+        "func": "flow.set(\"gridcode_rpc_response_topic\", msg.rpcResponseTopic);\n\nlet operation = msg.operation || 'read';\nconst params = msg.rpcParams || {};\n\n// Check if any writable field is present\nif (params.gridModeRaw !== undefined ||\n    params.gridFrequencyHz !== undefined ||\n    params.gridVoltageLevelCode !== undefined ||\n    params.normalConnect !== undefined ||\n    params.reconnectionTimeSeconds !== undefined ||\n    params.powerFactorTarget !== undefined ||\n    params.activePowerRegulationPercentPerStep !== undefined ||\n    params.reactivePowerRegulationPercentPerStep !== undefined) {\n    operation = 'write';\n}\n\nmsg.operation = operation;\n\nif (operation === 'write') {\n    return [null, msg];\n} else {\n    return [msg, null];\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 200,
+        "wires": [
+            [
+                "gridcode_start_read"
+            ],
+            [
+                "gridcode_queue_writes"
+            ]
+        ]
+    },
+    {
+        "id": "gridcode_comment_read",
+        "type": "comment",
+        "z": "gridcode_tab",
+        "name": "═══ READ SECTION ═══",
+        "info": "",
+        "x": 590,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "gridcode_start_read",
+        "type": "function",
+        "z": "gridcode_tab",
+        "name": "Start Read",
+        "func": "flow.set(\"gridcode_part_sn\", null);\nflow.set(\"gridcode_part_pf\", null);\nflow.set(\"gridcode_part_282\", null);\nflow.set(\"gridcode_part_grid\", null);\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 590,
+        "y": 120,
+        "wires": [
+            [
+                "gridcode_prep_sn",
+                "gridcode_prep_pf",
+                "gridcode_prep_282",
+                "gridcode_prep_grid"
+            ]
+        ]
+    },
+    {
+        "id": "gridcode_prep_sn",
+        "type": "function",
+        "z": "gridcode_tab",
+        "name": "Prep SN (003-007)",
+        "func": "msg.readGroup = \"sn\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 3,\n    quantity: 5\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 800,
+        "y": 80,
+        "wires": [
+            [
+                "gridcode_read_sn"
+            ]
+        ]
+    },
+    {
+        "id": "gridcode_prep_pf",
+        "type": "function",
+        "z": "gridcode_tab",
+        "name": "Prep PF (039-041)",
+        "func": "msg.readGroup = \"pf\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 39,\n    quantity: 3\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 800,
+        "y": 120,
+        "wires": [
+            [
+                "gridcode_read_pf"
+            ]
+        ]
+    },
+    {
+        "id": "gridcode_prep_282",
+        "type": "function",
+        "z": "gridcode_tab",
+        "name": "Prep 282",
+        "func": "msg.readGroup = \"reg282\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 282,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 780,
+        "y": 160,
+        "wires": [
+            [
+                "gridcode_read_282"
+            ]
+        ]
+    },
+    {
+        "id": "gridcode_prep_grid",
+        "type": "function",
+        "z": "gridcode_tab",
+        "name": "Prep Grid (284-290)",
+        "func": "msg.readGroup = \"grid\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 284,\n    quantity: 7\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 810,
+        "y": 200,
+        "wires": [
+            [
+                "gridcode_read_grid"
+            ]
+        ]
+    },
+    {
+        "id": "gridcode_read_sn",
+        "type": "modbus-flex-getter",
+        "z": "gridcode_tab",
+        "name": "Read SN",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1000,
+        "y": 80,
+        "wires": [
+            [
+                "gridcode_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "gridcode_read_pf",
+        "type": "modbus-flex-getter",
+        "z": "gridcode_tab",
+        "name": "Read PF",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1000,
+        "y": 120,
+        "wires": [
+            [
+                "gridcode_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "gridcode_read_282",
+        "type": "modbus-flex-getter",
+        "z": "gridcode_tab",
+        "name": "Read 282",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1000,
+        "y": 160,
+        "wires": [
+            [
+                "gridcode_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "gridcode_read_grid",
+        "type": "modbus-flex-getter",
+        "z": "gridcode_tab",
+        "name": "Read Grid",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1010,
+        "y": 200,
+        "wires": [
+            [
+                "gridcode_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "gridcode_collect",
+        "type": "function",
+        "z": "gridcode_tab",
+        "name": "Collect Parts",
+        "func": "let data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data)) {\n    node.error(\"Invalid response for \" + msg.readGroup);\n    return null;\n}\n\nconst group = msg.readGroup;\n\nif (group === \"sn\") {\n    flow.set(\"gridcode_part_sn\", data);\n} else if (group === \"pf\") {\n    flow.set(\"gridcode_part_pf\", data);\n} else if (group === \"reg282\") {\n    flow.set(\"gridcode_part_282\", data[0]);\n} else if (group === \"grid\") {\n    flow.set(\"gridcode_part_grid\", data);\n}\n\n// Check if all parts received\nconst partSn = flow.get(\"gridcode_part_sn\");\nconst partPf = flow.get(\"gridcode_part_pf\");\nconst part282 = flow.get(\"gridcode_part_282\");\nconst partGrid = flow.get(\"gridcode_part_grid\");\n\nif (!partSn || !partPf || part282 === null || part282 === undefined || !partGrid) {\n    return null;\n}\n\nmsg.snData = partSn;\nmsg.pfData = partPf;\nmsg.reg282 = part282;\nmsg.gridData = partGrid;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1190,
+        "y": 140,
+        "wires": [
+            [
+                "gridcode_build_json"
+            ]
+        ]
+    },
+    {
+        "id": "gridcode_build_json",
+        "type": "function",
+        "z": "gridcode_tab",
+        "name": "Build JSON State",
+        "func": "const snData = msg.snData;\nconst pfData = msg.pfData;\nconst reg282 = msg.reg282;\nconst gridData = msg.gridData;\n\n// Clear flow context\nflow.set(\"gridcode_part_sn\", null);\nflow.set(\"gridcode_part_pf\", null);\nflow.set(\"gridcode_part_282\", null);\nflow.set(\"gridcode_part_grid\", null);\n\n// Helper: Parse ASCII\nfunction parseAsciiChar(val, high) {\n    const byte = high ? ((val >> 8) & 0xFF) : (val & 0xFF);\n    if (byte >= 0x20 && byte <= 0x7E) {\n        return String.fromCharCode(byte);\n    }\n    return '';\n}\n\nfunction parseSerialNumber(regs) {\n    let sn = '';\n    for (let i = 0; i < 5; i++) {\n        sn += parseAsciiChar(regs[i], true);\n        sn += parseAsciiChar(regs[i], false);\n    }\n    return sn.trim();\n}\n\nconst serialNumber = parseSerialNumber(snData);\n\n// Parse PF data (039-041)\nconst reg39 = pfData[0];  // Power factor (0-2000, offset +1000)\nconst reg40 = pfData[1];  // Active power regulation (0.1%)\nconst reg41 = pfData[2];  // Reactive power regulation (0.1%)\n\nconst powerFactorTarget = reg39;  // Keep raw, offset applied externally\nconst activePowerReg = reg40 * 0.1;\nconst reactivePowerReg = reg41 * 0.1;\n\n// Parse 282\nconst reconnectionTimeSeconds = reg282;\n\n// Parse grid data (284-290)\nconst reg284 = gridData[0];  // Grid Mode\nconst reg285 = gridData[1];  // Grid Frequency\nconst reg286 = gridData[2];  // Grid Type\nconst reg287 = gridData[3];  // Grid Vol High (0.1V)\nconst reg288 = gridData[4];  // Grid Vol Low (0.1V)\nconst reg289 = gridData[5];  // Grid Hz High (0.01Hz)\nconst reg290 = gridData[6];  // Grid Hz Low (0.01Hz)\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\n\nconst state = {\n    kind: \"GridCodeConfigState\",\n    timestampUtc: new Date().toISOString(),\n    gatewayId: gatewayId,\n    inverterSerialNumber: serialNumber,\n    version: \"1.0\",\n    \n    gridModeRaw: reg284,\n    gridFrequencyHz: reg285 === 0 ? 50 : 60,\n    gridVoltageLevelCode: reg286,\n    \n    normalConnect: {\n        voltageLowV: reg288 * 0.1,\n        voltageHighV: reg287 * 0.1,\n        frequencyLowHz: reg290 * 0.01,\n        frequencyHighHz: reg289 * 0.01\n    },\n    \n    reconnectionTimeSeconds: reconnectionTimeSeconds,\n    \n    powerFactorTarget: powerFactorTarget,\n    activePowerRegulationPercentPerStep: Math.round(activePowerReg * 10) / 10,\n    reactivePowerRegulationPercentPerStep: Math.round(reactivePowerReg * 10) / 10,\n    \n    rawRegisters: {\n        reg39: reg39,\n        reg40: reg40,\n        reg41: reg41,\n        reg282: reg282,\n        reg284: reg284,\n        reg285: reg285,\n        reg286: reg286,\n        reg287: reg287,\n        reg288: reg288,\n        reg289: reg289,\n        reg290: reg290\n    }\n};\n\n// Check if this is after a write\nconst writeResult = flow.get(\"gridcode_write_result\");\nflow.set(\"gridcode_write_result\", null);\n\nconst rpcResponseTopic = flow.get(\"gridcode_rpc_response_topic\");\nflow.set(\"gridcode_rpc_response_topic\", null);\n\nif (writeResult) {\n    msg.payload = {\n        success: true,\n        message: `Successfully wrote ${writeResult.count} register(s)`,\n        writes: writeResult.writes,\n        state: state\n    };\n} else {\n    msg.payload = state;\n}\n\nmsg.rpcResponseTopic = rpcResponseTopic;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1390,
+        "y": 140,
+        "wires": [
+            [
+                "gridcode_debug",
+                "gridcode_rpc_response"
+            ]
+        ]
+    },
+    {
+        "id": "gridcode_debug",
+        "type": "debug",
+        "z": "gridcode_tab",
+        "name": "GridCode JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1600,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "gridcode_rpc_response",
+        "type": "function",
+        "z": "gridcode_tab",
+        "name": "RPC Response",
+        "func": "if (!msg.rpcResponseTopic) {\n    return null;\n}\n\nmsg.topic = msg.rpcResponseTopic;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1600,
+        "y": 160,
+        "wires": [
+            [
+                "gridcode_mqtt_response"
+            ]
+        ]
+    },
+    {
+        "id": "gridcode_mqtt_response",
+        "type": "mqtt out",
+        "z": "gridcode_tab",
+        "name": "MQTT Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1800,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "gridcode_comment_write",
+        "type": "comment",
+        "z": "gridcode_tab",
+        "name": "═══ WRITE SECTION ═══",
+        "info": "",
+        "x": 600,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "gridcode_queue_writes",
+        "type": "function",
+        "z": "gridcode_tab",
+        "name": "Queue Writes",
+        "func": "const params = msg.rpcParams || {};\nconst writes = [];\n\n// 039: powerFactorTarget (0-2000)\nif (params.powerFactorTarget !== undefined) {\n    const val = Math.max(0, Math.min(2000, params.powerFactorTarget));\n    writes.push({ register: 39, value: val, name: \"Power Factor Target\" });\n}\n\n// 040: activePowerRegulationPercentPerStep (0.1% scale)\nif (params.activePowerRegulationPercentPerStep !== undefined) {\n    const val = Math.round(params.activePowerRegulationPercentPerStep * 10);\n    writes.push({ register: 40, value: val, name: \"Active Power Reg\" });\n}\n\n// 041: reactivePowerRegulationPercentPerStep (0.1% scale)\nif (params.reactivePowerRegulationPercentPerStep !== undefined) {\n    const val = Math.round(params.reactivePowerRegulationPercentPerStep * 10);\n    writes.push({ register: 41, value: val, name: \"Reactive Power Reg\" });\n}\n\n// 282: reconnectionTimeSeconds (10-300)\nif (params.reconnectionTimeSeconds !== undefined) {\n    const val = Math.max(10, Math.min(300, params.reconnectionTimeSeconds));\n    writes.push({ register: 282, value: val, name: \"Reconnection Time\" });\n}\n\n// 284: gridModeRaw\nif (params.gridModeRaw !== undefined) {\n    writes.push({ register: 284, value: params.gridModeRaw, name: \"Grid Mode\" });\n}\n\n// 285: gridFrequencyHz (0=50Hz, 1=60Hz)\nif (params.gridFrequencyHz !== undefined) {\n    const val = params.gridFrequencyHz === 60 ? 1 : 0;\n    writes.push({ register: 285, value: val, name: \"Grid Frequency\" });\n}\n\n// 286: gridVoltageLevelCode\nif (params.gridVoltageLevelCode !== undefined) {\n    writes.push({ register: 286, value: params.gridVoltageLevelCode, name: \"Grid Voltage Level\" });\n}\n\n// normalConnect object\nif (params.normalConnect) {\n    const nc = params.normalConnect;\n    \n    // 287: voltageHighV (0.1V scale)\n    if (nc.voltageHighV !== undefined) {\n        const val = Math.round(nc.voltageHighV * 10);\n        writes.push({ register: 287, value: val, name: \"Voltage High\" });\n    }\n    \n    // 288: voltageLowV (0.1V scale)\n    if (nc.voltageLowV !== undefined) {\n        const val = Math.round(nc.voltageLowV * 10);\n        writes.push({ register: 288, value: val, name: \"Voltage Low\" });\n    }\n    \n    // 289: frequencyHighHz (0.01Hz scale)\n    if (nc.frequencyHighHz !== undefined) {\n        const val = Math.round(nc.frequencyHighHz * 100);\n        writes.push({ register: 289, value: val, name: \"Frequency High\" });\n    }\n    \n    // 290: frequencyLowHz (0.01Hz scale)\n    if (nc.frequencyLowHz !== undefined) {\n        const val = Math.round(nc.frequencyLowHz * 100);\n        writes.push({ register: 290, value: val, name: \"Frequency Low\" });\n    }\n}\n\nif (writes.length === 0) {\n    node.warn(\"No valid parameters to write\");\n    return null;\n}\n\nglobal.set(\"gridcode_write_queue\", writes);\nglobal.set(\"gridcode_write_index\", 0);\nglobal.set(\"gridcode_write_results\", []);\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: writes.length + \" writes queued\" });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 590,
+        "y": 340,
+        "wires": [
+            [
+                "gridcode_prepare_write"
+            ]
+        ]
+    },
+    {
+        "id": "gridcode_prepare_write",
+        "type": "function",
+        "z": "gridcode_tab",
+        "name": "Prepare Write",
+        "func": "const writes = global.get(\"gridcode_write_queue\") || [];\nconst index = global.get(\"gridcode_write_index\") || 0;\n\nif (index >= writes.length) {\n    return null;\n}\n\nconst current = writes[index];\n\nmsg.payload = {\n    fc: 16,\n    unitid: 1,\n    address: current.register,\n    quantity: 1,\n    value: [current.value]\n};\nmsg.currentWrite = current;\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: `[${index+1}/${writes.length}] ${current.name}` });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 800,
+        "y": 340,
+        "wires": [
+            [
+                "gridcode_write_register"
+            ]
+        ]
+    },
+    {
+        "id": "gridcode_write_register",
+        "type": "modbus-flex-write",
+        "z": "gridcode_tab",
+        "name": "Write Register",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "server": "e4e4f3e2a4f4e004",
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "x": 1000,
+        "y": 340,
+        "wires": [
+            [
+                "gridcode_write_ok"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "gridcode_write_ok",
+        "type": "function",
+        "z": "gridcode_tab",
+        "name": "Write OK",
+        "func": "const writes = global.get(\"gridcode_write_queue\") || [];\nlet index = global.get(\"gridcode_write_index\") || 0;\nconst results = global.get(\"gridcode_write_results\") || [];\n\nconst current = msg.currentWrite;\nif (current) {\n    results.push({\n        register: current.register,\n        name: current.name,\n        value: current.value,\n        success: true\n    });\n    global.set(\"gridcode_write_results\", results);\n}\n\nindex++;\nglobal.set(\"gridcode_write_index\", index);\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `${current.name} OK` });\n\nif (index < writes.length) {\n    return [msg, null];\n}\n\n// All writes done\nflow.set(\"gridcode_write_result\", {\n    count: results.length,\n    writes: results\n});\n\nglobal.set(\"gridcode_write_queue\", null);\nglobal.set(\"gridcode_write_index\", null);\nglobal.set(\"gridcode_write_results\", null);\n\nreturn [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1180,
+        "y": 340,
+        "wires": [
+            [
+                "gridcode_write_delay"
+            ],
+            [
+                "gridcode_start_read"
+            ]
+        ]
+    },
+    {
+        "id": "gridcode_write_delay",
+        "type": "delay",
+        "z": "gridcode_tab",
+        "name": "500ms",
+        "pauseType": "delay",
+        "timeout": "500",
+        "timeoutUnits": "milliseconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 1330,
+        "y": 340,
+        "wires": [
+            [
+                "gridcode_prepare_write"
+            ]
+        ]
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

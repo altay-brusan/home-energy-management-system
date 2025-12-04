@@ -1,0 +1,722 @@
+[
+    {
+        "id": "invadv_tab",
+        "type": "tab",
+        "label": "InverterAdvancedFunctionConfig",
+        "disabled": false,
+        "info": "Inverter Advanced Function Config - Read/Write\n\nRegisters:\n- 003-007: Serial Number (Read Only)\n- 045: Self-checking time\n- 280: Advanced function word (bit fields)\n- 283: Arc Fault Mode\n- 326: External meter phase\n- 327: CT ratio\n- 417: Parallel settings"
+    },
+    {
+        "id": "invadv_link_in_rpc",
+        "type": "link in",
+        "z": "invadv_tab",
+        "name": "RPC Request",
+        "links": [
+            "rpc_invadv_link_out"
+        ],
+        "x": 135,
+        "y": 140,
+        "wires": [
+            [
+                "invadv_route"
+            ]
+        ]
+    },
+    {
+        "id": "invadv_manual_read",
+        "type": "inject",
+        "z": "invadv_tab",
+        "name": "Manual Read",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operation",
+                "v": "read",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 200,
+        "wires": [
+            [
+                "invadv_route"
+            ]
+        ]
+    },
+    {
+        "id": "invadv_test_write",
+        "type": "inject",
+        "z": "invadv_tab",
+        "name": "Test Write",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operation",
+                "v": "write",
+                "vt": "str"
+            },
+            {
+                "p": "rpcParams",
+                "v": "{\"systemSelfCheckEnabled\":true,\"externalMeter\":{\"ctRatio\":1000}}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 140,
+        "y": 260,
+        "wires": [
+            [
+                "invadv_route"
+            ]
+        ]
+    },
+    {
+        "id": "invadv_route",
+        "type": "function",
+        "z": "invadv_tab",
+        "name": "Route: Read or Write?",
+        "func": "flow.set(\"invadv_rpc_response_topic\", msg.rpcResponseTopic);\n\nlet operation = msg.operation || 'read';\nconst params = msg.rpcParams || {};\n\n// Check if any writable field is present\nif (params.advancedFunctionWordRaw !== undefined ||\n    params.arcFault !== undefined ||\n    params.systemSelfCheckEnabled !== undefined ||\n    params.generatorPeakShavingEnabled !== undefined ||\n    params.gridPeakShavingEnabled !== undefined ||\n    params.smartLoadOnGridAlwaysOn !== undefined ||\n    params.externalRelayEnabled !== undefined ||\n    params.externalMeter !== undefined ||\n    params.bmsErrorStopEnabled !== undefined ||\n    params.drmEnabled !== undefined ||\n    params.parallel !== undefined) {\n    operation = 'write';\n}\n\nmsg.operation = operation;\n\nif (operation === 'write') {\n    return [null, msg];\n} else {\n    return [msg, null];\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 200,
+        "wires": [
+            [
+                "invadv_start_read"
+            ],
+            [
+                "invadv_queue_writes"
+            ]
+        ]
+    },
+    {
+        "id": "invadv_comment_read",
+        "type": "comment",
+        "z": "invadv_tab",
+        "name": "═══ READ SECTION ═══",
+        "info": "",
+        "x": 590,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "invadv_start_read",
+        "type": "function",
+        "z": "invadv_tab",
+        "name": "Start Read",
+        "func": "flow.set(\"invadv_part_sn\", null);\nflow.set(\"invadv_part_45\", null);\nflow.set(\"invadv_part_280\", null);\nflow.set(\"invadv_part_283\", null);\nflow.set(\"invadv_part_326\", null);\nflow.set(\"invadv_part_417\", null);\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 590,
+        "y": 120,
+        "wires": [
+            [
+                "invadv_prep_sn",
+                "invadv_prep_45",
+                "invadv_prep_280_283",
+                "invadv_prep_326_327",
+                "invadv_prep_417"
+            ]
+        ]
+    },
+    {
+        "id": "invadv_prep_sn",
+        "type": "function",
+        "z": "invadv_tab",
+        "name": "Prep SN (003-007)",
+        "func": "msg.readGroup = \"sn\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 3,\n    quantity: 5\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 800,
+        "y": 60,
+        "wires": [
+            [
+                "invadv_read_sn"
+            ]
+        ]
+    },
+    {
+        "id": "invadv_prep_45",
+        "type": "function",
+        "z": "invadv_tab",
+        "name": "Prep 045",
+        "func": "msg.readGroup = \"reg45\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 45,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 780,
+        "y": 100,
+        "wires": [
+            [
+                "invadv_read_45"
+            ]
+        ]
+    },
+    {
+        "id": "invadv_prep_280_283",
+        "type": "function",
+        "z": "invadv_tab",
+        "name": "Prep 280-283",
+        "func": "msg.readGroup = \"reg280\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 280,\n    quantity: 4\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 790,
+        "y": 140,
+        "wires": [
+            [
+                "invadv_read_280_283"
+            ]
+        ]
+    },
+    {
+        "id": "invadv_prep_326_327",
+        "type": "function",
+        "z": "invadv_tab",
+        "name": "Prep 326-327",
+        "func": "msg.readGroup = \"reg326\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 326,\n    quantity: 2\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 790,
+        "y": 180,
+        "wires": [
+            [
+                "invadv_read_326_327"
+            ]
+        ]
+    },
+    {
+        "id": "invadv_prep_417",
+        "type": "function",
+        "z": "invadv_tab",
+        "name": "Prep 417",
+        "func": "msg.readGroup = \"reg417\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 417,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 780,
+        "y": 220,
+        "wires": [
+            [
+                "invadv_read_417"
+            ]
+        ]
+    },
+    {
+        "id": "invadv_read_sn",
+        "type": "modbus-flex-getter",
+        "z": "invadv_tab",
+        "name": "Read SN",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1000,
+        "y": 60,
+        "wires": [
+            [
+                "invadv_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "invadv_read_45",
+        "type": "modbus-flex-getter",
+        "z": "invadv_tab",
+        "name": "Read 45",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1000,
+        "y": 100,
+        "wires": [
+            [
+                "invadv_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "invadv_read_280_283",
+        "type": "modbus-flex-getter",
+        "z": "invadv_tab",
+        "name": "Read 280-283",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1020,
+        "y": 140,
+        "wires": [
+            [
+                "invadv_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "invadv_read_326_327",
+        "type": "modbus-flex-getter",
+        "z": "invadv_tab",
+        "name": "Read 326-327",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1020,
+        "y": 180,
+        "wires": [
+            [
+                "invadv_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "invadv_read_417",
+        "type": "modbus-flex-getter",
+        "z": "invadv_tab",
+        "name": "Read 417",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1000,
+        "y": 220,
+        "wires": [
+            [
+                "invadv_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "invadv_collect",
+        "type": "function",
+        "z": "invadv_tab",
+        "name": "Collect Parts",
+        "func": "let data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data)) {\n    node.error(\"Invalid response for \" + msg.readGroup);\n    return null;\n}\n\nconst group = msg.readGroup;\n\nif (group === \"sn\") {\n    flow.set(\"invadv_part_sn\", data);\n} else if (group === \"reg45\") {\n    flow.set(\"invadv_part_45\", data[0]);\n} else if (group === \"reg280\") {\n    flow.set(\"invadv_part_280\", data[0]);  // 280\n    flow.set(\"invadv_part_281\", data[1]);  // 281\n    flow.set(\"invadv_part_282\", data[2]);  // 282\n    flow.set(\"invadv_part_283\", data[3]);  // 283\n} else if (group === \"reg326\") {\n    flow.set(\"invadv_part_326\", data[0]);\n    flow.set(\"invadv_part_327\", data[1]);\n} else if (group === \"reg417\") {\n    flow.set(\"invadv_part_417\", data[0]);\n}\n\n// Check if all parts received\nconst partSn = flow.get(\"invadv_part_sn\");\nconst part45 = flow.get(\"invadv_part_45\");\nconst part280 = flow.get(\"invadv_part_280\");\nconst part326 = flow.get(\"invadv_part_326\");\nconst part327 = flow.get(\"invadv_part_327\");\nconst part417 = flow.get(\"invadv_part_417\");\n\nif (!partSn || part45 === null || part45 === undefined ||\n    part280 === null || part280 === undefined ||\n    part326 === null || part326 === undefined ||\n    part327 === null || part327 === undefined ||\n    part417 === null || part417 === undefined) {\n    return null;\n}\n\nmsg.snData = partSn;\nmsg.reg45 = part45;\nmsg.reg280 = part280;\nmsg.reg281 = flow.get(\"invadv_part_281\");\nmsg.reg282 = flow.get(\"invadv_part_282\");\nmsg.reg283 = flow.get(\"invadv_part_283\");\nmsg.reg326 = part326;\nmsg.reg327 = part327;\nmsg.reg417 = part417;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1190,
+        "y": 140,
+        "wires": [
+            [
+                "invadv_build_json"
+            ]
+        ]
+    },
+    {
+        "id": "invadv_build_json",
+        "type": "function",
+        "z": "invadv_tab",
+        "name": "Build JSON State",
+        "func": "const snData = msg.snData;\nconst reg45 = msg.reg45;\nconst reg280 = msg.reg280;\nconst reg283 = msg.reg283;\nconst reg326 = msg.reg326;\nconst reg327 = msg.reg327;\nconst reg417 = msg.reg417;\n\n// Clear flow context\nflow.set(\"invadv_part_sn\", null);\nflow.set(\"invadv_part_45\", null);\nflow.set(\"invadv_part_280\", null);\nflow.set(\"invadv_part_281\", null);\nflow.set(\"invadv_part_282\", null);\nflow.set(\"invadv_part_283\", null);\nflow.set(\"invadv_part_326\", null);\nflow.set(\"invadv_part_327\", null);\nflow.set(\"invadv_part_417\", null);\n\n// Helper: Parse ASCII\nfunction parseAsciiChar(val, high) {\n    const byte = high ? ((val >> 8) & 0xFF) : (val & 0xFF);\n    if (byte >= 0x20 && byte <= 0x7E) {\n        return String.fromCharCode(byte);\n    }\n    return '';\n}\n\nfunction parseSerialNumber(regs) {\n    let sn = '';\n    for (let i = 0; i < 5; i++) {\n        sn += parseAsciiChar(regs[i], true);\n        sn += parseAsciiChar(regs[i], false);\n    }\n    return sn.trim();\n}\n\nconst serialNumber = parseSerialNumber(snData);\n\n// Parse reg280 bit fields\nconst bit0_3 = reg280 & 0x0F;                    // Microinverter export cutoff\nconst genPeakShaving = ((reg280 >> 4) & 0x0F);   // Bit4-7: Gen peak-shaving\nconst gridPeakShaving = ((reg280 >> 8) & 0x0F); // Bit8-11: Grid peak-shaving\nconst onGridAlwaysOn = ((reg280 >> 12) & 0x01); // Bit12: On Grid always on\nconst externalRelay = ((reg280 >> 13) & 0x01);  // Bit13: external relay\nconst bmsErrorStop = ((reg280 >> 14) & 0x01);   // Bit14: BMS error stop\nconst drmEnabled = ((reg280 >> 15) & 0x01);     // Bit15: DRM enable\n\n// Parse reg283: Arc Fault Mode\n// 0=close, 1=open, 2=clear request\nconst arcFaultEnabled = (reg283 === 1);\nconst arcFaultClearRequested = (reg283 === 2);\n\n// Parse reg45: Self-checking time (0-360 seconds)\n// 0 = disabled, >0 = enabled with time\nconst selfCheckTime = reg45;\nconst systemSelfCheckEnabled = reg45 > 0;\n\n// Parse reg326: External meter phase (Bit1-3 = A/B/C phase)\nconst phaseA = ((reg326 >> 1) & 0x01) === 1;\nconst phaseB = ((reg326 >> 2) & 0x01) === 1;\nconst phaseC = ((reg326 >> 3) & 0x01) === 1;\nlet phaseStr = '';\nif (phaseA) phaseStr += 'A';\nif (phaseB) phaseStr += 'B';\nif (phaseC) phaseStr += 'C';\nif (!phaseStr) phaseStr = null;\n\n// Parse reg327: CT ratio (200-8000)\nconst ctRatio = reg327;\n\n// Parse reg417: Parallel settings\nconst parallelEnabled = (reg417 & 0x01) === 1;        // Bit0\nconst parallelIsMaster = ((reg417 >> 1) & 0x01) === 1; // Bit1\nconst parallelModbusAddr = (reg417 >> 10) & 0x3F;      // Bit10-15\n\nlet parallelRole = 'standalone';\nif (parallelEnabled) {\n    parallelRole = parallelIsMaster ? 'master' : 'slave';\n}\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\n\nconst state = {\n    kind: \"InverterAdvancedFunctionConfigState\",\n    timestampUtc: new Date().toISOString(),\n    gatewayId: gatewayId,\n    inverterSerialNumber: serialNumber,\n    version: \"1.0\",\n    \n    advancedFunctionWordRaw: reg280,\n    \n    arcFault: {\n        enabled: arcFaultEnabled,\n        clearRequested: arcFaultClearRequested\n    },\n    \n    systemSelfCheckEnabled: systemSelfCheckEnabled,\n    selfCheckTimeSeconds: selfCheckTime,\n    \n    generatorPeakShavingEnabled: genPeakShaving === 1,\n    gridPeakShavingEnabled: gridPeakShaving === 1,\n    \n    smartLoadOnGridAlwaysOn: onGridAlwaysOn === 1,\n    externalRelayEnabled: externalRelay === 1,\n    islandModeSignalEnabled: null,  // Derived - not directly readable\n    \n    externalMeter: {\n        ctRatio: ctRatio,\n        phase: phaseStr\n    },\n    \n    bmsErrorStopEnabled: bmsErrorStop === 1,\n    drmEnabled: drmEnabled === 1,\n    \n    parallel: {\n        enabled: parallelEnabled,\n        role: parallelRole,\n        modbusAddress: parallelModbusAddr\n    },\n    \n    rawRegisters: {\n        reg45: reg45,\n        reg280: reg280,\n        reg283: reg283,\n        reg326: reg326,\n        reg327: reg327,\n        reg417: reg417\n    }\n};\n\n// Check if this is after a write\nconst writeResult = flow.get(\"invadv_write_result\");\nflow.set(\"invadv_write_result\", null);\n\nconst rpcResponseTopic = flow.get(\"invadv_rpc_response_topic\");\nflow.set(\"invadv_rpc_response_topic\", null);\n\nif (writeResult) {\n    msg.payload = {\n        success: true,\n        message: `Successfully wrote ${writeResult.count} register(s)`,\n        writes: writeResult.writes,\n        state: state\n    };\n} else {\n    msg.payload = state;\n}\n\nmsg.rpcResponseTopic = rpcResponseTopic;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1390,
+        "y": 140,
+        "wires": [
+            [
+                "invadv_debug",
+                "invadv_rpc_response"
+            ]
+        ]
+    },
+    {
+        "id": "invadv_debug",
+        "type": "debug",
+        "z": "invadv_tab",
+        "name": "InvAdv JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1590,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "invadv_rpc_response",
+        "type": "function",
+        "z": "invadv_tab",
+        "name": "RPC Response",
+        "func": "if (!msg.rpcResponseTopic) {\n    return null;\n}\n\nmsg.topic = msg.rpcResponseTopic;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1600,
+        "y": 160,
+        "wires": [
+            [
+                "invadv_mqtt_response"
+            ]
+        ]
+    },
+    {
+        "id": "invadv_mqtt_response",
+        "type": "mqtt out",
+        "z": "invadv_tab",
+        "name": "MQTT Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1800,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "invadv_comment_write",
+        "type": "comment",
+        "z": "invadv_tab",
+        "name": "═══ WRITE SECTION ═══",
+        "info": "",
+        "x": 600,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "invadv_queue_writes",
+        "type": "function",
+        "z": "invadv_tab",
+        "name": "Queue Writes",
+        "func": "const params = msg.rpcParams || {};\nconst writes = [];\n\n// Store current reg280 for bit manipulation\nlet reg280Current = flow.get(\"invadv_part_280\") || 0;\n\n// 045: systemSelfCheckEnabled (0-360 seconds)\nif (params.systemSelfCheckEnabled !== undefined) {\n    // If true, set to default 60 seconds, if false set to 0\n    let val = 0;\n    if (params.systemSelfCheckEnabled === true) {\n        val = params.selfCheckTimeSeconds || 60;\n    } else if (typeof params.systemSelfCheckEnabled === 'number') {\n        val = params.systemSelfCheckEnabled;\n    }\n    val = Math.max(0, Math.min(360, val));\n    writes.push({ register: 45, value: val, name: \"Self Check Time\" });\n}\n\nif (params.selfCheckTimeSeconds !== undefined) {\n    const val = Math.max(0, Math.min(360, params.selfCheckTimeSeconds));\n    writes.push({ register: 45, value: val, name: \"Self Check Time\" });\n}\n\n// 283: arcFault\nif (params.arcFault !== undefined) {\n    let val = 0;  // close\n    if (params.arcFault.enabled === true) val = 1;  // open\n    if (params.arcFault.clearRequested === true) val = 2;  // clear\n    writes.push({ register: 283, value: val, name: \"Arc Fault Mode\" });\n}\n\n// 327: CT ratio\nif (params.externalMeter && params.externalMeter.ctRatio !== undefined) {\n    const val = Math.max(200, Math.min(8000, params.externalMeter.ctRatio));\n    writes.push({ register: 327, value: val, name: \"CT Ratio\" });\n}\n\n// 326: External meter phase (need to read first for bit manipulation)\nif (params.externalMeter && params.externalMeter.phase !== undefined) {\n    let reg326Current = flow.get(\"invadv_part_326\") || 0;\n    const phaseStr = params.externalMeter.phase.toUpperCase();\n    \n    // Clear bits 1-3\n    reg326Current &= ~0x0E;\n    \n    if (phaseStr.includes('A')) reg326Current |= (1 << 1);\n    if (phaseStr.includes('B')) reg326Current |= (1 << 2);\n    if (phaseStr.includes('C')) reg326Current |= (1 << 3);\n    \n    writes.push({ register: 326, value: reg326Current, name: \"Meter Phase\" });\n}\n\n// 280 bit fields - need to manipulate individual bits\nlet needWrite280 = false;\n\nif (params.generatorPeakShavingEnabled !== undefined) {\n    reg280Current &= ~(0x0F << 4);  // Clear Bit4-7\n    if (params.generatorPeakShavingEnabled) {\n        reg280Current |= (1 << 4);  // Set Bit4\n    }\n    needWrite280 = true;\n}\n\nif (params.gridPeakShavingEnabled !== undefined) {\n    reg280Current &= ~(0x0F << 8);  // Clear Bit8-11\n    if (params.gridPeakShavingEnabled) {\n        reg280Current |= (1 << 8);  // Set Bit8\n    }\n    needWrite280 = true;\n}\n\nif (params.smartLoadOnGridAlwaysOn !== undefined) {\n    if (params.smartLoadOnGridAlwaysOn) {\n        reg280Current |= (1 << 12);\n    } else {\n        reg280Current &= ~(1 << 12);\n    }\n    needWrite280 = true;\n}\n\nif (params.externalRelayEnabled !== undefined) {\n    if (params.externalRelayEnabled) {\n        reg280Current |= (1 << 13);\n    } else {\n        reg280Current &= ~(1 << 13);\n    }\n    needWrite280 = true;\n}\n\nif (params.bmsErrorStopEnabled !== undefined) {\n    if (params.bmsErrorStopEnabled) {\n        reg280Current |= (1 << 14);\n    } else {\n        reg280Current &= ~(1 << 14);\n    }\n    needWrite280 = true;\n}\n\nif (params.drmEnabled !== undefined) {\n    if (params.drmEnabled) {\n        reg280Current |= (1 << 15);\n    } else {\n        reg280Current &= ~(1 << 15);\n    }\n    needWrite280 = true;\n}\n\nif (params.advancedFunctionWordRaw !== undefined) {\n    reg280Current = params.advancedFunctionWordRaw;\n    needWrite280 = true;\n}\n\nif (needWrite280) {\n    writes.push({ register: 280, value: reg280Current, name: \"Advanced Function Word\" });\n}\n\n// 417: Parallel settings\nif (params.parallel !== undefined) {\n    let reg417Current = flow.get(\"invadv_part_417\") || 0;\n    \n    if (params.parallel.enabled !== undefined) {\n        if (params.parallel.enabled) {\n            reg417Current |= 0x01;  // Set Bit0\n        } else {\n            reg417Current &= ~0x01;  // Clear Bit0\n        }\n    }\n    \n    if (params.parallel.role !== undefined) {\n        if (params.parallel.role === 'master') {\n            reg417Current |= (1 << 1);  // Set Bit1\n        } else {\n            reg417Current &= ~(1 << 1);  // Clear Bit1\n        }\n    }\n    \n    if (params.parallel.modbusAddress !== undefined) {\n        reg417Current &= ~(0x3F << 10);  // Clear Bit10-15\n        const addr = Math.max(0, Math.min(63, params.parallel.modbusAddress));\n        reg417Current |= (addr << 10);\n    }\n    \n    writes.push({ register: 417, value: reg417Current, name: \"Parallel Settings\" });\n}\n\nif (writes.length === 0) {\n    node.warn(\"No valid parameters to write\");\n    return null;\n}\n\nglobal.set(\"invadv_write_queue\", writes);\nglobal.set(\"invadv_write_index\", 0);\nglobal.set(\"invadv_write_results\", []);\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: writes.length + \" writes queued\" });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 590,
+        "y": 360,
+        "wires": [
+            [
+                "invadv_read_before_write"
+            ]
+        ]
+    },
+    {
+        "id": "invadv_read_before_write",
+        "type": "function",
+        "z": "invadv_tab",
+        "name": "Read Current Values",
+        "func": "// Read 280 and 326 and 417 first for bit manipulation\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 280,\n    quantity: 4\n};\nmsg.readStep = 1;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 820,
+        "y": 360,
+        "wires": [
+            [
+                "invadv_read_for_write"
+            ]
+        ]
+    },
+    {
+        "id": "invadv_read_for_write",
+        "type": "modbus-flex-getter",
+        "z": "invadv_tab",
+        "name": "Read Regs",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1010,
+        "y": 360,
+        "wires": [
+            [
+                "invadv_process_read_for_write"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "invadv_process_read_for_write",
+        "type": "function",
+        "z": "invadv_tab",
+        "name": "Process & Continue",
+        "func": "let data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (msg.readStep === 1) {\n    // Store 280-283\n    flow.set(\"invadv_part_280\", data[0]);\n    flow.set(\"invadv_part_281\", data[1]);\n    flow.set(\"invadv_part_282\", data[2]);\n    flow.set(\"invadv_part_283\", data[3]);\n    \n    // Read 326-327\n    msg.payload = {\n        fc: 3,\n        unitid: 1,\n        address: 326,\n        quantity: 2\n    };\n    msg.readStep = 2;\n    return [msg, null];\n} else if (msg.readStep === 2) {\n    flow.set(\"invadv_part_326\", data[0]);\n    flow.set(\"invadv_part_327\", data[1]);\n    \n    // Read 417\n    msg.payload = {\n        fc: 3,\n        unitid: 1,\n        address: 417,\n        quantity: 1\n    };\n    msg.readStep = 3;\n    return [msg, null];\n} else if (msg.readStep === 3) {\n    flow.set(\"invadv_part_417\", data[0]);\n    \n    // Now update write queue with current values\n    const writes = global.get(\"invadv_write_queue\") || [];\n    const params = msg.rpcParams || {};\n    let reg280Current = flow.get(\"invadv_part_280\") || 0;\n    \n    // Re-apply bit changes to reg280 with fresh data\n    for (let i = 0; i < writes.length; i++) {\n        if (writes[i].register === 280) {\n            let newVal = reg280Current;\n            \n            if (params.generatorPeakShavingEnabled !== undefined) {\n                newVal &= ~(0x0F << 4);\n                if (params.generatorPeakShavingEnabled) newVal |= (1 << 4);\n            }\n            if (params.gridPeakShavingEnabled !== undefined) {\n                newVal &= ~(0x0F << 8);\n                if (params.gridPeakShavingEnabled) newVal |= (1 << 8);\n            }\n            if (params.smartLoadOnGridAlwaysOn !== undefined) {\n                if (params.smartLoadOnGridAlwaysOn) newVal |= (1 << 12);\n                else newVal &= ~(1 << 12);\n            }\n            if (params.externalRelayEnabled !== undefined) {\n                if (params.externalRelayEnabled) newVal |= (1 << 13);\n                else newVal &= ~(1 << 13);\n            }\n            if (params.bmsErrorStopEnabled !== undefined) {\n                if (params.bmsErrorStopEnabled) newVal |= (1 << 14);\n                else newVal &= ~(1 << 14);\n            }\n            if (params.drmEnabled !== undefined) {\n                if (params.drmEnabled) newVal |= (1 << 15);\n                else newVal &= ~(1 << 15);\n            }\n            if (params.advancedFunctionWordRaw !== undefined) {\n                newVal = params.advancedFunctionWordRaw;\n            }\n            \n            writes[i].value = newVal;\n        }\n        \n        if (writes[i].register === 326 && params.externalMeter && params.externalMeter.phase) {\n            let reg326Current = flow.get(\"invadv_part_326\") || 0;\n            const phaseStr = params.externalMeter.phase.toUpperCase();\n            reg326Current &= ~0x0E;\n            if (phaseStr.includes('A')) reg326Current |= (1 << 1);\n            if (phaseStr.includes('B')) reg326Current |= (1 << 2);\n            if (phaseStr.includes('C')) reg326Current |= (1 << 3);\n            writes[i].value = reg326Current;\n        }\n        \n        if (writes[i].register === 417 && params.parallel) {\n            let reg417Current = flow.get(\"invadv_part_417\") || 0;\n            if (params.parallel.enabled !== undefined) {\n                if (params.parallel.enabled) reg417Current |= 0x01;\n                else reg417Current &= ~0x01;\n            }\n            if (params.parallel.role !== undefined) {\n                if (params.parallel.role === 'master') reg417Current |= (1 << 1);\n                else reg417Current &= ~(1 << 1);\n            }\n            if (params.parallel.modbusAddress !== undefined) {\n                reg417Current &= ~(0x3F << 10);\n                const addr = Math.max(0, Math.min(63, params.parallel.modbusAddress));\n                reg417Current |= (addr << 10);\n            }\n            writes[i].value = reg417Current;\n        }\n    }\n    \n    global.set(\"invadv_write_queue\", writes);\n    \n    // Proceed to write\n    return [null, msg];\n}\n\nreturn null;",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1210,
+        "y": 360,
+        "wires": [
+            [
+                "invadv_read_for_write"
+            ],
+            [
+                "invadv_prepare_write"
+            ]
+        ]
+    },
+    {
+        "id": "invadv_prepare_write",
+        "type": "function",
+        "z": "invadv_tab",
+        "name": "Prepare Write",
+        "func": "const writes = global.get(\"invadv_write_queue\") || [];\nconst index = global.get(\"invadv_write_index\") || 0;\n\nif (index >= writes.length) {\n    return null;\n}\n\nconst current = writes[index];\n\nmsg.payload = {\n    fc: 16,\n    unitid: 1,\n    address: current.register,\n    quantity: 1,\n    value: [current.value]\n};\nmsg.currentWrite = current;\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: `[${index+1}/${writes.length}] ${current.name}` });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 600,
+        "y": 440,
+        "wires": [
+            [
+                "invadv_write_register"
+            ]
+        ]
+    },
+    {
+        "id": "invadv_write_register",
+        "type": "modbus-flex-write",
+        "z": "invadv_tab",
+        "name": "Write Register",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "server": "e4e4f3e2a4f4e004",
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "x": 800,
+        "y": 440,
+        "wires": [
+            [
+                "invadv_write_ok"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "invadv_write_ok",
+        "type": "function",
+        "z": "invadv_tab",
+        "name": "Write OK",
+        "func": "const writes = global.get(\"invadv_write_queue\") || [];\nlet index = global.get(\"invadv_write_index\") || 0;\nconst results = global.get(\"invadv_write_results\") || [];\n\nconst current = msg.currentWrite;\nif (current) {\n    results.push({\n        register: current.register,\n        name: current.name,\n        value: current.value,\n        success: true\n    });\n    global.set(\"invadv_write_results\", results);\n}\n\nindex++;\nglobal.set(\"invadv_write_index\", index);\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `${current.name} OK` });\n\nif (index < writes.length) {\n    return [msg, null];\n}\n\n// All writes done\nflow.set(\"invadv_write_result\", {\n    count: results.length,\n    writes: results\n});\n\nglobal.set(\"invadv_write_queue\", null);\nglobal.set(\"invadv_write_index\", null);\nglobal.set(\"invadv_write_results\", null);\n\nreturn [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 980,
+        "y": 440,
+        "wires": [
+            [
+                "invadv_write_delay"
+            ],
+            [
+                "invadv_start_read"
+            ]
+        ]
+    },
+    {
+        "id": "invadv_write_delay",
+        "type": "delay",
+        "z": "invadv_tab",
+        "name": "500ms",
+        "pauseType": "delay",
+        "timeout": "500",
+        "timeoutUnits": "milliseconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 1130,
+        "y": 440,
+        "wires": [
+            [
+                "invadv_prepare_write"
+            ]
+        ]
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

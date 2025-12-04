@@ -1,0 +1,982 @@
+[
+    {
+        "id": "sysconn_tab",
+        "type": "tab",
+        "label": "SystemConnectionStructure",
+        "disabled": false,
+        "info": "System Connection Structure - Read/Write\n\nRegisters:\n- 000-019: Device info (Read Only)\n- 019: Grid Voltage Level (R/W)\n- 051: Grid Standard (R/W)\n- 204: Battery Capacity (R/W)\n- 213: Battery Control Mode (R/W)\n- 235: Generator Input Mode (R/W)\n- 244: Export Limit Mode (R/W)\n- 285: Grid Frequency (R/W)\n- 286: Grid Type (R/W)\n- 291: Gen Connected to Grid (R/W)\n- 325: Lithium Battery Type (R/W)"
+    },
+    {
+        "id": "sysconn_link_in_rpc",
+        "type": "link in",
+        "z": "sysconn_tab",
+        "name": "RPC Request",
+        "links": [
+            "rpc_sysconn_link_out"
+        ],
+        "x": 135,
+        "y": 140,
+        "wires": [
+            [
+                "sysconn_route"
+            ]
+        ]
+    },
+    {
+        "id": "sysconn_manual_read",
+        "type": "inject",
+        "z": "sysconn_tab",
+        "name": "Manual Read",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operation",
+                "v": "read",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 200,
+        "wires": [
+            [
+                "sysconn_route"
+            ]
+        ]
+    },
+    {
+        "id": "sysconn_test_write",
+        "type": "inject",
+        "z": "sysconn_tab",
+        "name": "Test Write",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operation",
+                "v": "write",
+                "vt": "str"
+            },
+            {
+                "p": "rpcParams",
+                "v": "{\"ratedCapacityAh\":200}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 140,
+        "y": 260,
+        "wires": [
+            [
+                "sysconn_route"
+            ]
+        ]
+    },
+    {
+        "id": "sysconn_route",
+        "type": "function",
+        "z": "sysconn_tab",
+        "name": "Route: Read or Write?",
+        "func": "flow.set('sysconn_rpc_response_topic', msg.rpcResponseTopic);\n\nlet operation = msg.operation || 'read';\nconst params = msg.rpcParams || {};\n\n// Check if any writable field is present\nif (params.gridVoltageLevelCode !== undefined ||\n    params.gridStandardRaw !== undefined ||\n    params.ratedCapacityAh !== undefined ||\n    params.batteryControlModeRaw !== undefined ||\n    params.generatorInputModeRaw !== undefined ||\n    params.exportLimitModeRaw !== undefined ||\n    params.gridFrequencyRaw !== undefined ||\n    params.gridTypeRaw !== undefined ||\n    params.connectedToGridInputRaw !== undefined ||\n    params.lithiumBatteryTypeRaw !== undefined) {\n    operation = 'write';\n}\n\nmsg.operation = operation;\n\nif (operation === 'write') {\n    return [null, msg];\n} else {\n    return [msg, null];\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 200,
+        "wires": [
+            [
+                "sysconn_start_read"
+            ],
+            [
+                "sysconn_queue_writes"
+            ]
+        ]
+    },
+    {
+        "id": "sysconn_comment_read",
+        "type": "comment",
+        "z": "sysconn_tab",
+        "name": "═══ READ SECTION ═══",
+        "info": "",
+        "x": 590,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "sysconn_start_read",
+        "type": "function",
+        "z": "sysconn_tab",
+        "name": "Start Read",
+        "func": "// Clear all parts\nflow.set('sysconn_part_0_2', null);\nflow.set('sysconn_part_sn', null);\nflow.set('sysconn_part_8_14', null);\nflow.set('sysconn_part_15_19', null);\nflow.set('sysconn_part_51', null);\nflow.set('sysconn_part_204', null);\nflow.set('sysconn_part_213', null);\nflow.set('sysconn_part_235', null);\nflow.set('sysconn_part_244', null);\nflow.set('sysconn_part_285_286', null);\nflow.set('sysconn_part_291', null);\nflow.set('sysconn_part_325', null);\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 590,
+        "y": 120,
+        "wires": [
+            [
+                "sysconn_prep_0_2",
+                "sysconn_prep_sn",
+                "sysconn_prep_8_14",
+                "sysconn_prep_15_19",
+                "sysconn_prep_51",
+                "sysconn_prep_204",
+                "sysconn_prep_213",
+                "sysconn_prep_235",
+                "sysconn_prep_244",
+                "sysconn_prep_285_286",
+                "sysconn_prep_291",
+                "sysconn_prep_325"
+            ]
+        ]
+    },
+    {
+        "id": "sysconn_prep_0_2",
+        "type": "function",
+        "z": "sysconn_tab",
+        "name": "Prep 000-002",
+        "func": "msg.readGroup = 'reg0_2';\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 0,\n    quantity: 3\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 790,
+        "y": 60,
+        "wires": [
+            [
+                "sysconn_read_0_2"
+            ]
+        ]
+    },
+    {
+        "id": "sysconn_prep_sn",
+        "type": "function",
+        "z": "sysconn_tab",
+        "name": "Prep SN (003-007)",
+        "func": "msg.readGroup = 'sn';\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 3,\n    quantity: 5\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 800,
+        "y": 100,
+        "wires": [
+            [
+                "sysconn_read_sn"
+            ]
+        ]
+    },
+    {
+        "id": "sysconn_prep_8_14",
+        "type": "function",
+        "z": "sysconn_tab",
+        "name": "Prep 008-014",
+        "func": "msg.readGroup = 'reg8_14';\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 8,\n    quantity: 7\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 790,
+        "y": 140,
+        "wires": [
+            [
+                "sysconn_read_8_14"
+            ]
+        ]
+    },
+    {
+        "id": "sysconn_prep_15_19",
+        "type": "function",
+        "z": "sysconn_tab",
+        "name": "Prep 015-019",
+        "func": "msg.readGroup = 'reg15_19';\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 15,\n    quantity: 5\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 790,
+        "y": 180,
+        "wires": [
+            [
+                "sysconn_read_15_19"
+            ]
+        ]
+    },
+    {
+        "id": "sysconn_prep_51",
+        "type": "function",
+        "z": "sysconn_tab",
+        "name": "Prep 051",
+        "func": "msg.readGroup = 'reg51';\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 51,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 780,
+        "y": 220,
+        "wires": [
+            [
+                "sysconn_read_51"
+            ]
+        ]
+    },
+    {
+        "id": "sysconn_prep_204",
+        "type": "function",
+        "z": "sysconn_tab",
+        "name": "Prep 204",
+        "func": "msg.readGroup = 'reg204';\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 204,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 780,
+        "y": 260,
+        "wires": [
+            [
+                "sysconn_read_204"
+            ]
+        ]
+    },
+    {
+        "id": "sysconn_prep_213",
+        "type": "function",
+        "z": "sysconn_tab",
+        "name": "Prep 213",
+        "func": "msg.readGroup = 'reg213';\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 213,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 780,
+        "y": 300,
+        "wires": [
+            [
+                "sysconn_read_213"
+            ]
+        ]
+    },
+    {
+        "id": "sysconn_prep_235",
+        "type": "function",
+        "z": "sysconn_tab",
+        "name": "Prep 235",
+        "func": "msg.readGroup = 'reg235';\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 235,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 780,
+        "y": 340,
+        "wires": [
+            [
+                "sysconn_read_235"
+            ]
+        ]
+    },
+    {
+        "id": "sysconn_prep_244",
+        "type": "function",
+        "z": "sysconn_tab",
+        "name": "Prep 244",
+        "func": "msg.readGroup = 'reg244';\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 244,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 780,
+        "y": 380,
+        "wires": [
+            [
+                "sysconn_read_244"
+            ]
+        ]
+    },
+    {
+        "id": "sysconn_prep_285_286",
+        "type": "function",
+        "z": "sysconn_tab",
+        "name": "Prep 285-286",
+        "func": "msg.readGroup = 'reg285_286';\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 285,\n    quantity: 2\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 790,
+        "y": 420,
+        "wires": [
+            [
+                "sysconn_read_285_286"
+            ]
+        ]
+    },
+    {
+        "id": "sysconn_prep_291",
+        "type": "function",
+        "z": "sysconn_tab",
+        "name": "Prep 291",
+        "func": "msg.readGroup = 'reg291';\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 291,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 780,
+        "y": 460,
+        "wires": [
+            [
+                "sysconn_read_291"
+            ]
+        ]
+    },
+    {
+        "id": "sysconn_prep_325",
+        "type": "function",
+        "z": "sysconn_tab",
+        "name": "Prep 325",
+        "func": "msg.readGroup = 'reg325';\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 325,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 780,
+        "y": 500,
+        "wires": [
+            [
+                "sysconn_read_325"
+            ]
+        ]
+    },
+    {
+        "id": "sysconn_read_0_2",
+        "type": "modbus-flex-getter",
+        "z": "sysconn_tab",
+        "name": "Read 0-2",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1000,
+        "y": 60,
+        "wires": [
+            [
+                "sysconn_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "sysconn_read_sn",
+        "type": "modbus-flex-getter",
+        "z": "sysconn_tab",
+        "name": "Read SN",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1000,
+        "y": 100,
+        "wires": [
+            [
+                "sysconn_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "sysconn_read_8_14",
+        "type": "modbus-flex-getter",
+        "z": "sysconn_tab",
+        "name": "Read 8-14",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1010,
+        "y": 140,
+        "wires": [
+            [
+                "sysconn_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "sysconn_read_15_19",
+        "type": "modbus-flex-getter",
+        "z": "sysconn_tab",
+        "name": "Read 15-19",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1010,
+        "y": 180,
+        "wires": [
+            [
+                "sysconn_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "sysconn_read_51",
+        "type": "modbus-flex-getter",
+        "z": "sysconn_tab",
+        "name": "Read 51",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1000,
+        "y": 220,
+        "wires": [
+            [
+                "sysconn_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "sysconn_read_204",
+        "type": "modbus-flex-getter",
+        "z": "sysconn_tab",
+        "name": "Read 204",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1000,
+        "y": 260,
+        "wires": [
+            [
+                "sysconn_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "sysconn_read_213",
+        "type": "modbus-flex-getter",
+        "z": "sysconn_tab",
+        "name": "Read 213",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1000,
+        "y": 300,
+        "wires": [
+            [
+                "sysconn_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "sysconn_read_235",
+        "type": "modbus-flex-getter",
+        "z": "sysconn_tab",
+        "name": "Read 235",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1000,
+        "y": 340,
+        "wires": [
+            [
+                "sysconn_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "sysconn_read_244",
+        "type": "modbus-flex-getter",
+        "z": "sysconn_tab",
+        "name": "Read 244",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1000,
+        "y": 380,
+        "wires": [
+            [
+                "sysconn_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "sysconn_read_285_286",
+        "type": "modbus-flex-getter",
+        "z": "sysconn_tab",
+        "name": "Read 285-286",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1020,
+        "y": 420,
+        "wires": [
+            [
+                "sysconn_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "sysconn_read_291",
+        "type": "modbus-flex-getter",
+        "z": "sysconn_tab",
+        "name": "Read 291",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1000,
+        "y": 460,
+        "wires": [
+            [
+                "sysconn_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "sysconn_read_325",
+        "type": "modbus-flex-getter",
+        "z": "sysconn_tab",
+        "name": "Read 325",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1000,
+        "y": 500,
+        "wires": [
+            [
+                "sysconn_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "sysconn_collect",
+        "type": "function",
+        "z": "sysconn_tab",
+        "name": "Collect Parts",
+        "func": "let data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data)) {\n    node.error('Invalid response for ' + msg.readGroup);\n    return null;\n}\n\nconst group = msg.readGroup;\n\nswitch(group) {\n    case 'reg0_2':\n        flow.set('sysconn_part_0_2', data);\n        break;\n    case 'sn':\n        flow.set('sysconn_part_sn', data);\n        break;\n    case 'reg8_14':\n        flow.set('sysconn_part_8_14', data);\n        break;\n    case 'reg15_19':\n        flow.set('sysconn_part_15_19', data);\n        break;\n    case 'reg51':\n        flow.set('sysconn_part_51', data[0]);\n        break;\n    case 'reg204':\n        flow.set('sysconn_part_204', data[0]);\n        break;\n    case 'reg213':\n        flow.set('sysconn_part_213', data[0]);\n        break;\n    case 'reg235':\n        flow.set('sysconn_part_235', data[0]);\n        break;\n    case 'reg244':\n        flow.set('sysconn_part_244', data[0]);\n        break;\n    case 'reg285_286':\n        flow.set('sysconn_part_285_286', data);\n        break;\n    case 'reg291':\n        flow.set('sysconn_part_291', data[0]);\n        break;\n    case 'reg325':\n        flow.set('sysconn_part_325', data[0]);\n        break;\n}\n\n// Check if all parts received\nconst p0_2 = flow.get('sysconn_part_0_2');\nconst pSn = flow.get('sysconn_part_sn');\nconst p8_14 = flow.get('sysconn_part_8_14');\nconst p15_19 = flow.get('sysconn_part_15_19');\nconst p51 = flow.get('sysconn_part_51');\nconst p204 = flow.get('sysconn_part_204');\nconst p213 = flow.get('sysconn_part_213');\nconst p235 = flow.get('sysconn_part_235');\nconst p244 = flow.get('sysconn_part_244');\nconst p285_286 = flow.get('sysconn_part_285_286');\nconst p291 = flow.get('sysconn_part_291');\nconst p325 = flow.get('sysconn_part_325');\n\nif (!p0_2 || !pSn || !p8_14 || !p15_19 ||\n    p51 === null || p51 === undefined ||\n    p204 === null || p204 === undefined ||\n    p213 === null || p213 === undefined ||\n    p235 === null || p235 === undefined ||\n    p244 === null || p244 === undefined ||\n    !p285_286 ||\n    p291 === null || p291 === undefined ||\n    p325 === null || p325 === undefined) {\n    return null;\n}\n\n// All parts received, pass to build JSON\nmsg.reg0_2 = p0_2;\nmsg.snData = pSn;\nmsg.reg8_14 = p8_14;\nmsg.reg15_19 = p15_19;\nmsg.reg51 = p51;\nmsg.reg204 = p204;\nmsg.reg213 = p213;\nmsg.reg235 = p235;\nmsg.reg244 = p244;\nmsg.reg285_286 = p285_286;\nmsg.reg291 = p291;\nmsg.reg325 = p325;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1190,
+        "y": 280,
+        "wires": [
+            [
+                "sysconn_build_json"
+            ]
+        ]
+    },
+    {
+        "id": "sysconn_build_json",
+        "type": "function",
+        "z": "sysconn_tab",
+        "name": "Build JSON State",
+        "func": "// Extract data\nconst reg0_2 = msg.reg0_2;\nconst snData = msg.snData;\nconst reg8_14 = msg.reg8_14;\nconst reg15_19 = msg.reg15_19;\nconst reg51 = msg.reg51;\nconst reg204 = msg.reg204;\nconst reg213 = msg.reg213;\nconst reg235 = msg.reg235;\nconst reg244 = msg.reg244;\nconst reg285_286 = msg.reg285_286;\nconst reg291 = msg.reg291;\nconst reg325 = msg.reg325;\n\n// Clear flow context\nflow.set('sysconn_part_0_2', null);\nflow.set('sysconn_part_sn', null);\nflow.set('sysconn_part_8_14', null);\nflow.set('sysconn_part_15_19', null);\nflow.set('sysconn_part_51', null);\nflow.set('sysconn_part_204', null);\nflow.set('sysconn_part_213', null);\nflow.set('sysconn_part_235', null);\nflow.set('sysconn_part_244', null);\nflow.set('sysconn_part_285_286', null);\nflow.set('sysconn_part_291', null);\nflow.set('sysconn_part_325', null);\n\n// === HELPER FUNCTIONS ===\nfunction parseAscii(val, high) {\n    const byte = high ? ((val >> 8) & 0xFF) : (val & 0xFF);\n    if (byte >= 0x20 && byte <= 0x7E) {\n        return String.fromCharCode(byte);\n    }\n    return '';\n}\n\nfunction parseSerialNumber(regs) {\n    let sn = '';\n    for (let i = 0; i < 5; i++) {\n        sn += parseAscii(regs[i], true);\n        sn += parseAscii(regs[i], false);\n    }\n    return sn.trim();\n}\n\n// === MAPPING FUNCTIONS ===\nfunction getDeviceType(code) {\n    const types = {\n        0x0002: 'String Inverter',\n        0x0003: 'Single-phase Storage Inverter',\n        0x0008: 'Single-phase Storage Inverter',\n        0x0200: 'String Inverter',\n        0x0300: 'Single-phase Storage Inverter',\n        0x0400: 'Microinverter',\n        0x0500: 'Three-phase Storage Inverter'\n    };\n    return types[code] || 'Unknown (0x' + code.toString(16) + ')';\n}\n\nfunction getBatteryControlMode(code) {\n    const modes = { 0: 'voltage', 1: 'capacity', 2: 'no_battery' };\n    return modes[code] !== undefined ? modes[code] : 'unknown';\n}\n\nfunction getGeneratorInputMode(code) {\n    const modes = { 0: 'generator_input_only', 1: 'smart_load_output', 2: 'inverter_input' };\n    return modes[code] !== undefined ? modes[code] : 'unknown';\n}\n\nfunction getExportLimitMode(code) {\n    const modes = { 0x00: 'sell_enabled', 0x01: 'built_in_meter', 0x02: 'external_meter' };\n    return modes[code] !== undefined ? modes[code] : 'unknown';\n}\n\nfunction getGridType(code) {\n    const types = {\n        0: 'single_phase_240V',\n        1: 'split_phase_120_240V',\n        2: 'three_phase_208V',\n        3: 'single_phase_120V'\n    };\n    return types[code] !== undefined ? types[code] : 'unknown';\n}\n\nfunction getSafetyType(code) {\n    if (code < 3) return '48V_battery';\n    if (code === 3) return '24V_battery';\n    return 'unknown (' + code + ')';\n}\n\nfunction getGridStandard(code) {\n    const standards = {\n        0: 'Default', 1: 'INMETRO', 2: 'EN50549', 3: 'EN50438',\n        4: 'IEC61727', 5: 'CUSTOM', 6: 'VDE_AR_N_4105',\n        7: 'UTE_C15_712_1', 8: 'RD_1699', 9: 'CEI_0_21',\n        10: 'G98_G99', 11: 'AS4777'\n    };\n    return standards[code] !== undefined ? standards[code] : 'Unknown (' + code + ')';\n}\n\nfunction getLithiumBatteryType(code) {\n    const types = {\n        0x0000: 'PYLON_SOLAX_CAN', 0x0001: 'Tianbonda_RS485',\n        0x0002: 'KOK', 0x0003: 'Keith', 0x0004: 'Topai',\n        0x0005: 'Pylon_RS485', 0x0006: 'JLSK_RS485',\n        0x0007: 'Xinwangda_RS485', 0x0008: 'Xinruineng_RS485',\n        0x0009: 'Tianbang_RS485', 0x000A: 'Shenggao_CAN'\n    };\n    return types[code] !== undefined ? types[code] : 'Unknown (0x' + code.toString(16) + ')';\n}\n\nfunction getGridVoltageLevelCode(code) {\n    const levels = { 0: '127V/220V', 1: '220V/380V', 2: 'Level_2', 3: 'Level_3' };\n    return levels[code] !== undefined ? levels[code] : 'unknown';\n}\n\n// === PARSE VALUES ===\nconst reg0 = reg0_2[0];   // Device type\nconst reg1 = reg0_2[1];   // Modbus address\nconst reg2 = reg0_2[2];   // Protocol version\n\nconst reg8 = reg8_14[0];  // Rated power class\nconst reg9 = reg8_14[1];  // Chip type\nconst reg10 = reg8_14[2]; // MCU board FW\nconst reg11 = reg8_14[3]; // Control aux FW\nconst reg12 = reg8_14[4]; // Control aux FW 2\nconst reg13 = reg8_14[5]; // Control board FW\nconst reg14 = reg8_14[6]; // Comm board FW\n\nconst reg15 = reg15_19[0]; // Safety type\nconst reg16 = reg15_19[1]; // Rated power low\nconst reg17 = reg15_19[2]; // Rated power high\nconst reg18 = reg15_19[3]; // MPPT & phases\nconst reg19 = reg15_19[4]; // Grid voltage level\n\nconst reg285 = reg285_286[0]; // Grid frequency\nconst reg286 = reg285_286[1]; // Grid type\n\nconst serialNumber = parseSerialNumber(snData);\nconst ratedPowerW = ((reg17 << 16) | reg16) * 0.1;\n\n// FIXED: Use byte method for MPPT & Phase parsing\n// reg18 = 0x0301 means MPPT=3, Phase=1\nconst mpptCount = (reg18 >> 8) & 0xFF;\nconst phaseCount = reg18 & 0xFF;\n\nconst protoMajor = (reg2 >> 8) & 0xFF;\nconst protoMinor = reg2 & 0xFF;\nconst protocolVersion = protoMajor + '.' + protoMinor;\nconst gridFreqHz = reg285 === 0 ? 50 : 60;\n\n// Build MPPT array\nconst mpptArray = [];\nfor (let i = 1; i <= 4; i++) {\n    mpptArray.push({\n        pvChannelId: i,\n        supportsInput: i <= mpptCount,\n        stringMaxCurrentA: null,\n        stringMaxVoltageV: null,\n        recommendedVocAtStcV: null\n    });\n}\n\nconst deviceId = global.get('DEVICE_ID') || env.get('DEVICE_ID') || 'INVERTER-001';\n\n// === BUILD STATE ===\nconst state = {\n    kind: 'SystemConnectionStructure',\n    timestampUtc: new Date().toISOString(),\n    version: '1.0',\n    schemaVersion: 1,\n    deviceId: deviceId,\n\n    inverter: {\n        deviceType: getDeviceType(reg0),\n        deviceTypeRaw: reg0,\n        inverterModel: null,\n        serialNumber: serialNumber,\n\n        firmware: {\n            protocolVersion: protocolVersion,\n            protocolVersionRaw: reg2,\n            mcuBoardRaw: reg10,\n            controlMainRaw: reg13,\n            commMainRaw: reg14\n        },\n\n        ratedPowerW: Math.round(ratedPowerW),\n\n        acSide: {\n            mpptAndPhasesRaw: reg18,\n            batteryInputCount: null,\n            outputTopology: null,\n            gridType: getGridType(reg286),\n            gridTypeRaw: reg286,\n            regionVariant: null,\n            safetyType: getSafetyType(reg15),\n            safetyTypeRaw: reg15,\n            gridPhaseCount: phaseCount,\n            gridStandard: getGridStandard(reg51),\n            gridStandardRaw: reg51,\n            gridFrequencyHz: gridFreqHz,\n            gridFrequencyRaw: reg285,\n            gridVoltageLevelCode: reg19,\n            gridVoltageLevel: getGridVoltageLevelCode(reg19),\n            gridPhaseSequence: null,\n            itSystemNeutralUngrounded: null\n        }\n    },\n\n    battery: {\n        batteryControlMode: getBatteryControlMode(reg213),\n        batteryControlModeRaw: reg213,\n\n        batteryChannels: [\n            {\n                channelId: 1,\n                ratedCapacityAh: reg204,\n                nominalVoltageV: null,\n                batterySn: null,\n                batteryPhysicalAddress: null,\n                batterySoftwareVersion: null,\n                lithiumBatteryType: getLithiumBatteryType(reg325),\n                lithiumBatteryTypeRaw: reg325\n            }\n        ]\n    },\n\n    generator: {\n        inputMode: getGeneratorInputMode(reg235),\n        inputModeRaw: reg235,\n        connectedToGridInput: reg291 === 1,\n        connectedToGridInputRaw: reg291\n    },\n\n    pv: {\n        mpptCount: mpptCount,\n        mppt: mpptArray\n    },\n\n    loadAndGrid: {\n        homeLoadConnectionPoint: null,\n        exportLimitMode: getExportLimitMode(reg244),\n        exportLimitModeRaw: reg244,\n        currentTransformerOnGridSide: null,\n        supportsBackupLoad: null,\n        supportsZeroExport: null,\n        supportsExternalMeter: null\n    },\n\n    _raw: {\n        reg0: reg0, reg1: reg1, reg2: reg2,\n        reg8: reg8, reg9: reg9, reg10: reg10,\n        reg11: reg11, reg12: reg12, reg13: reg13, reg14: reg14,\n        reg15: reg15, reg16: reg16, reg17: reg17, reg18: reg18, reg19: reg19,\n        reg51: reg51, reg204: reg204, reg213: reg213, reg235: reg235,\n        reg244: reg244, reg285: reg285, reg286: reg286, reg291: reg291, reg325: reg325\n    }\n};\n\n// Check if this is after a write\nconst writeResult = flow.get('sysconn_write_result');\nflow.set('sysconn_write_result', null);\n\nconst rpcResponseTopic = flow.get('sysconn_rpc_response_topic');\nflow.set('sysconn_rpc_response_topic', null);\n\nif (writeResult) {\n    msg.payload = {\n        success: true,\n        message: 'Successfully wrote ' + writeResult.count + ' register(s)',\n        writes: writeResult.writes,\n        state: state\n    };\n} else {\n    msg.payload = state;\n}\n\nmsg.rpcResponseTopic = rpcResponseTopic;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1390,
+        "y": 280,
+        "wires": [
+            [
+                "sysconn_debug",
+                "sysconn_rpc_response"
+            ]
+        ]
+    },
+    {
+        "id": "sysconn_debug",
+        "type": "debug",
+        "z": "sysconn_tab",
+        "name": "SysConn JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1600,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "sysconn_rpc_response",
+        "type": "function",
+        "z": "sysconn_tab",
+        "name": "RPC Response",
+        "func": "if (!msg.rpcResponseTopic) {\n    return null;\n}\n\nmsg.topic = msg.rpcResponseTopic;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1600,
+        "y": 300,
+        "wires": [
+            [
+                "sysconn_mqtt_response"
+            ]
+        ]
+    },
+    {
+        "id": "sysconn_mqtt_response",
+        "type": "mqtt out",
+        "z": "sysconn_tab",
+        "name": "MQTT Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1800,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "sysconn_comment_write",
+        "type": "comment",
+        "z": "sysconn_tab",
+        "name": "═══ WRITE SECTION ═══",
+        "info": "R/W Registers: 019, 051, 204, 213, 235, 244, 285, 286, 291, 325",
+        "x": 600,
+        "y": 560,
+        "wires": []
+    },
+    {
+        "id": "sysconn_queue_writes",
+        "type": "function",
+        "z": "sysconn_tab",
+        "name": "Queue Writes",
+        "func": "const params = msg.rpcParams || {};\nconst writes = [];\n\n// 019: gridVoltageLevelCode [0-3]\nif (params.gridVoltageLevelCode !== undefined) {\n    const val = Math.max(0, Math.min(3, params.gridVoltageLevelCode));\n    writes.push({ register: 19, value: val, name: 'Grid Voltage Level' });\n}\n\n// 051: gridStandardRaw [0-20]\nif (params.gridStandardRaw !== undefined) {\n    const val = Math.max(0, Math.min(20, params.gridStandardRaw));\n    writes.push({ register: 51, value: val, name: 'Grid Standard' });\n}\n\n// 204: ratedCapacityAh [0-2000]\nif (params.ratedCapacityAh !== undefined) {\n    const val = Math.max(0, Math.min(2000, params.ratedCapacityAh));\n    writes.push({ register: 204, value: val, name: 'Battery Capacity' });\n}\n\n// 213: batteryControlModeRaw [0-2]\nif (params.batteryControlModeRaw !== undefined) {\n    const val = Math.max(0, Math.min(2, params.batteryControlModeRaw));\n    writes.push({ register: 213, value: val, name: 'Battery Control Mode' });\n}\n\n// 235: generatorInputModeRaw [0-2]\nif (params.generatorInputModeRaw !== undefined) {\n    const val = Math.max(0, Math.min(2, params.generatorInputModeRaw));\n    writes.push({ register: 235, value: val, name: 'Generator Input Mode' });\n}\n\n// 244: exportLimitModeRaw [0-2]\nif (params.exportLimitModeRaw !== undefined) {\n    const val = Math.max(0, Math.min(2, params.exportLimitModeRaw));\n    writes.push({ register: 244, value: val, name: 'Export Limit Mode' });\n}\n\n// 285: gridFrequencyRaw [0-1]\nif (params.gridFrequencyRaw !== undefined) {\n    const val = params.gridFrequencyRaw === 1 ? 1 : 0;\n    writes.push({ register: 285, value: val, name: 'Grid Frequency' });\n}\n\n// 286: gridTypeRaw [0-3]\nif (params.gridTypeRaw !== undefined) {\n    const val = Math.max(0, Math.min(3, params.gridTypeRaw));\n    writes.push({ register: 286, value: val, name: 'Grid Type' });\n}\n\n// 291: connectedToGridInputRaw [0-1]\nif (params.connectedToGridInputRaw !== undefined) {\n    const val = params.connectedToGridInputRaw ? 1 : 0;\n    writes.push({ register: 291, value: val, name: 'Gen Connected to Grid' });\n}\n\n// 325: lithiumBatteryTypeRaw [0-10]\nif (params.lithiumBatteryTypeRaw !== undefined) {\n    const val = Math.max(0, Math.min(0x000A, params.lithiumBatteryTypeRaw));\n    writes.push({ register: 325, value: val, name: 'Lithium Battery Type' });\n}\n\nif (writes.length === 0) {\n    node.warn('No valid parameters to write');\n    return null;\n}\n\nglobal.set('sysconn_write_queue', writes);\nglobal.set('sysconn_write_index', 0);\nglobal.set('sysconn_write_results', []);\n\nnode.status({ fill: 'blue', shape: 'dot', text: writes.length + ' writes queued' });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 590,
+        "y": 620,
+        "wires": [
+            [
+                "sysconn_prepare_write"
+            ]
+        ]
+    },
+    {
+        "id": "sysconn_prepare_write",
+        "type": "function",
+        "z": "sysconn_tab",
+        "name": "Prepare Write",
+        "func": "const writes = global.get('sysconn_write_queue') || [];\nconst index = global.get('sysconn_write_index') || 0;\n\nif (index >= writes.length) {\n    return null;\n}\n\nconst current = writes[index];\n\nmsg.payload = {\n    fc: 6,\n    unitid: 1,\n    address: current.register,\n    value: current.value\n};\nmsg.currentWrite = current;\n\nnode.status({ fill: 'blue', shape: 'dot', text: '[' + (index+1) + '/' + writes.length + '] ' + current.name });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 800,
+        "y": 620,
+        "wires": [
+            [
+                "sysconn_write_register"
+            ]
+        ]
+    },
+    {
+        "id": "sysconn_write_register",
+        "type": "modbus-flex-write",
+        "z": "sysconn_tab",
+        "name": "Write Register",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "server": "e4e4f3e2a4f4e004",
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "x": 1000,
+        "y": 620,
+        "wires": [
+            [
+                "sysconn_write_ok"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "sysconn_write_ok",
+        "type": "function",
+        "z": "sysconn_tab",
+        "name": "Write OK",
+        "func": "const writes = global.get('sysconn_write_queue') || [];\nlet index = global.get('sysconn_write_index') || 0;\nconst results = global.get('sysconn_write_results') || [];\n\nconst current = msg.currentWrite;\nif (current) {\n    results.push({\n        register: current.register,\n        name: current.name,\n        value: current.value,\n        success: true\n    });\n    global.set('sysconn_write_results', results);\n}\n\nindex++;\nglobal.set('sysconn_write_index', index);\n\nnode.status({ fill: 'green', shape: 'dot', text: current.name + ' OK' });\n\nif (index < writes.length) {\n    return [msg, null];\n}\n\n// All writes done\nflow.set('sysconn_write_result', {\n    count: results.length,\n    writes: results\n});\n\nglobal.set('sysconn_write_queue', null);\nglobal.set('sysconn_write_index', null);\nglobal.set('sysconn_write_results', null);\n\nreturn [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1180,
+        "y": 620,
+        "wires": [
+            [
+                "sysconn_write_delay"
+            ],
+            [
+                "sysconn_start_read"
+            ]
+        ]
+    },
+    {
+        "id": "sysconn_write_delay",
+        "type": "delay",
+        "z": "sysconn_tab",
+        "name": "500ms",
+        "pauseType": "delay",
+        "timeout": "500",
+        "timeoutUnits": "milliseconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 1330,
+        "y": 620,
+        "wires": [
+            [
+                "sysconn_prepare_write"
+            ]
+        ]
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

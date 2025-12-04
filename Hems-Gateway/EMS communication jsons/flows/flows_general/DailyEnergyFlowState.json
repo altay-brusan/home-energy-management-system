@@ -1,0 +1,315 @@
+[
+    {
+        "id": "daily_energy_flow_tab",
+        "type": "tab",
+        "label": "Daily Energy Flow State",
+        "disabled": false,
+        "info": "Reads Daily Energy Flow State from registers:\n- 62: Generator\n- 70-71: Battery charge/discharge\n- 76-77: Grid buy/sell\n- 84: Load\n- 108: PV"
+    },
+    {
+        "id": "def_poll_inject",
+        "type": "inject",
+        "z": "daily_energy_flow_tab",
+        "name": "Poll Daily Energy (5 min)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "300",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 170,
+        "y": 140,
+        "wires": [
+            [
+                "def_prepare_gen_batt",
+                "def_prepare_grid_load",
+                "def_prepare_pv"
+            ]
+        ]
+    },
+    {
+        "id": "def_prepare_gen_batt",
+        "type": "function",
+        "z": "daily_energy_flow_tab",
+        "name": "Prepare read (Gen/Batt 62-71)",
+        "func": "// Generator and Battery daily energy\n// 62: Today Gen\n// 63-69: (skip)\n// 70: Day Batt Charge\n// 71: Day Batt Discharge\n\nmsg.baseAddr = 62;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 62,\n    quantity: 10  // 62-71\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 80,
+        "wires": [
+            [
+                "def_read_gen_batt"
+            ]
+        ]
+    },
+    {
+        "id": "def_prepare_grid_load",
+        "type": "function",
+        "z": "daily_energy_flow_tab",
+        "name": "Prepare read (Grid/Load 76-84)",
+        "func": "// Grid and Load daily energy\n// 76: Day Grid Buy\n// 77: Day Grid Sell\n// 78-83: (skip)\n// 84: Day Load\n\nmsg.baseAddr = 76;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 76,\n    quantity: 9  // 76-84\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 140,
+        "wires": [
+            [
+                "def_read_grid_load"
+            ]
+        ]
+    },
+    {
+        "id": "def_prepare_pv",
+        "type": "function",
+        "z": "daily_energy_flow_tab",
+        "name": "Prepare read (PV 108)",
+        "func": "// PV daily energy\n// 108: Day PV Power\n\nmsg.baseAddr = 108;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 108,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 470,
+        "y": 200,
+        "wires": [
+            [
+                "def_read_pv"
+            ]
+        ]
+    },
+    {
+        "id": "def_read_gen_batt",
+        "type": "modbus-flex-getter",
+        "z": "daily_energy_flow_tab",
+        "name": "Read Gen/Batt (62-71)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 770,
+        "y": 80,
+        "wires": [
+            [
+                "def_build_json"
+            ],
+            [
+                "def_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "def_read_grid_load",
+        "type": "modbus-flex-getter",
+        "z": "daily_energy_flow_tab",
+        "name": "Read Grid/Load (76-84)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 770,
+        "y": 140,
+        "wires": [
+            [
+                "def_build_json"
+            ],
+            [
+                "def_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "def_read_pv",
+        "type": "modbus-flex-getter",
+        "z": "daily_energy_flow_tab",
+        "name": "Read PV (108)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 750,
+        "y": 200,
+        "wires": [
+            [
+                "def_build_json"
+            ],
+            [
+                "def_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "def_build_json",
+        "type": "function",
+        "z": "daily_energy_flow_tab",
+        "name": "Build DailyEnergyFlowState JSON",
+        "func": "// Build DailyEnergyFlowState from multiple Modbus reads.\n\nlet raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nlet baseAddr = msg.baseAddr;\nif (typeof baseAddr !== \"number\") {\n    baseAddr = (msg.modbusRequest && msg.modbusRequest.address);\n}\nif (typeof baseAddr !== \"number\") {\n    node.warn(\"DailyEnergyFlowState: missing base address\");\n    return null;\n}\n\n// ---- Store partials ----\n\n// Gen/Batt 62-71\nif (baseAddr === 62) {\n    // data[0] = 62: Today Gen\n    // data[8] = 70: Day Batt Charge\n    // data[9] = 71: Day Batt Discharge\n    \n    const genEnergy = data[0] || 0;          // 62\n    const battCharge = data[8] || 0;         // 70\n    const battDischarge = data[9] || 0;      // 71\n    \n    flow.set(\"def_part_gen_batt\", {\n        genEnergyKWh: Math.round((genEnergy * 0.1) * 10) / 10,\n        chargeEnergyKWh: Math.round((battCharge * 0.1) * 10) / 10,\n        dischargeEnergyKWh: Math.round((battDischarge * 0.1) * 10) / 10\n    });\n}\n\n// Grid/Load 76-84\nelse if (baseAddr === 76) {\n    // data[0] = 76: Day Grid Buy\n    // data[1] = 77: Day Grid Sell\n    // data[8] = 84: Day Load\n    \n    const gridBuy = data[0] || 0;            // 76\n    const gridSell = data[1] || 0;           // 77\n    const loadEnergy = data[8] || 0;         // 84\n    \n    flow.set(\"def_part_grid_load\", {\n        importEnergyKWh: Math.round((gridBuy * 0.1) * 10) / 10,\n        exportEnergyKWh: Math.round((gridSell * 0.1) * 10) / 10,\n        loadEnergyKWh: Math.round((loadEnergy * 0.1) * 10) / 10\n    });\n}\n\n// PV 108\nelse if (baseAddr === 108) {\n    const pvEnergy = data[0] || 0;           // 108\n    \n    flow.set(\"def_part_pv\", {\n        pvEnergyKWh: Math.round((pvEnergy * 0.1) * 10) / 10\n    });\n}\nelse {\n    return null;\n}\n\n// ---- Try to assemble ----\n\nconst genBattPart = flow.get(\"def_part_gen_batt\");\nconst gridLoadPart = flow.get(\"def_part_grid_load\");\nconst pvPart = flow.get(\"def_part_pv\");\n\nif (!genBattPart || !gridLoadPart || !pvPart) {\n    return null;\n}\n\nconst deviceId = msg.deviceId\n    || global.get(\"DEVICE_ID\")\n    || env.get(\"DEVICE_ID\")\n    || \"EC100-DEV-001\";\n\nconst state = {\n    kind: \"DailyEnergyFlowState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    DeviceId: deviceId,\n    \n    loadEnergyKWh: gridLoadPart.loadEnergyKWh,\n    \n    grid: {\n        importEnergyKWh: gridLoadPart.importEnergyKWh,\n        exportEnergyKWh: gridLoadPart.exportEnergyKWh\n    },\n    \n    pv: {\n        totalEnergyKWh: pvPart.pvEnergyKWh,\n        mppt: [\n            { id: 1, energyKWh: null },\n            { id: 2, energyKWh: null },\n            { id: 3, energyKWh: null },\n            { id: 4, energyKWh: null }\n        ]\n    },\n    \n    battery: {\n        chargeEnergyKWh: genBattPart.chargeEnergyKWh,\n        dischargeEnergyKWh: genBattPart.dischargeEnergyKWh\n    },\n    \n    generator: {\n        energyKWh: genBattPart.genEnergyKWh\n    }\n};\n\n// Clear partials\nflow.set(\"def_part_gen_batt\", null);\nflow.set(\"def_part_grid_load\", null);\nflow.set(\"def_part_pv\", null);\n\nflow.set(\"dailyEnergyFlowStateSnapshot\", state);\n\nmsg.payload = state;\nmsg.state = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1020,
+        "y": 140,
+        "wires": [
+            [
+                "def_debug_json",
+                "def_mqtt_telemetry"
+            ]
+        ]
+    },
+    {
+        "id": "def_debug_json",
+        "type": "debug",
+        "z": "daily_energy_flow_tab",
+        "name": "DailyEnergyFlowState JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1300,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "def_error_debug",
+        "type": "debug",
+        "z": "daily_energy_flow_tab",
+        "name": "DailyEnergy CRC/Error debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1020,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "def_mqtt_telemetry",
+        "type": "mqtt out",
+        "z": "daily_energy_flow_tab",
+        "name": "Send to ThingsBoard",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1280,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

@@ -1,0 +1,33 @@
+InverterAlarmState {
+  "timestampUtc": string,
+  "gatewayId": string,
+  "inverterSerialNumber": string,
+
+  // Raw registers at time of snapshot
+  "runStateRaw": number,                  // 59 (run state: 0=standby, 1=selfcheck, 2=normal, 3=alarm, 4=fault)
+  "faultWord1Raw": number,                // 103 (Fault information word 1)
+  "faultWord2Raw": number,                // 104 (Fault information word 2)
+  "faultWord3Raw": number,                // 105 (Fault information word 3)
+  "faultWord4Raw": number,                // 106 (Fault information word 4)
+  "warningWord1Raw": number,              // 101 (Warning message word 1)
+  "warningWord2Raw": number,              // 102 (Warning message word 2)
+
+  // Decoded list of active alarms at that moment
+  "activeAlarms": [
+    {
+      "code": number,                     // same internal code as in event
+      "vendorCode": number,               // optional
+      "severity": string,                 // "warning" | "fault"
+      "sourceDevice": string,             // "inverter" | "battery" | "pv" | "grid" | "generator" | "bms"
+      "category": string,                 // e.g. "over_temp"
+      "messageKey": string,               // e.g. "INVERTER_OVER_TEMP"
+      "messageParams": {                  // optional context
+        "measuredValue": number,
+        "limitValue": number
+      },
+      "firstOccurredUtc": string,
+      "lastOccurredUtc": string,
+      "occurrenceCount": number
+    }
+  ]
+}

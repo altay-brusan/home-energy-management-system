@@ -1,0 +1,227 @@
+[
+    {
+        "id": "battery_soc_state_tab",
+        "type": "tab",
+        "label": "BatterySocState",
+        "disabled": false,
+        "info": "Reads Battery SOC State from register:\n- 184: Battery capacity %\n\nTriggers:\n1. Periodic: Every 5 minutes"
+    },
+    {
+        "id": "bss_poll_inject",
+        "type": "inject",
+        "z": "battery_soc_state_tab",
+        "name": "Poll BatterySocState (5 min)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "300",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 190,
+        "y": 120,
+        "wires": [
+            [
+                "bss_prepare_read"
+            ]
+        ]
+    },
+    {
+        "id": "bss_prepare_read",
+        "type": "function",
+        "z": "battery_soc_state_tab",
+        "name": "Prepare read (SOC 184)",
+        "func": "// Battery SOC\n// 184: Battery capacity %\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 184,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 470,
+        "y": 120,
+        "wires": [
+            [
+                "bss_modbus_read"
+            ]
+        ]
+    },
+    {
+        "id": "bss_modbus_read",
+        "type": "modbus-flex-getter",
+        "z": "battery_soc_state_tab",
+        "name": "Read SOC (184)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 700,
+        "y": 120,
+        "wires": [
+            [
+                "bss_build_json"
+            ],
+            [
+                "bss_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "bss_build_json",
+        "type": "function",
+        "z": "battery_soc_state_tab",
+        "name": "Build BatterySocState JSON",
+        "func": "// Build BatterySocState from Modbus read.\n\nlet raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nconst socPercent = data[0] || 0;  // 184: Battery capacity %\n\nconst deviceId = msg.deviceId\n    || global.get(\"DEVICE_ID\")\n    || env.get(\"DEVICE_ID\")\n    || \"EC100-DEV-001\";\n\nconst state = {\n    kind: \"BatterySocState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    DeviceId: deviceId,\n    \n    inverterBatChannelSoc: [\n        {\n            channelId: 1,\n            socPercent: socPercent\n        },\n        {\n            channelId: 2,\n            socPercent: null  // Reserved for future use\n        }\n    ],\n    \n    bmsSocDetails: [\n        {\n            channelId: 1,\n            deviceId: \"CH1-BMS1\",\n            socPercent: socPercent  // Same as inverter reading for now\n        }\n    ]\n};\n\nflow.set(\"batterySocStateSnapshot\", state);\n\nmsg.payload = state;\nmsg.state = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 940,
+        "y": 120,
+        "wires": [
+            [
+                "bss_debug_json",
+                "bss_mqtt_telemetry"
+            ]
+        ]
+    },
+    {
+        "id": "bss_debug_json",
+        "type": "debug",
+        "z": "battery_soc_state_tab",
+        "name": "BatterySocState JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1220,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "bss_error_debug",
+        "type": "debug",
+        "z": "battery_soc_state_tab",
+        "name": "BatterySocState CRC/Error",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 960,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "bss_mqtt_telemetry",
+        "type": "mqtt out",
+        "z": "battery_soc_state_tab",
+        "name": "Send to ThingsBoard",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1220,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "bss_comment",
+        "type": "comment",
+        "z": "battery_soc_state_tab",
+        "name": "Periodic polling only (5 min)",
+        "info": "",
+        "x": 190,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

@@ -1,0 +1,19 @@
+BatteryChargeSourceConfigState {
+  "timestampUtc": string,
+  "gatewayId": string,
+  "inverterSerialNumber": string,
+
+  "generator": {
+    "enabled": bool,              // 231: Generator charge enable (发电机充电使能)
+    "startSocPercent": number,    // 226: Generator charging starting capacity point (1%)
+    "chargeCurrentA": number,     // 227: Generator charges the battery current (1A)
+    "maxRunTimeHours": number,    // 223: Maximum operating time of generator (0.1 hours)
+    "coolingTimeHours": number    // 224: Generator cooling time (0.1 hours)
+  },
+
+  "grid": {
+    "enabled": bool,              // 232: Grid charge enable (市电充电使能)
+    "startSocPercent": number,    // 229: Grid charging start capacity point (1%)
+    "chargeCurrentA": number      // 230: Grid charge the battery current (1A)
+  }
+}

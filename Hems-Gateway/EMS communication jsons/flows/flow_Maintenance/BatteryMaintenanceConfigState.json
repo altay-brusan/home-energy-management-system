@@ -1,0 +1,217 @@
+[
+    {
+        "id": "bat_maint_config_tab",
+        "type": "tab",
+        "label": "Battery Maintenance Config",
+        "disabled": false,
+        "info": "Reads Battery Maintenance Config from registers:\n- 213: Battery control mode\n- 214: Lithium battery wake up\n- 215: Battery resistance\n- 216: Charge efficiency"
+    },
+    {
+        "id": "bmnt_poll_inject",
+        "type": "inject",
+        "z": "bat_maint_config_tab",
+        "name": "Poll Battery Maint Config (5 min)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "300",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 190,
+        "y": 120,
+        "wires": [
+            [
+                "bmnt_prepare_read"
+            ]
+        ]
+    },
+    {
+        "id": "bmnt_prepare_read",
+        "type": "function",
+        "z": "bat_maint_config_tab",
+        "name": "Prepare read (BattMaint 213-216)",
+        "func": "// Battery maintenance settings\n// 213: Battery control mode (0=voltage, 1=capacity, 2=no battery)\n// 214: Lithium battery wake up (0=enabled, 1=disabled)\n// 215: Battery resistance (mΩ)\n// 216: Charge efficiency (0.1%)\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 213,\n    quantity: 4\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 120,
+        "wires": [
+            [
+                "bmnt_read"
+            ]
+        ]
+    },
+    {
+        "id": "bmnt_read",
+        "type": "modbus-flex-getter",
+        "z": "bat_maint_config_tab",
+        "name": "Read BattMaint (213-216)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 760,
+        "y": 120,
+        "wires": [
+            [
+                "bmnt_build_json"
+            ],
+            [
+                "bmnt_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "bmnt_build_json",
+        "type": "function",
+        "z": "bat_maint_config_tab",
+        "name": "Build BatteryMaintenanceConfigState JSON",
+        "func": "// Build BatteryMaintenanceConfigState from Modbus read.\n//\n// Registers:\n// 213: Battery control mode (0=voltage, 1=capacity, 2=no battery)\n// 214: Lithium battery wake up (0=enabled, 1=disabled)\n// 215: Battery resistance (mΩ)\n// 216: Charge efficiency (0.1%)\n\nlet raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nconst controlModeRaw = data[0];      // 213\nconst wakeUpRaw = data[1];           // 214\nconst resistanceRaw = data[2];       // 215\nconst efficiencyRaw = data[3];       // 216\n\n// Map control mode\nlet batteryControlMode = null;\nif (controlModeRaw === 0) {\n    batteryControlMode = \"voltage\";\n} else if (controlModeRaw === 1) {\n    batteryControlMode = \"capacity\";\n} else if (controlModeRaw === 2) {\n    batteryControlMode = null;  // no battery\n}\n\n// Wake up: 0=enabled, 1=disabled (inverted logic)\nconst channel1Enabled = wakeUpRaw === 0;\n\n// Efficiency: 0.1% scale\nconst chargeEfficiency = efficiencyRaw !== undefined ? \n    Math.round(efficiencyRaw * 0.1 * 10) / 10 : null;\n\n// Resolve identifiers\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\nconst inverterSN = global.get(\"INVERTER_SN\") || env.get(\"INVERTER_SN\") || \"Unknown\";\n\nconst state = {\n    kind: \"BatteryMaintenanceConfigState\",\n    timestampUtc: new Date().toISOString(),\n    gatewayId: gatewayId,\n    inverterSerialNumber: inverterSN,\n    version: \"1\",\n    \n    batteryControlMode: batteryControlMode,\n    \n    wakeUp: {\n        channel1Enabled: channel1Enabled,\n        channel2Enabled: null  // Reserved for future use\n    },\n    \n    batteryResistanceMilliOhm: resistanceRaw || null,\n    chargeEfficiencyPercent: chargeEfficiency\n};\n\n// Keep snapshot in flow\nflow.set(\"batteryMaintenanceConfigSnapshot\", state);\n\nmsg.payload = state;\nmsg.state = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1060,
+        "y": 120,
+        "wires": [
+            [
+                "bmnt_debug_json",
+                "bmnt_mqtt_telemetry"
+            ]
+        ]
+    },
+    {
+        "id": "bmnt_debug_json",
+        "type": "debug",
+        "z": "bat_maint_config_tab",
+        "name": "BatteryMaintenanceConfigState JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1370,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "bmnt_error_debug",
+        "type": "debug",
+        "z": "bat_maint_config_tab",
+        "name": "BattMaint CRC/Error debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1020,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "bmnt_mqtt_telemetry",
+        "type": "mqtt out",
+        "z": "bat_maint_config_tab",
+        "name": "Send to ThingsBoard",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1340,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

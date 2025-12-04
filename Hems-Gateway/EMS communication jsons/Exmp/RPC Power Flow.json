@@ -1,0 +1,96 @@
+[
+    {
+        "id": "ad601f32084d37e8",
+        "type": "tab",
+        "label": "RPC Handler",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "b660a8f57adf65b9",
+        "type": "mqtt in",
+        "z": "ad601f32084d37e8",
+        "name": "RPC MQTT",
+        "topic": "v1/devices/me/rpc/request/+",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "tb-broker",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 910,
+        "y": 240,
+        "wires": [
+            [
+                "ecbd89384a7d58f6"
+            ]
+        ]
+    },
+    {
+        "id": "ecbd89384a7d58f6",
+        "type": "function",
+        "z": "ad601f32084d37e8",
+        "name": "Handel RPC",
+        "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\n\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\nif (msg.rpcMethod !== 'getPowerFlow') {\n    node.warn('Ignoring RPC method: ' + msg.rpcMethod);\n    return null;\n}\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1130,
+        "y": 240,
+        "wires": [
+            [
+                "1d606251b15aeac4"
+            ]
+        ]
+    },
+    {
+        "id": "1d606251b15aeac4",
+        "type": "link out",
+        "z": "ad601f32084d37e8",
+        "name": "RPC Handler output",
+        "mode": "link",
+        "links": [
+            "0306bf6ad37d37d6"
+        ],
+        "x": 1275,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

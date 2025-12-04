@@ -1,0 +1,166 @@
+[
+    {
+        "id": "debug_registers_tab",
+        "type": "tab",
+        "label": "DEBUG Registers 180-199",
+        "disabled": false,
+        "info": "Debug flow to read registers 180-199 and analyze what each contains."
+    },
+    {
+        "id": "dbg_poll_inject",
+        "type": "inject",
+        "z": "debug_registers_tab",
+        "name": "Read Registers NOW",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 100,
+        "wires": [
+            [
+                "dbg_prepare_read"
+            ]
+        ]
+    },
+    {
+        "id": "dbg_prepare_read",
+        "type": "function",
+        "z": "debug_registers_tab",
+        "name": "Prepare read (180-199)",
+        "func": "// Read registers 180-199 for debugging\n// 20 registers to analyze\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 180,\n    quantity: 20\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 100,
+        "wires": [
+            [
+                "dbg_read"
+            ]
+        ]
+    },
+    {
+        "id": "dbg_read",
+        "type": "modbus-flex-getter",
+        "z": "debug_registers_tab",
+        "name": "Read 180-199",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 570,
+        "y": 100,
+        "wires": [
+            [
+                "dbg_format"
+            ],
+            [
+                "dbg_error"
+            ]
+        ]
+    },
+    {
+        "id": "dbg_format",
+        "type": "function",
+        "z": "debug_registers_tab",
+        "name": "Format Debug Output",
+        "func": "// Format registers 180-199 for easy reading\n\nlet raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data)) {\n    return null;\n}\n\n// Known register meanings from datasheet\nconst meanings = {\n    180: \"? Unknown\",\n    181: \"Gen Voltage (0.1V)\",\n    182: \"? Unknown\",\n    183: \"? Unknown\",\n    184: \"Battery SOC (%)\",\n    185: \"Battery Status / SOH?\",\n    186: \"PV1 Power (1W)\",\n    187: \"PV2 Power (1W)\",\n    188: \"PV3 Power (1W)\",\n    189: \"PV4 Power (1W)\",\n    190: \"Battery Power (1W signed)\",\n    191: \"? Unknown\",\n    192: \"Load Frequency (0.01Hz)\",\n    193: \"Inverter Output Freq (0.01Hz)\",\n    194: \"Grid Relay Status\",\n    195: \"Gen Relay Status\",\n    196: \"Gen Frequency (0.01Hz)\",\n    197: \"? Unknown\",\n    198: \"? Unknown\",\n    199: \"? Unknown\"\n};\n\nconst output = {\n    timestamp: new Date().toISOString(),\n    registers: {}\n};\n\nfor (let i = 0; i < data.length; i++) {\n    const regAddr = 180 + i;\n    const rawVal = data[i];\n    const meaning = meanings[regAddr] || \"? Unknown\";\n    \n    // Try different interpretations\n    let interpretations = {\n        raw: rawVal,\n        hex: \"0x\" + rawVal.toString(16).padStart(4, '0'),\n        signed: (rawVal & 0x8000) ? rawVal - 0x10000 : rawVal,\n        div10: Math.round(rawVal * 0.1 * 10) / 10,\n        div100: Math.round(rawVal * 0.01 * 100) / 100\n    };\n    \n    output.registers[regAddr] = {\n        meaning: meaning,\n        ...interpretations\n    };\n}\n\n// Summary table\nlet summary = \"\\n=== REGISTERS 180-199 ===\\n\";\nfor (let i = 0; i < data.length; i++) {\n    const regAddr = 180 + i;\n    const rawVal = data[i];\n    const meaning = meanings[regAddr] || \"?\";\n    summary += `${regAddr}: ${rawVal.toString().padStart(6)} (0x${rawVal.toString(16).padStart(4,'0')}) - ${meaning}\\n`;\n}\n\nnode.warn(summary);\n\nmsg.payload = output;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 770,
+        "y": 100,
+        "wires": [
+            [
+                "dbg_output"
+            ]
+        ]
+    },
+    {
+        "id": "dbg_output",
+        "type": "debug",
+        "z": "debug_registers_tab",
+        "name": "Register Analysis",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 990,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "dbg_error",
+        "type": "debug",
+        "z": "debug_registers_tab",
+        "name": "Error",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 750,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    }
+]

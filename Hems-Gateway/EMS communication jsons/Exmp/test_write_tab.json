@@ -1,0 +1,231 @@
+[
+    {
+        "id": "test_write_tab",
+        "type": "tab",
+        "label": "TEST_Write",
+        "disabled": false,
+        "info": "Test write format"
+    },
+    {
+        "id": "test_inject_fc6",
+        "type": "inject",
+        "z": "test_write_tab",
+        "name": "Test FC6 - value only",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"fc\":6,\"unitid\":1,\"address\":248,\"value\":1}",
+        "payloadType": "json",
+        "x": 170,
+        "y": 80,
+        "wires": [
+            [
+                "test_write_node"
+            ]
+        ]
+    },
+    {
+        "id": "test_inject_fc16_array",
+        "type": "inject",
+        "z": "test_write_tab",
+        "name": "Test FC16 - array",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"fc\":16,\"unitid\":1,\"address\":248,\"quantity\":1,\"value\":[1]}",
+        "payloadType": "json",
+        "x": 160,
+        "y": 140,
+        "wires": [
+            [
+                "test_write_node"
+            ]
+        ]
+    },
+    {
+        "id": "test_inject_fc16_buffer",
+        "type": "inject",
+        "z": "test_write_tab",
+        "name": "Test FC16 - Buffer",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "bufferValue",
+                "v": "[0,1]",
+                "vt": "json"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"fc\":16,\"unitid\":1,\"address\":248,\"quantity\":1}",
+        "payloadType": "json",
+        "x": 160,
+        "y": 200,
+        "wires": [
+            [
+                "test_prep_buffer"
+            ]
+        ]
+    },
+    {
+        "id": "test_prep_buffer",
+        "type": "function",
+        "z": "test_write_tab",
+        "name": "Add Buffer",
+        "func": "msg.payload.value = Buffer.from(msg.bufferValue);\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 200,
+        "wires": [
+            [
+                "test_write_node"
+            ]
+        ]
+    },
+    {
+        "id": "test_read_248",
+        "type": "inject",
+        "z": "test_write_tab",
+        "name": "Read 248",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"fc\":3,\"unitid\":1,\"address\":248,\"quantity\":1}",
+        "payloadType": "json",
+        "x": 140,
+        "y": 300,
+        "wires": [
+            [
+                "test_read_node"
+            ]
+        ]
+    },
+    {
+        "id": "test_write_node",
+        "type": "modbus-flex-write",
+        "z": "test_write_tab",
+        "name": "Write Test",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "server": "e4e4f3e2a4f4e004",
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "x": 550,
+        "y": 140,
+        "wires": [
+            [
+                "test_debug"
+            ],
+            [
+                "test_debug"
+            ]
+        ]
+    },
+    {
+        "id": "test_read_node",
+        "type": "modbus-flex-getter",
+        "z": "test_write_tab",
+        "name": "Read Test",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 550,
+        "y": 300,
+        "wires": [
+            [
+                "test_debug"
+            ],
+            [
+                "test_debug"
+            ]
+        ]
+    },
+    {
+        "id": "test_debug",
+        "type": "debug",
+        "z": "test_write_tab",
+        "name": "Result",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload",
+        "statusType": "auto",
+        "x": 750,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    }
+]

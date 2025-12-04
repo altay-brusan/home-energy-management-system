@@ -1,0 +1,363 @@
+[
+    {
+        "id": "pv_device_state_tab",
+        "type": "tab",
+        "label": "PvDeviceState",
+        "disabled": false,
+        "info": "Reads PV Device State from registers:\n- 96-97: Total PV Energy (0.1kWh, 32-bit)\n- 108: Day PV Power (0.1kWh)\n- 109-116: MPPT 1-4 Voltage/Current\n- 186-189: MPPT 1-4 Power\n\nTriggers:\n1. RPC: getPvDeviceState"
+    },
+    {
+        "id": "pvds_link_in_rpc",
+        "type": "link in",
+        "z": "pv_device_state_tab",
+        "name": "RPC getPvDeviceState",
+        "links": [
+            "rpc_pvds_link_out"
+        ],
+        "x": 155,
+        "y": 140,
+        "wires": [
+            [
+                "pvds_prepare_total_energy",
+                "pvds_prepare_daily_voltage",
+                "pvds_prepare_power"
+            ]
+        ]
+    },
+    {
+        "id": "pvds_manual_inject",
+        "type": "inject",
+        "z": "pv_device_state_tab",
+        "name": "Manual Trigger",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 220,
+        "wires": [
+            [
+                "pvds_prepare_total_energy",
+                "pvds_prepare_daily_voltage",
+                "pvds_prepare_power"
+            ]
+        ]
+    },
+    {
+        "id": "pvds_prepare_total_energy",
+        "type": "function",
+        "z": "pv_device_state_tab",
+        "name": "Prepare read (Total Energy 96-97)",
+        "func": "// Total PV Energy (lifetime)\n// 96: historyPV PowerWh Low (0.1kWh)\n// 97: historyPV PowerWh High (0.1kWh)\n\nmsg.baseAddr = 96;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 96,\n    quantity: 2\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 490,
+        "y": 80,
+        "wires": [
+            [
+                "pvds_read_total_energy"
+            ]
+        ]
+    },
+    {
+        "id": "pvds_prepare_daily_voltage",
+        "type": "function",
+        "z": "pv_device_state_tab",
+        "name": "Prepare read (Daily/MPPT V/I 108-116)",
+        "func": "// Day PV and MPPT Voltage/Current\n// 108: Day PV PowerWh (0.1kWh)\n// 109: DC voltage 1 (0.1V)\n// 110: DC current 1 (0.1A)\n// 111: DC voltage 2 (0.1V)\n// 112: DC current 2 (0.1A)\n// 113: DC voltage 3 (0.1V)\n// 114: DC current 3 (0.1A)\n// 115: DC voltage 4 (0.1V)\n// 116: DC current 4 (0.1A)\n\nmsg.baseAddr = 108;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 108,\n    quantity: 9\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 510,
+        "y": 140,
+        "wires": [
+            [
+                "pvds_read_daily_voltage"
+            ]
+        ]
+    },
+    {
+        "id": "pvds_prepare_power",
+        "type": "function",
+        "z": "pv_device_state_tab",
+        "name": "Prepare read (MPPT Power 186-189)",
+        "func": "// MPPT Power\n// 186: PV1 input power (1W)\n// 187: PV2 input power (1W)\n// 188: PV3 input power (1W)\n// 189: PV4 input power (1W)\n\nmsg.baseAddr = 186;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 186,\n    quantity: 4\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 200,
+        "wires": [
+            [
+                "pvds_read_power"
+            ]
+        ]
+    },
+    {
+        "id": "pvds_read_total_energy",
+        "type": "modbus-flex-getter",
+        "z": "pv_device_state_tab",
+        "name": "Read Total Energy (96-97)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 780,
+        "y": 80,
+        "wires": [
+            [
+                "pvds_build_json"
+            ],
+            [
+                "pvds_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "pvds_read_daily_voltage",
+        "type": "modbus-flex-getter",
+        "z": "pv_device_state_tab",
+        "name": "Read Daily/MPPT V/I (108-116)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 790,
+        "y": 140,
+        "wires": [
+            [
+                "pvds_build_json"
+            ],
+            [
+                "pvds_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "pvds_read_power",
+        "type": "modbus-flex-getter",
+        "z": "pv_device_state_tab",
+        "name": "Read MPPT Power (186-189)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 780,
+        "y": 200,
+        "wires": [
+            [
+                "pvds_build_json"
+            ],
+            [
+                "pvds_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "pvds_build_json",
+        "type": "function",
+        "z": "pv_device_state_tab",
+        "name": "Build PvDeviceState JSON",
+        "func": "// Build PvDeviceState from multiple Modbus reads.\n\nlet raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nlet baseAddr = msg.baseAddr;\nif (typeof baseAddr !== \"number\") {\n    baseAddr = (msg.modbusRequest && msg.modbusRequest.address);\n}\nif (typeof baseAddr !== \"number\") {\n    node.warn(\"PvDeviceState: missing base address\");\n    return null;\n}\n\n// Helper: combine two 16-bit words to 32-bit unsigned\nfunction u32(low, high) {\n    return ((high & 0xFFFF) << 16) | (low & 0xFFFF);\n}\n\n// ---- Store partials ----\n\n// Total Energy 96-97\nif (baseAddr === 96) {\n    const totalLow = data[0] || 0;   // 96\n    const totalHigh = data[1] || 0;  // 97\n    \n    const totalKWh = Math.round(u32(totalLow, totalHigh) * 0.1 * 10) / 10;\n    \n    flow.set(\"pvds_part_total_energy\", {\n        totalPvEnergyKWh: totalKWh\n    });\n}\n\n// Daily/MPPT V/I 108-116\nelse if (baseAddr === 108) {\n    const dailyRaw = data[0] || 0;   // 108: Day PV (0.1kWh)\n    const v1 = data[1] || 0;         // 109: DC voltage 1 (0.1V)\n    const i1 = data[2] || 0;         // 110: DC current 1 (0.1A)\n    const v2 = data[3] || 0;         // 111: DC voltage 2 (0.1V)\n    const i2 = data[4] || 0;         // 112: DC current 2 (0.1A)\n    const v3 = data[5] || 0;         // 113: DC voltage 3 (0.1V)\n    const i3 = data[6] || 0;         // 114: DC current 3 (0.1A)\n    const v4 = data[7] || 0;         // 115: DC voltage 4 (0.1V)\n    const i4 = data[8] || 0;         // 116: DC current 4 (0.1A)\n    \n    flow.set(\"pvds_part_daily_voltage\", {\n        todayPvEnergyKWh: Math.round(dailyRaw * 0.1 * 10) / 10,\n        mppt1: { voltageV: Math.round(v1 * 0.1 * 10) / 10, currentA: Math.round(i1 * 0.1 * 10) / 10 },\n        mppt2: { voltageV: Math.round(v2 * 0.1 * 10) / 10, currentA: Math.round(i2 * 0.1 * 10) / 10 },\n        mppt3: { voltageV: Math.round(v3 * 0.1 * 10) / 10, currentA: Math.round(i3 * 0.1 * 10) / 10 },\n        mppt4: { voltageV: Math.round(v4 * 0.1 * 10) / 10, currentA: Math.round(i4 * 0.1 * 10) / 10 }\n    });\n}\n\n// MPPT Power 186-189\nelse if (baseAddr === 186) {\n    const p1 = data[0] || 0;  // 186: PV1 power (1W)\n    const p2 = data[1] || 0;  // 187: PV2 power (1W)\n    const p3 = data[2] || 0;  // 188: PV3 power (1W)\n    const p4 = data[3] || 0;  // 189: PV4 power (1W)\n    \n    const totalPower = p1 + p2 + p3 + p4;\n    \n    flow.set(\"pvds_part_power\", {\n        totalPvPowerW: totalPower,\n        mppt1PowerW: p1,\n        mppt2PowerW: p2,\n        mppt3PowerW: p3,\n        mppt4PowerW: p4\n    });\n}\nelse {\n    return null;\n}\n\n// ---- Try to assemble ----\n\nconst totalEnergyPart = flow.get(\"pvds_part_total_energy\");\nconst dailyVoltagePart = flow.get(\"pvds_part_daily_voltage\");\nconst powerPart = flow.get(\"pvds_part_power\");\n\nif (!totalEnergyPart || !dailyVoltagePart || !powerPart) {\n    return null;\n}\n\nconst deviceId = msg.deviceId\n    || global.get(\"DEVICE_ID\")\n    || env.get(\"DEVICE_ID\")\n    || \"EC100-DEV-001\";\n\n// Helper to determine if MPPT is active\nfunction isMpptActive(powerW, voltageV) {\n    return powerW > 0 || voltageV > 0;\n}\n\nconst state = {\n    kind: \"PvDeviceState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    DeviceId: deviceId,\n    \n    totalPvPowerW: powerPart.totalPvPowerW,\n    todayPvEnergyKWh: dailyVoltagePart.todayPvEnergyKWh,\n    totalPvEnergyKWh: totalEnergyPart.totalPvEnergyKWh,\n    \n    mppt: [\n        {\n            pvChannelId: 1,\n            isActive: isMpptActive(powerPart.mppt1PowerW, dailyVoltagePart.mppt1.voltageV),\n            dcVoltageV: dailyVoltagePart.mppt1.voltageV,\n            dcCurrentA: dailyVoltagePart.mppt1.currentA,\n            inputPowerW: powerPart.mppt1PowerW,\n            todayEnergyKWh: null,\n            totalEnergyKWh: null\n        },\n        {\n            pvChannelId: 2,\n            isActive: isMpptActive(powerPart.mppt2PowerW, dailyVoltagePart.mppt2.voltageV),\n            dcVoltageV: dailyVoltagePart.mppt2.voltageV,\n            dcCurrentA: dailyVoltagePart.mppt2.currentA,\n            inputPowerW: powerPart.mppt2PowerW,\n            todayEnergyKWh: null,\n            totalEnergyKWh: null\n        },\n        {\n            pvChannelId: 3,\n            isActive: isMpptActive(powerPart.mppt3PowerW, dailyVoltagePart.mppt3.voltageV),\n            dcVoltageV: dailyVoltagePart.mppt3.voltageV,\n            dcCurrentA: dailyVoltagePart.mppt3.currentA,\n            inputPowerW: powerPart.mppt3PowerW,\n            todayEnergyKWh: null,\n            totalEnergyKWh: null\n        },\n        {\n            pvChannelId: 4,\n            isActive: isMpptActive(powerPart.mppt4PowerW, dailyVoltagePart.mppt4.voltageV),\n            dcVoltageV: dailyVoltagePart.mppt4.voltageV,\n            dcCurrentA: dailyVoltagePart.mppt4.currentA,\n            inputPowerW: powerPart.mppt4PowerW,\n            todayEnergyKWh: null,\n            totalEnergyKWh: null\n        }\n    ]\n};\n\n// Clear partials\nflow.set(\"pvds_part_total_energy\", null);\nflow.set(\"pvds_part_daily_voltage\", null);\nflow.set(\"pvds_part_power\", null);\n\nflow.set(\"pvDeviceStateSnapshot\", state);\n\nmsg.payload = state;\nmsg.state = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1030,
+        "y": 140,
+        "wires": [
+            [
+                "pvds_debug_json",
+                "pvds_rpc_response"
+            ]
+        ]
+    },
+    {
+        "id": "pvds_debug_json",
+        "type": "debug",
+        "z": "pv_device_state_tab",
+        "name": "PvDeviceState JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1290,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "pvds_error_debug",
+        "type": "debug",
+        "z": "pv_device_state_tab",
+        "name": "PvDeviceState CRC/Error",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1050,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "pvds_rpc_response",
+        "type": "function",
+        "z": "pv_device_state_tab",
+        "name": "Prepare RPC Response",
+        "func": "// Only handle messages that came from RPC\nif (!msg.rpcResponseTopic) {\n    return null;\n}\n\nconst state = msg.state || msg.payload;\n\nmsg.payload = state;\nmsg.topic = msg.rpcResponseTopic;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1290,
+        "y": 200,
+        "wires": [
+            [
+                "pvds_mqtt_rpc_response"
+            ]
+        ]
+    },
+    {
+        "id": "pvds_mqtt_rpc_response",
+        "type": "mqtt out",
+        "z": "pv_device_state_tab",
+        "name": "RPC Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1510,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "pvds_comment_rpc",
+        "type": "comment",
+        "z": "pv_device_state_tab",
+        "name": "RPC Trigger Only (getPvDeviceState)",
+        "info": "",
+        "x": 210,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

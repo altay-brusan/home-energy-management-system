@@ -1,0 +1,331 @@
+[
+    {
+        "id": "inverter_info_tab",
+        "type": "tab",
+        "label": "InverterInfoState",
+        "disabled": false,
+        "info": "Inverter Info State - Read Only\n\nSplit into multiple reads to avoid CRC errors:\n- Part 1: 000-009 (10 regs)\n- Part 2: 010-019 (10 regs)"
+    },
+    {
+        "id": "invinfo_link_in_rpc",
+        "type": "link in",
+        "z": "inverter_info_tab",
+        "name": "RPC Request",
+        "links": [
+            "rpc_invinfo_link_out"
+        ],
+        "x": 135,
+        "y": 140,
+        "wires": [
+            [
+                "invinfo_start_read"
+            ]
+        ]
+    },
+    {
+        "id": "invinfo_manual_read",
+        "type": "inject",
+        "z": "inverter_info_tab",
+        "name": "Manual Read",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 200,
+        "wires": [
+            [
+                "invinfo_start_read"
+            ]
+        ]
+    },
+    {
+        "id": "invinfo_start_read",
+        "type": "function",
+        "z": "inverter_info_tab",
+        "name": "Start Read",
+        "func": "flow.set(\"invinfo_rpc_response_topic\", msg.rpcResponseTopic);\nflow.set(\"invinfo_part1\", null);\nflow.set(\"invinfo_part2\", null);\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 350,
+        "y": 160,
+        "wires": [
+            [
+                "invinfo_prep_part1",
+                "invinfo_prep_part2"
+            ]
+        ]
+    },
+    {
+        "id": "invinfo_prep_part1",
+        "type": "function",
+        "z": "inverter_info_tab",
+        "name": "Prep 000-009",
+        "func": "msg.readGroup = \"part1\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 0,\n    quantity: 10\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 550,
+        "y": 120,
+        "wires": [
+            [
+                "invinfo_read_part1"
+            ]
+        ]
+    },
+    {
+        "id": "invinfo_prep_part2",
+        "type": "function",
+        "z": "inverter_info_tab",
+        "name": "Prep 010-019",
+        "func": "msg.readGroup = \"part2\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 10,\n    quantity: 10\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 550,
+        "y": 200,
+        "wires": [
+            [
+                "invinfo_read_part2"
+            ]
+        ]
+    },
+    {
+        "id": "invinfo_read_part1",
+        "type": "modbus-flex-getter",
+        "z": "inverter_info_tab",
+        "name": "Read 000-009",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 760,
+        "y": 120,
+        "wires": [
+            [
+                "invinfo_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "invinfo_read_part2",
+        "type": "modbus-flex-getter",
+        "z": "inverter_info_tab",
+        "name": "Read 010-019",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 760,
+        "y": 200,
+        "wires": [
+            [
+                "invinfo_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "invinfo_collect",
+        "type": "function",
+        "z": "inverter_info_tab",
+        "name": "Collect Parts",
+        "func": "let data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data)) {\n    node.error(\"Invalid response for \" + msg.readGroup);\n    return null;\n}\n\nconst group = msg.readGroup;\n\nif (group === \"part1\") {\n    flow.set(\"invinfo_part1\", data);\n} else if (group === \"part2\") {\n    flow.set(\"invinfo_part2\", data);\n}\n\n// Check if all parts received\nconst part1 = flow.get(\"invinfo_part1\");\nconst part2 = flow.get(\"invinfo_part2\");\n\nif (!part1 || !part2) {\n    return null; // Wait for other parts\n}\n\n// Combine all data\nmsg.combinedData = [...part1, ...part2];\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 970,
+        "y": 160,
+        "wires": [
+            [
+                "invinfo_build_json"
+            ]
+        ]
+    },
+    {
+        "id": "invinfo_build_json",
+        "type": "function",
+        "z": "inverter_info_tab",
+        "name": "Build JSON State",
+        "func": "const data = msg.combinedData;\n\nif (!Array.isArray(data) || data.length < 20) {\n    node.error(\"Invalid combined data: \" + data.length + \" registers\");\n    return null;\n}\n\n// Clear flow context\nflow.set(\"invinfo_part1\", null);\nflow.set(\"invinfo_part2\", null);\n\n// Helper: Parse ASCII from packed register (2 chars per register)\nfunction parseAsciiChar(val, high) {\n    const byte = high ? ((val >> 8) & 0xFF) : (val & 0xFF);\n    if (byte >= 0x20 && byte <= 0x7E) {\n        return String.fromCharCode(byte);\n    }\n    return '';\n}\n\n// Helper: Parse Serial Number from registers 003-007 (10 ASCII chars)\nfunction parseSerialNumber(regs) {\n    let sn = '';\n    for (let i = 0; i < 5; i++) {\n        sn += parseAsciiChar(regs[i], true);  // High byte first\n        sn += parseAsciiChar(regs[i], false); // Low byte second\n    }\n    return sn.trim();\n}\n\n// Helper: Parse device type\nfunction parseDeviceType(val) {\n    switch(val) {\n        case 0x0200: return \"String Inverter\";\n        case 0x0300: return \"Single-phase Storage\";\n        case 0x0400: return \"Micro Inverter\";\n        case 0x0500: return \"Three-phase Storage\";\n        default: return \"Unknown (0x\" + val.toString(16) + \")\";\n    }\n}\n\n// Helper: Parse protocol version\nfunction parseProtocolVersion(val) {\n    const major = (val >> 8) & 0xFF;\n    const minor = val & 0xFF;\n    return major + \".\" + minor;\n}\n\n// Helper: Parse rated power from two registers (0.1W scale)\nfunction parseRatedPower(low, high) {\n    const combined = (high << 16) | low;\n    return combined * 0.1; // Returns in Watts\n}\n\n// Helper: Parse MPPT and phases\nfunction parseMpptPhases(val) {\n    const mppt = (val >> 8) & 0xFF;\n    const phases = val & 0xFF;\n    return { mpptCount: mppt, phaseCount: phases };\n}\n\n// Helper: Parse grid voltage rating\nfunction parseGridVoltage(val) {\n    switch(val) {\n        case 0: return \"127/220V\";\n        case 1: return \"220/380V\";\n        default: return \"Unknown (\" + val + \")\";\n    }\n}\n\n// Helper: Parse safety/battery type\nfunction parseSafetyType(val) {\n    if (val < 3) return \"48V Battery\";\n    if (val === 3) return \"24V Battery\";\n    return \"Unknown (\" + val + \")\";\n}\n\n// Parse all registers\nconst deviceType = parseDeviceType(data[0]);           // 000\nconst modbusAddress = data[1];                          // 001\nconst protocolVersion = parseProtocolVersion(data[2]); // 002\nconst serialNumber = parseSerialNumber(data.slice(3, 8)); // 003-007\nconst ratedPowerClass = data[8];                        // 008\nconst chipType = data[9];                               // 009\nconst commBoardFwField1 = data[10];                     // 010\nconst commBoardFwField2 = data[11];                     // 011\nconst ctrlBoardAuxFw = data[12];                        // 012\nconst ctrlBoardFw = data[13];                           // 013\nconst commBoardFw = data[14];                           // 014\nconst safetyType = parseSafetyType(data[15]);          // 015\nconst ratedPowerW = parseRatedPower(data[16], data[17]); // 016-017\nconst mpptPhases = parseMpptPhases(data[18]);          // 018\nconst gridVoltageRating = parseGridVoltage(data[19]);  // 019\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\n\nconst state = {\n    kind: \"InverterInfoState\",\n    timestampUtc: new Date().toISOString(),\n    gatewayId: gatewayId,\n    \n    deviceType: deviceType,\n    deviceTypeCode: data[0],\n    modbusAddress: modbusAddress,\n    protocolVersion: protocolVersion,\n    serialNumber: serialNumber,\n    \n    ratedPowerW: ratedPowerW,\n    ratedPowerKw: Math.round(ratedPowerW / 100) / 10,\n    \n    mpptCount: mpptPhases.mpptCount,\n    phaseCount: mpptPhases.phaseCount,\n    \n    gridVoltageRating: gridVoltageRating,\n    safetyType: safetyType,\n    \n    firmware: {\n        controlBoard: ctrlBoardFw,\n        controlBoardAux: ctrlBoardAuxFw,\n        communicationBoard: commBoardFw,\n        commBoardField1: commBoardFwField1,\n        commBoardField2: commBoardFwField2\n    },\n    \n    chipType: chipType,\n    ratedPowerClass: ratedPowerClass,\n    \n    rawRegisters: data\n};\n\nconst rpcResponseTopic = flow.get(\"invinfo_rpc_response_topic\");\nflow.set(\"invinfo_rpc_response_topic\", null);\n\nmsg.payload = state;\nmsg.rpcResponseTopic = rpcResponseTopic;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1170,
+        "y": 160,
+        "wires": [
+            [
+                "invinfo_debug",
+                "invinfo_rpc_response"
+            ]
+        ]
+    },
+    {
+        "id": "invinfo_debug",
+        "type": "debug",
+        "z": "inverter_info_tab",
+        "name": "Inverter Info JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1390,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "invinfo_rpc_response",
+        "type": "function",
+        "z": "inverter_info_tab",
+        "name": "RPC Response",
+        "func": "if (!msg.rpcResponseTopic) {\n    return null;\n}\n\nmsg.topic = msg.rpcResponseTopic;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1380,
+        "y": 160,
+        "wires": [
+            [
+                "invinfo_mqtt_response"
+            ]
+        ]
+    },
+    {
+        "id": "invinfo_mqtt_response",
+        "type": "mqtt out",
+        "z": "inverter_info_tab",
+        "name": "MQTT Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1580,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "invinfo_comment",
+        "type": "comment",
+        "z": "inverter_info_tab",
+        "name": "═══ INVERTER INFO (Read Only - Split Reads) ═══",
+        "info": "Split into 2 reads:\n- Part 1: 000-009\n- Part 2: 010-019",
+        "x": 640,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

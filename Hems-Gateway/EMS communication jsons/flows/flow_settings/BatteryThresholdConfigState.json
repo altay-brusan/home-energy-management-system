@@ -1,0 +1,217 @@
+[
+    {
+        "id": "bat_threshold_config_tab",
+        "type": "tab",
+        "label": "Battery Threshold Config",
+        "disabled": false,
+        "info": "Reads Battery Threshold Config from registers:\n- 217: Shutdown Capacity %\n- 218: Restart Capacity %\n- 219: Low Battery Capacity %"
+    },
+    {
+        "id": "bthr_poll_inject",
+        "type": "inject",
+        "z": "bat_threshold_config_tab",
+        "name": "Poll Threshold Config (5 min)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "300",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 180,
+        "y": 120,
+        "wires": [
+            [
+                "bthr_prepare_read"
+            ]
+        ]
+    },
+    {
+        "id": "bthr_prepare_read",
+        "type": "function",
+        "z": "bat_threshold_config_tab",
+        "name": "Prepare read (Thresholds 217-219)",
+        "func": "// Battery threshold settings\n// 217: battery capacity ShutDown (1%)\n// 218: battery capacity Restart (1%)\n// 219: battery capacity LowBatt (1%)\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 217,\n    quantity: 3\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 480,
+        "y": 120,
+        "wires": [
+            [
+                "bthr_read"
+            ]
+        ]
+    },
+    {
+        "id": "bthr_read",
+        "type": "modbus-flex-getter",
+        "z": "bat_threshold_config_tab",
+        "name": "Read Thresholds (217-219)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 750,
+        "y": 120,
+        "wires": [
+            [
+                "bthr_build_json"
+            ],
+            [
+                "bthr_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "bthr_build_json",
+        "type": "function",
+        "z": "bat_threshold_config_tab",
+        "name": "Build BatteryThresholdConfigState JSON",
+        "func": "// Build BatteryThresholdConfigState from Modbus read.\n//\n// Registers:\n// 217: battery capacity ShutDown (1%)\n// 218: battery capacity Restart (1%)\n// 219: battery capacity LowBatt (1%)\n\nlet raw = msg.payload;\n\n// node-red-contrib-modbus often sends { data: [...], buffer: ... }\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\n// Skip string errors\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nconst shutdownCapacity = data[0] || 0;   // 217\nconst restartCapacity = data[1] || 0;    // 218\nconst lowBattCapacity = data[2] || 0;    // 219\n\n// Resolve identifiers\nconst gatewayId = msg.gatewayId\n    || global.get(\"GATEWAY_ID\")\n    || env.get(\"GATEWAY_ID\")\n    || \"EC100-GW-001\";\n\nconst inverterSN = msg.inverterSerialNumber\n    || global.get(\"INVERTER_SN\")\n    || env.get(\"INVERTER_SN\")\n    || \"Unknown\";\n\nconst state = {\n    kind: \"BatteryThresholdConfigState\",\n    timestampUtc: new Date().toISOString(),\n    gatewayId: gatewayId,\n    inverterSerialNumber: inverterSN,\n    \n    shutdownCapacityPercent: shutdownCapacity,\n    restartCapacityPercent: restartCapacity,\n    lowBatteryCapacityPercent: lowBattCapacity\n};\n\n// Keep snapshot in flow\nflow.set(\"batteryThresholdConfigSnapshot\", state);\n\n// Put result on msg\nmsg.payload = state;\nmsg.state = state;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1030,
+        "y": 120,
+        "wires": [
+            [
+                "bthr_debug_json",
+                "bthr_mqtt_telemetry"
+            ]
+        ]
+    },
+    {
+        "id": "bthr_debug_json",
+        "type": "debug",
+        "z": "bat_threshold_config_tab",
+        "name": "BatteryThresholdConfigState JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1340,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "bthr_error_debug",
+        "type": "debug",
+        "z": "bat_threshold_config_tab",
+        "name": "Threshold CRC/Error debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1000,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "bthr_mqtt_telemetry",
+        "type": "mqtt out",
+        "z": "bat_threshold_config_tab",
+        "name": "Send to ThingsBoard",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1320,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

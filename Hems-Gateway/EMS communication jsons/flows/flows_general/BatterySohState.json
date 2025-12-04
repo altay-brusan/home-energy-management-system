@@ -1,0 +1,217 @@
+[
+    {
+        "id": "bat_soh_state_tab",
+        "type": "tab",
+        "label": "Battery SOH State",
+        "disabled": false,
+        "info": "Reads Battery SOH State from register:\n- 185: Battery Status (SOH derived from BMS?)\n\nNote: This register may not be actual SOH. Testing needed."
+    },
+    {
+        "id": "bsoh_poll_inject",
+        "type": "inject",
+        "z": "bat_soh_state_tab",
+        "name": "Poll Battery SOH (5 min)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "300",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 170,
+        "y": 120,
+        "wires": [
+            [
+                "bsoh_prepare_read"
+            ]
+        ]
+    },
+    {
+        "id": "bsoh_prepare_read",
+        "type": "function",
+        "z": "bat_soh_state_tab",
+        "name": "Prepare read (Battery Status 185)",
+        "func": "// Battery Status register\n// 185: 电池状态 (Battery Status)\n// May contain SOH info from BMS - testing needed\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 185,\n    quantity: 1\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 480,
+        "y": 120,
+        "wires": [
+            [
+                "bsoh_read"
+            ]
+        ]
+    },
+    {
+        "id": "bsoh_read",
+        "type": "modbus-flex-getter",
+        "z": "bat_soh_state_tab",
+        "name": "Read Battery Status (185)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 760,
+        "y": 120,
+        "wires": [
+            [
+                "bsoh_build_json"
+            ],
+            [
+                "bsoh_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "bsoh_build_json",
+        "type": "function",
+        "z": "bat_soh_state_tab",
+        "name": "Build BatterySohState JSON",
+        "func": "// Build BatterySohState from Modbus read.\n//\n// Register:\n// 185: Battery Status (电池状态)\n// \n// NOTE: This may not be actual SOH percentage.\n// Testing needed to determine what this register contains.\n// If value is 0-100, it might be SOH%.\n// If value is a bit field, interpretation is different.\n\nlet raw = msg.payload;\n\n// node-red-contrib-modbus often sends { data: [...], buffer: ... }\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\n// Skip string errors\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nconst batteryStatusRaw = data[0] || 0;\n\n// Attempt to interpret as SOH percentage\n// If value is 0-100, use it directly\n// If value is > 100, might need different interpretation\nlet sohPercent = null;\nif (batteryStatusRaw >= 0 && batteryStatusRaw <= 100) {\n    sohPercent = batteryStatusRaw;\n} else {\n    // Could be a bit field or different scale\n    // Store raw value for analysis\n    sohPercent = null;\n}\n\n// Resolve DeviceId\nconst deviceId = msg.deviceId\n    || global.get(\"DEVICE_ID\")\n    || env.get(\"DEVICE_ID\")\n    || \"EC100-DEV-001\";\n\nconst state = {\n    kind: \"BatterySohState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    DeviceId: deviceId,\n    \n    // Raw value for debugging\n    _rawBatteryStatus: batteryStatusRaw,\n    _rawHex: \"0x\" + batteryStatusRaw.toString(16).padStart(4, '0'),\n    \n    // SOH as seen by inverter\n    inverterBatChannelSoh: [\n        {\n            channelId: 1,\n            sohPercent: sohPercent\n        },\n        {\n            channelId: 2,\n            sohPercent: null  // Reserved for future use\n        }\n    ],\n    \n    // BMS SOH details - would come from separate BMS communication\n    // Not available from inverter registers\n    bmsSohDetails: []\n};\n\n// Keep snapshot in flow\nflow.set(\"batterySohSnapshot\", state);\n\n// Put result on msg\nmsg.payload = state;\nmsg.state = state;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1010,
+        "y": 120,
+        "wires": [
+            [
+                "bsoh_debug_json",
+                "bsoh_mqtt_telemetry"
+            ]
+        ]
+    },
+    {
+        "id": "bsoh_debug_json",
+        "type": "debug",
+        "z": "bat_soh_state_tab",
+        "name": "BatterySohState JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1280,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "bsoh_error_debug",
+        "type": "debug",
+        "z": "bat_soh_state_tab",
+        "name": "BatterySOH CRC/Error debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1020,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "bsoh_mqtt_telemetry",
+        "type": "mqtt out",
+        "z": "bat_soh_state_tab",
+        "name": "Send to ThingsBoard",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1300,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

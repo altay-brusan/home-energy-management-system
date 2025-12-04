@@ -1,0 +1,597 @@
+[
+    {
+        "id": "set_datetime_tab",
+        "type": "tab",
+        "label": "SetDateTime",
+        "disabled": false,
+        "info": "Set Date/Time for both EC100 (Gateway) and Inverter\n\nInverter Registers (021-026):\n- 021: Year (based on 2000, so 25=2025)\n- 022: Month (1-12)\n- 023: Day (1-31)\n- 024: Hour (0-23)\n- 025: Minute (0-59)\n- 026: Second (0-59)\n\nRPC Method: setDateTime\nParams: { dateTimeUtc, timezone, syncInverter, syncGateway }"
+    },
+    {
+        "id": "sdt_link_in_rpc",
+        "type": "link in",
+        "z": "set_datetime_tab",
+        "name": "RPC Request",
+        "links": [
+            "rpc_sdt_link_out"
+        ],
+        "x": 135,
+        "y": 180,
+        "wires": [
+            [
+                "sdt_parse_request"
+            ]
+        ]
+    },
+    {
+        "id": "sdt_manual_test",
+        "type": "inject",
+        "z": "set_datetime_tab",
+        "name": "Test SetDateTime (Now)",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "rpcParams",
+                "v": "{\"syncGateway\":true,\"syncInverter\":true}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 170,
+        "y": 260,
+        "wires": [
+            [
+                "sdt_parse_request"
+            ]
+        ]
+    },
+    {
+        "id": "sdt_manual_specific",
+        "type": "inject",
+        "z": "set_datetime_tab",
+        "name": "Test Specific DateTime",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "rpcParams",
+                "v": "{\"dateTimeUtc\":\"2025-12-03T15:00:00Z\",\"timezone\":\"Europe/Istanbul\",\"syncGateway\":true,\"syncInverter\":true}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 170,
+        "y": 320,
+        "wires": [
+            [
+                "sdt_parse_request"
+            ]
+        ]
+    },
+    {
+        "id": "sdt_read_current",
+        "type": "inject",
+        "z": "set_datetime_tab",
+        "name": "Read Current Time",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operationType",
+                "v": "read",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 160,
+        "y": 380,
+        "wires": [
+            [
+                "sdt_route_operation"
+            ]
+        ]
+    },
+    {
+        "id": "sdt_parse_request",
+        "type": "function",
+        "z": "set_datetime_tab",
+        "name": "Parse Request",
+        "func": "const params = msg.rpcParams || {};\n\n// Get target datetime\nlet targetDate;\nif (params.dateTimeUtc) {\n    targetDate = new Date(params.dateTimeUtc);\n} else {\n    // Use current time\n    targetDate = new Date();\n}\n\n// Timezone handling (for display, actual time is UTC-based)\nconst timezone = params.timezone || \"Europe/Istanbul\";\n\n// What to sync\nconst syncGateway = params.syncGateway !== false; // default true\nconst syncInverter = params.syncInverter !== false; // default true\n\n// Store in flow context\nflow.set(\"sdt_target_date\", targetDate.toISOString());\nflow.set(\"sdt_timezone\", timezone);\nflow.set(\"sdt_sync_gateway\", syncGateway);\nflow.set(\"sdt_sync_inverter\", syncInverter);\nflow.set(\"sdt_rpc_response_topic\", msg.rpcResponseTopic);\nflow.set(\"sdt_results\", { gateway: null, inverter: null });\n\nmsg.targetDate = targetDate;\nmsg.timezone = timezone;\nmsg.syncGateway = syncGateway;\nmsg.syncInverter = syncInverter;\nmsg.operationType = \"write\";\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: targetDate.toISOString() });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 260,
+        "wires": [
+            [
+                "sdt_route_operation"
+            ]
+        ]
+    },
+    {
+        "id": "sdt_route_operation",
+        "type": "function",
+        "z": "set_datetime_tab",
+        "name": "Route Operation",
+        "func": "const opType = msg.operationType || 'write';\n\nif (opType === 'read') {\n    return [msg, null];\n} else {\n    return [null, msg];\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 590,
+        "y": 260,
+        "wires": [
+            [
+                "sdt_read_inverter_time"
+            ],
+            [
+                "sdt_start_sync"
+            ]
+        ]
+    },
+    {
+        "id": "sdt_read_inverter_time",
+        "type": "function",
+        "z": "set_datetime_tab",
+        "name": "Prep Read 021-023",
+        "func": "msg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 21,\n    quantity: 3\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 810,
+        "y": 180,
+        "wires": [
+            [
+                "sdt_modbus_read"
+            ]
+        ]
+    },
+    {
+        "id": "sdt_modbus_read",
+        "type": "modbus-flex-getter",
+        "z": "set_datetime_tab",
+        "name": "Read Time Regs",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1000,
+        "y": 180,
+        "wires": [
+            [
+                "sdt_build_read_response"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "sdt_build_read_response",
+        "type": "function",
+        "z": "set_datetime_tab",
+        "name": "Build Read Response",
+        "func": "let data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data) || data.length < 3) {\n    node.error(\"Invalid modbus response\");\n    return null;\n}\n\n// Registers are packed: each 16-bit register contains 2 bytes\n// Register 21: High=Year (based on 2000), Low=Month\n// Register 22: High=Day, Low=Hour  \n// Register 23: High=Minute, Low=Second\n\nconst reg21 = data[0] || 0;\nconst reg22 = data[1] || 0;\nconst reg23 = data[2] || 0;\n\nconst year = 2000 + ((reg21 >> 8) & 0xFF);  // High byte of reg21\nconst month = reg21 & 0xFF;                  // Low byte of reg21\nconst day = (reg22 >> 8) & 0xFF;            // High byte of reg22\nconst hour = reg22 & 0xFF;                   // Low byte of reg22\nconst minute = (reg23 >> 8) & 0xFF;         // High byte of reg23\nconst second = reg23 & 0xFF;                 // Low byte of reg23\n\nnode.warn(`Parsed: ${year}-${month}-${day} ${hour}:${minute}:${second}`);\nnode.warn(`Raw registers: [${reg21}, ${reg22}, ${reg23}] = [0x${reg21.toString(16)}, 0x${reg22.toString(16)}, 0x${reg23.toString(16)}]`);\n\nconst inverterTime = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}T${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}:${String(second).padStart(2,'0')}`;\n\nmsg.payload = {\n    kind: \"DateTimeState\",\n    timestampUtc: new Date().toISOString(),\n    inverterDateTime: inverterTime,\n    inverterDateTimeRaw: {\n        year: year,\n        month: month,\n        day: day,\n        hour: hour,\n        minute: minute,\n        second: second,\n        rawRegisters: [reg21, reg22, reg23]\n    }\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1200,
+        "y": 180,
+        "wires": [
+            [
+                "sdt_debug_output"
+            ]
+        ]
+    },
+    {
+        "id": "sdt_start_sync",
+        "type": "function",
+        "z": "set_datetime_tab",
+        "name": "Start Sync Process",
+        "func": "const syncGateway = msg.syncGateway;\nconst syncInverter = msg.syncInverter;\n\nif (syncGateway) {\n    // First sync gateway\n    return [msg, null];\n} else if (syncInverter) {\n    // Skip gateway, go to inverter\n    return [null, msg];\n} else {\n    // Nothing to sync\n    node.warn(\"Nothing to sync\");\n    return [null, null];\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 810,
+        "y": 320,
+        "wires": [
+            [
+                "sdt_sync_gateway"
+            ],
+            [
+                "sdt_queue_inverter_writes"
+            ]
+        ]
+    },
+    {
+        "id": "sdt_sync_gateway",
+        "type": "function",
+        "z": "set_datetime_tab",
+        "name": "Prepare Gateway Sync",
+        "func": "const targetDate = new Date(flow.get(\"sdt_target_date\"));\nconst timezone = flow.get(\"sdt_timezone\");\n\n// Format for date command: \"YYYY-MM-DD HH:MM:SS\"\nconst year = targetDate.getUTCFullYear();\nconst month = String(targetDate.getUTCMonth() + 1).padStart(2, '0');\nconst day = String(targetDate.getUTCDate()).padStart(2, '0');\nconst hour = String(targetDate.getUTCHours()).padStart(2, '0');\nconst minute = String(targetDate.getUTCMinutes()).padStart(2, '0');\nconst second = String(targetDate.getUTCSeconds()).padStart(2, '0');\n\nconst dateStr = `${year}-${month}-${day} ${hour}:${minute}:${second}`;\n\n// Build single command string\nmsg.payload = `timedatectl set-timezone ${timezone} && date -s '${dateStr}' && hwclock -w`;\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: \"Setting gateway time...\" });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1030,
+        "y": 320,
+        "wires": [
+            [
+                "sdt_exec_timedatectl"
+            ]
+        ]
+    },
+    {
+        "id": "sdt_exec_timedatectl",
+        "type": "exec",
+        "z": "set_datetime_tab",
+        "command": "bash -c",
+        "addpay": "payload",
+        "append": "",
+        "useSpawn": "false",
+        "timer": "30",
+        "winHide": false,
+        "oldrc": false,
+        "name": "Set Time (bash)",
+        "x": 1250,
+        "y": 320,
+        "wires": [
+            [
+                "sdt_gateway_done"
+            ],
+            [
+                "sdt_gateway_error"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "sdt_gateway_done",
+        "type": "function",
+        "z": "set_datetime_tab",
+        "name": "Gateway Done",
+        "func": "const results = flow.get(\"sdt_results\") || {};\nresults.gateway = {\n    success: true,\n    message: \"Gateway time synchronized\",\n    output: msg.payload\n};\nflow.set(\"sdt_results\", results);\n\nnode.status({ fill: \"green\", shape: \"dot\", text: \"Gateway OK\" });\n\n// Check if we need to sync inverter\nconst syncInverter = flow.get(\"sdt_sync_inverter\");\nif (syncInverter) {\n    return msg;\n} else {\n    // Go to final response\n    return null;\n}",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1460,
+        "y": 380,
+        "wires": [
+            [
+                "sdt_queue_inverter_writes"
+            ]
+        ]
+    },
+    {
+        "id": "sdt_gateway_error",
+        "type": "function",
+        "z": "set_datetime_tab",
+        "name": "Gateway Error",
+        "func": "const results = flow.get(\"sdt_results\") || {};\nresults.gateway = {\n    success: false,\n    message: \"Gateway time sync failed\",\n    error: msg.payload\n};\nflow.set(\"sdt_results\", results);\n\nnode.status({ fill: \"red\", shape: \"dot\", text: \"Gateway FAILED\" });\nnode.error(\"Gateway time sync failed: \" + msg.payload);\n\n// Continue to inverter anyway\nconst syncInverter = flow.get(\"sdt_sync_inverter\");\nif (syncInverter) {\n    return msg;\n}\nreturn null;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1460,
+        "y": 440,
+        "wires": [
+            [
+                "sdt_queue_inverter_writes"
+            ]
+        ]
+    },
+    {
+        "id": "sdt_queue_inverter_writes",
+        "type": "function",
+        "z": "set_datetime_tab",
+        "name": "Queue Inverter Writes",
+        "func": "const targetDateStr = flow.get(\"sdt_target_date\");\nconst timezone = flow.get(\"sdt_timezone\") || \"Europe/Istanbul\";\n\n// Parse the target date\nconst targetDate = new Date(targetDateStr);\n\n// Get local time components based on timezone\n// Use toLocaleString to get the correct local time\nconst options = { \n    timeZone: timezone,\n    year: 'numeric',\n    month: '2-digit',\n    day: '2-digit',\n    hour: '2-digit',\n    minute: '2-digit',\n    second: '2-digit',\n    hour12: false\n};\n\nconst localStr = targetDate.toLocaleString('en-GB', options);\n// Format: \"DD/MM/YYYY, HH:MM:SS\"\nconst parts = localStr.split(/[\\/, :]+/);\n\nconst day = parseInt(parts[0]);\nconst month = parseInt(parts[1]);\nconst year = parseInt(parts[2]) - 2000;  // Based on 2000\nconst hour = parseInt(parts[3]);\nconst minute = parseInt(parts[4]);\nconst second = parseInt(parts[5]);\n\nnode.warn(`Local time for ${timezone}: ${year+2000}-${month}-${day} ${hour}:${minute}:${second}`);\n\nconst writes = [\n    { register: 21, value: year, name: \"Year\" },\n    { register: 22, value: month, name: \"Month\" },\n    { register: 23, value: day, name: \"Day\" },\n    { register: 24, value: hour, name: \"Hour\" },\n    { register: 25, value: minute, name: \"Minute\" },\n    { register: 26, value: second, name: \"Second\" }\n];\n\nglobal.set(\"sdt_write_queue\", writes);\nglobal.set(\"sdt_write_index\", 0);\nglobal.set(\"sdt_write_results\", []);\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: `${writes.length} inverter writes` });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 820,
+        "y": 480,
+        "wires": [
+            [
+                "sdt_prepare_write"
+            ]
+        ]
+    },
+    {
+        "id": "sdt_prepare_write",
+        "type": "function",
+        "z": "set_datetime_tab",
+        "name": "Prepare Write",
+        "func": "const writes = global.get(\"sdt_write_queue\") || [];\nconst index = global.get(\"sdt_write_index\") || 0;\n\nif (index >= writes.length) {\n    return null;\n}\n\nconst current = writes[index];\n\nconst newMsg = {\n    payload: {\n        fc: 16,\n        unitid: 1,\n        address: current.register,\n        quantity: 1,\n        value: [current.value]\n    },\n    currentWrite: current,\n    writeIndex: index\n};\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: `[${index+1}/${writes.length}] ${current.name}` });\n\nreturn newMsg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1020,
+        "y": 480,
+        "wires": [
+            [
+                "sdt_write_register"
+            ]
+        ]
+    },
+    {
+        "id": "sdt_write_register",
+        "type": "modbus-flex-write",
+        "z": "set_datetime_tab",
+        "name": "Write Register",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "server": "e4e4f3e2a4f4e004",
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "x": 1200,
+        "y": 480,
+        "wires": [
+            [
+                "sdt_write_ok"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "sdt_write_ok",
+        "type": "function",
+        "z": "set_datetime_tab",
+        "name": "Write OK",
+        "func": "const writes = global.get(\"sdt_write_queue\") || [];\nlet index = global.get(\"sdt_write_index\") || 0;\nconst results = global.get(\"sdt_write_results\") || [];\n\nconst current = writes[index];\nif (current) {\n    results.push({ \n        register: current.register, \n        name: current.name, \n        value: current.value, \n        success: true \n    });\n    global.set(\"sdt_write_results\", results);\n}\n\nindex++;\nglobal.set(\"sdt_write_index\", index);\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `${current.name} OK` });\n\nif (index < writes.length) {\n    return [{ doNext: true }, null];\n}\n\n// All done\nglobal.set(\"sdt_write_queue\", null);\nglobal.set(\"sdt_write_index\", null);\n\nconst flowResults = flow.get(\"sdt_results\") || {};\nflowResults.inverter = {\n    success: true,\n    message: `Successfully wrote ${results.length} time register(s)`,\n    writes: results\n};\nflow.set(\"sdt_results\", flowResults);\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `Inverter time set!` });\n\nreturn [null, msg];",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1360,
+        "y": 480,
+        "wires": [
+            [
+                "sdt_next_delay"
+            ],
+            [
+                "sdt_build_final_response"
+            ]
+        ]
+    },
+    {
+        "id": "sdt_next_delay",
+        "type": "delay",
+        "z": "set_datetime_tab",
+        "name": "200ms",
+        "pauseType": "delay",
+        "timeout": "200",
+        "timeoutUnits": "milliseconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 1500,
+        "y": 480,
+        "wires": [
+            [
+                "sdt_prepare_write"
+            ]
+        ]
+    },
+    {
+        "id": "sdt_build_final_response",
+        "type": "function",
+        "z": "set_datetime_tab",
+        "name": "Build Final Response",
+        "func": "const results = flow.get(\"sdt_results\") || {};\nconst rpcResponseTopic = flow.get(\"sdt_rpc_response_topic\");\nconst targetDate = flow.get(\"sdt_target_date\");\nconst timezone = flow.get(\"sdt_timezone\");\n\n// Clear flow context\nflow.set(\"sdt_results\", null);\nflow.set(\"sdt_rpc_response_topic\", null);\nflow.set(\"sdt_target_date\", null);\nflow.set(\"sdt_timezone\", null);\nflow.set(\"sdt_sync_gateway\", null);\nflow.set(\"sdt_sync_inverter\", null);\n\nconst success = \n    (!results.gateway || results.gateway.success) && \n    (!results.inverter || results.inverter.success);\n\nmsg.payload = {\n    kind: \"SetDateTimeResponse\",\n    success: success,\n    targetDateTime: targetDate,\n    timezone: timezone,\n    gateway: results.gateway,\n    inverter: results.inverter\n};\n\nmsg.rpcResponseTopic = rpcResponseTopic;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1220,
+        "y": 560,
+        "wires": [
+            [
+                "sdt_debug_output",
+                "sdt_rpc_response"
+            ]
+        ]
+    },
+    {
+        "id": "sdt_debug_output",
+        "type": "debug",
+        "z": "set_datetime_tab",
+        "name": "DateTime Output",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1450,
+        "y": 560,
+        "wires": []
+    },
+    {
+        "id": "sdt_rpc_response",
+        "type": "function",
+        "z": "set_datetime_tab",
+        "name": "RPC Response",
+        "func": "if (!msg.rpcResponseTopic) {\n    return null;\n}\n\nmsg.topic = msg.rpcResponseTopic;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1440,
+        "y": 620,
+        "wires": [
+            [
+                "sdt_mqtt_response"
+            ]
+        ]
+    },
+    {
+        "id": "sdt_mqtt_response",
+        "type": "mqtt out",
+        "z": "set_datetime_tab",
+        "name": "MQTT Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1620,
+        "y": 620,
+        "wires": []
+    },
+    {
+        "id": "sdt_comment_read",
+        "type": "comment",
+        "z": "set_datetime_tab",
+        "name": "═══ READ INVERTER TIME ═══",
+        "info": "",
+        "x": 850,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "sdt_comment_write",
+        "type": "comment",
+        "z": "set_datetime_tab",
+        "name": "═══ WRITE (Gateway + Inverter) ═══",
+        "info": "",
+        "x": 870,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

@@ -1,0 +1,105 @@
+[
+    {
+        "id": "rpc_battery_threshold_config_tab",
+        "type": "tab",
+        "label": "RPC_BatteryThresholdConfig",
+        "disabled": false,
+        "info": "RPC Handler for BatteryThresholdConfigState\nMethods:\n- getBatteryThresholdConfig (read)\n- setBatteryThresholdConfig (write + auto read)"
+    },
+    {
+        "id": "rpc_bthr_mqtt_in",
+        "type": "mqtt in",
+        "z": "rpc_battery_threshold_config_tab",
+        "name": "RPC Request",
+        "topic": "v1/devices/me/rpc/request/+",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "tb-broker",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 140,
+        "y": 160,
+        "wires": [
+            [
+                "rpc_bthr_handle"
+            ]
+        ]
+    },
+    {
+        "id": "rpc_bthr_handle",
+        "type": "function",
+        "z": "rpc_battery_threshold_config_tab",
+        "name": "Handle RPC (get/set)",
+        "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\n\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\n// Route to main flow with operation type\nif (msg.rpcMethod === 'getBatteryThresholdConfig') {\n    msg.isRpcRequest = true;\n    msg.operationType = 'read';\n    return msg;\n}\nelse if (msg.rpcMethod === 'setBatteryThresholdConfig') {\n    msg.isRpcRequest = true;\n    msg.operationType = 'write';\n    return msg;\n}\nelse {\n    return null;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 350,
+        "y": 160,
+        "wires": [
+            [
+                "rpc_bthr_link_out"
+            ]
+        ]
+    },
+    {
+        "id": "rpc_bthr_link_out",
+        "type": "link out",
+        "z": "rpc_battery_threshold_config_tab",
+        "name": "To Main Flow",
+        "mode": "link",
+        "links": [
+            "bthr_link_in_rpc"
+        ],
+        "x": 535,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "rpc_bthr_comment",
+        "type": "comment",
+        "z": "rpc_battery_threshold_config_tab",
+        "name": "getBatteryThresholdConfig / setBatteryThresholdConfig",
+        "info": "",
+        "x": 280,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

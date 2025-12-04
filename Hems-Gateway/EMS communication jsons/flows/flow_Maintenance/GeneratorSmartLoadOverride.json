@@ -1,0 +1,217 @@
+[
+    {
+        "id": "gen_sl_override_tab",
+        "type": "tab",
+        "label": "Generator SmartLoad Override",
+        "disabled": false,
+        "info": "Reads Generator SmartLoad Override from register:\n- 234: Force on generator as load function"
+    },
+    {
+        "id": "gslo_poll_inject",
+        "type": "inject",
+        "z": "gen_sl_override_tab",
+        "name": "Poll SmartLoad Override (5 min)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "300",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 180,
+        "y": 120,
+        "wires": [
+            [
+                "gslo_prepare_read"
+            ]
+        ]
+    },
+    {
+        "id": "gslo_prepare_read",
+        "type": "function",
+        "z": "gen_sl_override_tab",
+        "name": "Prepare read (ForceSmartLoad 234)",
+        "func": "// Force on generator as load function\n// 234: 强制开启发电机作为负载功能\n// prerequisite: reg 235 = 1\n// 0 = do not force, 1 = force\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 234,\n    quantity: 1\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 120,
+        "wires": [
+            [
+                "gslo_read"
+            ]
+        ]
+    },
+    {
+        "id": "gslo_read",
+        "type": "modbus-flex-getter",
+        "z": "gen_sl_override_tab",
+        "name": "Read ForceSmartLoad (234)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 760,
+        "y": 120,
+        "wires": [
+            [
+                "gslo_build_json"
+            ],
+            [
+                "gslo_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "gslo_build_json",
+        "type": "function",
+        "z": "gen_sl_override_tab",
+        "name": "Build GeneratorSmartLoadOverride JSON",
+        "func": "// Build GeneratorSmartLoadOverride from Modbus read.\n//\n// Register:\n// 234: Force on generator as load function\n//      0 = do not force, 1 = force\n\nlet raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nconst forceSmartLoadOn = (data[0] || 0) === 1;\n\nconst state = {\n    kind: \"GeneratorSmartLoadOverride\",\n    timestampUtc: new Date().toISOString(),\n    forceSmartLoadOn: forceSmartLoadOn\n};\n\nflow.set(\"generatorSmartLoadOverrideSnapshot\", state);\n\nmsg.payload = state;\nmsg.state = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1030,
+        "y": 120,
+        "wires": [
+            [
+                "gslo_debug_json",
+                "gslo_mqtt_telemetry"
+            ]
+        ]
+    },
+    {
+        "id": "gslo_debug_json",
+        "type": "debug",
+        "z": "gen_sl_override_tab",
+        "name": "GeneratorSmartLoadOverride JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1330,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "gslo_error_debug",
+        "type": "debug",
+        "z": "gen_sl_override_tab",
+        "name": "SmartLoadOverride CRC/Error debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1040,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "gslo_mqtt_telemetry",
+        "type": "mqtt out",
+        "z": "gen_sl_override_tab",
+        "name": "Send to ThingsBoard",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1300,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

@@ -1,0 +1,315 @@
+[
+    {
+        "id": "total_energy_flow_tab",
+        "type": "tab",
+        "label": "Total Energy Flow State",
+        "disabled": false,
+        "info": "Reads Total Energy Flow State from registers:\n- 72-75: Battery charge/discharge\n- 78, 80-82: Grid buy/sell\n- 85-86: Load\n- 92, 95: Generator\n- 96-97: PV"
+    },
+    {
+        "id": "tef_poll_inject",
+        "type": "inject",
+        "z": "total_energy_flow_tab",
+        "name": "Poll Total Energy (5 min)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "300",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 170,
+        "y": 140,
+        "wires": [
+            [
+                "tef_prepare_battery",
+                "tef_prepare_grid_load",
+                "tef_prepare_gen_pv"
+            ]
+        ]
+    },
+    {
+        "id": "tef_prepare_battery",
+        "type": "function",
+        "z": "total_energy_flow_tab",
+        "name": "Prepare read (Battery 72-75)",
+        "func": "// Battery total energy\n// 72: Total charge Low\n// 73: Total charge High\n// 74: Total discharge Low\n// 75: Total discharge High\n\nmsg.baseAddr = 72;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 72,\n    quantity: 4\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 80,
+        "wires": [
+            [
+                "tef_read_battery"
+            ]
+        ]
+    },
+    {
+        "id": "tef_prepare_grid_load",
+        "type": "function",
+        "z": "total_energy_flow_tab",
+        "name": "Prepare read (Grid/Load 78-86)",
+        "func": "// Grid and Load total energy\n// 78: Grid buy Low\n// 79: (skip)\n// 80: Grid buy High\n// 81: Grid sell Low\n// 82: Grid sell High\n// 83: (skip)\n// 84: (skip)\n// 85: Load Low\n// 86: Load High\n\nmsg.baseAddr = 78;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 78,\n    quantity: 9  // 78-86\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 140,
+        "wires": [
+            [
+                "tef_read_grid_load"
+            ]
+        ]
+    },
+    {
+        "id": "tef_prepare_gen_pv",
+        "type": "function",
+        "z": "total_energy_flow_tab",
+        "name": "Prepare read (Gen/PV 92-97)",
+        "func": "// Generator and PV total energy\n// 92: Gen Low\n// 93: (skip)\n// 94: (skip)\n// 95: Gen High\n// 96: PV Low\n// 97: PV High\n\nmsg.baseAddr = 92;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 92,\n    quantity: 6  // 92-97\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 490,
+        "y": 200,
+        "wires": [
+            [
+                "tef_read_gen_pv"
+            ]
+        ]
+    },
+    {
+        "id": "tef_read_battery",
+        "type": "modbus-flex-getter",
+        "z": "total_energy_flow_tab",
+        "name": "Read Battery (72-75)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 760,
+        "y": 80,
+        "wires": [
+            [
+                "tef_build_json"
+            ],
+            [
+                "tef_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "tef_read_grid_load",
+        "type": "modbus-flex-getter",
+        "z": "total_energy_flow_tab",
+        "name": "Read Grid/Load (78-86)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 770,
+        "y": 140,
+        "wires": [
+            [
+                "tef_build_json"
+            ],
+            [
+                "tef_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "tef_read_gen_pv",
+        "type": "modbus-flex-getter",
+        "z": "total_energy_flow_tab",
+        "name": "Read Gen/PV (92-97)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 760,
+        "y": 200,
+        "wires": [
+            [
+                "tef_build_json"
+            ],
+            [
+                "tef_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "tef_build_json",
+        "type": "function",
+        "z": "total_energy_flow_tab",
+        "name": "Build TotalEnergyFlowState JSON",
+        "func": "// Build TotalEnergyFlowState from multiple Modbus reads.\n\nlet raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nlet baseAddr = msg.baseAddr;\nif (typeof baseAddr !== \"number\") {\n    baseAddr = (msg.modbusRequest && msg.modbusRequest.address);\n}\nif (typeof baseAddr !== \"number\") {\n    node.warn(\"TotalEnergyFlowState: missing base address\");\n    return null;\n}\n\n// Helper: combine low+high word to 32-bit unsigned, then scale\nfunction u32(low, high) {\n    return ((high || 0) << 16) | (low || 0);\n}\n\n// ---- Store partials ----\n\n// Battery 72-75\nif (baseAddr === 72) {\n    const chargeLow = data[0] || 0;      // 72\n    const chargeHigh = data[1] || 0;     // 73\n    const dischargeLow = data[2] || 0;   // 74\n    const dischargeHigh = data[3] || 0;  // 75\n    \n    flow.set(\"tef_part_battery\", {\n        totalChargeEnergyKWh: Math.round(u32(chargeLow, chargeHigh) * 0.1 * 10) / 10,\n        totalDischargeEnergyKWh: Math.round(u32(dischargeLow, dischargeHigh) * 0.1 * 10) / 10\n    });\n}\n\n// Grid/Load 78-86\nelse if (baseAddr === 78) {\n    // data[0] = 78: Grid buy Low\n    // data[1] = 79: (skip)\n    // data[2] = 80: Grid buy High\n    // data[3] = 81: Grid sell Low\n    // data[4] = 82: Grid sell High\n    // data[5] = 83: (skip)\n    // data[6] = 84: (skip)\n    // data[7] = 85: Load Low\n    // data[8] = 86: Load High\n    \n    const gridBuyLow = data[0] || 0;     // 78\n    const gridBuyHigh = data[2] || 0;    // 80\n    const gridSellLow = data[3] || 0;    // 81\n    const gridSellHigh = data[4] || 0;   // 82\n    const loadLow = data[7] || 0;        // 85\n    const loadHigh = data[8] || 0;       // 86\n    \n    flow.set(\"tef_part_grid_load\", {\n        importTotalEnergyKWh: Math.round(u32(gridBuyLow, gridBuyHigh) * 0.1 * 10) / 10,\n        exportTotalEnergyKWh: Math.round(u32(gridSellLow, gridSellHigh) * 0.1 * 10) / 10,\n        loadTotalEnergyKWh: Math.round(u32(loadLow, loadHigh) * 0.1 * 10) / 10\n    });\n}\n\n// Gen/PV 92-97\nelse if (baseAddr === 92) {\n    // data[0] = 92: Gen Low\n    // data[1] = 93: (skip)\n    // data[2] = 94: (skip)\n    // data[3] = 95: Gen High\n    // data[4] = 96: PV Low\n    // data[5] = 97: PV High\n    \n    const genLow = data[0] || 0;         // 92\n    const genHigh = data[3] || 0;        // 95\n    const pvLow = data[4] || 0;          // 96\n    const pvHigh = data[5] || 0;         // 97\n    \n    flow.set(\"tef_part_gen_pv\", {\n        genTotalEnergyKWh: Math.round(u32(genLow, genHigh) * 0.1 * 10) / 10,\n        pvTotalEnergyKWh: Math.round(u32(pvLow, pvHigh) * 0.1 * 10) / 10\n    });\n}\nelse {\n    return null;\n}\n\n// ---- Try to assemble ----\n\nconst batteryPart = flow.get(\"tef_part_battery\");\nconst gridLoadPart = flow.get(\"tef_part_grid_load\");\nconst genPvPart = flow.get(\"tef_part_gen_pv\");\n\nif (!batteryPart || !gridLoadPart || !genPvPart) {\n    return null;\n}\n\nconst deviceId = msg.deviceId\n    || global.get(\"DEVICE_ID\")\n    || env.get(\"DEVICE_ID\")\n    || \"EC100-DEV-001\";\n\nconst state = {\n    kind: \"TotalEnergyFlowState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    deviceId: deviceId,\n    \n    grid: {\n        importTotalEnergyKWh: gridLoadPart.importTotalEnergyKWh,\n        exportTotalEnergyKWh: gridLoadPart.exportTotalEnergyKWh\n    },\n    \n    pv: {\n        totalEnergyKWh: genPvPart.pvTotalEnergyKWh,\n        mppt: [\n            { id: 1, totalEnergyKWh: null },\n            { id: 2, totalEnergyKWh: null },\n            { id: 3, totalEnergyKWh: null },\n            { id: 4, totalEnergyKWh: null }\n        ]\n    },\n    \n    load: {\n        totalEnergyKWh: gridLoadPart.loadTotalEnergyKWh\n    },\n    \n    battery: {\n        totalChargeEnergyKWh: batteryPart.totalChargeEnergyKWh,\n        totalDischargeEnergyKWh: batteryPart.totalDischargeEnergyKWh\n    },\n    \n    generator: {\n        totalEnergyKWh: genPvPart.genTotalEnergyKWh\n    }\n};\n\n// Clear partials\nflow.set(\"tef_part_battery\", null);\nflow.set(\"tef_part_grid_load\", null);\nflow.set(\"tef_part_gen_pv\", null);\n\nflow.set(\"totalEnergyFlowStateSnapshot\", state);\n\nmsg.payload = state;\nmsg.state = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1020,
+        "y": 140,
+        "wires": [
+            [
+                "tef_debug_json",
+                "tef_mqtt_telemetry"
+            ]
+        ]
+    },
+    {
+        "id": "tef_debug_json",
+        "type": "debug",
+        "z": "total_energy_flow_tab",
+        "name": "TotalEnergyFlowState JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1300,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "tef_error_debug",
+        "type": "debug",
+        "z": "total_energy_flow_tab",
+        "name": "TotalEnergy CRC/Error debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1020,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "tef_mqtt_telemetry",
+        "type": "mqtt out",
+        "z": "total_energy_flow_tab",
+        "name": "Send to ThingsBoard",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1280,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]
