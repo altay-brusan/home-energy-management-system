@@ -15,19 +15,38 @@ public record CreateDeviceDataCommand : IRequest<int>
 public class CreateDeviceDataCommandHandler : IRequestHandler<CreateDeviceDataCommand, int>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ITimezoneService _timezoneService;
+    private readonly IDeviceMappingService _deviceMapping;
 
-    public CreateDeviceDataCommandHandler(IApplicationDbContext context)
+    public CreateDeviceDataCommandHandler(
+        IApplicationDbContext context,
+        ITimezoneService timezoneService,
+        IDeviceMappingService deviceMapping)
     {
         _context = context;
+        _timezoneService = timezoneService;
+        _deviceMapping = deviceMapping;
     }
 
     public async Task<int> Handle(CreateDeviceDataCommand request, CancellationToken cancellationToken)
     {
+        // Convert UTC RequestDate to device local time using cached timezone service
+        var localDeviceId = await _deviceMapping.GetDeviceIdAsync(request.DeviceId, cancellationToken);
+        if (localDeviceId == null)
+        {
+            throw new ArgumentException($"Device mapping not found for ThingsBoardDeviceId {request.DeviceId}");
+        }
+        
+        var localRequestDate = await _timezoneService.ConvertUtcToDeviceTimeAsync(
+            localDeviceId.Value, 
+            request.RequestDate, 
+            cancellationToken);
+
         var entity = new Hems_Backend.Domain.Entities.DeviceData
         {
             DataType = request.DataType,
             ThingsBoardDeviceId = request.DeviceId,
-            RequestDate = request.RequestDate,
+            RequestDate = localRequestDate, // Store in device local time
             Data = request.Data
         };
 

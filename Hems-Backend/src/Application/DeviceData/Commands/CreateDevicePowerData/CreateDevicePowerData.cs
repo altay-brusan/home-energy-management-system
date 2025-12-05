@@ -36,10 +36,17 @@ public record CreateDevicePowerDataCommand : IRequest<int>
 public class CreateDevicePowerDataCommandHandler : IRequestHandler<CreateDevicePowerDataCommand, int>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ITimezoneService _timezoneService;
+    private readonly IDeviceMappingService _deviceMapping;
 
-    public CreateDevicePowerDataCommandHandler(IApplicationDbContext context)
+    public CreateDevicePowerDataCommandHandler(
+        IApplicationDbContext context,
+        ITimezoneService timezoneService,
+        IDeviceMappingService deviceMapping)
     {
         _context = context;
+        _timezoneService = timezoneService;
+        _deviceMapping = deviceMapping;
     }
 
     public async Task<int> Handle(CreateDevicePowerDataCommand request, CancellationToken cancellationToken)
@@ -53,14 +60,26 @@ public class CreateDevicePowerDataCommandHandler : IRequestHandler<CreateDeviceP
             throw new ArgumentException($"Device with ThingsBoardDeviceId {request.DeviceId} not found.");
         }
 
+        // Convert UTC DataDateTime to device local time using cached timezone service
+        var localDeviceId = await _deviceMapping.GetDeviceIdAsync(request.DeviceId, cancellationToken);
+        if (localDeviceId == null)
+        {
+            throw new ArgumentException($"Device mapping not found for ThingsBoardDeviceId {request.DeviceId}");
+        }
+        
+        var localDataDateTime = await _timezoneService.ConvertUtcToDeviceTimeAsync(
+            localDeviceId.Value, 
+            request.DataDateTime, 
+            cancellationToken);
+
         // Define duplicate detection threshold (in seconds)
         const int duplicateThresholdSeconds = 30; // Consider messages within 30 seconds as potential duplicates
 
-        // Check for exact match first (most common case)
+        // Check for exact match first (most common case) - using local time
         var exactMatch = await _context.DevicePowerData
             .FirstOrDefaultAsync(x =>
                 x.ThingsBoardDeviceId == request.DeviceId &&
-                x.DataDateTime == request.DataDateTime &&
+                x.DataDateTime == localDataDateTime &&
                 x.DataType == request.DataType,
                 cancellationToken);
 
@@ -84,9 +103,9 @@ public class CreateDevicePowerDataCommandHandler : IRequestHandler<CreateDeviceP
             return exactMatch.Id;
         }
 
-        // Check for recent record with close timestamp (within threshold)
-        var timeWindowStart = request.DataDateTime.AddSeconds(-duplicateThresholdSeconds);
-        var timeWindowEnd = request.DataDateTime.AddSeconds(duplicateThresholdSeconds);
+        // Check for recent record with close timestamp (within threshold) - using local time
+        var timeWindowStart = localDataDateTime.AddSeconds(-duplicateThresholdSeconds);
+        var timeWindowEnd = localDataDateTime.AddSeconds(duplicateThresholdSeconds);
 
         var recentRecord = await _context.DevicePowerData
             .Where(x =>
@@ -113,9 +132,10 @@ public class CreateDevicePowerDataCommandHandler : IRequestHandler<CreateDeviceP
             recentRecord.GeneratorTotalPowerW = request.GeneratorTotalPowerW;
 
             // Update the timestamp to the new one if it's more recent
-            if (request.DataDateTime > recentRecord.DataDateTime)
+            // Update with newer timestamp (comparing local times)
+            if (localDataDateTime > recentRecord.DataDateTime)
             {
-                recentRecord.DataDateTime = request.DataDateTime;
+                recentRecord.DataDateTime = localDataDateTime;
             }
 
             recentRecord.LastModified = DateTime.UtcNow;
@@ -129,7 +149,7 @@ public class CreateDevicePowerDataCommandHandler : IRequestHandler<CreateDeviceP
         var powerData = new DevicePowerData
         {
             ThingsBoardDeviceId = request.DeviceId,
-            DataDateTime = request.DataDateTime,
+            DataDateTime = localDataDateTime, // Store in device local time
             DataType = request.DataType,
             MessageType = MessageTypes.Telemetry,
             PhaseType = PhaseTypes.SinglePhase,
