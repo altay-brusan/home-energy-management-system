@@ -13,6 +13,8 @@ public class CreateDeviceDataCommandTests
 {
     private Mock<IApplicationDbContext> _context;
     private Mock<DbSet<Hems_Backend.Domain.Entities.DeviceData>> _deviceDataDbSet;
+    private Mock<ITimezoneService> _timezoneService;
+    private Mock<IDeviceMappingService> _deviceMapping;
     private CreateDeviceDataCommandHandler _handler;
 
     [SetUp]
@@ -20,8 +22,22 @@ public class CreateDeviceDataCommandTests
     {
         _context = new Mock<IApplicationDbContext>();
         _deviceDataDbSet = new Mock<DbSet<Hems_Backend.Domain.Entities.DeviceData>>();
+        _timezoneService = new Mock<ITimezoneService>();
+        _deviceMapping = new Mock<IDeviceMappingService>();
+        
         _context.Setup(c => c.DeviceData).Returns(_deviceDataDbSet.Object);
-        _handler = new CreateDeviceDataCommandHandler(_context.Object);
+        
+        // Mock timezone conversion to return same time (for tests)
+        _timezoneService.Setup(x => x.ConvertUtcToDeviceTimeAsync(
+            It.IsAny<Guid>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid id, DateTime dt, CancellationToken ct) => dt);
+        
+        // Mock device mapping to return a local device ID
+        _deviceMapping.Setup(x => x.GetDeviceIdAsync(
+            It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid id, CancellationToken ct) => id);
+        
+        _handler = new CreateDeviceDataCommandHandler(_context.Object, _timezoneService.Object, _deviceMapping.Object);
     }
 
     [Test]
