@@ -65,6 +65,7 @@ public class DeviceHeartbeatMonitorService : BackgroundService
         var cache = scope.ServiceProvider.GetRequiredService<IDeviceHeartbeatCache>();
         var context = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
         var hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<DeviceStatusHub>>();
+        var deviceMapping = scope.ServiceProvider.GetRequiredService<IDeviceMappingService>();
 
         // Check all tracked devices for missed heartbeats
         var statusChanges = await cache.CheckMissedHeartbeatsAsync(cancellationToken);
@@ -82,7 +83,7 @@ public class DeviceHeartbeatMonitorService : BackgroundService
             if (cancellationToken.IsCancellationRequested)
                 break;
 
-            await ProcessStatusChangeAsync(change, cache, context, hubContext, cancellationToken);
+            await ProcessStatusChangeAsync(change, cache, context, hubContext, deviceMapping, cancellationToken);
         }
 
         // Save all changes to database
@@ -94,23 +95,33 @@ public class DeviceHeartbeatMonitorService : BackgroundService
         IDeviceHeartbeatCache cache,
         IApplicationDbContext context,
         IHubContext<DeviceStatusHub> hubContext,
+        IDeviceMappingService deviceMapping,
         CancellationToken cancellationToken)
     {
-        var deviceId = change.ThingsBoardDeviceId;
+        var thingsBoardDeviceId = change.ThingsBoardDeviceId;
         var newStatus = change.NewStatus;
 
-        // Send SignalR notification to frontend
-        await hubContext.Clients.Group($"device_{deviceId}")
+        // ID ADAPTER: Translate ThingsBoard ID to local deviceId for frontend
+        var localDeviceId = await deviceMapping.GetDeviceIdAsync(thingsBoardDeviceId, cancellationToken);
+        
+        if (localDeviceId == null)
+        {
+            _logger.LogWarning("Could not find local deviceId for ThingsBoard device {TBDeviceId}", thingsBoardDeviceId);
+            return; // Skip notification if mapping not found
+        }
+
+        // Send SignalR notification with local deviceId (frontend doesn't know about TB ID)
+        await hubContext.Clients.Group($"device_{localDeviceId}")
             .SendAsync("DeviceStatusChanged", new
             {
-                deviceId = deviceId,
+                deviceId = localDeviceId, // ← Local ID for frontend
                 status = newStatus.ToString(),
                 missedHeartbeats = change.MissedHeartbeats,
                 timestamp = change.Timestamp
             }, cancellationToken);
 
-        _logger.LogInformation("SignalR notification sent for device {DeviceId}: {Status}", 
-            deviceId, newStatus);
+        _logger.LogInformation("SignalR notification sent for device {LocalDeviceId} (TB: {TBDeviceId}): {Status}", 
+            localDeviceId, thingsBoardDeviceId, newStatus);
 
         // Handle DISCONNECTED status - create DB log entry
         if (newStatus == DeviceStatus.DISCONNECTED && change.PreviousStatus != DeviceStatus.DISCONNECTED)
@@ -118,7 +129,7 @@ public class DeviceHeartbeatMonitorService : BackgroundService
             var disconnectLog = new DeviceDisconnectLog
             {
                 Id = Guid.NewGuid(),
-                ThingsBoardDeviceId = deviceId,
+                ThingsBoardDeviceId = thingsBoardDeviceId,
                 StartTime = change.Timestamp,
                 MissedHeartbeats = change.MissedHeartbeats
             };
@@ -126,20 +137,20 @@ public class DeviceHeartbeatMonitorService : BackgroundService
             context.DeviceDisconnectLogs.Add(disconnectLog);
 
             // Store log ID in cache for later update
-            var state = (cache as DeviceHeartbeatCache)?.GetDeviceState(deviceId);
+            var state = (cache as DeviceHeartbeatCache)?.GetDeviceState(thingsBoardDeviceId);
             if (state != null)
             {
                 state.DisconnectLogId = disconnectLog.Id;
             }
 
-            _logger.LogWarning("Device {DeviceId} marked as DISCONNECTED. Disconnect log created: {LogId}", 
-                deviceId, disconnectLog.Id);
+                _logger.LogWarning("Device {TBDeviceId} marked as DISCONNECTED. Disconnect log created: {LogId}", 
+                thingsBoardDeviceId, disconnectLog.Id);
         }
 
         // Handle recovery from DISCONNECTED - update DB log entry
         if (change.PreviousStatus == DeviceStatus.DISCONNECTED && newStatus == DeviceStatus.OK)
         {
-            var state = (cache as DeviceHeartbeatCache)?.GetDeviceState(deviceId);
+            var state = (cache as DeviceHeartbeatCache)?.GetDeviceState(thingsBoardDeviceId);
             if (state?.DisconnectLogId != null)
             {
                 var disconnectLog = await context.DeviceDisconnectLogs
@@ -151,8 +162,8 @@ public class DeviceHeartbeatMonitorService : BackgroundService
                     disconnectLog.Duration = disconnectLog.EndTime - disconnectLog.StartTime;
                     disconnectLog.RecoveryType = "Heartbeat";
 
-                    _logger.LogInformation("Device {DeviceId} recovered. Disconnect duration: {Duration}", 
-                        deviceId, disconnectLog.Duration);
+                    _logger.LogInformation("Device {TBDeviceId} recovered. Disconnect duration: {Duration}", 
+                        thingsBoardDeviceId, disconnectLog.Duration);
                 }
 
                 state.DisconnectLogId = null;
