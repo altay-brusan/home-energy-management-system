@@ -1,6 +1,6 @@
 using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -8,15 +8,14 @@ using Microsoft.Extensions.Logging;
 namespace Hems_Backend.Infrastructure.Services;
 
 /// <summary>
-/// Background service that monitors device heartbeats and handles offline detection
+/// Background service that monitors device heartbeats and handles disconnect logging
+/// Checks every 1 minute for missed heartbeats
 /// </summary>
 public class DeviceHeartbeatMonitorService : BackgroundService
 {
     private readonly ILogger<DeviceHeartbeatMonitorService> _logger;
     private readonly IServiceScopeFactory _serviceScopeFactory;
-    private const int CheckIntervalMinutes = 5;
-    private const int RetryDelayMinutes = 2;
-    private const int MaxRetryAttempts = 3;
+    private const int CheckIntervalSeconds = 60; // Check every 1 minute
 
     public DeviceHeartbeatMonitorService(
         ILogger<DeviceHeartbeatMonitorService> logger,
@@ -28,213 +27,143 @@ public class DeviceHeartbeatMonitorService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Device Heartbeat Monitor Service started");
+        _logger.LogInformation("Device Heartbeat Monitor Service started (heartbeat-driven mode)");
 
-        // Initial delay to let application start
-        await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken);
-
-        // Initialize cache on startup
-        using (var scope = _serviceScopeFactory.CreateScope())
-        {
-            var cache = scope.ServiceProvider.GetRequiredService<IDeviceHeartbeatCache>();
-            await cache.InitializeCacheAsync(stoppingToken);
-        }
+        // No initial cache population needed - devices auto-register on first heartbeat
+        await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
 
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                await MonitorDevicesAsync(stoppingToken);
+                await CheckDeviceHeartbeatsAsync(stoppingToken);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error in device heartbeat monitoring");
             }
 
-            // Wait for next check interval
-            await Task.Delay(TimeSpan.FromMinutes(CheckIntervalMinutes), stoppingToken);
+            // Wait 1 minute before next check
+            await Task.Delay(TimeSpan.FromSeconds(CheckIntervalSeconds), stoppingToken);
         }
 
         _logger.LogInformation("Device Heartbeat Monitor Service stopped");
     }
 
-    private async Task MonitorDevicesAsync(CancellationToken cancellationToken)
+    private async Task CheckDeviceHeartbeatsAsync(CancellationToken cancellationToken)
     {
         using var scope = _serviceScopeFactory.CreateScope();
         var cache = scope.ServiceProvider.GetRequiredService<IDeviceHeartbeatCache>();
-        var heartbeatSender = scope.ServiceProvider.GetRequiredService<IHeartbeatSender>();
         var context = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+        var hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<DeviceStatusHub>>();
 
-        // Get devices that haven't sent powerflow data in 5+ minutes
-        var inactiveDevices = await cache.GetInactiveDevicesAsync(cancellationToken);
+        // Check all tracked devices for missed heartbeats
+        var statusChanges = await cache.CheckMissedHeartbeatsAsync(cancellationToken);
 
-        _logger.LogInformation("Checking {Count} inactive devices", inactiveDevices.Count);
-
-        foreach (var deviceId in inactiveDevices)
+        if (statusChanges.Count == 0)
         {
-            if (cancellationToken.IsCancellationRequested)
-                break;
-
-            await ProcessInactiveDeviceAsync(deviceId, cache, heartbeatSender, context, cancellationToken);
-        }
-    }
-
-    private async Task ProcessInactiveDeviceAsync(
-        Guid thingsBoardDeviceId,
-        IDeviceHeartbeatCache cache,
-        IHeartbeatSender heartbeatSender,
-        IApplicationDbContext context,
-        CancellationToken cancellationToken)
-    {
-        var deviceStatus = cache.GetDeviceStatus(thingsBoardDeviceId);
-        if (deviceStatus == null)
-        {
-            _logger.LogWarning("Device status not found in cache for {DeviceId}", thingsBoardDeviceId);
+            _logger.LogDebug("No device status changes detected");
             return;
         }
 
-        _logger.LogInformation("Processing inactive device {DeviceId}, attempts: {Attempts}",
-            thingsBoardDeviceId, deviceStatus.HeartbeatAttempts);
+        _logger.LogInformation("Processing {Count} device status changes", statusChanges.Count);
 
-        // Retry logic: 3 attempts with 2-minute delays
-        for (int attempt = deviceStatus.HeartbeatAttempts + 1; attempt <= MaxRetryAttempts; attempt++)
+        foreach (var change in statusChanges)
         {
             if (cancellationToken.IsCancellationRequested)
                 break;
 
-            _logger.LogInformation("Heartbeat attempt {Attempt}/{MaxAttempts} for device {DeviceId}",
-                attempt, MaxRetryAttempts, thingsBoardDeviceId);
-
-            // Update attempt count in cache
-            await cache.UpdateHeartbeatAttemptAsync(thingsBoardDeviceId, attempt, cancellationToken);
-
-            // Record heartbeat attempt in database
-            var heartbeatRecord = new DeviceHeartbeat
-            {
-                Id = Guid.NewGuid(),
-                ThingsBoardDeviceId = thingsBoardDeviceId,
-                Timestamp = DateTime.UtcNow,
-                Status = HeartbeatStatus.Sent,
-                AttemptNumber = attempt
-            };
-
-            context.DeviceHeartbeats.Add(heartbeatRecord);
-            await context.SaveChangesAsync(cancellationToken);
-
-            // Send heartbeat request
-            var responseReceived = await heartbeatSender.SendHeartbeatAsync(thingsBoardDeviceId, cancellationToken);
-
-            if (responseReceived)
-            {
-                _logger.LogInformation("Device {DeviceId} responded to heartbeat", thingsBoardDeviceId);
-
-                // Update heartbeat record with response
-                heartbeatRecord.Status = HeartbeatStatus.ResponseReceived;
-                heartbeatRecord.ResponseReceivedAt = DateTime.UtcNow;
-                heartbeatRecord.ResponseMessage = "Device responded successfully";
-                await context.SaveChangesAsync(cancellationToken);
-
-                // Mark device as alive in cache
-                await cache.MarkDeviceAliveAsync(thingsBoardDeviceId, cancellationToken);
-                return; // Device is back online
-            }
-            else
-            {
-                _logger.LogWarning("Device {DeviceId} did not respond to heartbeat attempt {Attempt}",
-                    thingsBoardDeviceId, attempt);
-
-                // Update heartbeat record
-                heartbeatRecord.Status = HeartbeatStatus.NoResponse;
-                heartbeatRecord.ResponseMessage = $"No response on attempt {attempt}";
-                await context.SaveChangesAsync(cancellationToken);
-
-                // If not the last attempt, wait before retrying
-                if (attempt < MaxRetryAttempts)
-                {
-                    _logger.LogInformation("Waiting {Minutes} minutes before next retry for device {DeviceId}",
-                        RetryDelayMinutes, thingsBoardDeviceId);
-                    await Task.Delay(TimeSpan.FromMinutes(RetryDelayMinutes), cancellationToken);
-                }
-            }
+            await ProcessStatusChangeAsync(change, cache, context, hubContext, cancellationToken);
         }
 
-        // All retry attempts failed - mark device as offline
-        _logger.LogError("Device {DeviceId} failed all {MaxAttempts} heartbeat attempts - marking as offline",
-            thingsBoardDeviceId, MaxRetryAttempts);
-
-        await cache.MarkDeviceOfflineAsync(thingsBoardDeviceId, cancellationToken);
-
-        // Record device offline status
-        var offlineRecord = new DeviceHeartbeat
-        {
-            Id = Guid.NewGuid(),
-            ThingsBoardDeviceId = thingsBoardDeviceId,
-            Timestamp = DateTime.UtcNow,
-            Status = HeartbeatStatus.DeviceOffline,
-            AttemptNumber = MaxRetryAttempts,
-            ResponseMessage = "Device marked as offline after max retry attempts"
-        };
-
-        context.DeviceHeartbeats.Add(offlineRecord);
+        // Save all changes to database
         await context.SaveChangesAsync(cancellationToken);
-
-        // Send alarm to user
-        await SendDeviceOfflineAlarmAsync(thingsBoardDeviceId, context, cancellationToken);
     }
 
-    private async Task SendDeviceOfflineAlarmAsync(
-        Guid thingsBoardDeviceId,
+    private async Task ProcessStatusChangeAsync(
+        DeviceStatusChange change,
+        IDeviceHeartbeatCache cache,
         IApplicationDbContext context,
+        IHubContext<DeviceStatusHub> hubContext,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            // Get device information
-            var device = await context.Devices
-                .FirstOrDefaultAsync(d => d.ThingsBoardDeviceId == thingsBoardDeviceId, cancellationToken);
+        var deviceId = change.ThingsBoardDeviceId;
+        var newStatus = change.NewStatus;
 
-            if (device == null)
+        // Send SignalR notification to frontend
+        await hubContext.Clients.Group($"device_{deviceId}")
+            .SendAsync("DeviceStatusChanged", new
             {
-                _logger.LogWarning("Device not found for ThingsBoard ID {DeviceId}", thingsBoardDeviceId);
-                return;
+                deviceId = deviceId,
+                status = newStatus.ToString(),
+                missedHeartbeats = change.MissedHeartbeats,
+                timestamp = change.Timestamp
+            }, cancellationToken);
+
+        _logger.LogInformation("SignalR notification sent for device {DeviceId}: {Status}", 
+            deviceId, newStatus);
+
+        // Handle DISCONNECTED status - create DB log entry
+        if (newStatus == DeviceStatus.DISCONNECTED && change.PreviousStatus != DeviceStatus.DISCONNECTED)
+        {
+            var disconnectLog = new DeviceDisconnectLog
+            {
+                Id = Guid.NewGuid(),
+                ThingsBoardDeviceId = deviceId,
+                StartTime = change.Timestamp,
+                MissedHeartbeats = change.MissedHeartbeats
+            };
+
+            context.DeviceDisconnectLogs.Add(disconnectLog);
+
+            // Store log ID in cache for later update
+            var state = (cache as DeviceHeartbeatCache)?.GetDeviceState(deviceId);
+            if (state != null)
+            {
+                state.DisconnectLogId = disconnectLog.Id;
             }
 
-            // Get users who should be notified (device owners/admins)
-            var userSites = await context.UserSites
-                .Include(us => us.Site)
-                .ThenInclude(s => s.Setup)
-                .ThenInclude(setup => setup!.SetupDevice)
-                .Where(us => us.Site.Setup != null &&
-                    us.Site.Setup.SetupDevice != null &&
-                    us.Site.Setup.SetupDevice.DeviceId == device.Id)
-                .ToListAsync(cancellationToken);
+            _logger.LogWarning("Device {DeviceId} marked as DISCONNECTED. Disconnect log created: {LogId}", 
+                deviceId, disconnectLog.Id);
+        }
 
-            var userIds = userSites.Select(us => us.UserId).Distinct().ToList();
-
-            // Create notifications for each user
-            foreach (var userId in userIds)
+        // Handle recovery from DISCONNECTED - update DB log entry
+        if (change.PreviousStatus == DeviceStatus.DISCONNECTED && newStatus == DeviceStatus.OK)
+        {
+            var state = (cache as DeviceHeartbeatCache)?.GetDeviceState(deviceId);
+            if (state?.DisconnectLogId != null)
             {
-                var notification = new Notification
+                var disconnectLog = await context.DeviceDisconnectLogs
+                    .FindAsync(new object[] { state.DisconnectLogId.Value }, cancellationToken);
+
+                if (disconnectLog != null && disconnectLog.EndTime == null)
                 {
-                    Id = Guid.NewGuid(),
-                    UserId = userId,
-                    Email = string.Empty, // Will be populated by notification service
-                    InvitationId = Guid.Empty, // Not related to invitation
-                    Message = $"Device '{device.Name}' is offline and not responding to heartbeat requests.",
-                    IsRead = false
-                };
+                    disconnectLog.EndTime = change.Timestamp;
+                    disconnectLog.Duration = disconnectLog.EndTime - disconnectLog.StartTime;
+                    disconnectLog.RecoveryType = "Heartbeat";
 
-                context.Notifications.Add(notification);
+                    _logger.LogInformation("Device {DeviceId} recovered. Disconnect duration: {Duration}", 
+                        deviceId, disconnectLog.Duration);
+                }
+
+                state.DisconnectLogId = null;
             }
-
-            await context.SaveChangesAsync(cancellationToken);
-
-            _logger.LogInformation("Sent offline alarm for device {DeviceId} to {UserCount} users",
-                thingsBoardDeviceId, userIds.Count);
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error sending device offline alarm for {DeviceId}", thingsBoardDeviceId);
-        }
+    }
+}
+
+/// <summary>
+/// SignalR hub for pushing device status changes to frontend
+/// </summary>
+public class DeviceStatusHub : Hub
+{
+    public async Task SubscribeToDevice(string deviceId)
+    {
+        await Groups.AddToGroupAsync(Context.ConnectionId, $"device_{deviceId}");
+    }
+
+    public async Task UnsubscribeFromDevice(string deviceId)
+    {
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"device_{deviceId}");
     }
 }

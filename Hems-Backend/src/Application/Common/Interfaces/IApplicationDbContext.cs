@@ -31,6 +31,8 @@ public interface IApplicationDbContext
 
     DbSet<DeviceHeartbeat> DeviceHeartbeats { get; }
 
+    DbSet<DeviceDisconnectLog> DeviceDisconnectLogs { get; }
+
     DbSet<Invitation> Invitations { get; }
 
     DbSet<Notification> Notifications { get; }

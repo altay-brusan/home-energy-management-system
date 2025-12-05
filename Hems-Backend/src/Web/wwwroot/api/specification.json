@@ -1005,6 +1005,31 @@
         }
       }
     },
+    "/api/DeviceData/Heartbeat": {
+      "post": {
+        "tags": [
+          "DeviceData"
+        ],
+        "operationId": "ReceiveHeartbeat",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HeartbeatDto"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/DeviceData": {
       "get": {
         "tags": [
@@ -5155,6 +5180,19 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          }
+        }
+      },
+      "HeartbeatDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "deviceId": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },

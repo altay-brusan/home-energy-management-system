@@ -312,6 +312,35 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.ToTable("DeviceData", (string)null);
                 });
 
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceDisconnectLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<TimeSpan?>("Duration")
+                        .HasColumnType("interval");
+
+                    b.Property<DateTime?>("EndTime")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int>("MissedHeartbeats")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("RecoveryType")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("StartTime")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<Guid>("ThingsBoardDeviceId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DeviceDisconnectLogs");
+                });
+
             modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceEnergyData", b =>
                 {
                     b.Property<int>("Id")
