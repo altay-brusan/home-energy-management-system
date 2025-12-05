@@ -1,35 +1,65 @@
 [
     {
-        "id": "rpc_heartbeat_tab",
+        "id": "heartbeat_tab",
         "type": "tab",
-        "label": "RPC_Heartbeat",
+        "label": "Heartbeat",
         "disabled": false,
-        "info": "Heartbeat / Health Check\nMethod: getHeartbeat\n\nReturns timestamp and status:ok if system is alive"
+        "info": "Simple Heartbeat\nSends every 1 minute + RPC trigger"
     },
     {
-        "id": "hb_comment_rpc",
-        "type": "comment",
-        "z": "rpc_heartbeat_tab",
-        "name": "RPC Trigger (getHeartbeat)",
-        "info": "",
-        "x": 160,
-        "y": 60,
-        "wires": []
+        "id": "heartbeat_periodic",
+        "type": "inject",
+        "z": "heartbeat_tab",
+        "name": "Every 1 min",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "60",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 40,
+        "wires": [
+            [
+                "heartbeat_build"
+            ]
+        ]
     },
     {
-        "id": "hb_comment_manual",
-        "type": "comment",
-        "z": "rpc_heartbeat_tab",
+        "id": "heartbeat_manual",
+        "type": "inject",
+        "z": "heartbeat_tab",
         "name": "Manual Test",
-        "info": "",
-        "x": 120,
-        "y": 160,
-        "wires": []
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 80,
+        "wires": [
+            [
+                "heartbeat_build"
+            ]
+        ]
     },
     {
-        "id": "hb_mqtt_in",
+        "id": "heartbeat_mqtt_in",
         "type": "mqtt in",
-        "z": "rpc_heartbeat_tab",
+        "z": "heartbeat_tab",
         "name": "RPC Request",
         "topic": "v1/devices/me/rpc/request/+",
         "qos": "2",
@@ -40,89 +70,60 @@
         "rh": 0,
         "inputs": 0,
         "x": 140,
-        "y": 100,
+        "y": 160,
         "wires": [
             [
-                "hb_filter_method"
+                "heartbeat_filter"
             ]
         ]
     },
     {
-        "id": "hb_manual_inject",
-        "type": "inject",
-        "z": "rpc_heartbeat_tab",
-        "name": "Manual Test Heartbeat",
-        "props": [
-            {
-                "p": "payload"
-            },
-            {
-                "p": "topic",
-                "vt": "str",
-                "v": "v1/devices/me/rpc/request/manual-test-123"
-            }
-        ],
-        "repeat": "",
-        "crontab": "",
-        "once": false,
-        "onceDelay": 0.1,
-        "topic": "",
-        "payload": "{\"method\":\"getHeartbeat\"}",
-        "payloadType": "json",
-        "x": 160,
-        "y": 200,
-        "wires": [
-            [
-                "hb_filter_method"
-            ]
-        ]
-    },
-    {
-        "id": "hb_filter_method",
+        "id": "heartbeat_filter",
         "type": "function",
-        "z": "rpc_heartbeat_tab",
-        "name": "Filter: getHeartbeat only",
-        "func": "const rpc = msg.payload || {};\n\n// Only handle getHeartbeat\nif (rpc.method !== 'getHeartbeat') {\n    return null;\n}\n\n// Extract request ID from topic\nconst parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nreturn msg;",
+        "z": "heartbeat_tab",
+        "name": "Filter RPC",
+        "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nconst rpc = msg.payload || {};\n\nif (rpc.method !== 'getHeartbeat' && rpc.method !== 'heartbeat' && rpc.method !== 'ping') {\n    return null;\n}\n\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 410,
-        "y": 140,
+        "x": 340,
+        "y": 160,
         "wires": [
             [
-                "hb_build_response"
+                "heartbeat_build"
             ]
         ]
     },
     {
-        "id": "hb_build_response",
+        "id": "heartbeat_build",
         "type": "function",
-        "z": "rpc_heartbeat_tab",
-        "name": "Build Heartbeat Response",
-        "func": "const deviceId = global.get(\"DEVICE_ID\")\n    || env.get(\"DEVICE_ID\")\n    || \"EC100-DEV-001\";\n\nmsg.payload = {\n    kind: \"Heartbeat\",\n    timestampUtc: new Date().toISOString(),\n    DeviceId: deviceId,\n    status: \"ok\"\n};\n\nmsg.topic = msg.rpcResponseTopic;\n\nnode.status({ fill: \"green\", shape: \"dot\", text: \"ok - \" + new Date().toLocaleTimeString() });\n\nreturn msg;",
+        "z": "heartbeat_tab",
+        "name": "Build Response",
+        "func": "msg.payload = {\n    kind: 'Heartbeat',\n    timestampUtc: new Date().toISOString()\n};\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 660,
-        "y": 140,
+        "x": 540,
+        "y": 120,
         "wires": [
             [
-                "hb_debug",
-                "hb_mqtt_response"
+                "heartbeat_debug",
+                "heartbeat_rpc_response",
+                "heartbeat_mqtt_telemetry"
             ]
         ]
     },
     {
-        "id": "hb_debug",
+        "id": "heartbeat_debug",
         "type": "debug",
-        "z": "rpc_heartbeat_tab",
-        "name": "Heartbeat Response",
+        "z": "heartbeat_tab",
+        "name": "Heartbeat",
         "active": true,
         "tosidebar": true,
         "console": false,
@@ -131,15 +132,53 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 910,
-        "y": 100,
+        "x": 740,
+        "y": 40,
         "wires": []
     },
     {
-        "id": "hb_mqtt_response",
+        "id": "heartbeat_mqtt_telemetry",
         "type": "mqtt out",
-        "z": "rpc_heartbeat_tab",
+        "z": "heartbeat_tab",
+        "name": "Send to ThingsBoard",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 780,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "heartbeat_rpc_response",
+        "type": "function",
+        "z": "heartbeat_tab",
         "name": "RPC Response",
+        "func": "// Only handle messages that came from RPC\nif (!msg.rpcResponseTopic) {\n    return null;\n}\n\nmsg.topic = msg.rpcResponseTopic;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 760,
+        "y": 200,
+        "wires": [
+            [
+                "heartbeat_mqtt_out"
+            ]
+        ]
+    },
+    {
+        "id": "heartbeat_mqtt_out",
+        "type": "mqtt out",
+        "z": "heartbeat_tab",
+        "name": "MQTT Response",
         "topic": "",
         "qos": "1",
         "retain": "",
@@ -149,8 +188,8 @@
         "correl": "",
         "expiry": "",
         "broker": "tb-broker",
-        "x": 890,
-        "y": 180,
+        "x": 970,
+        "y": 200,
         "wires": []
     },
     {

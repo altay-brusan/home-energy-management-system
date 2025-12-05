@@ -1,0 +1,246 @@
+[
+    {
+        "id": "time_sync_test_tab",
+        "type": "tab",
+        "label": "TimeSync_Test",
+        "disabled": false,
+        "info": "Test: Read inverter time and EC100 time"
+    },
+    {
+        "id": "ts_manual_test",
+        "type": "inject",
+        "z": "time_sync_test_tab",
+        "name": "Read Both Times",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 160,
+        "y": 100,
+        "wires": [
+            [
+                "ts_read_ec100_time",
+                "ts_prep_inverter_read"
+            ]
+        ]
+    },
+    {
+        "id": "ts_comment_ec100",
+        "type": "comment",
+        "z": "time_sync_test_tab",
+        "name": "── EC100 Gateway Time ──",
+        "info": "",
+        "x": 170,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "ts_read_ec100_time",
+        "type": "exec",
+        "z": "time_sync_test_tab",
+        "command": "date -u \"+%Y-%m-%d %H:%M:%S UTC\"",
+        "addpay": "",
+        "append": "",
+        "useSpawn": "false",
+        "timer": "",
+        "winHide": false,
+        "oldrc": false,
+        "name": "Read EC100 Time",
+        "x": 170,
+        "y": 200,
+        "wires": [
+            [
+                "ts_parse_ec100_time"
+            ],
+            [],
+            []
+        ]
+    },
+    {
+        "id": "ts_parse_ec100_time",
+        "type": "function",
+        "z": "time_sync_test_tab",
+        "name": "Parse EC100 Time",
+        "func": "const output = msg.payload.toString().trim();\n\n// Parse: \"2025-12-05 09:34:45 UTC\"\nconst parts = output.replace(' UTC', '').split(/[\\s:-]/);\n\nconst ec100Time = {\n    source: 'EC100 Gateway',\n    raw: output,\n    year: parseInt(parts[0]),\n    month: parseInt(parts[1]),\n    day: parseInt(parts[2]),\n    hour: parseInt(parts[3]),\n    minute: parseInt(parts[4]),\n    second: parseInt(parts[5]),\n    timestampUtc: new Date().toISOString()\n};\n\nmsg.payload = ec100Time;\nnode.status({ fill: \"green\", shape: \"dot\", text: output });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 390,
+        "y": 200,
+        "wires": [
+            [
+                "ts_debug_ec100"
+            ]
+        ]
+    },
+    {
+        "id": "ts_debug_ec100",
+        "type": "debug",
+        "z": "time_sync_test_tab",
+        "name": "EC100 Time",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 590,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "ts_comment_inverter",
+        "type": "comment",
+        "z": "time_sync_test_tab",
+        "name": "── Inverter Time (Reg 022-024) ──",
+        "info": "",
+        "x": 190,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "ts_prep_inverter_read",
+        "type": "function",
+        "z": "time_sync_test_tab",
+        "name": "Prep Read (022-024)",
+        "func": "// Read registers 22-24 (3 registers)\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 22,\n    quantity: 3\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 180,
+        "y": 300,
+        "wires": [
+            [
+                "ts_modbus_read"
+            ]
+        ]
+    },
+    {
+        "id": "ts_modbus_read",
+        "type": "modbus-flex-getter",
+        "z": "time_sync_test_tab",
+        "name": "Read Time Regs",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 400,
+        "y": 300,
+        "wires": [
+            [
+                "ts_parse_inverter_time"
+            ],
+            [
+                "ts_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "ts_parse_inverter_time",
+        "type": "function",
+        "z": "time_sync_test_tab",
+        "name": "Parse Inverter Time",
+        "func": "let data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data) || data.length < 3) {\n    node.error(\"Invalid inverter time data\");\n    return null;\n}\n\n// Register 022: High=Year (2000-based), Low=Month\n// Register 023: High=Day, Low=Hour\n// Register 024: High=Minute, Low=Second\n\nconst reg022 = data[0];\nconst reg023 = data[1];\nconst reg024 = data[2];\n\nconst year = ((reg022 >> 8) & 0xFF) + 2000;  // Year based on 2000\nconst month = reg022 & 0xFF;\nconst day = (reg023 >> 8) & 0xFF;\nconst hour = reg023 & 0xFF;\nconst minute = (reg024 >> 8) & 0xFF;\nconst second = reg024 & 0xFF;\n\nconst formatted = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')} ` +\n                  `${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}:${String(second).padStart(2,'0')}`;\n\nconst inverterTime = {\n    source: 'Inverter',\n    raw: {\n        reg022: reg022,\n        reg023: reg023,\n        reg024: reg024,\n        reg022_hex: '0x' + reg022.toString(16).padStart(4, '0'),\n        reg023_hex: '0x' + reg023.toString(16).padStart(4, '0'),\n        reg024_hex: '0x' + reg024.toString(16).padStart(4, '0')\n    },\n    year: year,\n    month: month,\n    day: day,\n    hour: hour,\n    minute: minute,\n    second: second,\n    formatted: formatted\n};\n\nmsg.payload = inverterTime;\nnode.status({ fill: \"blue\", shape: \"dot\", text: formatted });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 610,
+        "y": 300,
+        "wires": [
+            [
+                "ts_debug_inverter"
+            ]
+        ]
+    },
+    {
+        "id": "ts_debug_inverter",
+        "type": "debug",
+        "z": "time_sync_test_tab",
+        "name": "Inverter Time",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 810,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "ts_error_debug",
+        "type": "debug",
+        "z": "time_sync_test_tab",
+        "name": "Modbus Error",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 610,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    }
+]
