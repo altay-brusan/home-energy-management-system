@@ -7,6 +7,7 @@ using Hems_Backend.Application.DeviceData.Commands.CreateDeviceData;
 using Hems_Backend.Application.DeviceData.Commands.CreateDeviceEnergyData;
 using Hems_Backend.Application.DeviceData.Commands.CreateDevicePowerData;
 using Hems_Backend.Application.DeviceData.Queries.GetDeviceData;
+using Hems_Backend.Application.Devices.Queries.GetDeviceHeartbeatStatus;
 using Hems_Backend.Domain.Constants;
 using Hems_Backend.Web.Infrastructure;
 using Hems_Backend.Web.Services;
@@ -94,32 +95,11 @@ public class DeviceData : EndpointGroupBase
     /// <summary>
     /// Gets current heartbeat status of a device
     /// </summary>
-    public IResult GetDeviceHeartbeatStatus(
-        Guid deviceId,
-        IDeviceHeartbeatCache heartbeatCache,
-        IDeviceMappingService deviceMapping,
-        ILogger<DeviceData> logger)
+    public async Task<DeviceHeartbeatStatusDto> GetDeviceHeartbeatStatus(
+        ISender sender,
+        Guid deviceId)
     {
-        // deviceId here is local device ID, need to map to ThingsBoard ID
-        var tbDeviceIdTask = deviceMapping.GetThingsBoardDeviceIdAsync(deviceId, CancellationToken.None);
-        tbDeviceIdTask.Wait(); // Safe for this lightweight operation
-        var tbDeviceId = tbDeviceIdTask.Result;
-
-        if (tbDeviceId == null)
-        {
-            logger.LogWarning("Device mapping not found for deviceId: {DeviceId}", deviceId);
-            return Results.NotFound(new { error = "Device not found" });
-        }
-
-        var status = heartbeatCache.GetDeviceStatus(tbDeviceId.Value);
-        
-        return Results.Ok(new
-        {
-            deviceId = deviceId,
-            thingsBoardDeviceId = tbDeviceId.Value,
-            status = status.ToString(),
-            timestamp = DateTime.UtcNow
-        });
+        return await sender.Send(new GetDeviceHeartbeatStatusQuery { DeviceId = deviceId });
     }
 
     public async Task<PaginatedList<DeviceDataDto>> GetDeviceData(
