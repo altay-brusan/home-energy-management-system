@@ -32,9 +32,10 @@ public class DeviceHeartbeatCache : IDeviceHeartbeatCache
         _deviceStates = new ConcurrentDictionary<Guid, DeviceMonitoringState>();
     }
 
-    public Task RecordHeartbeatAsync(Guid thingsBoardDeviceId, DateTime timestamp, CancellationToken cancellationToken = default)
+    public Task<DeviceStatusChange?> RecordHeartbeatAsync(Guid thingsBoardDeviceId, DateTime timestamp, CancellationToken cancellationToken = default)
     {
         var now = DateTime.UtcNow;
+        DeviceStatusChange? statusChange = null;
         
         // Validate timestamp (NTP sync check - reject if too far off)
         var timeDiff = Math.Abs((timestamp - now).TotalSeconds);
@@ -70,17 +71,28 @@ public class DeviceHeartbeatCache : IDeviceHeartbeatCache
                 {
                     _logger.LogInformation("Device {DeviceId} recovered via heartbeat (was {PreviousStatus})", 
                         deviceId, previousStatus);
+                    
+                    // Create status change for immediate SignalR notification
+                    statusChange = new DeviceStatusChange
+                    {
+                        ThingsBoardDeviceId = deviceId,
+                        PreviousStatus = previousStatus,
+                        NewStatus = DeviceStatus.OK,
+                        MissedHeartbeats = 0,
+                        Timestamp = timestamp
+                    };
                 }
                 
                 return existingState;
             });
 
-        return Task.CompletedTask;
+        return Task.FromResult(statusChange);
     }
 
-    public Task RecordPowerFlowAsync(Guid thingsBoardDeviceId, DateTime timestamp, CancellationToken cancellationToken = default)
+    public Task<DeviceStatusChange?> RecordPowerFlowAsync(Guid thingsBoardDeviceId, DateTime timestamp, CancellationToken cancellationToken = default)
     {
         var now = DateTime.UtcNow;
+        DeviceStatusChange? statusChange = null;
         
         _deviceStates.AddOrUpdate(
             thingsBoardDeviceId,
@@ -100,6 +112,7 @@ public class DeviceHeartbeatCache : IDeviceHeartbeatCache
             // Update existing device - PowerFlow resets missed heartbeats
             (deviceId, existingState) => {
                 var previousStatus = existingState.Status;
+                existingState.LastHeartbeat = timestamp; // PowerFlow counts as heartbeat signal
                 existingState.LastPowerFlow = timestamp;
                 existingState.MissedHeartbeats = 0;
                 existingState.Status = DeviceStatus.OK;
@@ -108,12 +121,22 @@ public class DeviceHeartbeatCache : IDeviceHeartbeatCache
                 {
                     _logger.LogInformation("Device {DeviceId} recovered via PowerFlow (was {PreviousStatus})", 
                         deviceId, previousStatus);
+                    
+                    // Create status change for immediate SignalR notification
+                    statusChange = new DeviceStatusChange
+                    {
+                        ThingsBoardDeviceId = deviceId,
+                        PreviousStatus = previousStatus,
+                        NewStatus = DeviceStatus.OK,
+                        MissedHeartbeats = 0,
+                        Timestamp = timestamp
+                    };
                 }
                 
                 return existingState;
             });
 
-        return Task.CompletedTask;
+        return Task.FromResult(statusChange);
     }
 
     public DeviceStatus GetDeviceStatus(Guid thingsBoardDeviceId)

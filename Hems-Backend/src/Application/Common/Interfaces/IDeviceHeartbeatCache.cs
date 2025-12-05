@@ -38,13 +38,15 @@ public interface IDeviceHeartbeatCache
 {
     /// <summary>
     /// Record heartbeat from device. Starts tracking if first heartbeat.
+    /// Returns DeviceStatusChange if status changed (e.g., recovery from DISCONNECTED)
     /// </summary>
-    Task RecordHeartbeatAsync(Guid thingsBoardDeviceId, DateTime timestamp, CancellationToken cancellationToken = default);
+    Task<DeviceStatusChange?> RecordHeartbeatAsync(Guid thingsBoardDeviceId, DateTime timestamp, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Record PowerFlow data received. Resets missed heartbeat count.
+    /// Returns DeviceStatusChange if status changed (e.g., recovery from DISCONNECTED)
     /// </summary>
-    Task RecordPowerFlowAsync(Guid thingsBoardDeviceId, DateTime timestamp, CancellationToken cancellationToken = default);
+    Task<DeviceStatusChange?> RecordPowerFlowAsync(Guid thingsBoardDeviceId, DateTime timestamp, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get current status of a device
