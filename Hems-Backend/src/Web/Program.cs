@@ -82,7 +82,7 @@ app.MapEndpoints();
 // Map SignalR Hubs
 app.MapHub<DeviceNotificationHub>("/deviceNotificationHub");
 app.MapHub<PowerFlowHub>("/powerFlowHub");
-app.MapHub<Hems_Backend.Infrastructure.Services.DeviceStatusHub>("/deviceStatusHub");
+app.MapHub<Hems_Backend.Infrastructure.Hubs.DeviceStatusHub>("/deviceStatusHub");
 app.Run();
 
 public partial class Program { }
