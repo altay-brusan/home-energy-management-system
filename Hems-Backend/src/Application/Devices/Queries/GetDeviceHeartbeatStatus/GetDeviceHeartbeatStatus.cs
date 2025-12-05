@@ -37,7 +37,6 @@ public class GetDeviceHeartbeatStatusQueryHandler : IRequestHandler<GetDeviceHea
         return new DeviceHeartbeatStatusDto
         {
             DeviceId = request.DeviceId,
-            ThingsBoardDeviceId = thingsBoardDeviceId.Value,
             Status = status.ToString(),
             Timestamp = DateTime.UtcNow
         };
@@ -47,7 +46,6 @@ public class GetDeviceHeartbeatStatusQueryHandler : IRequestHandler<GetDeviceHea
 public class DeviceHeartbeatStatusDto
 {
     public Guid DeviceId { get; init; }
-    public Guid ThingsBoardDeviceId { get; init; }
     public string Status { get; init; } = string.Empty;
     public DateTime Timestamp { get; init; }
 }

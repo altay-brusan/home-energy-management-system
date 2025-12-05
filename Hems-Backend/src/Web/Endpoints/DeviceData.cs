@@ -9,11 +9,13 @@ using Hems_Backend.Application.DeviceData.Commands.CreateDevicePowerData;
 using Hems_Backend.Application.DeviceData.Queries.GetDeviceData;
 using Hems_Backend.Application.Devices.Queries.GetDeviceHeartbeatStatus;
 using Hems_Backend.Domain.Constants;
+using Hems_Backend.Infrastructure.Hubs;
 using Hems_Backend.Web.Infrastructure;
 using Hems_Backend.Web.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http; // make sure this is present
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace Hems_Backend.Web.Endpoints;
 
@@ -44,6 +46,8 @@ public class DeviceData : EndpointGroupBase
     public async Task<IResult> ReceiveHeartbeat(
         HeartbeatDto request,
         IDeviceHeartbeatCache heartbeatCache,
+        IHubContext<DeviceStatusHub> hubContext,
+        IDeviceMappingService deviceMapping,
         ILogger<DeviceData> logger)
     {
         try
@@ -56,7 +60,29 @@ public class DeviceData : EndpointGroupBase
             }
 
             // Record heartbeat with timestamp (handles NTP sync validation)
-            await heartbeatCache.RecordHeartbeatAsync(deviceId, request.Timestamp);
+            var statusChange = await heartbeatCache.RecordHeartbeatAsync(deviceId, request.Timestamp);
+            
+            // If status changed (e.g., recovery from DISCONNECTED), send immediate SignalR notification
+            if (statusChange != null)
+            {
+                // Convert TB deviceId to local deviceId for frontend
+                var localDeviceId = await deviceMapping.GetDeviceIdAsync(statusChange.ThingsBoardDeviceId);
+                
+                if (localDeviceId != null)
+                {
+                    await hubContext.Clients.Group($"device_{localDeviceId}")
+                        .SendAsync("DeviceStatusChanged", new
+                        {
+                            deviceId = localDeviceId, // Local ID for frontend
+                            status = statusChange.NewStatus.ToString(),
+                            missedHeartbeats = statusChange.MissedHeartbeats,
+                            timestamp = statusChange.Timestamp
+                        });
+                    
+                    logger.LogInformation("Immediate SignalR notification sent for device {DeviceId} recovery via Heartbeat: {Status}",
+                        localDeviceId, statusChange.NewStatus);
+                }
+            }
 
             logger.LogDebug("Heartbeat received from device {DeviceId} at {Timestamp}", 
                 deviceId, request.Timestamp);
