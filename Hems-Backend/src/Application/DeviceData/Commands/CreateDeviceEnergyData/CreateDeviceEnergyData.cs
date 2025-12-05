@@ -40,11 +40,19 @@ public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDevice
 {
     private readonly IApplicationDbContext _context;
     private readonly IWeatherService _weatherService;
+    private readonly ITimezoneService _timezoneService;
+    private readonly IDeviceMappingService _deviceMapping;
 
-    public CreateDeviceEnergyDataCommandHandler(IApplicationDbContext context, IWeatherService weatherService)
+    public CreateDeviceEnergyDataCommandHandler(
+        IApplicationDbContext context, 
+        IWeatherService weatherService,
+        ITimezoneService timezoneService,
+        IDeviceMappingService deviceMapping)
     {
         _context = context;
         _weatherService = weatherService;
+        _timezoneService = timezoneService;
+        _deviceMapping = deviceMapping;
     }
 
     public async Task<int> Handle(CreateDeviceEnergyDataCommand request, CancellationToken cancellationToken)
@@ -61,6 +69,18 @@ public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDevice
             throw new ArgumentException($"Device with ThingsBoardDeviceId {request.DeviceId} not found.");
         }
 
+        // Convert UTC DataDateTime to device local time using cached timezone service
+        var localDeviceId = await _deviceMapping.GetDeviceIdAsync(request.DeviceId, cancellationToken);
+        if (localDeviceId == null)
+        {
+            throw new ArgumentException($"Device mapping not found for ThingsBoardDeviceId {request.DeviceId}");
+        }
+        
+        var localDataDateTime = await _timezoneService.ConvertUtcToDeviceTimeAsync(
+            localDeviceId.Value, 
+            request.DataDateTime, 
+            cancellationToken);
+
         var site = device.SetupDevice?.Setup?.Site;
         
         // Hava durumu bilgilerini al
@@ -73,11 +93,11 @@ public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDevice
                 cancellationToken);
         }
 
-        // Aynı device, datetime ve data type için kayıt var mı kontrol et
+        // Aynı device, datetime ve data type için kayıt var mı kontrol et (using local time)
         var existingRecord = await _context.DeviceEnergyData
             .FirstOrDefaultAsync(x => 
                 x.ThingsBoardDeviceId == request.DeviceId && 
-                x.DataDateTime == request.DataDateTime && 
+                x.DataDateTime == localDataDateTime && 
                 x.DataType == request.DataType, 
                 cancellationToken);
 
@@ -101,7 +121,7 @@ public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDevice
             var energyData = new DeviceEnergyData
             {
                 ThingsBoardDeviceId = request.DeviceId,
-                DataDateTime = request.DataDateTime,
+                DataDateTime = localDataDateTime, // Store in device local time
                 DataType = request.DataType,
                 MessageType = MessageTypes.Telemetry,
                 PhaseType = PhaseTypes.SinglePhase,
