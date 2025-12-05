@@ -25,13 +25,47 @@ public class DeviceData : EndpointGroupBase
             .MapPost(ReceivePowerFlowTelemetry, "PowerFlow")
             .MapPost(ReceiveBatterySocTelemetry, "BatterySoc")
             .MapPost(ReceiveDailyEnergyFlowTelemetry, "DailyEnergyFlow")
-            .MapPost(ReceiveTotalEnergyFlowTelemetry, "TotalEnergyFlow");
+            .MapPost(ReceiveTotalEnergyFlowTelemetry, "TotalEnergyFlow")
+            .MapPost(ReceiveHeartbeat, "Heartbeat");
 
         // User endpoints (require user authorization)
         app.MapGroup(this)
             //.RequireAuthorization()
             .MapGet(GetDeviceData)
             .MapGet(GetLivePowerFlow, "PowerFlow/live/{deviceId:guid}"); ;
+    }
+
+    /// <summary>
+    /// Receives lightweight heartbeat signal from devices (every 1 minute)
+    /// No authentication required - lightweight endpoint
+    /// </summary>
+    public async Task<IResult> ReceiveHeartbeat(
+        HeartbeatDto request,
+        IDeviceHeartbeatCache heartbeatCache,
+        ILogger<DeviceData> logger)
+    {
+        try
+        {
+            // Parse deviceId from request
+            if (!Guid.TryParse(request.DeviceId, out var deviceId))
+            {
+                logger.LogWarning("Invalid deviceId in heartbeat: {DeviceId}", request.DeviceId);
+                return Results.BadRequest("Invalid deviceId format");
+            }
+
+            // Record heartbeat with timestamp (handles NTP sync validation)
+            await heartbeatCache.RecordHeartbeatAsync(deviceId, request.Timestamp);
+
+            logger.LogDebug("Heartbeat received from device {DeviceId} at {Timestamp}", 
+                deviceId, request.Timestamp);
+
+            return Results.Ok();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error processing heartbeat");
+            return Results.StatusCode(500);
+        }
     }
 
     public async Task<IResult> GetLivePowerFlow(
@@ -639,4 +673,20 @@ private async Task<IResult> ProcessPowerFlowTelemetry(
     }
 }
 
+}
+
+/// <summary>
+/// DTO for device heartbeat
+/// </summary>
+public record HeartbeatDto
+{
+    /// <summary>
+    /// ThingsBoard Device ID (string format)
+    /// </summary>
+    public string DeviceId { get; init; } = string.Empty;
+    
+    /// <summary>
+    /// Timestamp from device (for NTP sync validation)
+    /// </summary>
+    public DateTime Timestamp { get; init; }
 }

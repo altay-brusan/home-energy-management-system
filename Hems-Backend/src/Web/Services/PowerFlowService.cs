@@ -25,7 +25,7 @@ public class PowerFlowService : IPowerFlowService
     private readonly HttpClient _httpClient;
     private readonly IThingsBoardAuthService _authService;
     private readonly IDeviceMappingService _deviceMapping;
-    private readonly IDeviceHeartbeatCache? _heartbeatCache;
+    private readonly IDeviceHeartbeatCache _heartbeatCache;
     private readonly string _tbBaseUrl;
     private readonly JsonSerializerOptions _jsonOptions;
 
@@ -35,7 +35,7 @@ public class PowerFlowService : IPowerFlowService
         IConfiguration configuration,
         IThingsBoardAuthService authService,
         IDeviceMappingService deviceMapping,
-        IDeviceHeartbeatCache? heartbeatCache = null)
+        IDeviceHeartbeatCache heartbeatCache)
     {
         _context = context;
         _httpClient = httpClient;
@@ -92,11 +92,8 @@ public class PowerFlowService : IPowerFlowService
 
         if (rpcState == null) return null;
 
-        // Mark device as alive in heartbeat cache when powerflow data is received (if enabled)
-        if (_heartbeatCache != null)
-        {
-            await _heartbeatCache.MarkDeviceAliveAsync(thingsBoardDeviceId.Value, cancellationToken);
-        }
+        // Record PowerFlow received - resets missed heartbeat count
+        await _heartbeatCache.RecordPowerFlowAsync(thingsBoardDeviceId.Value, DateTime.UtcNow, cancellationToken);
 
         return MapToPowerFlowDto(deviceId, rpcState);
     }

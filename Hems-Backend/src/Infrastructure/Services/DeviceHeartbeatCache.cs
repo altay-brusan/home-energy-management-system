@@ -1,201 +1,220 @@
 using Hems_Backend.Application.Common.Interfaces;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
 
 namespace Hems_Backend.Infrastructure.Services;
 
 /// <summary>
-/// In-memory cache service for tracking device heartbeat status
+/// In-memory cache for tracking device heartbeat status (event-driven, proactive monitoring)
 /// </summary>
 public class DeviceHeartbeatCache : IDeviceHeartbeatCache
 {
     private readonly IMemoryCache _cache;
-    private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly ILogger<DeviceHeartbeatCache> _logger;
-    private const string CacheKeyPrefix = "DeviceHeartbeat_";
-    private const string AllDevicesKey = "AllActiveDevices";
-    private const int InactiveThresholdMinutes = 5;
+    
+    // Concurrent dictionary for thread-safe access to device states
+    private readonly ConcurrentDictionary<Guid, DeviceMonitoringState> _deviceStates;
+    
+    private const string CacheKeyPrefix = "DeviceMonitoring_";
+    private const int HeartbeatIntervalSeconds = 60; // Expect heartbeat every 60 seconds
+    private const int GracePeriodSeconds = 30; // ±30 seconds grace period
+    private const int MissedHeartbeatsForPending = 1;
+    private const int MissedHeartbeatsForWaiting = 2;
+    private const int MissedHeartbeatsForDisconnected = 3;
 
     public DeviceHeartbeatCache(
         IMemoryCache cache,
-        IServiceScopeFactory serviceScopeFactory,
         ILogger<DeviceHeartbeatCache> logger)
     {
         _cache = cache;
-        _serviceScopeFactory = serviceScopeFactory;
         _logger = logger;
+        _deviceStates = new ConcurrentDictionary<Guid, DeviceMonitoringState>();
     }
 
-    public async Task InitializeCacheAsync(CancellationToken cancellationToken = default)
+    public Task RecordHeartbeatAsync(Guid thingsBoardDeviceId, DateTime timestamp, CancellationToken cancellationToken = default)
     {
-        try
+        var now = DateTime.UtcNow;
+        
+        // Validate timestamp (NTP sync check - reject if too far off)
+        var timeDiff = Math.Abs((timestamp - now).TotalSeconds);
+        if (timeDiff > 300) // 5 minutes tolerance for clock skew
         {
-            using var scope = _serviceScopeFactory.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
+            _logger.LogWarning("Device {DeviceId} heartbeat timestamp is {Diff}s off from server time. Using server time.", 
+                thingsBoardDeviceId, timeDiff);
+            timestamp = now;
+        }
 
-            // Get all active (non-deleted) devices from database
-            var activeDevices = await context.Devices
-                .Where(d => !d.IsDeleted)
-                .Select(d => d.ThingsBoardDeviceId)
-                .ToListAsync(cancellationToken);
-
-            // Store the list of active devices (filter out any nulls just in case)
-            var validDevices = activeDevices.Where(id => id != Guid.Empty).ToList();
-            _cache.Set(AllDevicesKey, validDevices, TimeSpan.FromHours(24));
-
-            // Initialize status for each device
-            foreach (var deviceId in validDevices)
-            {
-                var cacheKey = $"{CacheKeyPrefix}{deviceId}";
-                if (!_cache.TryGetValue<DeviceHeartbeatStatus>(cacheKey, out _))
+        _deviceStates.AddOrUpdate(
+            thingsBoardDeviceId,
+            // Add new device
+            deviceId => {
+                var state = new DeviceMonitoringState
                 {
-                    var status = new DeviceHeartbeatStatus
+                    ThingsBoardDeviceId = deviceId,
+                    LastHeartbeat = timestamp,
+                    MissedHeartbeats = 0,
+                    Status = DeviceStatus.OK
+                };
+                _logger.LogInformation("Device {DeviceId} started tracking (first heartbeat)", deviceId);
+                return state;
+            },
+            // Update existing device
+            (deviceId, existingState) => {
+                var previousStatus = existingState.Status;
+                existingState.LastHeartbeat = timestamp;
+                existingState.MissedHeartbeats = 0;
+                existingState.Status = DeviceStatus.OK;
+                
+                if (previousStatus != DeviceStatus.OK)
+                {
+                    _logger.LogInformation("Device {DeviceId} recovered via heartbeat (was {PreviousStatus})", 
+                        deviceId, previousStatus);
+                }
+                
+                return existingState;
+            });
+
+        return Task.CompletedTask;
+    }
+
+    public Task RecordPowerFlowAsync(Guid thingsBoardDeviceId, DateTime timestamp, CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+        
+        _deviceStates.AddOrUpdate(
+            thingsBoardDeviceId,
+            // Add new device (PowerFlow can also start tracking)
+            deviceId => {
+                var state = new DeviceMonitoringState
+                {
+                    ThingsBoardDeviceId = deviceId,
+                    LastHeartbeat = timestamp, // Use PowerFlow as heartbeat signal
+                    LastPowerFlow = timestamp,
+                    MissedHeartbeats = 0,
+                    Status = DeviceStatus.OK
+                };
+                _logger.LogInformation("Device {DeviceId} started tracking (first PowerFlow)", deviceId);
+                return state;
+            },
+            // Update existing device - PowerFlow resets missed heartbeats
+            (deviceId, existingState) => {
+                var previousStatus = existingState.Status;
+                existingState.LastPowerFlow = timestamp;
+                existingState.MissedHeartbeats = 0;
+                existingState.Status = DeviceStatus.OK;
+                
+                if (previousStatus != DeviceStatus.OK)
+                {
+                    _logger.LogInformation("Device {DeviceId} recovered via PowerFlow (was {PreviousStatus})", 
+                        deviceId, previousStatus);
+                }
+                
+                return existingState;
+            });
+
+        return Task.CompletedTask;
+    }
+
+    public DeviceStatus GetDeviceStatus(Guid thingsBoardDeviceId)
+    {
+        if (_deviceStates.TryGetValue(thingsBoardDeviceId, out var state))
+        {
+            return state.Status;
+        }
+        
+        return DeviceStatus.NOT_TRACKED;
+    }
+
+    public List<Guid> GetTrackedDevices()
+    {
+        return _deviceStates.Keys.ToList();
+    }
+
+    public Task<List<DeviceStatusChange>> CheckMissedHeartbeatsAsync(CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+        var statusChanges = new List<DeviceStatusChange>();
+        var expectedHeartbeatWindow = TimeSpan.FromSeconds(HeartbeatIntervalSeconds + GracePeriodSeconds);
+
+        foreach (var kvp in _deviceStates)
+        {
+            var deviceId = kvp.Key;
+            var state = kvp.Value;
+            
+            var timeSinceLastHeartbeat = now - state.LastHeartbeat;
+            var previousStatus = state.Status;
+            
+            // Check if heartbeat is overdue (with grace period)
+            if (timeSinceLastHeartbeat > expectedHeartbeatWindow)
+            {
+                // Heartbeat is late - increment missed count
+                state.MissedHeartbeats++;
+                
+                // Update status based on missed count
+                var newStatus = state.MissedHeartbeats switch
+                {
+                    MissedHeartbeatsForPending => DeviceStatus.PENDING,
+                    MissedHeartbeatsForWaiting => DeviceStatus.WAITING,
+                    >= MissedHeartbeatsForDisconnected => DeviceStatus.DISCONNECTED,
+                    _ => state.Status
+                };
+
+                if (newStatus != previousStatus)
+                {
+                    state.Status = newStatus;
+                    
+                    var change = new DeviceStatusChange
                     {
                         ThingsBoardDeviceId = deviceId,
-                        LastSeen = DateTime.UtcNow,
-                        IsOnline = true,
-                        HeartbeatAttempts = 0
+                        PreviousStatus = previousStatus,
+                        NewStatus = newStatus,
+                        MissedHeartbeats = state.MissedHeartbeats,
+                        Timestamp = now
                     };
-                    _cache.Set(cacheKey, status, TimeSpan.FromDays(1));
+                    
+                    statusChanges.Add(change);
+                    
+                    _logger.LogWarning("Device {DeviceId} status changed: {PreviousStatus} → {NewStatus} (missed: {Count}, last seen: {TimeSince}s ago)",
+                        deviceId, previousStatus, newStatus, state.MissedHeartbeats, (int)timeSinceLastHeartbeat.TotalSeconds);
                 }
             }
-
-            _logger.LogInformation("Device heartbeat cache initialized with {Count} devices", activeDevices.Count);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error initializing device heartbeat cache");
-            throw;
-        }
-    }
-
-    public Task MarkDeviceAliveAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken = default)
-    {
-        var cacheKey = $"{CacheKeyPrefix}{thingsBoardDeviceId}";
-
-        var status = _cache.Get<DeviceHeartbeatStatus>(cacheKey);
-        if (status == null)
-        {
-            status = new DeviceHeartbeatStatus
-            {
-                ThingsBoardDeviceId = thingsBoardDeviceId,
-                LastSeen = DateTime.UtcNow,
-                IsOnline = true,
-                HeartbeatAttempts = 0
-            };
-        }
-        else
-        {
-            status.LastSeen = DateTime.UtcNow;
-            status.IsOnline = true;
-            status.HeartbeatAttempts = 0;
-            status.LastHeartbeatAttempt = null;
         }
 
-        _cache.Set(cacheKey, status, TimeSpan.FromDays(1));
-        _logger.LogDebug("Device {DeviceId} marked as alive", thingsBoardDeviceId);
-
-        return Task.CompletedTask;
-    }
-
-    public Task<List<Guid>> GetInactiveDevicesAsync(CancellationToken cancellationToken = default)
-    {
-        var inactiveDevices = new List<Guid>();
-        var activeDevices = _cache.Get<List<Guid>>(AllDevicesKey);
-
-        if (activeDevices == null)
-        {
-            _logger.LogWarning("Active devices list not found in cache");
-            return Task.FromResult(inactiveDevices);
-        }
-
-        var now = DateTime.UtcNow;
-        var threshold = now.AddMinutes(-InactiveThresholdMinutes);
-
-        foreach (var deviceId in activeDevices)
-        {
-            var cacheKey = $"{CacheKeyPrefix}{deviceId}";
-            var status = _cache.Get<DeviceHeartbeatStatus>(cacheKey);
-
-            if (status != null && status.LastSeen < threshold && status.IsOnline)
-            {
-                inactiveDevices.Add(deviceId);
-            }
-        }
-
-        _logger.LogInformation("Found {Count} inactive devices", inactiveDevices.Count);
-        return Task.FromResult(inactiveDevices);
-    }
-
-    public Task UpdateHeartbeatAttemptAsync(Guid thingsBoardDeviceId, int attemptCount, CancellationToken cancellationToken = default)
-    {
-        var cacheKey = $"{CacheKeyPrefix}{thingsBoardDeviceId}";
-        var status = _cache.Get<DeviceHeartbeatStatus>(cacheKey);
-
-        if (status != null)
-        {
-            status.HeartbeatAttempts = attemptCount;
-            status.LastHeartbeatAttempt = DateTime.UtcNow;
-            _cache.Set(cacheKey, status, TimeSpan.FromDays(1));
-
-            _logger.LogInformation("Device {DeviceId} heartbeat attempt {Attempt}", thingsBoardDeviceId, attemptCount);
-        }
-
-        return Task.CompletedTask;
-    }
-
-    public Task MarkDeviceOfflineAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken = default)
-    {
-        var cacheKey = $"{CacheKeyPrefix}{thingsBoardDeviceId}";
-        var status = _cache.Get<DeviceHeartbeatStatus>(cacheKey);
-
-        if (status != null)
-        {
-            status.IsOnline = false;
-            _cache.Set(cacheKey, status, TimeSpan.FromDays(1));
-
-            _logger.LogWarning("Device {DeviceId} marked as offline", thingsBoardDeviceId);
-        }
-
-        return Task.CompletedTask;
-    }
-
-    public DeviceHeartbeatStatus? GetDeviceStatus(Guid thingsBoardDeviceId)
-    {
-        var cacheKey = $"{CacheKeyPrefix}{thingsBoardDeviceId}";
-        return _cache.Get<DeviceHeartbeatStatus>(cacheKey);
+        return Task.FromResult(statusChanges);
     }
 
     public Task AddDeviceToCacheAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken = default)
     {
-        if (thingsBoardDeviceId == Guid.Empty)
-        {
-            _logger.LogWarning("Attempted to add empty device ID to cache");
-            return Task.CompletedTask;
-        }
-
-        // Add to the list of all active devices
-        var activeDevices = _cache.Get<List<Guid>>(AllDevicesKey) ?? new List<Guid>();
-        if (!activeDevices.Contains(thingsBoardDeviceId))
-        {
-            activeDevices.Add(thingsBoardDeviceId);
-            _cache.Set(AllDevicesKey, activeDevices, TimeSpan.FromHours(24));
-        }
-
-        // Initialize heartbeat status for the new device
-        var cacheKey = $"{CacheKeyPrefix}{thingsBoardDeviceId}";
-        var status = new DeviceHeartbeatStatus
+        // Optional method - devices auto-add on first heartbeat
+        // Can be used when device is created to pre-populate cache
+        
+        _deviceStates.TryAdd(thingsBoardDeviceId, new DeviceMonitoringState
         {
             ThingsBoardDeviceId = thingsBoardDeviceId,
-            LastSeen = DateTime.UtcNow,
-            IsOnline = true,
-            HeartbeatAttempts = 0
-        };
-        _cache.Set(cacheKey, status, TimeSpan.FromDays(1));
-
-        _logger.LogInformation("Added new device {DeviceId} to heartbeat cache", thingsBoardDeviceId);
+            LastHeartbeat = DateTime.UtcNow,
+            MissedHeartbeats = 0,
+            Status = DeviceStatus.OK
+        });
+        
+        _logger.LogInformation("Device {DeviceId} pre-added to tracking", thingsBoardDeviceId);
         return Task.CompletedTask;
+    }
+
+    public Task InitializeCacheAsync(CancellationToken cancellationToken = default)
+    {
+        // Not needed for heartbeat-driven model
+        // Devices add themselves when they send first heartbeat
+        _logger.LogInformation("DeviceHeartbeatCache initialized (event-driven mode - devices will auto-register on first heartbeat)");
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Get internal state for a device (for disconnect logging)
+    /// </summary>
+    public DeviceMonitoringState? GetDeviceState(Guid thingsBoardDeviceId)
+    {
+        _deviceStates.TryGetValue(thingsBoardDeviceId, out var state);
+        return state;
     }
 }

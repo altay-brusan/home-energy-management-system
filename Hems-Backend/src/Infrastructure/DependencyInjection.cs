@@ -68,11 +68,9 @@ public static class DependencyInjection
         // ThingsBoard Authentication Service
         builder.Services.AddHttpClient<IThingsBoardAuthService, ThingsBoardAuthService>();
 
-        // Device Heartbeat Services
-        // NOTE: Temporarily disabled - uncomment to enable heartbeat monitoring
-        // builder.Services.AddSingleton<IDeviceHeartbeatCache, DeviceHeartbeatCache>();
-        // builder.Services.AddHttpClient<IHeartbeatSender, HeartbeatSender>();
-        // builder.Services.AddHostedService<DeviceHeartbeatMonitorService>();
+        // Device Heartbeat Services (event-driven, heartbeat-based monitoring)
+        builder.Services.AddSingleton<IDeviceHeartbeatCache, DeviceHeartbeatCache>();
+        builder.Services.AddHostedService<DeviceHeartbeatMonitorService>();
 
         // ThingsBoard Services
         builder.Services.AddHttpClient<IThingsBoardConnectorService, ThingsBoardConnectorService>();

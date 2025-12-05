@@ -312,6 +312,35 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.ToTable("DeviceData", (string)null);
                 });
 
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceDisconnectLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<TimeSpan?>("Duration")
+                        .HasColumnType("interval");
+
+                    b.Property<DateTime?>("EndTime")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int>("MissedHeartbeats")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("RecoveryType")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("StartTime")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<Guid>("ThingsBoardDeviceId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DeviceDisconnectLogs");
+                });
+
             modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceEnergyData", b =>
                 {
                     b.Property<int>("Id")
@@ -410,35 +439,6 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .HasDatabaseName("IX_DeviceEnergyData_ThingsBoardDeviceId_DataDateTime_DataType");
 
                     b.ToTable("DeviceEnergyData", (string)null);
-                });
-
-            modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceHeartbeat", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("AttemptNumber")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("ResponseMessage")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("ResponseReceivedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("ThingsBoardDeviceId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("Timestamp")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("DeviceHeartbeats");
                 });
 
             modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceNotification", b =>

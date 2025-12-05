@@ -29,7 +29,7 @@ public interface IApplicationDbContext
 
     DbSet<DeviceWeatherData> DeviceWeatherData { get; }
 
-    DbSet<DeviceHeartbeat> DeviceHeartbeats { get; }
+    DbSet<DeviceDisconnectLog> DeviceDisconnectLogs { get; }
 
     DbSet<Invitation> Invitations { get; }
 
