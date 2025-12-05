@@ -1,55 +1,34 @@
 ﻿namespace Hems_Backend.Web.Services;
-using System.Net.Http.Json;
 using System.Text.Json;
 using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Application.PowerFlow.Common.Models;
-using Hems_Backend.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 public interface IPowerFlowService
 {
     /// <summary>
     /// Calls ThingsBoard (via RPC) and returns the latest PowerFlow data for a device.
-    /// Implementation will typically call TB REST: /api/plugins/rpc/twoway/{deviceId}
-    /// and map PowerFlowState JSON -> PowerFlowDto.
     /// </summary>
     Task<PowerFlowDto?> GetPowerFlowAsync(Guid deviceId, CancellationToken cancellationToken = default);
 }
 
-
-
 public class PowerFlowService : IPowerFlowService
 {
-    private readonly IApplicationDbContext _context;
-    private readonly HttpClient _httpClient;
-    private readonly IThingsBoardAuthService _authService;
+    private readonly IThingsBoardConnectorService _tbConnector;
     private readonly IDeviceMappingService _deviceMapping;
     private readonly IDeviceHeartbeatCache _heartbeatCache;
-    private readonly string _tbBaseUrl;
-    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly ILogger<PowerFlowService> _logger;
 
     public PowerFlowService(
-        IApplicationDbContext context,
-        HttpClient httpClient,
-        IConfiguration configuration,
-        IThingsBoardAuthService authService,
+        IThingsBoardConnectorService tbConnector,
         IDeviceMappingService deviceMapping,
-        IDeviceHeartbeatCache heartbeatCache)
+        IDeviceHeartbeatCache heartbeatCache,
+        ILogger<PowerFlowService> logger)
     {
-        _context = context;
-        _httpClient = httpClient;
-        _authService = authService;
+        _tbConnector = tbConnector;
         _deviceMapping = deviceMapping;
         _heartbeatCache = heartbeatCache;
-
-        _tbBaseUrl = configuration["ThingsBoard:BaseUrl"]
-                     ?? "http://localhost";   // fallback for dev
-
-        _jsonOptions = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        };
+        _logger = logger;
     }
 
     public async Task<PowerFlowDto?> GetPowerFlowAsync(Guid deviceId, CancellationToken cancellationToken = default)
@@ -59,36 +38,31 @@ public class PowerFlowService : IPowerFlowService
         
         if (thingsBoardDeviceId == null)
         {
-            Console.WriteLine($"Device mapping not found for deviceId: {deviceId}");
+            _logger.LogWarning("Device mapping not found for deviceId: {DeviceId}", deviceId);
             return null;
         }
 
-        var tbDeviceId = thingsBoardDeviceId.Value.ToString();
-        var timeoutMs = 10000;
-        var url = $"{_tbBaseUrl.TrimEnd('/')}/api/plugins/rpc/twoway/{tbDeviceId}?timeout={timeoutMs}";
+        // Use centralized ThingsBoard connector for RPC call
+        var rpcResponse = await _tbConnector.SendTwoWayRpcAsync(
+            thingsBoardDeviceId.Value,
+            "getPowerFlow",
+            new Dictionary<string, object>(),
+            timeoutMs: 10000,
+            cancellationToken);
 
-        // 🔑 Get (or refresh) JWT from auth service
-        var jwt = await _authService.GetJwtAsync(cancellationToken);
-
-        using var request = new HttpRequestMessage(HttpMethod.Post, url);
-        request.Headers.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", jwt);
-
-        var body = new { method = "getPowerFlow", @params = new { } };
-        request.Content = JsonContent.Create(body);
-
-        using var response = await _httpClient.SendAsync(request, cancellationToken);
-
-        if (!response.IsSuccessStatusCode)
+        if (rpcResponse?.Success != true || rpcResponse.Response == null)
         {
-            var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
-            Console.WriteLine($"TB RPC error ({response.StatusCode}): {errorBody}");
+            _logger.LogWarning("Failed to get PowerFlow from device {DeviceId}. Error: {Error}", 
+                deviceId, rpcResponse?.Error);
             return null;
         }
 
-        var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        var rpcState = await JsonSerializer.DeserializeAsync<PowerFlowStateRpcDto>(
-            stream, _jsonOptions, cancellationToken);
+        // Deserialize response to PowerFlowStateRpcDto
+        var json = JsonSerializer.Serialize(rpcResponse.Response);
+        var rpcState = JsonSerializer.Deserialize<PowerFlowStateRpcDto>(json, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        });
 
         if (rpcState == null) return null;
 
