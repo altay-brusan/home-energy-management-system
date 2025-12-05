@@ -1145,7 +1145,14 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceHeartbeatStatusDto"
+                }
+              }
+            }
           }
         }
       }
@@ -5280,6 +5287,27 @@
           "createdBy": {
             "type": "string",
             "nullable": true
+          }
+        }
+      },
+      "DeviceHeartbeatStatusDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "thingsBoardDeviceId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "status": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },

@@ -21,17 +21,20 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
     private readonly IUser _user;
     private readonly TimeProvider _timeProvider;
     private readonly IThingsBoardConnectorService _tbConnector;
+    private readonly IDeviceHeartbeatCache _heartbeatCache;
 
     public CreateSetupCommandHandler(
         IApplicationDbContext context, 
         IUser user, 
         TimeProvider timeProvider,
-        IThingsBoardConnectorService tbConnector)
+        IThingsBoardConnectorService tbConnector,
+        IDeviceHeartbeatCache heartbeatCache)
     {
         _context = context;
         _user = user;
         _timeProvider = timeProvider;
         _tbConnector = tbConnector;
+        _heartbeatCache = heartbeatCache;
     }
 
     public async Task<Guid> Handle(CreateSetupCommand request, CancellationToken cancellationToken)
@@ -120,6 +123,10 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
             };
 
             _context.SetupDevices.Add(setupDevice);
+            
+            // Add device to heartbeat tracking immediately
+            await _heartbeatCache.AddDeviceToCacheAsync(device.ThingsBoardDeviceId, cancellationToken);
+            
             var devicesettingSchemeValues = await _context.ParameterValueSettingSchemes.Where(f => f.ModelNumber == device.ModelNumber).ToListAsync();
 
             foreach (var item in devicesettingSchemeValues)
