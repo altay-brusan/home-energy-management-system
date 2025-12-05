@@ -38,9 +38,8 @@ public static class DependencyInjection
         // Add SignalR
         builder.Services.AddSignalR();
 
-        // PowerFlow service (calls TB RPC)
-        builder.Services.AddHttpClient<IPowerFlowService, PowerFlowService>();
-
+        // PowerFlow service (uses centralized ThingsBoard connector for RPC)
+        builder.Services.AddScoped<IPowerFlowService, PowerFlowService>();
 
         // Add Device Notification Service
         builder.Services.AddScoped<IDeviceNotificationService, DeviceNotificationService>();

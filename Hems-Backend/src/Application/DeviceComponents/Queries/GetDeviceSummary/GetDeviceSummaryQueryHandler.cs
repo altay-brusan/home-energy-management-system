@@ -115,7 +115,7 @@ public class GetDeviceSummaryQueryHandler : IRequestHandler<GetDeviceSummaryQuer
         {
             var rpcResponse = await _tbService.SendTwoWayRpcAsync(
                 tbDeviceId,
-                "getInverterIdentity",
+                "getInverterInfo",
                 new Dictionary<string, object>(),
                 timeoutMs: 10000,
                 cancellationToken);
@@ -142,7 +142,7 @@ public class GetDeviceSummaryQueryHandler : IRequestHandler<GetDeviceSummaryQuer
         {
             var rpcResponse = await _tbService.SendTwoWayRpcAsync(
                 tbDeviceId,
-                "getInverterState",
+                "getInverterInfo",
                 new Dictionary<string, object>(),
                 timeoutMs: 10000,
                 cancellationToken);
