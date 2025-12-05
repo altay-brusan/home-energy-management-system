@@ -158,7 +158,6 @@ public class DeviceHeartbeatCache : IDeviceHeartbeatCache
     {
         var now = DateTime.UtcNow;
         var statusChanges = new List<DeviceStatusChange>();
-        var expectedHeartbeatWindow = TimeSpan.FromSeconds(HeartbeatIntervalSeconds + GracePeriodSeconds);
 
         foreach (var kvp in _deviceStates)
         {
@@ -168,39 +167,50 @@ public class DeviceHeartbeatCache : IDeviceHeartbeatCache
             var timeSinceLastHeartbeat = now - state.LastHeartbeat;
             var previousStatus = state.Status;
             
-            // Check if heartbeat is overdue (with grace period)
-            if (timeSinceLastHeartbeat > expectedHeartbeatWindow)
+            // Calculate expected status based on time elapsed (not missed count)
+            // This ensures status changes happen at correct intervals regardless of monitor frequency
+            var newStatus = timeSinceLastHeartbeat.TotalSeconds switch
             {
-                // Heartbeat is late - increment missed count
-                state.MissedHeartbeats++;
+                // 0-90s: OK (60s interval + 30s grace)
+                <= HeartbeatIntervalSeconds + GracePeriodSeconds => DeviceStatus.OK,
                 
-                // Update status based on missed count
-                var newStatus = state.MissedHeartbeats switch
-                {
-                    MissedHeartbeatsForPending => DeviceStatus.PENDING,
-                    MissedHeartbeatsForWaiting => DeviceStatus.WAITING,
-                    >= MissedHeartbeatsForDisconnected => DeviceStatus.DISCONNECTED,
-                    _ => state.Status
-                };
+                // 90-150s: PENDING (missed 1 heartbeat window)
+                <= (HeartbeatIntervalSeconds * 2) + GracePeriodSeconds => DeviceStatus.PENDING,
+                
+                // 150-210s: WAITING (missed 2 heartbeat windows)
+                <= (HeartbeatIntervalSeconds * 3) + GracePeriodSeconds => DeviceStatus.WAITING,
+                
+                // 210s+: DISCONNECTED (missed 3+ heartbeat windows)
+                _ => DeviceStatus.DISCONNECTED
+            };
+            
+            // Calculate missed heartbeats for logging/tracking
+            if (timeSinceLastHeartbeat.TotalSeconds > HeartbeatIntervalSeconds + GracePeriodSeconds)
+            {
+                state.MissedHeartbeats = (int)((timeSinceLastHeartbeat.TotalSeconds - GracePeriodSeconds) / HeartbeatIntervalSeconds);
+            }
+            else
+            {
+                state.MissedHeartbeats = 0;
+            }
 
-                if (newStatus != previousStatus)
+            if (newStatus != previousStatus)
+            {
+                state.Status = newStatus;
+                
+                var change = new DeviceStatusChange
                 {
-                    state.Status = newStatus;
-                    
-                    var change = new DeviceStatusChange
-                    {
-                        ThingsBoardDeviceId = deviceId,
-                        PreviousStatus = previousStatus,
-                        NewStatus = newStatus,
-                        MissedHeartbeats = state.MissedHeartbeats,
-                        Timestamp = now
-                    };
-                    
-                    statusChanges.Add(change);
-                    
-                    _logger.LogWarning("Device {DeviceId} status changed: {PreviousStatus} → {NewStatus} (missed: {Count}, last seen: {TimeSince}s ago)",
-                        deviceId, previousStatus, newStatus, state.MissedHeartbeats, (int)timeSinceLastHeartbeat.TotalSeconds);
-                }
+                    ThingsBoardDeviceId = deviceId,
+                    PreviousStatus = previousStatus,
+                    NewStatus = newStatus,
+                    MissedHeartbeats = state.MissedHeartbeats,
+                    Timestamp = now
+                };
+                
+                statusChanges.Add(change);
+                
+                _logger.LogWarning("Device {DeviceId} status changed: {PreviousStatus} → {NewStatus} (missed: {Count}, last seen: {TimeSince}s ago)",
+                    deviceId, previousStatus, newStatus, state.MissedHeartbeats, (int)timeSinceLastHeartbeat.TotalSeconds);
             }
         }
 
