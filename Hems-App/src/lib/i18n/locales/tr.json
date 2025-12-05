@@ -809,7 +809,7 @@
     "co2Savings": "CO₂ Tasarrufu",
     "equivalentTrees": "Eşdeğer Ağaç",
     "infoTitle": "Nasıl Çalışır",
-    "co2Info": "Toplam enerji tüketiminize göre hesaplanır. Kullandığınız her kWh güneş enerjisi, yaklaşık 0.25 kg CO₂ emisyonunu önler.",
+    "co2Info": "Ömür boyu toplam enerjinize (şebeke alımı + satışı) göre hesaplanır. Her kWh enerji, yaklaşık 0.25 kg CO₂ emisyonunu önler.",
     "treesInfo": "Bir ağaç yılda yaklaşık 22 kg CO₂ emer. Bu, aynı miktarda emisyonu dengelemek için kaç ağaca ihtiyaç olduğunu gösterir.",
     "gotIt": "Anladım"
   },
@@ -1509,9 +1509,16 @@
     "december": "Aralık"
   },
   "ranges": {
+    "day": "Gün",
     "week": "Hafta",
     "month": "Ay",
     "year": "Yıl"
+  },
+  "chart": {
+    "gridBuy": "Şebeke Alımı",
+    "gridSell": "Şebeke Satışı",
+    "net": "Net",
+    "price": "Fiyat"
   }
 },
 "qrScanner": {

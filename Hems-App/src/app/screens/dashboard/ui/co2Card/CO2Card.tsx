@@ -4,7 +4,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import Svg, { Path, Circle, G } from 'react-native-svg';
 import { useI18n } from '../../../../../hooks/useI18n';
 import { useDashboardRefresh } from '../../../../../hooks/useDashboardRefresh';
-// import { mobileDashboardService } from '../../../../../api/services/mobileDashboardService'; // TODO: API entegrasyonu yapılacak
+import { gridPerformanceService } from '../../../../../api/services/gridPerformanceService';
 import { useThemeStore } from '../../../../../store/themeStore';
 import { getThemeColors } from '../../../../../theme/constants';
 import { createStyles } from './CO2Card.styles';
@@ -73,20 +73,36 @@ const CO2Card: React.FC<CO2CardProps> = ({ deviceId }) => {
       return;
     }
 
-    // TODO: Statik veri - API entegrasyonu yapılacak
-    // Önceki kod:
-    // const batteryComponent = await mobileDashboardService.getBatteryComponent(deviceId);
-    // const totalLoad = batteryComponent.total || 0;
-    // const co2SavedKg = totalLoad * 0.25;
-    // const trees = co2SavedKg / 22;
+    try {
+      setLoading(true);
 
-    // Statik demo veriler
-    const staticCo2Saved = 125.5; // kg
-    const staticTreesEquivalent = 5.7; // ağaç
+      // Grid Performance Summary'den lifetime verilerini al
+      const summaryResponse = await gridPerformanceService.getGridPerformanceSummary(deviceId);
 
-    setCo2Saved(staticCo2Saved);
-    setTreesEquivalent(staticTreesEquivalent);
-    setLoading(false);
+      // Lifetime toplam enerji (buy + sell)
+      const lifetimeTotalKwh = summaryResponse.lifetime.gridImport + summaryResponse.lifetime.gridExport;
+
+      // CO₂ Tasarrufu Hesaplama
+      // Her 1 kWh güneş enerjisi kullanımı yaklaşık 0.25 kg CO₂ emisyonunu önler
+      const co2SavedKg = lifetimeTotalKwh * 0.25;
+
+      // Ağaç Eşdeğeri Hesaplama
+      // Bir ağaç yılda yaklaşık 22 kg CO₂ emer
+      const trees = co2SavedKg / 22;
+
+      setCo2Saved(co2SavedKg);
+      setTreesEquivalent(trees);
+    } catch (error: any) {
+      // Hata durumunda canceled errors'ı sessizce handle et
+      if (error?.message?.includes('canceled') || error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED') {
+        return;
+      }
+      console.error('Error fetching CO2 data:', error);
+      setCo2Saved(0);
+      setTreesEquivalent(0);
+    } finally {
+      setLoading(false);
+    }
   }, [deviceId]);
 
   const { registerRefreshCallback } = useDashboardRefresh();

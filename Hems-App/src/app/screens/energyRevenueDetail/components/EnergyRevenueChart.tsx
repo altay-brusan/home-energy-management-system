@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import { View, Text, Dimensions, PanResponder } from 'react-native';
 import Svg, { G, Line, Text as SvgText, Rect, Circle } from 'react-native-svg';
+import { useTranslation } from 'react-i18next';
 
 interface EnergyTransaction {
   timestamp: number;
@@ -24,6 +25,7 @@ const EnergyRevenueChart: React.FC<EnergyRevenueChartProps> = ({
   cardBgColor = '#1F2937',
   textColor = '#E5E7EB',
 }) => {
+  const { t } = useTranslation();
   const screenWidth = Dimensions.get('window').width;
   const padding = { top: 80, right: 20, bottom: 40, left: 30 }; // Top increased for floating box
   const chartWidth = screenWidth;
@@ -344,10 +346,10 @@ const EnergyRevenueChart: React.FC<EnergyRevenueChartProps> = ({
             })}
           </Text>
 
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 12 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
             <View style={{ flex: 1 }}>
               <Text style={{ color: '#ef4444', fontSize: 11, fontWeight: '500', marginBottom: 2 }}>
-                Grid Buy
+                {t('energyRevenueDetail.chart.gridBuy')}
               </Text>
               <Text style={{ color: textColor, fontSize: 14, fontWeight: '700' }}>
                 {selectedDataPoint.buy.toFixed(1)} kWh
@@ -356,7 +358,7 @@ const EnergyRevenueChart: React.FC<EnergyRevenueChartProps> = ({
 
             <View style={{ flex: 1 }}>
               <Text style={{ color: '#10b981', fontSize: 11, fontWeight: '500', marginBottom: 2 }}>
-                Grid Sell
+                {t('energyRevenueDetail.chart.gridSell')}
               </Text>
               <Text style={{ color: textColor, fontSize: 14, fontWeight: '700' }}>
                 {selectedDataPoint.sell.toFixed(1)} kWh
@@ -365,7 +367,7 @@ const EnergyRevenueChart: React.FC<EnergyRevenueChartProps> = ({
 
             <View style={{ flex: 1 }}>
               <Text style={{ color: textColor, fontSize: 11, fontWeight: '500', marginBottom: 2, opacity: 0.7 }}>
-                Net
+                {t('energyRevenueDetail.chart.net')}
               </Text>
               <Text style={{
                 color: (selectedDataPoint.sell - selectedDataPoint.buy) >= 0 ? '#10b981' : '#ef4444',
@@ -374,6 +376,15 @@ const EnergyRevenueChart: React.FC<EnergyRevenueChartProps> = ({
               }}>
                 {(selectedDataPoint.sell - selectedDataPoint.buy) >= 0 ? '+' : ''}
                 {(selectedDataPoint.sell - selectedDataPoint.buy).toFixed(1)} kWh
+              </Text>
+            </View>
+
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#f59e0b', fontSize: 11, fontWeight: '500', marginBottom: 2 }}>
+                {t('energyRevenueDetail.chart.price')}
+              </Text>
+              <Text style={{ color: textColor, fontSize: 14, fontWeight: '700' }}>
+                €{selectedDataPoint.price.toFixed(2)}
               </Text>
             </View>
           </View>
@@ -390,11 +401,11 @@ const EnergyRevenueChart: React.FC<EnergyRevenueChartProps> = ({
       }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: '#ef4444' }} />
-          <Text style={{ color: textColor, fontSize: 12, fontWeight: '600' }}>Grid Buy</Text>
+          <Text style={{ color: textColor, fontSize: 12, fontWeight: '600' }}>{t('energyRevenueDetail.chart.gridBuy')}</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: '#10b981' }} />
-          <Text style={{ color: textColor, fontSize: 12, fontWeight: '600' }}>Grid Sell</Text>
+          <Text style={{ color: textColor, fontSize: 12, fontWeight: '600' }}>{t('energyRevenueDetail.chart.gridSell')}</Text>
         </View>
       </View>
     </View>

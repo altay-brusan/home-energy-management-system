@@ -188,21 +188,28 @@ export default function EnergyRevenueDetailScreen() {
 
   const canNavigateNext = () => {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const newDate = new Date(selectedDate);
+    today.setHours(23, 59, 59, 999); // Set to end of today
+    const nextDate = new Date(selectedDate);
+    nextDate.setHours(0, 0, 0, 0); // Set to start of selected date
 
     if (selectedRange === 'Day') {
-      newDate.setDate(newDate.getDate() + 1);
-      return newDate.getTime() <= today.getTime();
+      nextDate.setDate(nextDate.getDate() + 1);
+      // Can navigate if next day is today or before today
+      return nextDate.getTime() <= today.getTime();
     } else if (selectedRange === 'Week') {
-      newDate.setDate(newDate.getDate() + 7);
-      return newDate.getTime() <= today.getTime();
+      nextDate.setDate(nextDate.getDate() + 7);
+      // Can navigate if next week's start is today or before
+      return nextDate.getTime() <= today.getTime();
     } else if (selectedRange === 'Month') {
-      newDate.setMonth(newDate.getMonth() + 1);
-      return newDate.getTime() <= today.getTime();
+      nextDate.setMonth(nextDate.getMonth() + 1);
+      nextDate.setDate(1); // Set to first day of next month
+      // Can navigate if next month's start is today or before
+      return nextDate.getTime() <= today.getTime();
     } else if (selectedRange === 'Year') {
-      newDate.setFullYear(newDate.getFullYear() + 1);
-      return newDate.getFullYear() <= today.getFullYear();
+      const nextYear = nextDate.getFullYear() + 1;
+      const currentYear = new Date().getFullYear();
+      // Can navigate if next year is this year or before
+      return nextYear <= currentYear;
     }
 
     return false;

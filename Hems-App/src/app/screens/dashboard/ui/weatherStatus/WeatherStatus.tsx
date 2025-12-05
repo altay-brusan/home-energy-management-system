@@ -3,7 +3,6 @@ import { View, Text, Image } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useI18n } from '../../../../../hooks/useI18n';
 import { useDashboardRefresh } from '../../../../../hooks/useDashboardRefresh';
-import { mobileDashboardService } from '../../../../../api/services/mobileDashboardService';
 import { dashboardService } from '../../../../../api/services/dashboardService';
 import { useSelectedSiteUtils } from '../../../../../hooks/useSelectedSite';
 import { useThemeStore } from '../../../../../store/themeStore';
@@ -57,42 +56,10 @@ export const WeatherStatus: React.FC<WeatherStatusProps> = ({ deviceId }) => {
       return;
     }
 
-    try {
-      // Get today's date range
-      const today = new Date();
-      const startDate = new Date(today);
-      startDate.setHours(0, 0, 0, 0);
-      const endDate = new Date(today);
-      endDate.setHours(23, 59, 59, 999);
-
-      // Fetch energy flow data
-      const energyFlow = await mobileDashboardService.getEnergyFlow(
-        deviceId,
-        startDate.toISOString(),
-        endDate.toISOString()
-      );
-
-      // Calculate status
-      if (energyFlow && energyFlow.sources) {
-        const gridSource = energyFlow.sources.find((s: any) => s.id.toLowerCase() === 'grid');
-        const batterySource = energyFlow.sources.find((s: any) => s.id.toLowerCase() === 'battery');
-        const gridEnergy = gridSource?.value || 0;
-        const batteryValue = batterySource?.value || 0;
-
-        let newStatus: StatusType = 'onGrid';
-        if (gridEnergy === 0) {
-          newStatus = 'off';
-        } else if (gridEnergy > 0 && batteryValue > 0) {
-          newStatus = 'hybrid';
-        }
-        setStatus(newStatus);
-      }
-    } catch (error: any) {
-      // Canceled errors'ı silent handle et
-      if (error?.message?.includes('canceled') || error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED') {
-        return;
-      }
-    }
+    // NOTE: EnergyFlow endpoint is deprecated and no longer available
+    // Status calculation has been disabled until a replacement endpoint is provided
+    // Default status is now 'onGrid'
+    setStatus('onGrid');
   }, [deviceId]);
 
   // Load weather

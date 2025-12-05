@@ -83,11 +83,20 @@ class ApiClient {
           this.abortControllers = this.abortControllers.filter(ac => ac.signal !== signal);
         }
 
-
         this.showSuccessToast(response);
         return response;
       },
       async (error: AxiosError) => {
+        // Debug logging for error (useful for development)
+        if (__DEV__) {
+          const errorUrl = error.config?.url ? `${error.config.baseURL || ''}${error.config.url}` : 'unknown';
+          console.log('❌ [API Error]', {
+            status: error.response?.status,
+            url: errorUrl,
+            message: (error.response?.data as any)?.detail || (error.response?.data as any)?.message || error.message,
+          });
+        }
+
         // Logout sırasında hiçbir işlem yapma
         if (this.isLoggingOut) {
           return Promise.reject(error);

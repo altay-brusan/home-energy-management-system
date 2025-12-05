@@ -774,7 +774,7 @@
       "co2Savings": "CO₂ Besparingen",
       "equivalentTrees": "Equivalente Bomen",
       "infoTitle": "Hoe het werkt",
-      "co2Info": "Berekend op basis van uw totale energieverbruik. Elke kWh zonne-energie die u gebruikt, voorkomt ongeveer 0,25 kg CO₂-uitstoot.",
+      "co2Info": "Berekend op basis van uw levenslange totale energie (netimport + export). Elke kWh energie voorkomt ongeveer 0,25 kg CO₂-uitstoot.",
       "treesInfo": "Een enkele boom absorbeert ongeveer 22 kg CO₂ per jaar. Dit toont hoeveel bomen nodig zouden zijn om dezelfde hoeveelheid uitstoot te compenseren.",
       "gotIt": "Begrepen"
     },
@@ -1478,9 +1478,16 @@
         "december": "December"
       },
       "ranges": {
+        "day": "Dag",
         "week": "Week",
         "month": "Maand",
         "year": "Jaar"
+      },
+      "chart": {
+        "gridBuy": "Netaankoop",
+        "gridSell": "Netverkoop",
+        "net": "Netto",
+        "price": "Prijs"
       }
   },
   "qrScanner": {

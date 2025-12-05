@@ -793,7 +793,7 @@
       "co2Savings": "CO₂ Savings",
       "equivalentTrees": "Equivalent Trees",
       "infoTitle": "How it works",
-      "co2Info": "Calculated based on your total energy consumption. Every kWh of solar energy you use prevents approximately 0.25 kg of CO₂ emissions.",
+      "co2Info": "Calculated based on your lifetime total energy (grid import + export). Every kWh of energy prevents approximately 0.25 kg of CO₂ emissions.",
       "treesInfo": "A single tree absorbs about 22 kg of CO₂ per year. This shows how many trees would be needed to offset the same amount of emissions.",
       "gotIt": "Got it"
     },
@@ -1506,9 +1506,16 @@
       "december": "December"
     },
     "ranges": {
+      "day": "Day",
       "week": "Week",
       "month": "Month",
       "year": "Year"
+    },
+    "chart": {
+      "gridBuy": "Grid Buy",
+      "gridSell": "Grid Sell",
+      "net": "Net",
+      "price": "Price"
     }
   },
   "qrScanner": {
