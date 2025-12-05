@@ -1125,6 +1125,31 @@
         }
       }
     },
+    "/api/DeviceData/Status/{deviceId}": {
+      "get": {
+        "tags": [
+          "DeviceData"
+        ],
+        "operationId": "GetDeviceHeartbeatStatus",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/DeviceNotifications": {
       "post": {
         "tags": [

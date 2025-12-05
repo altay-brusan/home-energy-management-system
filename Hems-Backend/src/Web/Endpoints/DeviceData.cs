@@ -32,7 +32,8 @@ public class DeviceData : EndpointGroupBase
         app.MapGroup(this)
             //.RequireAuthorization()
             .MapGet(GetDeviceData)
-            .MapGet(GetLivePowerFlow, "PowerFlow/live/{deviceId:guid}"); ;
+            .MapGet(GetLivePowerFlow, "PowerFlow/live/{deviceId:guid}")
+            .MapGet(GetDeviceHeartbeatStatus, "Status/{deviceId:guid}");
     }
 
     /// <summary>
@@ -90,7 +91,36 @@ public class DeviceData : EndpointGroupBase
         return Results.Ok(dto);
     }
 
+    /// <summary>
+    /// Gets current heartbeat status of a device
+    /// </summary>
+    public IResult GetDeviceHeartbeatStatus(
+        Guid deviceId,
+        IDeviceHeartbeatCache heartbeatCache,
+        IDeviceMappingService deviceMapping,
+        ILogger<DeviceData> logger)
+    {
+        // deviceId here is local device ID, need to map to ThingsBoard ID
+        var tbDeviceIdTask = deviceMapping.GetThingsBoardDeviceIdAsync(deviceId, CancellationToken.None);
+        tbDeviceIdTask.Wait(); // Safe for this lightweight operation
+        var tbDeviceId = tbDeviceIdTask.Result;
 
+        if (tbDeviceId == null)
+        {
+            logger.LogWarning("Device mapping not found for deviceId: {DeviceId}", deviceId);
+            return Results.NotFound(new { error = "Device not found" });
+        }
+
+        var status = heartbeatCache.GetDeviceStatus(tbDeviceId.Value);
+        
+        return Results.Ok(new
+        {
+            deviceId = deviceId,
+            thingsBoardDeviceId = tbDeviceId.Value,
+            status = status.ToString(),
+            timestamp = DateTime.UtcNow
+        });
+    }
 
     public async Task<PaginatedList<DeviceDataDto>> GetDeviceData(
         ISender sender,
