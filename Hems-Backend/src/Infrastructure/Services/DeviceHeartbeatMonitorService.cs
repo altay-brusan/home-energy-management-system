@@ -30,22 +30,30 @@ public class DeviceHeartbeatMonitorService : BackgroundService
     {
         _logger.LogInformation("Device Heartbeat Monitor Service started (heartbeat-driven mode)");
 
-        // No initial cache population needed - devices auto-register on first heartbeat
-        await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
-
-        while (!stoppingToken.IsCancellationRequested)
+        try
         {
-            try
-            {
-                await CheckDeviceHeartbeatsAsync(stoppingToken);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error in device heartbeat monitoring");
-            }
+            // No initial cache population needed - devices auto-register on first heartbeat
+            await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken);
 
-            // Wait 1 minute before next check
-            await Task.Delay(TimeSpan.FromSeconds(CheckIntervalSeconds), stoppingToken);
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                try
+                {
+                    await CheckDeviceHeartbeatsAsync(stoppingToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error in device heartbeat monitoring");
+                }
+
+                // Wait 1 minute before next check
+                await Task.Delay(TimeSpan.FromSeconds(CheckIntervalSeconds), stoppingToken);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when application is shutting down
+            _logger.LogInformation("Device Heartbeat Monitor Service is stopping (cancellation requested)");
         }
 
         _logger.LogInformation("Device Heartbeat Monitor Service stopped");
