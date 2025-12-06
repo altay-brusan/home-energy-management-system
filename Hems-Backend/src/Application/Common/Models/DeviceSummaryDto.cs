@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Hems_Backend.Application.Common.Models;
 
 /// <summary>
@@ -11,6 +13,9 @@ public class DeviceSummaryResponseDto
 /// <summary>
 /// Base component summary information
 /// </summary>
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
+[JsonDerivedType(typeof(InverterSummaryDto), typeDiscriminator: "inverter")]
+[JsonDerivedType(typeof(BatterySummaryDto), typeDiscriminator: "battery")]
 public class ComponentSummaryDto
 {
     public Guid Id { get; set; }

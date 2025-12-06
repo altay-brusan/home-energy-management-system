@@ -5094,7 +5094,17 @@
       },
       "ComponentSummaryDto": {
         "type": "object",
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "inverter": "#/components/schemas/InverterSummaryDto",
+            "battery": "#/components/schemas/BatterySummaryDto"
+          }
+        },
         "additionalProperties": false,
+        "required": [
+          "type"
+        ],
         "properties": {
           "id": {
             "type": "string",
@@ -5114,6 +5124,77 @@
           },
           "serialNumber": {
             "type": "string"
+          }
+        }
+      },
+      "InverterSummaryDto": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ComponentSummaryDto"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "activePowerKw": {
+                "type": "number",
+                "format": "double",
+                "nullable": true
+              }
+            }
+          }
+        ]
+      },
+      "BatterySummaryDto": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ComponentSummaryDto"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "stateOfCharge": {
+                "type": "number",
+                "format": "double",
+                "nullable": true
+              },
+              "packs": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BatteryPackDto"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "BatteryPackDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "manufacturer": {
+            "type": "string"
+          },
+          "serialNumber": {
+            "type": "string"
+          },
+          "stateOfCharge": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
           }
         }
       },
