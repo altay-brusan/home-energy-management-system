@@ -75,7 +75,7 @@ public class GetDeviceSummaryQueryHandler : IRequestHandler<GetDeviceSummaryQuer
         // Try to get identity from component DB first, otherwise call RPC
         if (component == null || string.IsNullOrEmpty(component.Name) || string.IsNullOrEmpty(component.Manufacturer))
         {
-            identity = await GetInverterIdentityFromRpcAsync(tbDeviceId, cancellationToken);
+            identity = await GetInverterInfoFromRpcAsync(tbDeviceId, cancellationToken);
 
             // If we got identity from RPC and no component exists, we could create a generic one
             // For now, we'll just use the RPC data
@@ -92,7 +92,7 @@ public class GetDeviceSummaryQueryHandler : IRequestHandler<GetDeviceSummaryQuer
         };
 
         // Get active power from inverter state
-        var state = await GetInverterStateFromRpcAsync(tbDeviceId, cancellationToken);
+        var state = await GetInverterDeviceStateFromRpcAsync(tbDeviceId, cancellationToken);
         if (state?.GridSideActivePowerW != null)
         {
             inverter.ActivePowerKw = state.GridSideActivePowerW / 1000.0;
@@ -107,7 +107,7 @@ public class GetDeviceSummaryQueryHandler : IRequestHandler<GetDeviceSummaryQuer
         return inverter;
     }
 
-    private async Task<InverterIdentityDto?> GetInverterIdentityFromRpcAsync(
+    private async Task<InverterIdentityDto?> GetInverterInfoFromRpcAsync(
         Guid tbDeviceId,
         CancellationToken cancellationToken)
     {
@@ -134,7 +134,7 @@ public class GetDeviceSummaryQueryHandler : IRequestHandler<GetDeviceSummaryQuer
         return null;
     }
 
-    private async Task<InverterDeviceStateDto?> GetInverterStateFromRpcAsync(
+    private async Task<InverterDeviceStateDto?> GetInverterDeviceStateFromRpcAsync(
         Guid tbDeviceId,
         CancellationToken cancellationToken)
     {
@@ -142,7 +142,7 @@ public class GetDeviceSummaryQueryHandler : IRequestHandler<GetDeviceSummaryQuer
         {
             var rpcResponse = await _tbService.SendTwoWayRpcAsync(
                 tbDeviceId,
-                "getInverterInfo",
+                "getInverterDeviceState",
                 new Dictionary<string, object>(),
                 timeoutMs: 10000,
                 cancellationToken);
