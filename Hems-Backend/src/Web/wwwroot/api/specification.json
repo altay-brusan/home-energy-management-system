@@ -875,6 +875,43 @@
         ]
       }
     },
+    "/api/DeviceComponents/Details/{componentId}": {
+      "get": {
+        "tags": [
+          "DeviceComponents"
+        ],
+        "operationId": "GetDeviceDetails",
+        "parameters": [
+          {
+            "name": "componentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceDetailsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/DeviceComponents": {
       "post": {
         "tags": [
@@ -5195,6 +5232,37 @@
             "type": "number",
             "format": "double",
             "nullable": true
+          }
+        }
+      },
+      "DeviceDetailsResponseDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "details": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeviceDetailItemDto"
+            }
+          }
+        }
+      },
+      "DeviceDetailItemDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "nullable": true
+          },
+          "unit": {
+            "type": "string",
+            "nullable": true
+          },
+          "labelKey": {
+            "type": "string"
           }
         }
       },
