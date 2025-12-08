@@ -13,7 +13,7 @@ SystemWorkModeConfigState {
   "inverterMode": {
     "workModeCode": number,           // 243: Energy management model (0=battery priority, 1=load priority)
     "exportStrategy": "selling_first" 
-    | "zero_export_to_load" 
+    | "zero_export_to_load"           // 244 Selling First zero_export_to_load zero_export_to_ct
     | "zero_export_to_ct",
     "solarSellEnabled": bool,         // 247: Solar sell (0x00=don't sell, 0x01=sell)
     "maxSellPowerW": number | null,   // 245: Limit max grid export power (1W)

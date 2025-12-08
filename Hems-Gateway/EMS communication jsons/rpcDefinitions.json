@@ -287,9 +287,9 @@
         "request": {
           "inverterMode": {
             "workModeCode": 1,
+            "exportStrategy": "selling_first",
             "solarSellEnabled": false,
             "maxSellPowerW": 8000,
-            "zeroExportLimitPowerW": 100,
             "forceOffGrid": false
           },
           "energyPriority": {
@@ -320,6 +320,65 @@
             ]
           }
         }
+      },
+      {
+        "rpcName": "getExportStrategy",
+        "kind": "ExportStrategyState",
+        "type": "read",
+        "pairedWith": "setExportStrategy",
+        "description": "Reads the current export/grid strategy mode from inverter register 244",
+        "register": 244,
+        "response": {
+          "kind": "ExportStrategyState",
+          "timestampUtc": "2025-12-08T07:05:26.398Z",
+          "version": 1,
+          "gatewayId": "EC100-GW-001",
+          "exportStrategy": "zero_export_to_ct",
+          "exportStrategyCode": 2
+        },
+        "exportStrategyValues": {
+          "selling_first": {
+            "code": 0,
+            "description": "Allow selling excess solar to grid"
+          },
+          "zero_export_to_load": {
+            "code": 1,
+            "description": "Zero export using internal load sensing"
+          },
+          "zero_export_to_ct": {
+            "code": 2,
+            "description": "Zero export using external CT clamp"
+          }
+        }
+      },
+      {
+        "rpcName": "setExportStrategy",
+        "kind": "ExportStrategyState",
+        "type": "write",
+        "pairedWith": "getExportStrategy",
+        "description": "Sets the export/grid strategy mode on inverter register 244",
+        "register": 244,
+        "request": {
+          "exportStrategy": "selling_first"
+        },
+        "alternativeRequest": {
+          "exportStrategyCode": 0
+        },
+        "response": {
+          "kind": "ExportStrategyState",
+          "timestampUtc": "2025-12-08T07:10:00.000Z",
+          "version": 1,
+          "gatewayId": "EC100-GW-001",
+          "success": true,
+          "message": "Export strategy updated",
+          "exportStrategy": "selling_first",
+          "exportStrategyCode": 0
+        },
+        "validValues": [
+          { "exportStrategy": "selling_first", "exportStrategyCode": 0 },
+          { "exportStrategy": "zero_export_to_load", "exportStrategyCode": 1 },
+          { "exportStrategy": "zero_export_to_ct", "exportStrategyCode": 2 }
+        ]
       },
       {
         "rpcName": "getInverterInfo",

@@ -1,0 +1,495 @@
+[
+    {
+        "id": "export_strategy_tab",
+        "type": "tab",
+        "label": "ExportStrategy",
+        "disabled": false,
+        "info": "Export Strategy Config - Register 244\n\nRPC Methods:\n- getExportStrategy: Read current mode\n- setExportStrategy: Write mode\n\nValues:\n- 0 = selling_first\n- 1 = zero_export_to_load\n- 2 = zero_export_to_ct"
+    },
+    {
+        "id": "es_comment_rpc",
+        "type": "comment",
+        "z": "export_strategy_tab",
+        "name": "══════ RPC TRIGGER ══════",
+        "info": "",
+        "x": 160,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "es_mqtt_in",
+        "type": "mqtt in",
+        "z": "export_strategy_tab",
+        "name": "RPC Request",
+        "topic": "v1/devices/me/rpc/request/+",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "tb-broker",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 140,
+        "y": 80,
+        "wires": [
+            [
+                "es_filter_rpc"
+            ]
+        ]
+    },
+    {
+        "id": "es_filter_rpc",
+        "type": "function",
+        "z": "export_strategy_tab",
+        "name": "Filter RPC",
+        "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nconst rpc = msg.payload || {};\nconst method = rpc.method;\n\nif (method !== 'getExportStrategy' && method !== 'setExportStrategy') {\n    return null;\n}\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\nmsg.rpcMethod = method;\nmsg.rpcParams = rpc.params || {};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 330,
+        "y": 80,
+        "wires": [
+            [
+                "es_route_operation"
+            ]
+        ]
+    },
+    {
+        "id": "es_comment_manual",
+        "type": "comment",
+        "z": "export_strategy_tab",
+        "name": "══════ MANUAL TEST ══════",
+        "info": "",
+        "x": 170,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "es_manual_read",
+        "type": "inject",
+        "z": "export_strategy_tab",
+        "name": "Manual Read",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "rpcMethod",
+                "v": "getExportStrategy",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 180,
+        "wires": [
+            [
+                "es_route_operation"
+            ]
+        ]
+    },
+    {
+        "id": "es_manual_selling",
+        "type": "inject",
+        "z": "export_strategy_tab",
+        "name": "Set: Selling First",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "rpcMethod",
+                "v": "setExportStrategy",
+                "vt": "str"
+            },
+            {
+                "p": "rpcParams",
+                "v": "{\"exportStrategy\":\"selling_first\"}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 160,
+        "y": 220,
+        "wires": [
+            [
+                "es_route_operation"
+            ]
+        ]
+    },
+    {
+        "id": "es_manual_load",
+        "type": "inject",
+        "z": "export_strategy_tab",
+        "name": "Set: Zero Export to Load",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "rpcMethod",
+                "v": "setExportStrategy",
+                "vt": "str"
+            },
+            {
+                "p": "rpcParams",
+                "v": "{\"exportStrategy\":\"zero_export_to_load\"}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 190,
+        "y": 260,
+        "wires": [
+            [
+                "es_route_operation"
+            ]
+        ]
+    },
+    {
+        "id": "es_manual_ct",
+        "type": "inject",
+        "z": "export_strategy_tab",
+        "name": "Set: Zero Export to CT",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "rpcMethod",
+                "v": "setExportStrategy",
+                "vt": "str"
+            },
+            {
+                "p": "rpcParams",
+                "v": "{\"exportStrategy\":\"zero_export_to_ct\"}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 180,
+        "y": 300,
+        "wires": [
+            [
+                "es_route_operation"
+            ]
+        ]
+    },
+    {
+        "id": "es_route_operation",
+        "type": "function",
+        "z": "export_strategy_tab",
+        "name": "Route: Get or Set?",
+        "func": "const method = msg.rpcMethod || 'getExportStrategy';\n\nif (method === 'setExportStrategy') {\n    return [null, msg];\n} else {\n    return [msg, null];\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 530,
+        "y": 180,
+        "wires": [
+            [
+                "es_prep_read"
+            ],
+            [
+                "es_prep_write"
+            ]
+        ]
+    },
+    {
+        "id": "es_comment_read",
+        "type": "comment",
+        "z": "export_strategy_tab",
+        "name": "══════ READ ══════",
+        "info": "",
+        "x": 720,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "es_prep_read",
+        "type": "function",
+        "z": "export_strategy_tab",
+        "name": "Prep Read Reg 244",
+        "func": "msg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 244,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 730,
+        "y": 80,
+        "wires": [
+            [
+                "es_modbus_read"
+            ]
+        ]
+    },
+    {
+        "id": "es_modbus_read",
+        "type": "modbus-flex-getter",
+        "z": "export_strategy_tab",
+        "name": "Read Reg 244",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 920,
+        "y": 80,
+        "wires": [
+            [
+                "es_build_read_response"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "es_build_read_response",
+        "type": "function",
+        "z": "export_strategy_tab",
+        "name": "Build Read Response",
+        "func": "let data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data) || data.length < 1) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Read failed\" });\n    return null;\n}\n\nconst code = data[0];\n\nconst strategyMap = {\n    0: \"selling_first\",\n    1: \"zero_export_to_load\",\n    2: \"zero_export_to_ct\"\n};\n\nconst strategy = strategyMap[code] || \"unknown\";\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\n\nconst state = {\n    kind: \"ExportStrategyState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    gatewayId: gatewayId,\n    exportStrategy: strategy,\n    exportStrategyCode: code\n};\n\nmsg.payload = state;\nmsg.state = state;\n\nnode.status({ fill: \"green\", shape: \"dot\", text: strategy });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1120,
+        "y": 80,
+        "wires": [
+            [
+                "es_debug",
+                "es_rpc_response"
+            ]
+        ]
+    },
+    {
+        "id": "es_comment_write",
+        "type": "comment",
+        "z": "export_strategy_tab",
+        "name": "══════ WRITE ══════",
+        "info": "",
+        "x": 730,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "es_prep_write",
+        "type": "function",
+        "z": "export_strategy_tab",
+        "name": "Prep Write Reg 244",
+        "func": "const params = msg.rpcParams || {};\n\nconst strategyToCode = {\n    \"selling_first\": 0,\n    \"zero_export_to_load\": 1,\n    \"zero_export_to_ct\": 2\n};\n\nlet code = null;\n\n// Accept both string and code\nif (params.exportStrategy !== undefined) {\n    code = strategyToCode[params.exportStrategy];\n} else if (params.exportStrategyCode !== undefined) {\n    code = params.exportStrategyCode;\n}\n\nif (code === null || code === undefined) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Invalid params\" });\n    node.error(\"Missing exportStrategy or exportStrategyCode\");\n    return null;\n}\n\nconst codeToStrategy = {\n    0: \"selling_first\",\n    1: \"zero_export_to_load\",\n    2: \"zero_export_to_ct\"\n};\n\nmsg.writeInfo = {\n    code: code,\n    strategy: codeToStrategy[code] || \"unknown\"\n};\n\nmsg.payload = {\n    fc: 16,\n    unitid: 1,\n    address: 244,\n    quantity: 1,\n    value: [code]\n};\n\nnode.status({ fill: \"yellow\", shape: \"dot\", text: \"Writing: \" + msg.writeInfo.strategy });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 730,
+        "y": 240,
+        "wires": [
+            [
+                "es_modbus_write"
+            ]
+        ]
+    },
+    {
+        "id": "es_modbus_write",
+        "type": "modbus-flex-write",
+        "z": "export_strategy_tab",
+        "name": "Write Reg 244",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "server": "e4e4f3e2a4f4e004",
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "x": 920,
+        "y": 240,
+        "wires": [
+            [
+                "es_build_write_response"
+            ],
+            [
+                "es_build_write_response"
+            ]
+        ]
+    },
+    {
+        "id": "es_build_write_response",
+        "type": "function",
+        "z": "export_strategy_tab",
+        "name": "Build Write Response",
+        "func": "// Filter out confirmation messages\nconst isConfirmation = msg.payload && \n                       msg.payload.address !== undefined && \n                       msg.payload.length !== undefined &&\n                       !msg.payload.error;\n\nif (isConfirmation) {\n    return null;\n}\n\nconst writeInfo = msg.writeInfo || { code: -1, strategy: 'unknown' };\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\n\nconst state = {\n    kind: \"ExportStrategyState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    gatewayId: gatewayId,\n    success: true,\n    message: \"Export strategy updated\",\n    exportStrategy: writeInfo.strategy,\n    exportStrategyCode: writeInfo.code\n};\n\nmsg.payload = state;\nmsg.state = state;\n\nnode.status({ fill: \"green\", shape: \"dot\", text: \"OK: \" + writeInfo.strategy });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1120,
+        "y": 240,
+        "wires": [
+            [
+                "es_debug",
+                "es_rpc_response"
+            ]
+        ]
+    },
+    {
+        "id": "es_debug",
+        "type": "debug",
+        "z": "export_strategy_tab",
+        "name": "Export Strategy",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1340,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "es_rpc_response",
+        "type": "function",
+        "z": "export_strategy_tab",
+        "name": "RPC Response",
+        "func": "if (!msg.rpcResponseTopic) {\n    return null;\n}\n\nmsg.topic = msg.rpcResponseTopic;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1340,
+        "y": 180,
+        "wires": [
+            [
+                "es_mqtt_response"
+            ]
+        ]
+    },
+    {
+        "id": "es_mqtt_response",
+        "type": "mqtt out",
+        "z": "export_strategy_tab",
+        "name": "MQTT Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1540,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]
