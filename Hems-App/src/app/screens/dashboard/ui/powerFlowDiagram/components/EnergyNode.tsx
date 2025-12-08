@@ -15,6 +15,7 @@ interface EnergyNodeProps {
   label?: string;
   labelPosition?: 'top' | 'bottom';
   soc?: number; // Battery State of Charge (percentage)
+  showSign?: boolean; // Show negative sign for charging (battery)
 }
 
 // SVG Icons - Custom Design
@@ -72,16 +73,18 @@ const iconMap = {
  * Format power value for display
  * - Below 1 kW: show as Watts (e.g., 854 W)
  * - 1 kW and above: show as kW with 2 decimals (e.g., 1.85 kW)
+ * - Preserves negative sign for battery charging
  */
-const formatPower = (kw: number): { value: string; unit: string } => {
+const formatPower = (kw: number, preserveSign: boolean = false): { value: string; unit: string } => {
   const absKw = Math.abs(kw);
+  const sign = preserveSign && kw < 0 ? '-' : '';
   if (absKw < 1) {
     // Convert to Watts and round to integer
     const watts = Math.round(absKw * 1000);
-    return { value: String(watts), unit: 'W' };
+    return { value: `${sign}${watts}`, unit: 'W' };
   } else {
     // Round to 2 decimal places
-    return { value: absKw.toFixed(2), unit: 'kW' };
+    return { value: `${sign}${absKw.toFixed(2)}`, unit: 'kW' };
   }
 };
 
@@ -94,6 +97,7 @@ export const EnergyNode: React.FC<EnergyNodeProps> = ({
   label,
   labelPosition = 'top',
   soc,
+  showSign = false,
 }) => {
   const mode = useThemeStore(s => s.mode);
   const isDark = mode === 'dark';
@@ -102,7 +106,7 @@ export const EnergyNode: React.FC<EnergyNodeProps> = ({
   const Icon = iconMap[type];
   const nodeColor = COLORS.accent; // Use primary accent color for all nodes
 
-  const formatted = formatPower(power);
+  const formatted = formatPower(power, showSign);
   const displayUnit = unit || formatted.unit;
   const formattedPower = formatted.value;
 

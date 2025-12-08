@@ -68,14 +68,16 @@ const OFFSET = 140; // Distance from center to nodes
  * Format power value for display
  * - Below 1 kW: show as Watts (e.g., 854 W)
  * - 1 kW and above: show as kW with 2 decimals (e.g., 1.85 kW)
+ * - Preserves negative sign when showSign is true (for battery charging)
  */
-const formatPower = (kw: number): { value: string; unit: string } => {
+const formatPower = (kw: number, showSign: boolean = false): { value: string; unit: string } => {
   const absKw = Math.abs(kw);
+  const sign = showSign && kw < 0 ? '-' : '';
   if (absKw < 1) {
     const watts = Math.round(absKw * 1000);
-    return { value: String(watts), unit: 'W' };
+    return { value: `${sign}${watts}`, unit: 'W' };
   } else {
-    return { value: absKw.toFixed(2), unit: 'kW' };
+    return { value: `${sign}${absKw.toFixed(2)}`, unit: 'kW' };
   }
 };
 
@@ -351,10 +353,10 @@ export const PowerFlowDiagram: React.FC = () => {
           >
             <BatteryIcon color={Math.abs(finalData.batteryPowerKw) >= 0.001 ? COLORS.accent : COLORS.slate400} />
             <Text style={{ fontSize: 18, fontWeight: '700', marginTop: 4, color: Math.abs(finalData.batteryPowerKw) >= 0.001 ? COLORS.text : COLORS.slate400 }}>
-              {formatPower(finalData.batteryPowerKw).value}
+              {formatPower(finalData.batteryPowerKw, true).value}
             </Text>
             <Text style={{ fontSize: 12, marginTop: 2, color: Math.abs(finalData.batteryPowerKw) >= 0.001 ? COLORS.textSoft : COLORS.border }}>
-              {formatPower(finalData.batteryPowerKw).unit}
+              {formatPower(finalData.batteryPowerKw, true).unit}
             </Text>
           </View>
           {batterySoc !== undefined && (
