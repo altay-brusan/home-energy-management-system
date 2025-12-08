@@ -136,3 +136,33 @@ public class BmsSocDetailRpcDto
     [JsonPropertyName("socPercent")]
     public double? SocPercent { get; set; }
 }
+
+/// <summary>
+/// RPC response for setExportStrategy (register 244)
+/// </summary>
+public class ExportStrategyStateDto
+{
+    [JsonPropertyName("kind")]
+    public string? Kind { get; set; }
+
+    [JsonPropertyName("timestampUtc")]
+    public string? TimestampUtc { get; set; }
+
+    [JsonPropertyName("version")]
+    public int? Version { get; set; }
+
+    [JsonPropertyName("gatewayId")]
+    public string? GatewayId { get; set; }
+
+    [JsonPropertyName("success")]
+    public bool Success { get; set; }
+
+    [JsonPropertyName("message")]
+    public string? Message { get; set; }
+
+    [JsonPropertyName("exportStrategy")]
+    public string? ExportStrategy { get; set; } // "selling_first" | "zero_export_to_load" | "zero_export_to_ct"
+
+    [JsonPropertyName("exportStrategyCode")]
+    public int? ExportStrategyCode { get; set; } // 0, 1, 2
+}
