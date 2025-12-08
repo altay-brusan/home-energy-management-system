@@ -868,7 +868,13 @@
       "online": "Online",
       "offline": "Offline",
       "onGrid": "On Grid",
-      "offGrid": "Off Grid"
+      "offGrid": "Off Grid",
+      "inverter": "Inverter",
+      "battery": "Battery",
+      "deviceNotFound": "Device not found",
+      "fetchError": "Failed to load device data",
+      "noDeviceSelected": "No device selected. Please select a site with a device.",
+      "noComponents": "No components found for this device"
     },
     "deviceDetail": {
     "title": "NetZr Device Detail",
@@ -887,8 +893,8 @@
       "title": "Battery",
       "subtitle": "Real-Time Information",
       "restart": "Restart Device",
-      "packCount": "{{count}} battery pack included",
-      "packCount_plural": "{{count}} battery packs included",
+      "packCount": "{{count}} battery pack",
+      "packCount_plural": "{{count}} battery packs",
       "noBatteries": "No batteries available"
     },
     "connectedDevices": {

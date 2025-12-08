@@ -87,3 +87,51 @@ export interface GetDeviceComponentParams {
 export interface GetDeviceComponentByIdParams {
   id: string;
 }
+
+// Device Summary Types (for DeviceSummary endpoint)
+export type ComponentType = 'inverter' | 'battery';
+
+export interface ComponentSummaryBaseDto {
+  id: string;
+  type: ComponentType;
+  name: string;
+  model: string;
+  manufacturer: string;
+  serialNumber: string;
+}
+
+export interface InverterSummaryDto extends ComponentSummaryBaseDto {
+  type: 'inverter';
+  activePowerKw: number | null;
+}
+
+export interface BatteryPackDto {
+  id: string;
+  type: 'battery';
+  name: string;
+  model: string;
+  manufacturer: string;
+  serialNumber: string;
+  stateOfCharge: number | null;
+}
+
+export interface BatterySummaryDto extends ComponentSummaryBaseDto {
+  type: 'battery';
+  stateOfCharge: number | null;
+  packs: BatteryPackDto[];
+}
+
+export type ComponentSummaryDto = InverterSummaryDto | BatterySummaryDto;
+
+export interface DeviceSummaryResponseDto {
+  components: ComponentSummaryDto[];
+}
+
+// Type guards
+export function isInverterSummary(component: ComponentSummaryDto): component is InverterSummaryDto {
+  return component.type === 'inverter';
+}
+
+export function isBatterySummary(component: ComponentSummaryDto): component is BatterySummaryDto {
+  return component.type === 'battery';
+}

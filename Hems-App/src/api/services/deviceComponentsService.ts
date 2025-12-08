@@ -7,6 +7,7 @@ import {
   GetDeviceComponentsByDeviceIdParams,
   GetDeviceComponentParams,
   GetDeviceComponentByIdParams,
+  DeviceSummaryResponseDto,
 } from '../types/deviceComponents.types';
 
 export const deviceComponentsService = {
@@ -54,5 +55,14 @@ export const deviceComponentsService = {
   deleteDeviceComponent: async (id: string): Promise<void> => {
     const url = ENDPOINTS.DEVICE_COMPONENTS.DELETE.replace(':id', id);
     await apiClient.delete<void>(url);
+  },
+
+  // Get device summary (components with live data)
+  getDeviceSummary: async (deviceId: string): Promise<DeviceSummaryResponseDto> => {
+    const response = await apiClient.get<DeviceSummaryResponseDto>(
+      ENDPOINTS.DEVICE_COMPONENTS.GET_DEVICE_SUMMARY,
+      { params: { deviceId } }
+    );
+    return response.data;
   },
 };

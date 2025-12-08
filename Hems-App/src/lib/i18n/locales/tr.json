@@ -871,7 +871,13 @@
   "online": "Çevrimiçi",
   "offline": "Çevrimdışı",
   "onGrid": "Şebekeye Bağlı",
-  "offGrid": "Şebekesiz"
+  "offGrid": "Şebekesiz",
+  "inverter": "İnvertör",
+  "battery": "Batarya",
+  "deviceNotFound": "Cihaz bulunamadı",
+  "fetchError": "Cihaz verileri yüklenemedi",
+  "noDeviceSelected": "Cihaz seçilmedi. Lütfen cihazı olan bir site seçin.",
+  "noComponents": "Bu cihaz için bileşen bulunamadı"
 },
 "deviceDetail": {
   "title": "NetZr Cihaz Detayı",
@@ -890,8 +896,8 @@
     "title": "Batarya",
     "subtitle": "Gerçek Zamanlı Bilgi",
     "restart": "Cihazı Tekrar Başlat",
-    "packCount": "{{count}} batarya paketi dahil",
-    "packCount_plural": "{{count}} batarya paketi dahil",
+    "packCount": "{{count}} batarya paketi",
+    "packCount_plural": "{{count}} batarya paketi",
     "noBatteries": "Batarya bulunamadı"
   },
   "connectedDevices": {
