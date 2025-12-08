@@ -1743,6 +1743,36 @@
         ]
       }
     },
+    "/api/DeviceSettings/ChangeExportStrategy": {
+      "post": {
+        "tags": [
+          "DeviceSettings"
+        ],
+        "operationId": "ChangeExportStrategy",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeExportStrategyCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/Invitations/create": {
       "post": {
         "tags": [
@@ -6002,6 +6032,33 @@
             "nullable": true
           }
         }
+      },
+      "ChangeExportStrategyCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "exportStrategy": {
+            "$ref": "#/components/schemas/ExportStrategy"
+          }
+        }
+      },
+      "ExportStrategy": {
+        "type": "integer",
+        "description": "",
+        "x-enumNames": [
+          "SellFirst",
+          "ZeroExportToLoad",
+          "ZeroExportToCt"
+        ],
+        "enum": [
+          0,
+          1,
+          2
+        ]
       },
       "CreateInvitationCommand": {
         "type": "object",
