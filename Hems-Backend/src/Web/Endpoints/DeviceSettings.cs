@@ -14,6 +14,13 @@ public class DeviceSettings : EndpointGroupBase
             .MapPost(ChangeExportStrategy, "ChangeExportStrategy");
     }
 
+    /// <summary>
+    /// This endpoint allows changing the export strategy of a device.
+    /// It is for demonstration purposes only and may be removed in future releases.
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="command"></param>
+    /// <returns></returns>
     [Authorize]
     public async Task<IResult> ChangeExportStrategy(
         ISender sender,
