@@ -122,20 +122,12 @@ export default function BatteryPackDetailScreen() {
     );
   }
 
-  // Get values from Details API
+  // Get values from Details API (only what's actually returned)
   const soc = getDetailValue('soc') || 0;
-  const soh = getDetailValue('soh');
-  const voltage = getDetailValue('voltage');
-  const current = getDetailValue('current');
-  const maxCellVoltage = getDetailValue('maxCellVoltage');
-  const minCellVoltage = getDetailValue('minCellVoltage');
-  const avgCellVoltage = getDetailValue('avgCellVoltage');
-  const maxCellTemp = getDetailValue('maxCellTemp');
-  const minCellTemp = getDetailValue('minCellTemp');
-  const avgTemp = getDetailValue('avgTemp');
+  const name = getDetailValue('name');
+  const manufacturer = getDetailValue('manufacturer');
   const model = getDetailValue('model');
   const serialNumber = getDetailValue('serialNumber');
-  const firmwareVersion = getDetailValue('firmwareVersion');
 
   const socColor = soc > 70 ? COLORS.success : soc > 30 ? COLORS.warning : COLORS.error;
 
@@ -237,279 +229,6 @@ export default function BatteryPackDetailScreen() {
           </Text>
         </View>
 
-        {/* Stats Section */}
-        <View
-          style={[
-            styles.section,
-            {
-              backgroundColor: COLORS.surface,
-              borderColor: COLORS.border,
-            },
-          ]}
-        >
-          <Text
-            style={[
-              styles.sectionTitle,
-              {
-                color: COLORS.text,
-              },
-            ]}
-          >
-            {t("batteryDetail.stats")}
-          </Text>
-
-          <View style={styles.row}>
-            <Text
-              style={[
-                styles.label,
-                {
-                  color: COLORS.textSoft,
-                },
-              ]}
-            >
-              {t("batteryDetail.soh")}
-            </Text>
-            <Text
-              style={[
-                styles.value,
-                {
-                  color: COLORS.text,
-                },
-              ]}
-            >
-              {soh != null ? `${soh}%` : "-"}
-            </Text>
-          </View>
-
-          <View style={styles.row}>
-            <Text
-              style={[
-                styles.label,
-                {
-                  color: COLORS.textSoft,
-                },
-              ]}
-            >
-              {t("batteryDetail.voltage")}
-            </Text>
-            <Text
-              style={[
-                styles.value,
-                {
-                  color: COLORS.text,
-                },
-              ]}
-            >
-              {voltage != null ? `${voltage.toFixed(2)} V` : "-"}
-            </Text>
-          </View>
-
-          <View style={styles.row}>
-            <Text
-              style={[
-                styles.label,
-                {
-                  color: COLORS.textSoft,
-                },
-              ]}
-            >
-              {t("batteryDetail.current")}
-            </Text>
-            <Text
-              style={[
-                styles.value,
-                {
-                  color: COLORS.text,
-                },
-              ]}
-            >
-              {current != null ? `${current.toFixed(2)} A` : "-"}
-            </Text>
-          </View>
-        </View>
-
-        {/* Cell Voltage Section */}
-        <View
-          style={[
-            styles.section,
-            {
-              backgroundColor: COLORS.surface,
-              borderColor: COLORS.border,
-            },
-          ]}
-        >
-          <Text
-            style={[
-              styles.sectionTitle,
-              {
-                color: COLORS.text,
-              },
-            ]}
-          >
-            {t("batteryDetail.cellVoltage")}
-          </Text>
-
-          <View style={styles.row}>
-            <Text
-              style={[
-                styles.label,
-                {
-                  color: COLORS.textSoft,
-                },
-              ]}
-            >
-              {t("batteryDetail.maxCellVoltage")}
-            </Text>
-            <Text
-              style={[
-                styles.value,
-                {
-                  color: COLORS.text,
-                },
-              ]}
-            >
-              {maxCellVoltage != null ? `${maxCellVoltage.toFixed(3)} V` : "-"}
-            </Text>
-          </View>
-
-          <View style={styles.row}>
-            <Text
-              style={[
-                styles.label,
-                {
-                  color: COLORS.textSoft,
-                },
-              ]}
-            >
-              {t("batteryDetail.minCellVoltage")}
-            </Text>
-            <Text
-              style={[
-                styles.value,
-                {
-                  color: COLORS.text,
-                },
-              ]}
-            >
-              {minCellVoltage != null ? `${minCellVoltage.toFixed(3)} V` : "-"}
-            </Text>
-          </View>
-
-          <View style={styles.row}>
-            <Text
-              style={[
-                styles.label,
-                {
-                  color: COLORS.textSoft,
-                },
-              ]}
-            >
-              {t("batteryDetail.avgCellVoltage")}
-            </Text>
-            <Text
-              style={[
-                styles.value,
-                {
-                  color: COLORS.text,
-                },
-              ]}
-            >
-              {avgCellVoltage != null ? `${avgCellVoltage.toFixed(3)} V` : "-"}
-            </Text>
-          </View>
-        </View>
-
-        {/* Temperature Section */}
-        <View
-          style={[
-            styles.section,
-            {
-              backgroundColor: COLORS.surface,
-              borderColor: COLORS.border,
-            },
-          ]}
-        >
-          <Text
-            style={[
-              styles.sectionTitle,
-              {
-                color: COLORS.text,
-              },
-            ]}
-          >
-            {t("batteryDetail.temperature")}
-          </Text>
-
-          <View style={styles.row}>
-            <Text
-              style={[
-                styles.label,
-                {
-                  color: COLORS.textSoft,
-                },
-              ]}
-            >
-              {t("batteryDetail.maxCellTemp")}
-            </Text>
-            <Text
-              style={[
-                styles.value,
-                {
-                  color: COLORS.text,
-                },
-              ]}
-            >
-              {maxCellTemp != null ? `${maxCellTemp.toFixed(1)} °C` : "-"}
-            </Text>
-          </View>
-
-          <View style={styles.row}>
-            <Text
-              style={[
-                styles.label,
-                {
-                  color: COLORS.textSoft,
-                },
-              ]}
-            >
-              {t("batteryDetail.minCellTemp")}
-            </Text>
-            <Text
-              style={[
-                styles.value,
-                {
-                  color: COLORS.text,
-                },
-              ]}
-            >
-              {minCellTemp != null ? `${minCellTemp.toFixed(1)} °C` : "-"}
-            </Text>
-          </View>
-
-          <View style={styles.row}>
-            <Text
-              style={[
-                styles.label,
-                {
-                  color: COLORS.textSoft,
-                },
-              ]}
-            >
-              {t("batteryDetail.avgTemp")}
-            </Text>
-            <Text
-              style={[
-                styles.value,
-                {
-                  color: COLORS.text,
-                },
-              ]}
-            >
-              {avgTemp != null ? `${avgTemp.toFixed(1)} °C` : "-"}
-            </Text>
-          </View>
-        </View>
-
         {/* Device Info Section */}
         <View
           style={[
@@ -531,97 +250,105 @@ export default function BatteryPackDetailScreen() {
             {t("batteryDetail.deviceInfo")}
           </Text>
 
-          <View style={styles.row}>
-            <Text
-              style={[
-                styles.label,
-                {
-                  color: COLORS.textSoft,
-                },
-              ]}
-            >
-              {t("batteryDetail.model")}
-            </Text>
-            <Text
-              style={[
-                styles.value,
-                {
-                  color: COLORS.text,
-                },
-              ]}
-            >
-              {model || "-"}
-            </Text>
-          </View>
+          {name && (
+            <View style={styles.row}>
+              <Text
+                style={[
+                  styles.label,
+                  {
+                    color: COLORS.textSoft,
+                  },
+                ]}
+              >
+                {t("batteryDetail.name")}
+              </Text>
+              <Text
+                style={[
+                  styles.value,
+                  {
+                    color: COLORS.text,
+                  },
+                ]}
+              >
+                {name}
+              </Text>
+            </View>
+          )}
 
-          <View style={styles.row}>
-            <Text
-              style={[
-                styles.label,
-                {
-                  color: COLORS.textSoft,
-                },
-              ]}
-            >
-              {t("batteryDetail.serialNumber")}
-            </Text>
-            <Text
-              style={[
-                styles.value,
-                {
-                  color: COLORS.text,
-                },
-              ]}
-            >
-              {serialNumber || "-"}
-            </Text>
-          </View>
+          {manufacturer && (
+            <View style={styles.row}>
+              <Text
+                style={[
+                  styles.label,
+                  {
+                    color: COLORS.textSoft,
+                  },
+                ]}
+              >
+                {t("batteryDetail.manufacturer")}
+              </Text>
+              <Text
+                style={[
+                  styles.value,
+                  {
+                    color: COLORS.text,
+                  },
+                ]}
+              >
+                {manufacturer}
+              </Text>
+            </View>
+          )}
 
-          <View style={styles.row}>
-            <Text
-              style={[
-                styles.label,
-                {
-                  color: COLORS.textSoft,
-                },
-              ]}
-            >
-              {t("batteryDetail.firmwareVersion")}
-            </Text>
-            <Text
-              style={[
-                styles.value,
-                {
-                  color: COLORS.text,
-                },
-              ]}
-            >
-              {firmwareVersion || "-"}
-            </Text>
-          </View>
+          {model && (
+            <View style={styles.row}>
+              <Text
+                style={[
+                  styles.label,
+                  {
+                    color: COLORS.textSoft,
+                  },
+                ]}
+              >
+                {t("batteryDetail.model")}
+              </Text>
+              <Text
+                style={[
+                  styles.value,
+                  {
+                    color: COLORS.text,
+                  },
+                ]}
+              >
+                {model}
+              </Text>
+            </View>
+          )}
 
-          <View style={styles.row}>
-            <Text
-              style={[
-                styles.label,
-                {
-                  color: COLORS.textSoft,
-                },
-              ]}
-            >
-              {t("batteryDetail.manufacturer")}
-            </Text>
-            <Text
-              style={[
-                styles.value,
-                {
-                  color: COLORS.text,
-                },
-              ]}
-            >
-              {getDetailValue('manufacturer') || "-"}
-            </Text>
-          </View>
+          {serialNumber && (
+            <View style={styles.row}>
+              <Text
+                style={[
+                  styles.label,
+                  {
+                    color: COLORS.textSoft,
+                  },
+                ]}
+              >
+                {t("batteryDetail.serialNumber")}
+              </Text>
+              <Text
+                style={[
+                  styles.value,
+                  {
+                    color: COLORS.text,
+                  },
+                ]}
+              >
+                {serialNumber}
+              </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
     </View>

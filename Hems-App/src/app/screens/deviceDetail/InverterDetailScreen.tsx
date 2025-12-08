@@ -12,10 +12,11 @@ import {
   View
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useDeviceLiveData } from "../../../hooks/useDeviceLiveData";
+import { deviceComponentsService } from "../../../api/services/deviceComponentsService";
 import { useI18n } from "../../../hooks/useI18n";
 import { useThemeStore } from "../../../store/themeStore";
 import { getThemeColors, SPACING, TYPOGRAPHY } from "../../../theme/constants";
+import type { DeviceDetailsResponseDto } from "../../../api/types/deviceComponents.types";
 
 const formatDateTime = (isoString: string | null | undefined, locale: string = 'tr-TR'): string => {
   if (!isoString || isoString === "-") return "-";
@@ -50,23 +51,58 @@ export default function InverterDetailScreen() {
   const { componentId, deviceId } = route.params || {};
 
   const [refreshing, setRefreshing] = useState(false);
-  const { data: inverterData, isFetching, fetchLiveData } = useDeviceLiveData(deviceId);
+  const [loading, setLoading] = useState(true);
+  const [detailsData, setDetailsData] = useState<DeviceDetailsResponseDto | null>(null);
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+
+  // Helper function to get value from details
+  const getDetailValue = (key: string): any => {
+    const item = detailsData?.details.find(d => d.key === key);
+    return item?.value;
+  };
+
+  // Fetch component details from Details API
+  const fetchComponentDetails = async () => {
+    if (!componentId) return;
+
+    try {
+      const details = await deviceComponentsService.getComponentDetails(componentId);
+      setDetailsData(details);
+    } catch (error) {
+      console.error('Error fetching component details:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (componentId && deviceId) {
-      fetchLiveData({ id: componentId, name: t('deviceNames.inverter') });
-    }
-  }, [componentId, deviceId]);
+    fetchComponentDetails();
+  }, [componentId]);
+
+  // Polling: Fetch details every 5 seconds
+  useEffect(() => {
+    if (!componentId) return;
+
+    const interval = setInterval(() => {
+      fetchComponentDetails();
+    }, 5000);
+
+    setPollingInterval(interval);
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [componentId]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    if (componentId && deviceId) {
-      await fetchLiveData({ id: componentId, name: t('deviceNames.inverter') });
-    }
+    await fetchComponentDetails();
     setRefreshing(false);
   };
 
-  if (isFetching && !inverterData) {
+  if (loading && !detailsData) {
     return (
       <View
         style={[
@@ -86,8 +122,26 @@ export default function InverterDetailScreen() {
     );
   }
 
-  const activePower = inverterData?.["Active Power"] || 0;
-  const powerColor = activePower > 0 ? COLORS.success : COLORS.textSoft;
+  // Get values from Details API (only what's actually returned)
+  const runState = getDetailValue('runState');
+  const outputActivePower = getDetailValue('outputActivePower') || 0;
+  const outputVoltage = getDetailValue('outputVoltage');
+  const outputCurrent = getDetailValue('outputCurrent');
+  const outputFrequency = getDetailValue('outputFrequency');
+  const gridSideActivePower = getDetailValue('gridSideActivePower');
+  const gridSidePhaseAPower = getDetailValue('gridSidePhaseAPower');
+  const gridSidePhaseBPower = getDetailValue('gridSidePhaseBPower');
+  const inverterHeatsinkTemp = getDetailValue('inverterHeatsinkTemp');
+  const internalAmbientTemp = getDetailValue('internalAmbientTemp');
+  const gridSignalPresent = getDetailValue('gridSignalPresent');
+  const generatorSignalPresent = getDetailValue('generatorSignalPresent');
+  const name = getDetailValue('name');
+  const manufacturer = getDetailValue('manufacturer');
+  const model = getDetailValue('model');
+  const serialNumber = getDetailValue('serialNumber');
+  const ratedPower = getDetailValue('ratedPower');
+
+  const powerColor = outputActivePower > 0 ? COLORS.success : COLORS.textSoft;
 
   return (
     <View
@@ -172,7 +226,7 @@ export default function InverterDetailScreen() {
               },
             ]}
           >
-            {activePower?.toFixed(2) || 0} W
+            {outputActivePower?.toFixed(1) || 0} W
           </Text>
           <Text
             style={[
@@ -186,7 +240,47 @@ export default function InverterDetailScreen() {
           </Text>
         </View>
 
-        {/* Power Metrics Section */}
+        {/* Run State Badge */}
+        {runState && (
+          <View
+            style={[
+              styles.section,
+              {
+                backgroundColor: COLORS.surface,
+                borderColor: COLORS.border,
+                alignItems: 'center',
+              },
+            ]}
+          >
+            <View
+              style={{
+                paddingHorizontal: 16,
+                paddingVertical: 8,
+                borderRadius: 20,
+                backgroundColor:
+                  runState === 'normal' ? `${COLORS.success}20` :
+                  runState === 'alarm' ? `${COLORS.warning}20` :
+                  `${COLORS.error}20`,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: '600',
+                  color:
+                    runState === 'normal' ? COLORS.success :
+                    runState === 'alarm' ? COLORS.warning :
+                    COLORS.error,
+                  textTransform: 'capitalize',
+                }}
+              >
+                {runState}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Output Section */}
         <View
           style={[
             styles.section,
@@ -204,7 +298,7 @@ export default function InverterDetailScreen() {
               },
             ]}
           >
-            {t("inverterDetail.powerMetrics")}
+            {t("inverterDetail.output")}
           </Text>
 
           <View style={styles.row}>
@@ -216,7 +310,7 @@ export default function InverterDetailScreen() {
                 },
               ]}
             >
-              {t("inverterDetail.reactivePower")}
+              {t("inverterDetail.outputVoltage")}
             </Text>
             <Text
               style={[
@@ -226,7 +320,7 @@ export default function InverterDetailScreen() {
                 },
               ]}
             >
-              {inverterData?.["Reactive Power"]?.toFixed(2) || 0} VAR
+              {outputVoltage != null ? `${outputVoltage.toFixed(1)} V` : "-"}
             </Text>
           </View>
 
@@ -239,7 +333,7 @@ export default function InverterDetailScreen() {
                 },
               ]}
             >
-              {t("inverterDetail.powerFactor")}
+              {t("inverterDetail.outputCurrent")}
             </Text>
             <Text
               style={[
@@ -249,7 +343,7 @@ export default function InverterDetailScreen() {
                 },
               ]}
             >
-              {inverterData?.["Power Factor"]?.toFixed(2) || 0}
+              {outputCurrent != null ? `${outputCurrent.toFixed(1)} A` : "-"}
             </Text>
           </View>
 
@@ -262,7 +356,7 @@ export default function InverterDetailScreen() {
                 },
               ]}
             >
-              {t("inverterDetail.insulationResistance")}
+              {t("inverterDetail.outputFrequency")}
             </Text>
             <Text
               style={[
@@ -272,13 +366,236 @@ export default function InverterDetailScreen() {
                 },
               ]}
             >
-              {inverterData?.["Insulation Resistance"] || 0} MΩ
+              {outputFrequency != null ? `${outputFrequency.toFixed(1)} Hz` : "-"}
             </Text>
           </View>
         </View>
 
-        {/* Phase Data Section */}
-        {inverterData?.Phases && inverterData.Phases.length > 0 && (
+        {/* Grid Section */}
+        {(gridSideActivePower != null || gridSidePhaseAPower != null || gridSidePhaseBPower != null) && (
+          <View
+            style={[
+              styles.section,
+              {
+                backgroundColor: COLORS.surface,
+                borderColor: COLORS.border,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.sectionTitle,
+                {
+                  color: COLORS.text,
+                },
+              ]}
+            >
+              {t("inverterDetail.grid")}
+            </Text>
+
+            {gridSideActivePower != null && (
+              <View style={styles.row}>
+                <Text
+                  style={[
+                    styles.label,
+                    {
+                      color: COLORS.textSoft,
+                    },
+                  ]}
+                >
+                  {t("inverterDetail.gridPower")}
+                </Text>
+                <Text
+                  style={[
+                    styles.value,
+                    {
+                      color: gridSideActivePower < 0 ? COLORS.success : gridSideActivePower > 0 ? COLORS.warning : COLORS.textSoft,
+                    },
+                  ]}
+                >
+                  {gridSideActivePower === 0 ? '0 W' : `${Math.abs(gridSideActivePower).toFixed(1)} W ${gridSideActivePower < 0 ? '(Export)' : '(Import)'}`}
+                </Text>
+              </View>
+            )}
+
+            {gridSidePhaseAPower != null && (
+              <View style={styles.row}>
+                <Text
+                  style={[
+                    styles.label,
+                    {
+                      color: COLORS.textSoft,
+                    },
+                  ]}
+                >
+                  {t("inverterDetail.phaseAPower")}
+                </Text>
+                <Text
+                  style={[
+                    styles.value,
+                    {
+                      color: COLORS.text,
+                    },
+                  ]}
+                >
+                  {gridSidePhaseAPower.toFixed(1)} W
+                </Text>
+              </View>
+            )}
+
+            {gridSidePhaseBPower != null && (
+              <View style={styles.row}>
+                <Text
+                  style={[
+                    styles.label,
+                    {
+                      color: COLORS.textSoft,
+                    },
+                  ]}
+                >
+                  {t("inverterDetail.phaseBPower")}
+                </Text>
+                <Text
+                  style={[
+                    styles.value,
+                    {
+                      color: COLORS.text,
+                    },
+                  ]}
+                >
+                  {gridSidePhaseBPower.toFixed(1)} W
+                </Text>
+              </View>
+            )}
+
+            {gridSignalPresent != null && (
+              <View style={styles.row}>
+                <Text
+                  style={[
+                    styles.label,
+                    {
+                      color: COLORS.textSoft,
+                    },
+                  ]}
+                >
+                  {t("inverterDetail.gridStatus")}
+                </Text>
+                <Text
+                  style={[
+                    styles.value,
+                    {
+                      color: gridSignalPresent ? COLORS.success : COLORS.error,
+                    },
+                  ]}
+                >
+                  {gridSignalPresent ? t("inverterDetail.connected") : t("inverterDetail.disconnected")}
+                </Text>
+              </View>
+            )}
+
+            {generatorSignalPresent != null && (
+              <View style={styles.row}>
+                <Text
+                  style={[
+                    styles.label,
+                    {
+                      color: COLORS.textSoft,
+                    },
+                  ]}
+                >
+                  {t("inverterDetail.generator")}
+                </Text>
+                <Text
+                  style={[
+                    styles.value,
+                    {
+                      color: generatorSignalPresent ? COLORS.success : COLORS.textSoft,
+                    },
+                  ]}
+                >
+                  {generatorSignalPresent ? t("inverterDetail.active") : t("inverterDetail.inactive")}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Temperature Section */}
+        {(inverterHeatsinkTemp != null || internalAmbientTemp != null) && (
+          <View
+            style={[
+              styles.section,
+              {
+                backgroundColor: COLORS.surface,
+                borderColor: COLORS.border,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.sectionTitle,
+                {
+                  color: COLORS.text,
+                },
+              ]}
+            >
+              {t("inverterDetail.temperature")}
+            </Text>
+
+            {inverterHeatsinkTemp != null && (
+              <View style={styles.row}>
+                <Text
+                  style={[
+                    styles.label,
+                    {
+                      color: COLORS.textSoft,
+                    },
+                  ]}
+                >
+                  {t("inverterDetail.heatsinkTemp")}
+                </Text>
+                <Text
+                  style={[
+                    styles.value,
+                    {
+                      color: COLORS.text,
+                    },
+                  ]}
+                >
+                  {inverterHeatsinkTemp.toFixed(1)} °C
+                </Text>
+              </View>
+            )}
+
+            {internalAmbientTemp != null && (
+              <View style={styles.row}>
+                <Text
+                  style={[
+                    styles.label,
+                    {
+                      color: COLORS.textSoft,
+                    },
+                  ]}
+                >
+                  {t("inverterDetail.ambientTemp")}
+                </Text>
+                <Text
+                  style={[
+                    styles.value,
+                    {
+                      color: COLORS.text,
+                    },
+                  ]}
+                >
+                  {internalAmbientTemp.toFixed(1)} °C
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Phases removed - not in new API */}
+        {false && (
           <View
             style={[
               styles.section,
@@ -406,6 +723,81 @@ export default function InverterDetailScreen() {
             {t("inverterDetail.deviceInfo")}
           </Text>
 
+          {name && (
+            <View style={styles.row}>
+              <Text
+                style={[
+                  styles.label,
+                  {
+                    color: COLORS.textSoft,
+                  },
+                ]}
+              >
+                {t("inverterDetail.name")}
+              </Text>
+              <Text
+                style={[
+                  styles.value,
+                  {
+                    color: COLORS.text,
+                  },
+                ]}
+              >
+                {name}
+              </Text>
+            </View>
+          )}
+
+          {manufacturer && (
+            <View style={styles.row}>
+              <Text
+                style={[
+                  styles.label,
+                  {
+                    color: COLORS.textSoft,
+                  },
+                ]}
+              >
+                {t("inverterDetail.manufacturer")}
+              </Text>
+              <Text
+                style={[
+                  styles.value,
+                  {
+                    color: COLORS.text,
+                  },
+                ]}
+              >
+                {manufacturer}
+              </Text>
+            </View>
+          )}
+
+          {model && (
+            <View style={styles.row}>
+              <Text
+                style={[
+                  styles.label,
+                  {
+                    color: COLORS.textSoft,
+                  },
+                ]}
+              >
+                {t("inverterDetail.model")}
+              </Text>
+              <Text
+                style={[
+                  styles.value,
+                  {
+                    color: COLORS.text,
+                  },
+                ]}
+              >
+                {model}
+              </Text>
+            </View>
+          )}
+
           <View style={styles.row}>
             <Text
               style={[
@@ -425,82 +817,34 @@ export default function InverterDetailScreen() {
                 },
               ]}
             >
-              {inverterData?.["Device Serial Number"] || "-"}
+              {serialNumber || "-"}
             </Text>
           </View>
 
-          <View style={styles.row}>
-            <Text
-              style={[
-                styles.label,
-                {
-                  color: COLORS.textSoft,
-                },
-              ]}
-            >
-              {t("inverterDetail.firmwareVersion")}
-            </Text>
-            <Text
-              style={[
-                styles.value,
-                {
-                  color: COLORS.text,
-                },
-              ]}
-            >
-              {inverterData?.["Firmware Version"] || "-"}
-            </Text>
-          </View>
-
-          <View style={styles.row}>
-            <Text
-              style={[
-                styles.label,
-                {
-                  color: COLORS.textSoft,
-                },
-              ]}
-            >
-              {t("inverterDetail.startupTime")}
-            </Text>
-            <Text
-              style={[
-                styles.value,
-                {
-                  color: COLORS.text,
-                },
-              ]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-            >
-              {formatDateTime(inverterData?.["Last Inverter Startup Time"], locale)}
-            </Text>
-          </View>
-
-          <View style={styles.row}>
-            <Text
-              style={[
-                styles.label,
-                {
-                  color: COLORS.textSoft,
-                },
-              ]}
-            >
-              {t("inverterDetail.shutdownTime")}
-            </Text>
-            <Text
-              style={[
-                styles.value,
-                {
-                  color: COLORS.text,
-                },
-              ]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-            >
-              {formatDateTime(inverterData?.["Last Inverter Shutdown Time"], locale)}
-            </Text>
-          </View>
+          {ratedPower != null && (
+            <View style={styles.row}>
+              <Text
+                style={[
+                  styles.label,
+                  {
+                    color: COLORS.textSoft,
+                  },
+                ]}
+              >
+                {t("inverterDetail.ratedPower")}
+              </Text>
+              <Text
+                style={[
+                  styles.value,
+                  {
+                    color: COLORS.text,
+                  },
+                ]}
+              >
+                {ratedPower} W
+              </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
     </View>

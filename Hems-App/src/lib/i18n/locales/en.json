@@ -479,7 +479,7 @@
       "noData": "No power data available.",
       "errorLoading": "Error loading power data. Please try again.",
       "connectionError": "Unable to connect to real-time data stream. Please check your connection.",
-      "connecting": "Connecting to real-time data...",
+      "connecting": "Connecting to device...",
       "lastUpdate": "Last updated",
       "labels": {
         "solar": "Solar",
@@ -913,6 +913,10 @@
       "basicInfo": "Basic Information",
       "serialNumber": "Serial Number",
       "connectedDevice": "Connected Device"
+    },
+    "addDevice": {
+      "title": "Add Device",
+      "description": "Connect a new device to your system"
     },
     "gateway": {
       "title": "Energy Gateway",
@@ -1461,6 +1465,8 @@
     "minCellTemp": "Min Cell Temperature",
     "avgTemp": "Average Temperature",
     "deviceInfo": "Device Information",
+    "name": "Name",
+    "manufacturer": "Manufacturer",
     "model": "Model",
     "serialNumber": "Serial Number",
     "firmwareVersion": "Firmware Version",
@@ -1469,6 +1475,23 @@
   "inverterDetail": {
     "title": "Inverter Details",
     "activePower": "Active Power",
+    "output": "Output",
+    "outputVoltage": "Output Voltage",
+    "outputCurrent": "Output Current",
+    "outputFrequency": "Output Frequency",
+    "grid": "Grid",
+    "gridPower": "Grid Power",
+    "phaseAPower": "Phase A Power",
+    "phaseBPower": "Phase B Power",
+    "gridStatus": "Grid Status",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "generator": "Generator",
+    "active": "Active",
+    "inactive": "Inactive",
+    "temperature": "Temperature",
+    "heatsinkTemp": "Heatsink Temperature",
+    "ambientTemp": "Ambient Temperature",
     "powerMetrics": "Power Metrics",
     "reactivePower": "Reactive Power",
     "powerFactor": "Power Factor",
@@ -1479,7 +1502,11 @@
     "current": "Current",
     "power": "Power",
     "deviceInfo": "Device Information",
+    "name": "Name",
+    "manufacturer": "Manufacturer",
+    "model": "Model",
     "serialNumber": "Serial Number",
+    "ratedPower": "Rated Power",
     "firmwareVersion": "Firmware Version",
     "startupTime": "Last Startup Time",
     "shutdownTime": "Last Shutdown Time"
@@ -1543,5 +1570,27 @@
     "title": "Error",
     "code": "Code",
     "close": "Close"
+  },
+  "realtime": {
+    "runState": "Run State",
+    "outputActivePower": "Output Active Power",
+    "outputVoltage": "Output Voltage",
+    "outputCurrent": "Output Current",
+    "outputFrequency": "Output Frequency",
+    "gridSideActivePower": "Grid Side Active Power",
+    "gridSidePhaseAPower": "Grid Phase A Power",
+    "gridSidePhaseBPower": "Grid Phase B Power",
+    "inverterHeatsinkTemp": "Inverter Heatsink Temperature",
+    "internalAmbientTemp": "Internal Ambient Temperature",
+    "gridSignalPresent": "Grid Signal Present",
+    "generatorSignalPresent": "Generator Signal Present",
+    "soc": "State of Charge"
+  },
+  "parameter": {
+    "name": "Name",
+    "manufacturer": "Manufacturer",
+    "model": "Model",
+    "serialNumber": "Serial Number",
+    "ratedPower": "Rated Power"
   }
 }

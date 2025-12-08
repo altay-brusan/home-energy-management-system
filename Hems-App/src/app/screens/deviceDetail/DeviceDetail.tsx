@@ -444,23 +444,47 @@ export default function DeviceDetail() {
               onPress={() => navigateToDetailScreen("pvpanel")}
             />
 
-            {/* Energy Gateway Card */}
-            <ConnectedDeviceCard
-              title={t("deviceDetail.gateway.title")}
-              description={t("deviceDetail.gateway.description")}
-              icon={<Wifi size={28} color="#3B82F6" />}
-              iconBackgroundColor="#DBEAFE"
-              onPress={() => navigateToDetailScreen("gateway")}
-            />
+            {/* Add Device Button */}
+            <Pressable
+              onPress={() => navigation.navigate("DeviceAdd")}
+              style={({ pressed }) => [
+                {
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingVertical: SPACING.md,
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
+            >
+              {/* Circular Plus Icon */}
+              <View
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: 32,
+                  backgroundColor: `${COLORS.accent}15`,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 2,
+                  borderColor: COLORS.accent,
+                  borderStyle: 'dashed',
+                  marginBottom: 8,
+                }}
+              >
+                <Text style={{ fontSize: 36, color: COLORS.accent, fontWeight: '300' }}>+</Text>
+              </View>
 
-            {/* Smart Meter Card */}
-            <ConnectedDeviceCard
-              title={t("deviceDetail.smartMeter.title")}
-              description={t("deviceDetail.smartMeter.description")}
-              icon={<Zap size={28} color="#10B981" />}
-              iconBackgroundColor="#D1FAE5"
-              onPress={() => navigateToDetailScreen("smartmeter")}
-            />
+              {/* Text */}
+              <Text
+                style={{
+                  fontSize: 15,
+                  fontWeight: '600',
+                  color: COLORS.text,
+                }}
+              >
+                {t("deviceDetail.addDevice.title")}
+              </Text>
+            </Pressable>
           </View>
         </View>
       </ScrollView>

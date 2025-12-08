@@ -495,7 +495,7 @@
     "noData": "Güç verisi bulunamadı.",
     "errorLoading": "Güç verileri yüklenirken hata oluştu. Lütfen tekrar deneyin.",
     "connectionError": "Gerçek zamanlı veri akışına bağlanılamadı. Lütfen bağlantınızı kontrol edin.",
-    "connecting": "Gerçek zamanlı veriye bağlanılıyor...",
+    "connecting": "Cihaza bağlanılıyor...",
     "lastUpdate": "Son güncelleme",
     "labels": {
       "solar": "Güneş",
@@ -916,6 +916,10 @@
     "basicInfo": "Temel Bilgiler",
     "serialNumber": "Seri Numarası",
     "connectedDevice": "Bağlı Cihaz"
+  },
+  "addDevice": {
+    "title": "Cihaz Ekle",
+    "description": "Sisteminize yeni bir cihaz bağlayın"
   },
 "gateway": {
   "title": "Enerji Geçidi",
@@ -1464,6 +1468,8 @@
   "minCellTemp": "Minimum Hücre Sıcaklığı",
   "avgTemp": "Ortalama Sıcaklık",
   "deviceInfo": "Cihaz Bilgileri",
+  "name": "İsim",
+  "manufacturer": "Üretici",
   "model": "Model",
   "serialNumber": "Seri Numarası",
   "firmwareVersion": "Firmware Sürümü",
@@ -1472,6 +1478,23 @@
 "inverterDetail": {
   "title": "İnvertör Detayları",
   "activePower": "Aktif Güç",
+  "output": "Çıkış",
+  "outputVoltage": "Çıkış Voltajı",
+  "outputCurrent": "Çıkış Akımı",
+  "outputFrequency": "Çıkış Frekansı",
+  "grid": "Şebeke",
+  "gridPower": "Şebeke Gücü",
+  "phaseAPower": "Faz A Gücü",
+  "phaseBPower": "Faz B Gücü",
+  "gridStatus": "Şebeke Durumu",
+  "connected": "Bağlı",
+  "disconnected": "Bağlı Değil",
+  "generator": "Jeneratör",
+  "active": "Aktif",
+  "inactive": "Pasif",
+  "temperature": "Sıcaklık",
+  "heatsinkTemp": "Soğutucu Sıcaklığı",
+  "ambientTemp": "Ortam Sıcaklığı",
   "powerMetrics": "Güç Metrikleri",
   "reactivePower": "Reaktif Güç",
   "powerFactor": "Güç Faktörü",
@@ -1482,7 +1505,11 @@
   "current": "Akım",
   "power": "Güç",
   "deviceInfo": "Cihaz Bilgileri",
+  "name": "İsim",
+  "manufacturer": "Üretici",
+  "model": "Model",
   "serialNumber": "Seri Numarası",
+  "ratedPower": "Nominal Güç",
   "firmwareVersion": "Firmware Sürümü",
   "startupTime": "Son Açılış Zamanı",
   "shutdownTime": "Son Kapanış Zamanı"
@@ -1546,5 +1573,27 @@
   "title": "Hata",
   "code": "Kod",
   "close": "Kapat"
+},
+"realtime": {
+  "runState": "Çalışma Durumu",
+  "outputActivePower": "Çıkış Aktif Gücü",
+  "outputVoltage": "Çıkış Voltajı",
+  "outputCurrent": "Çıkış Akımı",
+  "outputFrequency": "Çıkış Frekansı",
+  "gridSideActivePower": "Şebeke Tarafı Aktif Gücü",
+  "gridSidePhaseAPower": "Şebeke Faz A Gücü",
+  "gridSidePhaseBPower": "Şebeke Faz B Gücü",
+  "inverterHeatsinkTemp": "İnverter Soğutucu Sıcaklığı",
+  "internalAmbientTemp": "İç Ortam Sıcaklığı",
+  "gridSignalPresent": "Şebeke Sinyali",
+  "generatorSignalPresent": "Jeneratör Sinyali",
+  "soc": "Şarj Durumu"
+},
+"parameter": {
+  "name": "İsim",
+  "manufacturer": "Üretici",
+  "model": "Model",
+  "serialNumber": "Seri Numarası",
+  "ratedPower": "Nominal Güç"
 }
 }
