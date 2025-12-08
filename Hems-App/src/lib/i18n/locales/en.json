@@ -1592,5 +1592,24 @@
     "model": "Model",
     "serialNumber": "Serial Number",
     "ratedPower": "Rated Power"
+  },
+  "exportStrategy": {
+    "title": "Export Strategy",
+    "confirmTitle": "Confirm Mode Change",
+    "confirmMessage": "Are you sure you want to change the export strategy to {{mode}}?",
+    "sellFirst": {
+      "title": "Sell First",
+      "description": "Prioritizes selling excess energy to the grid. Solar energy first powers the load, then charges the battery, and remaining energy is exported to the grid."
+    },
+    "zeroExportToLoad": {
+      "title": "Zero Export to Load",
+      "description": "Zero export mode focused on load consumption. Solar energy prioritizes local consumption and excess charges the battery. Minimizes grid export."
+    },
+    "zeroExportToCt": {
+      "title": "Zero Export with CT",
+      "description": "Zero export mode with CT sensor monitoring. Actively prevents any export to grid by dynamically adjusting inverter output based on load."
+    },
+    "changeSuccess": "Export strategy changed successfully",
+    "changeFailed": "Failed to change export strategy"
   }
 }

@@ -1595,5 +1595,24 @@
   "model": "Model",
   "serialNumber": "Seri Numarası",
   "ratedPower": "Nominal Güç"
+},
+"exportStrategy": {
+  "title": "Enerji Satış Stratejisi",
+  "confirmTitle": "Mod Değişikliğini Onayla",
+  "confirmMessage": "Enerji satış stratejisini {{mode}} olarak değiştirmek istediğinizden emin misiniz?",
+  "sellFirst": {
+    "title": "Önce Sat",
+    "description": "Fazla enerjiyi şebekeye satmayı önceliklendirir. Güneş enerjisi önce yükü besler, sonra bataryayı şarj eder ve kalan enerji şebekeye aktarılır."
+  },
+  "zeroExportToLoad": {
+    "title": "Yüke Sıfır İhracat",
+    "description": "Yük tüketimine odaklı sıfır ihracat modu. Güneş enerjisi yerel tüketimi önceliklendirir ve fazlası bataryayı şarj eder. Şebeke ihracatını minimize eder."
+  },
+  "zeroExportToCt": {
+    "title": "CT ile Sıfır İhracat",
+    "description": "CT sensör izlemeli sıfır ihracat modu. Yüke göre inverter çıkışını dinamik olarak ayarlayarak şebekeye ihracatı aktif olarak engeller."
+  },
+  "changeSuccess": "Enerji satış stratejisi başarıyla değiştirildi",
+  "changeFailed": "Enerji satış stratejisi değiştirilemedi"
 }
 }

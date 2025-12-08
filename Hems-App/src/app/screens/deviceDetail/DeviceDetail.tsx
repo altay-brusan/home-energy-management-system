@@ -346,20 +346,6 @@ export default function DeviceDetail() {
                   fill={COLORS.textSoft}
                 />
               </Svg>
-              {/* Red Badge */}
-              <View
-                style={{
-                  position: 'absolute',
-                  top: -2,
-                  right: -2,
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: '#FF3B30',
-                  borderWidth: 1.5,
-                  borderColor: COLORS.dark,
-                }}
-              />
             </View>
           </TouchableOpacity>
         </View>
@@ -465,9 +451,6 @@ export default function DeviceDetail() {
                   backgroundColor: `${COLORS.accent}15`,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  borderWidth: 2,
-                  borderColor: COLORS.accent,
-                  borderStyle: 'dashed',
                   marginBottom: 8,
                 }}
               >

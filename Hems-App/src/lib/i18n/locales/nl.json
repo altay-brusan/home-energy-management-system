@@ -1509,5 +1509,24 @@
     "title": "Fout",
     "code": "Code",
     "close": "Sluiten"
+  },
+  "exportStrategy": {
+    "title": "Exportstrategie",
+    "confirmTitle": "Moduswijziging Bevestigen",
+    "confirmMessage": "Weet u zeker dat u de exportstrategie wilt wijzigen naar {{mode}}?",
+    "sellFirst": {
+      "title": "Eerst Verkopen",
+      "description": "Geeft prioriteit aan het verkopen van overtollige energie aan het net. Zonne-energie voedt eerst de belasting, laadt dan de batterij op en de resterende energie wordt geëxporteerd naar het net."
+    },
+    "zeroExportToLoad": {
+      "title": "Nul Export naar Belasting",
+      "description": "Nul export modus gericht op belastingverbruik. Zonne-energie geeft prioriteit aan lokaal verbruik en overschot laadt de batterij. Minimaliseert netexport."
+    },
+    "zeroExportToCt": {
+      "title": "Nul Export met CT",
+      "description": "Nul export modus met CT-sensorbewaking. Voorkomt actief elke export naar het net door de omvormeruitgang dynamisch aan te passen op basis van belasting."
+    },
+    "changeSuccess": "Exportstrategie succesvol gewijzigd",
+    "changeFailed": "Exportstrategie wijzigen mislukt"
   }
 }

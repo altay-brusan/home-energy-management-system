@@ -163,5 +163,8 @@ export const ENDPOINTS = {
     UPDATE: '/SetupDeviceParameterValues/:id',
     DELETE: '/SetupDeviceParameterValues/:id',
   },
+  DEVICE_SETTINGS: {
+    CHANGE_EXPORT_STRATEGY: '/DeviceSettings/ChangeExportStrategy',
+  },
 } as const;
 
