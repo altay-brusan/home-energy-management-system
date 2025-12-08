@@ -135,3 +135,22 @@ export function isInverterSummary(component: ComponentSummaryDto): component is 
 export function isBatterySummary(component: ComponentSummaryDto): component is BatterySummaryDto {
   return component.type === 'battery';
 }
+
+// Device Component Details Types
+export interface DeviceDetailItemDto {
+  key: string;
+  value: any;
+  unit: string | null;
+  labelKey: string;
+}
+
+export interface DeviceDetailsResponseDto {
+  details: DeviceDetailItemDto[];
+}
+
+export type DetailGroup = 'realtime' | 'parameter';
+
+export interface GroupedDetails {
+  realtime: DeviceDetailItemDto[];
+  parameter: DeviceDetailItemDto[];
+}

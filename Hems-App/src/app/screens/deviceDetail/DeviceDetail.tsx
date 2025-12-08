@@ -20,6 +20,7 @@ import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { mobileDashboardService } from "../../../api/services/mobileDashboardService";
 import { sitesService } from "../../../api/services/sitesService";
+import { deviceComponentsService } from "../../../api/services/deviceComponentsService";
 import { ConnectedDeviceCard } from "../../../components/ui/ConnectedDeviceCard";
 import { DeviceInfoCard } from "../../../components/ui/DeviceInfoCard";
 import { useDeviceLiveData } from "../../../hooks/useDeviceLiveData";
@@ -31,6 +32,7 @@ import { useSitesStore } from "../../../store/sitesStore";
 import { getThemeColors, SPACING } from "../../../theme/constants";
 import { getStyles } from "./DeviceDetail.styles";
 import { DeviceDetailSkeleton } from "./DeviceDetailSkeleton";
+import type { ComponentSummaryDto, InverterSummaryDto, BatterySummaryDto } from "../../../api/types/deviceComponents.types";
 
 // PV Icon from EnergyFlowRadial
 const PVIcon: React.FC<{ color: string; size?: number }> = ({ color, size = 32 }) => (
@@ -71,11 +73,38 @@ export default function DeviceDetail() {
   const [refreshing, setRefreshing] = useState(false);
   const [inverterData, setInverterData] = useState<any>(null);
 
+  // New state for DeviceSummary API data
+  const [summaryComponents, setSummaryComponents] = useState<ComponentSummaryDto[]>([]);
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+
   const { fetchLiveData } = useDeviceLiveData(deviceId);
+
+  // Fetch device summary (realtime data for inverter and battery)
+  const fetchDeviceSummary = useCallback(async () => {
+    if (!deviceId) return;
+
+    try {
+      const summaryData = await deviceComponentsService.getDeviceSummary(deviceId);
+      setSummaryComponents(summaryData.components || []);
+
+      // Save battery packs to localStorage for BatteryListScreen
+      const batteryComponent = summaryData.components.find(c => c.type === 'battery') as BatterySummaryDto | undefined;
+      if (batteryComponent?.packs) {
+        const cacheKey = `@battery_packs_summary_${deviceId}`;
+        await AsyncStorage.setItem(cacheKey, JSON.stringify({
+          packs: batteryComponent.packs,
+          timestamp: Date.now(),
+        })).catch(() => {});
+      }
+    } catch (error) {
+      console.error('Error fetching device summary:', error);
+    }
+  }, [deviceId]);
 
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchDeviceComponents();
+    await fetchDeviceSummary();
     setRefreshing(false);
   };
 
@@ -147,6 +176,32 @@ export default function DeviceDetail() {
   useEffect(() => {
     fetchDeviceComponents();
   }, [fetchDeviceComponents]);
+
+  // Fetch summary on mount and when deviceId changes
+  useEffect(() => {
+    if (deviceId) {
+      fetchDeviceSummary();
+    }
+  }, [deviceId, fetchDeviceSummary]);
+
+  // Polling: Fetch summary every 5 seconds
+  useEffect(() => {
+    if (!deviceId) return;
+
+    // Start polling
+    const interval = setInterval(() => {
+      fetchDeviceSummary();
+    }, 5000); // Poll every 5 seconds
+
+    setPollingInterval(interval);
+
+    // Cleanup on unmount
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [deviceId, fetchDeviceSummary]);
 
   // PERFORMANCE: Inverter live data'yı sayfa açılışında yükleme
   // Sadece gerektiğinde (manuel refresh veya kullanıcı istediğinde) yükle
@@ -225,6 +280,13 @@ export default function DeviceDetail() {
   const batterySubtitle = batteryCount > 0
     ? t("deviceDetail.battery.packCount", { count: batteryCount })
     : t("deviceDetail.battery.noBatteries");
+
+  // Get realtime data from DeviceSummary API
+  const inverterSummary = summaryComponents.find(c => c.type === 'inverter') as InverterSummaryDto | undefined;
+  const batterySummary = summaryComponents.find(c => c.type === 'battery') as BatterySummaryDto | undefined;
+
+  const inverterActivePower = inverterSummary?.activePowerKw;
+  const batteryStateOfCharge = batterySummary?.stateOfCharge;
 
   return (
     <View style={[styles.container, { backgroundColor: isDark ? 'rgba(28, 34, 43, 1)' : 'rgba(243, 243, 245, 1)' }]}>
@@ -338,7 +400,11 @@ export default function DeviceDetail() {
             {inverterComp && (
               <DeviceInfoCard
                 title={t("deviceDetail.inverter.title")}
-                subtitle={inverterComp.description || t("deviceDetail.inverter.subtitle")}
+                subtitle={
+                  inverterActivePower !== null && inverterActivePower !== undefined
+                    ? `${inverterActivePower.toFixed(1)} kW`
+                    : inverterComp.description || t("deviceDetail.inverter.subtitle")
+                }
                 icon={<Zap size={24} color={COLORS.accent} />}
                 status="online"
                 onPress={navigateToInverterDetail}
@@ -349,7 +415,11 @@ export default function DeviceDetail() {
             {/* Battery Card */}
             <DeviceInfoCard
               title={t("deviceDetail.battery.title")}
-              subtitle={batterySubtitle}
+              subtitle={
+                batteryStateOfCharge !== null && batteryStateOfCharge !== undefined
+                  ? `${batteryStateOfCharge.toFixed(1)}% ${batteryCount > 0 ? `• ${batterySubtitle}` : ''}`
+                  : batterySubtitle
+              }
               icon={<FontAwesome name="battery-full" size={24} color={COLORS.success} />}
               status={batteryCount > 0 ? "online" : "offline"}
               onPress={navigateToBatteryList}

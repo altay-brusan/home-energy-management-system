@@ -55,6 +55,7 @@ export const ENDPOINTS = {
     UPDATE: '/DeviceComponents/:id',
     DELETE: '/DeviceComponents/:id',
     GET_DEVICE_SUMMARY: '/DeviceComponents/DeviceSummary',
+    GET_COMPONENT_DETAILS: '/DeviceComponents/Details/:componentId',
   },
   DEVICE_DATA: {
     GET_ALL: '/DeviceData',

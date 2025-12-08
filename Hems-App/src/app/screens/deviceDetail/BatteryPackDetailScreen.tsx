@@ -12,10 +12,11 @@ import {
   View
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useDeviceLiveData } from "../../../hooks/useDeviceLiveData";
+import { deviceComponentsService } from "../../../api/services/deviceComponentsService";
 import { useI18n } from "../../../hooks/useI18n";
 import { useThemeStore } from "../../../store/themeStore";
 import { getThemeColors, SPACING, TYPOGRAPHY } from "../../../theme/constants";
+import type { DeviceDetailsResponseDto, DeviceDetailItemDto } from "../../../api/types/deviceComponents.types";
 
 const formatDateTime = (isoString: string | null | undefined, locale: string = 'tr-TR'): string => {
   if (!isoString || isoString === "-") return "-";
@@ -50,31 +51,58 @@ export default function BatteryPackDetailScreen() {
   const { deviceId, componentId, batteryName, componentData } = route.params || {};
 
   const [refreshing, setRefreshing] = useState(false);
-  const { data: batteryData, isFetching, fetchLiveData } = useDeviceLiveData(deviceId);
+  const [loading, setLoading] = useState(true);
+  const [detailsData, setDetailsData] = useState<DeviceDetailsResponseDto | null>(null);
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+
+  // Helper function to get value from details
+  const getDetailValue = (key: string): any => {
+    const item = detailsData?.details.find(d => d.key === key);
+    return item?.value;
+  };
+
+  // Fetch component details from Details API
+  const fetchComponentDetails = async () => {
+    if (!componentId) return;
+
+    try {
+      const details = await deviceComponentsService.getComponentDetails(componentId);
+      setDetailsData(details);
+    } catch (error) {
+      console.error('Error fetching component details:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (componentId && deviceId) {
-      fetchLiveData({
-        id: componentId,
-        name: batteryName || t('deviceNames.battery'),
-        componentData: componentData || 0 // SOC değerini hook'a gönder
-      });
-    }
-  }, [componentId, deviceId, componentData]);
+    fetchComponentDetails();
+  }, [componentId]);
+
+  // Polling: Fetch details every 5 seconds
+  useEffect(() => {
+    if (!componentId) return;
+
+    const interval = setInterval(() => {
+      fetchComponentDetails();
+    }, 5000);
+
+    setPollingInterval(interval);
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [componentId]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    if (componentId && deviceId) {
-      await fetchLiveData({
-        id: componentId,
-        name: batteryName || t('deviceNames.battery'),
-        componentData: componentData || 0 // SOC değerini hook'a gönder
-      });
-    }
+    await fetchComponentDetails();
     setRefreshing(false);
   };
 
-  if (isFetching && !batteryData) {
+  if (loading && !detailsData) {
     return (
       <View
         style={[
@@ -94,7 +122,22 @@ export default function BatteryPackDetailScreen() {
     );
   }
 
-  const socColor = batteryData?.soc > 70 ? COLORS.success : batteryData?.soc > 30 ? COLORS.warning : COLORS.error;
+  // Get values from Details API
+  const soc = getDetailValue('soc') || 0;
+  const soh = getDetailValue('soh');
+  const voltage = getDetailValue('voltage');
+  const current = getDetailValue('current');
+  const maxCellVoltage = getDetailValue('maxCellVoltage');
+  const minCellVoltage = getDetailValue('minCellVoltage');
+  const avgCellVoltage = getDetailValue('avgCellVoltage');
+  const maxCellTemp = getDetailValue('maxCellTemp');
+  const minCellTemp = getDetailValue('minCellTemp');
+  const avgTemp = getDetailValue('avgTemp');
+  const model = getDetailValue('model');
+  const serialNumber = getDetailValue('serialNumber');
+  const firmwareVersion = getDetailValue('firmwareVersion');
+
+  const socColor = soc > 70 ? COLORS.success : soc > 30 ? COLORS.warning : COLORS.error;
 
   return (
     <View
@@ -180,7 +223,7 @@ export default function BatteryPackDetailScreen() {
               },
             ]}
           >
-            {batteryData?.soc?.toFixed(0) || 0}%
+            {soc?.toFixed(0) || 0}%
           </Text>
           <Text
             style={[
@@ -234,7 +277,7 @@ export default function BatteryPackDetailScreen() {
                 },
               ]}
             >
-              {batteryData?.soh || "-"}
+              {soh != null ? `${soh}%` : "-"}
             </Text>
           </View>
 
@@ -257,7 +300,7 @@ export default function BatteryPackDetailScreen() {
                 },
               ]}
             >
-              {batteryData?.voltage?.toFixed(2) || 0} V
+              {voltage != null ? `${voltage.toFixed(2)} V` : "-"}
             </Text>
           </View>
 
@@ -280,7 +323,7 @@ export default function BatteryPackDetailScreen() {
                 },
               ]}
             >
-              {batteryData?.current?.toFixed(2) || 0} A
+              {current != null ? `${current.toFixed(2)} A` : "-"}
             </Text>
           </View>
         </View>
@@ -325,7 +368,7 @@ export default function BatteryPackDetailScreen() {
                 },
               ]}
             >
-              {batteryData?.maxCellVoltage?.toFixed(3) || 0} V
+              {maxCellVoltage != null ? `${maxCellVoltage.toFixed(3)} V` : "-"}
             </Text>
           </View>
 
@@ -348,7 +391,7 @@ export default function BatteryPackDetailScreen() {
                 },
               ]}
             >
-              {batteryData?.minCellVoltage?.toFixed(3) || 0} V
+              {minCellVoltage != null ? `${minCellVoltage.toFixed(3)} V` : "-"}
             </Text>
           </View>
 
@@ -371,7 +414,7 @@ export default function BatteryPackDetailScreen() {
                 },
               ]}
             >
-              {batteryData?.avgCellVoltage?.toFixed(3) || 0} V
+              {avgCellVoltage != null ? `${avgCellVoltage.toFixed(3)} V` : "-"}
             </Text>
           </View>
         </View>
@@ -416,7 +459,7 @@ export default function BatteryPackDetailScreen() {
                 },
               ]}
             >
-              {batteryData?.maxCellTemp?.toFixed(1) || 0} °C
+              {maxCellTemp != null ? `${maxCellTemp.toFixed(1)} °C` : "-"}
             </Text>
           </View>
 
@@ -439,7 +482,7 @@ export default function BatteryPackDetailScreen() {
                 },
               ]}
             >
-              {batteryData?.minCellTemp?.toFixed(1) || 0} °C
+              {minCellTemp != null ? `${minCellTemp.toFixed(1)} °C` : "-"}
             </Text>
           </View>
 
@@ -462,7 +505,7 @@ export default function BatteryPackDetailScreen() {
                 },
               ]}
             >
-              {batteryData?.avgTemp?.toFixed(1) || 0} °C
+              {avgTemp != null ? `${avgTemp.toFixed(1)} °C` : "-"}
             </Text>
           </View>
         </View>
@@ -507,7 +550,7 @@ export default function BatteryPackDetailScreen() {
                 },
               ]}
             >
-              {batteryData?.model || "-"}
+              {model || "-"}
             </Text>
           </View>
 
@@ -530,7 +573,7 @@ export default function BatteryPackDetailScreen() {
                 },
               ]}
             >
-              {batteryData?.sn || "-"}
+              {serialNumber || "-"}
             </Text>
           </View>
 
@@ -553,7 +596,7 @@ export default function BatteryPackDetailScreen() {
                 },
               ]}
             >
-              {batteryData?.version || "-"}
+              {firmwareVersion || "-"}
             </Text>
           </View>
 
@@ -566,7 +609,7 @@ export default function BatteryPackDetailScreen() {
                 },
               ]}
             >
-              {t("batteryDetail.lastUpdate")}
+              {t("batteryDetail.manufacturer")}
             </Text>
             <Text
               style={[
@@ -575,10 +618,8 @@ export default function BatteryPackDetailScreen() {
                   color: COLORS.text,
                 },
               ]}
-              numberOfLines={1}
-              adjustsFontSizeToFit
             >
-              {formatDateTime(batteryData?.dateTime, locale)}
+              {getDetailValue('manufacturer') || "-"}
             </Text>
           </View>
         </View>

@@ -13,10 +13,12 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { mobileDashboardService } from "../../../api/services/mobileDashboardService";
+import { deviceComponentsService } from "../../../api/services/deviceComponentsService";
 import { useI18n } from "../../../hooks/useI18n";
 import { useThemeStore } from "../../../store/themeStore";
 import { getThemeColors, SPACING, TYPOGRAPHY } from "../../../theme/constants";
 import { BatteryListSkeleton } from "./BatteryListSkeleton";
+import type { BatteryPackDto, BatterySummaryDto } from "../../../api/types/deviceComponents.types";
 
 interface BatteryPack {
   id: string;
@@ -24,6 +26,8 @@ interface BatteryPack {
   componentData: number; // SOC
   serialNumber: string;
   description: string;
+  model: string;
+  manufacturer: string;
 }
 
 export default function BatteryListScreen() {
@@ -39,6 +43,7 @@ export default function BatteryListScreen() {
   const [batteries, setBatteries] = useState<BatteryPack[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
 
   const fetchBatteries = useCallback(async () => {
     if (!deviceId) {
@@ -48,13 +53,26 @@ export default function BatteryListScreen() {
     }
 
     try {
-      // PERFORMANCE: Cache'ten instant yükle
+      // PERFORMANCE: Cache'ten instant yükle - summary'den kaydedilen pack'leri kullan
       try {
-        const cacheKey = `@battery_list_cache_${deviceId}`;
+        const cacheKey = `@battery_packs_summary_${deviceId}`;
         const cachedData = await AsyncStorage.getItem(cacheKey);
         if (cachedData) {
           const parsed = JSON.parse(cachedData);
-          setBatteries(parsed.batteries || []);
+          const cachedPacks = parsed.packs || [];
+
+          // Cache'deki pack'leri map et
+          const batteryPacks: BatteryPack[] = cachedPacks.map((pack: BatteryPackDto) => ({
+            id: pack.id,
+            name: pack.name,
+            componentData: pack.stateOfCharge || 0,
+            serialNumber: pack.serialNumber || "—",
+            description: '',
+            model: pack.model || "—",
+            manufacturer: pack.manufacturer || "—",
+          }));
+
+          setBatteries(batteryPacks);
           setLoading(false); // Cache varsa loading kapat
         } else {
           setLoading(true); // Cache yoksa skeleton göster
@@ -63,28 +81,37 @@ export default function BatteryListScreen() {
         setLoading(true);
       }
 
-      // API çağrısı - cache varsa background'da güncelle
-      const withDataRes = await mobileDashboardService.getDeviceWithData(deviceId);
+      // API çağrısı - yeni DeviceSummary API kullan
+      const summaryData = await deviceComponentsService.getDeviceSummary(deviceId);
 
-      const batteryComps = withDataRes?.components
-        ?.filter((c: any) =>
-          c.componentName.toLowerCase().includes("battery") &&
-          !c.componentName.toLowerCase().includes("bms")
-        )
-        .map((c: any) => ({
-          id: c.componentId,
-          name: c.componentName,
-          componentData: c.componentData || 0,
-          serialNumber: c.serialNumber || "—",
-          description: c.description || "",
-        })) || [];
+      // Battery component'i bul
+      const batteryComponent = summaryData.components.find(
+        c => c.type === 'battery'
+      ) as BatterySummaryDto | undefined;
 
-      setBatteries(batteryComps);
+      if (!batteryComponent) {
+        setBatteries([]);
+        setLoading(false);
+        return;
+      }
 
-      // Cache'e kaydet (background)
-      const cacheKey = `@battery_list_cache_${deviceId}`;
+      // Battery pack'leri map et
+      const batteryPacks: BatteryPack[] = batteryComponent.packs.map((pack: BatteryPackDto) => ({
+        id: pack.id,
+        name: pack.name,
+        componentData: pack.stateOfCharge || 0,
+        serialNumber: pack.serialNumber || "—",
+        description: '',
+        model: pack.model || "—",
+        manufacturer: pack.manufacturer || "—",
+      }));
+
+      setBatteries(batteryPacks);
+
+      // Cache'e kaydet (background) - aynı key ile
+      const cacheKey = `@battery_packs_summary_${deviceId}`;
       AsyncStorage.setItem(cacheKey, JSON.stringify({
-        batteries: batteryComps,
+        packs: batteryComponent.packs,
         timestamp: Date.now(),
       })).catch(() => {});
 
@@ -99,6 +126,25 @@ export default function BatteryListScreen() {
   useEffect(() => {
     fetchBatteries();
   }, [fetchBatteries]);
+
+  // Polling: Fetch battery data every 5 seconds
+  useEffect(() => {
+    if (!deviceId) return;
+
+    // Start polling
+    const interval = setInterval(() => {
+      fetchBatteries();
+    }, 5000); // Poll every 5 seconds
+
+    setPollingInterval(interval);
+
+    // Cleanup on unmount
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [deviceId, fetchBatteries]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -156,6 +202,19 @@ export default function BatteryListScreen() {
           >
             {item.name}
           </Text>
+          {item.model && item.model !== "—" && (
+            <Text
+              style={[
+                styles.serialNumber,
+                {
+                  color: COLORS.textSoft,
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {item.manufacturer} {item.model}
+            </Text>
+          )}
           <Text
             style={[
               styles.serialNumber,

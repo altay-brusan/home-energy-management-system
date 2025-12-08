@@ -8,6 +8,7 @@ import {
   GetDeviceComponentParams,
   GetDeviceComponentByIdParams,
   DeviceSummaryResponseDto,
+  DeviceDetailsResponseDto,
 } from '../types/deviceComponents.types';
 
 export const deviceComponentsService = {
@@ -63,6 +64,13 @@ export const deviceComponentsService = {
       ENDPOINTS.DEVICE_COMPONENTS.GET_DEVICE_SUMMARY,
       { params: { deviceId } }
     );
+    return response.data;
+  },
+
+  // Get component details (realtime + parameter data)
+  getComponentDetails: async (componentId: string): Promise<DeviceDetailsResponseDto> => {
+    const url = ENDPOINTS.DEVICE_COMPONENTS.GET_COMPONENT_DETAILS.replace(':componentId', componentId);
+    const response = await apiClient.get<DeviceDetailsResponseDto>(url);
     return response.data;
   },
 };
