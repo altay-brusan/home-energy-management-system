@@ -109,7 +109,7 @@ export const PowerFlowDiagram: React.FC = () => {
 
   // Clear cached data and log when device ID changes
   useEffect(() => {
-    console.log('🔌 [PowerFlowDiagram] Device ID:', deviceIdToUse, '| Has Device:', hasDevice);
+    /* console.log('🔌 [PowerFlowDiagram] Device ID:', deviceIdToUse, '| Has Device:', hasDevice); */
 
     // Clear old data when device changes
     setDataToRender(null);
@@ -131,12 +131,12 @@ export const PowerFlowDiagram: React.FC = () => {
   // Force update when powerFlow changes
   useEffect(() => {
     if (powerFlow) {
-      console.log('🔵 [PowerFlowDiagram] Updating dataToRender:', {
+      /* console.log('🔵 [PowerFlowDiagram] Updating dataToRender:', {
         solar: powerFlow.solarPowerKw,
         battery: powerFlow.batteryPowerKw,
         grid: powerFlow.gridPowerKw,
         load: powerFlow.loadPowerKw,
-      });
+      }); */
       setDataToRender({ ...powerFlow });
       // Update battery power in store for BatteryStateCard
       setBatteryPowerKw(powerFlow.batteryPowerKw || 0);
@@ -212,21 +212,21 @@ export const PowerFlowDiagram: React.FC = () => {
   const flowColor = COLORS.accent;
   const baseLineColor = isDark ? '#374151' : '#CBD5E1'; // Dark gray for dark mode
 
-  console.log('🎨 [PowerFlowDiagram] Rendering with dataToRender:', {
+  /* console.log('🎨 [PowerFlowDiagram] Rendering with dataToRender:', {
     solar: finalData.solarPowerKw,
     battery: finalData.batteryPowerKw,
     grid: finalData.gridPowerKw,
     load: finalData.loadPowerKw,
     batteryAbs: Math.abs(finalData.batteryPowerKw),
     loadAbs: Math.abs(finalData.loadPowerKw),
-  });
+  }); */
 
-  console.log('🎨 [PowerFlowDiagram] About to render nodes with keys:', {
+ /*  console.log('🎨 [PowerFlowDiagram] About to render nodes with keys:', {
     pvKey: `pv-${finalData.solarPowerKw}`,
     batteryKey: `battery-${finalData.batteryPowerKw}`,
     gridKey: `grid-${finalData.gridPowerKw}`,
     loadKey: `load-${finalData.loadPowerKw}`,
-  });
+  }); */
 
   return (
     <View style={styles.card}>

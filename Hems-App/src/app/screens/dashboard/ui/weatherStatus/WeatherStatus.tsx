@@ -1,20 +1,84 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, Image } from 'react-native';
+import { View, Text, Image, ActivityIndicator } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useI18n } from '../../../../../hooks/useI18n';
 import { useDashboardRefresh } from '../../../../../hooks/useDashboardRefresh';
+import { useDeviceStatus } from '../../../../../hooks/useDeviceStatus';
 import { dashboardService } from '../../../../../api/services/dashboardService';
 import { useSelectedSiteUtils } from '../../../../../hooks/useSelectedSite';
 import { useThemeStore } from '../../../../../store/themeStore';
 import { getThemeColors } from '../../../../../theme/constants';
 import { createStyles } from './WeatherStatus.styles';
 import type { WeatherForecastDto } from '../../../../../api/types/dashboard.types';
+import type { DeviceStatusType, SignalRConnectionState } from '../../../../../api/types/signalR.types';
 
 interface WeatherStatusProps {
   deviceId?: string;
 }
 
-type StatusType = 'onGrid' | 'off' | 'hybrid';
+// Status renklerini belirleyen helper fonksiyon
+const getStatusColor = (status: DeviceStatusType | null, connectionState: SignalRConnectionState, COLORS: Record<string, string>): string => {
+  // Bağlantı durumu kontrolü
+  if (connectionState === 'Connecting' || connectionState === 'Reconnecting') {
+    return COLORS.warning || '#FFA500';
+  }
+  if (connectionState === 'Disconnected' || connectionState === 'Failed') {
+    return COLORS.textSoft;
+  }
+
+  // Device status kontrolü
+  if (!status) {
+    return COLORS.textSoft;
+  }
+
+  switch (status) {
+    case 'OK':
+      return COLORS.success;
+    case 'PENDING':
+      return COLORS.warning || '#FFA500';
+    case 'WAITING':
+      return COLORS.warning || '#FFA500';
+    case 'DISCONNECTED':
+      return COLORS.error || '#FF4444';
+    case 'NOT_TRACKED':
+      return COLORS.textSoft;
+  }
+};
+
+// Status text'ini belirleyen helper fonksiyon
+const getStatusText = (status: DeviceStatusType | null, connectionState: SignalRConnectionState, t: (key: string) => string): string => {
+  // Bağlantı durumu kontrolü
+  if (connectionState === 'Connecting' || connectionState === 'Reconnecting') {
+    return t('dashboard.deviceStatus.connecting');
+  }
+  if (connectionState === 'Disconnected' || connectionState === 'Failed') {
+    return t('dashboard.deviceStatus.offline');
+  }
+
+  // Device status henüz gelmemişse
+  if (!status) {
+    return t('dashboard.deviceStatus.waiting');
+  }
+
+  switch (status) {
+    case 'OK':
+      return t('dashboard.deviceStatus.ok');
+    case 'PENDING':
+      return t('dashboard.deviceStatus.pending');
+    case 'WAITING':
+      return t('dashboard.deviceStatus.waiting');
+    case 'DISCONNECTED':
+      return t('dashboard.deviceStatus.disconnected');
+    case 'NOT_TRACKED':
+      return t('dashboard.deviceStatus.notTracked');
+  }
+};
+
+// Bağlantı durumuna göre loading indicator göster
+const shouldShowLoading = (connectionState: SignalRConnectionState, deviceStatus: DeviceStatusType | null): boolean => {
+  return connectionState === 'Connecting' || connectionState === 'Reconnecting' ||
+         (connectionState === 'Connected' && !deviceStatus);
+};
 
 export const WeatherStatus: React.FC<WeatherStatusProps> = ({ deviceId }) => {
   const mode = useThemeStore(s => s.mode);
@@ -25,8 +89,10 @@ export const WeatherStatus: React.FC<WeatherStatusProps> = ({ deviceId }) => {
   const { selectedSite } = useSelectedSiteUtils();
 
   const [weather, setWeather] = useState<WeatherForecastDto | null>(null);
-  const [status, setStatus] = useState<StatusType>('onGrid');
   const { registerRefreshCallback } = useDashboardRefresh();
+
+  // DeviceStatus hook - SignalR üzerinden cihaz durumu
+  const { deviceStatus, connectionState } = useDeviceStatus(deviceId);
 
   // Fetch weather separately
   const fetchWeather = useCallback(async () => {
@@ -50,37 +116,19 @@ export const WeatherStatus: React.FC<WeatherStatusProps> = ({ deviceId }) => {
     }
   }, [selectedSite?.id]);
 
-  // Fetch status from energy flow
-  const fetchStatus = useCallback(async () => {
-    if (!deviceId) {
-      return;
-    }
-
-    // NOTE: EnergyFlow endpoint is deprecated and no longer available
-    // Status calculation has been disabled until a replacement endpoint is provided
-    // Default status is now 'onGrid'
-    setStatus('onGrid');
-  }, [deviceId]);
 
   // Load weather
   useEffect(() => {
     fetchWeather();
   }, [fetchWeather]);
 
-  // Load status
-  useEffect(() => {
-    fetchStatus();
-  }, [fetchStatus]);
-
   // Register refresh callbacks
   useEffect(() => {
     const unregisterWeather = registerRefreshCallback(fetchWeather);
-    const unregisterStatus = registerRefreshCallback(fetchStatus);
     return () => {
       unregisterWeather();
-      unregisterStatus();
     };
-  }, [registerRefreshCallback, fetchWeather, fetchStatus]);
+  }, [registerRefreshCallback, fetchWeather]);
 
   if (!deviceId) {
     return null;
@@ -108,9 +156,12 @@ export const WeatherStatus: React.FC<WeatherStatusProps> = ({ deviceId }) => {
 
       {/* Status - Right */}
       <View style={styles.statusContainer}>
+        {shouldShowLoading(connectionState, deviceStatus) && (
+          <ActivityIndicator size="small" color={COLORS.accent} style={{ marginRight: 4 }} />
+        )}
         <Text style={styles.statusLabel}>{t('dashboard.status')}</Text>
-        <Text style={styles.statusValue}>
-          {t(`dashboard.${status}`).toUpperCase()}
+        <Text style={[styles.statusValue, { color: getStatusColor(deviceStatus, connectionState, COLORS) }]}>
+          {getStatusText(deviceStatus, connectionState, t).toUpperCase()}
         </Text>
       </View>
     </Animated.View>

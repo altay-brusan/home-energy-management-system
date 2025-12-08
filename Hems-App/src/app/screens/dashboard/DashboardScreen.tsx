@@ -24,6 +24,7 @@ import { GridPerformanceCard } from './ui/gridPerformanceCard';
 import { PowerFlowDiagram } from './ui/powerFlowDiagram';
 import { TodaySummary } from './ui/todaySummary';
 import { WeatherStatus } from './ui/weatherStatus';
+import { DeviceStatusDebug } from './ui/DeviceStatusDebug';
 
 type Range = 'Day' | 'Week' | 'Month' | 'Year';
 
@@ -269,6 +270,10 @@ export default function DashboardScreen (): JSX.Element {
           </TouchableOpacity>
         </View>
         <WeatherStatus deviceId={device?.id} />
+
+        {/* DEBUG: Device Status Test Panel - Remove after testing */}
+        <DeviceStatusDebug />
+
         <PowerFlowDiagram />
         <TodaySummary />
         <BatteryStateCard deviceId={device?.id} />

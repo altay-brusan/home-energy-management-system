@@ -586,7 +586,16 @@
     "hybrid": "Hibrit",
     "totalPower": "Toplam Güç",
     "dailiyPower": "Günlük Güç",
-    "noDataAvailable": "Veri mevcut değil"
+    "noDataAvailable": "Veri mevcut değil",
+    "deviceStatus": {
+      "ok": "Çevrimiçi",
+      "pending": "Beklemede",
+      "waiting": "Bekleniyor",
+      "disconnected": "Çevrimdışı",
+      "notTracked": "İzlenmiyor",
+      "connecting": "Bağlanıyor",
+      "offline": "Çevrimdışı"
+    }
   },
   "dashboardMode": {
     "title": "Şu anki Mod",

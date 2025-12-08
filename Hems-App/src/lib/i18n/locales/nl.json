@@ -555,7 +555,16 @@
       "hybrid": "Hybride",
       "totalPower": "Totaal Vermogen",
       "dailiyPower": "Dagelijks Vermogen",
-      "noDataAvailable": "Geen gegevens beschikbaar"
+      "noDataAvailable": "Geen gegevens beschikbaar",
+      "deviceStatus": {
+        "ok": "Online",
+        "pending": "In Behandeling",
+        "waiting": "Wachtend",
+        "disconnected": "Offline",
+        "notTracked": "Niet Gevolgd",
+        "connecting": "Verbinden",
+        "offline": "Offline"
+      }
     },
     "dashboardMode": {
       "title": "Huidige Modus",

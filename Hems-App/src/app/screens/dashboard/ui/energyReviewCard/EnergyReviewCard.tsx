@@ -340,13 +340,24 @@ export default function EnergyReviewCard() {
           <Text style={styles.subtitle}>
             {t('dashboardEnergyReview.subtitle', 'Monthly grid energy trading costs and revenue')}
           </Text>
-          <Text style={styles.priceInfo}>
-            {t('dashboardEnergyReview.buyPrice', 'Buy')}: {data.buyPricePerKWh.toFixed(2)} €/kWh • {t('dashboardEnergyReview.sellPrice', 'Sell')}: {data.sellPricePerKWh.toFixed(2)} €/kWh
-          </Text>
         </View>
         <TouchableOpacity onPress={handleHistoryPress} style={{ padding: 4 }}>
           <HistoryIcon color={COLORS.accent} />
         </TouchableOpacity>
+      </View>
+
+      {/* Price Cards */}
+      <View style={styles.priceCardsContainer}>
+        <View style={styles.priceCard}>
+          <View style={[styles.priceCardDot, { backgroundColor: '#ef4444' }]} />
+          <Text style={styles.priceCardLabel}>{t('dashboardEnergyReview.buyPrice', 'Buy')}</Text>
+          <Text style={[styles.priceCardValue, styles.buyColor]}>{data.buyPricePerKWh.toFixed(2)} €/kWh</Text>
+        </View>
+        <View style={styles.priceCard}>
+          <View style={[styles.priceCardDot, { backgroundColor: '#10b981' }]} />
+          <Text style={styles.priceCardLabel}>{t('dashboardEnergyReview.sellPrice', 'Sell')}</Text>
+          <Text style={[styles.priceCardValue, styles.sellColor]}>{data.sellPricePerKWh.toFixed(2)} €/kWh</Text>
+        </View>
       </View>
 
       {/* Chart Wrapper - for absolute positioning of info box */}
@@ -386,8 +397,8 @@ export default function EnergyReviewCard() {
 
               <View style={styles.infoItem}>
                 <Text style={styles.infoLabel}>{t('dashboardEnergyReview.price', 'Fiyat')}</Text>
-                <Text style={styles.infoValue}>
-                  ${(selectedData.price * Math.abs(selectedData.sell - selectedData.buy)).toFixed(2)}
+                <Text style={[styles.infoValue, selectedData.price >= 0 ? styles.sellColor : styles.buyColor]}>
+                  {selectedData.price >= 0 ? '+' : ''}€{selectedData.price.toFixed(2)}
                 </Text>
               </View>
             </View>

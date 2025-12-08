@@ -570,7 +570,16 @@
       "hybrid": "Hybrid",
       "totalPower": "Total Power",
       "dailiyPower": "Daily Power",
-      "noDataAvailable": "No data available"
+      "noDataAvailable": "No data available",
+      "deviceStatus": {
+        "ok": "Online",
+        "pending": "Pending",
+        "waiting": "Waiting",
+        "disconnected": "Offline",
+        "notTracked": "Not Tracked",
+        "connecting": "Connecting",
+        "offline": "Offline"
+      }
     },
     "dashboardMode": {
       "title": "Current Mode",

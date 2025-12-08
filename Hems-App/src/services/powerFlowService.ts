@@ -156,13 +156,13 @@ class PowerFlowService {
 
             const subscription = stream.subscribe({
                 next: (data: PowerFlowDto) => {
-                    console.log('✅ [PowerFlowService] Data received:', {
+                    /* console.log('✅ [PowerFlowService] Data received:', {
                         deviceId: data.deviceId,
                         solar: data.solarPowerKw,
                         battery: data.batteryPowerKw,
                         grid: data.gridPowerKw,
                         load: data.loadPowerKw,
-                    });
+                    }); */
                     try {
                         onData(data);
                     } catch (error) {

@@ -71,3 +71,18 @@ export interface PowerFlowStreamOptions {
 
 export type PowerFlowStreamState = 'idle' | 'streaming' | 'error' | 'completed';
 
+// Device Status Hub Types
+export type DeviceStatusType = 'OK' | 'PENDING' | 'WAITING' | 'DISCONNECTED' | 'NOT_TRACKED';
+
+export interface DeviceStatusChangedDto {
+  deviceId: string;
+  status: DeviceStatusType;
+  missedHeartbeats: number;
+  timestamp: string;
+  isInitialStatus?: boolean;
+}
+
+export interface DeviceStatusHubEvents {
+  DeviceStatusChanged: (data: DeviceStatusChangedDto) => void;
+}
+

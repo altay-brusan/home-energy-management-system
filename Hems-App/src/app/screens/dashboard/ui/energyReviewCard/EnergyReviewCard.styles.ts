@@ -26,12 +26,36 @@ export const createStyles = (COLORS: Record<string, string>) => {
       color: COLORS.textSoft,
       opacity: 0.7,
     },
-    priceInfo: {
-      fontSize: TYPOGRAPHY.sm,
-      fontWeight: '600',
+    priceCardsContainer: {
+      flexDirection: 'row',
+      gap: SPACING.sm,
+      marginTop: SPACING.sm,
+    },
+    priceCard: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: COLORS.cardBg,
+      borderRadius: 8,
+      paddingVertical: SPACING.xs,
+      paddingHorizontal: SPACING.sm,
+      gap: SPACING.xs,
+    },
+    priceCardDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+    },
+    priceCardLabel: {
+      fontSize: TYPOGRAPHY.xs,
       color: COLORS.textSoft,
-      opacity: 0.85,
-      marginTop: SPACING.xs,
+      opacity: 0.7,
+      fontWeight: '500',
+    },
+    priceCardValue: {
+      fontSize: TYPOGRAPHY.sm,
+      fontWeight: '700',
+      marginLeft: 'auto',
     },
     chartContainer: {
       width: '100%',
