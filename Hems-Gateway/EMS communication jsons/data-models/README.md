@@ -1,7 +1,5 @@
 # jsons
-
-Ham register tanımları ve mapping dosyaları.
-
+Bu registerler Modbus RTU Single Phase communication protocol  V118 içerisindeki karşılık  gelen registerleri barındırıyor
 ## İçerik
 
 - Registerlerde ihtiyaç duyulan değerler
