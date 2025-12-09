@@ -15,7 +15,7 @@ TotalEnergyFlowState {
       { "id": 2, "totalEnergyKWh": number },  // not available - use total
       { "id": 3, "totalEnergyKWh": number },  // not available - use total
       { "id": 4, "totalEnergyKWh": number }   // not available - use total
-    ]d
+    ]
   },
 
   "load": {

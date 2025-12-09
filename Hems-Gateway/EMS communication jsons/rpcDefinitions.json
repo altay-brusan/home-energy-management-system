@@ -74,6 +74,55 @@
         }
       },
       {
+        "rpcName": "getDailyEnergyFlowState",
+        "kind": "DailyEnergyFlowState",
+        "type": "read",
+        "description": "Reads daily cumulative energy flow data (resets at midnight)",
+        "registers": "62, 70-71, 76-77, 84, 108",
+        "triggers": [
+          "RPC: getDailyEnergyFlowState",
+          "Cron: Daily at 23:59",
+          "Manual"
+        ],
+        "response": {
+          "kind": "DailyEnergyFlowState",
+          "timestampUtc": "2025-12-09T06:14:44.415Z",
+          "version": 1,
+          "DeviceId": "EC100-DEV-001",
+          "loadEnergyKWh": 0.2,
+          "grid": {
+            "importEnergyKWh": 0.3,
+            "exportEnergyKWh": 0
+          },
+          "pv": {
+            "totalEnergyKWh": 0,
+            "mppt": [
+              { "id": 1, "energyKWh": null },
+              { "id": 2, "energyKWh": null },
+              { "id": 3, "energyKWh": null },
+              { "id": 4, "energyKWh": null }
+            ]
+          },
+          "battery": {
+            "chargeEnergyKWh": 0.2,
+            "dischargeEnergyKWh": 0.7
+          },
+          "generator": {
+            "energyKWh": 0
+          }
+        },
+        "fieldDescriptions": {
+          "loadEnergyKWh": "Total energy consumed by load today (kWh) - Reg 84",
+          "grid.importEnergyKWh": "Energy bought from grid today (kWh) - Reg 76",
+          "grid.exportEnergyKWh": "Energy sold to grid today (kWh) - Reg 77",
+          "pv.totalEnergyKWh": "Total PV generation today (kWh) - Reg 108",
+          "pv.mppt[].energyKWh": "Per-MPPT daily energy (not available on this model)",
+          "battery.chargeEnergyKWh": "Energy charged to battery today (kWh) - Reg 70",
+          "battery.dischargeEnergyKWh": "Energy discharged from battery today (kWh) - Reg 71",
+          "generator.energyKWh": "Generator energy produced today (kWh) - Reg 62"
+        }
+      },
+      {
         "rpcName": "getPvDeviceState",
         "kind": "PvDeviceState",
         "type": "read",
