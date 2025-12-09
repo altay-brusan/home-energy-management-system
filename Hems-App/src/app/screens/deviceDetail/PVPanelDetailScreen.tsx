@@ -1,16 +1,13 @@
 import React, { useMemo, useState } from 'react';
-import { LayoutChangeEvent, SafeAreaView, ScrollView, Text, TouchableOpacity, View, RefreshControl, Vibration, Platform } from 'react-native';
+import { LayoutChangeEvent, Pressable, ScrollView, Text, View, RefreshControl } from 'react-native';
+import { ArrowLeft, Sun } from 'lucide-react-native';
 import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors } from '../../../theme/constants';
 import { getPVStyles } from './PVPanelDetailScreen.styles';
-import AreaChart from '../dashboard/ui/dashboardGraph/components/AreaChart';
-import BarChart from '../dashboard/ui/dashboardGraph/components/BarChart';
+import { SolarLineChart } from './ui/SolarLineChart';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import DeviceHeader from './ui/DeviceHeader';
 import { useI18n } from '../../../hooks/useI18n';
-import Animated, { useSharedValue, withSpring } from 'react-native-reanimated';
-import MaterialIcons from '@react-native-vector-icons/material-icons';
 
 type Range = 'Day' | 'Week' | 'Month' | 'Year';
 
@@ -64,6 +61,8 @@ const generateDemoData = (range: Range): { x: string; y: number }[] => {
   }
 };
 
+const SOLAR_COLOR = '#FACC15';
+
 export default function PVPanelDetailScreen() {
   const navigation = useNavigation<any>();
   const isDark = useThemeStore(s => s.mode) === 'dark';
@@ -71,26 +70,9 @@ export default function PVPanelDetailScreen() {
   const styles = useMemo(() => getPVStyles(COLORS), [COLORS]);
   const { t } = useI18n();
   const [range, setRange] = useState<Range>('Day');
-  const [type, setType] = useState<'bar' | 'area'>('area');
   const [size, setSize] = useState({ w: 0, h: 0 });
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const padding = { top: 20, right: 8, bottom: 80, left: 8 };
   const insets = useSafeAreaInsets();
   const [refreshing, setRefreshing] = useState(false);
-  
-  const segmentedIndicatorPosition = useSharedValue(type === 'bar' ? 0 : 1);
-
-  const safeVibrate = (duration: number) => {
-    try {
-      if (Platform.OS === 'android') {
-        Vibration.vibrate(duration);
-      } else if (Platform.OS === 'ios') {
-        Vibration.vibrate();
-      }
-    } catch (error) {
-      // Silent
-    }
-  };
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -99,196 +81,132 @@ export default function PVPanelDetailScreen() {
 
   // Generate demo data based on selected range
   const data = useMemo(() => generateDemoData(range), [range]);
-  
+
   const onLayout = (e: LayoutChangeEvent) => setSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height });
-  const innerW = Math.max(size.w - padding.left - padding.right, 1);
-  const innerH = Math.max(size.h - padding.top - padding.bottom, 1);
-  const stepX = innerW / Math.max(data.length, 1);
-  const maxY = Math.max(...data.map(d => d.y)) * 1.1 || 1;
-  const yScale = (v: number) => innerH - (v / maxY) * innerH;
-  const avg = Math.round(data.reduce((s, d) => s + d.y, 0) / Math.max(data.length, 1));
+
+  // Calculate statistics
+  const totalProduction = data.reduce((s, d) => s + d.y, 0);
+  const avg = totalProduction / Math.max(data.length, 1);
   const peak = Math.max(...data.map(d => d.y));
 
-  // Reset selectedIndex when range or type changes
-  React.useEffect(() => {
-    setSelectedIndex(null);
-  }, [range, type]);
-
   return (
-    <SafeAreaView style={styles.screen}>
-      <DeviceHeader title={t('deviceDetail.pvPanel.title')} onBack={() => navigation.goBack()} />
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
+      {/* Header - BatteryListScreen style */}
+      <View style={styles.header}>
+        <Pressable style={styles.backButton} onPress={() => navigation.goBack()}>
+          <ArrowLeft size={24} color={COLORS.textSoft} strokeWidth={2} />
+        </Pressable>
+        <Text style={styles.headerTitle}>{t('deviceDetail.pvPanel.title')}</Text>
+        <View style={styles.headerPlaceholder} />
+      </View>
 
       <ScrollView
-        contentContainerStyle={[styles.container, { paddingTop: insets.top + 60 }]}
+        contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.accent} />
         }
       >
+        {/* Summary Card - Dashboard style */}
         <View style={styles.card}>
-          <Text style={styles.title}>{t('deviceDetail.pvPanel.title')}</Text>
-          <Text style={styles.sub}>{t('deviceDetail.pvPanel.subtitle')}</Text>
-          
-          {/* Stat Pills */}
-          <View style={styles.statPillsContainer}>
-            <View style={styles.statPillContainer}>
-              <View style={styles.statPill}>
-                <Text style={styles.statPillLabel}>{t('dashboardGraph.peak')}</Text>
-                <Text style={styles.statPillValue}>{peak.toFixed(1)}</Text>
-              </View>
+          <View style={styles.cardHeader}>
+            <View style={[styles.cardIconContainer, { backgroundColor: `${SOLAR_COLOR}20` }]}>
+              <Sun size={22} color={SOLAR_COLOR} strokeWidth={2} />
             </View>
-            <View style={styles.statPillContainer}>
-              <View style={styles.statPill}>
-                <Text style={styles.statPillLabel}>{t('dashboardGraph.average')}</Text>
-                <Text style={styles.statPillValue}>{avg.toFixed(1)}</Text>
-              </View>
+            <View>
+              <Text style={styles.cardTitle}>{t('deviceDetail.pvPanel.title')}</Text>
+              <Text style={styles.cardSubtitle}>{t('deviceDetail.pvPanel.subtitle')}</Text>
+            </View>
+          </View>
+
+          {/* Metrics Row - TodaySummary style */}
+          <View style={styles.metricsRow}>
+            <View style={styles.metricItem}>
+              <Text style={styles.metricValue}>
+                {peak.toFixed(1)}
+                <Text style={styles.metricUnit}> kW</Text>
+              </Text>
+              <Text style={styles.metricLabel}>{t('dashboardGraph.peak')}</Text>
+            </View>
+            <View style={styles.metricDivider} />
+            <View style={styles.metricItem}>
+              <Text style={styles.metricValue}>
+                {avg.toFixed(1)}
+                <Text style={styles.metricUnit}> kW</Text>
+              </Text>
+              <Text style={styles.metricLabel}>{t('dashboardGraph.average')}</Text>
+            </View>
+            <View style={styles.metricDivider} />
+            <View style={styles.metricItem}>
+              <Text style={styles.metricValue}>
+                {totalProduction.toFixed(1)}
+                <Text style={styles.metricUnit}> kWh</Text>
+              </Text>
+              <Text style={styles.metricLabel}>{t('dashboardGraph.total')}</Text>
             </View>
           </View>
         </View>
 
-        <View style={styles.card}>
-          <View style={[styles.chart]} onLayout={onLayout}>
+        {/* Chart Card */}
+        <View style={styles.chartCard}>
+          <View style={styles.chartHeader}>
+            <Text style={styles.chartTitle}>{t('dashboardGraph.production')}</Text>
+          </View>
+
+          <View style={styles.chart} onLayout={onLayout}>
             {size.w > 0 && size.h > 0 && data.length > 0 ? (
-              type === 'bar' ? (
-                <BarChart 
-                  width={size.w} 
-                  height={size.h} 
-                  padding={padding} 
-                  innerW={innerW} 
-                  innerH={innerH} 
-                  stepX={stepX} 
-                  yScale={yScale} 
-                  data={data} 
-                  COLORS={COLORS} 
-                  accentColor={COLORS.accent} 
-                  avg={avg} 
-                  peak={peak} 
-                  selectedIndex={selectedIndex} 
-                  setSelectedIndex={setSelectedIndex}
-                  selectedRange={range}
-                />
-              ) : (
-                <AreaChart 
-                  width={size.w} 
-                  height={size.h} 
-                  padding={padding} 
-                  innerW={innerW} 
-                  innerH={innerH} 
-                  stepX={stepX} 
-                  yScale={yScale} 
-                  data={data} 
-                  COLORS={COLORS} 
-                  accentColor={COLORS.accent} 
-                  avg={avg} 
-                  peak={peak} 
-                  selectedIndex={selectedIndex} 
-                  setSelectedIndex={setSelectedIndex}
-                  selectedRange={range}
-                />
-              )
+              <SolarLineChart
+                data={data}
+                range={range}
+                COLORS={COLORS}
+                width={size.w}
+                height={size.h}
+              />
             ) : (
-              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <Text style={{ color: COLORS.textSoft }}>{t('common.noData')}</Text>
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>{t('common.noData')}</Text>
               </View>
             )}
           </View>
 
-          {/* Segmented Control for Chart Type */}
-          <View style={styles.segmentedControl}>
-            <View style={styles.segmentedTrack}>
-              <Animated.View
-                style={[
-                  styles.segmentedIndicator,
-                  {
-                    backgroundColor: COLORS.accent,
-                    left: type === 'bar' ? 2 : '50%',
-                    right: type === 'bar' ? '50%' : 2
-                  }
-                ]}
-              />
-              {(['bar', 'area'] as const).map((chartType, index) => (
-                <TouchableOpacity
-                  key={chartType}
-                  style={styles.segmentedButton}
-                  onPress={() => {
-                    safeVibrate(50);
-                    segmentedIndicatorPosition.value = withSpring(index, {
-                      damping: 15,
-                      stiffness: 150,
-                    });
-                    setType(chartType);
-                    setSelectedIndex(null);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.segmentedContent}>
-                    <MaterialIcons
-                      name={chartType === 'bar' ? 'bar-chart' : 'show-chart'}
-                      size={16}
-                      color={type === chartType ? COLORS.white : COLORS.textSoft}
-                    />
-                    <Text style={[
-                      styles.segmentedText,
-                      {
-                        color: type === chartType ? COLORS.white : COLORS.textSoft,
-                        fontWeight: type === chartType ? '600' : '500'
-                      }
-                    ]}>
-                      {t(`dashboardGraph.chartType.${chartType}`)}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Pill Tabs for Range */}
-          <View style={styles.pillTabs}>
+          {/* Range Tabs - Dashboard style */}
+          <View style={styles.rangeTabs}>
             {(['Day', 'Week', 'Month', 'Year'] as const).map((r) => {
               const isActive = range === r;
               return (
-                <TouchableOpacity
+                <Pressable
                   key={r}
                   style={[
-                    styles.pillTab,
-                    {
-                      backgroundColor: isActive ? COLORS.accent : COLORS.bgShadeLight,
-                      borderColor: isActive ? COLORS.accent : COLORS.border,
-                      shadowColor: isActive ? COLORS.accent : 'transparent',
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: isActive ? 0.2 : 0,
-                      shadowRadius: 3,
-                      elevation: isActive ? 2 : 0,
-                    }
+                    styles.rangeTab,
+                    isActive && styles.rangeTabActive,
                   ]}
-                  onPress={() => {
-                    safeVibrate(30);
-                    setRange(r);
-                    setSelectedIndex(null);
-                  }}
-                  activeOpacity={0.7}
+                  onPress={() => setRange(r)}
                 >
                   <Text style={[
-                    styles.pillText,
-                    {
-                      color: isActive ? COLORS.white : COLORS.textSoft,
-                      fontWeight: isActive ? '600' : '500',
-                    }
+                    styles.rangeTabText,
+                    isActive && styles.rangeTabTextActive,
                   ]}>
                     {t(`dashboardGraph.range.${r.toLowerCase()}`)}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               );
             })}
           </View>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.title}>{t('deviceDetail.pvPanel.basicInfo')}</Text>
-          <View style={styles.statRow}><Text style={styles.statText}>{t('deviceDetail.pvPanel.serialNumber')}</Text><Text style={styles.statText}>—</Text></View>
-          <View style={styles.statRow}><Text style={styles.statText}>{t('deviceDetail.pvPanel.connectedDevice')}</Text><Text style={styles.statText}>—</Text></View>
+        {/* Info Card */}
+        <View style={styles.infoCard}>
+          <Text style={styles.infoTitle}>{t('deviceDetail.pvPanel.basicInfo')}</Text>
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>{t('deviceDetail.pvPanel.serialNumber')}</Text>
+            <Text style={styles.infoValue}>—</Text>
+          </View>
+          <View style={[styles.infoRow, styles.infoRowLast]}>
+            <Text style={styles.infoLabel}>{t('deviceDetail.pvPanel.connectedDevice')}</Text>
+            <Text style={styles.infoValue}>—</Text>
+          </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

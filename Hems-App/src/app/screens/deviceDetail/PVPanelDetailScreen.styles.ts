@@ -3,208 +3,203 @@ import { SPACING, TYPOGRAPHY } from '../../../theme/constants';
 
 export function getPVStyles(COLORS: Record<string, string>) {
   return StyleSheet.create({
-    screen: { 
-      flex: 1, 
-      backgroundColor: COLORS.dark 
+    // Screen
+    screen: {
+      flex: 1,
+      backgroundColor: COLORS.dark,
     },
+
+    // Header
     header: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      zIndex: 10,
-      backgroundColor: COLORS.surface,
-    },
-    headerContent: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: SPACING.md,
       paddingVertical: SPACING.sm,
-    },
-    headerTitle: {
-      fontSize: TYPOGRAPHY.md,
-      fontWeight: '700',
-      color: COLORS.textSoft,
+      backgroundColor: COLORS.dark,
     },
     backButton: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
+      padding: 8,
+    },
+    headerTitle: {
+      fontSize: TYPOGRAPHY.lg,
+      fontWeight: '700',
+      color: COLORS.textSoft,
+    },
+    headerPlaceholder: {
+      width: 40,
+    },
+
+    // Container
+    container: {
+      padding: SPACING.md,
+      paddingBottom: SPACING.xl,
+    },
+
+    // Cards - Dashboard style
+    card: {
       backgroundColor: COLORS.surface,
+      borderRadius: 12,
+      padding: SPACING.md,
+      marginBottom: SPACING.md,
+    },
+
+    // Card Header
+    cardHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: SPACING.sm,
+    },
+    cardIconContainer: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
       alignItems: 'center',
       justifyContent: 'center',
-      borderWidth: 1,
-      borderColor: COLORS.border,
+      marginRight: SPACING.sm,
     },
-    container: { 
-      padding: SPACING.md,
-      paddingTop: SPACING.lg,
-      paddingBottom: SPACING.xl 
+    cardTitle: {
+      fontSize: TYPOGRAPHY.md,
+      fontWeight: '700',
+      color: COLORS.text,
     },
-    card: { 
-      backgroundColor: COLORS.dark, 
-      borderRadius: 16, 
-      padding: SPACING.md, 
-      borderWidth: 1, 
-      borderColor: COLORS.border, 
-      marginBottom: SPACING.md,
-      shadowColor: COLORS.black,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.08,
-      shadowRadius: 6,
-      elevation: 3,
+    cardSubtitle: {
+      color: COLORS.textSoft,
+      fontSize: TYPOGRAPHY.xs,
+      marginTop: 2,
     },
-    title: { 
-      fontSize: TYPOGRAPHY.lg, 
-      fontWeight: '800', 
-      color: COLORS.textSoft, 
-      marginBottom: 10,
-      letterSpacing: 0.3,
+
+    // Metrics Row - TodaySummary style
+    metricsRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      paddingTop: SPACING.sm,
     },
-    sub: { 
-      color: COLORS.slate400, 
-      marginBottom: 10,
+    metricItem: {
+      alignItems: 'center',
+      flex: 1,
+    },
+    metricValue: {
+      fontSize: TYPOGRAPHY.xxl,
+      fontWeight: '700',
+      color: COLORS.text,
+    },
+    metricUnit: {
       fontSize: TYPOGRAPHY.sm,
+      fontWeight: '400',
+      color: COLORS.textSoft,
     },
-    row: { 
-      flexDirection: 'row', 
-      gap: SPACING.sm, 
-      justifyContent: 'center', 
-      marginTop: SPACING.sm,
-      marginBottom: SPACING.xs,
+    metricLabel: {
+      fontSize: TYPOGRAPHY.xs,
+      color: COLORS.textSoft,
+      marginTop: 4,
     },
-    chart: { 
-      width: '100%', 
-      height: 300, 
-      borderRadius: 14, 
-      overflow: 'hidden', 
-      backgroundColor: 'transparent', 
-      borderWidth: 1, 
-      borderColor: COLORS.border,
+    metricDivider: {
+      width: 1,
+      backgroundColor: COLORS.border,
+      marginVertical: 4,
+    },
+
+    // Chart Card
+    chartCard: {
+      backgroundColor: COLORS.surface,
+      borderRadius: 12,
+      padding: SPACING.md,
+      marginBottom: SPACING.md,
+    },
+    chartHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: SPACING.sm,
+    },
+    chartTitle: {
+      fontSize: TYPOGRAPHY.md,
+      fontWeight: '700',
+      color: COLORS.text,
+    },
+    chart: {
+      width: '100%',
+      height: 280,
+      overflow: 'visible',
+      backgroundColor: 'transparent',
+    },
+
+    // Range Tabs - Dashboard style
+    rangeTabs: {
+      flexDirection: 'row',
+      backgroundColor: COLORS.bgShadeLight,
+      borderRadius: 8,
+      padding: 4,
+      marginTop: SPACING.md,
+    },
+    rangeTab: {
+      flex: 1,
+      paddingVertical: SPACING.xs,
+      borderRadius: 6,
+      alignItems: 'center',
+    },
+    rangeTabActive: {
+      backgroundColor: COLORS.surface,
       shadowColor: COLORS.black,
       shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.08,
-      shadowRadius: 4,
-      elevation: 1,
-    },
-    statPillContainer: {
-      marginRight: 8,
-    },
-    statPillsContainer: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      flexWrap: 'wrap',
-      gap: 6,
-      marginTop: 12,
-      marginBottom: 8,
-    },
-    statPill: {
-      flexDirection: 'column',
-      alignItems: 'center',
-      backgroundColor: COLORS.bgShadeLight,
-      borderRadius: 12,
-      paddingVertical: 4,
-      paddingHorizontal: 8,
-      minWidth: 50,
-      maxWidth: 80,
-      borderWidth: 1,
-      borderColor: COLORS.border,
-    },
-    statPillLabel: {
-      fontSize: 10,
-      color: COLORS.textSoft,
-      fontWeight: '500',
-      textAlign: 'center',
-    },
-    statPillValue: {
-      fontSize: 14,
-      color: COLORS.textSoft,
-      fontWeight: '700',
-      textAlign: 'center',
-    },
-    segmentedControl: {
-      alignItems: 'center',
-      marginTop: SPACING.sm,
-      marginBottom: SPACING.xs,
-    },
-    segmentedTrack: {
-      flexDirection: 'row',
-      backgroundColor: COLORS.bgShadeLight,
-      borderRadius: 25,
-      padding: 2,
-      position: 'relative',
-      borderWidth: 1,
-      borderColor: COLORS.border,
-    },
-    segmentedIndicator: {
-      position: 'absolute',
-      top: 2,
-      bottom: 2,
-      borderRadius: 23,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.1,
-      shadowRadius: 4,
+      shadowRadius: 2,
       elevation: 2,
     },
-    segmentedButton: {
-      flex: 1,
-      paddingVertical: SPACING.sm,
-      paddingHorizontal: SPACING.md,
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1,
-    },
-    segmentedContent: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-    },
-    segmentedText: {
-      fontSize: 14,
+    rangeTabText: {
+      fontSize: TYPOGRAPHY.xs,
       fontWeight: '500',
+      color: COLORS.textSoft,
     },
-    pillTabs: {
+    rangeTabTextActive: {
+      color: COLORS.text,
+      fontWeight: '600',
+    },
+
+    // Info Card
+    infoCard: {
+      backgroundColor: COLORS.surface,
+      borderRadius: 12,
+      padding: SPACING.md,
+      marginBottom: SPACING.md,
+    },
+    infoTitle: {
+      fontSize: TYPOGRAPHY.md,
+      fontWeight: '700',
+      color: COLORS.text,
+      marginBottom: SPACING.sm,
+    },
+    infoRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      gap: SPACING.xs,
-      marginTop: SPACING.xs,
-      paddingHorizontal: SPACING.sm,
-    },
-    pillTab: {
-      flex: 1,
-      paddingVertical: SPACING.sm,
-      paddingHorizontal: SPACING.xs,
-      borderRadius: 18,
-      borderWidth: 1,
-      justifyContent: 'center',
       alignItems: 'center',
-      marginHorizontal: 2,
-    },
-    pillText: {
-      fontSize: 11,
-      fontWeight: '500',
-      textAlign: 'center',
-    },
-    tabBtn: { 
-      minWidth: 68, 
-      paddingVertical: 10, 
-      paddingHorizontal: 10,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: COLORS.border,
-    },
-    statRow: { 
-      flexDirection: 'row', 
-      justifyContent: 'space-between',
-      paddingVertical: SPACING.xs,
+      paddingVertical: SPACING.sm,
       borderBottomWidth: 1,
       borderBottomColor: COLORS.border,
     },
-    statText: { 
-      color: COLORS.textSoft, 
+    infoRowLast: {
+      borderBottomWidth: 0,
+    },
+    infoLabel: {
+      color: COLORS.textSoft,
+      fontSize: TYPOGRAPHY.sm,
+    },
+    infoValue: {
+      color: COLORS.text,
       fontWeight: '600',
+      fontSize: TYPOGRAPHY.sm,
+    },
+
+    // Empty state
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingVertical: 60,
+    },
+    emptyText: {
+      color: COLORS.textSoft,
       fontSize: TYPOGRAPHY.sm,
     },
   });

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Rect } from 'react-native-svg';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useI18n } from '../../../../../hooks/useI18n';
 import { useDashboardRefresh } from '../../../../../hooks/useDashboardRefresh';
@@ -23,14 +23,48 @@ const SolarIcon: React.FC<{ color: string }> = ({ color }) => (
   </Svg>
 );
 
-const BatteryIcon: React.FC<{ color: string }> = ({ color }) => (
-  <Svg width={24} height={24} viewBox="0 0 25.56 14.70">
-    <Path
-      d="M23.6,4.01h-.76v-1.14c0-1.59-1.29-2.87-2.87-2.87H2.87C1.29,0,.01,1.29,0,2.87v8.96c0,1.59,1.29,2.87,2.87,2.87h17.1c1.59,0,2.87-1.29,2.87-2.87v-1.14h.76c1.08,0,1.95-.88,1.96-1.96v-2.77c0-1.08-.88-1.95-1.96-1.96ZM21.65,11.83c0,.92-.75,1.67-1.68,1.68H2.87c-.93,0-1.67-.75-1.68-1.68V2.87c0-.93.75-1.67,1.68-1.68h17.1c.92,0,1.67.75,1.68,1.68v8.96ZM24.36,8.74c0,.42-.34.76-.76.76h-.76v-4.29h.76c.42,0,.76.34.76.76v2.77Z"
-      fill={color}
-    />
-  </Svg>
-);
+// Battery Icon with SOC fill level
+const BatteryIcon: React.FC<{ color: string; soc?: number }> = ({ color, soc = 0 }) => {
+  const clampedSoc = Math.max(0, Math.min(100, soc));
+  const fillWidth = (clampedSoc / 100) * 16; // Max fill width is 16
+
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24">
+      {/* Battery body outline */}
+      <Rect
+        x="2"
+        y="7"
+        width="18"
+        height="10"
+        rx="2"
+        ry="2"
+        fill="none"
+        stroke={color}
+        strokeWidth="1.5"
+      />
+      {/* Battery terminal */}
+      <Rect
+        x="20"
+        y="10"
+        width="2"
+        height="4"
+        rx="0.5"
+        fill={color}
+      />
+      {/* Battery fill level */}
+      {clampedSoc > 0 && (
+        <Rect
+          x="4"
+          y="9"
+          width={fillWidth}
+          height="6"
+          rx="1"
+          fill={color}
+        />
+      )}
+    </Svg>
+  );
+};
 
 const GridIcon: React.FC<{ color: string }> = ({ color }) => (
   <Svg width={24} height={24} viewBox="0 0 15.16 24.42">
@@ -351,7 +385,7 @@ export const PowerFlowDiagram: React.FC = () => {
               justifyContent: 'center',
             }}
           >
-            <BatteryIcon color={Math.abs(finalData.batteryPowerKw) >= 0.001 ? COLORS.accent : COLORS.slate400} />
+            <BatteryIcon color={Math.abs(finalData.batteryPowerKw) >= 0.001 ? COLORS.accent : COLORS.slate400} soc={batterySoc ?? 0} />
             <Text style={{ fontSize: 18, fontWeight: '700', marginTop: 4, color: Math.abs(finalData.batteryPowerKw) >= 0.001 ? COLORS.text : COLORS.slate400 }}>
               {formatPower(finalData.batteryPowerKw, true).value}
             </Text>

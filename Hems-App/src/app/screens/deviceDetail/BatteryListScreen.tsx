@@ -1,6 +1,7 @@
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { ArrowLeft, Battery } from 'lucide-react-native';
+import { ArrowLeft } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from "react";
+import Svg, { Rect } from 'react-native-svg';
 import {
   ActivityIndicator,
   FlatList,
@@ -19,6 +20,61 @@ import { useThemeStore } from "../../../store/themeStore";
 import { getThemeColors, SPACING, TYPOGRAPHY } from "../../../theme/constants";
 import { BatteryListSkeleton } from "./BatteryListSkeleton";
 import type { BatteryPackDto, BatterySummaryDto } from "../../../api/types/deviceComponents.types";
+
+// Battery Icon with fill level
+const BatteryIcon: React.FC<{
+  percentage: number;
+  size?: number;
+  fillColor?: string;
+  borderColor?: string;
+}> = ({ percentage, size = 24, fillColor = '#22C55E', borderColor = '#9CA3AF' }) => {
+  const clampedPercentage = Math.max(0, Math.min(100, percentage));
+  const fillWidth = (clampedPercentage / 100) * 16; // Max fill width is 16
+
+  // Color based on percentage
+  const getFillColor = () => {
+    if (clampedPercentage <= 20) return '#EF4444'; // Red
+    if (clampedPercentage <= 40) return '#F59E0B'; // Orange
+    return fillColor; // Green
+  };
+
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      {/* Battery body outline */}
+      <Rect
+        x="2"
+        y="7"
+        width="18"
+        height="10"
+        rx="2"
+        ry="2"
+        fill="none"
+        stroke={borderColor}
+        strokeWidth="1.5"
+      />
+      {/* Battery terminal */}
+      <Rect
+        x="20"
+        y="10"
+        width="2"
+        height="4"
+        rx="0.5"
+        fill={borderColor}
+      />
+      {/* Battery fill level */}
+      {clampedPercentage > 0 && (
+        <Rect
+          x="4"
+          y="9"
+          width={fillWidth}
+          height="6"
+          rx="1"
+          fill={getFillColor()}
+        />
+      )}
+    </Svg>
+  );
+};
 
 interface BatteryPack {
   id: string;
@@ -163,7 +219,8 @@ export default function BatteryListScreen() {
 
   const renderBatteryCard = ({ item }: { item: BatteryPack }) => {
     const socValue = item.componentData || 0;
-    const socColor = socValue > 70 ? COLORS.success : socValue > 30 ? COLORS.warning : COLORS.error;
+    // SOC badge rengi için (Seçenek A: %0-20 kırmızı, %21-40 turuncu, %41+ yeşil)
+    const socBadgeColor = socValue <= 20 ? COLORS.error : socValue <= 40 ? COLORS.warning : COLORS.success;
 
     return (
       <Pressable
@@ -182,11 +239,15 @@ export default function BatteryListScreen() {
           style={[
             styles.iconContainer,
             {
-              backgroundColor: `${socColor}20`,
+              backgroundColor: `${COLORS.accent}15`,
             },
           ]}
         >
-          <Battery size={28} color={socColor} />
+          <BatteryIcon
+            percentage={socValue}
+            size={32}
+            borderColor={COLORS.textSoft}
+          />
         </View>
 
         {/* Content */}
@@ -246,7 +307,7 @@ export default function BatteryListScreen() {
           style={[
             styles.socBadge,
             {
-              backgroundColor: `${socColor}15`,
+              backgroundColor: `${socBadgeColor}15`,
             },
           ]}
         >
@@ -254,7 +315,7 @@ export default function BatteryListScreen() {
             style={[
               styles.socText,
               {
-                color: socColor,
+                color: socBadgeColor,
               },
             ]}
           >
@@ -267,7 +328,7 @@ export default function BatteryListScreen() {
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
-      <Battery size={64} color={COLORS.textSoft} opacity={0.3} />
+      <BatteryIcon percentage={0} size={64} borderColor={`${COLORS.textSoft}50`} />
       <Text
         style={[
           styles.emptyText,

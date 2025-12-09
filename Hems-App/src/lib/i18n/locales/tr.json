@@ -20,7 +20,8 @@
     "ok": "Tamam",
     "close": "Kapat",
     "retry": "Yeniden Dene",
-    "serialLabel": "SN"
+    "serialLabel": "SN",
+    "noData": "Veri bulunamadı"
   },
   "invitation": {
     "title": "Ev Daveti",
@@ -514,6 +515,7 @@
   "dashboardGraph": {
     "productionTitle": "Enerji Üretimi",
     "consumptionTitle": "Enerji Tüketimi",
+    "production": "Üretim",
     "total": "Toplam",
     "peak": "Maksimum",
     "average": "Ortalama",

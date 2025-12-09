@@ -20,7 +20,8 @@
       "ok": "OK",
       "close": "Close",
       "retry": "Retry",
-      "serialLabel": "SN"
+      "serialLabel": "SN",
+      "noData": "No data available"
     },
     "invitation": {
       "title": "Home Invitation",
@@ -498,6 +499,7 @@
     "dashboardGraph": {
       "productionTitle": "Energy Production",
       "consumptionTitle": "Energy Consumption",
+      "production": "Production",
       "total": "Total",
       "peak": "Peak",
       "average": "Average",

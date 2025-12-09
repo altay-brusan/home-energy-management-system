@@ -1,4 +1,3 @@
-import FontAwesome from "@react-native-vector-icons/fontawesome";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { ArrowLeft, Sun, Wifi, Zap } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -16,7 +15,7 @@ import {
 } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LinearGradient from 'react-native-linear-gradient';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Rect } from 'react-native-svg';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { mobileDashboardService } from "../../../api/services/mobileDashboardService";
 import { sitesService } from "../../../api/services/sitesService";
@@ -33,6 +32,61 @@ import { getThemeColors, SPACING } from "../../../theme/constants";
 import { getStyles } from "./DeviceDetail.styles";
 import { DeviceDetailSkeleton } from "./DeviceDetailSkeleton";
 import type { ComponentSummaryDto, InverterSummaryDto, BatterySummaryDto } from "../../../api/types/deviceComponents.types";
+
+// Battery Icon with fill level
+const BatteryIcon: React.FC<{
+  percentage: number;
+  size?: number;
+  fillColor?: string;
+  borderColor?: string;
+}> = ({ percentage, size = 24, fillColor = '#22C55E', borderColor = '#9CA3AF' }) => {
+  const clampedPercentage = Math.max(0, Math.min(100, percentage));
+  const fillWidth = (clampedPercentage / 100) * 16; // Max fill width is 16
+
+  // Color based on percentage
+  const getFillColor = () => {
+    if (clampedPercentage <= 20) return '#EF4444'; // Red
+    if (clampedPercentage <= 40) return '#F59E0B'; // Orange
+    return fillColor; // Green
+  };
+
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      {/* Battery body outline */}
+      <Rect
+        x="2"
+        y="7"
+        width="18"
+        height="10"
+        rx="2"
+        ry="2"
+        fill="none"
+        stroke={borderColor}
+        strokeWidth="1.5"
+      />
+      {/* Battery terminal */}
+      <Rect
+        x="20"
+        y="10"
+        width="2"
+        height="4"
+        rx="0.5"
+        fill={borderColor}
+      />
+      {/* Battery fill level */}
+      {clampedPercentage > 0 && (
+        <Rect
+          x="4"
+          y="9"
+          width={fillWidth}
+          height="6"
+          rx="1"
+          fill={getFillColor()}
+        />
+      )}
+    </Svg>
+  );
+};
 
 // PV Icon from EnergyFlowRadial
 const PVIcon: React.FC<{ color: string; size?: number }> = ({ color, size = 32 }) => (
@@ -403,10 +457,16 @@ export default function DeviceDetail() {
               title={t("deviceDetail.battery.title")}
               subtitle={
                 batteryStateOfCharge !== null && batteryStateOfCharge !== undefined
-                  ? `${batteryStateOfCharge.toFixed(1)}% ${batteryCount > 0 ? `• ${batterySubtitle}` : ''}`
+                  ? `${batterySubtitle}\n${batteryStateOfCharge.toFixed(0)}% SOC`
                   : batterySubtitle
               }
-              icon={<FontAwesome name="battery-full" size={24} color={COLORS.success} />}
+              icon={
+                <BatteryIcon
+                  percentage={batteryStateOfCharge ?? 0}
+                  size={28}
+                  borderColor={COLORS.textSoft}
+                />
+              }
               status={batteryCount > 0 ? "online" : "offline"}
               onPress={navigateToBatteryList}
               style={{ flex: 1 }}
