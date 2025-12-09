@@ -42,7 +42,7 @@ public class GetDailyEnergySummaryHandler : IRequestHandler<GetDailyEnergySummar
             throw new ArgumentException($"Device with ID {request.DeviceId} not found or has no ThingsBoard mapping.");
         }
 
-        // Query the latest BatterySoc data for the device using ThingsBoardDeviceId
+        // Query the latest EnergySummary data for the device using ThingsBoardDeviceId
         var LatestDailyCumulativeEnergyData = await _context.DeviceEnergyData
             .Where(dd => dd.ThingsBoardDeviceId == thingsBoardDeviceId && dd.DataType == "DailyCumulativeEnergyData")
             .OrderByDescending(dd => dd.Created)
