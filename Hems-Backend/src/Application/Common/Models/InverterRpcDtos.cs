@@ -166,3 +166,78 @@ public class ExportStrategyStateDto
     [JsonPropertyName("exportStrategyCode")]
     public int? ExportStrategyCode { get; set; } // 0, 1, 2
 }
+
+/// <summary>
+/// RPC response for getDailyEnergyFlowState
+/// </summary>
+public class DailyEnergyFlowStateDto
+{
+    [JsonPropertyName("kind")]
+    public string? Kind { get; set; }
+
+    [JsonPropertyName("timestampUtc")]
+    public string? TimestampUtc { get; set; }
+
+    [JsonPropertyName("version")]
+    public int? Version { get; set; }
+
+    [JsonPropertyName("DeviceId")]
+    public string? DeviceId { get; set; }
+
+    [JsonPropertyName("loadEnergyKWh")]
+    public double? LoadEnergyKWh { get; set; }
+
+    [JsonPropertyName("grid")]
+    public DailyGridEnergyDto? Grid { get; set; }
+
+    [JsonPropertyName("pv")]
+    public DailyPvEnergyDto? Pv { get; set; }
+
+    [JsonPropertyName("battery")]
+    public DailyBatteryEnergyDto? Battery { get; set; }
+
+    [JsonPropertyName("generator")]
+    public DailyGeneratorEnergyDto? Generator { get; set; }
+}
+
+public class DailyGridEnergyDto
+{
+    [JsonPropertyName("importEnergyKWh")]
+    public double? ImportEnergyKWh { get; set; }
+
+    [JsonPropertyName("exportEnergyKWh")]
+    public double? ExportEnergyKWh { get; set; }
+}
+
+public class DailyPvEnergyDto
+{
+    [JsonPropertyName("totalEnergyKWh")]
+    public double? TotalEnergyKWh { get; set; }
+
+    [JsonPropertyName("mppt")]
+    public List<DailyMpptEnergyDto>? Mppt { get; set; }
+}
+
+public class DailyMpptEnergyDto
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    [JsonPropertyName("energyKWh")]
+    public double? EnergyKWh { get; set; }
+}
+
+public class DailyBatteryEnergyDto
+{
+    [JsonPropertyName("chargeEnergyKWh")]
+    public double? ChargeEnergyKWh { get; set; }
+
+    [JsonPropertyName("dischargeEnergyKWh")]
+    public double? DischargeEnergyKWh { get; set; }
+}
+
+public class DailyGeneratorEnergyDto
+{
+    [JsonPropertyName("energyKWh")]
+    public double? EnergyKWh { get; set; }
+}
