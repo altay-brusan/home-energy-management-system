@@ -1,0 +1,19 @@
+GeneratorDeviceState {
+   "timestampUtc": string,
+   "version": number,
+   "DeviceId": string,
+
+  // --- Electrical (when used as generator input) ---
+  "genVoltageV": number | null,    // generator phase voltage A on GEN port (same as grid when ATS) // re-uses grid-side voltage regs
+  "genFrequencyHz": number | null, // same as grid frequency // 183
+
+  "genActivePowerW": number | null,// generator input power low word 667 + high 671 // 667 + 671
+
+  // --- Smart-load mode telemetry (if used as dump load etc.) ---
+  "smartLoadActivePowerW": number | null, // when inputMode == "smart_load", same 667/671 pair interpreted as load // 667 + 671
+
+  // --- Energy / runtime stats (if you decide to keep them) ---
+  "todayGenEnergyKWh": number | null,    // generator today energy if FW supports it (often 536)
+  "totalGenEnergyKWh": number | null,    // generator lifetime energy
+  "accumulatedRunTimeHours": number | null // derived or from BMS/genset controller, not inverter
+}

@@ -1,0 +1,162 @@
+GridAdvancedProtectionConfigState {
+  "timestampUtc": "string",
+  "gatewayId": "string",
+  "inverterSerialNumber": "string",
+  "version": "string",
+
+  // ─────────────────────────────────────
+  // 1) Instantaneous IP protection levels
+  //    (screen: Grid Setting / IP Protection)
+  // ─────────────────────────────────────
+  //
+  // NOTE: register addresses for HVx/LVx/HFx/LFx vary by
+  // firmware / grid code set. Keep this block as
+  // "maintenance-only" and only wire it if a client
+  // explicitly needs it.
+
+  "ipProtection": {
+    "hv1OverVoltageV": "number",       // Level 1 overvoltage point (reg TBD)
+    "hv1TripTimeSeconds": "number",
+
+    "hv2OverVoltageV": "number",
+    "hv2TripTimeSeconds": "number",
+
+    "hv3OverVoltageV": "number",
+    "hv3TripTimeSeconds": "number",
+
+    "lv1UnderVoltageV": "number",
+    "lv1TripTimeSeconds": "number",
+
+    "lv2UnderVoltageV": "number",
+    "lv2TripTimeSeconds": "number",
+
+    "lv3UnderVoltageV": "number",
+    "lv3TripTimeSeconds": "number",
+
+    "hf1OverFrequencyHz": "number",
+    "hf1TripTimeSeconds": "number",
+
+    "hf2OverFrequencyHz": "number",
+    "hf2TripTimeSeconds": "number",
+
+    "hf3OverFrequencyHz": "number",
+    "hf3TripTimeSeconds": "number",
+
+    "lf1UnderFrequencyHz": "number",
+    "lf1TripTimeSeconds": "number",
+
+    "lf2UnderFrequencyHz": "number",
+    "lf2TripTimeSeconds": "number",
+
+    "lf3UnderFrequencyHz": "number",
+    "lf3TripTimeSeconds": "number",
+
+    // Over-voltage U>(10min running mean)
+    "tenMinuteOverVoltageV": "number"  // reg TBD
+  },
+
+  // ─────────────────────────────────────
+  // 2) F(W) frequency–power droop
+  //    (screen: Grid Setting / F(W))
+  // ─────────────────────────────────────
+
+  "frequencyPowerDroop": {
+    "enabled": "bool",                 // FW checkbox (bit/reg TBD)
+
+    "overFrequency": {
+      "startFreqHz": "number",         // Start freq F>
+      "stopFreqHz": "number",          // Stop freq F<
+      "droopPercentPerHz": "number",   // Droop F, e.g. 40 %Pn/Hz
+      "startDelaySeconds": "number",
+      "stopDelaySeconds": "number"
+    },
+
+    "underFrequency": {
+      "startFreqHz": "number",         // Start freq F<
+      "stopFreqHz": "number",          // Stop freq F>
+      "droopPercentPerHz": "number",
+      "startDelaySeconds": "number",
+      "stopDelaySeconds": "number"
+    }
+  },
+
+  // ─────────────────────────────────────
+  // 3) V(W) active-power vs voltage
+  //    and V(Q) reactive-power vs voltage
+  // ─────────────────────────────────────
+
+  "voltageActivePowerCurve": {
+    "enabled": "bool",                 // V(W) checkbox
+    "lockInPnPercent": "number",       // Lock-in/Pn (e.g. 5%)
+    "lockOutPnPercent": "number",      // Lock-out/Pn (e.g. 20%)
+
+    // V1..V4, P1..P4, all as % of nominal
+    "points": [
+      { "voltagePercent": "number", "powerPercent": "number" },  // V1/P1
+      { "voltagePercent": "number", "powerPercent": "number" },  // V2/P2
+      { "voltagePercent": "number", "powerPercent": "number" },  // V3/P3
+      { "voltagePercent": "number", "powerPercent": "number" }   // V4/P4
+    ]
+  },
+
+  "voltageReactivePowerCurve": {
+    "enabled": "bool",                 // V(Q) checkbox
+    "lockInPnPercent": "number",
+    "lockOutPnPercent": "number",
+
+    // V1..V4, Q1..Q4 (Q in % reactive power, e.g. -44%)
+    "points": [
+      { "voltagePercent": "number", "reactivePercent": "number" },  // V1/Q1
+      { "voltagePercent": "number", "reactivePercent": "number" },  // V2/Q2
+      { "voltagePercent": "number", "reactivePercent": "number" },  // V3/Q3
+      { "voltagePercent": "number", "reactivePercent": "number" }   // V4/Q4
+    ]
+  },
+
+  // ─────────────────────────────────────
+  // 4) P(Q) and P(PF) curves
+  //    (screen: Grid Setting / P(Q) P(F))
+  // ─────────────────────────────────────
+
+  "activeVsReactiveCurve": {
+    "enabled": "bool",                 // P(Q) checkbox
+    "points": [
+      { "activePowerPercent": "number", "reactivePercent": "number" }, // P1/Q1
+      { "activePowerPercent": "number", "reactivePercent": "number" },
+      { "activePowerPercent": "number", "reactivePercent": "number" },
+      { "activePowerPercent": "number", "reactivePercent": "number" }
+    ]
+  },
+
+  "activeVsPowerFactorCurve": {
+    "enabled": "bool",                 // P(PF) checkbox
+    "lockInPnPercent": "number",       // Lock-in/Pn
+    "lockOutPnPercent": "number",      // Lock-out/Pn
+    "pfPoints": [
+      { "activePowerPercent": "number", "powerFactor": "number" },    // P1/PF1
+      { "activePowerPercent": "number", "powerFactor": "number" },    // P2/PF2
+      { "activePowerPercent": "number", "powerFactor": "number" },    // P3/PF3
+      { "activePowerPercent": "number", "powerFactor": "number" }     // P4/PF4
+    ]
+  },
+
+  // ─────────────────────────────────────
+  // 5) LVRT / HVRT (low/high voltage ride-through)
+  //    (screen: Grid Setting / LVRT)
+  // ─────────────────────────────────────
+
+  "voltageRideThrough": {
+    "enabled": "bool",                 // L/HVRT checkbox
+
+    "hvLevels": [
+      { "voltagePercent": "number", "timeSeconds": "number" }, // HV1, HV1_T
+      { "voltagePercent": "number", "timeSeconds": "number" }, // HV2, HV2_T
+      { "voltagePercent": "number", "timeSeconds": "number" }  // HV3, HV3_T
+    ],
+
+    "lvLevels": [
+      { "voltagePercent": "number", "timeSeconds": "number" }, // LV1, LV1_T
+      { "voltagePercent": "number", "timeSeconds": "number" }  // LV2, LV2_T
+    ]
+  }
+}

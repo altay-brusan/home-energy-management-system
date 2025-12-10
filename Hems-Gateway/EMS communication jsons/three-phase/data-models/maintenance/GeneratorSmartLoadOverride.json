@@ -1,0 +1,5 @@
+GeneratorSmartLoadOverride {
+  "forceSmartLoadOn": bool  // 132: true = force-enable the "generator as load" (Smart Load) function
+                            // when the GEN port mode is already set to smart load (reg 133 = 1)
+                            // and the feature is enabled in firmware (reg 235 = 1)
+}

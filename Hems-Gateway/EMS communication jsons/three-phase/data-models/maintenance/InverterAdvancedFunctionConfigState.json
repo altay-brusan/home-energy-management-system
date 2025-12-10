@@ -1,0 +1,61 @@
+InverterAdvancedFunctionConfigState {
+  "timestampUtc": "string",
+  "gatewayId": "string",
+  "inverterSerialNumber": "string",
+  "version": "string",
+
+  // Raw 16-bit advanced-function word
+  "advancedFunctionWordRaw": "number",           // 178
+
+  // ─────────────────────────────────────
+  // 1) Arc-fault & self-check
+  // ─────────────────────────────────────
+
+  "arcFault": {
+    "enabled": "bool",                           // 178 Bit0-1 (Solar Arc Fault ON)
+    "clearRequested": "bool"                     // 178 Bit0-1 special pattern for Clear_Arc_Fault (factory use)
+  },
+
+  "systemSelfCheckEnabled": "bool",              // 178 Bit?  (System selfcheck – normally false)
+
+  // ─────────────────────────────────────
+  // 2) Peak-shaving (note: grid peak-shaving is already represented
+  //    conceptually in SystemWorkModeConfigState.gridPeakShaving)
+  // ─────────────────────────────────────
+
+  "generatorPeakShavingEnabled": "bool",         // 178 Bit2-3 (Gen peak-shaving)
+  "gridPeakShavingEnabled": "bool",             // 178 Bit4-5  (this backs SystemWorkModeConfigState.gridPeakShaving.enabled)
+
+  // ─────────────────────────────────────
+  // 3) Smart-load / island-mode relay
+  // ─────────────────────────────────────
+
+  "smartLoadOnGridAlwaysOn": "bool",            // 178 Bit6-7 – "On Grid always on" vs "off grid immediately off"
+  "externalRelayEnabled": "bool",               // 178 Bit8-9 – enable ATS / island-mode relay output
+  "islandModeSignalEnabled": "bool",            // same group: "Signal ISLAND MODE" behaviour
+
+  // CT ratio and external meter phase (from "Advanced Function → CT Ratio / Ex_Meter For CT")
+  "externalMeter": {
+    "ctRatio": "number",                        // 194 – CT Ratio (e.g. 2000 ⇒ 2000:1)
+    "phase": "string"                           // "A" | "B" | "C" | null – which phase CHiNT meter is on
+  },
+
+  // ─────────────────────────────────────
+  // 4) BMS / DRM behaviour
+  // ─────────────────────────────────────
+
+  "bmsErrorStopEnabled": "bool",                // 178 Bit10-11 – BMS_Err_Stop
+  "drmEnabled": "bool",                         // 178 Bit12-13 – DRM signal handling enable
+
+  // ─────────────────────────────────────
+  // 5) Parallel settings (screen: Advanced Function / Parallel)
+  // ─────────────────────────────────────
+
+  "parallel": {
+    "enabled": "bool",                          // Parallel checkbox
+    "role": "master" | "slave" | "standalone",  // Master / Slave / not in parallel
+    "modbusAddress": "number"                   // "Modbus SN" value
+  }
+
+  // You can extend later if firmware adds more bits into 178/194/etc.
+}

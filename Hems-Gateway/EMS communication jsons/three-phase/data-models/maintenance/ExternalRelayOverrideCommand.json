@@ -1,0 +1,21 @@
+ExternalRelayOverrideCommand {
+  "timestampUtc": string,
+  "gatewayId": string,
+  "inverterSerialNumber": string,
+
+  // Which relay to control (must match ExternalRelayConfigState.relayId)
+  "relayId": number,
+
+  // Desired action
+  "action": "on" | "off" | "pulse",
+
+  // Optional pulse duration for "pulse"
+  "pulseSeconds": number | null,          // e.g. 3.0 → ON for 3s, then back to previous state
+
+  // Safety: when should this override automatically expire
+  "expiresAtUtc": string | null,          // null = let gateway decide default (e.g. 10s)
+
+  // For logging / audit
+  "reason": string,                       // "manual_test", "remote_maintenance", etc.
+  "requestedBy": string                   // user id / system component
+}
