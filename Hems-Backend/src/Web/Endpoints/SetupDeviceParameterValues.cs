@@ -1,8 +1,10 @@
 using Hems_Backend.Application.SetupDeviceParameterValues.Commands.CreateSetupDeviceParameterValue;
 using Hems_Backend.Application.SetupDeviceParameterValues.Commands.DeleteSetupDeviceParameterValue;
 using Hems_Backend.Application.SetupDeviceParameterValues.Commands.UpdateSetupDeviceParameterValue;
+using Hems_Backend.Application.SetupDeviceParameterValues.Commands.UpdateDeviceParameterValue;
 using Hems_Backend.Application.SetupDeviceParameterValues.Queries.GetSetupDeviceParameterValues;
 using Hems_Backend.Application.SetupDeviceParameterValues.Queries.GetSetupDeviceParameterValuesTree;
+using Hems_Backend.Application.SetupDeviceParameterValues.Queries.GetDeviceParameterValuesTree;
 using Hems_Backend.Domain.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -17,12 +19,13 @@ public class SetupDeviceParameterValues : EndpointGroupBase
             .RequireAuthorization()
             .MapGet(GetSetupDeviceParameterValues)
             .MapGet(GetSetupDeviceParameterValuesTree, "tree")
+            .MapGet(GetDeviceParameterValuesTree, "device/{deviceId}/tree")
             .MapPost(CreateSetupDeviceParameterValue)
             .MapPut(UpdateSetupDeviceParameterValue, "{id}")
+            .MapPut(UpdateDeviceParameterValue, "device/{deviceId}/parameter/{parameterId}")
             .MapDelete(DeleteSetupDeviceParameterValue, "{id}");
     }
 
-    [Authorize(Policies.AdminOnly)]
     public async Task<SetupDeviceParameterValuesVm> GetSetupDeviceParameterValues(
         ISender sender,
         Guid setupDeviceId)
@@ -30,7 +33,6 @@ public class SetupDeviceParameterValues : EndpointGroupBase
         return await sender.Send(new GetSetupDeviceParameterValuesQuery { SetupDeviceId = setupDeviceId });
     }
 
-    [Authorize(Policies.AdminOnly)]
     public async Task<SetupDeviceParameterValuesTreeVm> GetSetupDeviceParameterValuesTree(
         ISender sender,
         Guid setupDeviceId)
@@ -47,7 +49,6 @@ public class SetupDeviceParameterValues : EndpointGroupBase
         return TypedResults.Created($"/api/SetupDeviceParameterValues/{id}", id);
     }
 
-    [Authorize(Policies.AdminOnly)]
     public async Task<Results<NoContent, BadRequest>> UpdateSetupDeviceParameterValue(
         ISender sender,
         Guid id,
@@ -65,6 +66,26 @@ public class SetupDeviceParameterValues : EndpointGroupBase
         Guid id)
     {
         await sender.Send(new DeleteSetupDeviceParameterValueCommand { Id = id });
+        return TypedResults.NoContent();
+    }
+
+    public async Task<SetupDeviceParameterValuesTreeVm> GetDeviceParameterValuesTree(
+        ISender sender,
+        Guid deviceId)
+    {
+        return await sender.Send(new GetDeviceParameterValuesTreeQuery { DeviceId = deviceId });
+    }
+
+    public async Task<Results<NoContent, BadRequest>> UpdateDeviceParameterValue(
+        ISender sender,
+        Guid deviceId,
+        Guid parameterId,
+        UpdateDeviceParameterValueCommand command)
+    {
+        if (deviceId != command.DeviceId || parameterId != command.ParameterId)
+            return TypedResults.BadRequest();
+
+        await sender.Send(command);
         return TypedResults.NoContent();
     }
 }

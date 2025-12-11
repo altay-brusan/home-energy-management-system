@@ -2914,6 +2914,43 @@
         ]
       }
     },
+    "/api/SetupDeviceParameterValues/device/{deviceId}/tree": {
+      "get": {
+        "tags": [
+          "SetupDeviceParameterValues"
+        ],
+        "operationId": "GetDeviceParameterValuesTree",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupDeviceParameterValuesTreeVm"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/SetupDeviceParameterValues/{id}": {
       "put": {
         "tags": [
@@ -2975,6 +3012,61 @@
             "x-position": 1
           }
         ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/SetupDeviceParameterValues/device/{deviceId}/parameter/{parameterId}": {
+      "put": {
+        "tags": [
+          "SetupDeviceParameterValues"
+        ],
+        "operationId": "UpdateDeviceParameterValue",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "parameterId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 2
+          }
+        ],
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDeviceParameterValueCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 3
+        },
         "responses": {
           "204": {
             "description": ""
@@ -5864,8 +5956,7 @@
             "type": "string"
           },
           "modelNumber": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "serialNumber": {
             "type": "string",
@@ -5980,8 +6071,7 @@
             "type": "string"
           },
           "modelNumber": {
-            "type": "string",
-            "nullable": true
+            "type": "string"
           },
           "serialNumber": {
             "type": "string",
@@ -7133,6 +7223,23 @@
             "format": "int32"
           },
           "modelNumber": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateDeviceParameterValueCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "parameterId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "value": {
             "type": "string"
           }
         }
