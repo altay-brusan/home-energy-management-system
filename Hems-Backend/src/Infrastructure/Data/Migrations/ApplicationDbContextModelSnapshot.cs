@@ -127,6 +127,7 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.Property<string>("ModelNumber")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
