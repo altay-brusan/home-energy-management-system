@@ -9,7 +9,7 @@ public class Device : BaseGuidAuditableEntity
     public Guid ThingsBoardDeviceId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Manufacturer { get; set; } = string.Empty;
-    public string? ModelNumber { get; set; }
+    public string ModelNumber { get; set; } = string.Empty;
     public string? SerialNumber { get; set; }
     public string? TypeNumber { get; set; }
     public string? QRCode { get; set; }
