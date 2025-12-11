@@ -1,0 +1,51 @@
+InverterDeviceState {
+  "timestampUtc": string,
+  "version": number,
+  "DeviceId": string,
+
+  "runState": string,              // 500: "standby"|"selfcheck"|"normal"|"alarm"|"fault"|"activating"
+
+  // --- Inverter Output (3-phase) ---
+  "output": {
+    "totalActivePowerW": number,       // 636 (low) + 694 (high): Total active power (1W)
+    "totalApparentPowerVA": number,    // 637 (low) + 695 (high): Total apparent power (1W)
+    "frequencyHz": number,             // 638: Inverter frequency (0.01Hz)
+    
+    "phaseA": {
+      "voltageV": number,              // 627: Phase A voltage (0.1V)
+      "currentA": number,              // 630: Phase A current (0.01A)
+      "activePowerW": number           // 633 (low) + 691 (high): Phase A power (1W)
+    },
+    "phaseB": {
+      "voltageV": number,              // 628: Phase B voltage (0.1V)
+      "currentA": number,              // 631: Phase B current (0.01A)
+      "activePowerW": number           // 634 (low) + 692 (high): Phase B power (1W)
+    },
+    "phaseC": {
+      "voltageV": number,              // 629: Phase C voltage (0.1V)
+      "currentA": number,              // 632: Phase C current (0.01A)
+      "activePowerW": number           // 635 (low) + 693 (high): Phase C power (1W)
+    }
+  },
+
+  // --- Grid Side (import/export) ---
+  "gridSide": {
+    "totalActivePowerW": number,       // 625 (low) + 690 (high): Grid total power (1W)
+    "phaseAPowerW": number,            // 622 (low) + 687 (high): Grid A-phase power (1W)
+    "phaseBPowerW": number,            // 623 (low) + 688 (high): Grid B-phase power (1W)
+    "phaseCPowerW": number             // 624 (low) + 689 (high): Grid C-phase power (1W)
+  },
+
+  // --- Temperatures ---
+  "temperatures": {
+    "dcTransformerTempC": number | null,  // 540: DC transformer temp (0.1°C, offset 1000)
+    "heatsinkTempC": number | null        // 541: Heat sink temp (0.1°C)
+  },
+
+  // --- AC Input Status ---
+  "acInputStatus": {
+    "genGridSignalRaw": number,        // 140: Gen_Grid_Signal (R/W register)
+    "gridSignalPresent": bool,         // 140 bit0 == 1 → grid OK
+    "generatorSignalPresent": bool     // 140 bit1 == 1 → generator OK
+  }
+}

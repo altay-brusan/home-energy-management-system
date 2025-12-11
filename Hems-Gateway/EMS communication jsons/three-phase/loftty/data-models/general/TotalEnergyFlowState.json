@@ -1,0 +1,34 @@
+TotalEnergyFlowState {
+  "timestampUtc": string,
+  "version": number,
+  "deviceId": string,
+
+  "grid": {
+    "importTotalEnergyKWh": number,      // 522 (low) + 523 (high): Total grid buy (0.1kWh)
+    "exportTotalEnergyKWh": number       // 524 (low) + 525 (high): Total grid sell (0.1kWh)
+  },
+
+  "pv": {
+    "totalEnergyKWh": number | null,     // 534 (low) + 535 (high): Total PV energy (0.1kWh) - 534 预留 reserved!
+
+    "mppt": [
+      { "id": 1, "totalEnergyKWh": number | null },  // Bu protokolde yok - null
+      { "id": 2, "totalEnergyKWh": number | null },  // Bu protokolde yok - null
+      { "id": 3, "totalEnergyKWh": number | null },  // Bu protokolde yok - null
+      { "id": 4, "totalEnergyKWh": number | null }   // Bu protokolde yok - null
+    ]
+  },
+
+  "load": {
+    "totalEnergyKWh": number             // 527 (low) + 528 (high): Total load energy (0.1kWh)
+  },
+
+  "battery": {
+    "totalChargeEnergyKWh": number,      // 516 (low) + 517 (high): Total battery charge (0.1kWh)
+    "totalDischargeEnergyKWh": number    // 518 (low) + 519 (high): Total battery discharge (0.1kWh)
+  },
+
+  "generator": {
+    "totalEnergyKWh": number             // 537 (low) + 538 (high): Total generator energy (0.1kWh)
+  }
+}

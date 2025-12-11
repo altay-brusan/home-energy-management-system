@@ -1,0 +1,313 @@
+[
+    {
+        "id": "total_energy_flow_state_tab",
+        "type": "tab",
+        "label": "TotalEnergyFlowState",
+        "disabled": false,
+        "info": "Total Energy Flow State Telemetry\nPeriodic: Every 1 hour\nRPC: getTotalEnergyFlowState"
+    },
+    {
+        "id": "tefs_inject",
+        "type": "inject",
+        "z": "total_energy_flow_state_tab",
+        "name": "Every 1 hour",
+        "props": [],
+        "repeat": "3600",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 140,
+        "y": 80,
+        "wires": [
+            [
+                "tefs_trigger"
+            ]
+        ]
+    },
+    {
+        "id": "tefs_manual",
+        "type": "inject",
+        "z": "total_energy_flow_state_tab",
+        "name": "Manual",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 130,
+        "y": 120,
+        "wires": [
+            [
+                "tefs_trigger"
+            ]
+        ]
+    },
+    {
+        "id": "tefs_link_in_rpc",
+        "type": "link in",
+        "z": "total_energy_flow_state_tab",
+        "name": "From RPC",
+        "links": [
+            "rpc_tefs_link_out"
+        ],
+        "x": 115,
+        "y": 160,
+        "wires": [
+            [
+                "tefs_trigger"
+            ]
+        ]
+    },
+    {
+        "id": "tefs_trigger",
+        "type": "function",
+        "z": "total_energy_flow_state_tab",
+        "name": "Trigger Reads",
+        "func": "// Clear previous partial reads\nflow.set(\"tefs_part_grid\", undefined);\nflow.set(\"tefs_part_battery\", undefined);\nflow.set(\"tefs_part_load\", undefined);\nflow.set(\"tefs_part_pv\", undefined);\nflow.set(\"tefs_part_generator\", undefined);\n\n// Preserve RPC context if present\nconst isRpc = msg.isRpcRequest === true;\nif (isRpc) {\n    flow.set(\"tefs_rpc_context\", {\n        requestId: msg.rpcRequestId,\n        responseTopic: msg.rpcResponseTopic\n    });\n} else {\n    flow.set(\"tefs_rpc_context\", undefined);\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 310,
+        "y": 120,
+        "wires": [
+            [
+                "tefs_read_grid",
+                "tefs_read_battery",
+                "tefs_read_load",
+                "tefs_read_pv",
+                "tefs_read_generator"
+            ]
+        ]
+    },
+    {
+        "id": "tefs_read_grid",
+        "type": "function",
+        "z": "total_energy_flow_state_tab",
+        "name": "Read Grid",
+        "func": "// Read registers 522-525: Grid import + export\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 522,\n    quantity: 4\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 60,
+        "wires": [
+            [
+                "tefs_modbus_client"
+            ]
+        ]
+    },
+    {
+        "id": "tefs_read_battery",
+        "type": "function",
+        "z": "total_energy_flow_state_tab",
+        "name": "Read Battery",
+        "func": "// Read registers 516-519: Battery charge + discharge\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 516,\n    quantity: 4\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 510,
+        "y": 100,
+        "wires": [
+            [
+                "tefs_modbus_client"
+            ]
+        ]
+    },
+    {
+        "id": "tefs_read_load",
+        "type": "function",
+        "z": "total_energy_flow_state_tab",
+        "name": "Read Load",
+        "func": "// Read registers 527-528: Load total energy\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 527,\n    quantity: 2\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 140,
+        "wires": [
+            [
+                "tefs_modbus_client"
+            ]
+        ]
+    },
+    {
+        "id": "tefs_read_pv",
+        "type": "function",
+        "z": "total_energy_flow_state_tab",
+        "name": "Read PV",
+        "func": "// Read registers 534-535: PV total energy (reserved)\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 534,\n    quantity: 2\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 490,
+        "y": 180,
+        "wires": [
+            [
+                "tefs_modbus_client"
+            ]
+        ]
+    },
+    {
+        "id": "tefs_read_generator",
+        "type": "function",
+        "z": "total_energy_flow_state_tab",
+        "name": "Read Generator",
+        "func": "// Read registers 537-538: Generator total energy\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 537,\n    quantity: 2\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 520,
+        "y": 220,
+        "wires": [
+            [
+                "tefs_modbus_client"
+            ]
+        ]
+    },
+    {
+        "id": "tefs_modbus_client",
+        "type": "modbus-client",
+        "z": "total_energy_flow_state_tab",
+        "name": "Modbus RTU",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "tcpHost": "",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyUSB0",
+        "serialType": "RTU-BUFFERD",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "unit_id": "1",
+        "commandDelay": "1",
+        "clientTimeout": "1000",
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": "2000",
+        "parallelUnitIdsAllowed": false,
+        "x": 750,
+        "y": 140,
+        "wires": [
+            [
+                "tefs_handle_response"
+            ]
+        ]
+    },
+    {
+        "id": "tefs_handle_response",
+        "type": "function",
+        "z": "total_energy_flow_state_tab",
+        "name": "Handle Response",
+        "func": "const data = msg.payload;\nconst address = msg.modbusRequest?.address;\n\n// Helper: u32 from two words\nfunction u32(low, high) {\n    return ((high & 0xFFFF) << 16) | (low & 0xFFFF);\n}\n\n// Determine which part this is\nif (address === 522) {\n    // Grid 522-525\n    const gridImportLow = data[0] || 0;   // 522\n    const gridImportHigh = data[1] || 0;  // 523\n    const gridExportLow = data[2] || 0;   // 524\n    const gridExportHigh = data[3] || 0;  // 525\n    \n    const gridImport = u32(gridImportLow, gridImportHigh);\n    const gridExport = u32(gridExportLow, gridExportHigh);\n    \n    flow.set(\"tefs_part_grid\", {\n        gridImport, gridExport\n    });\n    \n} else if (address === 516) {\n    // Battery 516-519\n    const battChargeLow = data[0] || 0;     // 516\n    const battChargeHigh = data[1] || 0;    // 517\n    const battDischargeLow = data[2] || 0;  // 518\n    const battDischargeHigh = data[3] || 0; // 519\n    \n    const battCharge = u32(battChargeLow, battChargeHigh);\n    const battDischarge = u32(battDischargeLow, battDischargeHigh);\n    \n    flow.set(\"tefs_part_battery\", {\n        battCharge, battDischarge\n    });\n    \n} else if (address === 527) {\n    // Load 527-528\n    const loadLow = data[0] || 0;   // 527\n    const loadHigh = data[1] || 0;  // 528\n    \n    const loadTotal = u32(loadLow, loadHigh);\n    \n    flow.set(\"tefs_part_load\", loadTotal);\n    \n} else if (address === 534) {\n    // PV 534-535 (reserved)\n    const pvLow = data[0] || 0;   // 534\n    const pvHigh = data[1] || 0;  // 535\n    \n    const pvTotal = u32(pvLow, pvHigh);\n    \n    flow.set(\"tefs_part_pv\", pvTotal);\n    \n} else if (address === 537) {\n    // Generator 537-538\n    const genLow = data[0] || 0;   // 537\n    const genHigh = data[1] || 0;  // 538\n    \n    const genTotal = u32(genLow, genHigh);\n    \n    flow.set(\"tefs_part_generator\", genTotal);\n}\n\n// Check if all parts are ready\nconst gridPart = flow.get(\"tefs_part_grid\");\nconst batteryPart = flow.get(\"tefs_part_battery\");\nconst loadTotal = flow.get(\"tefs_part_load\");\nconst pvTotal = flow.get(\"tefs_part_pv\");\nconst genTotal = flow.get(\"tefs_part_generator\");\n\nif (!gridPart || !batteryPart || loadTotal === undefined || pvTotal === undefined || genTotal === undefined) {\n    return null;  // Wait for all parts\n}\n\n// All parts ready - assemble payload\nconst telemetry = {\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    deviceId: \"loftty-inverter\",\n    \n    grid: {\n        importTotalEnergyKWh: Math.round((gridPart.gridImport * 0.1) * 10) / 10,\n        exportTotalEnergyKWh: Math.round((gridPart.gridExport * 0.1) * 10) / 10\n    },\n    \n    pv: {\n        totalEnergyKWh: pvTotal === 0 ? null : Math.round((pvTotal * 0.1) * 10) / 10,\n        mppt: [\n            { id: 1, totalEnergyKWh: null },  // Bu inverterde yok\n            { id: 2, totalEnergyKWh: null },  // Bu inverterde yok\n            { id: 3, totalEnergyKWh: null },  // Bu inverterde yok\n            { id: 4, totalEnergyKWh: null }   // Bu inverterde yok\n        ]\n    },\n    \n    load: {\n        totalEnergyKWh: Math.round((loadTotal * 0.1) * 10) / 10\n    },\n    \n    battery: {\n        totalChargeEnergyKWh: Math.round((batteryPart.battCharge * 0.1) * 10) / 10,\n        totalDischargeEnergyKWh: Math.round((batteryPart.battDischarge * 0.1) * 10) / 10\n    },\n    \n    generator: {\n        totalEnergyKWh: Math.round((genTotal * 0.1) * 10) / 10\n    }\n};\n\n// Clear flow context\nflow.set(\"tefs_part_grid\", undefined);\nflow.set(\"tefs_part_battery\", undefined);\nflow.set(\"tefs_part_load\", undefined);\nflow.set(\"tefs_part_pv\", undefined);\nflow.set(\"tefs_part_generator\", undefined);\n\n// Check if RPC\nconst rpcContext = flow.get(\"tefs_rpc_context\");\nif (rpcContext) {\n    msg.topic = rpcContext.responseTopic;\n    msg.payload = telemetry;\n    flow.set(\"tefs_rpc_context\", undefined);\n    return [msg, null];  // Send to RPC output only\n} else {\n    msg.payload = telemetry;\n    return [null, msg];  // Send to telemetry output only\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 330,
+        "y": 280,
+        "wires": [
+            [
+                "tefs_rpc_response"
+            ],
+            [
+                "tefs_mqtt_out"
+            ]
+        ]
+    },
+    {
+        "id": "tefs_rpc_response",
+        "type": "mqtt out",
+        "z": "total_energy_flow_state_tab",
+        "name": "RPC Response",
+        "topic": "",
+        "qos": "2",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 560,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "tefs_mqtt_out",
+        "type": "mqtt out",
+        "z": "total_energy_flow_state_tab",
+        "name": "Telemetry",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "2",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 550,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

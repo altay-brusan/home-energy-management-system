@@ -1,0 +1,34 @@
+GeneratorDeviceState {
+   "timestampUtc": string,
+   "version": number,
+   "DeviceId": string,
+
+  // --- Generator Port Voltages (3-phase) ---
+  "genVoltage": {
+    "phaseAVoltageV": number | null,     // 661: Gen port phase voltage A (0.1V)
+    "phaseBVoltageV": number | null,     // 662: Gen port phase voltage B (0.1V)
+    "phaseCVoltageV": number | null      // 663: Gen port phase voltage C (0.1V)
+  },
+
+  // --- Generator Port Frequency ---
+  "genFrequencyHz": number | null,       // 609: Grid-side frequency (0.01Hz) - shared with grid
+
+  // --- Generator Port Power (3-phase) ---
+  "genPower": {
+    "phaseAPowerW": number | null,       // 664 (low) + 668 (high): Gen port phase A power (1W, S32)
+    "phaseBPowerW": number | null,       // 665 (low) + 669 (high): Gen port phase B power (1W, S32)
+    "phaseCPowerW": number | null,       // 666 (low) + 670 (high): Gen port phase C power (1W, S32)
+    "totalPowerW": number | null         // 667 (low) + 671 (high): Gen port total power (1W, S32)
+  },
+
+  // --- Smart Load Mode (when Gen port used as dump load) ---
+  "smartLoadActivePowerW": number | null, // Same 667+671 when inputMode == "smart_load"
+
+  // --- Daily Energy & Runtime ---
+  "todayGenEnergyKWh": number | null,    // 536: Generator daily energy (0.1kWh)
+  "dailyRunTimeHours": number | null,    // 539: Generator daily runtime (0.1h)
+
+  // --- Lifetime Totals ---
+  "totalGenEnergyKWh": number | null,    // 537 (low) + 538 (high): Generator total energy (0.1kWh)
+  "accumulatedRunTimeHours": number | null // 512 (low) + 513 (high): Generator historical runtime (0.1h)
+}

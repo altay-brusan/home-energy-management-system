@@ -1,0 +1,292 @@
+[
+    {
+        "id": "power_flow_state_tab",
+        "type": "tab",
+        "label": "PowerFlowState",
+        "disabled": false,
+        "info": "Power Flow State Telemetry\nPeriodic: Every 5 minutes\nRPC: getPowerFlowState"
+    },
+    {
+        "id": "pfs_inject",
+        "type": "inject",
+        "z": "power_flow_state_tab",
+        "name": "Every 5 min",
+        "props": [],
+        "repeat": "300",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 130,
+        "y": 80,
+        "wires": [
+            [
+                "pfs_trigger"
+            ]
+        ]
+    },
+    {
+        "id": "pfs_manual",
+        "type": "inject",
+        "z": "power_flow_state_tab",
+        "name": "Manual",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 130,
+        "y": 120,
+        "wires": [
+            [
+                "pfs_trigger"
+            ]
+        ]
+    },
+    {
+        "id": "pfs_link_in_rpc",
+        "type": "link in",
+        "z": "power_flow_state_tab",
+        "name": "From RPC",
+        "links": [
+            "rpc_pfs_link_out"
+        ],
+        "x": 115,
+        "y": 160,
+        "wires": [
+            [
+                "pfs_trigger"
+            ]
+        ]
+    },
+    {
+        "id": "pfs_trigger",
+        "type": "function",
+        "z": "power_flow_state_tab",
+        "name": "Trigger Reads",
+        "func": "// Clear previous partial reads\nflow.set(\"pfs_part_pvmppt14\", undefined);\nflow.set(\"pfs_part_pvmppt58\", undefined);\nflow.set(\"pfs_part_gridbatt\", undefined);\nflow.set(\"pfs_part_loadgen\", undefined);\n\n// Preserve RPC context if present\nconst isRpc = msg.isRpcRequest === true;\nif (isRpc) {\n    flow.set(\"pfs_rpc_context\", {\n        requestId: msg.rpcRequestId,\n        responseTopic: msg.rpcResponseTopic\n    });\n} else {\n    flow.set(\"pfs_rpc_context\", undefined);\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 310,
+        "y": 120,
+        "wires": [
+            [
+                "pfs_read_pvmppt14",
+                "pfs_read_pvmppt58",
+                "pfs_read_gridbatt",
+                "pfs_read_loadgen"
+            ]
+        ]
+    },
+    {
+        "id": "pfs_read_pvmppt14",
+        "type": "function",
+        "z": "power_flow_state_tab",
+        "name": "Read PV MPPT 1-4",
+        "func": "// Read registers 672-675: PV1-4 input power\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 672,\n    quantity: 4\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 530,
+        "y": 60,
+        "wires": [
+            [
+                "pfs_modbus_client"
+            ]
+        ]
+    },
+    {
+        "id": "pfs_read_pvmppt58",
+        "type": "function",
+        "z": "power_flow_state_tab",
+        "name": "Read PV MPPT 5-8",
+        "func": "// Read registers 727-730: PV5-8 power\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 727,\n    quantity: 4\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 530,
+        "y": 100,
+        "wires": [
+            [
+                "pfs_modbus_client"
+            ]
+        ]
+    },
+    {
+        "id": "pfs_read_gridbatt",
+        "type": "function",
+        "z": "power_flow_state_tab",
+        "name": "Read Grid+Battery",
+        "func": "// Read registers 590, 625, 690\n// We'll read 590, then 625, then 690 separately\n// For simplicity, read 590-590, then 625-625, then 690-690\n// Better approach: read 590, then 625+690 in one read\n// But they're far apart, so read separately\n\n// Actually, let's read 625 and 690 (Grid low+high)\n// And 590 separately\n// Since 625 and 690 are far apart (65 registers), read separately\n\n// Read 590 (Battery), 625 (Grid low), 690 (Grid high)\n// Strategy: Read 590 alone, then read 625, then read 690\n// But we need all 3 in one partial... let's use multiple reads\n\n// Simpler: Just read what we need\n// 590: Battery power\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 590,\n    quantity: 1\n};\nmsg.readPart = \"battery\";\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 530,
+        "y": 140,
+        "wires": [
+            [
+                "pfs_modbus_client"
+            ]
+        ]
+    },
+    {
+        "id": "pfs_read_loadgen",
+        "type": "function",
+        "z": "power_flow_state_tab",
+        "name": "Read Load+Gen+PVTotal",
+        "func": "// Read registers 653, 659, 667, 671, 718\n// 653: Load low\n// 659: Load high  \n// 667: Gen low\n// 671: Gen high\n// 718: PV total\n\n// These are scattered, so we'll need multiple reads\n// But let's group what we can\n// 653-659 is 7 registers apart\n// 667-671 is 5 registers apart\n// 718 is far\n\n// Read 653, 659 (Load)\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 653,\n    quantity: 7  // 653-659\n};\nmsg.readPart = \"load_range\";\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 550,
+        "y": 180,
+        "wires": [
+            [
+                "pfs_modbus_client"
+            ]
+        ]
+    },
+    {
+        "id": "pfs_modbus_client",
+        "type": "modbus-client",
+        "z": "power_flow_state_tab",
+        "name": "Modbus RTU",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "tcpHost": "",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyUSB0",
+        "serialType": "RTU-BUFFERD",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "unit_id": "1",
+        "commandDelay": "1",
+        "clientTimeout": "1000",
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": "2000",
+        "parallelUnitIdsAllowed": false,
+        "x": 770,
+        "y": 120,
+        "wires": [
+            [
+                "pfs_handle_response"
+            ]
+        ]
+    },
+    {
+        "id": "pfs_handle_response",
+        "type": "function",
+        "z": "power_flow_state_tab",
+        "name": "Handle Response",
+        "func": "const data = msg.payload;\nconst address = msg.modbusRequest?.address;\nconst readPart = msg.readPart;\n\n// Helper: s16 conversion\nfunction s16(val) {\n    return (val & 0x8000) ? val - 0x10000 : val;\n}\n\n// Helper: u32 from two words\nfunction u32(low, high) {\n    return ((high & 0xFFFF) << 16) | (low & 0xFFFF);\n}\n\n// Helper: s32 from two words\nfunction s32(low, high) {\n    const val = u32(low, high);\n    return (val & 0x80000000) ? val - 0x100000000 : val;\n}\n\n// Determine which part this is\nif (address === 672) {\n    // PV MPPT 1-4\n    const pv1 = data[0] || 0;  // 672\n    const pv2 = data[1] || 0;  // 673\n    const pv3 = data[2] || 0;  // 674\n    const pv4 = data[3] || 0;  // 675\n    \n    flow.set(\"pfs_part_pvmppt14\", {\n        pv1, pv2, pv3, pv4\n    });\n    \n} else if (address === 727) {\n    // PV MPPT 5-8\n    const pv5 = data[0] || 0;  // 727\n    const pv6 = data[1] || 0;  // 728\n    const pv7 = data[2] || 0;  // 729\n    const pv8 = data[3] || 0;  // 730\n    \n    flow.set(\"pfs_part_pvmppt58\", {\n        pv5, pv6, pv7, pv8\n    });\n    \n} else if (address === 590 && readPart === \"battery\") {\n    // Battery power\n    const batteryPower = s16(data[0] || 0);  // 590: S16, 1W or 10W\n    \n    flow.set(\"pfs_part_battery\", batteryPower);\n    \n    // Now read Grid low (625)\n    msg.payload = {\n        fc: 3,\n        unitid: 1,\n        address: 625,\n        quantity: 1\n    };\n    msg.readPart = \"grid_low\";\n    return msg;\n    \n} else if (address === 625 && readPart === \"grid_low\") {\n    // Grid low word\n    const gridLow = data[0] || 0;\n    flow.set(\"pfs_part_grid_low\", gridLow);\n    \n    // Now read Grid high (690)\n    msg.payload = {\n        fc: 3,\n        unitid: 1,\n        address: 690,\n        quantity: 1\n    };\n    msg.readPart = \"grid_high\";\n    return msg;\n    \n} else if (address === 690 && readPart === \"grid_high\") {\n    // Grid high word\n    const gridHigh = data[0] || 0;\n    flow.set(\"pfs_part_grid_high\", gridHigh);\n    \n    // Mark grid+batt complete\n    flow.set(\"pfs_part_gridbatt\", true);\n    \n} else if (address === 653 && readPart === \"load_range\") {\n    // Load range 653-659 (7 registers)\n    const loadLow = data[0] || 0;   // 653\n    const loadHigh = data[6] || 0;  // 659\n    \n    flow.set(\"pfs_part_load_low\", loadLow);\n    flow.set(\"pfs_part_load_high\", loadHigh);\n    \n    // Now read Gen low+high (667-671 is 5 registers)\n    msg.payload = {\n        fc: 3,\n        unitid: 1,\n        address: 667,\n        quantity: 5\n    };\n    msg.readPart = \"gen_range\";\n    return msg;\n    \n} else if (address === 667 && readPart === \"gen_range\") {\n    // Gen range 667-671\n    const genLow = data[0] || 0;   // 667\n    const genHigh = data[4] || 0;  // 671\n    \n    flow.set(\"pfs_part_gen_low\", genLow);\n    flow.set(\"pfs_part_gen_high\", genHigh);\n    \n    // Now read PV total (718)\n    msg.payload = {\n        fc: 3,\n        unitid: 1,\n        address: 718,\n        quantity: 1\n    };\n    msg.readPart = \"pv_total\";\n    return msg;\n    \n} else if (address === 718 && readPart === \"pv_total\") {\n    // PV total power\n    const pvTotal = data[0] || 0;  // 718\n    flow.set(\"pfs_part_pv_total\", pvTotal);\n    \n    // Mark load+gen complete\n    flow.set(\"pfs_part_loadgen\", true);\n}\n\n// Check if all parts are ready\nconst pvmppt14 = flow.get(\"pfs_part_pvmppt14\");\nconst pvmppt58 = flow.get(\"pfs_part_pvmppt58\");\nconst gridbatt = flow.get(\"pfs_part_gridbatt\");\nconst loadgen = flow.get(\"pfs_part_loadgen\");\n\nif (!pvmppt14 || !pvmppt58 || !gridbatt || !loadgen) {\n    return null;  // Wait for all parts\n}\n\n// All parts ready - assemble payload\nconst batteryPower = flow.get(\"pfs_part_battery\");\nconst gridLow = flow.get(\"pfs_part_grid_low\");\nconst gridHigh = flow.get(\"pfs_part_grid_high\");\nconst loadLow = flow.get(\"pfs_part_load_low\");\nconst loadHigh = flow.get(\"pfs_part_load_high\");\nconst genLow = flow.get(\"pfs_part_gen_low\");\nconst genHigh = flow.get(\"pfs_part_gen_high\");\nconst pvTotal = flow.get(\"pfs_part_pv_total\");\n\n// Combine 32-bit values\nconst gridPower = s32(gridLow, gridHigh);\nconst loadPower = s32(loadLow, loadHigh);\nconst genPower = s32(genLow, genHigh);\n\n// Build telemetry\nconst telemetry = {\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    DeviceId: \"loftty-inverter\",\n    \n    pv: {\n        totalPowerW: pvTotal,\n        mppt: [\n            { id: 1, powerW: pvmppt14.pv1 },\n            { id: 2, powerW: pvmppt14.pv2 },\n            { id: 3, powerW: pvmppt14.pv3 },\n            { id: 4, powerW: pvmppt14.pv4 },\n            { id: 5, powerW: pvmppt58.pv5 === 0 ? null : pvmppt58.pv5 },\n            { id: 6, powerW: pvmppt58.pv6 === 0 ? null : pvmppt58.pv6 },\n            { id: 7, powerW: pvmppt58.pv7 === 0 ? null : pvmppt58.pv7 },\n            { id: 8, powerW: pvmppt58.pv8 === 0 ? null : pvmppt58.pv8 }\n        ]\n    },\n    \n    grid: {\n        totalPowerW: gridPower\n    },\n    \n    load: {\n        totalPowerW: loadPower\n    },\n    \n    battery: {\n        powerW: batteryPower\n    },\n    \n    generator: {\n        totalPowerW: genPower\n    }\n};\n\n// Clear flow context\nflow.set(\"pfs_part_pvmppt14\", undefined);\nflow.set(\"pfs_part_pvmppt58\", undefined);\nflow.set(\"pfs_part_battery\", undefined);\nflow.set(\"pfs_part_grid_low\", undefined);\nflow.set(\"pfs_part_grid_high\", undefined);\nflow.set(\"pfs_part_load_low\", undefined);\nflow.set(\"pfs_part_load_high\", undefined);\nflow.set(\"pfs_part_gen_low\", undefined);\nflow.set(\"pfs_part_gen_high\", undefined);\nflow.set(\"pfs_part_pv_total\", undefined);\nflow.set(\"pfs_part_gridbatt\", undefined);\nflow.set(\"pfs_part_loadgen\", undefined);\n\n// Check if RPC\nconst rpcContext = flow.get(\"pfs_rpc_context\");\nif (rpcContext) {\n    msg.topic = rpcContext.responseTopic;\n    msg.payload = telemetry;\n    flow.set(\"pfs_rpc_context\", undefined);\n    return [msg, null];  // Send to RPC output only\n} else {\n    msg.payload = telemetry;\n    return [null, msg];  // Send to telemetry output only\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 330,
+        "y": 260,
+        "wires": [
+            [
+                "pfs_rpc_response"
+            ],
+            [
+                "pfs_mqtt_out"
+            ]
+        ]
+    },
+    {
+        "id": "pfs_rpc_response",
+        "type": "mqtt out",
+        "z": "power_flow_state_tab",
+        "name": "RPC Response",
+        "topic": "",
+        "qos": "2",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 560,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "pfs_mqtt_out",
+        "type": "mqtt out",
+        "z": "power_flow_state_tab",
+        "name": "Telemetry",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "2",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 550,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

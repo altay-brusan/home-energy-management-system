@@ -1,0 +1,105 @@
+[
+    {
+        "id": "rpc_battery_soc_state_tab",
+        "type": "tab",
+        "label": "RPC_BatterySocState",
+        "disabled": false,
+        "info": "RPC Handler for BatterySocState\nMethod: getBatterySocState"
+    },
+    {
+        "id": "rpc_bss_mqtt_in",
+        "type": "mqtt in",
+        "z": "rpc_battery_soc_state_tab",
+        "name": "RPC Request",
+        "topic": "v1/devices/me/rpc/request/+",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "tb-broker",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 140,
+        "y": 120,
+        "wires": [
+            [
+                "rpc_bss_handle"
+            ]
+        ]
+    },
+    {
+        "id": "rpc_bss_handle",
+        "type": "function",
+        "z": "rpc_battery_soc_state_tab",
+        "name": "Handle RPC",
+        "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\n\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\n// Only handle getBatterySocState\nif (msg.rpcMethod !== 'getBatterySocState') {\n    return null;\n}\n\nmsg.isRpcRequest = true;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 330,
+        "y": 120,
+        "wires": [
+            [
+                "rpc_bss_link_out"
+            ]
+        ]
+    },
+    {
+        "id": "rpc_bss_link_out",
+        "type": "link out",
+        "z": "rpc_battery_soc_state_tab",
+        "name": "To BatterySocState",
+        "mode": "link",
+        "links": [
+            "bss_link_in_rpc"
+        ],
+        "x": 515,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "rpc_bss_comment",
+        "type": "comment",
+        "z": "rpc_battery_soc_state_tab",
+        "name": "getBatterySocState - Read battery SOC on demand (registers 214, 245)",
+        "info": "",
+        "x": 310,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

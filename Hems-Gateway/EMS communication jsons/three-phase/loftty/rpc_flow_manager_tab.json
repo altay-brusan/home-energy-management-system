@@ -1,0 +1,251 @@
+[
+  {
+    "id": "rpc_flow_manager_tab",
+    "type": "tab",
+    "label": "RPC_FlowManager",
+    "disabled": false,
+    "info": "Remote Flow Management via ThingsBoard RPC\n\nMethods:\n- getFlows: Returns current flows\n- setFlows: Import new flows\n- deleteFlows: Remove all flows"
+  },
+  {
+    "id": "fm_mqtt_in",
+    "type": "mqtt in",
+    "z": "rpc_flow_manager_tab",
+    "name": "RPC Request",
+    "topic": "v1/devices/me/rpc/request/+",
+    "qos": "2",
+    "datatype": "json",
+    "broker": "tb-broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 140,
+    "y": 160,
+    "wires": [
+      [
+        "fm_parse_rpc"
+      ]
+    ]
+  },
+  {
+    "id": "fm_parse_rpc",
+    "type": "function",
+    "z": "rpc_flow_manager_tab",
+    "name": "Parse RPC Request",
+    "func": "// Extract request ID from topic\nconst parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\n// Only handle flow management methods\nconst validMethods = ['getFlows', 'setFlows', 'deleteFlows'];\n\nif (!validMethods.includes(msg.rpcMethod)) {\n    return null;\n}\n\nnode.status({fill: 'blue', shape: 'dot', text: msg.rpcMethod});\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 350,
+    "y": 160,
+    "wires": [
+      [
+        "fm_route_method"
+      ]
+    ]
+  },
+  {
+    "id": "fm_route_method",
+    "type": "switch",
+    "z": "rpc_flow_manager_tab",
+    "name": "Route by Method",
+    "property": "rpcMethod",
+    "propertyType": "msg",
+    "rules": [
+      {
+        "t": "eq",
+        "v": "getFlows",
+        "vt": "str"
+      },
+      {
+        "t": "eq",
+        "v": "setFlows",
+        "vt": "str"
+      },
+      {
+        "t": "eq",
+        "v": "deleteFlows",
+        "vt": "str"
+      }
+    ],
+    "checkall": "true",
+    "repair": false,
+    "outputs": 3,
+    "x": 560,
+    "y": 160,
+    "wires": [
+      [ "fm_get_flows" ],
+      [ "fm_set_flows" ],
+      [ "fm_delete_flows" ]
+    ]
+  },
+  {
+    "id": "fm_get_flows",
+    "type": "http request",
+    "z": "rpc_flow_manager_tab",
+    "name": "GET /flows",
+    "method": "GET",
+    "ret": "obj",
+    "paytoqs": "ignore",
+    "url": "http://localhost:1880/flows",
+    "tls": "",
+    "persist": false,
+    "proxy": "",
+    "insecureHTTPParser": false,
+    "authType": "",
+    "senderr": false,
+    "headers": [],
+    "x": 770,
+    "y": 100,
+    "wires": [
+      [ "fm_prepare_response" ]
+    ]
+  },
+  {
+    "id": "fm_set_flows",
+    "type": "function",
+    "z": "rpc_flow_manager_tab",
+    "name": "Prepare POST body",
+    "func": "// Get flows from RPC params\nconst flows = msg.rpcParams.flows || msg.rpcParams;\n\nif (!flows || !Array.isArray(flows)) {\n    msg.payload = {\n        success: false,\n        error: 'Invalid flows data. Expected array.'\n    };\n    msg.statusCode = 400;\n    return [null, msg];\n}\n\nmsg.payload = flows;\nmsg.headers = {\n    'Content-Type': 'application/json',\n    'Node-RED-Deployment-Type': msg.rpcParams.deploymentType || 'full'\n};\n\nreturn [msg, null];",
+    "outputs": 2,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 790,
+    "y": 160,
+    "wires": [
+      [ "fm_post_flows" ],
+      [ "fm_send_response" ]
+    ]
+  },
+  {
+    "id": "fm_post_flows",
+    "type": "http request",
+    "z": "rpc_flow_manager_tab",
+    "name": "POST /flows",
+    "method": "POST",
+    "ret": "obj",
+    "paytoqs": "ignore",
+    "url": "http://localhost:1880/flows",
+    "tls": "",
+    "persist": false,
+    "proxy": "",
+    "insecureHTTPParser": false,
+    "authType": "",
+    "senderr": false,
+    "headers": [],
+    "x": 990,
+    "y": 160,
+    "wires": [
+      [ "fm_prepare_response" ]
+    ]
+  },
+  {
+    "id": "fm_delete_flows",
+    "type": "function",
+    "z": "rpc_flow_manager_tab",
+    "name": "Prepare empty array",
+    "func": "// Delete all flows by posting empty array\nmsg.payload = [];\nmsg.headers = {\n    'Content-Type': 'application/json',\n    'Node-RED-Deployment-Type': 'full'\n};\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 800,
+    "y": 220,
+    "wires": [
+      [ "fm_post_delete" ]
+    ]
+  },
+  {
+    "id": "fm_post_delete",
+    "type": "http request",
+    "z": "rpc_flow_manager_tab",
+    "name": "POST /flows (delete)",
+    "method": "POST",
+    "ret": "obj",
+    "paytoqs": "ignore",
+    "url": "http://localhost:1880/flows",
+    "tls": "",
+    "persist": false,
+    "proxy": "",
+    "insecureHTTPParser": false,
+    "authType": "",
+    "senderr": false,
+    "headers": [],
+    "x": 1010,
+    "y": 220,
+    "wires": [
+      [ "fm_prepare_response" ]
+    ]
+  },
+  {
+    "id": "fm_prepare_response",
+    "type": "function",
+    "z": "rpc_flow_manager_tab",
+    "name": "Prepare RPC Response",
+    "func": "const method = msg.rpcMethod;\nconst statusCode = msg.statusCode || 200;\n\nlet response = {};\n\nif (method === 'getFlows') {\n    response = {\n        success: true,\n        flowCount: Array.isArray(msg.payload) ? msg.payload.length : 0,\n        flows: msg.payload\n    };\n} else if (method === 'setFlows') {\n    response = {\n        success: statusCode === 200 || statusCode === 204,\n        message: 'Flows deployed successfully'\n    };\n} else if (method === 'deleteFlows') {\n    response = {\n        success: statusCode === 200 || statusCode === 204,\n        message: 'All flows deleted'\n    };\n}\n\nif (statusCode >= 400) {\n    response.success = false;\n    response.error = msg.payload || 'Unknown error';\n}\n\nmsg.payload = response;\nmsg.topic = msg.rpcResponseTopic;\n\nnode.status({\n    fill: response.success ? 'green' : 'red',\n    shape: 'dot',\n    text: method + ': ' + (response.success ? 'OK' : 'FAIL')\n});\n\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1120,
+    "y": 100,
+    "wires": [
+      [ "fm_send_response", "fm_debug" ]
+    ]
+  },
+  {
+    "id": "fm_send_response",
+    "type": "mqtt out",
+    "z": "rpc_flow_manager_tab",
+    "name": "RPC Response",
+    "topic": "",
+    "qos": "1",
+    "retain": "",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "tb-broker",
+    "x": 1340,
+    "y": 160,
+    "wires": []
+  },
+  {
+    "id": "fm_debug",
+    "type": "debug",
+    "z": "rpc_flow_manager_tab",
+    "name": "FlowManager Debug",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1350,
+    "y": 100,
+    "wires": []
+  },
+  {
+    "id": "fm_comment1",
+    "type": "comment",
+    "z": "rpc_flow_manager_tab",
+    "name": "📡 Remote Flow Management",
+    "info": "This flow enables remote management of Node-RED flows via ThingsBoard RPC.\n\n## Available Methods\n\n### getFlows\nReturns all current flows.\n```json\n{\"method\": \"getFlows\", \"params\": {}}\n```\n\n### setFlows\nDeploys new flows.\n```json\n{\n  \"method\": \"setFlows\",\n  \"params\": {\n    \"deploymentType\": \"full\",\n    \"flows\": [...]\n  }\n}\n```\n\n### deleteFlows\nRemoves all flows.\n```json\n{\"method\": \"deleteFlows\", \"params\": {}}\n```",
+    "x": 190,
+    "y": 60,
+    "wires": []
+  }
+]

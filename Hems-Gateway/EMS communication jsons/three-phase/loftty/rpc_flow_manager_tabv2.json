@@ -1,0 +1,368 @@
+[
+    {
+        "id": "rpc_flow_manager_tab",
+        "type": "tab",
+        "label": "RPC_FlowManager",
+        "disabled": false,
+        "info": "Remote Flow Management via ThingsBoard RPC\n\nMethods:\n- getFlows: Returns current flows\n- setFlows: Replace ALL flows (use with caution)\n- deleteFlows: Remove ALL flows\n- addFlow: Add a single flow tab\n- updateFlow: Update a single flow tab\n- removeFlow: Remove a single flow tab"
+    },
+    {
+        "id": "fm_mqtt_in",
+        "type": "mqtt in",
+        "z": "rpc_flow_manager_tab",
+        "name": "RPC Request",
+        "topic": "v1/devices/me/rpc/request/+",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "tb-broker",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 140,
+        "y": 160,
+        "wires": [
+            [
+                "fm_parse_rpc"
+            ]
+        ]
+    },
+    {
+        "id": "fm_parse_rpc",
+        "type": "function",
+        "z": "rpc_flow_manager_tab",
+        "name": "Parse RPC Request",
+        "func": "// Extract request ID from topic\nconst parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\n// Valid flow management methods\nconst validMethods = [\n    'getFlows', 'setFlows', 'deleteFlows',\n    'addFlow', 'updateFlow', 'removeFlow'\n];\n\nif (!validMethods.includes(msg.rpcMethod)) {\n    return null;\n}\n\nnode.status({fill: 'blue', shape: 'dot', text: msg.rpcMethod});\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 350,
+        "y": 160,
+        "wires": [
+            [
+                "fm_route_method"
+            ]
+        ]
+    },
+    {
+        "id": "fm_route_method",
+        "type": "switch",
+        "z": "rpc_flow_manager_tab",
+        "name": "Route by Method",
+        "property": "rpcMethod",
+        "propertyType": "msg",
+        "rules": [
+            {"t": "eq", "v": "getFlows", "vt": "str"},
+            {"t": "eq", "v": "setFlows", "vt": "str"},
+            {"t": "eq", "v": "deleteFlows", "vt": "str"},
+            {"t": "eq", "v": "addFlow", "vt": "str"},
+            {"t": "eq", "v": "updateFlow", "vt": "str"},
+            {"t": "eq", "v": "removeFlow", "vt": "str"}
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 6,
+        "x": 560,
+        "y": 160,
+        "wires": [
+            ["fm_get_flows"],
+            ["fm_set_flows"],
+            ["fm_delete_flows"],
+            ["fm_add_flow"],
+            ["fm_update_flow"],
+            ["fm_remove_flow"]
+        ]
+    },
+    {
+        "id": "fm_get_flows",
+        "type": "http request",
+        "z": "rpc_flow_manager_tab",
+        "name": "GET /flows",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://localhost:1880/flows",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 770,
+        "y": 60,
+        "wires": [
+            ["fm_prepare_response"]
+        ]
+    },
+    {
+        "id": "fm_set_flows",
+        "type": "function",
+        "z": "rpc_flow_manager_tab",
+        "name": "Prepare POST body",
+        "func": "// Get flows from RPC params\nconst flows = msg.rpcParams.flows || msg.rpcParams;\n\nif (!flows || !Array.isArray(flows)) {\n    msg.payload = {\n        success: false,\n        error: 'Invalid flows data. Expected array.'\n    };\n    msg.statusCode = 400;\n    return [null, msg];\n}\n\nmsg.payload = flows;\nmsg.headers = {\n    'Content-Type': 'application/json',\n    'Node-RED-Deployment-Type': msg.rpcParams.deploymentType || 'full'\n};\n\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 790,
+        "y": 100,
+        "wires": [
+            ["fm_post_flows"],
+            ["fm_send_response"]
+        ]
+    },
+    {
+        "id": "fm_post_flows",
+        "type": "http request",
+        "z": "rpc_flow_manager_tab",
+        "name": "POST /flows",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://localhost:1880/flows",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 990,
+        "y": 100,
+        "wires": [
+            ["fm_prepare_response"]
+        ]
+    },
+    {
+        "id": "fm_delete_flows",
+        "type": "function",
+        "z": "rpc_flow_manager_tab",
+        "name": "Prepare empty array",
+        "func": "// Delete all flows by posting empty array\nmsg.payload = [];\nmsg.headers = {\n    'Content-Type': 'application/json',\n    'Node-RED-Deployment-Type': 'full'\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 800,
+        "y": 140,
+        "wires": [
+            ["fm_post_delete"]
+        ]
+    },
+    {
+        "id": "fm_post_delete",
+        "type": "http request",
+        "z": "rpc_flow_manager_tab",
+        "name": "POST /flows (delete)",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://localhost:1880/flows",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1010,
+        "y": 140,
+        "wires": [
+            ["fm_prepare_response"]
+        ]
+    },
+    {
+        "id": "fm_add_flow",
+        "type": "function",
+        "z": "rpc_flow_manager_tab",
+        "name": "Prepare addFlow",
+        "func": "// Add a single flow (tab with its nodes)\n// params.flow = { id, label, nodes: [...] }\n\nconst flowData = msg.rpcParams.flow;\n\nif (!flowData) {\n    msg.payload = {\n        success: false,\n        error: 'Missing flow parameter. Expected: { flow: { id, label, nodes: [...] } }'\n    };\n    msg.statusCode = 400;\n    return [null, msg];\n}\n\n// Build the flow structure for POST /flow\n// Node-RED expects: { id, label, nodes: [...], configs: [...] }\nmsg.payload = {\n    id: flowData.id || undefined,\n    label: flowData.label || 'New Flow',\n    disabled: flowData.disabled || false,\n    info: flowData.info || '',\n    nodes: flowData.nodes || [],\n    configs: flowData.configs || []\n};\n\nmsg.headers = {\n    'Content-Type': 'application/json'\n};\n\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 790,
+        "y": 200,
+        "wires": [
+            ["fm_post_flow"],
+            ["fm_send_response"]
+        ]
+    },
+    {
+        "id": "fm_post_flow",
+        "type": "http request",
+        "z": "rpc_flow_manager_tab",
+        "name": "POST /flow",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://localhost:1880/flow",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 990,
+        "y": 200,
+        "wires": [
+            ["fm_prepare_response"]
+        ]
+    },
+    {
+        "id": "fm_update_flow",
+        "type": "function",
+        "z": "rpc_flow_manager_tab",
+        "name": "Prepare updateFlow",
+        "func": "// Update a single flow by ID\n// params.id = flow tab id\n// params.flow = { label, nodes: [...] }\n\nconst flowId = msg.rpcParams.id;\nconst flowData = msg.rpcParams.flow;\n\nif (!flowId) {\n    msg.payload = {\n        success: false,\n        error: 'Missing id parameter'\n    };\n    msg.statusCode = 400;\n    return [null, msg];\n}\n\nif (!flowData) {\n    msg.payload = {\n        success: false,\n        error: 'Missing flow parameter'\n    };\n    msg.statusCode = 400;\n    return [null, msg];\n}\n\nmsg.url = 'http://localhost:1880/flow/' + flowId;\nmsg.payload = {\n    id: flowId,\n    label: flowData.label,\n    disabled: flowData.disabled || false,\n    info: flowData.info || '',\n    nodes: flowData.nodes || [],\n    configs: flowData.configs || []\n};\n\nmsg.headers = {\n    'Content-Type': 'application/json'\n};\n\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 800,
+        "y": 260,
+        "wires": [
+            ["fm_put_flow"],
+            ["fm_send_response"]
+        ]
+    },
+    {
+        "id": "fm_put_flow",
+        "type": "http request",
+        "z": "rpc_flow_manager_tab",
+        "name": "PUT /flow/:id",
+        "method": "PUT",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1000,
+        "y": 260,
+        "wires": [
+            ["fm_prepare_response"]
+        ]
+    },
+    {
+        "id": "fm_remove_flow",
+        "type": "function",
+        "z": "rpc_flow_manager_tab",
+        "name": "Prepare removeFlow",
+        "func": "// Remove a single flow by ID\n// params.id = flow tab id to delete\n\nconst flowId = msg.rpcParams.id;\n\nif (!flowId) {\n    msg.payload = {\n        success: false,\n        error: 'Missing id parameter. Expected: { id: \"flow_tab_id\" }'\n    };\n    msg.statusCode = 400;\n    return [null, msg];\n}\n\n// Protect critical flows from deletion\nconst protectedFlows = ['rpc_flow_manager_tab'];\nif (protectedFlows.includes(flowId)) {\n    msg.payload = {\n        success: false,\n        error: 'Cannot delete protected flow: ' + flowId\n    };\n    msg.statusCode = 403;\n    return [null, msg];\n}\n\nmsg.url = 'http://localhost:1880/flow/' + flowId;\nmsg.headers = {\n    'Content-Type': 'application/json'\n};\n\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 800,
+        "y": 320,
+        "wires": [
+            ["fm_delete_flow"],
+            ["fm_send_response"]
+        ]
+    },
+    {
+        "id": "fm_delete_flow",
+        "type": "http request",
+        "z": "rpc_flow_manager_tab",
+        "name": "DELETE /flow/:id",
+        "method": "DELETE",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1010,
+        "y": 320,
+        "wires": [
+            ["fm_prepare_response"]
+        ]
+    },
+    {
+        "id": "fm_prepare_response",
+        "type": "function",
+        "z": "rpc_flow_manager_tab",
+        "name": "Prepare RPC Response",
+        "func": "const method = msg.rpcMethod;\nconst statusCode = msg.statusCode || 200;\n\nlet response = {};\n\nswitch(method) {\n    case 'getFlows':\n        response = {\n            success: true,\n            flowCount: Array.isArray(msg.payload) ? msg.payload.length : 0,\n            flows: msg.payload\n        };\n        break;\n        \n    case 'setFlows':\n        response = {\n            success: statusCode >= 200 && statusCode < 300,\n            message: 'Flows deployed successfully'\n        };\n        break;\n        \n    case 'deleteFlows':\n        response = {\n            success: statusCode >= 200 && statusCode < 300,\n            message: 'All flows deleted'\n        };\n        break;\n        \n    case 'addFlow':\n        response = {\n            success: statusCode >= 200 && statusCode < 300,\n            message: 'Flow added successfully',\n            flowId: msg.payload ? msg.payload.id : null\n        };\n        break;\n        \n    case 'updateFlow':\n        response = {\n            success: statusCode >= 200 && statusCode < 300,\n            message: 'Flow updated successfully',\n            flowId: msg.rpcParams.id\n        };\n        break;\n        \n    case 'removeFlow':\n        response = {\n            success: statusCode >= 200 && statusCode < 300,\n            message: 'Flow removed successfully',\n            flowId: msg.rpcParams.id\n        };\n        break;\n        \n    default:\n        response = {\n            success: false,\n            error: 'Unknown method'\n        };\n}\n\nif (statusCode >= 400) {\n    response.success = false;\n    response.error = msg.payload || 'Operation failed';\n    response.statusCode = statusCode;\n}\n\nmsg.payload = response;\nmsg.topic = msg.rpcResponseTopic;\n\nnode.status({\n    fill: response.success ? 'green' : 'red',\n    shape: 'dot',\n    text: method + ': ' + (response.success ? 'OK' : 'FAIL')\n});\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1200,
+        "y": 60,
+        "wires": [
+            ["fm_send_response", "fm_debug"]
+        ]
+    },
+    {
+        "id": "fm_send_response",
+        "type": "mqtt out",
+        "z": "rpc_flow_manager_tab",
+        "name": "RPC Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1420,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "fm_debug",
+        "type": "debug",
+        "z": "rpc_flow_manager_tab",
+        "name": "FlowManager Debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1430,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "fm_comment1",
+        "type": "comment",
+        "z": "rpc_flow_manager_tab",
+        "name": "📡 Remote Flow Management v2",
+        "info": "## Available Methods\n\n### Bulk Operations\n- **getFlows**: Get all flows\n- **setFlows**: Replace ALL flows\n- **deleteFlows**: Delete ALL flows\n\n### Single Flow Operations (Recommended)\n- **addFlow**: Add one flow tab\n- **updateFlow**: Update one flow tab\n- **removeFlow**: Delete one flow tab\n\n## Examples\n\n### addFlow\n```json\n{\n  \"method\": \"addFlow\",\n  \"params\": {\n    \"flow\": {\n      \"label\": \"My New Flow\",\n      \"nodes\": [...],\n      \"configs\": [...]\n    }\n  }\n}\n```\n\n### updateFlow\n```json\n{\n  \"method\": \"updateFlow\",\n  \"params\": {\n    \"id\": \"flow_tab_id\",\n    \"flow\": {\n      \"label\": \"Updated Label\",\n      \"nodes\": [...]\n    }\n  }\n}\n```\n\n### removeFlow\n```json\n{\n  \"method\": \"removeFlow\",\n  \"params\": {\n    \"id\": \"flow_tab_id\"\n  }\n}\n```",
+        "x": 200,
+        "y": 60,
+        "wires": []
+    }
+]
