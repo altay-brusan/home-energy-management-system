@@ -8,6 +8,7 @@ import RegionSelector, {
 } from '../../../components/ui/RegionSelector/RegionSelector';
 import ThemeToggle from '../../../components/ui/ThemeToggle';
 import useAuth from '../../../hooks/useAuth';
+import { useAuthStore } from '../../../store/authStore';
 import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors, SPACING } from '../../../theme/constants';
 import { makeProfileScreenStyles } from './ProfileScreenStyles';
@@ -26,6 +27,8 @@ export default function ProfileScreen ({ navigation }: any) {
   const { t } = useI18n();
 
   const { user, logout } = useAuth();
+  const hasRole = useAuthStore(s => s.hasRole);
+  const isAdmin = hasRole('Admin') || hasRole('Administrator');
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const avatarUrl = user?.name && user?.surname 
@@ -80,6 +83,7 @@ const confirmLogout = async () => {
               {t('profile.personalInfo')}
             </Text>
           </TouchableOpacity>
+          {!isAdmin && (
           <TouchableOpacity style={styles.card}
             onPress={() => navigation.navigate('DeviceSharing')}>
 
@@ -89,7 +93,7 @@ const confirmLogout = async () => {
               color={COLORS.accent}
               style={{ marginRight: 12 }}
             />
-            <Text 
+            <Text
               style={styles.sectionTitle}
               numberOfLines={1}
               ellipsizeMode="tail"
@@ -97,6 +101,7 @@ const confirmLogout = async () => {
               {t('profile.deviceSharing')}
             </Text>
           </TouchableOpacity>
+          )}
   <TouchableOpacity
   style={styles.card}
   onPress={() => navigation.navigate('Faults')}

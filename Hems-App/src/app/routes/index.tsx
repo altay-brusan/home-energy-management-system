@@ -198,7 +198,7 @@ export function RootNavigator () {
   const isDark = mode === 'dark';
   const navTheme = isDark ? DarkTheme : DefaultTheme;
   const COLORS = getThemeColors(isDark);
-  const { user, setUser, clearAuth } = useAuthStore();
+  const { user, setUser, clearAuth, hasRole } = useAuthStore();
   const { getUserSites } = useSitesStore();
   const {
     pendingInvitationCode,
@@ -294,6 +294,7 @@ export function RootNavigator () {
 
   // Auth durumuna göre screens
   const isAuthenticated = !!user;
+  const isAdminUser = hasRole('Admin') || hasRole('Administrator');
 
   return (
     <NavigationContainer ref={navigationRef} theme={navTheme}>
@@ -312,11 +313,15 @@ export function RootNavigator () {
           <>
             <Stack.Screen name="ProfileInfo" component={ProfileInfoScreen} />
             <Stack.Screen name="MainTabs" component={TabNavigator} />
-            <Stack.Screen name="DeviceSharing" component={DeviceSharingScreen} />
-            <Stack.Screen
-              name="DeviceSharingDetail"
-              component={DeviceSharingDetailScreen}
-            />
+            {!isAdminUser && (
+              <>
+                <Stack.Screen name="DeviceSharing" component={DeviceSharingScreen} />
+                <Stack.Screen
+                  name="DeviceSharingDetail"
+                  component={DeviceSharingDetailScreen}
+                />
+              </>
+            )}
             <Stack.Screen name="CompanyInfo" component={CompanyInfoScreen} />
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="HomeSetup" component={HomeSetupScreen} />
