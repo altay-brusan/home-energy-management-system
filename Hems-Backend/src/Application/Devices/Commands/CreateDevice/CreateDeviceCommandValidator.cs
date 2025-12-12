@@ -12,6 +12,8 @@ public class CreateDeviceCommandValidator : AbstractValidator<CreateDeviceComman
             .WithMessage("Manufacturer is required and must not exceed 100 characters.");
 
         RuleFor(v => v.ModelNumber)
+            .NotEmpty()
+            .WithMessage("ModelNumber is required.")
             .MaximumLength(100)
             .WithMessage("ModelNumber must not exceed 100 characters.");
 

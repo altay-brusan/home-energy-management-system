@@ -9,7 +9,7 @@ namespace Hems_Backend.Application.Devices.Commands.CreateDevice;
 public record CreateDeviceCommand : IRequest<Guid>
 {
     public string Manufacturer { get; init; } = string.Empty;
-    public string? ModelNumber { get; init; }
+    public string ModelNumber { get; init; } = string.Empty;
     public string? SerialNumber { get; init; }
     public string? TypeNumber { get; init; }
     public string? QRCode { get; init; }
@@ -71,7 +71,7 @@ public class CreateDeviceCommandHandler : IRequestHandler<CreateDeviceCommand, G
             ServerAttributes = new Dictionary<string, object>
             {
                 ["Manufacturer"] = request.Manufacturer,
-                ["ModelNumber"] = request.ModelNumber ?? string.Empty,
+                ["ModelNumber"] = request.ModelNumber,
                 ["SerialNumber"] = request.SerialNumber ?? string.Empty,
                 ["TypeNumber"] = request.TypeNumber ?? string.Empty,
                 ["QRCode"] = request.QRCode ?? string.Empty
