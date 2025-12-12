@@ -7,83 +7,138 @@ import { setupDeviceParameterValuesService } from "../../../../api/services/setu
 
 export default function SolarPowerCard({ styles, COLORS, isDark, deviceParams }: any) {
   const navigation = useNavigation<any>();
-  const [showSolarExport, setShowSolarExport] = useState(true);
-  const [showPvArray, setShowPvArray] = useState(false);
-  const [solarSelling, setSolarSelling] = useState(false);
+  const [showInverterMode, setShowInverterMode] = useState(false);
+  const [showExportStrategy, setShowExportStrategy] = useState(false);
   const { t } = useI18n();
-  const [enableMpptScan, setEnableMpptScan] = useState(false);
-  
-  const [solarSellingParam, setSolarSellingParam] = useState<{id: string, valueId: string} | null>(null);
-  const [enableMpptScanParam, setEnableMpptScanParam] = useState<{id: string, valueId: string} | null>(null);
-  
-  const [hasSolarSelling, setHasSolarSelling] = useState(false);
-  const [hasMpptScan, setHasMpptScan] = useState(false);
+
+  // InverterMode parameters from API
+  const [solarSell, setSolarSell] = useState(false);
+  const [maxSellPower, setMaxSellPower] = useState<string>("12000");
+  const [zeroExportLimit, setZeroExportLimit] = useState<string>("2");
+  const [forceOffGrid, setForceOffGrid] = useState(false);
+
+  // ExportStrategy parameter
+  const [exportStrategy, setExportStrategy] = useState<string>("ZeroExportToCT");
+
+  // Param references for updates
+  const [solarSellParam, setSolarSellParam] = useState<{id: string, valueId: string, modelNumber: string} | null>(null);
+  const [maxSellPowerParam, setMaxSellPowerParam] = useState<{id: string, valueId: string, modelNumber: string} | null>(null);
+  const [zeroExportLimitParam, setZeroExportLimitParam] = useState<{id: string, valueId: string, modelNumber: string} | null>(null);
+  const [forceOffGridParam, setForceOffGridParam] = useState<{id: string, valueId: string, modelNumber: string} | null>(null);
+  const [exportStrategyParam, setExportStrategyParam] = useState<{id: string, valueId: string, modelNumber: string} | null>(null);
+
+  // Has flags
+  const [hasSolarSell, setHasSolarSell] = useState(false);
+  const [hasMaxSellPower, setHasMaxSellPower] = useState(false);
+  const [hasZeroExportLimit, setHasZeroExportLimit] = useState(false);
+  const [hasForceOffGrid, setHasForceOffGrid] = useState(false);
+  const [hasExportStrategy, setHasExportStrategy] = useState(false);
 
   useEffect(() => {
     if (!deviceParams?.data || !deviceParams?.findParameterByName) return;
 
-    const solarSellingParamFound = deviceParams.findParameterByName("Enable Solar Selling to Grid");
-    if (solarSellingParamFound?.setupDeviceParameterValue) {
-      setSolarSellingParam({
-        id: solarSellingParamFound.id,
-        valueId: solarSellingParamFound.setupDeviceParameterValue.id,
+    // SolarSell
+    const solarSellFound = deviceParams.findParameterByName("SolarSell");
+    if (solarSellFound?.setupDeviceParameterValue) {
+      setSolarSellParam({
+        id: solarSellFound.id,
+        valueId: solarSellFound.setupDeviceParameterValue.id,
+        modelNumber: solarSellFound.setupDeviceParameterValue.modelNumber,
       });
-      setHasSolarSelling(true);
-      if (solarSellingParamFound.setupDeviceParameterValue.value === "true") {
-        setSolarSelling(true);
-      } else {
-        setSolarSelling(false);
-      }
-    } else {
-      setHasSolarSelling(false);
+      setSolarSell(solarSellFound.setupDeviceParameterValue.value === "true");
+      setHasSolarSell(true);
     }
 
-    const enableMpptScanParamFound = deviceParams.findParameterByName("Enable MPPT Scanning");
-    if (enableMpptScanParamFound?.setupDeviceParameterValue) {
-      setEnableMpptScanParam({
-        id: enableMpptScanParamFound.id,
-        valueId: enableMpptScanParamFound.setupDeviceParameterValue.id,
+    // MaxSellPower
+    const maxSellPowerFound = deviceParams.findParameterByName("MaxSellPower");
+    if (maxSellPowerFound?.setupDeviceParameterValue) {
+      setMaxSellPowerParam({
+        id: maxSellPowerFound.id,
+        valueId: maxSellPowerFound.setupDeviceParameterValue.id,
+        modelNumber: maxSellPowerFound.setupDeviceParameterValue.modelNumber,
       });
-      setHasMpptScan(true);
-      if (enableMpptScanParamFound.setupDeviceParameterValue.value === "true") {
-        setEnableMpptScan(true);
-      } else {
-        setEnableMpptScan(false);
-      }
-    } else {
-      setHasMpptScan(false);
+      setMaxSellPower(maxSellPowerFound.setupDeviceParameterValue.value || "12000");
+      setHasMaxSellPower(true);
+    }
+
+    // ZeroExportLimit
+    const zeroExportLimitFound = deviceParams.findParameterByName("ZeroExportLimit");
+    if (zeroExportLimitFound?.setupDeviceParameterValue) {
+      setZeroExportLimitParam({
+        id: zeroExportLimitFound.id,
+        valueId: zeroExportLimitFound.setupDeviceParameterValue.id,
+        modelNumber: zeroExportLimitFound.setupDeviceParameterValue.modelNumber,
+      });
+      setZeroExportLimit(zeroExportLimitFound.setupDeviceParameterValue.value || "2");
+      setHasZeroExportLimit(true);
+    }
+
+    // ForceOffGrid
+    const forceOffGridFound = deviceParams.findParameterByName("ForceOffGrid");
+    if (forceOffGridFound?.setupDeviceParameterValue) {
+      setForceOffGridParam({
+        id: forceOffGridFound.id,
+        valueId: forceOffGridFound.setupDeviceParameterValue.id,
+        modelNumber: forceOffGridFound.setupDeviceParameterValue.modelNumber,
+      });
+      setForceOffGrid(forceOffGridFound.setupDeviceParameterValue.value === "true");
+      setHasForceOffGrid(true);
+    }
+
+    // ExportStrategySelection
+    const exportStrategyFound = deviceParams.findParameterByName("ExportStrategySelection");
+    if (exportStrategyFound?.setupDeviceParameterValue) {
+      setExportStrategyParam({
+        id: exportStrategyFound.id,
+        valueId: exportStrategyFound.setupDeviceParameterValue.id,
+        modelNumber: exportStrategyFound.setupDeviceParameterValue.modelNumber,
+      });
+      setExportStrategy(exportStrategyFound.setupDeviceParameterValue.value || "ZeroExportToCT");
+      setHasExportStrategy(true);
     }
   }, [deviceParams?.data, deviceParams?.findParameterByName]);
 
-  const handleSolarSellingChange = async (value: boolean) => {
-    setSolarSelling(value);
-
-    if (deviceParams?.setupDeviceId && solarSellingParam) {
+  const handleSolarSellChange = async (value: boolean) => {
+    setSolarSell(value);
+    if (solarSellParam) {
       try {
-        await setupDeviceParameterValuesService.update(solarSellingParam.valueId, {
-          id: solarSellingParam.valueId,
+        await setupDeviceParameterValuesService.update(solarSellParam.valueId, {
+          id: solarSellParam.valueId,
           value: value ? "true" : "false",
-          sortOrder: 1,
-          modelNumber: "NX-200",
+          sortOrder: 0,
+          modelNumber: solarSellParam.modelNumber,
         });
       } catch (error) {
+        console.error("Failed to update SolarSell:", error);
       }
     }
   };
 
-  const handleMpptScanChange = async (value: boolean) => {
-    setEnableMpptScan(value);
-
-    if (deviceParams?.setupDeviceId && enableMpptScanParam) {
+  const handleForceOffGridChange = async (value: boolean) => {
+    setForceOffGrid(value);
+    if (forceOffGridParam) {
       try {
-        await setupDeviceParameterValuesService.update(enableMpptScanParam.valueId, {
-          id: enableMpptScanParam.valueId,
+        await setupDeviceParameterValuesService.update(forceOffGridParam.valueId, {
+          id: forceOffGridParam.valueId,
           value: value ? "true" : "false",
-          sortOrder: 1,
-          modelNumber: "NX-200",
+          sortOrder: 0,
+          modelNumber: forceOffGridParam.modelNumber,
         });
       } catch (error) {
+        console.error("Failed to update ForceOffGrid:", error);
       }
+    }
+  };
+
+  const hasAnyInverterMode = hasSolarSell || hasMaxSellPower || hasZeroExportLimit || hasForceOffGrid;
+  const hasAnyExportStrategy = hasExportStrategy;
+
+  const getExportStrategyLabel = (value: string) => {
+    switch (value) {
+      case "SellingFirst": return "Selling First";
+      case "ZeroExportToLoad": return "Zero Export to Load";
+      case "ZeroExportToCT": return "Zero Export to CT";
+      default: return value;
     }
   };
 
@@ -91,128 +146,95 @@ export default function SolarPowerCard({ styles, COLORS, isDark, deviceParams }:
     <View style={styles.mainCard}>
       <Text style={styles.cardTitle}>{t('solarPower.title')}</Text>
 
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPress={() => {
-          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-          setShowSolarExport(!showSolarExport);
-        }}
-      >
-        <View style={styles.dropdownRow}>
-          <Text style={styles.subCardTitle}>{t('solarPower.exportControl')}</Text>
-          <FontAwesome
-            name={showSolarExport ? "chevron-up" : "chevron-down"}
-            size={16}
-            color={COLORS.textSoft}
-          />
-        </View>
-      </TouchableOpacity>
-
-      {showSolarExport && (
-        <View style={styles.subCard}>
-          {hasSolarSelling && (
-            <View style={styles.switchRow}>
-              <Text style={styles.label}>{t('solarPower.enableSelling')}</Text>
-              <Switch
-                value={solarSelling}
-                onValueChange={handleSolarSellingChange}
-                thumbColor={
-                  solarSelling
-                    ? COLORS.accent
-                    : isDark
-                    ? "#323030ff"
-                    : "#eae1e1ff"
-                }
-                trackColor={{
-                  false: isDark ? "#555" : "#ccc",
-                  true: COLORS.accent + "66",
-                }}
-                ios_backgroundColor={isDark ? "#555" : "#ccc"}
-                style={{ transform: [{ scale: 1.05 }] }}
-              />
-            </View>
-          )}
-        </View>
-      )}
-
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPress={() => {
-          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-          setShowPvArray(!showPvArray);
-        }}
-      >
-        <View style={styles.dropdownRow}>
-          <Text style={styles.subCardTitle}>{t('solarPower.pvArrayConfig')}</Text>
-          <FontAwesome
-            name={showPvArray ? "chevron-up" : "chevron-down"}
-            size={16}
-            color={COLORS.textSoft}
-          />
-        </View>
-      </TouchableOpacity>
-
-      {showPvArray && (
-        <View style={styles.subCard}>
-          <Text style={styles.valueText}>
-           {t('solarPower.mpptTrackers')}: <Text style={styles.valueAccent}>2</Text>
-          </Text>
-
-          {hasMpptScan && (
-            <View style={styles.switchRow}>
-              <Text style={styles.label}>
-                {t('solarPower.enableMpptScanning')}
-              </Text>
-              <Switch
-                value={enableMpptScan}
-                onValueChange={handleMpptScanChange}
-                thumbColor={
-                  enableMpptScan
-                    ? COLORS.accent
-                    : isDark
-                    ? "#323030ff" 
-                    : "#eae1e1ff"
-                }
-                trackColor={{
-                  false: isDark ? "#555" : "#ccc",
-                  true: COLORS.accent + "66",
-                }}
-                ios_backgroundColor={isDark ? "#555" : "#ccc"}
-                style={{ transform: [{ scale: 1.05 }] }}
-              />
-            </View>
-          )}
-
-          <Text style={styles.valueText}>
-           {t('solarPower.maxPvVoltage')}: <Text style={styles.valueAccent}>480 V</Text>
-          </Text>
-          <Text style={styles.valueText}>
-           {t('solarPower.maxPvCurrent')}: <Text style={styles.valueAccent}>12.5 A</Text>
-          </Text>
-
+      {/* Export Strategy Section */}
+      {hasAnyExportStrategy && (
+        <>
           <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => navigation.navigate("SolarSourcePriority")}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              alignSelf: "flex-start",
-              marginTop: 16,
+            activeOpacity={0.8}
+            onPress={() => {
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              setShowExportStrategy(!showExportStrategy);
             }}
           >
-            <Text
-              style={{
-                color: COLORS.accent,
-                fontWeight: "600",
-                fontSize: 15,
-                marginRight: 6,
-              }}
-            >
-             {t('solarPower.prioritySettings')}
-            </Text>
-            <FontAwesome name="cog" size={14} color={COLORS.accent} />
+            <View style={styles.dropdownRow}>
+              <Text style={styles.subCardTitle}>Export Strategy</Text>
+              <FontAwesome
+                name={showExportStrategy ? "chevron-up" : "chevron-down"}
+                size={16}
+                color={COLORS.textSoft}
+              />
+            </View>
           </TouchableOpacity>
-        </View>
+
+          {showExportStrategy && (
+            <View style={styles.subCard}>
+              <Text style={styles.valueText}>
+                Current Strategy: <Text style={styles.valueAccent}>{getExportStrategyLabel(exportStrategy)}</Text>
+              </Text>
+            </View>
+          )}
+        </>
+      )}
+
+      {/* Inverter Mode Section */}
+      {hasAnyInverterMode && (
+        <>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => {
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              setShowInverterMode(!showInverterMode);
+            }}
+          >
+            <View style={styles.dropdownRow}>
+              <Text style={styles.subCardTitle}>Inverter Mode</Text>
+              <FontAwesome
+                name={showInverterMode ? "chevron-up" : "chevron-down"}
+                size={16}
+                color={COLORS.textSoft}
+              />
+            </View>
+          </TouchableOpacity>
+
+          {showInverterMode && (
+            <View style={styles.subCard}>
+              {hasSolarSell && (
+                <View style={styles.switchRow}>
+                  <Text style={styles.label}>Solar Sell</Text>
+                  <Switch
+                    value={solarSell}
+                    onValueChange={handleSolarSellChange}
+                    thumbColor={solarSell ? COLORS.accent : isDark ? "#323030ff" : "#eae1e1ff"}
+                    trackColor={{ false: isDark ? "#555" : "#ccc", true: COLORS.accent + "66" }}
+                    ios_backgroundColor={isDark ? "#555" : "#ccc"}
+                  />
+                </View>
+              )}
+              {hasMaxSellPower && (
+                <Text style={styles.valueText}>
+                  Max Sell Power: <Text style={styles.valueAccent}>{maxSellPower} W</Text>
+                </Text>
+              )}
+              {hasZeroExportLimit && (
+                <Text style={styles.valueText}>
+                  Zero Export Limit: <Text style={styles.valueAccent}>{zeroExportLimit} W</Text>
+                </Text>
+              )}
+              {hasForceOffGrid && (
+                <View style={styles.switchRow}>
+                  <Text style={styles.label}>Force Off-Grid</Text>
+                  <Switch
+                    value={forceOffGrid}
+                    onValueChange={handleForceOffGridChange}
+                    thumbColor={forceOffGrid ? COLORS.accent : isDark ? "#323030ff" : "#eae1e1ff"}
+                    trackColor={{ false: isDark ? "#555" : "#ccc", true: COLORS.accent + "66" }}
+                    ios_backgroundColor={isDark ? "#555" : "#ccc"}
+                  />
+                </View>
+              )}
+            </View>
+          )}
+        </>
       )}
     </View>
   );

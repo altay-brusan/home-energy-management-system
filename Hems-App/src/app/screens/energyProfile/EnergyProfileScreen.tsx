@@ -12,7 +12,6 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
-import FontAwesome from "@react-native-vector-icons/fontawesome";
 import { ArrowLeft } from 'lucide-react-native';
 import MainLayout from "../../layouts/MainLayout";
 import { useThemeStore } from "../../../store/themeStore";
@@ -129,24 +128,23 @@ const handleSave = async (onClose?: () => void) => {
           deviceParams={deviceParams}
         />
 
-        <SolarPowerCard styles={styles} COLORS={COLORS} deviceParams={deviceParams} />
+        <SolarPowerCard styles={styles} COLORS={COLORS} isDark={isDark} deviceParams={deviceParams} />
 
         <BatteryManagementCard styles={styles} COLORS={COLORS} deviceParams={deviceParams} />
 
         <TimeOfUseCard
           styles={styles}
           COLORS={COLORS}
-          setIsLoading={setIsLoading}
           deviceParams={deviceParams}
         />
-        <ProtectionSafetyCard styles={styles} COLORS={COLORS} deviceParams={deviceParams} />
+        <ProtectionSafetyCard styles={styles} COLORS={COLORS} isDark={isDark} deviceParams={deviceParams} />
         <GeneratorSmartLoadsCard 
           styles={styles} 
           COLORS={COLORS} 
           setIsLoading={setIsLoading}
           deviceParams={deviceParams}
         /> 
-        <AdvancedPowerControlCard styles={styles} COLORS={COLORS} deviceParams={deviceParams} />
+        <AdvancedPowerControlCard styles={styles} COLORS={COLORS} isDark={isDark} deviceParams={deviceParams} />
       </ScrollView>
     </MainLayout>
   );
