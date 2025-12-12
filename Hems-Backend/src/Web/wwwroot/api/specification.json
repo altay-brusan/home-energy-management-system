@@ -2951,6 +2951,44 @@
         ]
       }
     },
+    "/api/SetupDeviceParameterValues/device/{deviceId}/initialize": {
+      "post": {
+        "tags": [
+          "SetupDeviceParameterValues"
+        ],
+        "operationId": "InitializeDeviceSettings",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/SetupDeviceParameterValues/{id}": {
       "put": {
         "tags": [
