@@ -12,7 +12,6 @@ import { useRoles } from '../../../hooks/useRoles';
 import { useSelectedSiteUtils } from '../../../hooks/useSelectedSite';
 import { useSelectedSiteDevice } from '../../../hooks/useSelectedSiteDevice';
 import { useThemeStore } from '../../../store/themeStore';
-import { useSitesStore } from '../../../store/sitesStore';
 import { getThemeColors, SPACING } from '../../../theme/constants';
 import { getDashboardStyles } from './DashboardScreen.styles';
 import PowerAndEnergyMetrics from './ui/powerAndEnergyMetrics/PowerAndEnergyMetrics';
@@ -27,117 +26,6 @@ import { TodaySummary } from './ui/todaySummary';
 import { WeatherStatus } from './ui/weatherStatus';
 
 type Range = 'Day' | 'Week' | 'Month' | 'Year';
-
-// Debug Panel Component for SitesStore
-const SitesStoreDebugPanel = ({ isDark }: { isDark: boolean }) => {
-  const [expanded, setExpanded] = useState(false);
-  const sitesStore = useSitesStore();
-
-  const debugData = {
-    'sites.length': sitesStore.sites?.length ?? 0,
-    'selectedSite.id': sitesStore.selectedSite?.id ?? 'null',
-    'selectedSite.name': sitesStore.selectedSite?.name ?? 'null',
-    'selectedSite.hasDevice': sitesStore.selectedSite?.hasDevice ?? 'null',
-    'selectedSiteDevice.setupDeviceId': sitesStore.selectedSiteDevice?.setupDeviceId ?? 'null',
-    'selectedSiteDevice.setupId': sitesStore.selectedSiteDevice?.setupId ?? 'null',
-    'selectedSiteDevice.setupName': sitesStore.selectedSiteDevice?.setupName ?? 'null',
-    'selectedSiteDevice.siteId': sitesStore.selectedSiteDevice?.siteId ?? 'null',
-    'selectedSiteDevice.siteName': sitesStore.selectedSiteDevice?.siteName ?? 'null',
-    'selectedSiteDevice.device.id': sitesStore.selectedSiteDevice?.device?.id ?? 'null',
-    'selectedSiteDevice.device.serialNumber': sitesStore.selectedSiteDevice?.device?.serialNumber ?? 'null',
-    'selectedSiteDevice.device.modelNumber': sitesStore.selectedSiteDevice?.device?.modelNumber ?? 'null',
-    'selectedSiteDevice.externalDevices.length': sitesStore.selectedSiteDevice?.externalDevices?.length ?? 0,
-    'deviceComponents.length': sitesStore.deviceComponents?.length ?? 0,
-    'isLoading': String(sitesStore.isLoading),
-    'error': sitesStore.error ?? 'null',
-  };
-
-  return (
-    <View style={{
-      backgroundColor: isDark ? 'rgba(255, 100, 100, 0.15)' : 'rgba(255, 0, 0, 0.08)',
-      borderRadius: 12,
-      marginHorizontal: 16,
-      marginBottom: 16,
-      borderWidth: 1,
-      borderColor: isDark ? 'rgba(255, 100, 100, 0.3)' : 'rgba(255, 0, 0, 0.2)',
-      overflow: 'hidden',
-    }}>
-      <TouchableOpacity
-        onPress={() => setExpanded(!expanded)}
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: 12,
-          backgroundColor: isDark ? 'rgba(255, 100, 100, 0.2)' : 'rgba(255, 0, 0, 0.1)',
-        }}
-      >
-        <Text style={{ color: '#ff4444', fontWeight: 'bold', fontSize: 14 }}>
-          🔧 SitesStore Debug Panel
-        </Text>
-        <Text style={{ color: '#ff4444', fontSize: 18 }}>
-          {expanded ? '▲' : '▼'}
-        </Text>
-      </TouchableOpacity>
-
-      {expanded && (
-        <View style={{ padding: 12 }}>
-          {Object.entries(debugData).map(([key, value]) => (
-            <View key={key} style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              paddingVertical: 4,
-              borderBottomWidth: 1,
-              borderBottomColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-            }}>
-              <Text style={{
-                color: isDark ? '#aaa' : '#666',
-                fontSize: 11,
-                flex: 1,
-                fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-              }}>
-                {key}
-              </Text>
-              <Text style={{
-                color: value === 'null' ? '#ff6666' : (isDark ? '#4CAF50' : '#2e7d32'),
-                fontSize: 11,
-                flex: 1,
-                textAlign: 'right',
-                fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-              }}>
-                {String(value)}
-              </Text>
-            </View>
-          ))}
-
-          {/* Full selectedSiteDevice JSON */}
-          <View style={{ marginTop: 12 }}>
-            <Text style={{ color: '#ff4444', fontWeight: 'bold', fontSize: 12, marginBottom: 8 }}>
-              Full selectedSiteDevice JSON:
-            </Text>
-            <ScrollView
-              horizontal
-              style={{
-                backgroundColor: isDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.05)',
-                borderRadius: 8,
-                padding: 8,
-                maxHeight: 200,
-              }}
-            >
-              <Text style={{
-                color: isDark ? '#ccc' : '#333',
-                fontSize: 10,
-                fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-              }}>
-                {JSON.stringify(sitesStore.selectedSiteDevice, null, 2)}
-              </Text>
-            </ScrollView>
-          </View>
-        </View>
-      )}
-    </View>
-  );
-};
 
 // GRP Logo Component
 const GRPLogo = ({ width = 100, height = 23, isDark }: { width?: number; height?: number; isDark: boolean }) => {
@@ -381,9 +269,6 @@ export default function DashboardScreen (): JSX.Element {
           </TouchableOpacity>
         </View>
         <WeatherStatus deviceId={device?.id} />
-
-        {/* Debug Panel - SitesStore değerlerini göster */}
-        <SitesStoreDebugPanel isDark={isDark} />
 
         <PowerFlowDiagram />
         <TodaySummary />
