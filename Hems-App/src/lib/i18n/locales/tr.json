@@ -1616,5 +1616,174 @@
   },
   "changeSuccess": "Enerji satış stratejisi başarıyla değiştirildi",
   "changeFailed": "Enerji satış stratejisi değiştirilemedi"
+},
+"inverterModes": {
+  "title": "İnverter Modları",
+  "subtitle": "Hibrit inverter için en uygun çalışma modunu seçin. Önceden tanımlı modlar otomatik yapılandırma sağlar, özel mod tam kontrol sunar.",
+  "selectMode": "Mod Seç",
+  "applyMode": "Modu Uygula",
+  "activeMode": "Aktif Mod",
+  "noModeSelected": "Mod Seçilmedi",
+  "configureMode": "İnverter modunu yapılandırın",
+  "tapToConfigure": "Yapılandırmak için dokunun",
+  "modeApplied": "Mod başarıyla uygulandı",
+  "modeApplyError": "Mod uygulanırken hata oluştu",
+  "confirmApply": "Bu modu uygulamak istediğinizden emin misiniz?",
+  "custom": "Özel",
+  "editSettings": "Ayarları Düzenle",
+  "modes": {
+    "mode1": {
+      "name": "Maksimum Tasarruf",
+      "description": "Şebeke elektrik maliyetini minimize eder, güneş enerjisini önceliklendirir"
+    },
+    "mode2": {
+      "name": "Şebekeye Satış",
+      "description": "Fazla enerjiyi şebekeye satarak gelir elde eder"
+    },
+    "mode3": {
+      "name": "Off-Grid (Ada Modu)",
+      "description": "Şebekeden tamamen bağımsız çalışır"
+    },
+    "mode4": {
+      "name": "Yedek Güç (UPS)",
+      "description": "Elektrik kesintilerine karşı yüksek batarya rezervi tutar"
+    },
+    "mode5": {
+      "name": "Gece Tarifesi Avantajı",
+      "description": "Ucuz gece tarifelerinden faydalanarak bataryayı şarj eder"
+    },
+    "mode6": {
+      "name": "Sıfır İhracat",
+      "description": "Şebekeye hiç enerji göndermez, sadece öz tüketim"
+    },
+    "mode7": {
+      "name": "Jeneratör Destekli",
+      "description": "Uzun süreli kesintilerde jeneratör ile çalışır"
+    },
+    "mode8": {
+      "name": "Dengeli Hibrit",
+      "description": "Genel kullanım için optimize edilmiş dengeli mod"
+    },
+    "custom": {
+      "name": "Özel Mod",
+      "description": "Tüm ayarları manuel olarak yapılandırın"
+    }
+  },
+  "settings": {
+    "workMode": "Çalışma Modu",
+    "battery": "Batarya Ayarları",
+    "grid": "Şebeke Ayarları",
+    "generator": "Jeneratör Ayarları",
+    "advanced": "Gelişmiş Ayarlar",
+    "timeOfUse": "Time of Use"
+  },
+  "labels": {
+    "workMode": "Work Mode",
+    "solarSell": "Solar Sell",
+    "energyPattern": "Energy Pattern",
+    "maxSellPower": "Max Sell Power",
+    "zeroExportPower": "Zero Export Power",
+    "gridPeakShaving": "Grid Peak Shaving",
+    "peakShavingPower": "Peak Shaving Power",
+    "batteryType": "Batarya Tipi",
+    "batteryCapacity": "Kapasite",
+    "maxChargeCurrent": "Max Şarj Akımı",
+    "maxDischargeCurrent": "Max Deşarj Akımı",
+    "shutdownSOC": "Shutdown SOC",
+    "lowBattSOC": "Low Batt SOC",
+    "restartSOC": "Restart SOC",
+    "gridCharge": "Grid Charge",
+    "gridChargeSOC": "Grid Charge SOC",
+    "gridChargeCurrent": "Grid Charge Current",
+    "gridSignal": "Grid Signal",
+    "genCharge": "Gen Charge",
+    "genStartSOC": "Gen Start SOC",
+    "genChargeCurrent": "Gen Charge Current",
+    "genMaxRunTime": "Max Run Time",
+    "genDownTime": "Down Time",
+    "genRatedPower": "Rated Power",
+    "genSignal": "Gen Signal",
+    "genPeakShaving": "Gen Peak Shaving",
+    "signalIslandMode": "Signal Island Mode",
+    "bmsErrStop": "BMS Error Stop",
+    "backupDelay": "Backup Delay",
+    "ctRatio": "CT Ratio"
+  },
+  "features": {
+    "gridSelling": "Satış",
+    "gridCharging": "Şebeke Şarj",
+    "generatorSupport": "Jeneratör"
+  },
+  "targetUser": "Hedef Kullanıcı",
+  "recommendedScenario": "Önerilen Senaryo",
+  "modeNotFound": "Mod bulunamadı",
+  "applyModeTitle": "Modu Uygula",
+  "applyModeConfirm": "\"{{mode}}\" modunu uygulamak istediğinizden emin misiniz?",
+  "success": "Başarılı",
+  "modeAppliedSuccess": "\"{{mode}}\" modu uygulandı.",
+  "ok": "Tamam",
+  "cancel": "İptal",
+  "apply": "Uygula",
+  "active": "Aktif",
+  "thisModeActive": "Bu Mod Aktif",
+  "applyThisMode": "Aktif Mod Olarak Ayarla",
+  "settingDetails": "Ayar Detayları",
+  "editSettingsButton": "Ayarları Düzenle",
+  "mode": "Mod",
+  "hours": "saat",
+  "customModeSettings": "Özel Mod Ayarları",
+  "validationError": "Validasyon Hatası",
+  "socValidation": "SOC değerleri şu şekilde olmalıdır: Shutdown SOC < Low Batt SOC < Restart SOC",
+  "customModeApplied": "Özel mod ayarları kaydedildi ve uygulandı.",
+  "resetSettings": "Ayarları Sıfırla",
+  "resetConfirm": "Tüm özel mod ayarları varsayılan değerlere sıfırlanacak. Devam etmek istiyor musunuz?",
+  "reset": "Sıfırla",
+  "editTimeOfUse": "Time of Use Programını Düzenle",
+  "periodCount": "{{count}} periyot",
+  "saveAndApply": "Kaydet ve Uygula",
+  "presetModes": "Önceden Tanımlı Modlar",
+  "infoText": "Detayları görüntülemek ve uygulamak için bir moda dokunun. Tüm ayarları manuel yapılandırmak için özel mod seçeneğini kullanın.",
+  "descriptions": {
+    "solarSell": "Güneş enerjisi satışını etkinleştir",
+    "gridCharge": "Şebekeden batarya şarjı",
+    "genCharge": "Jeneratörden batarya şarjı",
+    "shutdownSOC": "Batarya bu seviyede kapanır",
+    "lowBattSOC": "Düşük batarya uyarı seviyesi",
+    "restartSOC": "Yeniden başlatma seviyesi",
+    "signalIslandMode": "Ada modu sinyali",
+    "bmsErrStop": "BMS hatalarında dur"
+  }
+},
+"timeOfUse": {
+  "title": "Time of Use Programı",
+  "enabled": "Time of Use Aktif",
+  "enableDescription": "Zaman bazlı programlamayı etkinleştir",
+  "activeDays": "Aktif Günler",
+  "periods": "Zaman Dilimleri",
+  "fixedPeriods": "24 saati kaplayan sabit {{count}} periyot",
+  "periodOverlap": "Periyot çakışması tespit edildi",
+  "overlapError": "Periyot {{period1}} ve {{period2}} zaman dilimleri çakışıyor. Lütfen düzeltin.",
+  "saved": "Time of Use ayarları kaydedildi",
+  "24HourView": "24 Saat Görünümü",
+  "period": "Periyot",
+  "startTime": "Başlangıç",
+  "endTime": "Bitiş",
+  "gridCharge": "Şebekeden Şarj",
+  "genCharge": "Jeneratörden Şarj",
+  "targetSOC": "Hedef SOC",
+  "maxDischargePower": "Max Deşarj Gücü",
+  "save": "Kaydet",
+  "hour": "Saat",
+  "minute": "Dakika",
+  "select": "Seç",
+  "startTimeTitle": "Başlangıç Saati",
+  "endTimeTitle": "Bitiş Saati",
+  "tips": {
+    "title": "Kullanım İpuçları",
+    "fixedPeriods": "Sistem sabit {{count}} zaman dilimi kullanır",
+    "fullCoverage": "Periyotlar 24 saati boşluksuz kaplar",
+    "colors": "Yeşil: Şebekeden şarj | Turuncu: Jeneratörden şarj",
+    "targetSOC": "Hedef SOC: O periyotta ulaşılmak istenen batarya seviyesi"
+  }
 }
 }
