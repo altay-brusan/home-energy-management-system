@@ -16,6 +16,7 @@ import { getThemeColors, SPACING } from '../../../theme/constants';
 import { getDashboardStyles } from './DashboardScreen.styles';
 import PowerAndEnergyMetrics from './ui/powerAndEnergyMetrics/PowerAndEnergyMetrics';
 import { DashboardModeCard } from './ui/dashboardModeCard';
+import { InverterModeCard } from './ui/inverterModeCard';
 import Sidebar from "./ui/dashboardSideBar/Sidebar";
 import { BatteryStateCard } from './ui/batteryStateCard';
 import { CO2Card } from './ui/co2Card';
@@ -273,6 +274,7 @@ export default function DashboardScreen (): JSX.Element {
         <PowerFlowDiagram />
         <TodaySummary />
         <BatteryStateCard deviceId={device?.id} />
+        <InverterModeCard COLORS={COLORS} />
         <DashboardModeCard COLORS={COLORS} />
         <PowerAndEnergyMetrics
           COLORS={COLORS}

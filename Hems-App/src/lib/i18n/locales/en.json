@@ -1613,5 +1613,174 @@
     },
     "changeSuccess": "Export strategy changed successfully",
     "changeFailed": "Failed to change export strategy"
+  },
+  "inverterModes": {
+    "title": "Inverter Modes",
+    "subtitle": "Select the most suitable operating mode for your hybrid inverter. Preset modes provide automatic configuration, while custom mode offers full control.",
+    "presetModes": "Preset Modes",
+    "infoText": "Tap on a mode to view details and apply it. Use the custom mode option to manually configure all settings.",
+    "selectMode": "Select Mode",
+    "applyMode": "Apply Mode",
+    "activeMode": "Active Mode",
+    "noModeSelected": "No Mode Selected",
+    "configureMode": "Configure inverter mode",
+    "tapToConfigure": "Tap to configure",
+    "modeApplied": "Mode applied successfully",
+    "modeApplyError": "Error applying mode",
+    "confirmApply": "Are you sure you want to apply this mode?",
+    "custom": "Custom",
+    "editSettings": "Edit Settings",
+    "modes": {
+      "mode1": {
+        "name": "Maximum Savings",
+        "description": "Minimizes grid electricity cost, prioritizes solar energy"
+      },
+      "mode2": {
+        "name": "Grid Selling",
+        "description": "Earns revenue by selling excess energy to the grid"
+      },
+      "mode3": {
+        "name": "Off-Grid (Island Mode)",
+        "description": "Operates completely independent from the grid"
+      },
+      "mode4": {
+        "name": "Backup Power (UPS)",
+        "description": "Maintains high battery reserve against power outages"
+      },
+      "mode5": {
+        "name": "Night Tariff Advantage",
+        "description": "Charges battery using cheap night tariffs"
+      },
+      "mode6": {
+        "name": "Zero Export",
+        "description": "No energy export to grid, self-consumption only"
+      },
+      "mode7": {
+        "name": "Generator Supported",
+        "description": "Works with generator during extended outages"
+      },
+      "mode8": {
+        "name": "Balanced Hybrid",
+        "description": "Balanced mode optimized for general use"
+      },
+      "custom": {
+        "name": "Custom Mode",
+        "description": "Manually configure all settings"
+      }
+    },
+    "settings": {
+      "workMode": "Work Mode",
+      "battery": "Battery Settings",
+      "grid": "Grid Settings",
+      "generator": "Generator Settings",
+      "advanced": "Advanced Settings",
+      "timeOfUse": "Time of Use"
+    },
+    "labels": {
+      "workMode": "Work Mode",
+      "solarSell": "Solar Sell",
+      "energyPattern": "Energy Pattern",
+      "maxSellPower": "Max Sell Power",
+      "zeroExportPower": "Zero Export Power",
+      "gridPeakShaving": "Grid Peak Shaving",
+      "peakShavingPower": "Peak Shaving Power",
+      "batteryType": "Battery Type",
+      "batteryCapacity": "Capacity",
+      "maxChargeCurrent": "Max Charge Current",
+      "maxDischargeCurrent": "Max Discharge Current",
+      "shutdownSOC": "Shutdown SOC",
+      "lowBattSOC": "Low Batt SOC",
+      "restartSOC": "Restart SOC",
+      "gridCharge": "Grid Charge",
+      "gridChargeSOC": "Grid Charge SOC",
+      "gridChargeCurrent": "Grid Charge Current",
+      "gridSignal": "Grid Signal",
+      "genCharge": "Gen Charge",
+      "genStartSOC": "Gen Start SOC",
+      "genChargeCurrent": "Gen Charge Current",
+      "genMaxRunTime": "Max Run Time",
+      "genDownTime": "Down Time",
+      "genRatedPower": "Rated Power",
+      "genSignal": "Gen Signal",
+      "genPeakShaving": "Gen Peak Shaving",
+      "signalIslandMode": "Signal Island Mode",
+      "bmsErrStop": "BMS Error Stop",
+      "backupDelay": "Backup Delay",
+      "ctRatio": "CT Ratio"
+    },
+    "features": {
+      "gridSelling": "Selling",
+      "gridCharging": "Grid Charge",
+      "generatorSupport": "Generator"
+    },
+    "targetUser": "Target User",
+    "recommendedScenario": "Recommended Scenario",
+    "modeNotFound": "Mode not found",
+    "applyModeTitle": "Apply Mode",
+    "applyModeConfirm": "Are you sure you want to apply \"{{mode}}\" mode?",
+    "success": "Success",
+    "modeAppliedSuccess": "\"{{mode}}\" mode has been applied.",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "apply": "Apply",
+    "active": "Active",
+    "thisModeActive": "This Mode is Active",
+    "applyThisMode": "Set Active Mode",
+    "settingDetails": "Setting Details",
+    "editSettingsButton": "Edit Settings",
+    "mode": "Mode",
+    "hours": "hours",
+    "customModeSettings": "Custom Mode Settings",
+    "validationError": "Validation Error",
+    "socValidation": "SOC values must be: Shutdown SOC < Low Batt SOC < Restart SOC",
+    "customModeApplied": "Custom mode settings saved and applied.",
+    "resetSettings": "Reset Settings",
+    "resetConfirm": "All custom mode settings will be reset to default values. Do you want to continue?",
+    "reset": "Reset",
+    "editTimeOfUse": "Edit Time of Use Schedule",
+    "periodCount": "{{count}} periods",
+    "saveAndApply": "Save and Apply",
+    "descriptions": {
+      "solarSell": "Enable solar energy selling",
+      "gridCharge": "Charge battery from grid",
+      "genCharge": "Charge battery from generator",
+      "shutdownSOC": "Battery turns off at this level",
+      "lowBattSOC": "Low battery warning level",
+      "restartSOC": "Restart level",
+      "signalIslandMode": "Island mode signal",
+      "bmsErrStop": "Stop on BMS errors"
+    }
+  },
+  "timeOfUse": {
+    "title": "Time of Use Schedule",
+    "enabled": "Time of Use Active",
+    "enableDescription": "Enable time-based scheduling",
+    "activeDays": "Active Days",
+    "periods": "Time Periods",
+    "fixedPeriods": "Fixed {{count}} periods covering 24 hours",
+    "periodOverlap": "Period overlap detected",
+    "overlapError": "Period {{period1}} and {{period2}} time slots overlap. Please fix.",
+    "saved": "Time of Use settings saved",
+    "24HourView": "24 Hour View",
+    "period": "Period",
+    "startTime": "Start",
+    "endTime": "End",
+    "gridCharge": "Grid Charge",
+    "genCharge": "Generator Charge",
+    "targetSOC": "Target SOC",
+    "maxDischargePower": "Max Discharge Power",
+    "save": "Save",
+    "hour": "Hour",
+    "minute": "Minute",
+    "select": "Select",
+    "startTimeTitle": "Start Time",
+    "endTimeTitle": "End Time",
+    "tips": {
+      "title": "Usage Tips",
+      "fixedPeriods": "System uses {{count}} fixed time periods",
+      "fullCoverage": "Periods cover the entire 24-hour day without gaps",
+      "colors": "Green: Grid charge | Orange: Generator charge",
+      "targetSOC": "Target SOC: Desired battery level during that period"
+    }
   }
 }

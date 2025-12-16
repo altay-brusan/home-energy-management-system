@@ -63,6 +63,12 @@ import DeviceAddScreen from '../screens/devices/DeviceAddScreen';
 import { EnergyProfileScreen } from '../screens/energyProfile';
 import { BatteryLevelSettingsScreen } from "../screens/energyProfile/ui/BatteryLevel";
 import { SolarSourcePriorityScreen } from "../screens/energyProfile/ui/SolarSourcePriority";
+import {
+  InverterModesScreen,
+  ModeDetailScreen,
+  CustomModeScreen,
+  TimeOfUseScreen,
+} from '../screens/inverterModes';
 import HomeScreen from '../screens/home/Home';
 import NotificationScreen from '../screens/notification/NotificationScreen';
 import NotificationDetailScreen from '../screens/notificationDetail/NotificationDetailScreen';
@@ -424,6 +430,26 @@ export function RootNavigator () {
             <Stack.Screen
               name="SolarSourcePriority"
               component={SolarSourcePriorityScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="InverterModes"
+              component={InverterModesScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="ModeDetail"
+              component={ModeDetailScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="CustomMode"
+              component={CustomModeScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="TimeOfUse"
+              component={TimeOfUseScreen}
               options={{ animation: 'slide_from_right' }}
             />
           </>
