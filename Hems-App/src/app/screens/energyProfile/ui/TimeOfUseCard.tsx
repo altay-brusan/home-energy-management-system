@@ -500,8 +500,8 @@ export default function TimeOfUseCard({ styles, COLORS, deviceParams }: any) {
 
       {/* TOU Enabled Toggle */}
       {hasTouEnabled && (
-        <View style={styles.switchRow}>
-          <Text style={styles.label}>Time-of-Use Enabled</Text>
+        <View style={styles.dropdownRow}>
+          <Text style={styles.subCardTitle}>Time-of-Use Enabled</Text>
           <Switch
             value={touEnabled}
             onValueChange={handleTouEnabledChange}
