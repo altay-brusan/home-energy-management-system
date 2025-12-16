@@ -1,0 +1,569 @@
+[
+    {
+        "id": "ext_relay_tab",
+        "type": "tab",
+        "label": "ExternalRelayConfig",
+        "disabled": false,
+        "info": "External Relay Config - Registers 278 & 294\n\nValues:\n- 278 Bit8-9: Feature enabled (10=disable, 11=enable)\n- 294 Bit0-7: Relay bitmap (8 relays)"
+    },
+    {
+        "id": "extrel_link_in_rpc",
+        "type": "link in",
+        "z": "ext_relay_tab",
+        "name": "RPC Request",
+        "links": [
+            "rpc_extrel_link_out"
+        ],
+        "x": 125,
+        "y": 80,
+        "wires": [
+            [
+                "extrel_route_operation"
+            ]
+        ]
+    },
+    {
+        "id": "extrel_comment_manual",
+        "type": "comment",
+        "z": "ext_relay_tab",
+        "name": "══════ MANUAL TEST ══════",
+        "info": "",
+        "x": 170,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "extrel_manual_read",
+        "type": "inject",
+        "z": "ext_relay_tab",
+        "name": "Manual Read",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operationType",
+                "v": "read",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 180,
+        "wires": [
+            [
+                "extrel_route_operation"
+            ]
+        ]
+    },
+    {
+        "id": "extrel_manual_write",
+        "type": "inject",
+        "z": "ext_relay_tab",
+        "name": "Test Write",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operationType",
+                "v": "write",
+                "vt": "str"
+            },
+            {
+                "p": "rpcParams",
+                "v": "{\"externalRelayFeatureEnabled\":true,\"relayBitmapRaw\":5}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 220,
+        "wires": [
+            [
+                "extrel_route_operation"
+            ]
+        ]
+    },
+    {
+        "id": "extrel_route_operation",
+        "type": "function",
+        "z": "ext_relay_tab",
+        "name": "Route: Read or Write?",
+        "func": "const opType = msg.operationType || 'read';\n\nif (opType === 'write') {\n    return [null, msg];\n} else {\n    return [msg, null];\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 180,
+        "wires": [
+            [
+                "extrel_start_read"
+            ],
+            [
+                "extrel_queue_writes"
+            ]
+        ]
+    },
+    {
+        "id": "extrel_comment_read",
+        "type": "comment",
+        "z": "ext_relay_tab",
+        "name": "══════ READ ══════",
+        "info": "",
+        "x": 640,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "extrel_start_read",
+        "type": "function",
+        "z": "ext_relay_tab",
+        "name": "Start Read & Store Context",
+        "func": "flow.set(\"extrel_rpc_response_topic\", msg.rpcResponseTopic);\nflow.set(\"extrel_write_result\", msg.writeResult || null);\n\nflow.set(\"extrel_part_278\", null);\nflow.set(\"extrel_part_294\", null);\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 680,
+        "y": 80,
+        "wires": [
+            [
+                "extrel_prep_278",
+                "extrel_prep_294"
+            ]
+        ]
+    },
+    {
+        "id": "extrel_prep_278",
+        "type": "function",
+        "z": "ext_relay_tab",
+        "name": "Prep Reg 278",
+        "func": "msg.baseAddr = 278;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 278,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 890,
+        "y": 60,
+        "wires": [
+            [
+                "extrel_read_278"
+            ]
+        ]
+    },
+    {
+        "id": "extrel_prep_294",
+        "type": "function",
+        "z": "ext_relay_tab",
+        "name": "Prep Reg 294",
+        "func": "msg.baseAddr = 294;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 294,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 890,
+        "y": 120,
+        "wires": [
+            [
+                "extrel_read_294"
+            ]
+        ]
+    },
+    {
+        "id": "extrel_read_278",
+        "type": "modbus-flex-getter",
+        "z": "ext_relay_tab",
+        "name": "Read 278",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1050,
+        "y": 60,
+        "wires": [
+            [
+                "extrel_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "extrel_read_294",
+        "type": "modbus-flex-getter",
+        "z": "ext_relay_tab",
+        "name": "Read 294",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1050,
+        "y": 120,
+        "wires": [
+            [
+                "extrel_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "extrel_collect",
+        "type": "function",
+        "z": "ext_relay_tab",
+        "name": "Collect Parts",
+        "func": "let data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data)) {\n    node.error(\"Invalid response for baseAddr \" + msg.baseAddr);\n    return null;\n}\n\nconst baseAddr = msg.baseAddr;\n\nif (baseAddr === 278) {\n    flow.set(\"extrel_part_278\", data[0]);\n    flow.set(\"extrel_reg278_current\", data[0]); // Store for bit manipulation in write\n} else if (baseAddr === 294) {\n    flow.set(\"extrel_part_294\", data[0]);\n}\n\n// Check if all parts received\nconst part278 = flow.get(\"extrel_part_278\");\nconst part294 = flow.get(\"extrel_part_294\");\n\nif (part278 === null || part278 === undefined ||\n    part294 === null || part294 === undefined) {\n    return null;\n}\n\nmsg.reg278 = part278;\nmsg.reg294 = part294;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1230,
+        "y": 90,
+        "wires": [
+            [
+                "extrel_build_read_response"
+            ]
+        ]
+    },
+    {
+        "id": "extrel_build_read_response",
+        "type": "function",
+        "z": "ext_relay_tab",
+        "name": "Build Read Response",
+        "func": "const reg278 = msg.reg278;\nconst reg294 = msg.reg294;\n\n// Clear flow context\nflow.set(\"extrel_part_278\", null);\nflow.set(\"extrel_part_294\", null);\n\n// Parse reg278 Bit8-9 (10=disable, 11=enable)\nconst relayBits = (reg278 >> 8) & 0x03;\nconst externalRelayFeatureEnabled = relayBits === 0x03;\n\n// Parse relay bitmap (reg294 Bit0-7)\nconst relayBitmapRaw = reg294 & 0xFF;\n\n// Build relays array - only relayId (0-7) and normallyOpen\nconst relays = [];\nfor (let i = 0; i < 8; i++) {\n    const isActive = ((relayBitmapRaw >> i) & 0x01) === 1;\n    relays.push({\n        relayId: i,\n        normallyOpen: isActive\n    });\n}\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\n\nconst state = {\n    kind: \"ExternalRelayConfigState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    gatewayId: gatewayId,\n    externalRelayFeatureEnabled: externalRelayFeatureEnabled,\n    relayBitmapRaw: relayBitmapRaw,\n    relays: relays\n};\n\n// Check if this is after a write\nconst writeResult = flow.get(\"extrel_write_result\");\nflow.set(\"extrel_write_result\", null);\n\nif (writeResult) {\n    msg.payload = {\n        success: true,\n        message: `Updated ${writeResult.count} register(s)`,\n        writes: writeResult.writes,\n        state: state\n    };\n} else {\n    msg.payload = state;\n}\n\nnode.status({ fill: \"green\", shape: \"dot\", text: externalRelayFeatureEnabled ? \"Enabled\" : \"Disabled\" });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1080,
+        "y": 160,
+        "wires": [
+            [
+                "extrel_debug",
+                "extrel_rpc_response"
+            ]
+        ]
+    },
+    {
+        "id": "extrel_comment_write",
+        "type": "comment",
+        "z": "ext_relay_tab",
+        "name": "══════ WRITE ══════",
+        "info": "",
+        "x": 650,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "extrel_queue_writes",
+        "type": "function",
+        "z": "ext_relay_tab",
+        "name": "Queue Writes",
+        "func": "const params = msg.rpcParams || {};\nconst writes = [];\n\n// 278 Bit8-9: externalRelayFeatureEnabled (will need to read first)\nif (params.externalRelayFeatureEnabled !== undefined) {\n    writes.push({ register: 278, param: \"feature\", enabled: params.externalRelayFeatureEnabled, name: \"Ext Relay Feature\" });\n}\n\n// 294: relayBitmapRaw\nif (params.relayBitmapRaw !== undefined) {\n    const val = params.relayBitmapRaw & 0xFF;\n    writes.push({ register: 294, value: val, name: \"Relay Bitmap\" });\n}\n\n// If relays array provided, build bitmap\nif (params.relays && Array.isArray(params.relays)) {\n    let bitmap = 0;\n    for (const relay of params.relays) {\n        if (relay.relayId >= 0 && relay.relayId <= 7 && relay.normallyOpen) {\n            bitmap |= (1 << relay.relayId);\n        }\n    }\n    // Check if we already have a write for 294\n    const existing = writes.find(w => w.register === 294);\n    if (existing) {\n        existing.value = bitmap;\n    } else {\n        writes.push({ register: 294, value: bitmap, name: \"Relay Bitmap\" });\n    }\n}\n\nif (writes.length === 0) {\n    node.warn(\"No valid parameters to write\");\n    return null;\n}\n\nglobal.set(\"extrel_write_queue\", writes);\nglobal.set(\"extrel_write_index\", 0);\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: writes.length + \" writes queued\" });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 650,
+        "y": 280,
+        "wires": [
+            [
+                "extrel_prepare_write"
+            ]
+        ]
+    },
+    {
+        "id": "extrel_prepare_write",
+        "type": "function",
+        "z": "ext_relay_tab",
+        "name": "Prepare Write",
+        "func": "const writes = global.get(\"extrel_write_queue\") || [];\nconst index = global.get(\"extrel_write_index\") || 0;\n\nif (index >= writes.length) {\n    return null;\n}\n\nconst current = writes[index];\n\n// If register 278, need to do bit manipulation\nif (current.register === 278) {\n    // Read reg278 first if not already read\n    const reg278Current = flow.get(\"extrel_reg278_current\");\n    if (reg278Current === null || reg278Current === undefined) {\n        // Need to read it first\n        msg.needRead278 = true;\n        msg.payload = {\n            fc: 3,\n            unitid: 1,\n            address: 278,\n            quantity: 1\n        };\n        msg.currentWrite = current;\n        return [msg, null];\n    }\n    \n    // We have the value, do bit manipulation\n    let newVal = reg278Current & ~0x0300; // Clear bits 8-9\n    if (current.enabled) {\n        newVal = newVal | 0x0300; // Set bits 8-9 (11)\n    } else {\n        newVal = newVal | 0x0200; // Set bit 9, clear bit 8 (10)\n    }\n    \n    msg.payload = {\n        fc: 16,\n        unitid: 1,\n        address: 278,\n        quantity: 1,\n        value: [newVal]\n    };\n    msg.currentWrite = current;\n    msg.needRead278 = false;\n    \n    node.status({ fill: \"blue\", shape: \"dot\", text: `[${index+1}/${writes.length}] ${current.name}` });\n    return [null, msg];\n}\n\n// Regular write for other registers\nmsg.payload = {\n    fc: 16,\n    unitid: 1,\n    address: current.register,\n    quantity: 1,\n    value: [current.value]\n};\nmsg.currentWrite = current;\nmsg.needRead278 = false;\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: `[${index+1}/${writes.length}] ${current.name}` });\n\nreturn [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 850,
+        "y": 280,
+        "wires": [
+            [
+                "extrel_read_278_for_write"
+            ],
+            [
+                "extrel_write_register"
+            ]
+        ]
+    },
+    {
+        "id": "extrel_read_278_for_write",
+        "type": "modbus-flex-getter",
+        "z": "ext_relay_tab",
+        "name": "Read 278",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1050,
+        "y": 260,
+        "wires": [
+            [
+                "extrel_store_278_and_retry"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "extrel_store_278_and_retry",
+        "type": "function",
+        "z": "ext_relay_tab",
+        "name": "Store 278 & Retry",
+        "func": "let data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nconst reg278 = Array.isArray(data) ? data[0] : 0;\nflow.set(\"extrel_reg278_current\", reg278);\n\n// Now retry the prepare write\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1240,
+        "y": 260,
+        "wires": [
+            [
+                "extrel_prepare_write"
+            ]
+        ]
+    },
+    {
+        "id": "extrel_write_register",
+        "type": "modbus-flex-write",
+        "z": "ext_relay_tab",
+        "name": "Write Register",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "server": "e4e4f3e2a4f4e004",
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "x": 1050,
+        "y": 320,
+        "wires": [
+            [
+                "extrel_write_ok"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "extrel_write_ok",
+        "type": "function",
+        "z": "ext_relay_tab",
+        "name": "Write OK",
+        "func": "const writes = global.get(\"extrel_write_queue\") || [];\nlet index = global.get(\"extrel_write_index\") || 0;\n\nconst current = msg.currentWrite;\nconst results = global.get(\"extrel_write_results\") || [];\n\nif (current) {\n    results.push({\n        register: current.register,\n        name: current.name,\n        value: current.value || current.enabled,\n        success: true\n    });\n    global.set(\"extrel_write_results\", results);\n}\n\nindex++;\nglobal.set(\"extrel_write_index\", index);\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `${current.name} OK` });\n\nif (index < writes.length) {\n    return [msg, null];\n}\n\n// All writes done - trigger read\nmsg.writeResult = {\n    count: results.length,\n    writes: results\n};\n\nglobal.set(\"extrel_write_queue\", null);\nglobal.set(\"extrel_write_index\", null);\nglobal.set(\"extrel_write_results\", null);\n\nreturn [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 650,
+        "y": 380,
+        "wires": [
+            [
+                "extrel_write_delay"
+            ],
+            [
+                "extrel_start_read"
+            ]
+        ]
+    },
+    {
+        "id": "extrel_write_delay",
+        "type": "delay",
+        "z": "ext_relay_tab",
+        "name": "500ms",
+        "pauseType": "delay",
+        "timeout": "500",
+        "timeoutUnits": "milliseconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 830,
+        "y": 380,
+        "wires": [
+            [
+                "extrel_prepare_write"
+            ]
+        ]
+    },
+    {
+        "id": "extrel_debug",
+        "type": "debug",
+        "z": "ext_relay_tab",
+        "name": "External Relay",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1290,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "extrel_rpc_response",
+        "type": "function",
+        "z": "ext_relay_tab",
+        "name": "RPC Response",
+        "func": "const rpcTopic = flow.get(\"extrel_rpc_response_topic\");\nflow.set(\"extrel_rpc_response_topic\", null);\n\nif (!rpcTopic) {\n    return null;\n}\n\nmsg.topic = rpcTopic;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1290,
+        "y": 180,
+        "wires": [
+            [
+                "extrel_mqtt_response"
+            ]
+        ]
+    },
+    {
+        "id": "extrel_mqtt_response",
+        "type": "mqtt out",
+        "z": "ext_relay_tab",
+        "name": "MQTT Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1490,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "EC100 Modbus",
+        "clienttype": "tcp",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": true,
+        "tcpHost": "192.168.1.100",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyUSB0",
+        "serialType": "RTU-BUFFERD",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "0x3A",
+        "unit_id": "1",
+        "commandDelay": "1",
+        "clientTimeout": "1000",
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": "2000",
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {}
+    }
+]

@@ -1,36 +1,37 @@
-GridCodeConfigState {
-  "timestampUtc": string,
-  "gatewayId": string,
-  "inverterSerialNumber": string,
-  "version": string,
+GridCodeConfigState
+{
+  "version": 1,
 
-  // --- Basic grid profile (high-level) ---
+  "gridModeRaw": "number",                   // 282 - 并网标准 Grid Mode
+                                             //   0 = General standard (通用标准)
+                                             //   1 = UL1741 & IEEE1547
+                                             //   2 = CPUC RULE21
+                                             //   3 = SRD-UL1741
+                                             //   4 = CEI 0-21
 
-  "gridModeRaw": number,              // 182 – country/grid code ID
-  "gridFrequencyHz": number,          // 183 – 50 or 60
-  "gridVoltageLevelCode": number,     // 138 – LN/LL voltage profile
+  "gridFrequencyHz": "number",               // 283 - 电网频率设置 Grid Frequency
+                                             //   0x00 = 50Hz
+                                             //   0x01 = 60Hz
 
-  // --- Connection window (matches “Grid Setting / Connect”) ---
+  "outputVoltageLevelCode": "number",        // 238 - 输出电压等级设定 Output voltage level
+                                             //   0 = 220V
+                                             //   1 = 230V
+                                             //   2 = 240V
+                                             //   3 = 120V
+                                             //   4 = 133VAC
 
   "normalConnect": {
-    "voltageLowV": number,            // 185 – Grid Vol Low
-    "voltageHighV": number,           // 185/186 if you decide to split normal vs reconnect
-    "frequencyLowHz": number,         // 188 – Grid Hz Low
-    "frequencyHighHz": number         // 187 – Grid Hz High
-    // You can later add ramp-rate and separate “reconnect window”
+    "voltageHighV": "number",                // 285 - 电网高压保护点 Grid Vol High (0.1V) [1800,2700]
+    "voltageLowV": "number",                 // 286 - 电网低压保护点 Grid Vol Low (0.1V) [1800,2700]
+    "frequencyHighHz": "number",             // 287 - 电网频率高保护点 Grid Hz High (0.01Hz) [4500,6500]
+    "frequencyLowHz": "number"               // 288 - 电网频率低保护点 Grid Hz Low (0.01Hz) [4500,6500]
   },
 
-  "reconnectionTimeSeconds": number,  // 180 – Restore connection time e.g. reg=60 → 60 s
+  "reconnectionTimeSeconds": "number",       // 280 - 恢复并网时间 Restore connection time [10,300]
 
-  // --- Power factor / reactive power behaviour ---
+  "powerFactorTarget": "number",             // 293 - 输出PF值设定 Output PF value (800=80%, 1000=100%, 1200=120%)
 
-  "powerFactorTarget": number,        // 193 – PF setting (% of nominal), e.g. 1000 = 1.00
-  "activePowerRegulationPercentPerStep": number,   // 77 – Active-power regulation (0.1%) 
-  "reactivePowerRegulationPercentPerStep": number  // 78 – Reactive-power regulation (0.1%)
+  "activePowerRegulationPercentPerStep": "number",    // bu hatalı geldi ffff geldi bun batarya ile test edecez 177 - 有功功率调节 Active power regulation [0,1200] (0.1%)
   
-  // Optionally: extra blocks later for:
-  // - F(W) droop curves (FW screen → uses 75/76 plus a curve table)
-  // - V(W)/V(Q) curves
-  // - P(Q)/P(F) curves
-  // - LVRT curve
+  "reactivePowerRegulationPercentPerStep": "number"   // 178 - 无功功率调节 Reactive power regulation [0,1200] (0.1%)
 }

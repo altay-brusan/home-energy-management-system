@@ -1,61 +1,92 @@
-InverterAdvancedFunctionConfigState {
-  "timestampUtc": "string",
-  "gatewayId": "string",
-  "inverterSerialNumber": "string",
-  "version": "string",
+InverterAdvancedFunctionConfigState
+{
+  "version": 1,
 
-  // Raw 16-bit advanced-function word
-  "advancedFunctionWordRaw": "number",           // 178
+  // Raw 16-bit advanced-function words
+  "advancedFunctionWord1Raw": "number",          // 278 - 控制板特殊功能位1
+  "advancedFunctionWord2Raw": "number",          // 279 - 控制板特殊功能位2
 
   // ─────────────────────────────────────
   // 1) Arc-fault & self-check
   // ─────────────────────────────────────
 
   "arcFault": {
-    "enabled": "bool",                           // 178 Bit0-1 (Solar Arc Fault ON)
-    "clearRequested": "bool"                     // 178 Bit0-1 special pattern for Clear_Arc_Fault (factory use)
+    "mode": "number",                            // 281 - Solar Arc Fault Mode
+                                                 //   0x00 = Off (关闭)
+                                                 //   0x01 = On (开启)
+                                                 //   0x02 = Clear fault (拉弧故障清零)
+    "enabled": "boolean"                         // Derived: mode == 0x01
   },
 
-  "systemSelfCheckEnabled": "bool",              // 178 Bit?  (System selfcheck – normally false)
+  "systemSelfCheckEnabled": null,                // Bu datasheet'te yok
 
   // ─────────────────────────────────────
-  // 2) Peak-shaving (note: grid peak-shaving is already represented
-  //    conceptually in SystemWorkModeConfigState.gridPeakShaving)
+  // 2) Peak-shaving
   // ─────────────────────────────────────
 
-  "generatorPeakShavingEnabled": "bool",         // 178 Bit2-3 (Gen peak-shaving)
-  "gridPeakShavingEnabled": "bool",             // 178 Bit4-5  (this backs SystemWorkModeConfigState.gridPeakShaving.enabled)
+  "generatorPeakShavingEnabled": "boolean",      // 278 Bit2-3 - Gen peak-shaving
+                                                 //   10 = disable
+                                                 //   11 = enable
+
+  "gridPeakShavingEnabled": "boolean",           // 278 Bit4-5 - Grid peak-shaving
+                                                 //   10 = disable
+                                                 //   11 = enable
 
   // ─────────────────────────────────────
   // 3) Smart-load / island-mode relay
   // ─────────────────────────────────────
 
-  "smartLoadOnGridAlwaysOn": "bool",            // 178 Bit6-7 – "On Grid always on" vs "off grid immediately off"
-  "externalRelayEnabled": "bool",               // 178 Bit8-9 – enable ATS / island-mode relay output
-  "islandModeSignalEnabled": "bool",            // same group: "Signal ISLAND MODE" behaviour
+  "smartLoadOnGridAlwaysOn": "boolean",          // 278 Bit6-7 - On Grid always on
+                                                 //   10 = disable (off grid immediately off)
+                                                 //   11 = enable (on grid always on)
 
-  // CT ratio and external meter phase (from "Advanced Function → CT Ratio / Ex_Meter For CT")
+  "externalRelayEnabled": "boolean",             // 278 Bit8-9 - External relay enable
+                                                 //   10 = disable
+                                                 //   11 = enable
+
+  "islandProtectionEnabled": "boolean",          // 183 - 孤岛保护使能 Island protection enable
+                                                 //   0 = disable
+                                                 //   1 = enable
+
+  // CT ratio and external meter (from "Advanced Function → CT Ratio / Ex_Meter For CT")
   "externalMeter": {
-    "ctRatio": "number",                        // 194 – CT Ratio (e.g. 2000 ⇒ 2000:1)
-    "phase": "string"                           // "A" | "B" | "C" | null – which phase CHiNT meter is on
+    "ctRatio": "number",                         // 447 - 外置CT变比 CT ratio (e.g. 30 = 30:1)
+    "meterCtRatio": "number",                    // 448 - 外置Meter CT变比 Meter CT ratio
+    "phase": null                                // Bu datasheet'te yok
   },
 
   // ─────────────────────────────────────
   // 4) BMS / DRM behaviour
   // ─────────────────────────────────────
 
-  "bmsErrorStopEnabled": "bool",                // 178 Bit10-11 – BMS_Err_Stop
-  "drmEnabled": "bool",                         // 178 Bit12-13 – DRM signal handling enable
+  "lithiumBatteryLossFaultEnabled": "boolean",   // 278 Bit10-11 - 锂电池丢失报故障
+                                                 //   10 = disable
+                                                 //   11 = enable
+
+  "drmEnabled": null,                            // Bu datasheet'te yok
 
   // ─────────────────────────────────────
   // 5) Parallel settings (screen: Advanced Function / Parallel)
   // ─────────────────────────────────────
 
   "parallel": {
-    "enabled": "bool",                          // Parallel checkbox
-    "role": "master" | "slave" | "standalone",  // Master / Slave / not in parallel
-    "modbusAddress": "number"                   // "Modbus SN" value
+    "enabled": "boolean",                        // 436 Bit0 - Parallel Enable
+                                                 //   0 = disable
+                                                 //   1 = enable
+
+    "role": "string",                            // 436 Bit1 - Master/Slave
+                                                 //   0 = "slave"
+                                                 //   1 = "master"
+                                                 //   (Bit0=0 ise "standalone")
+
+    "phase": "string",                           // 436 Bit8-9 - Phase
+                                                 //   00 = "A"
+                                                 //   01 = "B"
+                                                 //   10 = "C"
+                                                 //   11 = "void"
+
+    "modbusAddress": "number"                    // 436 Bit10-15 - Modbus SN (0-63)
   }
 
-  // You can extend later if firmware adds more bits into 178/194/etc.
+  // You can extend later if firmware adds more bits
 }
