@@ -275,7 +275,7 @@ export default function DashboardScreen (): JSX.Element {
         <TodaySummary />
         <BatteryStateCard deviceId={device?.id} />
         <InverterModeCard COLORS={COLORS} />
-        <DashboardModeCard COLORS={COLORS} />
+        {/* <DashboardModeCard COLORS={COLORS} /> */}
         <PowerAndEnergyMetrics
           COLORS={COLORS}
           isDark={isDark}

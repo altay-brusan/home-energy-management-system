@@ -10,12 +10,11 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   Alert,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, CheckCircle, Settings } from 'lucide-react-native';
+import { ArrowLeft, CheckCircle, Settings, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors } from '../../../theme/constants';
@@ -43,6 +42,9 @@ const ModeDetailScreen: React.FC = () => {
 
   const { activeModeId, selectMode, applyMode, customConfig } = useInverterModeStore();
 
+  // State for showing/hiding settings
+  const [showSettings, setShowSettings] = useState(false);
+
   const modeId = route.params?.modeId;
   const mode = getModeById(modeId);
 
@@ -59,11 +61,23 @@ const ModeDetailScreen: React.FC = () => {
     return t(`inverterModes.modes.${modeKey}.description`, { defaultValue: mode.description });
   };
 
+  const getModeTargetUser = () => {
+    if (!mode) return '';
+    const modeKey = mode.id.replace('mode_', 'mode');
+    return t(`inverterModes.modes.${modeKey}.targetUser`, { defaultValue: mode.targetUser });
+  };
+
+  const getModeRecommendedScenario = () => {
+    if (!mode) return '';
+    const modeKey = mode.id.replace('mode_', 'mode');
+    return t(`inverterModes.modes.${modeKey}.recommendedScenario`, { defaultValue: mode.recommendedScenario });
+  };
+
   if (!mode) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: COLORS.dark }]}>
+      <View style={[styles.container, { backgroundColor: COLORS.dark, paddingTop: insets.top }]}>
         <Text style={{ color: COLORS.text }}>{t('inverterModes.modeNotFound')}</Text>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -97,14 +111,14 @@ const ModeDetailScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView
+    <View
       style={[
         styles.container,
         { backgroundColor: isDark ? COLORS.dark : COLORS.gray100 },
       ]}
     >
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backButton}
@@ -169,7 +183,7 @@ const ModeDetailScreen: React.FC = () => {
               {t('inverterModes.targetUser')}
             </Text>
             <Text style={[styles.infoCardValue, { color: COLORS.text }]}>
-              {mode.targetUser}
+              {getModeTargetUser()}
             </Text>
           </View>
           <View
@@ -182,13 +196,34 @@ const ModeDetailScreen: React.FC = () => {
               {t('inverterModes.recommendedScenario')}
             </Text>
             <Text style={[styles.infoCardValue, { color: COLORS.text }]}>
-              {mode.recommendedScenario}
+              {getModeRecommendedScenario()}
             </Text>
           </View>
         </View>
 
+        {/* Show/Hide Settings Button */}
+        <TouchableOpacity
+          onPress={() => setShowSettings(!showSettings)}
+          style={[
+            styles.showSettingsButton,
+            { backgroundColor: isDark ? COLORS.surface : COLORS.white },
+          ]}
+        >
+          <Text style={[styles.showSettingsButtonText, { color: COLORS.accent }]}>
+            {showSettings ? t('inverterModes.hideSettings') : t('inverterModes.showSettings')}
+          </Text>
+          {showSettings ? (
+            <ChevronUp size={20} color={COLORS.accent} />
+          ) : (
+            <ChevronDown size={20} color={COLORS.accent} />
+          )}
+        </TouchableOpacity>
+
+        {/* Settings Sections - Only show when expanded */}
+        {showSettings && (
+        <>
         {/* Settings Sections */}
-        <Text style={[styles.sectionTitle, { color: COLORS.text }]}>
+        <Text style={[styles.sectionTitle, { color: COLORS.text, marginTop: 16 }]}>
           {t('inverterModes.settingDetails')}
         </Text>
 
@@ -377,7 +412,7 @@ const ModeDetailScreen: React.FC = () => {
         {config.timeOfUse.enabled === 'on' && config.timeOfUse.periods.length > 0 && (
           <SettingSection title={t('inverterModes.settings.timeOfUse')} icon="clock-o" defaultExpanded>
             <TimelineBar periods={config.timeOfUse.periods} />
-            {config.timeOfUse.periods.map((period, index) => (
+            {config.timeOfUse.periods.map((period) => (
               <View
                 key={period.id}
                 style={[
@@ -394,6 +429,8 @@ const ModeDetailScreen: React.FC = () => {
               </View>
             ))}
           </SettingSection>
+        )}
+        </>
         )}
 
         {/* Edit Button for Custom Mode */}
@@ -440,7 +477,7 @@ const ModeDetailScreen: React.FC = () => {
           )}
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -521,6 +558,19 @@ const styles = StyleSheet.create({
   },
   infoCardValue: {
     fontSize: 13,
+    fontWeight: '600',
+  },
+  showSettingsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 14,
+    borderRadius: 12,
+    marginBottom: 8,
+    gap: 8,
+  },
+  showSettingsButtonText: {
+    fontSize: 15,
     fontWeight: '600',
   },
   sectionTitle: {

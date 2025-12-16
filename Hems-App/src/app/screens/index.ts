@@ -1,5 +1,7 @@
 export { default as ProfileScreen } from "./profile/ProfileScreen";
-export { default as SettingsScreen } from "./SettingsScreen";
+export { default as AppSettingsScreen } from "./settings/SettingsScreen";
+export { default as GeneralSettingsScreen } from "./settings/GeneralSettingsScreen";
+export { default as PricingSettingsScreen } from "./settings/PricingSettingsScreen";
 export { default as FormExampleScreen } from "./FormExampleScreen";
 export { default as LoginScreen } from "./login/LoginScreen";
 export { default as SignUpScreen } from "./signup/SignUpScreen";

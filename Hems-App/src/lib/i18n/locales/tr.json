@@ -116,6 +116,7 @@
     "forgotPassword": "Şifremi Unuttum?",
     "signUp": "Kayıt Ol",
     "welcome": "Hoş Geldiniz",
+    "welcomeBack": "Tekrar Hoş Geldiniz",
     "loginSubtitle": "Hesabınıza giriş yapın",
     "emailPlaceholder": "E-posta Adresiniz",
     "passwordPlaceholder": "Şifreniz",
@@ -425,6 +426,7 @@
     "selectRange": "Aralık Seç"
   },
   "settings": {
+    "title": "Ayarlar",
     "settings": "Ayarlar",
     "settingsScreen": "Ayarlar Ekranı",
     "setting1": "Ayar 1",
@@ -437,7 +439,44 @@
     "version": "Sürüm",
     "contact": "İletişim",
     "help": "Yardım",
-    "feedback": "Geri Bildirim"
+    "feedback": "Geri Bildirim",
+    "generalSettings": "Genel Ayarlar",
+    "generalSettingsDesc": "Sıcaklık, birimler, tarih ve saat",
+    "pricingSettings": "Fiyatlandırma Ayarları",
+    "comingSoon": "Yakında",
+    "temperatureUnit": "Sıcaklık Birimi",
+    "celsius": "Celsius",
+    "fahrenheit": "Fahrenheit",
+    "metricSystem": "Ölçü Sistemi",
+    "metric": "Metrik",
+    "imperial": "İmparatorluk",
+    "inverterSettings": "İnverter Ayarları",
+    "dateTime": "Tarih ve Saat",
+    "dateFormat": "Tarih Formatı",
+    "timeFormat": "Saat Formatı",
+    "24hour": "24 Saat",
+    "12hour": "12 Saat",
+    "pricingSettingsDesc": "Enerji alış ve satış fiyatları"
+  },
+  "pricing": {
+    "title": "Fiyatlandırma Ayarları",
+    "pricingType": "Fiyatlandırma Tipi",
+    "pricingTypeDesc": "Sabit veya zamana dayalı dinamik fiyatlandırma seçin",
+    "fixed": "Sabit",
+    "dynamic": "Dinamik",
+    "fixedPricing": "Sabit Fiyatlandırma",
+    "dynamicPricing": "Dinamik Fiyatlandırma",
+    "dynamicPricingDesc": "Farklı zaman dilimleri için farklı fiyatlar belirleyin",
+    "buyPrice": "Alış Fiyatı (€/kWh)",
+    "sellPrice": "Satış Fiyatı (€/kWh)",
+    "period": "Dönem",
+    "addPeriod": "Dönem Ekle",
+    "deletePeriod": "Dönemi Sil",
+    "deletePeriodConfirm": "Bu zaman dilimini silmek istediğinizden emin misiniz?",
+    "startTime": "Başlangıç Saati",
+    "endTime": "Bitiş Saati",
+    "hours": "Saat",
+    "minutes": "Dakika"
   },
   "alerts": {
     "confirmLogout": "Çıkış yapmak istediğinizden emin misiniz?",
@@ -1618,7 +1657,7 @@
   "changeFailed": "Enerji satış stratejisi değiştirilemedi"
 },
 "inverterModes": {
-  "title": "İnverter Modları",
+  "title": "Cihaz Modları",
   "subtitle": "Hibrit inverter için en uygun çalışma modunu seçin. Önceden tanımlı modlar otomatik yapılandırma sağlar, özel mod tam kontrol sunar.",
   "selectMode": "Mod Seç",
   "applyMode": "Modu Uygula",
@@ -1634,35 +1673,51 @@
   "modes": {
     "mode1": {
       "name": "Maksimum Tasarruf",
-      "description": "Şebeke elektrik maliyetini minimize eder, güneş enerjisini önceliklendirir"
+      "description": "Şebeke elektrik maliyetini minimize eder, güneş enerjisini önceliklendirir",
+      "targetUser": "Fatura düşürme odaklı kullanıcılar",
+      "recommendedScenario": "Yüksek elektrik faturası olan evler"
     },
     "mode2": {
       "name": "Şebekeye Satış",
-      "description": "Fazla enerjiyi şebekeye satarak gelir elde eder"
+      "description": "Fazla enerjiyi şebekeye satarak gelir elde eder",
+      "targetUser": "Üretim fazlası olan kullanıcılar",
+      "recommendedScenario": "Net metering/Feed-in tarife olan bölgeler"
     },
     "mode4": {
       "name": "Yedek Güç (UPS)",
-      "description": "Elektrik kesintilerine karşı yüksek batarya rezervi tutar"
+      "description": "Elektrik kesintilerine karşı yüksek batarya rezervi tutar",
+      "targetUser": "Kesinti riski yüksek bölgelerdeki kullanıcılar",
+      "recommendedScenario": "Hastane, iş yeri, kritik yükler"
     },
     "mode5": {
       "name": "Gece Tarifesi Avantajı",
-      "description": "Ucuz gece tarifelerinden faydalanarak bataryayı şarj eder"
+      "description": "Ucuz gece tarifelerinden faydalanarak bataryayı şarj eder",
+      "targetUser": "Çok zamanlı tarife kullananlar",
+      "recommendedScenario": "Gündüz/gece farklı tarife olan bölgeler"
     },
     "mode6": {
       "name": "Sıfır İhracat",
-      "description": "Şebekeye hiç enerji göndermez, sadece öz tüketim"
+      "description": "Şebekeye hiç enerji göndermez, sadece öz tüketim",
+      "targetUser": "Yasal kısıtlama olan bölgelerdeki kullanıcılar",
+      "recommendedScenario": "Satış izni olmayan bölgeler"
     },
     "mode7": {
       "name": "Jeneratör Destekli",
-      "description": "Uzun süreli kesintilerde jeneratör ile çalışır"
+      "description": "Uzun süreli kesintilerde jeneratör ile çalışır",
+      "targetUser": "Jeneratörü olan kullanıcılar",
+      "recommendedScenario": "Sık kesinti olan, jeneratörü olan yerler"
     },
     "mode8": {
       "name": "Dengeli Hibrit",
-      "description": "Genel kullanım için optimize edilmiş dengeli mod"
+      "description": "Genel kullanım için optimize edilmiş dengeli mod",
+      "targetUser": "Yeni başlayanlar, kararsızlar",
+      "recommendedScenario": "Genel ev kullanımı"
     },
     "custom": {
       "name": "Özel Mod",
-      "description": "Tüm ayarları manuel olarak yapılandırın"
+      "description": "Tüm ayarları manuel olarak yapılandırın",
+      "targetUser": "İleri düzey kullanıcılar",
+      "recommendedScenario": "Özel gereksinimler"
     }
   },
   "settings": {
@@ -1725,6 +1780,8 @@
   "applyThisMode": "Aktif Mod Olarak Ayarla",
   "settingDetails": "Ayar Detayları",
   "editSettingsButton": "Ayarları Düzenle",
+  "showSettings": "Mod Ayarlarını Göster",
+  "hideSettings": "Mod Ayarlarını Gizle",
   "mode": "Mod",
   "hours": "saat",
   "customModeSettings": "Özel Mod Ayarları",

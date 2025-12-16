@@ -59,12 +59,22 @@ const ModeCard: React.FC<ModeCardProps> = ({
 
   const IconComponent = MODE_ICONS[id];
 
+  // Preset mode mavi rengi (TodaySummary ile aynı)
+  const PRESET_BLUE = '#5EB2F7';
+
   // İkon rengi
   const iconColor = isActive
     ? COLORS.accent
     : isCustom
     ? '#9C27B0'
-    : COLORS.textSoft;
+    : PRESET_BLUE;
+
+  // İkon arka plan rengi
+  const iconBgColor = isActive
+    ? `${COLORS.accent}20`
+    : isCustom
+    ? '#9C27B015'
+    : `${PRESET_BLUE}15`;
 
   return (
     <TouchableOpacity
@@ -93,13 +103,7 @@ const ModeCard: React.FC<ModeCardProps> = ({
         style={[
           styles.iconContainer,
           {
-            backgroundColor: isActive
-              ? `${COLORS.accent}20`
-              : isCustom
-              ? '#9C27B015'
-              : isDark
-              ? COLORS.border
-              : COLORS.gray100,
+            backgroundColor: iconBgColor,
           },
         ]}
       >

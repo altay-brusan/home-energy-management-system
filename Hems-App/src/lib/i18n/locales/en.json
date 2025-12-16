@@ -101,6 +101,7 @@
       "forgotPassword": "Forgot Password?",
       "signUp": "Sign Up",
       "welcome": "Welcome",
+      "welcomeBack": "Welcome Back",
       "loginSubtitle": "Sign in to your account",
       "emailPlaceholder": "Your Email",
       "passwordPlaceholder": "Your Password",
@@ -409,6 +410,7 @@
       "selectRange": "Select Range"
     },
     "settings": {
+      "title": "Settings",
       "settings": "Settings",
       "settingsScreen": "Settings Screen",
       "setting1": "Setting 1",
@@ -421,7 +423,44 @@
       "version": "Version",
       "contact": "Contact",
       "help": "Help",
-      "feedback": "Feedback"
+      "feedback": "Feedback",
+      "generalSettings": "General Settings",
+      "generalSettingsDesc": "Temperature, units, date and time",
+      "pricingSettings": "Pricing Settings",
+      "comingSoon": "Coming Soon",
+      "temperatureUnit": "Temperature Unit",
+      "celsius": "Celsius",
+      "fahrenheit": "Fahrenheit",
+      "metricSystem": "Measurement System",
+      "metric": "Metric",
+      "imperial": "Imperial",
+      "inverterSettings": "Inverter Settings",
+      "dateTime": "Date & Time",
+      "dateFormat": "Date Format",
+      "timeFormat": "Time Format",
+      "24hour": "24 Hour",
+      "12hour": "12 Hour",
+      "pricingSettingsDesc": "Energy buy and sell prices"
+    },
+    "pricing": {
+      "title": "Pricing Settings",
+      "pricingType": "Pricing Type",
+      "pricingTypeDesc": "Choose between fixed or time-based dynamic pricing",
+      "fixed": "Fixed",
+      "dynamic": "Dynamic",
+      "fixedPricing": "Fixed Pricing",
+      "dynamicPricing": "Dynamic Pricing",
+      "dynamicPricingDesc": "Set different prices for different time periods",
+      "buyPrice": "Buy Price (€/kWh)",
+      "sellPrice": "Sell Price (€/kWh)",
+      "period": "Period",
+      "addPeriod": "Add Period",
+      "deletePeriod": "Delete Period",
+      "deletePeriodConfirm": "Are you sure you want to delete this time period?",
+      "startTime": "Start Time",
+      "endTime": "End Time",
+      "hours": "Hours",
+      "minutes": "Minutes"
     },
     "alerts": {
       "confirmLogout": "Are you sure you want to logout?",
@@ -1615,7 +1654,7 @@
     "changeFailed": "Failed to change export strategy"
   },
   "inverterModes": {
-    "title": "Inverter Modes",
+    "title": "Device Modes",
     "subtitle": "Select the most suitable operating mode for your hybrid inverter. Preset modes provide automatic configuration, while custom mode offers full control.",
     "presetModes": "Preset Modes",
     "infoText": "Tap on a mode to view details and apply it. Use the custom mode option to manually configure all settings.",
@@ -1633,35 +1672,51 @@
     "modes": {
       "mode1": {
         "name": "Maximum Savings",
-        "description": "Minimizes grid electricity cost, prioritizes solar energy"
+        "description": "Minimizes grid electricity cost, prioritizes solar energy",
+        "targetUser": "Users focused on reducing bills",
+        "recommendedScenario": "Homes with high electricity bills"
       },
       "mode2": {
         "name": "Grid Selling",
-        "description": "Earns revenue by selling excess energy to the grid"
+        "description": "Earns revenue by selling excess energy to the grid",
+        "targetUser": "Users with excess production",
+        "recommendedScenario": "Regions with net metering/feed-in tariffs"
       },
       "mode4": {
         "name": "Backup Power (UPS)",
-        "description": "Maintains high battery reserve against power outages"
+        "description": "Maintains high battery reserve against power outages",
+        "targetUser": "Users in high outage risk areas",
+        "recommendedScenario": "Hospitals, workplaces, critical loads"
       },
       "mode5": {
         "name": "Night Tariff Advantage",
-        "description": "Charges battery using cheap night tariffs"
+        "description": "Charges battery using cheap night tariffs",
+        "targetUser": "Users with time-of-use tariffs",
+        "recommendedScenario": "Regions with day/night different tariffs"
       },
       "mode6": {
         "name": "Zero Export",
-        "description": "No energy export to grid, self-consumption only"
+        "description": "No energy export to grid, self-consumption only",
+        "targetUser": "Users in legally restricted areas",
+        "recommendedScenario": "Regions without selling permission"
       },
       "mode7": {
         "name": "Generator Supported",
-        "description": "Works with generator during extended outages"
+        "description": "Works with generator during extended outages",
+        "targetUser": "Users with generators",
+        "recommendedScenario": "Areas with frequent outages and generator availability"
       },
       "mode8": {
         "name": "Balanced Hybrid",
-        "description": "Balanced mode optimized for general use"
+        "description": "Balanced mode optimized for general use",
+        "targetUser": "Beginners, undecided users",
+        "recommendedScenario": "General home use"
       },
       "custom": {
         "name": "Custom Mode",
-        "description": "Manually configure all settings"
+        "description": "Manually configure all settings",
+        "targetUser": "Advanced users",
+        "recommendedScenario": "Special requirements"
       }
     },
     "settings": {
@@ -1724,6 +1779,8 @@
     "applyThisMode": "Set Active Mode",
     "settingDetails": "Setting Details",
     "editSettingsButton": "Edit Settings",
+    "showSettings": "Show Mode Settings",
+    "hideSettings": "Hide Mode Settings",
     "mode": "Mode",
     "hours": "hours",
     "customModeSettings": "Custom Mode Settings",
