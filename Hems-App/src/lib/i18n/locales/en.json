@@ -1639,10 +1639,6 @@
         "name": "Grid Selling",
         "description": "Earns revenue by selling excess energy to the grid"
       },
-      "mode3": {
-        "name": "Off-Grid (Island Mode)",
-        "description": "Operates completely independent from the grid"
-      },
       "mode4": {
         "name": "Backup Power (UPS)",
         "description": "Maintains high battery reserve against power outages"

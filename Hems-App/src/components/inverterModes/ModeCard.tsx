@@ -6,9 +6,31 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import MaterialIcons from '@react-native-vector-icons/material-icons';
+import {
+  PiggyBank,
+  TrendingUp,
+  ShieldCheck,
+  Moon,
+  CircleOff,
+  Fuel,
+  Scale,
+  SlidersHorizontal,
+  LucideIcon,
+} from 'lucide-react-native';
 import { useThemeStore } from '../../store/themeStore';
 import { getThemeColors } from '../../theme/constants';
-import { getModeNumber } from '../../data/presetModes';
+
+// Mode ID'ye göre ikon eşlemesi
+const MODE_ICONS: Record<string, LucideIcon> = {
+  mode_1: PiggyBank,        // Maksimum Tasarruf
+  mode_2: TrendingUp,       // Şebekeye Satış
+  mode_4: ShieldCheck,      // Yedek Güç (UPS)
+  mode_5: Moon,             // Gece Tarifesi Avantajı
+  mode_6: CircleOff,        // Sıfır İhracat
+  mode_7: Fuel,             // Jeneratör Destekli
+  mode_8: Scale,            // Dengeli Hibrit
+  custom: SlidersHorizontal, // Özel Mod
+};
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_MARGIN = 8;
@@ -35,7 +57,14 @@ const ModeCard: React.FC<ModeCardProps> = ({
   const isDark = mode === 'dark';
   const COLORS = getThemeColors(isDark);
 
-  const modeNumber = getModeNumber(id);
+  const IconComponent = MODE_ICONS[id];
+
+  // İkon rengi
+  const iconColor = isActive
+    ? COLORS.accent
+    : isCustom
+    ? '#9C27B0'
+    : COLORS.textSoft;
 
   return (
     <TouchableOpacity
@@ -59,31 +88,24 @@ const ModeCard: React.FC<ModeCardProps> = ({
         },
       ]}
     >
-      {/* Mode Number Badge */}
+      {/* Mode Icon */}
       <View
         style={[
-          styles.badge,
+          styles.iconContainer,
           {
             backgroundColor: isActive
-              ? COLORS.accent
+              ? `${COLORS.accent}20`
               : isCustom
-              ? '#9C27B0'
+              ? '#9C27B015'
               : isDark
               ? COLORS.border
-              : COLORS.gray200,
+              : COLORS.gray100,
           },
         ]}
       >
-        <Text
-          style={[
-            styles.badgeText,
-            {
-              color: isActive || isCustom ? '#FFFFFF' : COLORS.textSoft,
-            },
-          ]}
-        >
-          {modeNumber}
-        </Text>
+        {IconComponent && (
+          <IconComponent size={24} color={iconColor} strokeWidth={2} />
+        )}
       </View>
 
       {/* Mode Name */}
@@ -112,7 +134,7 @@ const ModeCard: React.FC<ModeCardProps> = ({
 const styles = StyleSheet.create({
   card: {
     width: CARD_WIDTH,
-    minHeight: 100,
+    minHeight: 110,
     borderRadius: 12,
     padding: 12,
     margin: CARD_MARGIN,
@@ -120,21 +142,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     position: 'relative',
   },
-  badge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 8,
   },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
   name: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 14,
   },
   activeIndicator: {
     position: 'absolute',

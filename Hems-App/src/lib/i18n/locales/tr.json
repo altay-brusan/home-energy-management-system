@@ -1640,10 +1640,6 @@
       "name": "Şebekeye Satış",
       "description": "Fazla enerjiyi şebekeye satarak gelir elde eder"
     },
-    "mode3": {
-      "name": "Off-Grid (Ada Modu)",
-      "description": "Şebekeden tamamen bağımsız çalışır"
-    },
     "mode4": {
       "name": "Yedek Güç (UPS)",
       "description": "Elektrik kesintilerine karşı yüksek batarya rezervi tutar"
