@@ -1,0 +1,728 @@
+[
+    {
+        "id": "gen_smartload_config_tab",
+        "type": "tab",
+        "label": "GeneratorSmartLoadConfig",
+        "disabled": false,
+        "info": "Generator And SmartLoad Config - Read & Write\n\nRegisters:\n- 221-222: Gen timing (R)\n- 224-225: Gen charge settings (R/W)\n- 229-230: Charge enables (R/W)\n- 233,235,237,239: SmartLoad (R/W)\n- 278: Bit field - Bit2-3 genPeakShaving, Bit6-7 onGridAlwaysOn (R/W)\n- 290: Gen peak shaving power (R/W)\n- 292: SmartLoad open delay (R/W)"
+    },
+    {
+        "id": "gsl_link_in_rpc",
+        "type": "link in",
+        "z": "gen_smartload_config_tab",
+        "name": "RPC Request",
+        "links": [
+            "rpc_gsl_link_out"
+        ],
+        "x": 135,
+        "y": 180,
+        "wires": [
+            [
+                "gsl_route_operation"
+            ]
+        ]
+    },
+    {
+        "id": "gsl_manual_read",
+        "type": "inject",
+        "z": "gen_smartload_config_tab",
+        "name": "Manual Read",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operationType",
+                "v": "read",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 260,
+        "wires": [
+            [
+                "gsl_route_operation"
+            ]
+        ]
+    },
+    {
+        "id": "gsl_manual_write",
+        "type": "inject",
+        "z": "gen_smartload_config_tab",
+        "name": "Test Write",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operationType",
+                "v": "write",
+                "vt": "str"
+            },
+            {
+                "p": "rpcParams",
+                "v": "{\"generatorChargeEnabled\":true,\"gridChargeEnabled\":true,\"startSocPercent\":20,\"chargeCurrentA\":30,\"generatorPeakShaving\":{\"enabled\":true,\"limitPowerW\":3000},\"smartLoad\":{\"enabled\":1,\"offSocPercent\":20,\"onSocPercent\":80,\"pvPowerThresholdW\":500,\"openDelayMinutes\":5,\"onGridAlwaysOn\":false}}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 320,
+        "wires": [
+            [
+                "gsl_route_operation"
+            ]
+        ]
+    },
+    {
+        "id": "gsl_route_operation",
+        "type": "function",
+        "z": "gen_smartload_config_tab",
+        "name": "Route: Read or Write?",
+        "func": "const opType = msg.operationType || 'read';\n\nif (opType === 'write') {\n    return [null, msg];\n} else {\n    return [msg, null];\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 180,
+        "wires": [
+            [
+                "gsl_start_read"
+            ],
+            [
+                "gsl_start_write"
+            ]
+        ]
+    },
+    {
+        "id": "gsl_start_read",
+        "type": "function",
+        "z": "gen_smartload_config_tab",
+        "name": "Start Read",
+        "func": "flow.set(\"gsl_rpc_response_topic\", msg.rpcResponseTopic);\nflow.set(\"gsl_write_result\", msg.writeResult || null);\n\n// Clear all parts\nflow.set(\"gsl_part_gen_timing\", null);\nflow.set(\"gsl_part_gen_charge\", null);\nflow.set(\"gsl_part_enables\", null);\nflow.set(\"gsl_part_smartload1\", null);\nflow.set(\"gsl_part_reg278\", null);\nflow.set(\"gsl_part_reg290\", null);\nflow.set(\"gsl_part_reg292\", null);\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 550,
+        "y": 120,
+        "wires": [
+            [
+                "gsl_prep_gen_timing",
+                "gsl_prep_gen_charge",
+                "gsl_prep_enables",
+                "gsl_prep_smartload1",
+                "gsl_prep_reg278",
+                "gsl_prep_reg290",
+                "gsl_prep_reg292"
+            ]
+        ]
+    },
+    {
+        "id": "gsl_prep_gen_timing",
+        "type": "function",
+        "z": "gen_smartload_config_tab",
+        "name": "Prep 221-222",
+        "func": "msg.readGroup = \"gen_timing\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 221,\n    quantity: 2\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 750,
+        "y": 40,
+        "wires": [
+            [
+                "gsl_read_gen_timing"
+            ]
+        ]
+    },
+    {
+        "id": "gsl_prep_gen_charge",
+        "type": "function",
+        "z": "gen_smartload_config_tab",
+        "name": "Prep 224-225",
+        "func": "msg.readGroup = \"gen_charge\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 224,\n    quantity: 2\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 750,
+        "y": 80,
+        "wires": [
+            [
+                "gsl_read_gen_charge"
+            ]
+        ]
+    },
+    {
+        "id": "gsl_prep_enables",
+        "type": "function",
+        "z": "gen_smartload_config_tab",
+        "name": "Prep 229-230",
+        "func": "msg.readGroup = \"enables\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 229,\n    quantity: 2\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 750,
+        "y": 120,
+        "wires": [
+            [
+                "gsl_read_enables"
+            ]
+        ]
+    },
+    {
+        "id": "gsl_prep_smartload1",
+        "type": "function",
+        "z": "gen_smartload_config_tab",
+        "name": "Prep 233,235,237,239",
+        "func": "msg.readGroup = \"smartload1\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 233,\n    quantity: 7\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 770,
+        "y": 160,
+        "wires": [
+            [
+                "gsl_read_smartload1"
+            ]
+        ]
+    },
+    {
+        "id": "gsl_prep_reg278",
+        "type": "function",
+        "z": "gen_smartload_config_tab",
+        "name": "Prep 278",
+        "func": "msg.readGroup = \"reg278\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 278,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 740,
+        "y": 200,
+        "wires": [
+            [
+                "gsl_read_reg278"
+            ]
+        ]
+    },
+    {
+        "id": "gsl_prep_reg290",
+        "type": "function",
+        "z": "gen_smartload_config_tab",
+        "name": "Prep 290",
+        "func": "msg.readGroup = \"reg290\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 290,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 740,
+        "y": 240,
+        "wires": [
+            [
+                "gsl_read_reg290"
+            ]
+        ]
+    },
+    {
+        "id": "gsl_prep_reg292",
+        "type": "function",
+        "z": "gen_smartload_config_tab",
+        "name": "Prep 292",
+        "func": "msg.readGroup = \"reg292\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 292,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 740,
+        "y": 280,
+        "wires": [
+            [
+                "gsl_read_reg292"
+            ]
+        ]
+    },
+    {
+        "id": "gsl_read_gen_timing",
+        "type": "modbus-flex-getter",
+        "z": "gen_smartload_config_tab",
+        "name": "Read 221-222",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 940,
+        "y": 40,
+        "wires": [
+            [
+                "gsl_build_json"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "gsl_read_gen_charge",
+        "type": "modbus-flex-getter",
+        "z": "gen_smartload_config_tab",
+        "name": "Read 224-225",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 940,
+        "y": 80,
+        "wires": [
+            [
+                "gsl_build_json"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "gsl_read_enables",
+        "type": "modbus-flex-getter",
+        "z": "gen_smartload_config_tab",
+        "name": "Read 229-230",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 940,
+        "y": 120,
+        "wires": [
+            [
+                "gsl_build_json"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "gsl_read_smartload1",
+        "type": "modbus-flex-getter",
+        "z": "gen_smartload_config_tab",
+        "name": "Read 233-239",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 940,
+        "y": 160,
+        "wires": [
+            [
+                "gsl_build_json"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "gsl_read_reg278",
+        "type": "modbus-flex-getter",
+        "z": "gen_smartload_config_tab",
+        "name": "Read 278",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 920,
+        "y": 200,
+        "wires": [
+            [
+                "gsl_build_json"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "gsl_read_reg290",
+        "type": "modbus-flex-getter",
+        "z": "gen_smartload_config_tab",
+        "name": "Read 290",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 920,
+        "y": 240,
+        "wires": [
+            [
+                "gsl_build_json"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "gsl_read_reg292",
+        "type": "modbus-flex-getter",
+        "z": "gen_smartload_config_tab",
+        "name": "Read 292",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 920,
+        "y": 280,
+        "wires": [
+            [
+                "gsl_build_json"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "gsl_build_json",
+        "type": "function",
+        "z": "gen_smartload_config_tab",
+        "name": "Build JSON State",
+        "func": "let raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nconst group = msg.readGroup;\n\nif (group === \"gen_timing\") {\n    flow.set(\"gsl_part_gen_timing\", {\n        maxRunTimeHours: Math.round((data[0] || 0) * 0.1 * 10) / 10,\n        coolingTimeHours: Math.round((data[1] || 0) * 0.1 * 10) / 10\n    });\n}\nelse if (group === \"gen_charge\") {\n    flow.set(\"gsl_part_gen_charge\", {\n        startSocPercent: data[0] || 0,\n        chargeCurrentA: data[1] || 0\n    });\n}\nelse if (group === \"enables\") {\n    flow.set(\"gsl_part_enables\", {\n        generatorChargeEnabled: (data[0] || 0) === 1,\n        gridChargeEnabled: (data[1] || 0) === 1\n    });\n}\nelse if (group === \"smartload1\") {\n    // 233, 234, 235, 236, 237, 238, 239\n    flow.set(\"gsl_part_smartload1\", {\n        smartLoadEnabled: data[0] || 0,        // 233\n        offSocPercent: data[2] || 0,           // 235\n        onSocPercent: data[4] || 0,            // 237\n        pvPowerThresholdW: data[6] || 0        // 239\n    });\n}\nelse if (group === \"reg278\") {\n    const val = data[0] || 0;\n    // Bit2-3: Gen peak shaving (10=disable, 11=enable)\n    const genPeakShavingEnabled = ((val >> 2) & 0x03) === 0x03;\n    // Bit6-7: On Grid always on (10=disable, 11=enable)\n    const onGridAlwaysOn = ((val >> 6) & 0x03) === 0x03;\n    \n    flow.set(\"gsl_part_reg278\", {\n        rawValue: val,\n        genPeakShavingEnabled: genPeakShavingEnabled,\n        onGridAlwaysOn: onGridAlwaysOn\n    });\n}\nelse if (group === \"reg290\") {\n    flow.set(\"gsl_part_reg290\", {\n        limitPowerW: data[0] || 0\n    });\n}\nelse if (group === \"reg292\") {\n    flow.set(\"gsl_part_reg292\", {\n        openDelayMinutes: data[0] || 0\n    });\n}\nelse {\n    return null;\n}\n\n// Check if all parts received\nconst genTiming = flow.get(\"gsl_part_gen_timing\");\nconst genCharge = flow.get(\"gsl_part_gen_charge\");\nconst enables = flow.get(\"gsl_part_enables\");\nconst smartload1 = flow.get(\"gsl_part_smartload1\");\nconst reg278 = flow.get(\"gsl_part_reg278\");\nconst reg290 = flow.get(\"gsl_part_reg290\");\nconst reg292 = flow.get(\"gsl_part_reg292\");\n\nif (!genTiming || !genCharge || !enables || !smartload1 || !reg278 || !reg290 || !reg292) {\n    return null;\n}\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\nconst inverterSN = global.get(\"INVERTER_SN\") || env.get(\"INVERTER_SN\") || \"Unknown\";\n\nconst state = {\n    kind: \"GeneratorAndSmartLoadConfigState\",\n    timestampUtc: new Date().toISOString(),\n    gatewayId: gatewayId,\n    inverterSerialNumber: inverterSN,\n    \n    // Global enables\n    generatorChargeEnabled: enables.generatorChargeEnabled,\n    gridChargeEnabled: enables.gridChargeEnabled,\n    \n    // Generator settings\n    maxRunTimeHours: genTiming.maxRunTimeHours,\n    coolingTimeHours: genTiming.coolingTimeHours,\n    startSocPercent: genCharge.startSocPercent,\n    chargeCurrentA: genCharge.chargeCurrentA,\n    \n    // Generator peak shaving\n    generatorPeakShaving: {\n        enabled: reg278.genPeakShavingEnabled,\n        limitPowerW: reg290.limitPowerW\n    },\n    \n    // Smart Load\n    smartLoad: {\n        enabled: smartload1.smartLoadEnabled,\n        offSocPercent: smartload1.offSocPercent,\n        onSocPercent: smartload1.onSocPercent,\n        pvPowerThresholdW: smartload1.pvPowerThresholdW,\n        openDelayMinutes: reg292.openDelayMinutes,\n        onGridAlwaysOn: reg278.onGridAlwaysOn\n    }\n};\n\n// Store reg278 raw value for write operations\nflow.set(\"gsl_reg278_current\", reg278.rawValue);\n\n// Clear parts\nflow.set(\"gsl_part_gen_timing\", null);\nflow.set(\"gsl_part_gen_charge\", null);\nflow.set(\"gsl_part_enables\", null);\nflow.set(\"gsl_part_smartload1\", null);\nflow.set(\"gsl_part_reg278\", null);\nflow.set(\"gsl_part_reg290\", null);\nflow.set(\"gsl_part_reg292\", null);\n\nconst writeResult = flow.get(\"gsl_write_result\");\nconst rpcResponseTopic = flow.get(\"gsl_rpc_response_topic\");\n\nflow.set(\"gsl_write_result\", null);\nflow.set(\"gsl_rpc_response_topic\", null);\n\nif (writeResult) {\n    msg.payload = {\n        success: writeResult.success,\n        message: writeResult.message,\n        writes: writeResult.writes,\n        state: state\n    };\n} else {\n    msg.payload = state;\n}\n\nmsg.state = state;\nmsg.rpcResponseTopic = rpcResponseTopic;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1130,
+        "y": 160,
+        "wires": [
+            [
+                "gsl_debug_json",
+                "gsl_rpc_response"
+            ]
+        ]
+    },
+    {
+        "id": "gsl_debug_json",
+        "type": "debug",
+        "z": "gen_smartload_config_tab",
+        "name": "GenSmartLoad Config JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1360,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "gsl_rpc_response",
+        "type": "function",
+        "z": "gen_smartload_config_tab",
+        "name": "RPC Response",
+        "func": "if (!msg.rpcResponseTopic) {\n    return null;\n}\n\nmsg.topic = msg.rpcResponseTopic;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1340,
+        "y": 160,
+        "wires": [
+            [
+                "gsl_mqtt_response"
+            ]
+        ]
+    },
+    {
+        "id": "gsl_mqtt_response",
+        "type": "mqtt out",
+        "z": "gen_smartload_config_tab",
+        "name": "MQTT Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1540,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "gsl_start_write",
+        "type": "function",
+        "z": "gen_smartload_config_tab",
+        "name": "Queue Writes",
+        "func": "const params = msg.rpcParams || {};\nconst genPeak = params.generatorPeakShaving || {};\nconst smartLoad = params.smartLoad || {};\n\nconst writes = [];\n\n// Generator charge settings\nif (params.startSocPercent !== undefined) {\n    writes.push({ register: 224, value: params.startSocPercent, name: \"Gen Start SOC\" });\n}\nif (params.chargeCurrentA !== undefined) {\n    writes.push({ register: 225, value: params.chargeCurrentA, name: \"Gen Charge Current\" });\n}\n\n// Enable flags\nif (params.generatorChargeEnabled !== undefined) {\n    writes.push({ register: 229, value: params.generatorChargeEnabled ? 1 : 0, name: \"Gen Charge Enable\" });\n}\nif (params.gridChargeEnabled !== undefined) {\n    writes.push({ register: 230, value: params.gridChargeEnabled ? 1 : 0, name: \"Grid Charge Enable\" });\n}\n\n// SmartLoad settings\nif (smartLoad.enabled !== undefined) {\n    writes.push({ register: 233, value: smartLoad.enabled, name: \"SmartLoad Enable\" });\n}\nif (smartLoad.offSocPercent !== undefined) {\n    writes.push({ register: 235, value: smartLoad.offSocPercent, name: \"SmartLoad OFF SOC\" });\n}\nif (smartLoad.onSocPercent !== undefined) {\n    writes.push({ register: 237, value: smartLoad.onSocPercent, name: \"SmartLoad ON SOC\" });\n}\nif (smartLoad.pvPowerThresholdW !== undefined) {\n    writes.push({ register: 239, value: smartLoad.pvPowerThresholdW, name: \"SmartLoad PV Threshold\" });\n}\nif (smartLoad.openDelayMinutes !== undefined) {\n    writes.push({ register: 292, value: smartLoad.openDelayMinutes, name: \"SmartLoad Open Delay\" });\n}\n\n// Generator peak shaving power\nif (genPeak.limitPowerW !== undefined) {\n    writes.push({ register: 290, value: genPeak.limitPowerW, name: \"Gen Peak Shaving Power\" });\n}\n\n// Register 278 bit field - needs special handling\nlet needReg278Write = false;\nlet reg278NewValue = flow.get(\"gsl_reg278_current\") || 0;\n\nif (genPeak.enabled !== undefined) {\n    needReg278Write = true;\n    // Bit2-3: Gen peak shaving (10=disable, 11=enable)\n    reg278NewValue = reg278NewValue & ~0x000C; // Clear bits 2-3\n    if (genPeak.enabled) {\n        reg278NewValue = reg278NewValue | 0x000C; // Set bits 2-3 (11)\n    } else {\n        reg278NewValue = reg278NewValue | 0x0008; // Set bit 3, clear bit 2 (10)\n    }\n}\n\nif (smartLoad.onGridAlwaysOn !== undefined) {\n    needReg278Write = true;\n    // Bit6-7: On Grid always on (10=disable, 11=enable)\n    reg278NewValue = reg278NewValue & ~0x00C0; // Clear bits 6-7\n    if (smartLoad.onGridAlwaysOn) {\n        reg278NewValue = reg278NewValue | 0x00C0; // Set bits 6-7 (11)\n    } else {\n        reg278NewValue = reg278NewValue | 0x0080; // Set bit 7, clear bit 6 (10)\n    }\n}\n\nif (needReg278Write) {\n    writes.push({ register: 278, value: reg278NewValue, name: \"Reg278 Bits\" });\n}\n\nif (writes.length === 0) {\n    msg.operationType = 'read';\n    return [null, msg];\n}\n\n// Store to GLOBAL context\nglobal.set(\"gsl_write_queue\", writes);\nglobal.set(\"gsl_write_index\", 0);\nglobal.set(\"gsl_write_results\", []);\nglobal.set(\"gsl_write_rpc_topic\", msg.rpcResponseTopic);\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: `${writes.length} writes queued` });\n\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 560,
+        "y": 400,
+        "wires": [
+            [
+                "gsl_prepare_write"
+            ],
+            [
+                "gsl_start_read"
+            ]
+        ]
+    },
+    {
+        "id": "gsl_prepare_write",
+        "type": "function",
+        "z": "gen_smartload_config_tab",
+        "name": "Prepare Write",
+        "func": "const writes = global.get(\"gsl_write_queue\") || [];\nconst index = global.get(\"gsl_write_index\") || 0;\n\nif (index >= writes.length) {\n    return null;\n}\n\nconst current = writes[index];\n\nconst newMsg = {\n    payload: {\n        fc: 16,\n        unitid: 1,\n        address: current.register,\n        quantity: 1,\n        value: [current.value]\n    },\n    currentWrite: current,\n    writeIndex: index\n};\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: `[${index+1}/${writes.length}] ${current.name}` });\n\nreturn newMsg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 740,
+        "y": 400,
+        "wires": [
+            [
+                "gsl_write_register"
+            ]
+        ]
+    },
+    {
+        "id": "gsl_write_register",
+        "type": "modbus-flex-write",
+        "z": "gen_smartload_config_tab",
+        "name": "Write Register",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "server": "e4e4f3e2a4f4e004",
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "x": 920,
+        "y": 400,
+        "wires": [
+            [
+                "gsl_write_ok"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "gsl_write_ok",
+        "type": "function",
+        "z": "gen_smartload_config_tab",
+        "name": "Write OK",
+        "func": "const writes = global.get(\"gsl_write_queue\") || [];\nlet index = global.get(\"gsl_write_index\") || 0;\nconst results = global.get(\"gsl_write_results\") || [];\n\nconst current = writes[index];\nif (current) {\n    results.push({ \n        register: current.register, \n        name: current.name, \n        value: current.value, \n        success: true \n    });\n    global.set(\"gsl_write_results\", results);\n}\n\nindex++;\nglobal.set(\"gsl_write_index\", index);\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `${current.name} OK` });\n\nif (index < writes.length) {\n    return [{ doNext: true }, null];\n}\n\nconst rpcTopic = global.get(\"gsl_write_rpc_topic\");\n\nglobal.set(\"gsl_write_queue\", null);\nglobal.set(\"gsl_write_index\", null);\nglobal.set(\"gsl_write_rpc_topic\", null);\n\nconst finalMsg = {\n    writeResult: {\n        success: true,\n        message: `Successfully wrote ${results.length} register(s)`,\n        writes: results\n    },\n    rpcResponseTopic: rpcTopic\n};\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `All ${results.length} writes OK!` });\n\nreturn [null, finalMsg];",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1080,
+        "y": 400,
+        "wires": [
+            [
+                "gsl_next_delay"
+            ],
+            [
+                "gsl_start_read"
+            ]
+        ]
+    },
+    {
+        "id": "gsl_next_delay",
+        "type": "delay",
+        "z": "gen_smartload_config_tab",
+        "name": "500ms",
+        "pauseType": "delay",
+        "timeout": "500",
+        "timeoutUnits": "milliseconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 1210,
+        "y": 400,
+        "wires": [
+            [
+                "gsl_prepare_write"
+            ]
+        ]
+    },
+    {
+        "id": "gsl_comment_read",
+        "type": "comment",
+        "z": "gen_smartload_config_tab",
+        "name": "═══ READ SECTION (7 parallel reads) ═══",
+        "info": "",
+        "x": 820,
+        "y": 0,
+        "wires": []
+    },
+    {
+        "id": "gsl_comment_write",
+        "type": "comment",
+        "z": "gen_smartload_config_tab",
+        "name": "═══ WRITE SECTION (sequential with 500ms delay) ═══",
+        "info": "Register 278 uses bit masking for genPeakShaving (bit2-3: 10=disable, 11=enable) and onGridAlwaysOn (bit6-7: 10=disable, 11=enable)",
+        "x": 720,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "EC100 Modbus",
+        "clienttype": "tcp",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": true,
+        "tcpHost": "192.168.1.100",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyUSB0",
+        "serialType": "RTU-BUFFERD",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "0x3A",
+        "unit_id": "1",
+        "commandDelay": "1",
+        "clientTimeout": "1000",
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": "2000",
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {}
+    }
+]

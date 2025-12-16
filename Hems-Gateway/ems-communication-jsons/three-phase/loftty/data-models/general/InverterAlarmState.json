@@ -1,33 +1,31 @@
-InverterAlarmState {
-  "timestampUtc": string,
-  "gatewayId": string,
-  "inverterSerialNumber": string,
+{
+  "timestampUtc": "string",
+  "gatewayId": "string",
+  "inverterSerialNumber": "string",
 
-  // Raw registers at time of snapshot
-  "runStateRaw": number,                  // 500: Run state (0-5)
-  "warningWord1Raw": number,              // 553: Warning message word 1
-  "warningWord2Raw": number,              // 554: Warning message word 2
-  "faultWord1Raw": number,                // 555: Fault information word 1
-  "faultWord2Raw": number,                // 556: Fault information word 2
-  "faultWord3Raw": number,                // 557: Fault information word 3
-  "faultWord4Raw": number,                // 558: Fault information word 4
+  "runStateRaw": "number",                   // 600 - Run state (0=standby, 1=selfcheck, 2=normal, 3=alarm, 4=fault)
+  "warningWord1Raw": "number",               // 653 - Warning message word 1
+  "warningWord2Raw": "number",               // 654 - Warning message word 2
+  "faultWord1Raw": "number",                 // 655 - Fault information word 1
+  "faultWord2Raw": "number",                 // 656 - Fault information word 2
+  "faultWord3Raw": "number",                 // 657 - Fault information word 3
+  "faultWord4Raw": "number",                 // 658 - Fault information word 4
 
-  // Decoded list of active alarms (senin eklediğin kısım - bu kalsın)
   "activeAlarms": [
     {
-      "code": number,
-      "vendorCode": number,
-      "severity": string,                 // "warning" | "fault"
-      "sourceDevice": string,
-      "category": string,
-      "messageKey": string,
+      "code": "number",
+      "vendorCode": "number",
+      "severity": "string",                  // "warning" | "fault"
+      "sourceDevice": "string",
+      "category": "string",
+      "messageKey": "string",
       "messageParams": {
-        "measuredValue": number,
-        "limitValue": number
+        "measuredValue": "number",
+        "limitValue": "number"
       },
-      "firstOccurredUtc": string,
-      "lastOccurredUtc": string,
-      "occurrenceCount": number
+      "firstOccurredUtc": "string",
+      "lastOccurredUtc": "string",
+      "occurrenceCount": "number"
     }
   ]
 }

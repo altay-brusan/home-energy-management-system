@@ -4,7 +4,7 @@
         "type": "tab",
         "label": "BatterySocState",
         "disabled": false,
-        "info": "Reads Battery SOC State from registers:\n- 214: Battery 1 capacity %\n- 245: Battery 2 capacity %\n\nTriggers:\n1. Periodic: Every 5 minutes\n2. RPC: getBatterySocState"
+        "info": "Reads Battery SOC State from register:\n- 688: Battery capacity (1%)\n\nTriggers:\n1. Periodic: Every 5 minutes"
     },
     {
         "id": "bss_poll_inject",
@@ -27,94 +27,60 @@
         "y": 120,
         "wires": [
             [
-                "bss_route_to_both"
+                "bss_prepare_read"
             ]
         ]
     },
     {
-        "id": "bss_link_in_rpc",
-        "type": "link in",
+        "id": "bss_manual_inject",
+        "type": "inject",
         "z": "battery_soc_state_tab",
-        "name": "From RPC",
-        "links": [
-            "rpc_bss_link_out"
+        "name": "Manual Trigger",
+        "props": [
+            {
+                "p": "payload"
+            }
         ],
-        "x": 115,
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
         "y": 180,
         "wires": [
             [
-                "bss_route_to_both"
+                "bss_prepare_read"
             ]
         ]
     },
     {
-        "id": "bss_route_to_both",
+        "id": "bss_prepare_read",
         "type": "function",
         "z": "battery_soc_state_tab",
-        "name": "Route to both reads",
-        "func": "// Send to both outputs\nreturn [msg, msg];",
-        "outputs": 2,
-        "timeout": 0,
+        "name": "Prepare read (SOC 688)",
+        "func": "// Battery SOC\n// 688: Battery capacity (1%)\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 688,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 420,
+        "x": 470,
         "y": 150,
         "wires": [
             [
-                "bss_prepare_bat1"
-            ],
-            [
-                "bss_prepare_bat2"
+                "bss_modbus_read"
             ]
         ]
     },
     {
-        "id": "bss_prepare_bat1",
-        "type": "function",
-        "z": "battery_soc_state_tab",
-        "name": "Prepare read Bat1 (214)",
-        "func": "// Battery 1 SOC\n// 214: Battery 1 capacity %\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 214,\n    quantity: 1\n};\nreturn msg;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 670,
-        "y": 100,
-        "wires": [
-            [
-                "bss_read_bat1"
-            ]
-        ]
-    },
-    {
-        "id": "bss_prepare_bat2",
-        "type": "function",
-        "z": "battery_soc_state_tab",
-        "name": "Prepare read Bat2 (245)",
-        "func": "// Battery 2 SOC\n// 245: Battery 2 capacity %\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 245,\n    quantity: 1\n};\nreturn msg;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 670,
-        "y": 200,
-        "wires": [
-            [
-                "bss_read_bat2"
-            ]
-        ]
-    },
-    {
-        "id": "bss_read_bat1",
+        "id": "bss_modbus_read",
         "type": "modbus-flex-getter",
         "z": "battery_soc_state_tab",
-        "name": "Read Bat1 SOC (214)",
+        "name": "Read SOC (688)",
         "showStatusActivities": true,
         "showErrors": true,
         "showWarnings": true,
@@ -127,82 +93,14 @@
         "keepMsgProperties": true,
         "delayOnStart": false,
         "startDelayTime": "",
-        "x": 920,
-        "y": 100,
-        "wires": [
-            [
-                "bss_store_bat1"
-            ],
-            [
-                "bss_error_debug"
-            ]
-        ]
-    },
-    {
-        "id": "bss_read_bat2",
-        "type": "modbus-flex-getter",
-        "z": "battery_soc_state_tab",
-        "name": "Read Bat2 SOC (245)",
-        "showStatusActivities": true,
-        "showErrors": true,
-        "showWarnings": true,
-        "logIOActivities": false,
-        "server": "e4e4f3e2a4f4e004",
-        "useIOFile": false,
-        "ioFile": "",
-        "useIOForPayload": false,
-        "emptyMsgOnFail": true,
-        "keepMsgProperties": true,
-        "delayOnStart": false,
-        "startDelayTime": "",
-        "x": 920,
-        "y": 200,
-        "wires": [
-            [
-                "bss_store_bat2"
-            ],
-            [
-                "bss_error_debug"
-            ]
-        ]
-    },
-    {
-        "id": "bss_store_bat1",
-        "type": "function",
-        "z": "battery_soc_state_tab",
-        "name": "Store Bat1 partial",
-        "func": "// Store Battery 1 SOC partial\nlet raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nconst bat1Soc = data[0] || 0;\nflow.set(\"bss_part_bat1\", bat1Soc);\n\nreturn msg;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 1150,
-        "y": 100,
+        "x": 700,
+        "y": 150,
         "wires": [
             [
                 "bss_build_json"
-            ]
-        ]
-    },
-    {
-        "id": "bss_store_bat2",
-        "type": "function",
-        "z": "battery_soc_state_tab",
-        "name": "Store Bat2 partial",
-        "func": "// Store Battery 2 SOC partial\nlet raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nconst bat2Soc = data[0] || 0;\nflow.set(\"bss_part_bat2\", bat2Soc);\n\nreturn msg;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 1150,
-        "y": 200,
-        "wires": [
+            ],
             [
-                "bss_build_json"
+                "bss_error_debug"
             ]
         ]
     },
@@ -211,61 +109,54 @@
         "type": "function",
         "z": "battery_soc_state_tab",
         "name": "Build BatterySocState JSON",
-        "func": "// Wait for both partials\nconst bat1Soc = flow.get(\"bss_part_bat1\");\nconst bat2Soc = flow.get(\"bss_part_bat2\");\n\nif (bat1Soc === undefined || bat2Soc === undefined) {\n    return null;  // Wait for both\n}\n\n// Clear partials\nflow.set(\"bss_part_bat1\", undefined);\nflow.set(\"bss_part_bat2\", undefined);\n\nconst deviceId = msg.deviceId\n    || global.get(\"DEVICE_ID\")\n    || env.get(\"DEVICE_ID\")\n    || \"EC100-DEV-001\";\n\nconst state = {\n    kind: \"BatterySocState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    DeviceId: deviceId,\n    \n    inverterBatChannelSoc: [\n        {\n            channelId: 1,\n            socPercent: bat1Soc  // Register 214\n        },\n        {\n            channelId: 2,\n            socPercent: bat2Soc  // Register 245\n        }\n    ],\n    \n    bmsSocDetails: [\n        {\n            channelId: 1,\n            deviceId: \"CH1-BMS1\",\n            socPercent: bat1Soc  // Same as inverter reading for now\n        },\n        {\n            channelId: 2,\n            deviceId: \"CH2-BMS1\",\n            socPercent: bat2Soc  // Same as inverter reading for now\n        }\n    ]\n};\n\nflow.set(\"batterySocStateSnapshot\", state);\n\nmsg.payload = state;\nmsg.state = state;\nreturn msg;",
+        "func": "// Build BatterySocState from Modbus read.\n\nlet raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nconst socPercent = data[0] || 0;  // 688: Battery capacity (1%)\n\nconst deviceId = msg.deviceId\n    || global.get(\"DEVICE_ID\")\n    || env.get(\"DEVICE_ID\")\n    || \"EC100\";\n\nconst state = {\n    kind: \"BatterySocState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    DeviceId: deviceId,\n    \n    inverterBatChannelSoc: [\n        {\n            channelId: 1,\n            socPercent: socPercent\n        },\n        {\n            channelId: 2,\n            socPercent: null  // Not available in three-phase datasheet\n        }\n    ],\n    \n    bmsSocDetails: null  // BMS details not available - separate BMS protocol required\n};\n\nflow.set(\"batterySocStateSnapshot\", state);\n\nmsg.payload = state;\nmsg.state = state;\nreturn msg;",
         "outputs": 1,
-        "timeout": 0,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1420,
+        "x": 940,
         "y": 150,
         "wires": [
             [
-                "bss_check_rpc",
-                "bss_debug_json"
-            ]
-        ]
-    },
-    {
-        "id": "bss_check_rpc",
-        "type": "function",
-        "z": "battery_soc_state_tab",
-        "name": "Check if RPC",
-        "func": "if (msg.isRpcRequest && msg.rpcResponseTopic) {\n    msg.topic = msg.rpcResponseTopic;\n    return [msg, null];  // RPC response\n} else {\n    return [null, msg];  // MQTT telemetry\n}",
-        "outputs": 2,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 1680,
-        "y": 150,
-        "wires": [
-            [
-                "bss_rpc_response"
-            ],
-            [
+                "bss_debug_json",
                 "bss_mqtt_telemetry"
             ]
         ]
     },
     {
-        "id": "bss_rpc_response",
-        "type": "mqtt out",
+        "id": "bss_debug_json",
+        "type": "debug",
         "z": "battery_soc_state_tab",
-        "name": "RPC Response",
-        "topic": "",
-        "qos": "1",
-        "retain": "",
-        "respTopic": "",
-        "contentType": "",
-        "userProps": "",
-        "correl": "",
-        "expiry": "",
-        "broker": "tb-broker",
-        "x": 1890,
-        "y": 120,
+        "name": "BatterySocState JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1220,
+        "y": 110,
+        "wires": []
+    },
+    {
+        "id": "bss_error_debug",
+        "type": "debug",
+        "z": "battery_soc_state_tab",
+        "name": "BatterySocState Error",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 960,
+        "y": 240,
         "wires": []
     },
     {
@@ -282,79 +173,45 @@
         "correl": "",
         "expiry": "",
         "broker": "tb-broker",
-        "x": 1930,
-        "y": 180,
-        "wires": []
-    },
-    {
-        "id": "bss_debug_json",
-        "type": "debug",
-        "z": "battery_soc_state_tab",
-        "name": "BatterySocState JSON",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "payload",
-        "targetType": "msg",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 1700,
-        "y": 220,
-        "wires": []
-    },
-    {
-        "id": "bss_error_debug",
-        "type": "debug",
-        "z": "battery_soc_state_tab",
-        "name": "BatterySocState CRC/Error",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": true,
-        "complete": "payload",
-        "targetType": "msg",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 1160,
-        "y": 280,
+        "x": 1240,
+        "y": 190,
         "wires": []
     },
     {
         "id": "bss_comment",
         "type": "comment",
         "z": "battery_soc_state_tab",
-        "name": "Periodic (5 min) + On-demand (RPC) - 2 parallel reads",
+        "name": "THREE-PHASE: Polls every 5 min - Register 688 (Battery Capacity %)",
         "info": "",
-        "x": 290,
+        "x": 320,
         "y": 60,
         "wires": []
     },
     {
         "id": "e4e4f3e2a4f4e004",
         "type": "modbus-client",
-        "name": "RS485-1 Inverter",
-        "clienttype": "serial",
+        "name": "EC100 Modbus",
+        "clienttype": "tcp",
         "bufferCommands": true,
         "stateLogEnabled": false,
         "queueLogEnabled": false,
-        "failureLogEnabled": false,
-        "tcpHost": "127.0.0.1",
+        "failureLogEnabled": true,
+        "tcpHost": "192.168.1.100",
         "tcpPort": "502",
         "tcpType": "DEFAULT",
-        "serialPort": "/dev/ttyS4",
-        "serialType": "RTU",
+        "serialPort": "/dev/ttyUSB0",
+        "serialType": "RTU-BUFFERD",
         "serialBaudrate": "9600",
         "serialDatabits": "8",
         "serialStopbits": "1",
         "serialParity": "none",
         "serialConnectionDelay": "100",
-        "serialAsciiResponseStartDelimiter": "",
-        "unit_id": 1,
-        "commandDelay": 50,
-        "clientTimeout": 1000,
+        "serialAsciiResponseStartDelimiter": "0x3A",
+        "unit_id": "1",
+        "commandDelay": "1",
+        "clientTimeout": "1000",
         "reconnectOnTimeout": true,
-        "reconnectTimeout": 2000,
+        "reconnectTimeout": "2000",
         "parallelUnitIdsAllowed": true,
         "showErrors": false,
         "showWarnings": true,
@@ -388,8 +245,6 @@
         "willQos": "0",
         "willRetain": "false",
         "willPayload": "",
-        "willMsg": {},
-        "userProps": "",
-        "sessionExpiry": ""
+        "willMsg": {}
     }
 ]

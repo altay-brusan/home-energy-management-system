@@ -1,130 +1,137 @@
-SystemWorkModeConfigState {
-  "timestampUtc": string,
-  "gatewayId": string,
-  "inverterSerialNumber": string,
-  "version": number,
+SystemWorkModeConfigState
+{
+  "version": 1,
 
-  // 1) High-level *user* mode (what the app shows)
-  "userModeProfile": "self_consumption"
-                    | "backup"
-                    | "time_of_use"
-                    | "eco"
-                    | "custom",
+  "userModeProfile": "string",               // "self_consumption" | "backup" | "time_of_use" | "eco" | "custom" - derived
 
-  // 2) Raw inverter work mode + export behavior
   "inverterMode": {
-    // 141 – "System Work Mode"
-    //   0 = Selling First
-    //   1 = Zero Export to Load
-    //   2 = Zero Export to CT
-    "workModeCode": number,           // 141
+    "workModeCode": "number",                // 241 - Energy management model
+                                             //   Bit0-1: 10 = battery first mode
+                                             //           11 = load first mode
+                                             //   Bit2-3: Passive grid balance (被动并网功率平衡)
+                                             //           10 = close (disable)
+                                             //           11 = open (enable)
+                                             //   Bit4-5: Active grid balance (主动并网功率平衡)
+                                             //           10 = close (disable)
+                                             //           11 = open (enable)
+    
+    "exportStrategy": "string",              // 242 - limit控制功能
+                                             //   0x00 = sell electricity enabled (使能卖电)
+                                             //   0x01 = built-in CT enabled (使能内置)
+                                             //   0x02 = external CT enabled (使能外置)
 
-    // Derived from workModeCode + exportLimitMode (142)
-    "exportStrategy": "selling_first"
-                    | "zero_export_to_load"
-                    | "zero_export_to_ct",
+    "solarSellEnabled": "boolean",           // 245 - Solar sell (光伏卖电)
+                                             //   0x00 = solar don't sell
+                                             //   0x01 = solar sell
 
-    // 145 – "Solar sell"
-    //   0x00 = PV does NOT sell
-    //   0x01 = PV may sell to grid
-    "solarSellEnabled": bool,         // 145
+    "maxSellPowerW": "number",               // 243 - Limit max grid power output (1W)
 
-    // 143 – "Max. sell power"
-    // Max allowed AC power exported to grid
-    "maxSellPowerW": number | null,   // 143
+    "defaultMaxSellPowerW": null,            // Bu datasheet'te yok (244 = CT direction)
 
-    // Optional: some firmwares also expose a "default max sell power" (144)
-    "defaultMaxSellPowerW": number | null,  // 144 (optional, can be same as 143)
+    "zeroExportLimitPowerW": null,           // Bu datasheet'te zero export power register yok
 
-    // For zero-export modes: allowed small bleed into grid (e.g. 20–100 W).
-    // There is a "Zero export power" parameter, but its exact register is
-    // not clearly documented in our excerpt, so we keep this as conceptual.
-    // 144  Zero-export Power (W)
-    "zeroExportLimitPowerW": number | null,  // HMI "Zero-export Power" // register TBD
-    // 179: 0 = auto (connect to grid when ok)
-    //      1 = force off-grid (stay islanded even if grid present)
-    "forceOffGrid": bool              // 179
+    "forceOffGrid": "boolean"                // 279 Bit2-3 - 强制离网工作 Forced off-grid
+                                             //   10 = disable
+                                             //   11 = enable
   },
 
-  // 3) Energy source priority & grid peak shaving
   "energyPriority": {
-    // 141 Bit0–1:
-    //   10 = battery_first
-    //   11 = load_first
-    "pattern": "battery_first" | "load_first"
+    "pattern": "string"                      // 241 Bit0-1 (yukarıdaki ile aynı register)
+                                             //   10 (binary) = battery_first
+                                             //   11 (binary) = load_first
   },
 
   "gridPeakShaving": {
-    // 178 Bit4–5:
-    //   10 = grid peak-shaving disable
-    //   11 = grid peak-shaving enable
-    "enabled": bool,                   // 178 bits4–5
-
-    // 191 – GRID peak shaving Power
-    // Limit for how much power can be drawn from the grid
-    "limitPowerW": number | null       // 191
+    "enabled": "boolean",                    // 278 Bit4-5 - Grid peak-shaving
+                                             //   10 = disable
+                                             //   11 = enable
+    "limitPowerW": "number"                  // 291 - GRID peak shaving Power (1W)
   },
 
-  // 4) Time-of-Use (ToU) schedule
-  //
-  // This directly matches the “System Work Mode → Time Of Use” pages.
-  // We use SOC-based thresholds (lithium) and ignore the “voltage” option.
-
   "timeOfUse": {
-    // 146 Bit0: 0 = disabled, 1 = enabled
-    "enabled": bool,                   // 146.bit0
+    "enabled": "boolean",                    // 246 Bit0 - 高级削峰填谷功能使能
+                                             //   0 = disable
+                                             //   1 = enable
 
-    // Which days the schedule is active (from the “Mon/Tue/…/Sun” page)
-    // 146 Bits1–7: weekday flags
-    "daysActive": {
-      "monday":    bool,               // 146.bit1
-      "tuesday":   bool,               // 146.bit2
-      "wednesday": bool,               // 146.bit3
-      "thursday":  bool,               // 146.bit4
-      "friday":    bool,               // 146.bit5
-      "saturday":  bool,               // 146.bit6
-      "sunday":    bool                // 146.bit7
-    }
+    "daysActive": {                          // 246 Bit1-7 - Weekday flags
+      "monday": "boolean",                   //   Bit1: 0=disable, 1=enable
+      "tuesday": "boolean",                  //   Bit2: 0=disable, 1=enable
+      "wednesday": "boolean",                //   Bit3: 0=disable, 1=enable
+      "thursday": "boolean",                 //   Bit4: 0=disable, 1=enable
+      "friday": "boolean",                   //   Bit5: 0=disable, 1=enable
+      "saturday": "boolean",                 //   Bit6: 0=disable, 1=enable
+      "sunday": "boolean"                    //   Bit7: 0=disable, 1=enable
+    },
 
-    // NOTE: 146.bit8 = "Spain mode" – region-specific behaviour.
-    // For your system you can keep this OFF and not expose it in the UI.
-
-    ,
-
-    // HMI shows up to 6 rows (01:00–05:00, …, 21:00–01:00)
     "slots": [
       {
-        "slotIndex": number,           // 1..6 – TOU window index
-
-        // Local wall-clock times, 24h HH:mm.
-        //
-        // Backed by 148–153: 6 "time points" stored as HHMM.
-        // The gateway is responsible for mapping those points into
-        // start/end per slot for the UI.
-        "startTimeLocal": string,      // e.g. "01:00"  // from 148–153
-        "endTimeLocal": string,        // e.g. "05:00"  // also from 148–153
-
-        // Charge / sell flags for this slot
-        // 172–177:
-        //   Bit0 = grid charge enable
-        //   Bit1 = generator charge enable
-        //   Bit5 = sell mode enable for this slot
-        "allowGridCharge": bool,       // 172–177.bit0
-        "allowGeneratorCharge": bool,  // 172–177.bit1
-        "sellEnabledInThisSlot": bool, // 172–177.bit5
-
-        // Max allowed *discharge* power from battery in this slot
-        // 154–159: TOU TimeX bat out power (per slot)
-        "maxBatteryDischargePowerW": number,   // 154–159
-
-        // Trigger threshold for this action.
-        // In your lithium design you prefer SOC:
-        // 166–171: Capacity1..6 (SOC thresholds, 1% step)
-        // 160–165: target voltage (0.01 V) – used only in voltage mode
-        "batteryThresholdSocPercent": number | null, // 166–171
-        "batteryThresholdVoltageV": number | null    // 160–165 (usually null)
+        "slotIndex": 1,
+        "startTimeLocal": "string",          // 248 - Time point 1 (HHMM format, 2359 = 23:59)
+        "endTimeLocal": "string",            // 249 - Time point 2
+        "allowGridCharge": "boolean",        // 272 Bit0 - grid charging enable (0=disable, 1=enable)
+        "allowGeneratorCharge": "boolean",   // 272 Bit1 - gen charging enable (0=disable, 1=enable)
+                                             // 272 Bit2 - Spain GM mode (bölgesel, ignore)
+                                             // 272 Bit3 - Spain BU mode (bölgesel, ignore)
+        "sellEnabledInThisSlot": null,       // Bu datasheet'te Bit5 tanımlı değil
+        "maxBatteryDischargePowerW": "number", // 254 - Time point 1 power (1W)
+        "batteryThresholdSocPercent": "number", // 266 - Capacity 1 (1%)
+        "batteryThresholdVoltageV": "number"    // 260 - Time point 1 voltage (0.01V)
+      },
+      {
+        "slotIndex": 2,
+        "startTimeLocal": "string",          // 249
+        "endTimeLocal": "string",            // 250
+        "allowGridCharge": "boolean",        // 273 Bit0
+        "allowGeneratorCharge": "boolean",   // 273 Bit1
+        "sellEnabledInThisSlot": null,
+        "maxBatteryDischargePowerW": "number", // 255
+        "batteryThresholdSocPercent": "number", // 267
+        "batteryThresholdVoltageV": "number"    // 261
+      },
+      {
+        "slotIndex": 3,
+        "startTimeLocal": "string",          // 250
+        "endTimeLocal": "string",            // 251
+        "allowGridCharge": "boolean",        // 274 Bit0
+        "allowGeneratorCharge": "boolean",   // 274 Bit1
+        "sellEnabledInThisSlot": null,
+        "maxBatteryDischargePowerW": "number", // 256
+        "batteryThresholdSocPercent": "number", // 268
+        "batteryThresholdVoltageV": "number"    // 262
+      },
+      {
+        "slotIndex": 4,
+        "startTimeLocal": "string",          // 251
+        "endTimeLocal": "string",            // 252
+        "allowGridCharge": "boolean",        // 275 Bit0
+        "allowGeneratorCharge": "boolean",   // 275 Bit1
+        "sellEnabledInThisSlot": null,
+        "maxBatteryDischargePowerW": "number", // 257
+        "batteryThresholdSocPercent": "number", // 269
+        "batteryThresholdVoltageV": "number"    // 263
+      },
+      {
+        "slotIndex": 5,
+        "startTimeLocal": "string",          // 252
+        "endTimeLocal": "string",            // 253
+        "allowGridCharge": "boolean",        // 276 Bit0
+        "allowGeneratorCharge": "boolean",   // 276 Bit1
+        "sellEnabledInThisSlot": null,
+        "maxBatteryDischargePowerW": "number", // 258
+        "batteryThresholdSocPercent": "number", // 270
+        "batteryThresholdVoltageV": "number"    // 264
+      },
+      {
+        "slotIndex": 6,
+        "startTimeLocal": "string",          // 253
+        "endTimeLocal": "string",            // 248 (wrap to start)
+        "allowGridCharge": "boolean",        // 277 Bit0
+        "allowGeneratorCharge": "boolean",   // 277 Bit1
+        "sellEnabledInThisSlot": null,
+        "maxBatteryDischargePowerW": "number", // 259
+        "batteryThresholdSocPercent": "number", // 271
+        "batteryThresholdVoltageV": "number"    // 265
       }
-      // up to 6 entries
     ]
   }
 }

@@ -32,7 +32,7 @@
         "type": "function",
         "z": "rpc_pv_device_state_tab",
         "name": "Handle RPC",
-        "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\n\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\n// Only handle getPvDeviceState\nif (msg.rpcMethod !== 'getPvDeviceState') {\n    return null;\n}\n\nmsg.isRpcRequest = true;\nreturn msg;",
+        "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\n\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\n// Only handle getPvDeviceState\nif (msg.rpcMethod !== 'getPvDeviceState') {\n    return null;\n}\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,

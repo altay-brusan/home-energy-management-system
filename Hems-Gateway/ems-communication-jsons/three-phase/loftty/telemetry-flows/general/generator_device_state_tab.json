@@ -4,7 +4,7 @@
         "type": "tab",
         "label": "GeneratorDeviceState",
         "disabled": false,
-        "info": "Reads Generator Device State from registers:\n- 512-513: Runtime totals (32-bit)\n- 536-539: Daily energy/time\n- 609: Frequency\n- 661-671: 3-phase voltage + power (32-bit power values)\n\nTriggers:\n1. Periodic: Every 5 minutes (only sends if generator active)\n2. Manual\n3. RPC: getGeneratorDeviceState (always sends response)"
+        "info": "Reads Generator Device State from registers:\n- 612-613: Accumulated runtime (0.1h, 32-bit)\n- 636: Today Gen Energy (0.1kWh)\n- 637-638: Total Gen Energy (0.1kWh, 32-bit)\n- 639: Daily runtime (0.1h)\n- 709: Gen Frequency (0.01Hz)\n- 761-763: Gen Phase A/B/C Voltage (0.1V)\n- 764-771: Gen Phase A/B/C/Total Power (1W, S32)\n\nTriggers:\n1. Periodic: Every 5 minutes (only sends if generator active)\n2. RPC: getGeneratorDeviceState (always sends response)\n\nNote: Three-phase model has voltages and powers per phase."
     },
     {
         "id": "gds_link_in_rpc",
@@ -15,10 +15,15 @@
             "rpc_gds_link_out"
         ],
         "x": 175,
-        "y": 80,
+        "y": 120,
         "wires": [
             [
-                "gds_route_to_all"
+                "gds_prepare_runtime_hist",
+                "gds_prepare_energy",
+                "gds_prepare_daily_runtime",
+                "gds_prepare_freq",
+                "gds_prepare_voltage",
+                "gds_prepare_power"
             ]
         ]
     },
@@ -40,10 +45,15 @@
         "payload": "",
         "payloadType": "date",
         "x": 170,
-        "y": 140,
+        "y": 200,
         "wires": [
             [
-                "gds_route_to_all"
+                "gds_prepare_runtime_hist",
+                "gds_prepare_energy",
+                "gds_prepare_daily_runtime",
+                "gds_prepare_freq",
+                "gds_prepare_voltage",
+                "gds_prepare_power"
             ]
         ]
     },
@@ -65,79 +75,75 @@
         "payload": "",
         "payloadType": "date",
         "x": 150,
-        "y": 200,
+        "y": 280,
         "wires": [
             [
-                "gds_route_to_all"
+                "gds_prepare_runtime_hist",
+                "gds_prepare_energy",
+                "gds_prepare_daily_runtime",
+                "gds_prepare_freq",
+                "gds_prepare_voltage",
+                "gds_prepare_power"
             ]
         ]
     },
     {
-        "id": "gds_route_to_all",
+        "id": "gds_prepare_runtime_hist",
         "type": "function",
         "z": "generator_device_state_tab",
-        "name": "Route to 4 reads",
-        "func": "// Store RPC info if present\nif (msg.rpcResponseTopic) {\n    flow.set(\"gds_rpc_response_topic\", msg.rpcResponseTopic);\n}\nif (msg.isRpcRequest) {\n    flow.set(\"gds_is_rpc_request\", true);\n}\n\n// Send to all 4 parallel reads\nreturn [msg, msg, msg, msg];",
-        "outputs": 4,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 390,
-        "y": 140,
-        "wires": [
-            [
-                "gds_prepare_runtime"
-            ],
-            [
-                "gds_prepare_daily"
-            ],
-            [
-                "gds_prepare_freq"
-            ],
-            [
-                "gds_prepare_voltage_power"
-            ]
-        ]
-    },
-    {
-        "id": "gds_prepare_runtime",
-        "type": "function",
-        "z": "generator_device_state_tab",
-        "name": "Prepare read (Runtime 512-513)",
-        "func": "// Generator historical runtime (32-bit)\n// 512: Low word\n// 513: High word\n// Unit: 0.1h\n\nmsg.baseAddr = 512;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 512,\n    quantity: 2\n};\nreturn msg;",
+        "name": "Prepare read (Hist Runtime 612-613)",
+        "func": "// Store RPC response topic if present\nif (msg.rpcResponseTopic) {\n    flow.set(\"gds_rpc_response_topic\", msg.rpcResponseTopic);\n    msg.isRpcRequest = true;\n}\n\n// Historical accumulated runtime\n// 612 (low) + 613 (high): Generator historical runtime (0.1h, S32)\n\nmsg.baseAddr = 612;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 612,\n    quantity: 2\n};\nreturn msg;",
         "outputs": 1,
-        "timeout": 0,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 660,
+        "x": 500,
         "y": 60,
         "wires": [
             [
-                "gds_read_runtime"
+                "gds_read_runtime_hist"
             ]
         ]
     },
     {
-        "id": "gds_prepare_daily",
+        "id": "gds_prepare_energy",
         "type": "function",
         "z": "generator_device_state_tab",
-        "name": "Prepare read (Daily 536-539)",
-        "func": "// Daily energy and runtime\n// 536: Today Gen Energy (0.1kWh)\n// 537-538: Total Gen Energy (0.1kWh, 32-bit)\n// 539: Daily Runtime (0.1h)\n\nmsg.baseAddr = 536;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 536,\n    quantity: 4\n};\nreturn msg;",
+        "name": "Prepare read (Energy 636-638)",
+        "func": "// Generator energy - today and total\n// 636: Generator daily (0.1kWh)\n// 637 (low) + 638 (high): Generator total energy (0.1kWh)\n\nmsg.baseAddr = 636;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 636,\n    quantity: 3  // 636-638\n};\nreturn msg;",
         "outputs": 1,
-        "timeout": 0,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 640,
+        "x": 470,
         "y": 120,
         "wires": [
             [
-                "gds_read_daily"
+                "gds_read_energy"
+            ]
+        ]
+    },
+    {
+        "id": "gds_prepare_daily_runtime",
+        "type": "function",
+        "z": "generator_device_state_tab",
+        "name": "Prepare read (Daily Runtime 639)",
+        "func": "// Generator daily runtime\n// 639: Generator daily runtime (0.1h)\n\nmsg.baseAddr = 639;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 639,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 480,
+        "y": 180,
+        "wires": [
+            [
+                "gds_read_daily_runtime"
             ]
         ]
     },
@@ -145,16 +151,16 @@
         "id": "gds_prepare_freq",
         "type": "function",
         "z": "generator_device_state_tab",
-        "name": "Prepare read (Freq 609)",
-        "func": "// Grid-side frequency (shared with grid)\n// 609: Frequency (0.01Hz)\n\nmsg.baseAddr = 609;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 609,\n    quantity: 1\n};\nreturn msg;",
+        "name": "Prepare read (Freq 709)",
+        "func": "// Generator frequency\n// 709: Grid-side frequency (0.01Hz)\n\nmsg.baseAddr = 709;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 709,\n    quantity: 1\n};\nreturn msg;",
         "outputs": 1,
-        "timeout": 0,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 630,
-        "y": 180,
+        "x": 450,
+        "y": 240,
         "wires": [
             [
                 "gds_read_freq"
@@ -162,30 +168,50 @@
         ]
     },
     {
-        "id": "gds_prepare_voltage_power",
+        "id": "gds_prepare_voltage",
         "type": "function",
         "z": "generator_device_state_tab",
-        "name": "Prepare read (Voltage/Power 661-671)",
-        "func": "// 3-phase voltage and power\n// 661-663: Phase voltage A, B, C (0.1V)\n// 664-667: Phase power A, B, C, Total (low word, 1W, S32)\n// 668-671: Phase power A, B, C, Total (high word, 1W, S32)\n\nmsg.baseAddr = 661;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 661,\n    quantity: 11\n};\nreturn msg;",
+        "name": "Prepare read (Voltage 761-763)",
+        "func": "// Generator phase voltages\n// 761: Gen port phase voltage A (0.1V)\n// 762: Gen port phase voltage B (0.1V)\n// 763: Gen port phase voltage C (0.1V)\n\nmsg.baseAddr = 761;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 761,\n    quantity: 3  // 761-763\n};\nreturn msg;",
         "outputs": 1,
-        "timeout": 0,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 680,
-        "y": 240,
+        "x": 470,
+        "y": 300,
         "wires": [
             [
-                "gds_read_voltage_power"
+                "gds_read_voltage"
             ]
         ]
     },
     {
-        "id": "gds_read_runtime",
+        "id": "gds_prepare_power",
+        "type": "function",
+        "z": "generator_device_state_tab",
+        "name": "Prepare read (Power 764-771)",
+        "func": "// Generator phase powers (S32)\n// 764 (low) + 768 (high): Gen port phase A power (1W, S32)\n// 765 (low) + 769 (high): Gen port phase B power (1W, S32)\n// 766 (low) + 770 (high): Gen port phase C power (1W, S32)\n// 767 (low) + 771 (high): Gen port total power (1W, S32)\n\nmsg.baseAddr = 764;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 764,\n    quantity: 8  // 764-771\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 470,
+        "y": 360,
+        "wires": [
+            [
+                "gds_read_power"
+            ]
+        ]
+    },
+    {
+        "id": "gds_read_runtime_hist",
         "type": "modbus-flex-getter",
         "z": "generator_device_state_tab",
-        "name": "Read Runtime (512-513)",
+        "name": "Read Runtime Hist (612-613)",
         "showStatusActivities": true,
         "showErrors": true,
         "showWarnings": true,
@@ -198,7 +224,7 @@
         "keepMsgProperties": true,
         "delayOnStart": false,
         "startDelayTime": "",
-        "x": 930,
+        "x": 760,
         "y": 60,
         "wires": [
             [
@@ -210,10 +236,10 @@
         ]
     },
     {
-        "id": "gds_read_daily",
+        "id": "gds_read_energy",
         "type": "modbus-flex-getter",
         "z": "generator_device_state_tab",
-        "name": "Read Daily (536-539)",
+        "name": "Read Energy (636-638)",
         "showStatusActivities": true,
         "showErrors": true,
         "showWarnings": true,
@@ -226,8 +252,36 @@
         "keepMsgProperties": true,
         "delayOnStart": false,
         "startDelayTime": "",
-        "x": 920,
+        "x": 740,
         "y": 120,
+        "wires": [
+            [
+                "gds_build_json"
+            ],
+            [
+                "gds_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "gds_read_daily_runtime",
+        "type": "modbus-flex-getter",
+        "z": "generator_device_state_tab",
+        "name": "Read Daily Runtime (639)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 750,
+        "y": 180,
         "wires": [
             [
                 "gds_build_json"
@@ -241,7 +295,7 @@
         "id": "gds_read_freq",
         "type": "modbus-flex-getter",
         "z": "generator_device_state_tab",
-        "name": "Read Freq (609)",
+        "name": "Read Freq (709)",
         "showStatusActivities": true,
         "showErrors": true,
         "showWarnings": true,
@@ -254,8 +308,8 @@
         "keepMsgProperties": true,
         "delayOnStart": false,
         "startDelayTime": "",
-        "x": 910,
-        "y": 180,
+        "x": 720,
+        "y": 240,
         "wires": [
             [
                 "gds_build_json"
@@ -266,10 +320,10 @@
         ]
     },
     {
-        "id": "gds_read_voltage_power",
+        "id": "gds_read_voltage",
         "type": "modbus-flex-getter",
         "z": "generator_device_state_tab",
-        "name": "Read Voltage/Power (661-671)",
+        "name": "Read Voltage (761-763)",
         "showStatusActivities": true,
         "showErrors": true,
         "showWarnings": true,
@@ -282,8 +336,36 @@
         "keepMsgProperties": true,
         "delayOnStart": false,
         "startDelayTime": "",
-        "x": 960,
-        "y": 240,
+        "x": 740,
+        "y": 300,
+        "wires": [
+            [
+                "gds_build_json"
+            ],
+            [
+                "gds_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "gds_read_power",
+        "type": "modbus-flex-getter",
+        "z": "generator_device_state_tab",
+        "name": "Read Power (764-771)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 740,
+        "y": 360,
         "wires": [
             [
                 "gds_build_json"
@@ -298,15 +380,15 @@
         "type": "function",
         "z": "generator_device_state_tab",
         "name": "Build GeneratorDeviceState JSON",
-        "func": "// Build GeneratorDeviceState from 4 parallel Modbus reads.\n\nlet raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nlet baseAddr = msg.baseAddr;\nif (typeof baseAddr !== \"number\") {\n    baseAddr = (msg.modbusRequest && msg.modbusRequest.address);\n}\nif (typeof baseAddr !== \"number\") {\n    node.warn(\"GeneratorDeviceState: missing base address\");\n    return null;\n}\n\n// Helper: combine two 16-bit words to 32-bit unsigned\nfunction u32(low, high) {\n    return ((high & 0xFFFF) << 16) | (low & 0xFFFF);\n}\n\n// Helper: combine two 16-bit words to 32-bit signed\nfunction s32(low, high) {\n    const val = u32(low, high);\n    return (val & 0x80000000) ? val - 0x100000000 : val;\n}\n\n// ---- Store partials ----\n\n// Runtime 512-513\nif (baseAddr === 512) {\n    const runtimeLow = data[0] || 0;   // 512\n    const runtimeHigh = data[1] || 0;  // 513\n    const totalRuntime = u32(runtimeLow, runtimeHigh) * 0.1;\n    \n    flow.set(\"gds_part_runtime\", {\n        accumulatedRunTimeHours: Math.round(totalRuntime * 10) / 10\n    });\n}\n\n// Daily 536-539\nelse if (baseAddr === 536) {\n    const todayEnergy = data[0] || 0;    // 536\n    const totalLow = data[1] || 0;       // 537\n    const totalHigh = data[2] || 0;      // 538\n    const dailyRuntime = data[3] || 0;   // 539\n    \n    const totalEnergy = u32(totalLow, totalHigh) * 0.1;\n    \n    flow.set(\"gds_part_daily\", {\n        todayGenEnergyKWh: Math.round((todayEnergy * 0.1) * 100) / 100,\n        totalGenEnergyKWh: Math.round(totalEnergy * 100) / 100,\n        dailyRunTimeHours: Math.round((dailyRuntime * 0.1) * 10) / 10\n    });\n}\n\n// Frequency 609\nelse if (baseAddr === 609) {\n    const freqRaw = data[0] || 0;  // 0.01Hz\n    \n    flow.set(\"gds_part_freq\", {\n        genFrequencyHz: Math.round((freqRaw * 0.01) * 100) / 100\n    });\n}\n\n// Voltage/Power 661-671\nelse if (baseAddr === 661) {\n    const voltageA = data[0] || 0;   // 661: Phase A voltage (0.1V)\n    const voltageB = data[1] || 0;   // 662: Phase B voltage (0.1V)\n    const voltageC = data[2] || 0;   // 663: Phase C voltage (0.1V)\n    \n    // Power low words (S32)\n    const powerALow = data[3] || 0;  // 664\n    const powerBLow = data[4] || 0;  // 665\n    const powerCLow = data[5] || 0;  // 666\n    const powerTotalLow = data[6] || 0;  // 667\n    \n    // Power high words (S32)\n    const powerAHigh = data[7] || 0;  // 668\n    const powerBHigh = data[8] || 0;  // 669\n    const powerCHigh = data[9] || 0;  // 670\n    const powerTotalHigh = data[10] || 0;  // 671\n    \n    // Combine to 32-bit signed\n    const powerA = s32(powerALow, powerAHigh);\n    const powerB = s32(powerBLow, powerBHigh);\n    const powerC = s32(powerCLow, powerCHigh);\n    const powerTotal = s32(powerTotalLow, powerTotalHigh);\n    \n    flow.set(\"gds_part_voltage_power\", {\n        phaseAVoltageV: Math.round((voltageA * 0.1) * 10) / 10,\n        phaseBVoltageV: Math.round((voltageB * 0.1) * 10) / 10,\n        phaseCVoltageV: Math.round((voltageC * 0.1) * 10) / 10,\n        phaseAPowerW: powerA,\n        phaseBPowerW: powerB,\n        phaseCPowerW: powerC,\n        totalPowerW: powerTotal\n    });\n}\nelse {\n    return null;\n}\n\n// ---- Try to assemble ----\n\nconst runtimePart = flow.get(\"gds_part_runtime\");\nconst dailyPart = flow.get(\"gds_part_daily\");\nconst freqPart = flow.get(\"gds_part_freq\");\nconst voltagePowerPart = flow.get(\"gds_part_voltage_power\");\n\nif (!runtimePart || !dailyPart || !freqPart || !voltagePowerPart) {\n    return null;  // Wait for all 4 parts\n}\n\nconst deviceId = msg.deviceId\n    || global.get(\"DEVICE_ID\")\n    || env.get(\"DEVICE_ID\")\n    || \"EC100-DEV-001\";\n\nconst state = {\n    kind: \"GeneratorDeviceState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    DeviceId: deviceId,\n    \n    genVoltage: {\n        phaseAVoltageV: voltagePowerPart.phaseAVoltageV,\n        phaseBVoltageV: voltagePowerPart.phaseBVoltageV,\n        phaseCVoltageV: voltagePowerPart.phaseCVoltageV\n    },\n    \n    genFrequencyHz: freqPart.genFrequencyHz,\n    \n    genPower: {\n        phaseAPowerW: voltagePowerPart.phaseAPowerW,\n        phaseBPowerW: voltagePowerPart.phaseBPowerW,\n        phaseCPowerW: voltagePowerPart.phaseCPowerW,\n        totalPowerW: voltagePowerPart.totalPowerW\n    },\n    \n    smartLoadActivePowerW: voltagePowerPart.totalPowerW,\n    \n    todayGenEnergyKWh: dailyPart.todayGenEnergyKWh,\n    dailyRunTimeHours: dailyPart.dailyRunTimeHours,\n    \n    totalGenEnergyKWh: dailyPart.totalGenEnergyKWh,\n    accumulatedRunTimeHours: runtimePart.accumulatedRunTimeHours\n};\n\n// Clear partials\nflow.set(\"gds_part_runtime\", null);\nflow.set(\"gds_part_daily\", null);\nflow.set(\"gds_part_freq\", null);\nflow.set(\"gds_part_voltage_power\", null);\n\n// Get RPC info\nconst rpcResponseTopic = flow.get(\"gds_rpc_response_topic\");\nconst isRpcRequest = flow.get(\"gds_is_rpc_request\");\nflow.set(\"gds_rpc_response_topic\", null);\nflow.set(\"gds_is_rpc_request\", null);\n\nflow.set(\"generatorDeviceStateSnapshot\", state);\n\nmsg.payload = state;\nmsg.state = state;\nmsg.rpcResponseTopic = rpcResponseTopic;\nmsg.isRpcRequest = isRpcRequest;\n\nreturn msg;",
+        "func": "// Build GeneratorDeviceState from multiple Modbus reads.\n\nlet raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nlet baseAddr = msg.baseAddr;\nif (typeof baseAddr !== \"number\") {\n    baseAddr = (msg.modbusRequest && msg.modbusRequest.address);\n}\nif (typeof baseAddr !== \"number\") {\n    node.warn(\"GeneratorDeviceState: missing base address\");\n    return null;\n}\n\n// Helper: signed 16-bit\nfunction s16(v) {\n    if (!Number.isFinite(v)) return 0;\n    return (v & 0x8000) ? v - 0x10000 : v;\n}\n\n// Helper: combine two 16-bit words to 32-bit signed\nfunction s32(low, high) {\n    const u = ((high & 0xFFFF) << 16) | (low & 0xFFFF);\n    return (u & 0x80000000) ? u - 0x100000000 : u;\n}\n\n// Helper: combine two 16-bit words to 32-bit unsigned\nfunction u32(low, high) {\n    return ((high & 0xFFFF) << 16) | (low & 0xFFFF);\n}\n\n// ---- Store partials ----\n\n// Historical Runtime 612-613\nif (baseAddr === 612) {\n    const histLow = data[0] || 0;\n    const histHigh = data[1] || 0;\n    const histRuntime = u32(histLow, histHigh) * 0.1;\n    flow.set(\"gds_part_runtime_hist\", {\n        accumulatedRunTimeHours: Math.round(histRuntime * 10) / 10\n    });\n}\n\n// Energy 636-638\nelse if (baseAddr === 636) {\n    const todayEnergy = data[0] || 0;       // 636\n    const totalLow = data[1] || 0;          // 637\n    const totalHigh = data[2] || 0;         // 638\n    const totalEnergy = u32(totalLow, totalHigh) * 0.1;\n    \n    flow.set(\"gds_part_energy\", {\n        todayGenEnergyKWh: Math.round(todayEnergy * 0.1 * 100) / 100,\n        totalGenEnergyKWh: Math.round(totalEnergy * 100) / 100\n    });\n}\n\n// Daily Runtime 639\nelse if (baseAddr === 639) {\n    const dailyRuntime = data[0] || 0;  // 0.1h\n    flow.set(\"gds_part_daily_runtime\", {\n        dailyRunTimeHours: Math.round(dailyRuntime * 0.1 * 10) / 10\n    });\n}\n\n// Frequency 709\nelse if (baseAddr === 709) {\n    const freqRaw = data[0] || 0;  // 0.01Hz\n    flow.set(\"gds_part_freq\", {\n        genFrequencyHz: Math.round(freqRaw * 0.01 * 100) / 100\n    });\n}\n\n// Voltage 761-763\nelse if (baseAddr === 761) {\n    const vA = data[0] || 0;  // 0.1V\n    const vB = data[1] || 0;\n    const vC = data[2] || 0;\n    \n    flow.set(\"gds_part_voltage\", {\n        phaseAVoltageV: Math.round(vA * 0.1 * 10) / 10,\n        phaseBVoltageV: Math.round(vB * 0.1 * 10) / 10,\n        phaseCVoltageV: Math.round(vC * 0.1 * 10) / 10\n    });\n}\n\n// Power 764-771 (S32 values)\nelse if (baseAddr === 764) {\n    // Phase A: 764 (low) + 768 (high)\n    // Phase B: 765 (low) + 769 (high)\n    // Phase C: 766 (low) + 770 (high)\n    // Total:   767 (low) + 771 (high)\n    \n    const pA = s32(data[0], data[4]);  // 764 + 768\n    const pB = s32(data[1], data[5]);  // 765 + 769\n    const pC = s32(data[2], data[6]);  // 766 + 770\n    const pTotal = s32(data[3], data[7]);  // 767 + 771\n    \n    flow.set(\"gds_part_power\", {\n        phaseAPowerW: pA,\n        phaseBPowerW: pB,\n        phaseCPowerW: pC,\n        totalPowerW: pTotal,\n        smartLoadActivePowerW: pTotal  // Same as total when in smart load mode\n    });\n}\nelse {\n    return null;\n}\n\n// ---- Try to assemble ----\n\nconst runtimeHistPart = flow.get(\"gds_part_runtime_hist\");\nconst energyPart = flow.get(\"gds_part_energy\");\nconst dailyRuntimePart = flow.get(\"gds_part_daily_runtime\");\nconst freqPart = flow.get(\"gds_part_freq\");\nconst voltagePart = flow.get(\"gds_part_voltage\");\nconst powerPart = flow.get(\"gds_part_power\");\n\nif (!runtimeHistPart || !energyPart || !dailyRuntimePart || !freqPart || !voltagePart || !powerPart) {\n    return null;\n}\n\nconst deviceId = msg.deviceId\n    || global.get(\"DEVICE_ID\")\n    || env.get(\"DEVICE_ID\")\n    || \"EC100\";\n\nconst state = {\n    kind: \"GeneratorDeviceState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    DeviceId: deviceId,\n    \n    genVoltage: {\n        phaseAVoltageV: voltagePart.phaseAVoltageV,\n        phaseBVoltageV: voltagePart.phaseBVoltageV,\n        phaseCVoltageV: voltagePart.phaseCVoltageV\n    },\n    \n    genFrequencyHz: freqPart.genFrequencyHz,\n    \n    genPower: {\n        phaseAPowerW: powerPart.phaseAPowerW,\n        phaseBPowerW: powerPart.phaseBPowerW,\n        phaseCPowerW: powerPart.phaseCPowerW,\n        totalPowerW: powerPart.totalPowerW\n    },\n    \n    smartLoadActivePowerW: powerPart.smartLoadActivePowerW,\n    todayGenEnergyKWh: energyPart.todayGenEnergyKWh,\n    dailyRunTimeHours: dailyRuntimePart.dailyRunTimeHours,\n    totalGenEnergyKWh: energyPart.totalGenEnergyKWh,\n    accumulatedRunTimeHours: runtimeHistPart.accumulatedRunTimeHours\n};\n\n// Clear partials\nflow.set(\"gds_part_runtime_hist\", null);\nflow.set(\"gds_part_energy\", null);\nflow.set(\"gds_part_daily_runtime\", null);\nflow.set(\"gds_part_freq\", null);\nflow.set(\"gds_part_voltage\", null);\nflow.set(\"gds_part_power\", null);\n\nflow.set(\"generatorDeviceStateSnapshot\", state);\n\nmsg.payload = state;\nmsg.state = state;\nreturn msg;",
         "outputs": 1,
-        "timeout": 0,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1240,
-        "y": 150,
+        "x": 1010,
+        "y": 210,
         "wires": [
             [
                 "gds_debug_json",
@@ -319,21 +401,21 @@
         "type": "function",
         "z": "generator_device_state_tab",
         "name": "Check if should send",
-        "func": "// Check if generator is active or if this is an RPC request\n// Only send to ThingsBoard telemetry if:\n// 1. Generator has power (any phase != 0)\n// 2. OR Generator has voltage (any phase > 0)\n// 3. OR Generator has frequency (genFrequencyHz > 0)\n// 4. OR This is an RPC request (always respond)\n\nconst state = msg.payload;\nconst isRpcRequest = msg.isRpcRequest === true;\n\nconst hasPower = state.genPower.phaseAPowerW !== 0 \n    || state.genPower.phaseBPowerW !== 0 \n    || state.genPower.phaseCPowerW !== 0;\n    \nconst hasVoltage = state.genVoltage.phaseAVoltageV > 0 \n    || state.genVoltage.phaseBVoltageV > 0 \n    || state.genVoltage.phaseCVoltageV > 0;\n    \nconst hasFrequency = state.genFrequencyHz > 0;\nconst isGeneratorActive = hasPower || hasVoltage || hasFrequency;\n\n// RPC requests always get a response\nif (isRpcRequest) {\n    msg.topic = msg.rpcResponseTopic;\n    node.status({ \n        fill: \"blue\", \n        shape: \"dot\", \n        text: `RPC response - ${state.genPower.totalPowerW}W` \n    });\n    return [msg, msg];  // Send to both telemetry and RPC response\n}\n\n// Periodic poll - only send if generator is active\nif (!isGeneratorActive) {\n    // Check if we need to send \"generator stopped\" once\n    const previousWasActive = flow.get(\"gds_previous_was_active\") || false;\n    \n    if (previousWasActive) {\n        // Send one \"stopped\" message\n        flow.set(\"gds_previous_was_active\", false);\n        node.status({ fill: \"grey\", shape: \"dot\", text: \"Stopped - sent\" });\n        return [msg, null];  // Send to telemetry only\n    } else {\n        // Already sent stopped, don't spam\n        node.status({ fill: \"grey\", shape: \"ring\", text: \"Inactive - skipped\" });\n        return [null, null];\n    }\n}\n\n// Generator is active - send it\nflow.set(\"gds_previous_was_active\", true);\n\nnode.status({ \n    fill: \"green\", \n    shape: \"dot\", \n    text: `Active - ${state.genPower.totalPowerW}W` \n});\n\nreturn [msg, null];  // Send to telemetry only",
+        "func": "// Check if generator is active or if this is an RPC request\n// Only send to ThingsBoard telemetry if:\n// 1. Generator has power (totalPowerW != 0)\n// 2. OR Generator has voltage (any phase > 0)\n// 3. OR Generator has frequency (genFrequencyHz > 0)\n// 4. OR This is an RPC request (always respond)\n\nconst state = msg.payload;\nconst isRpcRequest = msg.isRpcRequest === true;\n\nconst hasPower = state.genPower.totalPowerW !== 0;\nconst hasVoltage = state.genVoltage.phaseAVoltageV > 0 \n    || state.genVoltage.phaseBVoltageV > 0 \n    || state.genVoltage.phaseCVoltageV > 0;\nconst hasFrequency = state.genFrequencyHz > 0;\nconst isGeneratorActive = hasPower || hasVoltage || hasFrequency;\n\n// RPC requests always get a response\nif (isRpcRequest) {\n    node.status({ \n        fill: \"blue\", \n        shape: \"dot\", \n        text: `RPC response - ${state.genPower.totalPowerW}W` \n    });\n    return [msg, msg];  // Send to both telemetry and RPC response\n}\n\n// Periodic poll - only send if generator is active\nif (!isGeneratorActive) {\n    // Check if we need to send \"generator stopped\" once\n    const previousWasActive = flow.get(\"gds_previous_was_active\") || false;\n    \n    if (previousWasActive) {\n        // Send one \"stopped\" message\n        flow.set(\"gds_previous_was_active\", false);\n        node.status({ fill: \"grey\", shape: \"dot\", text: \"Stopped - sent\" });\n        return [msg, null];  // Send to telemetry only\n    } else {\n        // Already sent stopped, don't spam\n        node.status({ fill: \"grey\", shape: \"ring\", text: \"Inactive - skipped\" });\n        return [null, null];\n    }\n}\n\n// Generator is active - send it\nflow.set(\"gds_previous_was_active\", true);\n\nnode.status({ \n    fill: \"green\", \n    shape: \"dot\", \n    text: `Active - ${state.genPower.totalPowerW}W` \n});\n\nreturn [msg, null];  // Send to telemetry only",
         "outputs": 2,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1520,
-        "y": 150,
+        "x": 1280,
+        "y": 210,
         "wires": [
             [
                 "gds_mqtt_telemetry"
             ],
             [
-                "gds_mqtt_rpc_response"
+                "gds_rpc_response"
             ]
         ]
     },
@@ -350,15 +432,15 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1530,
-        "y": 100,
+        "x": 1290,
+        "y": 150,
         "wires": []
     },
     {
         "id": "gds_error_debug",
         "type": "debug",
         "z": "generator_device_state_tab",
-        "name": "GeneratorDeviceState CRC/Error",
+        "name": "GeneratorDeviceState Error",
         "active": true,
         "tosidebar": true,
         "console": false,
@@ -367,8 +449,8 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1240,
-        "y": 320,
+        "x": 1020,
+        "y": 450,
         "wires": []
     },
     {
@@ -385,9 +467,29 @@
         "correl": "",
         "expiry": "",
         "broker": "tb-broker",
-        "x": 1780,
-        "y": 130,
+        "x": 1540,
+        "y": 190,
         "wires": []
+    },
+    {
+        "id": "gds_rpc_response",
+        "type": "function",
+        "z": "generator_device_state_tab",
+        "name": "Prepare RPC Response",
+        "func": "// Only handle messages that came from RPC\nconst rpcTopic = flow.get(\"gds_rpc_response_topic\");\nif (!rpcTopic) {\n    return null;\n}\n\nconst state = msg.state || msg.payload;\n\nmsg.payload = { success: true, data: state };\nmsg.topic = rpcTopic;\n\nflow.set(\"gds_rpc_response_topic\", null);\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1520,
+        "y": 250,
+        "wires": [
+            [
+                "gds_mqtt_rpc_response"
+            ]
+        ]
     },
     {
         "id": "gds_mqtt_rpc_response",
@@ -403,45 +505,45 @@
         "correl": "",
         "expiry": "",
         "broker": "tb-broker",
-        "x": 1760,
-        "y": 190,
+        "x": 1740,
+        "y": 250,
         "wires": []
     },
     {
         "id": "gds_comment",
         "type": "comment",
         "z": "generator_device_state_tab",
-        "name": "Poll 5min (sends if active) + Manual + RPC (always) - 4 parallel reads with 32-bit power",
+        "name": "THREE-PHASE: Polls 5 min (only sends if active) + RPC (always responds) - Phase A/B/C voltages and powers",
         "info": "",
-        "x": 380,
-        "y": 40,
+        "x": 420,
+        "y": 20,
         "wires": []
     },
     {
         "id": "e4e4f3e2a4f4e004",
         "type": "modbus-client",
-        "name": "RS485-1 Inverter",
-        "clienttype": "serial",
+        "name": "EC100 Modbus",
+        "clienttype": "tcp",
         "bufferCommands": true,
         "stateLogEnabled": false,
         "queueLogEnabled": false,
-        "failureLogEnabled": false,
-        "tcpHost": "127.0.0.1",
+        "failureLogEnabled": true,
+        "tcpHost": "192.168.1.100",
         "tcpPort": "502",
         "tcpType": "DEFAULT",
-        "serialPort": "/dev/ttyS4",
-        "serialType": "RTU",
+        "serialPort": "/dev/ttyUSB0",
+        "serialType": "RTU-BUFFERD",
         "serialBaudrate": "9600",
         "serialDatabits": "8",
         "serialStopbits": "1",
         "serialParity": "none",
         "serialConnectionDelay": "100",
-        "serialAsciiResponseStartDelimiter": "",
-        "unit_id": 1,
-        "commandDelay": 50,
-        "clientTimeout": 1000,
+        "serialAsciiResponseStartDelimiter": "0x3A",
+        "unit_id": "1",
+        "commandDelay": "1",
+        "clientTimeout": "1000",
         "reconnectOnTimeout": true,
-        "reconnectTimeout": 2000,
+        "reconnectTimeout": "2000",
         "parallelUnitIdsAllowed": true,
         "showErrors": false,
         "showWarnings": true,
@@ -475,8 +577,6 @@
         "willQos": "0",
         "willRetain": "false",
         "willPayload": "",
-        "willMsg": {},
-        "userProps": "",
-        "sessionExpiry": ""
+        "willMsg": {}
     }
 ]

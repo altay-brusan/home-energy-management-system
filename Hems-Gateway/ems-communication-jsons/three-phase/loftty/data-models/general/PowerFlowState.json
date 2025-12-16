@@ -1,38 +1,38 @@
-PowerFlowState {
-  "timestampUtc": string,
-  "version": number,
-  "DeviceId": string,
+{
+  "timestampUtc": "string",
+  "version": 1,
+  "DeviceId": "string",
   
   "pv": {
-    "totalPowerW": number,                  // 718: PV total power (veya sum)
+    "totalPowerW": "number",                 // sum 772-775 - Bu datasheet'te ayrı register yok, sum hesapla
 
     "mppt": [
-      { "id": 1, "powerW": number },        // 672: PV1 input power (L:1W, H:10W)
-      { "id": 2, "powerW": number },        // 673: PV2 input power (L:1W, H:10W)
-      { "id": 3, "powerW": number },        // 674: PV3 input power (L:1W, H:10W)
-      { "id": 4, "powerW": number },        // 675: PV4 input power (L:1W, H:10W)
-      { "id": 5, "powerW": number | null }, // 727: PV5 power (10W) - optional
-      { "id": 6, "powerW": number | null }, // 728: PV6 power (10W) - optional
-      { "id": 7, "powerW": number | null }, // 729: PV7 power (10W) - optional
-      { "id": 8, "powerW": number | null }  // 730: PV8 power (10W) - optional
+      { "id": 1, "powerW": "number" },        // 772 - PV1 input power (1W)
+      { "id": 2, "powerW": "number" },        // 773 - PV2 input power (1W)
+      { "id": 3, "powerW": "number" },        // 774 - PV3 input power (1W)
+      { "id": 4, "powerW": "number" },        // 775 - PV4 input power (1W)
+      { "id": 5, "powerW": null },            // Bu datasheet'te PV5 yok (sadece 4 MPPT)
+      { "id": 6, "powerW": null },            // Bu datasheet'te PV6 yok
+      { "id": 7, "powerW": null },            // Bu datasheet'te PV7 yok
+      { "id": 8, "powerW": null }             // Bu datasheet'te PV8 yok
     ]
   },
 
   "grid": {
-    "totalPowerW": number                   // 625 (low) + 690 (high): Grid total power (1W)
-                                            // + = import, - = export
+    "totalPowerW": "number"                  // 725 (low) + 790 (high) - Grid total power (1W, S32)
+                                             // + = import, - = export
   },
 
   "load": {
-    "totalPowerW": number                   // 653 (low) + 659 (high): Load total power (1W)
+    "totalPowerW": "number"                  // 753 (low) + 759 (high) - Load total power (1W, S32)
   },
 
   "battery": {
-    "powerW": number                        // 590: Battery output power (1W or 10W, S16)
-                                            // + = discharge, - = charge
+    "powerW": "number"                       // 690 - Battery output power (1W, S16)
+                                             // + = discharge, - = charge
   },
 
   "generator": {
-    "totalPowerW": number                   // 667 (low) + 671 (high): Gen total power (1W)
+    "totalPowerW": "number"                  // 767 (low) + 771 (high) - Gen total power (1W, S32)
   }
 }

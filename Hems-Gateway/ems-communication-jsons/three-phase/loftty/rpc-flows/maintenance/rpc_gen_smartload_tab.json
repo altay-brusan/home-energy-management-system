@@ -1,0 +1,105 @@
+[
+    {
+        "id": "rpc_gen_smartload_tab",
+        "type": "tab",
+        "label": "RPC_GenSmartLoadOverride",
+        "disabled": false,
+        "info": "RPC Handler for GeneratorSmartLoadOverride\nMethods:\n- getGeneratorSmartLoadOverride (read)\n- setGeneratorSmartLoadOverride (write + read)"
+    },
+    {
+        "id": "rpc_gensmartload_mqtt_in",
+        "type": "mqtt in",
+        "z": "rpc_gen_smartload_tab",
+        "name": "RPC Request",
+        "topic": "v1/devices/me/rpc/request/+",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "tb-broker",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 140,
+        "y": 160,
+        "wires": [
+            [
+                "rpc_gensmartload_handle"
+            ]
+        ]
+    },
+    {
+        "id": "rpc_gensmartload_handle",
+        "type": "function",
+        "z": "rpc_gen_smartload_tab",
+        "name": "Handle RPC",
+        "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\n\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\nif (msg.rpcMethod === 'getGeneratorSmartLoadOverride') {\n    msg.operation = 'read';\n    return msg;\n}\nelse if (msg.rpcMethod === 'setGeneratorSmartLoadOverride') {\n    msg.operation = 'write';\n    return msg;\n}\nelse {\n    return null;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 330,
+        "y": 160,
+        "wires": [
+            [
+                "rpc_gensmartload_link_out"
+            ]
+        ]
+    },
+    {
+        "id": "rpc_gensmartload_link_out",
+        "type": "link out",
+        "z": "rpc_gen_smartload_tab",
+        "name": "To Main Flow",
+        "mode": "link",
+        "links": [
+            "gensmartload_link_in_rpc"
+        ],
+        "x": 495,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "rpc_gensmartload_comment",
+        "type": "comment",
+        "z": "rpc_gen_smartload_tab",
+        "name": "getGeneratorSmartLoadOverride / setGeneratorSmartLoadOverride",
+        "info": "Read/Write generator smart load override:\n- forceSmartLoadOn: bool (Reg234)\n\nPrerequisite: Reg235 = 1 (generatorAsLoadEnabled)",
+        "x": 300,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

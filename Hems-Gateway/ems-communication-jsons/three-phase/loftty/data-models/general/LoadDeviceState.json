@@ -1,37 +1,32 @@
-LoadDeviceState {
-  "timestampUtc": string,
-  "version": number,
-  "DeviceId": string,
+{
+  "timestampUtc": "string",
+  "version": 1,
+  "DeviceId": "string",
 
-  "scope": string,                     // "backup_load" | "home_load" | "total_site"
+  "scope": "string",                         // "backup_load" | "home_load" | "total_site"
 
-  // --- Load Side Power (3-phase) ---
   "loadPower": {
-    "totalActivePowerW": number,       // 653 (low) + 659 (high): Load total power (1W)
-    "phaseAPowerW": number,            // 650 (low) + 656 (high): Load phase A power (1W)
-    "phaseBPowerW": number,            // 651 (low) + 657 (high): Load phase B power (1W)
-    "phaseCPowerW": number             // 652 (low) + 658 (high): Load phase C power (1W)
+    "totalActivePowerW": "number",           // 753 (low) + 759 (high) - Load total power (1W, S32)
+    "phaseAPowerW": "number",                // 750 (low) + 756 (high) - Load phase A power (1W, S32)
+    "phaseBPowerW": "number",                // 751 (low) + 757 (high) - Load phase B power (1W, S32)
+    "phaseCPowerW": "number"                 // 752 (low) + 758 (high) - Load phase C power (1W, S32)
   },
 
-  // --- Load Voltage (3-phase) ---
   "loadVoltage": {
-    "phaseAVoltageV": number,          // 644: Load phase voltage A (0.1V)
-    "phaseBVoltageV": number,          // 645: Load phase voltage B (0.1V)
-    "phaseCVoltageV": number           // 646: Load phase voltage C (0.1V)
+    "phaseAVoltageV": "number",              // 744 - Load phase voltage A (0.1V)
+    "phaseBVoltageV": "number",              // 745 - Load phase voltage B (0.1V)
+    "phaseCVoltageV": "number"               // 746 - Load phase voltage C (0.1V)
   },
 
-  // --- Load Frequency ---
-  "frequencyHz": number,               // 655: Load frequency (0.01Hz)
+  "frequencyHz": "number",                   // 755 - Load frequency (0.01Hz)
 
-  // --- UPS/Backup Load Power (ayrı ölçüm) ---
   "upsLoadPower": {
-    "totalPowerW": number,             // 643 (low) + 699 (high): UPS load total (1W)
-    "phaseAPowerW": number,            // 640 (low) + 696 (high): UPS load phase A (1W)
-    "phaseBPowerW": number,            // 641 (low) + 697 (high): UPS load phase B (1W)
-    "phaseCPowerW": number             // 642 (low) + 698 (high): UPS load phase C (1W)
+    "totalPowerW": "number",                 // 743 (low) + 799 (high) - UPS load total (1W, U32)
+    "phaseAPowerW": "number",                // 740 (low) + 796 (high) - UPS load phase A (1W, U32)
+    "phaseBPowerW": "number",                // 741 (low) + 797 (high) - UPS load phase B (1W, U32)
+    "phaseCPowerW": "number"                 // 742 (low) + 798 (high) - UPS load phase C (1W, U32)
   },
 
-  // --- Energy ---
-  "todayEnergyKWh": number | null,     // 526: Day load energy (0.1kWh)
-  "totalEnergyKWh": number | null      // 527 (low) + 528 (high): Total load energy (0.1kWh)
+  "todayEnergyKWh": "number",                // 626 - Day load energy (0.1kWh)
+  "totalEnergyKWh": "number"                 // 627 (low) + 628 (high) - Total load energy (0.1kWh)
 }

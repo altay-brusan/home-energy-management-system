@@ -1,0 +1,105 @@
+[
+    {
+        "id": "rpc_invadv_tab",
+        "type": "tab",
+        "label": "RPC_InvAdvancedFunction",
+        "disabled": false,
+        "info": "RPC Handler for InverterAdvancedFunctionConfigState\nMethods:\n- getInverterAdvancedFunctionConfig (read)\n- setInverterAdvancedFunctionConfig (write + read)"
+    },
+    {
+        "id": "rpc_invadv_mqtt_in",
+        "type": "mqtt in",
+        "z": "rpc_invadv_tab",
+        "name": "RPC Request",
+        "topic": "v1/devices/me/rpc/request/+",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "tb-broker",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 140,
+        "y": 160,
+        "wires": [
+            [
+                "rpc_invadv_handle"
+            ]
+        ]
+    },
+    {
+        "id": "rpc_invadv_handle",
+        "type": "function",
+        "z": "rpc_invadv_tab",
+        "name": "Handle RPC",
+        "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\n\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\nif (msg.rpcMethod === 'getInverterAdvancedFunctionConfig') {\n    msg.operation = 'read';\n    return msg;\n}\nelse if (msg.rpcMethod === 'setInverterAdvancedFunctionConfig') {\n    msg.operation = 'write';\n    return msg;\n}\nelse {\n    return null;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 330,
+        "y": 160,
+        "wires": [
+            [
+                "rpc_invadv_link_out"
+            ]
+        ]
+    },
+    {
+        "id": "rpc_invadv_link_out",
+        "type": "link out",
+        "z": "rpc_invadv_tab",
+        "name": "To Main Flow",
+        "mode": "link",
+        "links": [
+            "invadv_link_in_rpc"
+        ],
+        "x": 495,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "rpc_invadv_comment",
+        "type": "comment",
+        "z": "rpc_invadv_tab",
+        "name": "getInverterAdvancedFunctionConfig / setInverterAdvancedFunctionConfig",
+        "info": "Read/Write advanced function config:\n- arcFault, systemSelfCheckEnabled\n- generatorPeakShavingEnabled, gridPeakShavingEnabled\n- smartLoadOnGridAlwaysOn, externalRelayEnabled\n- externalMeter (ctRatio, phase)\n- bmsErrorStopEnabled, drmEnabled\n- parallel (enabled, role, modbusAddress)",
+        "x": 320,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

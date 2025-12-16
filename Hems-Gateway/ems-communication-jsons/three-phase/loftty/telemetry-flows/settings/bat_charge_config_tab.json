@@ -1,0 +1,540 @@
+[
+    {
+        "id": "bat_charge_config_tab",
+        "type": "tab",
+        "label": "BatteryChargeSourceConfig",
+        "disabled": false,
+        "info": "Battery Charge Source Config - Read & Write\n\n6 Registers (R/W):\n- 224: Gen Start SOC\n- 225: Gen Charge Current\n- 227: Grid Start SOC\n- 228: Grid Charge Current\n- 229: Gen Charge Enable\n- 230: Grid Charge Enable\n\nRead-only:\n- 221: Gen Max Run Time\n- 222: Gen Cooling Time"
+    },
+    {
+        "id": "bchg_link_in_rpc",
+        "type": "link in",
+        "z": "bat_charge_config_tab",
+        "name": "RPC Request",
+        "links": [
+            "rpc_bchg_link_out"
+        ],
+        "x": 135,
+        "y": 180,
+        "wires": [
+            [
+                "bchg_route_operation"
+            ]
+        ]
+    },
+    {
+        "id": "bchg_manual_read",
+        "type": "inject",
+        "z": "bat_charge_config_tab",
+        "name": "Manual Read",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operationType",
+                "v": "read",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 260,
+        "wires": [
+            [
+                "bchg_route_operation"
+            ]
+        ]
+    },
+    {
+        "id": "bchg_manual_write",
+        "type": "inject",
+        "z": "bat_charge_config_tab",
+        "name": "Test Write",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operationType",
+                "v": "write",
+                "vt": "str"
+            },
+            {
+                "p": "rpcParams",
+                "v": "{\"generator\":{\"enabled\":true,\"startSocPercent\":20,\"chargeCurrentA\":35},\"grid\":{\"enabled\":true,\"startSocPercent\":25,\"chargeCurrentA\":45}}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 320,
+        "wires": [
+            [
+                "bchg_route_operation"
+            ]
+        ]
+    },
+    {
+        "id": "bchg_route_operation",
+        "type": "function",
+        "z": "bat_charge_config_tab",
+        "name": "Route: Read or Write?",
+        "func": "const opType = msg.operationType || 'read';\n\nif (opType === 'write') {\n    return [null, msg];\n} else {\n    return [msg, null];\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 180,
+        "wires": [
+            [
+                "bchg_start_read"
+            ],
+            [
+                "bchg_start_write"
+            ]
+        ]
+    },
+    {
+        "id": "bchg_start_read",
+        "type": "function",
+        "z": "bat_charge_config_tab",
+        "name": "Start Read",
+        "func": "flow.set(\"bchg_rpc_response_topic\", msg.rpcResponseTopic);\nflow.set(\"bchg_write_result\", msg.writeResult || null);\n\nflow.set(\"bchg_part_gen_timing\", null);\nflow.set(\"bchg_part_gen_charge\", null);\nflow.set(\"bchg_part_grid\", null);\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 570,
+        "y": 120,
+        "wires": [
+            [
+                "bchg_prepare_gen_timing",
+                "bchg_prepare_gen_charge",
+                "bchg_prepare_grid"
+            ]
+        ]
+    },
+    {
+        "id": "bchg_prepare_gen_timing",
+        "type": "function",
+        "z": "bat_charge_config_tab",
+        "name": "Prepare (221-222)",
+        "func": "msg.baseAddr = 221;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 221,\n    quantity: 2\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 780,
+        "y": 60,
+        "wires": [
+            [
+                "bchg_read_gen_timing"
+            ]
+        ]
+    },
+    {
+        "id": "bchg_prepare_gen_charge",
+        "type": "function",
+        "z": "bat_charge_config_tab",
+        "name": "Prepare (224-225)",
+        "func": "msg.baseAddr = 224;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 224,\n    quantity: 2\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 780,
+        "y": 120,
+        "wires": [
+            [
+                "bchg_read_gen_charge"
+            ]
+        ]
+    },
+    {
+        "id": "bchg_prepare_grid",
+        "type": "function",
+        "z": "bat_charge_config_tab",
+        "name": "Prepare (227-230)",
+        "func": "msg.baseAddr = 227;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 227,\n    quantity: 4\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 780,
+        "y": 180,
+        "wires": [
+            [
+                "bchg_read_grid"
+            ]
+        ]
+    },
+    {
+        "id": "bchg_read_gen_timing",
+        "type": "modbus-flex-getter",
+        "z": "bat_charge_config_tab",
+        "name": "Read 221-222",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 980,
+        "y": 60,
+        "wires": [
+            [
+                "bchg_build_json"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "bchg_read_gen_charge",
+        "type": "modbus-flex-getter",
+        "z": "bat_charge_config_tab",
+        "name": "Read 224-225",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 980,
+        "y": 120,
+        "wires": [
+            [
+                "bchg_build_json"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "bchg_read_grid",
+        "type": "modbus-flex-getter",
+        "z": "bat_charge_config_tab",
+        "name": "Read 227-230",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 980,
+        "y": 180,
+        "wires": [
+            [
+                "bchg_build_json"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "bchg_build_json",
+        "type": "function",
+        "z": "bat_charge_config_tab",
+        "name": "Build JSON State",
+        "func": "let raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nlet baseAddr = msg.baseAddr;\nif (typeof baseAddr !== \"number\") {\n    baseAddr = (msg.modbusRequest && msg.modbusRequest.address);\n}\nif (typeof baseAddr !== \"number\") {\n    return null;\n}\n\nif (baseAddr === 221) {\n    flow.set(\"bchg_part_gen_timing\", {\n        maxRunTimeHours: Math.round((data[0] || 0) * 0.1 * 10) / 10,\n        coolingTimeHours: Math.round((data[1] || 0) * 0.1 * 10) / 10\n    });\n}\nelse if (baseAddr === 224) {\n    flow.set(\"bchg_part_gen_charge\", {\n        startSocPercent: data[0] || 0,\n        chargeCurrentA: data[1] || 0\n    });\n}\nelse if (baseAddr === 227) {\n    flow.set(\"bchg_part_grid\", {\n        gridStartSocPercent: data[0] || 0,\n        gridChargeCurrentA: data[1] || 0,\n        genEnabled: (data[2] || 0) === 1,\n        gridEnabled: (data[3] || 0) === 1\n    });\n}\nelse {\n    return null;\n}\n\nconst genTimingPart = flow.get(\"bchg_part_gen_timing\");\nconst genChargePart = flow.get(\"bchg_part_gen_charge\");\nconst gridPart = flow.get(\"bchg_part_grid\");\n\nif (!genTimingPart || !genChargePart || !gridPart) {\n    return null;\n}\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\nconst inverterSN = global.get(\"INVERTER_SN\") || env.get(\"INVERTER_SN\") || \"Unknown\";\n\nconst state = {\n    kind: \"BatteryChargeSourceConfigState\",\n    timestampUtc: new Date().toISOString(),\n    gatewayId: gatewayId,\n    inverterSerialNumber: inverterSN,\n    \n    generator: {\n        enabled: gridPart.genEnabled,\n        startSocPercent: genChargePart.startSocPercent,\n        chargeCurrentA: genChargePart.chargeCurrentA,\n        maxRunTimeHours: genTimingPart.maxRunTimeHours,\n        coolingTimeHours: genTimingPart.coolingTimeHours\n    },\n    \n    grid: {\n        enabled: gridPart.gridEnabled,\n        startSocPercent: gridPart.gridStartSocPercent,\n        chargeCurrentA: gridPart.gridChargeCurrentA\n    }\n};\n\nflow.set(\"bchg_part_gen_timing\", null);\nflow.set(\"bchg_part_gen_charge\", null);\nflow.set(\"bchg_part_grid\", null);\n\nconst writeResult = flow.get(\"bchg_write_result\");\nconst rpcResponseTopic = flow.get(\"bchg_rpc_response_topic\");\n\nflow.set(\"bchg_write_result\", null);\nflow.set(\"bchg_rpc_response_topic\", null);\n\nif (writeResult) {\n    msg.payload = {\n        success: writeResult.success,\n        message: writeResult.message,\n        writes: writeResult.writes,\n        state: state\n    };\n} else {\n    msg.payload = state;\n}\n\nmsg.state = state;\nmsg.rpcResponseTopic = rpcResponseTopic;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1190,
+        "y": 120,
+        "wires": [
+            [
+                "bchg_debug_json",
+                "bchg_rpc_response"
+            ]
+        ]
+    },
+    {
+        "id": "bchg_debug_json",
+        "type": "debug",
+        "z": "bat_charge_config_tab",
+        "name": "Config State JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1410,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "bchg_rpc_response",
+        "type": "function",
+        "z": "bat_charge_config_tab",
+        "name": "RPC Response",
+        "func": "if (!msg.rpcResponseTopic) {\n    return null;\n}\n\nmsg.topic = msg.rpcResponseTopic;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1400,
+        "y": 120,
+        "wires": [
+            [
+                "bchg_mqtt_response"
+            ]
+        ]
+    },
+    {
+        "id": "bchg_mqtt_response",
+        "type": "mqtt out",
+        "z": "bat_charge_config_tab",
+        "name": "MQTT Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1600,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "bchg_start_write",
+        "type": "function",
+        "z": "bat_charge_config_tab",
+        "name": "Queue Writes",
+        "func": "// Parse RPC params and build write queue\nconst params = msg.rpcParams || {};\nconst gen = params.generator || {};\nconst grid = params.grid || {};\n\nconst writes = [];\n\n// Generator settings (221,222 are read-only)\nif (gen.startSocPercent !== undefined) {\n    writes.push({ register: 224, value: gen.startSocPercent, name: \"Gen Start SOC\" });\n}\nif (gen.chargeCurrentA !== undefined) {\n    writes.push({ register: 225, value: gen.chargeCurrentA, name: \"Gen Charge Current\" });\n}\n\n// Grid settings\nif (grid.startSocPercent !== undefined) {\n    writes.push({ register: 227, value: grid.startSocPercent, name: \"Grid Start SOC\" });\n}\nif (grid.chargeCurrentA !== undefined) {\n    writes.push({ register: 228, value: grid.chargeCurrentA, name: \"Grid Charge Current\" });\n}\n\n// Enable flags\nif (gen.enabled !== undefined) {\n    writes.push({ register: 229, value: gen.enabled ? 1 : 0, name: \"Gen Charge Enable\" });\n}\nif (grid.enabled !== undefined) {\n    writes.push({ register: 230, value: grid.enabled ? 1 : 0, name: \"Grid Charge Enable\" });\n}\n\nif (writes.length === 0) {\n    msg.operationType = 'read';\n    return [null, msg];\n}\n\n// Store to GLOBAL context\nglobal.set(\"bchg_write_queue\", writes);\nglobal.set(\"bchg_write_index\", 0);\nglobal.set(\"bchg_write_results\", []);\nglobal.set(\"bchg_write_rpc_topic\", msg.rpcResponseTopic);\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: `${writes.length} writes queued` });\n\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 580,
+        "y": 340,
+        "wires": [
+            [
+                "bchg_prepare_write"
+            ],
+            [
+                "bchg_start_read"
+            ]
+        ]
+    },
+    {
+        "id": "bchg_prepare_write",
+        "type": "function",
+        "z": "bat_charge_config_tab",
+        "name": "Prepare Write",
+        "func": "const writes = global.get(\"bchg_write_queue\") || [];\nconst index = global.get(\"bchg_write_index\") || 0;\n\nif (index >= writes.length) {\n    return null;\n}\n\nconst current = writes[index];\n\nconst newMsg = {\n    payload: {\n        fc: 16,\n        unitid: 1,\n        address: current.register,\n        quantity: 1,\n        value: [current.value]\n    },\n    currentWrite: current,\n    writeIndex: index\n};\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: `[${index+1}/${writes.length}] ${current.name}` });\n\nreturn newMsg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 760,
+        "y": 340,
+        "wires": [
+            [
+                "bchg_write_register"
+            ]
+        ]
+    },
+    {
+        "id": "bchg_write_register",
+        "type": "modbus-flex-write",
+        "z": "bat_charge_config_tab",
+        "name": "Write Register",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "server": "e4e4f3e2a4f4e004",
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "x": 940,
+        "y": 340,
+        "wires": [
+            [
+                "bchg_write_ok"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "bchg_write_ok",
+        "type": "function",
+        "z": "bat_charge_config_tab",
+        "name": "Write OK",
+        "func": "const writes = global.get(\"bchg_write_queue\") || [];\nlet index = global.get(\"bchg_write_index\") || 0;\nconst results = global.get(\"bchg_write_results\") || [];\n\n// Record success\nconst current = writes[index];\nif (current) {\n    results.push({ \n        register: current.register, \n        name: current.name, \n        value: current.value, \n        success: true \n    });\n    global.set(\"bchg_write_results\", results);\n}\n\n// Move to next\nindex++;\nglobal.set(\"bchg_write_index\", index);\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `${current.name} OK` });\n\n// More writes?\nif (index < writes.length) {\n    return [{ doNext: true }, null];\n}\n\n// All done - go to read\nconst rpcTopic = global.get(\"bchg_write_rpc_topic\");\n\nglobal.set(\"bchg_write_queue\", null);\nglobal.set(\"bchg_write_index\", null);\nglobal.set(\"bchg_write_rpc_topic\", null);\n\nconst finalMsg = {\n    writeResult: {\n        success: true,\n        message: `Successfully wrote ${results.length} register(s)`,\n        writes: results\n    },\n    rpcResponseTopic: rpcTopic\n};\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `All ${results.length} writes OK!` });\n\nreturn [null, finalMsg];",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1100,
+        "y": 340,
+        "wires": [
+            [
+                "bchg_next_delay"
+            ],
+            [
+                "bchg_start_read"
+            ]
+        ]
+    },
+    {
+        "id": "bchg_next_delay",
+        "type": "delay",
+        "z": "bat_charge_config_tab",
+        "name": "500ms",
+        "pauseType": "delay",
+        "timeout": "500",
+        "timeoutUnits": "milliseconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 1230,
+        "y": 340,
+        "wires": [
+            [
+                "bchg_prepare_write"
+            ]
+        ]
+    },
+    {
+        "id": "bchg_comment_read",
+        "type": "comment",
+        "z": "bat_charge_config_tab",
+        "name": "═══ READ SECTION ═══",
+        "info": "",
+        "x": 780,
+        "y": 20,
+        "wires": []
+    },
+    {
+        "id": "bchg_comment_write",
+        "type": "comment",
+        "z": "bat_charge_config_tab",
+        "name": "═══ WRITE SECTION ═══",
+        "info": "Sequential write with 500ms delay between each.",
+        "x": 610,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "EC100 Modbus",
+        "clienttype": "tcp",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": true,
+        "tcpHost": "192.168.1.100",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyUSB0",
+        "serialType": "RTU-BUFFERD",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "0x3A",
+        "unit_id": "1",
+        "commandDelay": "1",
+        "clientTimeout": "1000",
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": "2000",
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {}
+    }
+]

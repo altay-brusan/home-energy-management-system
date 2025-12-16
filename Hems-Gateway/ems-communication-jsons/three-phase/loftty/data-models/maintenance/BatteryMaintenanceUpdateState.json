@@ -1,18 +1,21 @@
-BatteryMaintenanceConfigState {
-  "timestampUtc": string,
-  "gatewayId": string,
-  "inverterSerialNumber": string,
-  "version": string,
+BatteryMaintenanceConfigState
+{
+  "version": 1,
 
-  // We usually keep this fixed to "capacity" in your design,
-  // but if admins *really* want to switch modes, they can:
-  "batteryControlMode": "capacity" | "voltage" | null,  // 111
+  "batteryControlMode": "string",            // 211 - 电池工作根据电压还是容量
+                                             //   0 = "voltage" (根据电压)
+                                             //   1 = "capacity" (根据容量)
+                                             //   2 = "no_battery" (没有电池)
 
   "wakeUp": {
-    "channel1Enabled": bool | null,    // 112 Bit0 (0=enabled,1=disable)
-    "channel2Enabled": bool | null     // 112 Bit8 (0=enabled,1=disable)
+    "channel1Enabled": "boolean",            // 212 - 锂电池唤醒标志位
+                                             //   0 = enabled
+                                             //   1 = disabled
+    "channel2Enabled": null                  // Bu datasheet'te channel2 yok (tek flag)
   },
 
-  "batteryResistanceMilliOhm": number | null,    // 113
-  "chargeEfficiencyPercent": number | null       // 114 (0.1% step)
+  "batteryResistanceMilliOhm": "number",     // 213 - 电池内阻值 [0,6000] mΩ
+
+  "chargeEfficiencyPercent": "number"        // 214 - 电池充电效率 [0-100] (0.1% step)
+                                             //   983 = 98.3%
 }

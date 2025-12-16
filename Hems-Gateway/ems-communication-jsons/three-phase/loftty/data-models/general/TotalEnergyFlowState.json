@@ -1,34 +1,34 @@
-TotalEnergyFlowState {
-  "timestampUtc": string,
-  "version": number,
-  "deviceId": string,
+{
+  "timestampUtc": "string",
+  "version": 1,
+  "deviceId": "string",
 
   "grid": {
-    "importTotalEnergyKWh": number,      // 522 (low) + 523 (high): Total grid buy (0.1kWh)
-    "exportTotalEnergyKWh": number       // 524 (low) + 525 (high): Total grid sell (0.1kWh)
+    "importTotalEnergyKWh": "number",        // 622 (low) + 623 (high) - Total grid buy (0.1kWh)
+    "exportTotalEnergyKWh": "number"         // 624 (low) + 625 (high) - Total grid sell (0.1kWh)
   },
 
   "pv": {
-    "totalEnergyKWh": number | null,     // 534 (low) + 535 (high): Total PV energy (0.1kWh) - 534 预留 reserved!
+    "totalEnergyKWh": "number",              // 634 (low) + 635 (high) - Total PV energy (0.1kWh) - YENİ DATASHEET'TE TANIMLI
 
     "mppt": [
-      { "id": 1, "totalEnergyKWh": number | null },  // Bu protokolde yok - null
-      { "id": 2, "totalEnergyKWh": number | null },  // Bu protokolde yok - null
-      { "id": 3, "totalEnergyKWh": number | null },  // Bu protokolde yok - null
-      { "id": 4, "totalEnergyKWh": number | null }   // Bu protokolde yok - null
+      { "id": 1, "totalEnergyKWh": null },   // Bu datasheet'te MPPT bazında total energy yok
+      { "id": 2, "totalEnergyKWh": null },   // Bu datasheet'te MPPT bazında total energy yok
+      { "id": 3, "totalEnergyKWh": null },   // Bu datasheet'te MPPT bazında total energy yok
+      { "id": 4, "totalEnergyKWh": null }    // Bu datasheet'te MPPT bazında total energy yok
     ]
   },
 
   "load": {
-    "totalEnergyKWh": number             // 527 (low) + 528 (high): Total load energy (0.1kWh)
+    "totalEnergyKWh": "number"               // 627 (low) + 628 (high) - Total load energy (0.1kWh)
   },
 
   "battery": {
-    "totalChargeEnergyKWh": number,      // 516 (low) + 517 (high): Total battery charge (0.1kWh)
-    "totalDischargeEnergyKWh": number    // 518 (low) + 519 (high): Total battery discharge (0.1kWh)
+    "totalChargeEnergyKWh": "number",        // 616 (low) + 617 (high) - Total battery charge (0.1kWh)
+    "totalDischargeEnergyKWh": "number"      // 618 (low) + 619 (high) - Total battery discharge (0.1kWh)
   },
 
   "generator": {
-    "totalEnergyKWh": number             // 537 (low) + 538 (high): Total generator energy (0.1kWh)
+    "totalEnergyKWh": "number"               // 637 (low) + 638 (high) - Total generator energy (0.1kWh)
   }
 }

@@ -4,7 +4,7 @@
         "type": "tab",
         "label": "LoadDeviceState",
         "disabled": false,
-        "info": "Reads Load Device State from registers:\n- 526-528: Energy (daily + total)\n- 640-646: UPS power low + Load voltage\n- 650-655: Load power low + frequency\n- 656-659: Load power high\n- 696-699: UPS power high\n\nTriggers:\n1. RPC: getLoadDeviceState"
+        "info": "Reads Load Device State from registers:\n- 626: Day load energy (0.1kWh)\n- 627-628: Total load energy (0.1kWh, U32)\n- 740-743 + 796-799: UPS Load phase powers (1W, U32)\n- 744-746: Load phase voltages (0.1V)\n- 750-753 + 756-759: Load phase powers (1W, S32)\n- 755: Load frequency (0.01Hz)\n\nTriggers:\n1. RPC: getLoadDeviceState"
     },
     {
         "id": "lds_link_in_rpc",
@@ -15,10 +15,16 @@
             "rpc_lds_link_out"
         ],
         "x": 155,
-        "y": 140,
+        "y": 180,
         "wires": [
             [
-                "lds_route_to_all"
+                "lds_prepare_daily_total",
+                "lds_prepare_ups_power_low",
+                "lds_prepare_ups_power_high",
+                "lds_prepare_voltage",
+                "lds_prepare_load_power_low",
+                "lds_prepare_load_power_high",
+                "lds_prepare_freq"
             ]
         ]
     },
@@ -40,120 +46,164 @@
         "payload": "",
         "payloadType": "date",
         "x": 150,
-        "y": 220,
+        "y": 260,
         "wires": [
             [
-                "lds_route_to_all"
+                "lds_prepare_daily_total",
+                "lds_prepare_ups_power_low",
+                "lds_prepare_ups_power_high",
+                "lds_prepare_voltage",
+                "lds_prepare_load_power_low",
+                "lds_prepare_load_power_high",
+                "lds_prepare_freq"
             ]
         ]
     },
     {
-        "id": "lds_route_to_all",
+        "id": "lds_prepare_daily_total",
         "type": "function",
         "z": "load_device_state_tab",
-        "name": "Route to 5 reads",
-        "func": "// Store RPC info\nif (msg.rpcResponseTopic) {\n    flow.set(\"lds_rpc_response_topic\", msg.rpcResponseTopic);\n}\n\n// Send to all 5 parallel reads\nreturn [msg, msg, msg, msg, msg];",
-        "outputs": 5,
-        "timeout": 0,
+        "name": "Prepare read (Daily/Total 626-628)",
+        "func": "// Store RPC response topic if present\nif (msg.rpcResponseTopic) {\n    flow.set(\"lds_rpc_response_topic\", msg.rpcResponseTopic);\n}\n\n// Daily and Total load energy\n// 626: Day_Load_Power (0.1kWh)\n// 627: Total_Load_Energy Low (0.1kWh)\n// 628: Total_Load_Energy High (0.1kWh)\n\nmsg.baseAddr = 626;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 626,\n    quantity: 3\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 380,
-        "y": 180,
+        "x": 490,
+        "y": 80,
         "wires": [
-            ["lds_prepare_energy"],
-            ["lds_prepare_ups_voltage"],
-            ["lds_prepare_load_freq"],
-            ["lds_prepare_load_high"],
-            ["lds_prepare_ups_high"]
+            [
+                "lds_read_daily_total"
+            ]
         ]
     },
     {
-        "id": "lds_prepare_energy",
+        "id": "lds_prepare_ups_power_low",
         "type": "function",
         "z": "load_device_state_tab",
-        "name": "Prepare read (Energy 526-528)",
-        "func": "// Daily and Total load energy\n// 526: Day load energy (0.1kWh)\n// 527-528: Total load energy (0.1kWh, 32-bit)\n\nmsg.baseAddr = 526;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 526,\n    quantity: 3\n};\nreturn msg;",
+        "name": "Prepare read (UPS Low 740-743)",
+        "func": "// UPS Load power - LOW words\n// 740: UPS load phase A LOW (1W, U32)\n// 741: UPS load phase B LOW (1W, U32)\n// 742: UPS load phase C LOW (1W, U32)\n// 743: UPS load total LOW (1W, U32)\n\nmsg.baseAddr = 740;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 740,\n    quantity: 4\n};\nreturn msg;",
         "outputs": 1,
-        "timeout": 0,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 650,
-        "y": 60,
-        "wires": [["lds_read_energy"]]
+        "x": 490,
+        "y": 140,
+        "wires": [
+            [
+                "lds_read_ups_power_low"
+            ]
+        ]
     },
     {
-        "id": "lds_prepare_ups_voltage",
+        "id": "lds_prepare_ups_power_high",
         "type": "function",
         "z": "load_device_state_tab",
-        "name": "Prepare read (UPS/Voltage 640-646)",
-        "func": "// UPS load power (low) + Load voltage\n// 640-643: UPS phase A,B,C,total power (low word)\n// 644-646: Load phase A,B,C voltage (0.1V)\n\nmsg.baseAddr = 640;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 640,\n    quantity: 7\n};\nreturn msg;",
+        "name": "Prepare read (UPS High 796-799)",
+        "func": "// UPS Load power - HIGH words\n// 796: UPS load phase A HIGH (1W, U32)\n// 797: UPS load phase B HIGH (1W, U32)\n// 798: UPS load phase C HIGH (1W, U32)\n// 799: UPS load total HIGH (1W, U32)\n\nmsg.baseAddr = 796;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 796,\n    quantity: 4\n};\nreturn msg;",
         "outputs": 1,
-        "timeout": 0,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 670,
-        "y": 120,
-        "wires": [["lds_read_ups_voltage"]]
-    },
-    {
-        "id": "lds_prepare_load_freq",
-        "type": "function",
-        "z": "load_device_state_tab",
-        "name": "Prepare read (Load/Freq 650-655)",
-        "func": "// Load power (low) + frequency\n// 650-653: Load phase A,B,C,total power (low word)\n// 654: (skip)\n// 655: Load frequency (0.01Hz)\n\nmsg.baseAddr = 650;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 650,\n    quantity: 6\n};\nreturn msg;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 660,
+        "x": 500,
         "y": 180,
-        "wires": [["lds_read_load_freq"]]
+        "wires": [
+            [
+                "lds_read_ups_power_high"
+            ]
+        ]
     },
     {
-        "id": "lds_prepare_load_high",
+        "id": "lds_prepare_voltage",
         "type": "function",
         "z": "load_device_state_tab",
-        "name": "Prepare read (Load High 656-659)",
-        "func": "// Load power (high word)\n// 656-659: Load phase A,B,C,total power (high word)\n\nmsg.baseAddr = 656;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 656,\n    quantity: 4\n};\nreturn msg;",
+        "name": "Prepare read (Voltage 744-746)",
+        "func": "// Load phase voltages\n// 744: Load phase voltage A (0.1V)\n// 745: Load phase voltage B (0.1V)\n// 746: Load phase voltage C (0.1V)\n\nmsg.baseAddr = 744;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 744,\n    quantity: 3\n};\nreturn msg;",
         "outputs": 1,
-        "timeout": 0,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 660,
+        "x": 490,
         "y": 240,
-        "wires": [["lds_read_load_high"]]
+        "wires": [
+            [
+                "lds_read_voltage"
+            ]
+        ]
     },
     {
-        "id": "lds_prepare_ups_high",
+        "id": "lds_prepare_load_power_low",
         "type": "function",
         "z": "load_device_state_tab",
-        "name": "Prepare read (UPS High 696-699)",
-        "func": "// UPS load power (high word)\n// 696-699: UPS phase A,B,C,total power (high word)\n\nmsg.baseAddr = 696;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 696,\n    quantity: 4\n};\nreturn msg;",
+        "name": "Prepare read (Load Low 750-753)",
+        "func": "// Load power - LOW words\n// 750: Load phase A power LOW (1W, S32)\n// 751: Load phase B power LOW (1W, S32)\n// 752: Load phase C power LOW (1W, S32)\n// 753: Load total power LOW (1W, S32)\n\nmsg.baseAddr = 750;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 750,\n    quantity: 4\n};\nreturn msg;",
         "outputs": 1,
-        "timeout": 0,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 660,
+        "x": 500,
         "y": 300,
-        "wires": [["lds_read_ups_high"]]
+        "wires": [
+            [
+                "lds_read_load_power_low"
+            ]
+        ]
     },
     {
-        "id": "lds_read_energy",
+        "id": "lds_prepare_load_power_high",
+        "type": "function",
+        "z": "load_device_state_tab",
+        "name": "Prepare read (Load High 756-759)",
+        "func": "// Load power - HIGH words\n// 756: Load phase A power HIGH (1W, S32)\n// 757: Load phase B power HIGH (1W, S32)\n// 758: Load phase C power HIGH (1W, S32)\n// 759: Load total power HIGH (1W, S32)\n\nmsg.baseAddr = 756;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 756,\n    quantity: 4\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 340,
+        "wires": [
+            [
+                "lds_read_load_power_high"
+            ]
+        ]
+    },
+    {
+        "id": "lds_prepare_freq",
+        "type": "function",
+        "z": "load_device_state_tab",
+        "name": "Prepare read (Freq 755)",
+        "func": "// Load frequency\n// 755: Load frequency (0.01Hz)\n\nmsg.baseAddr = 755;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 755,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 400,
+        "wires": [
+            [
+                "lds_read_freq"
+            ]
+        ]
+    },
+    {
+        "id": "lds_read_daily_total",
         "type": "modbus-flex-getter",
         "z": "load_device_state_tab",
-        "name": "Read Energy (526-528)",
+        "name": "Read Daily/Total (626-628)",
         "showStatusActivities": true,
         "showErrors": true,
         "showWarnings": true,
@@ -166,15 +216,22 @@
         "keepMsgProperties": true,
         "delayOnStart": false,
         "startDelayTime": "",
-        "x": 930,
-        "y": 60,
-        "wires": [["lds_build_json"], ["lds_error_debug"]]
+        "x": 760,
+        "y": 80,
+        "wires": [
+            [
+                "lds_build_json"
+            ],
+            [
+                "lds_error_debug"
+            ]
+        ]
     },
     {
-        "id": "lds_read_ups_voltage",
+        "id": "lds_read_ups_power_low",
         "type": "modbus-flex-getter",
         "z": "load_device_state_tab",
-        "name": "Read UPS/Voltage (640-646)",
+        "name": "Read UPS Low (740-743)",
         "showStatusActivities": true,
         "showErrors": true,
         "showWarnings": true,
@@ -187,15 +244,22 @@
         "keepMsgProperties": true,
         "delayOnStart": false,
         "startDelayTime": "",
-        "x": 960,
-        "y": 120,
-        "wires": [["lds_build_json"], ["lds_error_debug"]]
+        "x": 760,
+        "y": 140,
+        "wires": [
+            [
+                "lds_build_json"
+            ],
+            [
+                "lds_error_debug"
+            ]
+        ]
     },
     {
-        "id": "lds_read_load_freq",
+        "id": "lds_read_ups_power_high",
         "type": "modbus-flex-getter",
         "z": "load_device_state_tab",
-        "name": "Read Load/Freq (650-655)",
+        "name": "Read UPS High (796-799)",
         "showStatusActivities": true,
         "showErrors": true,
         "showWarnings": true,
@@ -208,15 +272,22 @@
         "keepMsgProperties": true,
         "delayOnStart": false,
         "startDelayTime": "",
-        "x": 950,
+        "x": 770,
         "y": 180,
-        "wires": [["lds_build_json"], ["lds_error_debug"]]
+        "wires": [
+            [
+                "lds_build_json"
+            ],
+            [
+                "lds_error_debug"
+            ]
+        ]
     },
     {
-        "id": "lds_read_load_high",
+        "id": "lds_read_voltage",
         "type": "modbus-flex-getter",
         "z": "load_device_state_tab",
-        "name": "Read Load High (656-659)",
+        "name": "Read Voltage (744-746)",
         "showStatusActivities": true,
         "showErrors": true,
         "showWarnings": true,
@@ -229,15 +300,22 @@
         "keepMsgProperties": true,
         "delayOnStart": false,
         "startDelayTime": "",
-        "x": 950,
+        "x": 760,
         "y": 240,
-        "wires": [["lds_build_json"], ["lds_error_debug"]]
+        "wires": [
+            [
+                "lds_build_json"
+            ],
+            [
+                "lds_error_debug"
+            ]
+        ]
     },
     {
-        "id": "lds_read_ups_high",
+        "id": "lds_read_load_power_low",
         "type": "modbus-flex-getter",
         "z": "load_device_state_tab",
-        "name": "Read UPS High (696-699)",
+        "name": "Read Load Low (750-753)",
         "showStatusActivities": true,
         "showErrors": true,
         "showWarnings": true,
@@ -250,24 +328,87 @@
         "keepMsgProperties": true,
         "delayOnStart": false,
         "startDelayTime": "",
-        "x": 940,
+        "x": 770,
         "y": 300,
-        "wires": [["lds_build_json"], ["lds_error_debug"]]
+        "wires": [
+            [
+                "lds_build_json"
+            ],
+            [
+                "lds_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "lds_read_load_power_high",
+        "type": "modbus-flex-getter",
+        "z": "load_device_state_tab",
+        "name": "Read Load High (756-759)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 770,
+        "y": 340,
+        "wires": [
+            [
+                "lds_build_json"
+            ],
+            [
+                "lds_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "lds_read_freq",
+        "type": "modbus-flex-getter",
+        "z": "load_device_state_tab",
+        "name": "Read Freq (755)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 720,
+        "y": 400,
+        "wires": [
+            [
+                "lds_build_json"
+            ],
+            [
+                "lds_error_debug"
+            ]
+        ]
     },
     {
         "id": "lds_build_json",
         "type": "function",
         "z": "load_device_state_tab",
         "name": "Build LoadDeviceState JSON",
-        "func": "// Build LoadDeviceState from 5 parallel Modbus reads.\n\nlet raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nlet baseAddr = msg.baseAddr;\nif (typeof baseAddr !== \"number\") {\n    baseAddr = (msg.modbusRequest && msg.modbusRequest.address);\n}\nif (typeof baseAddr !== \"number\") {\n    node.warn(\"LoadDeviceState: missing base address\");\n    return null;\n}\n\n// Helper: combine two 16-bit words to 32-bit unsigned\nfunction u32(low, high) {\n    return ((high & 0xFFFF) << 16) | (low & 0xFFFF);\n}\n\n// Helper: combine two 16-bit words to 32-bit signed\nfunction s32(low, high) {\n    const val = u32(low, high);\n    return (val & 0x80000000) ? val - 0x100000000 : val;\n}\n\n// ---- Store partials ----\n\n// Energy 526-528\nif (baseAddr === 526) {\n    const dailyRaw = data[0] || 0;      // 526\n    const totalLow = data[1] || 0;      // 527\n    const totalHigh = data[2] || 0;     // 528\n    \n    flow.set(\"lds_part_energy\", {\n        todayEnergyKWh: Math.round(dailyRaw * 0.1 * 10) / 10,\n        totalEnergyKWh: Math.round(u32(totalLow, totalHigh) * 0.1 * 10) / 10\n    });\n}\n\n// UPS/Voltage 640-646\nelse if (baseAddr === 640) {\n    const upsALow = data[0] || 0;       // 640\n    const upsBLow = data[1] || 0;       // 641\n    const upsCLow = data[2] || 0;       // 642\n    const upsTotalLow = data[3] || 0;   // 643\n    const voltageA = data[4] || 0;      // 644 (0.1V)\n    const voltageB = data[5] || 0;      // 645 (0.1V)\n    const voltageC = data[6] || 0;      // 646 (0.1V)\n    \n    flow.set(\"lds_part_ups_voltage\", {\n        upsALow: upsALow,\n        upsBLow: upsBLow,\n        upsCLow: upsCLow,\n        upsTotalLow: upsTotalLow,\n        phaseAVoltageV: Math.round(voltageA * 0.1 * 10) / 10,\n        phaseBVoltageV: Math.round(voltageB * 0.1 * 10) / 10,\n        phaseCVoltageV: Math.round(voltageC * 0.1 * 10) / 10\n    });\n}\n\n// Load/Freq 650-655\nelse if (baseAddr === 650) {\n    const loadALow = data[0] || 0;      // 650\n    const loadBLow = data[1] || 0;      // 651\n    const loadCLow = data[2] || 0;      // 652\n    const loadTotalLow = data[3] || 0;  // 653\n    // data[4] = 654 (skip)\n    const freq = data[5] || 0;          // 655 (0.01Hz)\n    \n    flow.set(\"lds_part_load_freq\", {\n        loadALow: loadALow,\n        loadBLow: loadBLow,\n        loadCLow: loadCLow,\n        loadTotalLow: loadTotalLow,\n        frequencyHz: Math.round(freq * 0.01 * 100) / 100\n    });\n}\n\n// Load High 656-659\nelse if (baseAddr === 656) {\n    const loadAHigh = data[0] || 0;     // 656\n    const loadBHigh = data[1] || 0;     // 657\n    const loadCHigh = data[2] || 0;     // 658\n    const loadTotalHigh = data[3] || 0; // 659\n    \n    flow.set(\"lds_part_load_high\", {\n        loadAHigh: loadAHigh,\n        loadBHigh: loadBHigh,\n        loadCHigh: loadCHigh,\n        loadTotalHigh: loadTotalHigh\n    });\n}\n\n// UPS High 696-699\nelse if (baseAddr === 696) {\n    const upsAHigh = data[0] || 0;      // 696\n    const upsBHigh = data[1] || 0;      // 697\n    const upsCHigh = data[2] || 0;      // 698\n    const upsTotalHigh = data[3] || 0;  // 699\n    \n    flow.set(\"lds_part_ups_high\", {\n        upsAHigh: upsAHigh,\n        upsBHigh: upsBHigh,\n        upsCHigh: upsCHigh,\n        upsTotalHigh: upsTotalHigh\n    });\n}\nelse {\n    return null;\n}\n\n// ---- Try to assemble ----\n\nconst energyPart = flow.get(\"lds_part_energy\");\nconst upsVoltagePart = flow.get(\"lds_part_ups_voltage\");\nconst loadFreqPart = flow.get(\"lds_part_load_freq\");\nconst loadHighPart = flow.get(\"lds_part_load_high\");\nconst upsHighPart = flow.get(\"lds_part_ups_high\");\n\nif (!energyPart || !upsVoltagePart || !loadFreqPart || !loadHighPart || !upsHighPart) {\n    return null;  // Wait for all 5 parts\n}\n\n// Combine 32-bit power values\nconst loadAPower = s32(loadFreqPart.loadALow, loadHighPart.loadAHigh);\nconst loadBPower = s32(loadFreqPart.loadBLow, loadHighPart.loadBHigh);\nconst loadCPower = s32(loadFreqPart.loadCLow, loadHighPart.loadCHigh);\nconst loadTotalPower = s32(loadFreqPart.loadTotalLow, loadHighPart.loadTotalHigh);\n\nconst upsAPower = s32(upsVoltagePart.upsALow, upsHighPart.upsAHigh);\nconst upsBPower = s32(upsVoltagePart.upsBLow, upsHighPart.upsBHigh);\nconst upsCPower = s32(upsVoltagePart.upsCLow, upsHighPart.upsCHigh);\nconst upsTotalPower = s32(upsVoltagePart.upsTotalLow, upsHighPart.upsTotalHigh);\n\nconst deviceId = msg.deviceId\n    || global.get(\"DEVICE_ID\")\n    || env.get(\"DEVICE_ID\")\n    || \"EC100-DEV-001\";\n\nconst state = {\n    kind: \"LoadDeviceState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    DeviceId: deviceId,\n    \n    scope: \"backup_load\",\n    \n    loadPower: {\n        totalActivePowerW: loadTotalPower,\n        phaseAPowerW: loadAPower,\n        phaseBPowerW: loadBPower,\n        phaseCPowerW: loadCPower\n    },\n    \n    loadVoltage: {\n        phaseAVoltageV: upsVoltagePart.phaseAVoltageV,\n        phaseBVoltageV: upsVoltagePart.phaseBVoltageV,\n        phaseCVoltageV: upsVoltagePart.phaseCVoltageV\n    },\n    \n    frequencyHz: loadFreqPart.frequencyHz,\n    \n    upsLoadPower: {\n        totalPowerW: upsTotalPower,\n        phaseAPowerW: upsAPower,\n        phaseBPowerW: upsBPower,\n        phaseCPowerW: upsCPower\n    },\n    \n    todayEnergyKWh: energyPart.todayEnergyKWh,\n    totalEnergyKWh: energyPart.totalEnergyKWh\n};\n\n// Clear partials\nflow.set(\"lds_part_energy\", null);\nflow.set(\"lds_part_ups_voltage\", null);\nflow.set(\"lds_part_load_freq\", null);\nflow.set(\"lds_part_load_high\", null);\nflow.set(\"lds_part_ups_high\", null);\n\n// Get RPC info\nconst rpcResponseTopic = flow.get(\"lds_rpc_response_topic\");\nflow.set(\"lds_rpc_response_topic\", null);\n\nflow.set(\"loadDeviceStateSnapshot\", state);\n\nmsg.payload = state;\nmsg.state = state;\nmsg.rpcResponseTopic = rpcResponseTopic;\n\nreturn msg;",
+        "func": "let raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nlet baseAddr = msg.baseAddr;\nif (typeof baseAddr !== \"number\") {\n    baseAddr = (msg.modbusRequest && msg.modbusRequest.address);\n}\nif (typeof baseAddr !== \"number\") {\n    return null;\n}\n\nfunction s32(low, high) {\n    const u = ((high & 0xFFFF) << 16) | (low & 0xFFFF);\n    return (u & 0x80000000) ? u - 0x100000000 : u;\n}\n\nfunction u32(low, high) {\n    return ((high & 0xFFFF) << 16) | (low & 0xFFFF);\n}\n\n// Daily/Total 626-628\nif (baseAddr === 626) {\n    const daily = data[0] || 0;\n    const totalLow = data[1] || 0;\n    const totalHigh = data[2] || 0;\n    \n    flow.set(\"lds_part_energy\", {\n        todayEnergyKWh: Math.round(daily * 0.1 * 100) / 100,\n        totalEnergyKWh: Math.round(u32(totalLow, totalHigh) * 0.1 * 100) / 100\n    });\n}\n\n// UPS Power Low 740-743\nelse if (baseAddr === 740) {\n    flow.set(\"lds_part_ups_low\", {\n        phaseA: data[0] || 0,\n        phaseB: data[1] || 0,\n        phaseC: data[2] || 0,\n        total: data[3] || 0\n    });\n}\n\n// UPS Power High 796-799\nelse if (baseAddr === 796) {\n    const low = flow.get(\"lds_part_ups_low\");\n    if (low) {\n        flow.set(\"lds_part_ups_power\", {\n            phaseAPowerW: u32(low.phaseA, data[0]),\n            phaseBPowerW: u32(low.phaseB, data[1]),\n            phaseCPowerW: u32(low.phaseC, data[2]),\n            totalPowerW: u32(low.total, data[3])\n        });\n    }\n}\n\n// Voltage 744-746\nelse if (baseAddr === 744) {\n    flow.set(\"lds_part_voltage\", {\n        phaseAVoltageV: Math.round(data[0] * 0.1 * 10) / 10,\n        phaseBVoltageV: Math.round(data[1] * 0.1 * 10) / 10,\n        phaseCVoltageV: Math.round(data[2] * 0.1 * 10) / 10\n    });\n}\n\n// Load Power Low 750-753\nelse if (baseAddr === 750) {\n    flow.set(\"lds_part_load_low\", {\n        phaseA: data[0] || 0,\n        phaseB: data[1] || 0,\n        phaseC: data[2] || 0,\n        total: data[3] || 0\n    });\n}\n\n// Load Power High 756-759\nelse if (baseAddr === 756) {\n    const low = flow.get(\"lds_part_load_low\");\n    if (low) {\n        flow.set(\"lds_part_load_power\", {\n            phaseAPowerW: s32(low.phaseA, data[0]),\n            phaseBPowerW: s32(low.phaseB, data[1]),\n            phaseCPowerW: s32(low.phaseC, data[2]),\n            totalActivePowerW: s32(low.total, data[3])\n        });\n    }\n}\n\n// Freq 755\nelse if (baseAddr === 755) {\n    flow.set(\"lds_part_freq\", {\n        frequencyHz: Math.round((data[0] || 0) * 0.01 * 100) / 100\n    });\n}\nelse {\n    return null;\n}\n\n// Assemble\nconst energyPart = flow.get(\"lds_part_energy\");\nconst upsPowerPart = flow.get(\"lds_part_ups_power\");\nconst voltagePart = flow.get(\"lds_part_voltage\");\nconst loadPowerPart = flow.get(\"lds_part_load_power\");\nconst freqPart = flow.get(\"lds_part_freq\");\n\nif (!energyPart || !upsPowerPart || !voltagePart || !loadPowerPart || !freqPart) {\n    return null;\n}\n\nconst deviceId = msg.deviceId || global.get(\"DEVICE_ID\") || env.get(\"DEVICE_ID\") || \"EC100\";\n\nconst state = {\n    kind: \"LoadDeviceState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    DeviceId: deviceId,\n    \n    scope: \"backup_load\",\n    \n    loadPower: {\n        totalActivePowerW: loadPowerPart.totalActivePowerW,\n        phaseAPowerW: loadPowerPart.phaseAPowerW,\n        phaseBPowerW: loadPowerPart.phaseBPowerW,\n        phaseCPowerW: loadPowerPart.phaseCPowerW\n    },\n    \n    loadVoltage: {\n        phaseAVoltageV: voltagePart.phaseAVoltageV,\n        phaseBVoltageV: voltagePart.phaseBVoltageV,\n        phaseCVoltageV: voltagePart.phaseCVoltageV\n    },\n    \n    frequencyHz: freqPart.frequencyHz,\n    \n    upsLoadPower: {\n        totalPowerW: upsPowerPart.totalPowerW,\n        phaseAPowerW: upsPowerPart.phaseAPowerW,\n        phaseBPowerW: upsPowerPart.phaseBPowerW,\n        phaseCPowerW: upsPowerPart.phaseCPowerW\n    },\n    \n    todayEnergyKWh: energyPart.todayEnergyKWh,\n    totalEnergyKWh: energyPart.totalEnergyKWh\n};\n\n// Clear partials\nflow.set(\"lds_part_energy\", null);\nflow.set(\"lds_part_ups_low\", null);\nflow.set(\"lds_part_ups_power\", null);\nflow.set(\"lds_part_voltage\", null);\nflow.set(\"lds_part_load_low\", null);\nflow.set(\"lds_part_load_power\", null);\nflow.set(\"lds_part_freq\", null);\n\nflow.set(\"loadDeviceStateSnapshot\", state);\n\nmsg.payload = state;\nmsg.state = state;\nreturn msg;",
         "outputs": 1,
-        "timeout": 0,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1250,
-        "y": 180,
+        "x": 1040,
+        "y": 240,
         "wires": [
             [
                 "lds_debug_json",
@@ -276,52 +417,18 @@
         ]
     },
     {
-        "id": "lds_debug_json",
-        "type": "debug",
-        "z": "load_device_state_tab",
-        "name": "LoadDeviceState JSON",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "payload",
-        "targetType": "msg",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 1530,
-        "y": 120,
-        "wires": []
-    },
-    {
-        "id": "lds_error_debug",
-        "type": "debug",
-        "z": "load_device_state_tab",
-        "name": "LoadDeviceState CRC/Error",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": true,
-        "complete": "payload",
-        "targetType": "msg",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 1260,
-        "y": 360,
-        "wires": []
-    },
-    {
         "id": "lds_rpc_response",
         "type": "function",
         "z": "load_device_state_tab",
         "name": "Prepare RPC Response",
-        "func": "// Only handle messages that came from RPC\nif (!msg.rpcResponseTopic) {\n    return null;\n}\n\nconst state = msg.state || msg.payload;\n\nmsg.payload = state;\nmsg.topic = msg.rpcResponseTopic;\n\nreturn msg;",
+        "func": "const rpcTopic = flow.get(\"lds_rpc_response_topic\");\nif (!rpcTopic) {\n    return null;\n}\n\nconst state = msg.state || msg.payload;\nmsg.payload = { success: true, data: state };\nmsg.topic = rpcTopic;\n\nflow.set(\"lds_rpc_response_topic\", null);\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1530,
+        "x": 1310,
         "y": 240,
         "wires": [
             [
@@ -343,45 +450,79 @@
         "correl": "",
         "expiry": "",
         "broker": "tb-broker",
-        "x": 1760,
+        "x": 1530,
         "y": 240,
         "wires": []
     },
     {
-        "id": "lds_comment_rpc",
+        "id": "lds_debug_json",
+        "type": "debug",
+        "z": "load_device_state_tab",
+        "name": "LoadDeviceState JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1320,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "lds_error_debug",
+        "type": "debug",
+        "z": "load_device_state_tab",
+        "name": "LoadDeviceState Error",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1030,
+        "y": 480,
+        "wires": []
+    },
+    {
+        "id": "lds_comment",
         "type": "comment",
         "z": "load_device_state_tab",
-        "name": "RPC Trigger Only (getLoadDeviceState) - 5 parallel reads, 32-bit power",
+        "name": "THREE-PHASE: RPC only - Phase A/B/C voltages and powers (Load + UPS Load) with S32/U32",
         "info": "",
-        "x": 330,
-        "y": 40,
+        "x": 420,
+        "y": 20,
         "wires": []
     },
     {
         "id": "e4e4f3e2a4f4e004",
         "type": "modbus-client",
-        "name": "RS485-1 Inverter",
-        "clienttype": "serial",
+        "name": "EC100 Modbus",
+        "clienttype": "tcp",
         "bufferCommands": true,
         "stateLogEnabled": false,
         "queueLogEnabled": false,
-        "failureLogEnabled": false,
-        "tcpHost": "127.0.0.1",
+        "failureLogEnabled": true,
+        "tcpHost": "192.168.1.100",
         "tcpPort": "502",
         "tcpType": "DEFAULT",
-        "serialPort": "/dev/ttyS4",
-        "serialType": "RTU",
+        "serialPort": "/dev/ttyUSB0",
+        "serialType": "RTU-BUFFERD",
         "serialBaudrate": "9600",
         "serialDatabits": "8",
         "serialStopbits": "1",
         "serialParity": "none",
         "serialConnectionDelay": "100",
-        "serialAsciiResponseStartDelimiter": "",
-        "unit_id": 1,
-        "commandDelay": 50,
-        "clientTimeout": 1000,
+        "serialAsciiResponseStartDelimiter": "0x3A",
+        "unit_id": "1",
+        "commandDelay": "1",
+        "clientTimeout": "1000",
         "reconnectOnTimeout": true,
-        "reconnectTimeout": 2000,
+        "reconnectTimeout": "2000",
         "parallelUnitIdsAllowed": true,
         "showErrors": false,
         "showWarnings": true,
@@ -415,8 +556,6 @@
         "willQos": "0",
         "willRetain": "false",
         "willPayload": "",
-        "willMsg": {},
-        "userProps": "",
-        "sessionExpiry": ""
+        "willMsg": {}
     }
 ]

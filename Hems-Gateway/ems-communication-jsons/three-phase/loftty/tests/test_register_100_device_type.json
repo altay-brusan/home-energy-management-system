@@ -1,0 +1,176 @@
+[
+    {
+        "id": "test_reg100_tab",
+        "type": "tab",
+        "label": "TEST_Register100_DeviceType",
+        "disabled": false,
+        "info": "Test: Register 100 (Device Type)\n\nDevice Type Values:\n- 0x03 (3): Single phase hybrid\n- 0x05 (5): Three phase hybrid\n- 0x06 (6): Three phase inverter"
+    },
+    {
+        "id": "test_reg100_inject",
+        "type": "inject",
+        "z": "test_reg100_tab",
+        "name": "Read Register 100",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 170,
+        "y": 100,
+        "wires": [
+            [
+                "test_reg100_prepare"
+            ]
+        ]
+    },
+    {
+        "id": "test_reg100_prepare",
+        "type": "function",
+        "z": "test_reg100_tab",
+        "name": "Prepare Read 100",
+        "func": "// Read Register 100: Device Type\nmsg.payload = {\n    fc: 3,           // Function Code 3 (Read Holding Registers)\n    unitid: 1,       // Unit ID\n    address: 100,    // Register 100\n    quantity: 1      // Read 1 register\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 100,
+        "wires": [
+            [
+                "test_reg100_read"
+            ]
+        ]
+    },
+    {
+        "id": "test_reg100_read",
+        "type": "modbus-flex-getter",
+        "z": "test_reg100_tab",
+        "name": "Read Register",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 590,
+        "y": 100,
+        "wires": [
+            [
+                "test_reg100_parse"
+            ],
+            [
+                "test_reg100_error"
+            ]
+        ]
+    },
+    {
+        "id": "test_reg100_parse",
+        "type": "function",
+        "z": "test_reg100_tab",
+        "name": "Parse Device Type",
+        "func": "// Parse Register 100 value\nconst data = msg.payload.data || msg.payload;\nconst value = data[0];\n\n// Decode device type\nlet deviceType = 'Unknown';\nlet deviceTypeCode = value;\n\nswitch(value) {\n    case 0x03:\n    case 3:\n        deviceType = 'Single Phase Hybrid';\n        break;\n    case 0x05:\n    case 5:\n        deviceType = 'Three Phase Hybrid';\n        break;\n    case 0x06:\n    case 6:\n        deviceType = 'Three Phase Inverter';\n        break;\n    default:\n        deviceType = 'Unknown Type';\n}\n\nmsg.payload = {\n    register: 100,\n    rawValue: value,\n    hexValue: '0x' + value.toString(16).toUpperCase().padStart(2, '0'),\n    deviceType: deviceType,\n    deviceTypeCode: deviceTypeCode\n};\n\nnode.status({\n    fill: 'green',\n    shape: 'dot',\n    text: deviceType + ' (' + msg.payload.hexValue + ')'\n});\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 800,
+        "y": 100,
+        "wires": [
+            [
+                "test_reg100_debug"
+            ]
+        ]
+    },
+    {
+        "id": "test_reg100_debug",
+        "type": "debug",
+        "z": "test_reg100_tab",
+        "name": "Device Type Result",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1030,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "test_reg100_error",
+        "type": "debug",
+        "z": "test_reg100_tab",
+        "name": "Error",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 770,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "test_reg100_comment",
+        "type": "comment",
+        "z": "test_reg100_tab",
+        "name": "Register 100: Device Type (0x03=Single, 0x05=Three Phase Hybrid, 0x06=Three Phase Inverter)",
+        "info": "## Register 100 - Device Type\n\n### Values:\n- **0x03 (3)**: Single phase hybrid inverter\n- **0x05 (5)**: Three phase hybrid inverter\n- **0x06 (6)**: Three phase inverter\n\n### Test Flow:\n1. Inject button triggers read\n2. Prepare: FC3, Address 100, Quantity 1\n3. Modbus Read\n4. Parse and decode device type\n5. Display result in debug\n\n### Expected Output:\n```json\n{\n  \"register\": 100,\n  \"rawValue\": 5,\n  \"hexValue\": \"0x05\",\n  \"deviceType\": \"Three Phase Hybrid\",\n  \"deviceTypeCode\": 5\n}\n```",
+        "x": 420,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "EC100 Modbus",
+        "clienttype": "tcp",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": true,
+        "tcpHost": "192.168.1.100",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyUSB0",
+        "serialType": "RTU-BUFFERD",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "0x3A",
+        "unit_id": "1",
+        "commandDelay": "1",
+        "clientTimeout": "1000",
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": "2000",
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    }
+]

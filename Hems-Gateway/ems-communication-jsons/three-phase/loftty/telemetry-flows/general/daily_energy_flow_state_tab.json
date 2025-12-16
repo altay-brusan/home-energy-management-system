@@ -4,7 +4,7 @@
         "type": "tab",
         "label": "DailyEnergyFlowState",
         "disabled": false,
-        "info": "Reads Daily Energy Flow State from registers:\n- 514-515: Battery charge/discharge\n- 520-521: Grid import/export\n- 526: Load\n- 529-533: PV total + MPPT 1-4\n- 536: Generator\n\nTriggers:\n1. Daily at 23:59\n2. Manual\n3. RPC: getDailyEnergyFlowState"
+        "info": "Reads Daily Energy Flow State from registers:\n- 614-615: Battery charge/discharge\n- 620-621: Grid buy/sell\n- 626: Load\n- 629: PV\n- 636: Generator\n\nTriggers:\n1. Daily at 23:59\n2. Manual\n3. RPC: getDailyEnergyFlowState"
     },
     {
         "id": "def_link_in_rpc",
@@ -18,7 +18,9 @@
         "y": 60,
         "wires": [
             [
-                "def_route_to_both"
+                "def_prepare_batt",
+                "def_prepare_grid",
+                "def_prepare_load_pv_gen"
             ]
         ]
     },
@@ -39,7 +41,7 @@
         "name": "Cron: Daily at 23:59",
         "info": "",
         "x": 160,
-        "y": 120,
+        "y": 100,
         "wires": []
     },
     {
@@ -60,10 +62,12 @@
         "payload": "",
         "payloadType": "date",
         "x": 150,
-        "y": 160,
+        "y": 140,
         "wires": [
             [
-                "def_route_to_both"
+                "def_prepare_batt",
+                "def_prepare_grid",
+                "def_prepare_load_pv_gen"
             ]
         ]
     },
@@ -85,81 +89,80 @@
         "payload": "",
         "payloadType": "date",
         "x": 150,
+        "y": 200,
+        "wires": [
+            [
+                "def_prepare_batt",
+                "def_prepare_grid",
+                "def_prepare_load_pv_gen"
+            ]
+        ]
+    },
+    {
+        "id": "def_prepare_batt",
+        "type": "function",
+        "z": "daily_energy_flow_state_tab",
+        "name": "Prepare read (Battery 614-615)",
+        "func": "// Store RPC response topic if present\nif (msg.rpcResponseTopic) {\n    flow.set(\"def_rpc_response_topic\", msg.rpcResponseTopic);\n}\n\n// Battery daily energy\n// 614: Today charge (0.1kWh)\n// 615: Today discharge (0.1kWh)\n\nmsg.baseAddr = 614;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 614,\n    quantity: 2  // 614-615\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 450,
+        "y": 100,
+        "wires": [
+            [
+                "def_read_batt"
+            ]
+        ]
+    },
+    {
+        "id": "def_prepare_grid",
+        "type": "function",
+        "z": "daily_energy_flow_state_tab",
+        "name": "Prepare read (Grid 620-621)",
+        "func": "// Grid daily energy\n// 620: Day_GridBuy_Power (0.1kWh)\n// 621: Day_GridSell_Power (0.1kWh)\n\nmsg.baseAddr = 620;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 620,\n    quantity: 2  // 620-621\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 440,
+        "y": 160,
+        "wires": [
+            [
+                "def_read_grid"
+            ]
+        ]
+    },
+    {
+        "id": "def_prepare_load_pv_gen",
+        "type": "function",
+        "z": "daily_energy_flow_state_tab",
+        "name": "Prepare read (Load/PV/Gen 626-636)",
+        "func": "// Load, PV, Generator daily energy\n// 626: Day_Load_Power (0.1kWh)\n// 627-628: (skip)\n// 629: Day_PV_Power (0.1kWh)\n// 630-635: (skip)\n// 636: Generator daily (0.1kWh)\n\nmsg.baseAddr = 626;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 626,\n    quantity: 11  // 626-636\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 470,
         "y": 220,
         "wires": [
             [
-                "def_route_to_both"
+                "def_read_load_pv_gen"
             ]
         ]
     },
     {
-        "id": "def_route_to_both",
-        "type": "function",
-        "z": "daily_energy_flow_state_tab",
-        "name": "Route to both reads",
-        "func": "// Store RPC response topic if present\nif (msg.rpcResponseTopic) {\n    flow.set(\"def_rpc_response_topic\", msg.rpcResponseTopic);\n}\n\n// Send to both parallel reads\nreturn [msg, msg];",
-        "outputs": 2,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 390,
-        "y": 140,
-        "wires": [
-            [
-                "def_prepare_batt_grid_load"
-            ],
-            [
-                "def_prepare_pv_gen"
-            ]
-        ]
-    },
-    {
-        "id": "def_prepare_batt_grid_load",
-        "type": "function",
-        "z": "daily_energy_flow_state_tab",
-        "name": "Prepare read (Batt/Grid/Load 514-526)",
-        "func": "// Battery, Grid, Load daily energy\n// 514: Battery Charge\n// 515: Battery Discharge\n// 516-519: (skip)\n// 520: Grid Import\n// 521: Grid Export\n// 522-525: (skip)\n// 526: Load\n\nmsg.baseAddr = 514;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 514,\n    quantity: 13  // 514-526\n};\nreturn msg;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 680,
-        "y": 100,
-        "wires": [
-            [
-                "def_read_batt_grid_load"
-            ]
-        ]
-    },
-    {
-        "id": "def_prepare_pv_gen",
-        "type": "function",
-        "z": "daily_energy_flow_state_tab",
-        "name": "Prepare read (PV/Gen 529-536)",
-        "func": "// PV and Generator daily energy\n// 529: PV Total\n// 530: PV MPPT1\n// 531: PV MPPT2\n// 532: PV MPPT3\n// 533: PV MPPT4\n// 534-535: (skip)\n// 536: Generator\n\nmsg.baseAddr = 529;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 529,\n    quantity: 8  // 529-536\n};\nreturn msg;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 650,
-        "y": 180,
-        "wires": [
-            [
-                "def_read_pv_gen"
-            ]
-        ]
-    },
-    {
-        "id": "def_read_batt_grid_load",
+        "id": "def_read_batt",
         "type": "modbus-flex-getter",
         "z": "daily_energy_flow_state_tab",
-        "name": "Read Batt/Grid/Load (514-526)",
+        "name": "Read Battery (614-615)",
         "showStatusActivities": true,
         "showErrors": true,
         "showWarnings": true,
@@ -172,22 +175,20 @@
         "keepMsgProperties": true,
         "delayOnStart": false,
         "startDelayTime": "",
-        "x": 970,
+        "x": 720,
         "y": 100,
         "wires": [
             [
                 "def_build_json"
             ],
-            [
-                "def_error_debug"
-            ]
+            []
         ]
     },
     {
-        "id": "def_read_pv_gen",
+        "id": "def_read_grid",
         "type": "modbus-flex-getter",
         "z": "daily_energy_flow_state_tab",
-        "name": "Read PV/Gen (529-536)",
+        "name": "Read Grid (620-621)",
         "showStatusActivities": true,
         "showErrors": true,
         "showWarnings": true,
@@ -200,15 +201,39 @@
         "keepMsgProperties": true,
         "delayOnStart": false,
         "startDelayTime": "",
-        "x": 940,
-        "y": 180,
+        "x": 710,
+        "y": 160,
         "wires": [
             [
                 "def_build_json"
             ],
+            []
+        ]
+    },
+    {
+        "id": "def_read_load_pv_gen",
+        "type": "modbus-flex-getter",
+        "z": "daily_energy_flow_state_tab",
+        "name": "Read Load/PV/Gen (626-636)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 740,
+        "y": 220,
+        "wires": [
             [
-                "def_error_debug"
-            ]
+                "def_build_json"
+            ],
+            []
         ]
     },
     {
@@ -216,50 +241,29 @@
         "type": "function",
         "z": "daily_energy_flow_state_tab",
         "name": "Build DailyEnergyFlowState JSON",
-        "func": "// Build DailyEnergyFlowState from multiple Modbus reads.\n\nlet raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nlet baseAddr = msg.baseAddr;\nif (typeof baseAddr !== \"number\") {\n    baseAddr = (msg.modbusRequest && msg.modbusRequest.address);\n}\nif (typeof baseAddr !== \"number\") {\n    node.warn(\"DailyEnergyFlowState: missing base address\");\n    return null;\n}\n\n// ---- Store partials ----\n\n// Batt/Grid/Load 514-526\nif (baseAddr === 514) {\n    const battCharge = data[0] || 0;         // 514\n    const battDischarge = data[1] || 0;      // 515\n    const gridImport = data[6] || 0;         // 520\n    const gridExport = data[7] || 0;         // 521\n    const loadEnergy = data[12] || 0;        // 526\n    \n    flow.set(\"def_part_batt_grid_load\", {\n        chargeEnergyKWh: Math.round((battCharge * 0.1) * 10) / 10,\n        dischargeEnergyKWh: Math.round((battDischarge * 0.1) * 10) / 10,\n        importEnergyKWh: Math.round((gridImport * 0.1) * 10) / 10,\n        exportEnergyKWh: Math.round((gridExport * 0.1) * 10) / 10,\n        loadEnergyKWh: Math.round((loadEnergy * 0.1) * 10) / 10\n    });\n}\n\n// PV/Gen 529-536\nelse if (baseAddr === 529) {\n    const pvTotal = data[0] || 0;            // 529\n    const pvMppt1 = data[1] || 0;            // 530\n    const pvMppt2 = data[2] || 0;            // 531\n    const pvMppt3 = data[3] || 0;            // 532\n    const pvMppt4 = data[4] || 0;            // 533\n    const genEnergy = data[7] || 0;          // 536\n    \n    flow.set(\"def_part_pv_gen\", {\n        pvTotalEnergyKWh: Math.round((pvTotal * 0.1) * 10) / 10,\n        pvMppt1EnergyKWh: Math.round((pvMppt1 * 0.1) * 10) / 10,\n        pvMppt2EnergyKWh: Math.round((pvMppt2 * 0.1) * 10) / 10,\n        pvMppt3EnergyKWh: Math.round((pvMppt3 * 0.1) * 10) / 10,\n        pvMppt4EnergyKWh: Math.round((pvMppt4 * 0.1) * 10) / 10,\n        genEnergyKWh: Math.round((genEnergy * 0.1) * 10) / 10\n    });\n}\nelse {\n    return null;\n}\n\n// ---- Try to assemble ----\n\nconst battGridLoadPart = flow.get(\"def_part_batt_grid_load\");\nconst pvGenPart = flow.get(\"def_part_pv_gen\");\n\nif (!battGridLoadPart || !pvGenPart) {\n    return null;  // Wait for both\n}\n\nconst deviceId = msg.deviceId\n    || global.get(\"DEVICE_ID\")\n    || env.get(\"DEVICE_ID\")\n    || \"EC100-DEV-001\";\n\nconst state = {\n    kind: \"DailyEnergyFlowState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    DeviceId: deviceId,\n    \n    loadEnergyKWh: battGridLoadPart.loadEnergyKWh,\n    \n    grid: {\n        importEnergyKWh: battGridLoadPart.importEnergyKWh,\n        exportEnergyKWh: battGridLoadPart.exportEnergyKWh\n    },\n    \n    pv: {\n        totalEnergyKWh: pvGenPart.pvTotalEnergyKWh,\n        mppt: [\n            { id: 1, energyKWh: pvGenPart.pvMppt1EnergyKWh },\n            { id: 2, energyKWh: pvGenPart.pvMppt2EnergyKWh },\n            { id: 3, energyKWh: pvGenPart.pvMppt3EnergyKWh },\n            { id: 4, energyKWh: pvGenPart.pvMppt4EnergyKWh }\n        ]\n    },\n    \n    battery: {\n        chargeEnergyKWh: battGridLoadPart.chargeEnergyKWh,\n        dischargeEnergyKWh: battGridLoadPart.dischargeEnergyKWh\n    },\n    \n    generator: {\n        energyKWh: pvGenPart.genEnergyKWh\n    }\n};\n\n// Clear partials\nflow.set(\"def_part_batt_grid_load\", null);\nflow.set(\"def_part_pv_gen\", null);\n\n// Get RPC response topic if present\nconst rpcResponseTopic = flow.get(\"def_rpc_response_topic\");\nflow.set(\"def_rpc_response_topic\", null);\n\nflow.set(\"dailyEnergyFlowStateSnapshot\", state);\n\nmsg.payload = state;\nmsg.state = state;\nmsg.rpcResponseTopic = rpcResponseTopic;\n\nreturn msg;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 1240,
-        "y": 140,
-        "wires": [
-            [
-                "def_debug_json",
-                "def_check_rpc"
-            ]
-        ]
-    },
-    {
-        "id": "def_check_rpc",
-        "type": "function",
-        "z": "daily_energy_flow_state_tab",
-        "name": "Check if RPC",
-        "func": "if (msg.rpcResponseTopic) {\n    msg.topic = msg.rpcResponseTopic;\n    return [msg, null];  // RPC response\n} else {\n    return [null, msg];  // MQTT telemetry\n}",
+        "func": "const base = msg.baseAddr;\nconst data = msg.payload.data || msg.payload;\n\n// Store partial results in flow context\nif (base === 614) {\n    // Battery: 614-615\n    flow.set(\"def_battery\", {\n        chargeEnergyKWh: data[0] * 0.1,      // 614\n        dischargeEnergyKWh: data[1] * 0.1    // 615\n    });\n}\nelse if (base === 620) {\n    // Grid: 620-621\n    flow.set(\"def_grid\", {\n        importEnergyKWh: data[0] * 0.1,      // 620\n        exportEnergyKWh: data[1] * 0.1       // 621\n    });\n}\nelse if (base === 626) {\n    // Load/PV/Gen: 626, 629, 636\n    flow.set(\"def_load\", data[0] * 0.1);                    // 626\n    flow.set(\"def_pv\", data[3] * 0.1);                      // 629 (offset 3)\n    flow.set(\"def_generator\", data[10] * 0.1);              // 636 (offset 10)\n}\n\n// Check if all parts are ready\nconst battery = flow.get(\"def_battery\");\nconst grid = flow.get(\"def_grid\");\nconst load = flow.get(\"def_load\");\nconst pv = flow.get(\"def_pv\");\nconst generator = flow.get(\"def_generator\");\n\nif (!battery || !grid || load === undefined || pv === undefined || generator === undefined) {\n    return null;  // Wait for all parts\n}\n\n// All data collected, build final JSON\nconst result = {\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    DeviceId: \"EC100\",\n    \n    loadEnergyKWh: load,\n    \n    grid: {\n        importEnergyKWh: grid.importEnergyKWh,\n        exportEnergyKWh: grid.exportEnergyKWh\n    },\n    \n    pv: {\n        totalEnergyKWh: pv,\n        mppt: [\n            { id: 1, energyKWh: null },  // Not available in datasheet\n            { id: 2, energyKWh: null },\n            { id: 3, energyKWh: null },\n            { id: 4, energyKWh: null }\n        ]\n    },\n    \n    battery: {\n        chargeEnergyKWh: battery.chargeEnergyKWh,\n        dischargeEnergyKWh: battery.dischargeEnergyKWh\n    },\n    \n    generator: {\n        energyKWh: generator\n    }\n};\n\n// Clear flow context\nflow.set(\"def_battery\", null);\nflow.set(\"def_grid\", null);\nflow.set(\"def_load\", null);\nflow.set(\"def_pv\", null);\nflow.set(\"def_generator\", null);\n\n// Check if this is an RPC request\nconst rpcTopic = flow.get(\"def_rpc_response_topic\");\nif (rpcTopic) {\n    // Send RPC response\n    msg.payload = { success: true, data: result };\n    msg.topic = rpcTopic;\n    flow.set(\"def_rpc_response_topic\", null);\n    return [msg, null];\n} else {\n    // Send telemetry\n    msg.payload = result;\n    return [null, msg];\n}",
         "outputs": 2,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1520,
-        "y": 140,
+        "x": 1010,
+        "y": 160,
         "wires": [
             [
-                "def_mqtt_response"
+                "def_send_rpc_response"
             ],
             [
-                "def_mqtt_telemetry"
+                "def_send_telemetry"
             ]
         ]
     },
     {
-        "id": "def_mqtt_response",
+        "id": "def_send_rpc_response",
         "type": "mqtt out",
         "z": "daily_energy_flow_state_tab",
-        "name": "MQTT Response",
+        "name": "RPC Response",
         "topic": "",
         "qos": "1",
         "retain": "",
@@ -269,12 +273,12 @@
         "correl": "",
         "expiry": "",
         "broker": "tb-broker",
-        "x": 1730,
-        "y": 100,
+        "x": 1260,
+        "y": 120,
         "wires": []
     },
     {
-        "id": "def_mqtt_telemetry",
+        "id": "def_send_telemetry",
         "type": "mqtt out",
         "z": "daily_energy_flow_state_tab",
         "name": "Send to ThingsBoard",
@@ -287,15 +291,15 @@
         "correl": "",
         "expiry": "",
         "broker": "tb-broker",
-        "x": 1760,
-        "y": 180,
+        "x": 1280,
+        "y": 200,
         "wires": []
     },
     {
-        "id": "def_debug_json",
+        "id": "def_debug",
         "type": "debug",
         "z": "daily_energy_flow_state_tab",
-        "name": "DailyEnergyFlowState JSON",
+        "name": "DailyEnergyFlow Debug",
         "active": true,
         "tosidebar": true,
         "console": false,
@@ -304,62 +308,35 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1540,
-        "y": 220,
-        "wires": []
-    },
-    {
-        "id": "def_error_debug",
-        "type": "debug",
-        "z": "daily_energy_flow_state_tab",
-        "name": "DailyEnergyFlowState Error",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": true,
-        "complete": "payload",
-        "targetType": "msg",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 1220,
-        "y": 280,
-        "wires": []
-    },
-    {
-        "id": "def_comment_pattern",
-        "type": "comment",
-        "z": "daily_energy_flow_state_tab",
-        "name": "Cron (daily 23:59) + Manual + RPC - 2 parallel reads",
-        "info": "",
-        "x": 290,
-        "y": 280,
+        "x": 1290,
+        "y": 160,
         "wires": []
     },
     {
         "id": "e4e4f3e2a4f4e004",
         "type": "modbus-client",
-        "name": "RS485-1 Inverter",
-        "clienttype": "serial",
+        "name": "EC100 Modbus",
+        "clienttype": "tcp",
         "bufferCommands": true,
         "stateLogEnabled": false,
         "queueLogEnabled": false,
-        "failureLogEnabled": false,
-        "tcpHost": "127.0.0.1",
+        "failureLogEnabled": true,
+        "tcpHost": "192.168.1.100",
         "tcpPort": "502",
         "tcpType": "DEFAULT",
-        "serialPort": "/dev/ttyS4",
-        "serialType": "RTU",
+        "serialPort": "/dev/ttyUSB0",
+        "serialType": "RTU-BUFFERD",
         "serialBaudrate": "9600",
         "serialDatabits": "8",
         "serialStopbits": "1",
         "serialParity": "none",
         "serialConnectionDelay": "100",
-        "serialAsciiResponseStartDelimiter": "",
-        "unit_id": 1,
-        "commandDelay": 50,
-        "clientTimeout": 1000,
+        "serialAsciiResponseStartDelimiter": "0x3A",
+        "unit_id": "1",
+        "commandDelay": "1",
+        "clientTimeout": "1000",
         "reconnectOnTimeout": true,
-        "reconnectTimeout": 2000,
+        "reconnectTimeout": "2000",
         "parallelUnitIdsAllowed": true,
         "showErrors": false,
         "showWarnings": true,
@@ -393,8 +370,6 @@
         "willQos": "0",
         "willRetain": "false",
         "willPayload": "",
-        "willMsg": {},
-        "userProps": "",
-        "sessionExpiry": ""
+        "willMsg": {}
     }
 ]

@@ -64,9 +64,9 @@
         "id": "rpc_bss_comment",
         "type": "comment",
         "z": "rpc_battery_soc_state_tab",
-        "name": "getBatterySocState - Read battery SOC on demand (registers 214, 245)",
+        "name": "getBatterySocState - Read battery SOC on demand",
         "info": "",
-        "x": 310,
+        "x": 260,
         "y": 60,
         "wires": []
     },

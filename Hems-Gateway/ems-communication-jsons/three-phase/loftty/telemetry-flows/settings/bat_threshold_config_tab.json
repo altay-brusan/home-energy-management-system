@@ -1,0 +1,446 @@
+[
+    {
+        "id": "bat_threshold_config_tab",
+        "type": "tab",
+        "label": "BatteryThresholdConfig",
+        "disabled": false,
+        "info": "Battery Threshold Config - Read & Write\n\n3 Registers (215-217):\n- 215: Shutdown Capacity %\n- 216: Restart Capacity %\n- 217: Low Battery Capacity %\n\nAll R/W"
+    },
+    {
+        "id": "bthr_link_in_rpc",
+        "type": "link in",
+        "z": "bat_threshold_config_tab",
+        "name": "RPC Request",
+        "links": [
+            "rpc_bthr_link_out"
+        ],
+        "x": 135,
+        "y": 180,
+        "wires": [
+            [
+                "bthr_route_operation"
+            ]
+        ]
+    },
+    {
+        "id": "bthr_manual_read",
+        "type": "inject",
+        "z": "bat_threshold_config_tab",
+        "name": "Manual Read",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operationType",
+                "v": "read",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 260,
+        "wires": [
+            [
+                "bthr_route_operation"
+            ]
+        ]
+    },
+    {
+        "id": "bthr_manual_write",
+        "type": "inject",
+        "z": "bat_threshold_config_tab",
+        "name": "Test Write",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operationType",
+                "v": "write",
+                "vt": "str"
+            },
+            {
+                "p": "rpcParams",
+                "v": "{\"shutdownCapacityPercent\":10,\"restartCapacityPercent\":15,\"lowBatteryCapacityPercent\":20}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 320,
+        "wires": [
+            [
+                "bthr_route_operation"
+            ]
+        ]
+    },
+    {
+        "id": "bthr_route_operation",
+        "type": "function",
+        "z": "bat_threshold_config_tab",
+        "name": "Route: Read or Write?",
+        "func": "const opType = msg.operationType || 'read';\n\nif (opType === 'write') {\n    return [null, msg];\n} else {\n    return [msg, null];\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 180,
+        "wires": [
+            [
+                "bthr_start_read"
+            ],
+            [
+                "bthr_start_write"
+            ]
+        ]
+    },
+    {
+        "id": "bthr_start_read",
+        "type": "function",
+        "z": "bat_threshold_config_tab",
+        "name": "Start Read",
+        "func": "flow.set(\"bthr_rpc_response_topic\", msg.rpcResponseTopic);\nflow.set(\"bthr_write_result\", msg.writeResult || null);\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 570,
+        "y": 120,
+        "wires": [
+            [
+                "bthr_prepare_read"
+            ]
+        ]
+    },
+    {
+        "id": "bthr_prepare_read",
+        "type": "function",
+        "z": "bat_threshold_config_tab",
+        "name": "Prepare (215-217)",
+        "func": "msg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 215,\n    quantity: 3\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 750,
+        "y": 120,
+        "wires": [
+            [
+                "bthr_read_registers"
+            ]
+        ]
+    },
+    {
+        "id": "bthr_read_registers",
+        "type": "modbus-flex-getter",
+        "z": "bat_threshold_config_tab",
+        "name": "Read 215-217",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 940,
+        "y": 120,
+        "wires": [
+            [
+                "bthr_build_json"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "bthr_build_json",
+        "type": "function",
+        "z": "bat_threshold_config_tab",
+        "name": "Build JSON State",
+        "func": "let raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    node.error(\"Invalid modbus response\");\n    return null;\n}\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\nconst inverterSN = global.get(\"INVERTER_SN\") || env.get(\"INVERTER_SN\") || \"Unknown\";\n\nconst state = {\n    kind: \"BatteryThresholdConfigState\",\n    timestampUtc: new Date().toISOString(),\n    gatewayId: gatewayId,\n    inverterSerialNumber: inverterSN,\n    \n    shutdownCapacityPercent: data[0] || 0,   // 215\n    restartCapacityPercent: data[1] || 0,    // 216\n    lowBatteryCapacityPercent: data[2] || 0  // 217\n};\n\nconst writeResult = flow.get(\"bthr_write_result\");\nconst rpcResponseTopic = flow.get(\"bthr_rpc_response_topic\");\n\nflow.set(\"bthr_write_result\", null);\nflow.set(\"bthr_rpc_response_topic\", null);\n\nif (writeResult) {\n    msg.payload = {\n        success: writeResult.success,\n        message: writeResult.message,\n        writes: writeResult.writes,\n        state: state\n    };\n} else {\n    msg.payload = state;\n}\n\nmsg.state = state;\nmsg.rpcResponseTopic = rpcResponseTopic;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1130,
+        "y": 120,
+        "wires": [
+            [
+                "bthr_debug_json",
+                "bthr_rpc_response"
+            ]
+        ]
+    },
+    {
+        "id": "bthr_debug_json",
+        "type": "debug",
+        "z": "bat_threshold_config_tab",
+        "name": "Threshold Config JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1350,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "bthr_rpc_response",
+        "type": "function",
+        "z": "bat_threshold_config_tab",
+        "name": "RPC Response",
+        "func": "if (!msg.rpcResponseTopic) {\n    return null;\n}\n\nmsg.topic = msg.rpcResponseTopic;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1340,
+        "y": 120,
+        "wires": [
+            [
+                "bthr_mqtt_response"
+            ]
+        ]
+    },
+    {
+        "id": "bthr_mqtt_response",
+        "type": "mqtt out",
+        "z": "bat_threshold_config_tab",
+        "name": "MQTT Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1540,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "bthr_start_write",
+        "type": "function",
+        "z": "bat_threshold_config_tab",
+        "name": "Queue Writes",
+        "func": "// Parse RPC params and build write queue\nconst params = msg.rpcParams || {};\n\nconst writes = [];\n\n// Register 215: Shutdown Capacity %\nif (params.shutdownCapacityPercent !== undefined) {\n    writes.push({ register: 215, value: params.shutdownCapacityPercent, name: \"Shutdown Capacity\" });\n}\n\n// Register 216: Restart Capacity %\nif (params.restartCapacityPercent !== undefined) {\n    writes.push({ register: 216, value: params.restartCapacityPercent, name: \"Restart Capacity\" });\n}\n\n// Register 217: Low Battery Capacity %\nif (params.lowBatteryCapacityPercent !== undefined) {\n    writes.push({ register: 217, value: params.lowBatteryCapacityPercent, name: \"Low Battery Capacity\" });\n}\n\nif (writes.length === 0) {\n    msg.operationType = 'read';\n    return [null, msg];\n}\n\n// Store to GLOBAL context\nglobal.set(\"bthr_write_queue\", writes);\nglobal.set(\"bthr_write_index\", 0);\nglobal.set(\"bthr_write_results\", []);\nglobal.set(\"bthr_write_rpc_topic\", msg.rpcResponseTopic);\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: `${writes.length} writes queued` });\n\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 580,
+        "y": 320,
+        "wires": [
+            [
+                "bthr_prepare_write"
+            ],
+            [
+                "bthr_start_read"
+            ]
+        ]
+    },
+    {
+        "id": "bthr_prepare_write",
+        "type": "function",
+        "z": "bat_threshold_config_tab",
+        "name": "Prepare Write",
+        "func": "const writes = global.get(\"bthr_write_queue\") || [];\nconst index = global.get(\"bthr_write_index\") || 0;\n\nif (index >= writes.length) {\n    return null;\n}\n\nconst current = writes[index];\n\nconst newMsg = {\n    payload: {\n        fc: 16,\n        unitid: 1,\n        address: current.register,\n        quantity: 1,\n        value: [current.value]\n    },\n    currentWrite: current,\n    writeIndex: index\n};\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: `[${index+1}/${writes.length}] ${current.name}` });\n\nreturn newMsg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 760,
+        "y": 320,
+        "wires": [
+            [
+                "bthr_write_register"
+            ]
+        ]
+    },
+    {
+        "id": "bthr_write_register",
+        "type": "modbus-flex-write",
+        "z": "bat_threshold_config_tab",
+        "name": "Write Register",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "server": "e4e4f3e2a4f4e004",
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "x": 940,
+        "y": 320,
+        "wires": [
+            [
+                "bthr_write_ok"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "bthr_write_ok",
+        "type": "function",
+        "z": "bat_threshold_config_tab",
+        "name": "Write OK",
+        "func": "const writes = global.get(\"bthr_write_queue\") || [];\nlet index = global.get(\"bthr_write_index\") || 0;\nconst results = global.get(\"bthr_write_results\") || [];\n\n// Record success\nconst current = writes[index];\nif (current) {\n    results.push({ \n        register: current.register, \n        name: current.name, \n        value: current.value, \n        success: true \n    });\n    global.set(\"bthr_write_results\", results);\n}\n\n// Move to next\nindex++;\nglobal.set(\"bthr_write_index\", index);\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `${current.name} OK` });\n\n// More writes?\nif (index < writes.length) {\n    return [{ doNext: true }, null];\n}\n\n// All done - go to read\nconst rpcTopic = global.get(\"bthr_write_rpc_topic\");\n\nglobal.set(\"bthr_write_queue\", null);\nglobal.set(\"bthr_write_index\", null);\nglobal.set(\"bthr_write_rpc_topic\", null);\n\nconst finalMsg = {\n    writeResult: {\n        success: true,\n        message: `Successfully wrote ${results.length} register(s)`,\n        writes: results\n    },\n    rpcResponseTopic: rpcTopic\n};\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `All ${results.length} writes OK!` });\n\nreturn [null, finalMsg];",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1100,
+        "y": 320,
+        "wires": [
+            [
+                "bthr_next_delay"
+            ],
+            [
+                "bthr_start_read"
+            ]
+        ]
+    },
+    {
+        "id": "bthr_next_delay",
+        "type": "delay",
+        "z": "bat_threshold_config_tab",
+        "name": "500ms",
+        "pauseType": "delay",
+        "timeout": "500",
+        "timeoutUnits": "milliseconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 1230,
+        "y": 320,
+        "wires": [
+            [
+                "bthr_prepare_write"
+            ]
+        ]
+    },
+    {
+        "id": "bthr_comment_read",
+        "type": "comment",
+        "z": "bat_threshold_config_tab",
+        "name": "═══ READ SECTION ═══",
+        "info": "",
+        "x": 750,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "bthr_comment_write",
+        "type": "comment",
+        "z": "bat_threshold_config_tab",
+        "name": "═══ WRITE SECTION ═══",
+        "info": "Sequential write with 500ms delay between each.",
+        "x": 610,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "EC100 Modbus",
+        "clienttype": "tcp",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": true,
+        "tcpHost": "192.168.1.100",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyUSB0",
+        "serialType": "RTU-BUFFERD",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "0x3A",
+        "unit_id": "1",
+        "commandDelay": "1",
+        "clientTimeout": "1000",
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": "2000",
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {}
+    }
+]

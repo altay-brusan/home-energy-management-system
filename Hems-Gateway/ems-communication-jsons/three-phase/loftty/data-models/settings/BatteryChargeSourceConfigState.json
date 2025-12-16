@@ -1,19 +1,19 @@
-BatteryChargeSourceConfigState {
-  "timestampUtc": string,
-  "gatewayId": string,
-  "inverterSerialNumber": string,
+{
+  "timestampUtc": "string",
+  "gatewayId": "string",
+  "inverterSerialNumber": "string",
 
   "generator": {
-    "enabled": bool,              // 129: Generator charge enable
-    "startSocPercent": number,    // 124: start charging when SOC < this
-    "chargeCurrentA": number,     // 125: generator → battery current
-    "maxRunTimeHours": number,    // 121: 0.1 h units
-    "coolingTimeHours": number    // 122: 0.1 h units
+    "enabled": "boolean",                    // 229 - Generator charge enable
+    "startSocPercent": "number",             // 224 - Start charging when SOC < this (1%)
+    "chargeCurrentA": "number",              // 225 - Generator → battery current (1A)
+    "maxRunTimeHours": "number",             // 221 - Max run time (0.1h)
+    "coolingTimeHours": "number"             // 222 - Cooling time (0.1h)
   },
 
   "grid": {
-    "enabled": bool,              // 130: Grid charge enable
-    "startSocPercent": number,    // 127: grid charge start SOC
-    "chargeCurrentA": number      // 128: grid charge current
+    "enabled": "boolean",                    // 230 - Grid charge enable
+    "startSocPercent": "number",             // 227 - Grid charge start SOC (1%)
+    "chargeCurrentA": "number"               // 228 - Grid charge current (1A)
   }
 }

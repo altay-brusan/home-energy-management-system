@@ -1,54 +1,52 @@
-PvDeviceState {
-  "timestampUtc": string,
-  "version": number,
-  "DeviceId": string,
+{
+  "timestampUtc": "string",
+  "version": 1,
+  "DeviceId": "string",
 
-  // Total site PV
-  "totalPvPowerW": number,             // 718: PV total power (veya sum 672-675)
-  "todayPvEnergyKWh": number,          // 529: Day PV energy (0.1kWh)
-  "totalPvEnergyKWh": number | null,   // 534 (low) + 535 (high): Total PV energy (0.1kWh) - 预留 reserved!
+  "totalPvPowerW": "number",                 // sum 772-775 - PV1-4 input power (1W)
+  "todayPvEnergyKWh": "number",              // 629 - Day PV energy (0.1kWh)
+  "totalPvEnergyKWh": "number",              // 634 (low) + 635 (high) - Total PV energy (0.1kWh) - YENİ DATASHEET'TE TANIMLI
 
-  // Per-tracker live data (MPPT 1-4)
   "mppt": [
     {
       "pvChannelId": 1,
-      "isActive": bool,                // derived: dcVoltageV > threshold
+      "isActive": "boolean",                 // derived: dcVoltageV > threshold
 
-      "dcVoltageV": number,            // 676: DC voltage 1 (0.1V)
-      "dcCurrentA": number,            // 677: DC current 1 (0.1A)
-      "inputPowerW": number,           // 672: PV1 input power (L:1W H:10W)
+      "dcVoltageV": "number",                // 776 - DC voltage 1 (0.1V)
+      "dcCurrentA": "number",                // 777 - DC current 1 (0.1A)
+      "inputPowerW": "number",               // 772 - PV1 input power (1W)
 
-      "todayEnergyKWh": number | null  // 530: Day PV-1 energy (0.1kWh) - 预留 reserved!
+      "todayEnergyKWh": "number"             // 630 - Day PV-1 energy (0.1kWh) - YENİ DATASHEET'TE TANIMLI
     },
     {
       "pvChannelId": 2,
-      "isActive": bool,
+      "isActive": "boolean",
 
-      "dcVoltageV": number,            // 678: DC voltage 2 (0.1V)
-      "dcCurrentA": number,            // 679: DC current 2 (0.1A)
-      "inputPowerW": number,           // 673: PV2 input power (L:1W H:10W)
+      "dcVoltageV": "number",                // 778 - DC voltage 2 (0.1V)
+      "dcCurrentA": "number",                // 779 - DC current 2 (0.1A)
+      "inputPowerW": "number",               // 773 - PV2 input power (1W)
 
-      "todayEnergyKWh": number | null  // 531: Day PV-2 energy (0.1kWh) - 预留 reserved!
+      "todayEnergyKWh": "number"             // 631 - Day PV-2 energy (0.1kWh)
     },
     {
       "pvChannelId": 3,
-      "isActive": bool,
+      "isActive": "boolean",
 
-      "dcVoltageV": number,            // 680: DC voltage 3 (0.1V)
-      "dcCurrentA": number,            // 681: DC current 3 (0.1A)
-      "inputPowerW": number,           // 674: PV3 input power (L:1W H:10W)
+      "dcVoltageV": "number",                // 780 - DC voltage 3 (0.1V)
+      "dcCurrentA": "number",                // 781 - DC current 3 (0.1A)
+      "inputPowerW": "number",               // 774 - PV3 input power (1W)
 
-      "todayEnergyKWh": number | null  // 532: Day PV-3 energy (0.1kWh) - 预留 reserved!
+      "todayEnergyKWh": "number"             // 632 - Day PV-3 energy (0.1kWh)
     },
     {
       "pvChannelId": 4,
-      "isActive": bool,
+      "isActive": "boolean",
 
-      "dcVoltageV": number,            // 682: DC voltage 4 (0.1V)
-      "dcCurrentA": number,            // 683: DC current 4 (0.1A)
-      "inputPowerW": number,           // 675: PV4 input power (L:1W H:10W)
+      "dcVoltageV": "number",                // 782 - DC voltage 4 (0.1V)
+      "dcCurrentA": "number",                // 783 - DC current 4 (0.1A)
+      "inputPowerW": "number",               // 775 - PV4 input power (1W)
 
-      "todayEnergyKWh": number | null  // 533: Day PV-4 energy (0.1kWh) - 预留 reserved!
+      "todayEnergyKWh": "number"             // 633 - Day PV-4 energy (0.1kWh)
     }
   ]
 }
