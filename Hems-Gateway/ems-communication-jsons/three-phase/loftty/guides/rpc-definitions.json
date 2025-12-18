@@ -941,9 +941,68 @@
           "supportsExternalMeter": null
         }
       }
-    }
-    ]
-  },
+    },
+    {
+        "rpcName": "getInverterInfo",
+        "kind": "InverterInfoState",
+        "type": "read",
+        "response": {
+          "kind": "InverterInfoState",
+          "timestampUtc": "2025-12-18T08:00:09.459Z",
+          "version": 1,
+          "deviceType": "Three-phase LV Hybrid",
+          "deviceTypeCode": 5,
+          "modbusAddress": 1,
+          "protocolVersion": null,
+          "serialNumber": "2509080139",
+          "ratedPowerW": 12000,
+          "ratedPowerKw": 12,
+          "mpptCount": 4,
+          "phaseCount": 3,
+          "gridVoltageRating": null,
+          "safetyType": null,
+          "firmware": {},
+          "controlBoard": null,
+          "controlBoardAux": null,
+          "controlHardware": 0,
+          "controlMasterVersion": 1,
+          "communicationBoard": null,
+          "commBoardField1": 15,
+          "commBoardField2": 0,
+          "commMasterVersion": 1,
+          "chipType": null,
+          "ratedPowerClass": null,
+            "0-9": [
+                    5,
+                    1,
+                    260,
+                    12853,
+                    12345,
+                    12344,
+                    12337,
+                    13113,
+                    0,
+                    0
+                  ],
+            "10-19": [
+                    0,
+                    6151,
+                    0,
+                    0,
+                    0,
+                    1,
+                    15,
+                    0,
+                    1,
+                    0
+                  ],
+            "20-21": [
+                    54464,
+                    1
+                  ]
+                }
+              }
+            },
   "summary": {
     "readOnlyRpcs": [
       "getBatterySocState",
@@ -955,6 +1014,7 @@
       "getPvDeviceState",
       "getTotalEnergyFlowState",
       "getSystemConnectionStructure"
+      "getInverterInfo"
     ],
     "readWritePairs": [
       {
@@ -1013,9 +1073,9 @@
         "kind": "SystemConnectionStructureState"
       }
     ],
-    "totalMethods": 30,
-    "totalReadOnly": 9,
+    "totalMethods": 31,
+    "totalReadOnly": 10,
     "totalReadWritePairs": 11,
-    "uniqueKinds": 20
+    "uniqueKinds": 21
   }
 }
