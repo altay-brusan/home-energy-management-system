@@ -1,0 +1,67 @@
+InverterInfoState
+{
+  "kind": "InverterInfoState",
+  "timestampUtc": "string",
+  "version": 1,
+
+  "deviceType": "string",                    // 100 - Derived text
+                                             //   0x03 → "Single-phase LV Hybrid"
+                                             //   0x05 → "Three-phase LV Hybrid"
+                                             //   0x06 → "Three-phase HV Hybrid"
+
+  "deviceTypeCode": "number",                // 100 - Raw değer (0x03, 0x05, 0x06)
+
+  "modbusAddress": "number",                 // Gateway config'den (1-247)
+
+  "protocolVersion": null,                   // Bu datasheet'te yok
+
+  "serialNumber": "string",                  // 103-107 - 10 ASCII karakter
+                                             //   Her register 2 byte = 2 karakter
+                                             //   Örnek: "AH12345678"
+
+  "ratedPowerW": "number",                   // 120 (low) + 121 (high) - 额定功率 (0.1W)
+                                             //   Örnek: 60000 = 6000W = 6kW
+
+  "ratedPowerKw": "number",                  // Derived: ratedPowerW / 1000
+
+  "mpptCount": "number",                     // Derived from deviceType
+                                             //   Three-phase genelde 4 MPPT
+
+  "phaseCount": "number",                    // Derived from deviceType
+                                             //   0x05 veya 0x06 → 3
+
+  "gridVoltageRating": null,                 // Bu datasheet'te yok
+                                             //   238'den derive edilebilir (220V/230V/240V)
+
+  "safetyType": null,                        // Bu datasheet'te yok
+
+  "firmware": {
+    "controlBoard": null,                    // Bu datasheet'te yok
+
+    "controlBoardAux": null,                 // Bu datasheet'te yok
+
+    "controlHardware": "number",             // 114 - 控制板固件版本-字段2
+                                             //   Hardware version, factory set
+
+    "controlMasterVersion": "number",        // 115 - 控制板固件版本-主版本
+                                             //   Örnek: 0x1001
+                                             //   Bit12-15: Release version (F=debug)
+                                             //   Bit0-11: Version number
+
+    "communicationBoard": null,              // Bu datasheet'te yok
+
+    "commBoardField1": "number",             // 116 - 通讯板固件版本-字段1
+
+    "commBoardField2": "number",             // 117 - 通讯板固件版本-字段2
+
+    "commMasterVersion": "number",           // 118 - 通讯板固件版本-主版本
+
+    "chipType": null,                        // Bu datasheet'te yok
+
+    "ratedPowerClass": null                  // Bu datasheet'te yok
+  },
+
+  "rawRegisters": [
+    "number"                                 // 100-121 raw register values (debug)
+  ]
+}
