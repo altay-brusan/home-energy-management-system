@@ -52,7 +52,7 @@ public class PowerFlowService : IPowerFlowService
         // Use centralized ThingsBoard connector for RPC call
         var rpcResponse = await _tbConnector.SendTwoWayRpcAsync(
             thingsBoardDeviceId.Value,
-            "getPowerFlow",
+            "getPowerFlowState",
             new Dictionary<string, object>(),
             timeoutMs: 10000,
             cancellationToken);
