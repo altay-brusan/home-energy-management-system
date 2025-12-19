@@ -1001,7 +1001,85 @@
                     1
                   ]
                 }
-              }
+     },
+        {
+        "rpcName": "getBatteryEnergyFlowState",
+        "kind": "BatteryEnergyFlowState",
+        "type": "read",
+        "response": {
+          "kind": "BatteryEnergyFlowState",
+          "version": 1,
+          "timestampUtc": "2025-12-19T12:30:00.000Z",
+          "DeviceId": "EC100",
+          "bmsCount": 2,
+          "socPercent": 60,
+          "sohPercent": 100,
+          "voltageV": 49.76,
+          "currentA": -2.2,
+          "temperatureC": 24,
+          "bmsList": [
+            {
+              "bmsAddress": 1,
+              "chargeDischargeStatus": 2,
+              "currentA": -1.2,
+              "batteryPackVoltageV": 49.7,
+              "batteryRemainingCapacityAh": 76.79,
+              "maxCellVoltageMv": 3319,
+              "minCellVoltageMv": 3316,
+              "avgCellVoltageMv": 3318,
+              "avgCellTempC": 23,
+              "ratedCapacityAh": 100,
+              "totalDischargeWh": 1264,
+              "cycleCount": 0,
+              "sohPercent": 100
+            },
+            {
+              "bmsAddress": 2,
+              "chargeDischargeStatus": 2,
+              "currentA": -1.0,
+              "batteryPackVoltageV": 49.7,
+              "batteryRemainingCapacityAh": 44.36,
+              "maxCellVoltageMv": 3319,
+              "minCellVoltageMv": 3312,
+              "avgCellVoltageMv": 3317,
+              "avgCellTempC": 25,
+              "ratedCapacityAh": 100,
+              "totalDischargeWh": 1811,
+              "cycleCount": 0,
+              "sohPercent": 100
+            }
+          ]
+        }
+      },
+      {
+        "rpcName": "getBatteryInfoState",
+        "kind": "BatteryInfoState",
+        "type": "read",
+        "response": {
+          "kind": "BatteryInfoState",
+          "version": 1,
+          "timestampUtc": "2025-12-19T12:30:00.000Z",
+          "DeviceId": "EC100",
+          "manufacturerName": "PYLON",
+          "moduleCount": 2,
+          "bmsList": [
+            {
+              "bmsAddress": 1,
+              "ratedCapacityAh": 100,
+              "softwareVersionMain": 1,
+              "softwareVersionSub": 0,
+              "serialNumber": "TBM25110500121"
+            },
+            {
+              "bmsAddress": 2,
+              "ratedCapacityAh": 100,
+              "softwareVersionMain": 1,
+              "softwareVersionSub": 0,
+              "serialNumber": "TBM25081600046"
+            }
+          ]
+        }
+      }
             },
   "summary": {
     "readOnlyRpcs": [
@@ -1014,7 +1092,10 @@
       "getPvDeviceState",
       "getTotalEnergyFlowState",
       "getSystemConnectionStructure"
-      "getInverterInfo"
+      "getInverterInfo",
+      getBatteryEnergyFlowState,
+      "getBatteryInfoState"
+
     ],
     "readWritePairs": [
       {
@@ -1073,9 +1154,9 @@
         "kind": "SystemConnectionStructureState"
       }
     ],
-    "totalMethods": 31,
-    "totalReadOnly": 10,
+    "totalMethods": 33,
+    "totalReadOnly": 12,
     "totalReadWritePairs": 11,
-    "uniqueKinds": 21
+    "uniqueKinds": 23
   }
 }
