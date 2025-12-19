@@ -78,6 +78,7 @@ const getDefaultCustomConfig = (): InverterConfig => {
       batteryCapacity: 200,
       maxACharge: 40,
       maxADischarge: 100,
+      chargingSOC: 100,
       shutdownSOC: 10,
       lowBattSOC: 20,
       restartSOC: 40,
@@ -296,6 +297,11 @@ export const useInverterModeStore = create<InverterModeState>()(
             // Reset to default 6 periods
             state.customConfig.timeOfUse.periods = [...DEFAULT_TIME_OF_USE_PERIODS];
           }
+        }
+
+        // Migration: Ensure chargingSOC exists (for existing users)
+        if (state?.customConfig?.battery && state.customConfig.battery.chargingSOC === undefined) {
+          state.customConfig.battery.chargingSOC = 100;
         }
       },
     }

@@ -27,9 +27,10 @@ export interface BatterySettings {
   batteryCapacity: number; // Ah
   maxACharge: number; // A (0-280)
   maxADischarge: number; // A (0-280)
-  shutdownSOC: number; // 0-100%
-  lowBattSOC: number; // 0-100%
-  restartSOC: number; // 0-100%
+  chargingSOC: number; // 0-100% - Charging cutoff SOC
+  shutdownSOC: number; // 0-100% - Discharge cutoff (lowest)
+  lowBattSOC: number; // 0-100% - Warning SOC
+  restartSOC: number; // 0-100% - Backup SOC
   floatVoltage: number; // V
   absorptionVoltage: number; // V
   equalizationVoltage: number; // V
@@ -170,6 +171,7 @@ export type SettingCategory =
 // Validasyon Kuralları
 export interface ValidationRules {
   batterySOC: {
+    charging: { min: number; max: number; default: number };
     shutdown: { min: number; max: number; default: number };
     lowBatt: { min: number; max: number; default: number };
     restart: { min: number; max: number; default: number };
@@ -205,6 +207,7 @@ export interface ValidationRules {
 // Default Validasyon Değerleri
 export const VALIDATION_RULES: ValidationRules = {
   batterySOC: {
+    charging: { min: 50, max: 100, default: 100 },
     shutdown: { min: 0, max: 30, default: 10 },
     lowBatt: { min: 10, max: 50, default: 20 },
     restart: { min: 20, max: 100, default: 40 },

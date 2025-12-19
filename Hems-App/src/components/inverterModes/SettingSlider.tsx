@@ -1,11 +1,17 @@
 /**
  * SettingSlider Component
- * Slider ayarı (+/- butonları ile)
+ * Sürüklenebilir slider ile ayar komponenti
  */
 
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
-import { Minus, Plus } from 'lucide-react-native';
+import React, { useCallback } from 'react';
+import { View, Text, StyleSheet, TextInput, LayoutChangeEvent } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  runOnJS,
+  withSpring,
+} from 'react-native-reanimated';
 import { useThemeStore } from '../../store/themeStore';
 import { getThemeColors } from '../../theme/constants';
 
@@ -21,6 +27,8 @@ interface SettingSliderProps {
   disabled?: boolean;
   showMinMax?: boolean;
 }
+
+const THUMB_SIZE = 28;
 
 const SettingSlider: React.FC<SettingSliderProps> = ({
   label,
@@ -38,28 +46,106 @@ const SettingSlider: React.FC<SettingSliderProps> = ({
   const isDark = mode === 'dark';
   const COLORS = getThemeColors(isDark);
 
-  const handleDecrease = () => {
-    if (disabled) return;
-    const newValue = Math.max(min, value - step);
-    onChange(newValue);
-  };
+  const sliderWidth = useSharedValue(0);
+  const thumbPosition = useSharedValue(0);
+  const startPosition = useSharedValue(0);
+  const isGestureActive = useSharedValue(false);
 
-  const handleIncrease = () => {
-    if (disabled) return;
-    const newValue = Math.min(max, value + step);
-    onChange(newValue);
-  };
+  // Calculate position from value
+  const valueToPosition = useCallback((val: number, width: number) => {
+    'worklet';
+    const percentage = (val - min) / (max - min);
+    return percentage * (width - THUMB_SIZE);
+  }, [min, max]);
+
+  // Calculate value from position
+  const positionToValue = useCallback((pos: number, width: number) => {
+    'worklet';
+    const percentage = pos / (width - THUMB_SIZE);
+    const rawValue = percentage * (max - min) + min;
+    // Round to step
+    const steppedValue = Math.round(rawValue / step) * step;
+    return Math.min(max, Math.max(min, steppedValue));
+  }, [min, max, step]);
+
+  const handleValueChange = useCallback((newValue: number) => {
+    if (!disabled && newValue !== value) {
+      onChange(newValue);
+    }
+  }, [disabled, value, onChange]);
 
   const handleTextChange = (text: string) => {
     if (disabled) return;
     const numValue = parseInt(text, 10);
     if (!isNaN(numValue)) {
       const clampedValue = Math.min(max, Math.max(min, numValue));
-      onChange(clampedValue);
+      // Round to step
+      const steppedValue = Math.round(clampedValue / step) * step;
+      onChange(steppedValue);
     }
   };
 
-  // Calculate progress percentage for visual bar
+  const onLayout = (event: LayoutChangeEvent) => {
+    const { width } = event.nativeEvent.layout;
+    sliderWidth.value = width;
+    thumbPosition.value = valueToPosition(value, width);
+  };
+
+  // Update thumb position when value changes externally
+  React.useEffect(() => {
+    if (sliderWidth.value > 0 && !isGestureActive.value) {
+      thumbPosition.value = withSpring(valueToPosition(value, sliderWidth.value), {
+        damping: 20,
+        stiffness: 200,
+      });
+    }
+  }, [value, sliderWidth.value, valueToPosition, isGestureActive.value, thumbPosition]);
+
+  const panGesture = Gesture.Pan()
+    .enabled(!disabled)
+    .onBegin(() => {
+      isGestureActive.value = true;
+      startPosition.value = thumbPosition.value;
+    })
+    .onUpdate((event) => {
+      const newPosition = Math.max(0, Math.min(sliderWidth.value - THUMB_SIZE, startPosition.value + event.translationX));
+      thumbPosition.value = newPosition;
+      const newValue = positionToValue(newPosition, sliderWidth.value);
+      runOnJS(handleValueChange)(newValue);
+    })
+    .onEnd(() => {
+      isGestureActive.value = false;
+      // Snap to step
+      const currentValue = positionToValue(thumbPosition.value, sliderWidth.value);
+      thumbPosition.value = withSpring(valueToPosition(currentValue, sliderWidth.value), {
+        damping: 20,
+        stiffness: 200,
+      });
+    });
+
+  const tapGesture = Gesture.Tap()
+    .enabled(!disabled)
+    .onEnd((event) => {
+      const tapPosition = Math.max(0, Math.min(sliderWidth.value - THUMB_SIZE, event.x - THUMB_SIZE / 2));
+      const newValue = positionToValue(tapPosition, sliderWidth.value);
+      thumbPosition.value = withSpring(valueToPosition(newValue, sliderWidth.value), {
+        damping: 20,
+        stiffness: 200,
+      });
+      runOnJS(handleValueChange)(newValue);
+    });
+
+  const composedGesture = Gesture.Race(panGesture, tapGesture);
+
+  const thumbAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: thumbPosition.value }],
+  }));
+
+  const progressAnimatedStyle = useAnimatedStyle(() => ({
+    width: thumbPosition.value + THUMB_SIZE / 2,
+  }));
+
+  // Calculate progress percentage for display
   const progress = ((value - min) / (max - min)) * 100;
 
   return (
@@ -103,60 +189,50 @@ const SettingSlider: React.FC<SettingSliderProps> = ({
         </Text>
       )}
 
-      {/* Progress Bar */}
-      <View style={[styles.progressBarContainer, { backgroundColor: isDark ? '#333' : '#E0E0E0' }]}>
+      {/* Slider Track */}
+      <GestureDetector gesture={composedGesture}>
         <View
           style={[
-            styles.progressBar,
-            {
-              width: `${progress}%`,
-              backgroundColor: disabled ? COLORS.textSoft : COLORS.accent,
-            },
+            styles.sliderContainer,
+            { backgroundColor: isDark ? '#333' : '#E0E0E0' },
           ]}
-        />
-      </View>
-
-      {/* Controls Row */}
-      <View style={styles.controlsRow}>
-        <TouchableOpacity
-          onPress={handleDecrease}
-          disabled={disabled || value <= min}
-          style={[
-            styles.button,
-            {
-              backgroundColor: isDark ? COLORS.surface : COLORS.gray100,
-              opacity: disabled || value <= min ? 0.4 : 1,
-            },
-          ]}
+          onLayout={onLayout}
         >
-          <Minus size={18} color={COLORS.text} />
-        </TouchableOpacity>
+          {/* Progress Fill */}
+          <Animated.View
+            style={[
+              styles.progressFill,
+              { backgroundColor: disabled ? COLORS.textSoft : COLORS.accent },
+              progressAnimatedStyle,
+            ]}
+          />
+          {/* Thumb */}
+          <Animated.View
+            style={[
+              styles.thumb,
+              {
+                backgroundColor: disabled ? COLORS.textSoft : COLORS.accent,
+                borderColor: isDark ? '#222' : '#fff',
+              },
+              thumbAnimatedStyle,
+            ]}
+          >
+            <View style={styles.thumbInner} />
+          </Animated.View>
+        </View>
+      </GestureDetector>
 
-        {showMinMax && (
-          <View style={styles.rangeContainer}>
-            <Text style={[styles.rangeText, { color: COLORS.textSoft }]}>
-              {min}{unit}
-            </Text>
-            <Text style={[styles.rangeText, { color: COLORS.textSoft }]}>
-              {max}{unit}
-            </Text>
-          </View>
-        )}
-
-        <TouchableOpacity
-          onPress={handleIncrease}
-          disabled={disabled || value >= max}
-          style={[
-            styles.button,
-            {
-              backgroundColor: isDark ? COLORS.surface : COLORS.gray100,
-              opacity: disabled || value >= max ? 0.4 : 1,
-            },
-          ]}
-        >
-          <Plus size={18} color={COLORS.text} />
-        </TouchableOpacity>
-      </View>
+      {/* Min/Max Labels */}
+      {showMinMax && (
+        <View style={styles.rangeContainer}>
+          <Text style={[styles.rangeText, { color: COLORS.textSoft }]}>
+            {min}{unit}
+          </Text>
+          <Text style={[styles.rangeText, { color: COLORS.textSoft }]}>
+            {max}{unit}
+          </Text>
+        </View>
+      )}
     </View>
   );
 };
@@ -199,34 +275,45 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 8,
   },
-  progressBarContainer: {
-    height: 6,
-    borderRadius: 3,
-    marginTop: 8,
-    marginBottom: 12,
-    overflow: 'hidden',
+  sliderContainer: {
+    height: 28,
+    borderRadius: 14,
+    marginTop: 12,
+    marginBottom: 8,
+    justifyContent: 'center',
+    overflow: 'visible',
   },
-  progressBar: {
-    height: '100%',
-    borderRadius: 3,
+  progressFill: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    borderRadius: 14,
   },
-  controlsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  button: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  thumb: {
+    position: 'absolute',
+    width: THUMB_SIZE,
+    height: THUMB_SIZE,
+    borderRadius: THUMB_SIZE / 2,
+    borderWidth: 3,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  thumbInner: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.5)',
   },
   rangeContainer: {
-    flex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: 4,
   },
   rangeText: {
     fontSize: 11,

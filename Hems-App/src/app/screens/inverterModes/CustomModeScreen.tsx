@@ -19,11 +19,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors } from '../../../theme/constants';
 import { useInverterModeStore } from '../../../store/inverterModeStore';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import {
   SettingSection,
   SettingToggle,
   SettingSlider,
   SettingPicker,
+  BatterySOCVisualizer,
 } from '../../../components/inverterModes';
 import {
   WorkModeType,
@@ -65,19 +67,20 @@ const CustomModeScreen: React.FC = () => {
     updateGridSettings,
     updateGeneratorSettings,
     updateAdvancedSettings,
-    updateTimeOfUseSettings,
     selectMode,
     applyMode,
   } = useInverterModeStore();
 
-  const [hasChanges, setHasChanges] = useState(false);
+  const [_hasChanges, setHasChanges] = useState(false);
+  const [scrollEnabled, setScrollEnabled] = useState(true);
 
   const markChanged = () => setHasChanges(true);
 
   const handleSave = () => {
-    // Validate SOC values
-    const { shutdownSOC, lowBattSOC, restartSOC } = customConfig.battery;
-    if (shutdownSOC >= lowBattSOC || lowBattSOC >= restartSOC) {
+    // Validate SOC values (4-level constraint)
+    const { chargingSOC, shutdownSOC, lowBattSOC, restartSOC } = customConfig.battery;
+    // Constraint: shutdownSOC < lowBattSOC < restartSOC < chargingSOC
+    if (shutdownSOC >= lowBattSOC || lowBattSOC >= restartSOC || restartSOC >= chargingSOC) {
       Alert.alert(
         t('inverterModes.validationError'),
         t('inverterModes.socValidation')
@@ -116,6 +119,7 @@ const CustomModeScreen: React.FC = () => {
   };
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <View
       style={[
         styles.container,
@@ -144,6 +148,7 @@ const CustomModeScreen: React.FC = () => {
           { paddingBottom: insets.bottom + 100 },
         ]}
         showsVerticalScrollIndicator={false}
+        scrollEnabled={scrollEnabled}
       >
         {/* Work Mode Settings */}
         <SettingSection title={t('inverterModes.settings.workMode')} icon="cog" defaultExpanded>
@@ -296,44 +301,28 @@ const CustomModeScreen: React.FC = () => {
             step={VALIDATION_RULES.current.maxDischarge.step}
             unit="A"
           />
-          <SettingSlider
-            label={t('inverterModes.labels.shutdownSOC')}
-            value={customConfig.battery.shutdownSOC}
-            onChange={(value) => {
-              updateBatterySettings({ shutdownSOC: value });
+          {/* Visual Battery SOC Bar */}
+          <BatterySOCVisualizer
+            values={{
+              chargingSOC: customConfig.battery.chargingSOC ?? 100,
+              backupSOC: customConfig.battery.restartSOC,
+              warningSOC: customConfig.battery.lowBattSOC,
+              dischargeSOC: customConfig.battery.shutdownSOC,
+            }}
+            onValuesChange={(values) => {
+              updateBatterySettings({
+                chargingSOC: values.chargingSOC,
+                restartSOC: values.backupSOC,
+                lowBattSOC: values.warningSOC,
+                shutdownSOC: values.dischargeSOC,
+              });
               markChanged();
             }}
-            min={0}
-            max={30}
-            step={1}
-            unit="%"
-            description={t('inverterModes.descriptions.shutdownSOC')}
-          />
-          <SettingSlider
-            label={t('inverterModes.labels.lowBattSOC')}
-            value={customConfig.battery.lowBattSOC}
-            onChange={(value) => {
-              updateBatterySettings({ lowBattSOC: value });
-              markChanged();
-            }}
-            min={10}
-            max={50}
-            step={1}
-            unit="%"
-            description={t('inverterModes.descriptions.lowBattSOC')}
-          />
-          <SettingSlider
-            label={t('inverterModes.labels.restartSOC')}
-            value={customConfig.battery.restartSOC}
-            onChange={(value) => {
-              updateBatterySettings({ restartSOC: value });
-              markChanged();
-            }}
-            min={20}
-            max={100}
-            step={1}
-            unit="%"
-            description={t('inverterModes.descriptions.restartSOC')}
+            onGestureStart={() => setScrollEnabled(false)}
+            onGestureEnd={() => setScrollEnabled(true)}
+            COLORS={COLORS}
+            isDark={isDark}
+            barHeight={280}
           />
         </SettingSection>
 
@@ -533,6 +522,7 @@ const CustomModeScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
     </View>
+    </GestureHandlerRootView>
   );
 };
 

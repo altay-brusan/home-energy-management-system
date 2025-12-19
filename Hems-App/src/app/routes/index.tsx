@@ -72,6 +72,10 @@ import {
 import SettingsScreen from '../screens/settings/SettingsScreen';
 import GeneralSettingsScreen from '../screens/settings/GeneralSettingsScreen';
 import PricingSettingsScreen from '../screens/settings/PricingSettingsScreen';
+import DeviceSettingsScreen from '../screens/settings/DeviceSettingsScreen';
+import ResetSettingsScreen from '../screens/settings/ResetSettingsScreen';
+import ProceduresScreen from '../screens/settings/ProceduresScreen';
+import BatteryRecoveryScreen from '../screens/settings/BatteryRecoveryScreen';
 import HomeScreen from '../screens/home/Home';
 import NotificationScreen from '../screens/notification/NotificationScreen';
 import NotificationDetailScreen from '../screens/notificationDetail/NotificationDetailScreen';
@@ -468,6 +472,26 @@ export function RootNavigator () {
             <Stack.Screen
               name="PricingSettings"
               component={PricingSettingsScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="DeviceSettings"
+              component={DeviceSettingsScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="ResetSettings"
+              component={ResetSettingsScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="Procedures"
+              component={ProceduresScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="BatteryRecovery"
+              component={BatteryRecoveryScreen}
               options={{ animation: 'slide_from_right' }}
             />
           </>

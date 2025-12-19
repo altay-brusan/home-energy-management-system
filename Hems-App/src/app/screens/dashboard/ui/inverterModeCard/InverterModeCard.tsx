@@ -136,12 +136,6 @@ const InverterModeCard: React.FC<InverterModeCardProps> = ({ COLORS }) => {
           </View>
         )}
 
-        {/* Tap to configure hint */}
-        {!activeModeId && (
-          <Text style={[styles.hint, { color: COLORS.accent }]}>
-            {t('inverterModes.tapToConfigure')}
-          </Text>
-        )}
       </TouchableOpacity>
     </Reanimated.View>
   );
@@ -210,11 +204,6 @@ const styles = StyleSheet.create({
   featureText: {
     fontSize: 11,
     fontWeight: '600',
-  },
-  hint: {
-    fontSize: 12,
-    fontWeight: '500',
-    marginTop: 4,
   },
 });
 

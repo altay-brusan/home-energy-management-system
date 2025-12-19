@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, Settings, ChevronRight, DollarSign } from 'lucide-react-native';
+import { ArrowLeft, Settings, ChevronRight, DollarSign, Smartphone, Wrench } from 'lucide-react-native';
 import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors } from '../../../theme/constants';
 import { useI18n } from '../../../hooks/useI18n';
@@ -65,6 +65,46 @@ export default function SettingsScreen({ navigation }: any) {
             </Text>
             <Text style={[styles.cardSubtitle, { color: COLORS.textSoft }]}>
               {t('settings.pricingSettingsDesc')}
+            </Text>
+          </View>
+          <ChevronRight size={20} color={COLORS.textSoft} />
+        </TouchableOpacity>
+
+        {/* Device Settings Card */}
+        <TouchableOpacity
+          style={[styles.card, { backgroundColor: isDark ? COLORS.surface : COLORS.white }]}
+          onPress={() => navigation.navigate('DeviceSettings')}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.iconContainer, { backgroundColor: `${COLORS.accent}15` }]}>
+            <Smartphone size={22} color={COLORS.accent} />
+          </View>
+          <View style={styles.cardContent}>
+            <Text style={[styles.cardTitle, { color: COLORS.text }]}>
+              {t('settings.deviceSettings')}
+            </Text>
+            <Text style={[styles.cardSubtitle, { color: COLORS.textSoft }]}>
+              {t('settings.deviceSettingsDesc')}
+            </Text>
+          </View>
+          <ChevronRight size={20} color={COLORS.textSoft} />
+        </TouchableOpacity>
+
+        {/* Procedures Card */}
+        <TouchableOpacity
+          style={[styles.card, { backgroundColor: isDark ? COLORS.surface : COLORS.white }]}
+          onPress={() => navigation.navigate('Procedures')}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.iconContainer, { backgroundColor: `${COLORS.accent}15` }]}>
+            <Wrench size={22} color={COLORS.accent} />
+          </View>
+          <View style={styles.cardContent}>
+            <Text style={[styles.cardTitle, { color: COLORS.text }]}>
+              {t('settings.procedures')}
+            </Text>
+            <Text style={[styles.cardSubtitle, { color: COLORS.textSoft }]}>
+              {t('settings.proceduresDesc')}
             </Text>
           </View>
           <ChevronRight size={20} color={COLORS.textSoft} />
