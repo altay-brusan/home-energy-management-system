@@ -74,7 +74,8 @@ public static class DependencyInjection
 
         // ThingsBoard Services
         builder.Services.AddHttpClient<IThingsBoardConnectorService, ThingsBoardConnectorService>();
-        
+        builder.Services.AddScoped<IDeviceRpcExecutorService, DeviceRpcExecutorService>();
+
         // Device Authorization
         builder.Services.AddScoped<IAuthorizationHandler, DeviceOnlyAuthorizationHandler>();
         
