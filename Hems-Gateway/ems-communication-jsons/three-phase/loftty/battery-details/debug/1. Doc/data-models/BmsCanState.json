@@ -1,0 +1,42 @@
+BmsCanState
+{
+  "kind": "BmsCanState",
+  "version": 1,
+  "timestampUtc": "string",
+  "bmsAddress": "number",                    // 0x01-0x10 (1-16)
+
+  // ═══════════════════════════════════════
+  // 0x14F001xx - Periodic message data 1 (1000ms)
+  // ═══════════════════════════════════════
+  "chargeDischargeStatus": "number",         // BYTE0: 0=standby, 1=charging, 2=discharge
+  "currentA": "number",                      // BYTE2-3: 0.1A (positive=charge, negative=discharge)
+  "batteryPackVoltageV": "number",           // BYTE4-5: 0.1V
+  "batteryRemainingCapacityAh": "number",    // BYTE6-7: 0.01Ah
+
+  // ═══════════════════════════════════════
+  // 0x14F002xx - Periodic message data 2 (1000ms)
+  // ═══════════════════════════════════════
+  "maxCellVoltageMv": "number",              // BYTE0-1: mV
+  "minCellVoltageMv": "number",              // BYTE2-3: mV
+  "avgCellVoltageMv": "number",              // BYTE4-5: mV
+  "avgCellTempC": "number",                  // BYTE6-7: 0.1°C
+
+  // ═══════════════════════════════════════
+  // 0x14F003xx - Periodic message data 3 (10000ms)
+  // ═══════════════════════════════════════
+  "ratedCapacityAh": "number",               // BYTE0-1: 0.01Ah
+  "totalDischargeWh": "number",              // BYTE2-5: Wh (4 bytes)
+  "cycleCount": "number",                    // BYTE6-7: times
+
+  // ═══════════════════════════════════════
+  // 0x14F004xx - Periodic message data 4 (10000ms)
+  // ═══════════════════════════════════════
+  "softwareVersionMain": "number",           // BYTE0
+  "softwareVersionSub": "number",            // BYTE1
+  "sohPercent": "number",                    // BYTE2-3: 0.1%
+
+  // ═══════════════════════════════════════
+  // 0x14F005xx-07xx - Periodic message data 5 (10000ms)
+  // ═══════════════════════════════════════
+  "serialNumber": "string"                   // 24 ASCII chars (3 frames)
+}

@@ -1,0 +1,77 @@
+{
+  "kind": "BatteryEnergyFlowState",
+  "version": 1,
+  "timestampUtc": "2025-12-19T12:00:00.000Z",
+
+  // ═══════════════════════════════════════
+  // Sistem Toplamı (Pylontech 0x35x)
+  // ═══════════════════════════════════════
+  "bmsCount": 2,
+  "socPercent": 60,
+  "sohPercent": 100,
+  "voltageV": 49.76,
+  "currentA": -2.2,
+  "temperatureC": 24,
+
+  // ═══════════════════════════════════════
+  // Bireysel BMS Detayları (48100-LT-48 0x14F00xxx)
+  // ═══════════════════════════════════════
+  "bmsList": [
+    {
+      "bmsAddress": 1,
+      "chargeDischargeStatus": 2,
+      "currentA": -1.2,
+      "batteryPackVoltageV": 49.7,
+      "batteryRemainingCapacityAh": 76.79,
+      "maxCellVoltageMv": 3319,
+      "minCellVoltageMv": 3316,
+      "avgCellVoltageMv": 3318,
+      "avgCellTempC": 23,
+      "ratedCapacityAh": 100,
+      "totalDischargeWh": 1264,
+      "cycleCount": 0,
+      "sohPercent": 100
+    },
+    {
+      "bmsAddress": 2,
+      "chargeDischargeStatus": 2,
+      "currentA": -1.0,
+      "batteryPackVoltageV": 49.7,
+      "batteryRemainingCapacityAh": 44.36,
+      "maxCellVoltageMv": 3319,
+      "minCellVoltageMv": 3312,
+      "avgCellVoltageMv": 3317,
+      "avgCellTempC": 25,
+      "ratedCapacityAh": 100,
+      "totalDischargeWh": 1811,
+      "cycleCount": 0,
+      "sohPercent": 100
+    }
+  ]
+}
+```
+
+---
+
+## 📋 Kaynak Özeti
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   BatteryEnergyFlowState                    │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  Sistem (Pylontech 0x35x)                           │   │
+│  │  ─────────────────────────────────────────────────  │   │
+│  │  0x355 → socPercent, sohPercent                     │   │
+│  │  0x356 → voltageV, currentA, temperatureC           │   │
+│  │  0x359 → bmsCount                                   │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  bmsList[] (48100-LT-48 0x14F00xxx)                 │   │
+│  │  ─────────────────────────────────────────────────  │   │
+│  │  0x14F001xx → status, current, voltage, capacity    │   │
+│  │  0x14F002xx → cell voltages, temp                   │   │
+│  │  0x14F003xx → rated, totalWh, cycles                │   │
+│  │  0x14F004xx → sohPercent                            │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘

@@ -1,0 +1,67 @@
+PylontechCanState
+{
+  "kind": "PylontechCanState",
+  "version": 1,
+  "timestampUtc": "string",
+
+  // ═══════════════════════════════════════
+  // 0x351 - Battery Charge/Discharge Limits (1000ms)
+  // ═══════════════════════════════════════
+  "chargeVoltageV": "number",                // BYTE0-1: 0.1V, U16 - 建议充电电压
+  "chargeCurrentLimitA": "number",           // BYTE2-3: 0.1A, S16 - 充电限流
+  "dischargeCurrentLimitA": "number",        // BYTE4-5: 0.1A, S16 - 放电限流
+
+  // ═══════════════════════════════════════
+  // 0x355 - SOC / SOH (1000ms) ⭐
+  // ═══════════════════════════════════════
+  "socPercent": "number",                    // BYTE0-1: 1%, U16 - SOC of system
+  "sohPercent": "number",                    // BYTE2-3: 1%, U16 - SOH of system
+
+  // ═══════════════════════════════════════
+  // 0x356 - Voltage / Current / Temperature (1000ms)
+  // ═══════════════════════════════════════
+  "voltageV": "number",                      // BYTE0-1: 0.01V, S16 - 单模块或系统平均电压
+  "currentA": "number",                      // BYTE2-3: 0.1A, S16 - 单台或系统总电流
+  "temperatureC": "number",                  // BYTE4-5: 0.1°C, S16 - 电芯平均温度
+
+  // ═══════════════════════════════════════
+  // 0x359 - Protection / Alarm Status (1000ms)
+  // ═══════════════════════════════════════
+  "moduleCount": "number",                   // BYTE4: Module numbers
+
+  "protection": {
+    "cellOverVoltage": "boolean",            // Table1 Bit1
+    "cellUnderVoltage": "boolean",           // Table1 Bit2
+    "cellOverTemperature": "boolean",        // Table1 Bit3
+    "cellUnderTemperature": "boolean",       // Table1 Bit4
+    "dischargeOverCurrent": "boolean",       // Table1 Bit7
+    "chargeOverCurrent": "boolean",          // Table2 Bit0
+    "systemError": "boolean"                 // Table2 Bit3-4
+  },
+
+  "alarm": {
+    "cellHighVoltage": "boolean",            // Table3 Bit1
+    "cellLowVoltage": "boolean",             // Table3 Bit2
+    "cellHighTemperature": "boolean",        // Table3 Bit3
+    "cellLowTemperature": "boolean",         // Table3 Bit4
+    "dischargeHighCurrent": "boolean",       // Table3 Bit7
+    "chargeHighCurrent": "boolean",          // Table4 Bit0
+    "internalCommFail": "boolean"            // Table4 Bit3
+  },
+
+  // ═══════════════════════════════════════
+  // 0x35C - Request Flags (1000ms)
+  // ═══════════════════════════════════════
+  "request": {
+    "chargeEnable": "boolean",               // Bit7 - Charge enable
+    "dischargeEnable": "boolean",            // Bit6 - Discharge enable
+    "forceChargeI": "boolean",               // Bit5 - Request force charge I (SOC 5-10%)
+    "forceChargeII": "boolean",              // Bit4 - Request force charge II (SOC 9-13%)
+    "fullCharge": "boolean"                  // Bit3 - Request full charge (SOC < 97% for 30 days)
+  },
+
+  // ═══════════════════════════════════════
+  // 0x35E - Manufacturer Name (1000ms)
+  // ═══════════════════════════════════════
+  "manufacturerName": "string"               // ASCII "PYLON"
+}

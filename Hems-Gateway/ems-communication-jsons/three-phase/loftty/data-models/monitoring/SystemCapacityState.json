@@ -1,0 +1,59 @@
+SystemCapacityState
+{
+  "kind": "SystemCapacityState",
+  "version": 1,
+  "timestampUtc": "string",
+  "gatewayId": "string",
+  "inverterSerialNumber": "string",
+
+  // ═══════════════════════════════════════
+  // Inverter Capacity Info
+  // ═══════════════════════════════════════
+
+  "inverter": {
+    "deviceType": "number",                  // 100 - 设备类型 Device Type
+                                             //   0x03 = Single-phase LV Hybrid
+                                             //   0x05 = Three-phase LV Hybrid
+                                             //   0x06 = Three-phase HV Hybrid
+
+    "ratedPowerW": "number",                 // 120 (low) + 121 (high) - 额定功率 Rated Power
+                                             //   Unit: 0.1W, U32
+                                             //   Example: 120000 = 12000W = 12kW
+
+    "ratedPowerKw": "number"                 // Derived: ratedPowerW / 1000
+  },
+
+  // ═══════════════════════════════════════
+  // Battery Capacity Info
+  // ═══════════════════════════════════════
+
+  "battery": {
+    "capacityAh": "number",                  // 202 - 电池容量 Battery Capacity
+                                             //   Unit: 1 Ah, Range: [0, 2000]
+
+    "nominalVoltageV": "number",             // Config/derived - typically 48V or 51.2V for LFP
+
+    "capacityKwh": "number",                 // Derived: (capacityAh × nominalVoltageV) / 1000
+
+    "socPercent": "number",                  // 688 - 电池SOC Battery SOC
+                                             //   Unit: 1%
+
+    "controlMode": "number"                  // 211 - 电池工作根据电压还是容量
+                                             //   0 = voltage mode
+                                             //   1 = capacity mode
+                                             //   2 = no battery
+  },
+
+  // ═══════════════════════════════════════
+  // Raw Register Values (for debugging)
+  // ═══════════════════════════════════════
+
+  "rawRegisters": {
+    "reg100": "number",                      // Device type raw
+    "reg120": "number",                      // Rated power low word
+    "reg121": "number",                      // Rated power high word
+    "reg202": "number",                      // Battery capacity raw
+    "reg211": "number",                      // Battery control mode raw
+    "reg688": "number"                       // Battery SOC raw
+  }
+}

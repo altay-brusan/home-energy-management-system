@@ -1,0 +1,106 @@
+[
+    {
+        "id": "battery_info_tab",
+        "type": "tab",
+        "label": "Battery Info",
+        "disabled": false,
+        "info": "BatteryInfoState - Static battery information"
+    },
+    {
+        "id": "bi_can_in",
+        "type": "socketcan-out",
+        "z": "battery_info_tab",
+        "name": "CAN0 Input",
+        "config": "537471527fc35bc4",
+        "x": 120,
+        "y": 140,
+        "wires": [
+            ["bi_parse"]
+        ]
+    },
+    {
+        "id": "bi_parse",
+        "type": "function",
+        "z": "battery_info_tab",
+        "name": "Parse Battery Info",
+        "func": "const frame = msg.payload || msg;\nconst canId = frame.canid;\nconst data = frame.data || [];\n\nlet state = flow.get(\"batteryInfo\") || {\n    kind: \"BatteryInfoState\",\n    version: 1,\n    manufacturerName: null,\n    moduleCount: 0,\n    bmsList: []\n};\n\nfunction u16(buf, offset) {\n    return (buf[offset] & 0xFF) | ((buf[offset + 1] & 0xFF) << 8);\n}\n\nfunction getBms(addr) {\n    var bms = state.bmsList.find(function(b) { return b.bmsAddress === addr; });\n    if (!bms) {\n        bms = { bmsAddress: addr, _sn1: \"\", _sn2: \"\", _sn3: \"\" };\n        state.bmsList.push(bms);\n        state.bmsList.sort(function(a, b) { return a.bmsAddress - b.bmsAddress; });\n    }\n    return bms;\n}\n\nvar processed = false;\n\nif (canId === 0x359) {\n    processed = true;\n    state.moduleCount = data[4];\n}\n\nif (canId === 0x35E) {\n    processed = true;\n    var name = \"\";\n    for (var i = 0; i < 8; i++) {\n        if (data[i] === 0) break;\n        name += String.fromCharCode(data[i]);\n    }\n    state.manufacturerName = name;\n}\n\nif ((canId & 0x1FFFF000) === 0x14F00000) {\n    var msgType = (canId >> 8) & 0x0F;\n    var bmsAddr = canId & 0xFF;\n    \n    if (msgType >= 3 && msgType <= 7) {\n        processed = true;\n        var bms = getBms(bmsAddr);\n        \n        switch (msgType) {\n            case 3:\n                bms.ratedCapacityAh = u16(data, 0) * 0.01;\n                break;\n            case 4:\n                bms.softwareVersionMain = data[0];\n                bms.softwareVersionSub = data[1];\n                break;\n            case 5:\n                bms._sn1 = \"\";\n                for (var j = 0; j < 8; j++) {\n                    if (data[j] === 0) break;\n                    bms._sn1 += String.fromCharCode(data[j]);\n                }\n                bms.serialNumber = bms._sn1 + (bms._sn2 || \"\") + (bms._sn3 || \"\");\n                break;\n            case 6:\n                bms._sn2 = \"\";\n                for (var k = 0; k < 8; k++) {\n                    if (data[k] === 0) break;\n                    bms._sn2 += String.fromCharCode(data[k]);\n                }\n                bms.serialNumber = (bms._sn1 || \"\") + bms._sn2 + (bms._sn3 || \"\");\n                break;\n            case 7:\n                bms._sn3 = \"\";\n                for (var l = 0; l < 8; l++) {\n                    if (data[l] === 0) break;\n                    bms._sn3 += String.fromCharCode(data[l]);\n                }\n                bms.serialNumber = (bms._sn1 || \"\") + (bms._sn2 || \"\") + bms._sn3;\n                break;\n        }\n    }\n}\n\nif (!processed) {\n    return null;\n}\n\nstate.timestampUtc = new Date().toISOString();\nflow.set(\"batteryInfo\", state);\nmsg.payload = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 320,
+        "y": 140,
+        "wires": [
+            ["bi_debug"]
+        ]
+    },
+    {
+        "id": "bi_debug",
+        "type": "debug",
+        "z": "battery_info_tab",
+        "name": "Battery Info",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.moduleCount",
+        "statusType": "msg",
+        "x": 510,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "bi_manual",
+        "type": "inject",
+        "z": "battery_info_tab",
+        "name": "Get Battery Info",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 140,
+        "y": 260,
+        "wires": [
+            ["bi_get_state"]
+        ]
+    },
+    {
+        "id": "bi_get_state",
+        "type": "function",
+        "z": "battery_info_tab",
+        "name": "Get State from Context",
+        "func": "var state = flow.get(\"batteryInfo\");\nif (state) {\n    var clean = JSON.parse(JSON.stringify(state));\n    clean.bmsList.forEach(function(bms) {\n        delete bms._sn1;\n        delete bms._sn2;\n        delete bms._sn3;\n    });\n    msg.payload = clean;\n    return msg;\n}\nmsg.payload = { error: \"No data yet\" };\nreturn msg;",
+        "outputs": 1,
+        "x": 350,
+        "y": 260,
+        "wires": [
+            ["bi_state_debug"]
+        ]
+    },
+    {
+        "id": "bi_state_debug",
+        "type": "debug",
+        "z": "battery_info_tab",
+        "name": "Full Info",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 550,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "537471527fc35bc4",
+        "type": "socketcan-config",
+        "interface": "can0"
+    }
+]

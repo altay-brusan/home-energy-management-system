@@ -1,0 +1,320 @@
+[
+    {
+        "id": "system_capacity_state_tab",
+        "type": "tab",
+        "label": "SystemCapacityState",
+        "disabled": false,
+        "info": "Reads System Capacity State from registers:\n- 100: Device type\n- 120-121: Rated power (32-bit, 0.1W)\n- 202: Battery capacity (Ah)\n- 211: Battery control mode\n- 688: Battery SOC %\n\nTriggers:\n1. Periodic: Every 5 minutes (sends to ThingsBoard only if values changed)\n2. RPC: getSystemCapacityState (always returns current value)"
+    },
+    {
+        "id": "scs_comment_periodic",
+        "type": "comment",
+        "z": "system_capacity_state_tab",
+        "name": "Periodic polling (5 min) - sends only if changed",
+        "info": "",
+        "x": 230,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "scs_comment_rpc",
+        "type": "comment",
+        "z": "system_capacity_state_tab",
+        "name": "RPC Trigger (getSystemCapacityState) - always responds",
+        "info": "",
+        "x": 250,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "scs_poll_inject",
+        "type": "inject",
+        "z": "system_capacity_state_tab",
+        "name": "Poll SystemCapacityState (5 min)",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "isRpcRequest",
+                "v": "false",
+                "vt": "bool"
+            }
+        ],
+        "repeat": "300",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 2,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 200,
+        "y": 120,
+        "wires": [
+            [
+                "scs_prep_read"
+            ]
+        ]
+    },
+    {
+        "id": "scs_link_in_rpc",
+        "type": "link in",
+        "z": "system_capacity_state_tab",
+        "name": "RPC getSystemCapacityState",
+        "links": [
+            "rpc_scs_link_out"
+        ],
+        "x": 155,
+        "y": 220,
+        "wires": [
+            [
+                "scs_prep_read"
+            ]
+        ]
+    },
+    {
+        "id": "scs_prep_read",
+        "type": "function",
+        "z": "system_capacity_state_tab",
+        "name": "Prep Parallel Reads",
+        "func": "// Read all capacity-related registers in parallel\nconst reads = [\n    { name: 'deviceType', address: 100, quantity: 1 },\n    { name: 'ratedPower', address: 120, quantity: 2 },  // 32-bit\n    { name: 'batteryCapacity', address: 202, quantity: 1 },\n    { name: 'batteryMode', address: 211, quantity: 1 },\n    { name: 'batterySoc', address: 688, quantity: 1 }\n];\n\nconst messages = reads.map(r => ({\n    payload: {\n        fc: 3,\n        unitid: 1,\n        address: r.address,\n        quantity: r.quantity\n    },\n    readName: r.name\n}));\n\nreturn [messages];",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 470,
+        "y": 160,
+        "wires": [
+            [
+                "scs_modbus_read"
+            ]
+        ]
+    },
+    {
+        "id": "scs_modbus_read",
+        "type": "modbus-flex-getter",
+        "z": "system_capacity_state_tab",
+        "name": "Read Capacity Regs",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 690,
+        "y": 160,
+        "wires": [
+            [
+                "scs_collect_reads"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "scs_collect_reads",
+        "type": "function",
+        "z": "system_capacity_state_tab",
+        "name": "Collect All Reads",
+        "func": "const flowKey = 'scs_reads';\nlet collected = flow.get(flowKey) || {};\nlet expectedCount = 5;\n\nlet data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data) || data.length < 1) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Read failed: \" + msg.readName });\n    return null;\n}\n\nconst readName = msg.readName;\n\n// Store the data based on type\nif (readName === 'ratedPower') {\n    // 32-bit value (2 registers)\n    collected[readName] = data;\n} else {\n    // Single register reads\n    collected[readName] = data[0];\n}\n\nflow.set(flowKey, collected);\n\nconst collectedCount = Object.keys(collected).length;\nnode.status({ fill: \"blue\", shape: \"dot\", text: `Collected ${collectedCount}/${expectedCount}` });\n\nif (collectedCount >= expectedCount) {\n    flow.set(flowKey, null);\n    msg.collectedData = collected;\n    msg.payload = collected;\n    return msg;\n}\n\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 890,
+        "y": 160,
+        "wires": [
+            [
+                "scs_build_json"
+            ]
+        ]
+    },
+    {
+        "id": "scs_build_json",
+        "type": "function",
+        "z": "system_capacity_state_tab",
+        "name": "Build SystemCapacityState JSON",
+        "func": "// Build SystemCapacityState from Modbus reads\n\nconst data = msg.collectedData;\n\nif (!data) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"No data\" });\n    return null;\n}\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\nconst serialNumber = global.get(\"INVERTER_SN\") || \"Unknown\";\n\n// Parse device type\nconst deviceType = data.deviceType;\n\n// Parse rated power (32-bit: high word << 16 | low word)\nconst ratedPowerRaw = (data.ratedPower[1] << 16) | data.ratedPower[0];\nconst ratedPowerW = ratedPowerRaw / 10;  // 0.1W scale\nconst ratedPowerKw = ratedPowerW / 1000;\n\n// Parse battery data\nconst capacityAh = data.batteryCapacity;\nconst socPercent = data.batterySoc;\nconst controlMode = data.batteryMode;\n\n// Assume nominal voltage (typical for LFP batteries)\nconst nominalVoltageV = 51.2;  // Standard LFP voltage\nconst capacityKwh = (capacityAh * nominalVoltageV) / 1000;\n\n// Build state object\nconst state = {\n    kind: \"SystemCapacityState\",\n    version: 1,\n    timestampUtc: new Date().toISOString(),\n    gatewayId: gatewayId,\n    inverterSerialNumber: serialNumber,\n    \n    inverter: {\n        deviceType: deviceType,\n        ratedPowerW: ratedPowerW,\n        ratedPowerKw: ratedPowerKw\n    },\n    \n    battery: {\n        capacityAh: capacityAh,\n        nominalVoltageV: nominalVoltageV,\n        capacityKwh: capacityKwh,\n        socPercent: socPercent,\n        controlMode: controlMode\n    },\n    \n    rawRegisters: {\n        reg100: deviceType,\n        reg120: data.ratedPower[0],\n        reg121: data.ratedPower[1],\n        reg202: capacityAh,\n        reg211: controlMode,\n        reg688: socPercent\n    }\n};\n\n// Create a hash for change detection\nconst stateHash = JSON.stringify({\n    deviceType: deviceType,\n    ratedPowerW: ratedPowerW,\n    capacityAh: capacityAh,\n    socPercent: socPercent,\n    controlMode: controlMode\n});\n\nmsg.currentStateHash = stateHash;\nmsg.previousStateHash = flow.get(\"lastCapacityStateHash\");\n\n// Update stored hash\nflow.set(\"lastCapacityStateHash\", stateHash);\n\nmsg.payload = state;\nmsg.state = state;\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `${ratedPowerKw}kW / ${capacityAh}Ah (${socPercent}%)` });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1140,
+        "y": 160,
+        "wires": [
+            [
+                "scs_check_change"
+            ]
+        ]
+    },
+    {
+        "id": "scs_check_change",
+        "type": "function",
+        "z": "system_capacity_state_tab",
+        "name": "Check State Change",
+        "func": "// Check if capacity state has changed\n// RPC requests always get response\n// Periodic polls only send to ThingsBoard if value changed\n\nconst currentHash = msg.currentStateHash;\nconst previousHash = msg.previousStateHash;\nconst isRpc = msg.isRpcRequest === true;\n\n// Determine if state changed\nconst stateChanged = (previousHash === undefined || previousHash === null || currentHash !== previousHash);\n\nmsg.stateChanged = stateChanged;\n\n// Debug status\nif (stateChanged) {\n    node.status({ fill: \"green\", shape: \"dot\", text: \"State changed - sending to TB\" });\n} else {\n    node.status({ fill: \"grey\", shape: \"ring\", text: \"No change\" });\n}\n\n// Output routing:\n// Output 1: Debug (always)\n// Output 2: MQTT ThingsBoard (only if changed)\n// Output 3: RPC Response (only if RPC request)\n\nconst debugMsg = { ...msg };\nconst mqttMsg = stateChanged ? { ...msg } : null;\nconst rpcMsg = isRpc ? { ...msg } : null;\n\nreturn [debugMsg, mqttMsg, rpcMsg];",
+        "outputs": 3,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1390,
+        "y": 160,
+        "wires": [
+            [
+                "scs_debug_json"
+            ],
+            [
+                "scs_mqtt_telemetry"
+            ],
+            [
+                "scs_rpc_response"
+            ]
+        ]
+    },
+    {
+        "id": "scs_debug_json",
+        "type": "debug",
+        "z": "system_capacity_state_tab",
+        "name": "SystemCapacityState JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1660,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "scs_mqtt_telemetry",
+        "type": "mqtt out",
+        "z": "system_capacity_state_tab",
+        "name": "Send to ThingsBoard (if changed)",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1700,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "scs_rpc_response",
+        "type": "function",
+        "z": "system_capacity_state_tab",
+        "name": "Prepare RPC Response",
+        "func": "// Only respond if this came from RPC\nif (!msg.rpcResponseTopic) {\n    return null;\n}\n\nconst state = msg.state || msg.payload;\n\nmsg.payload = state;\nmsg.topic = msg.rpcResponseTopic;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1650,
+        "y": 220,
+        "wires": [
+            [
+                "scs_mqtt_rpc_response"
+            ]
+        ]
+    },
+    {
+        "id": "scs_mqtt_rpc_response",
+        "type": "mqtt out",
+        "z": "system_capacity_state_tab",
+        "name": "RPC Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1870,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "EC100 Modbus",
+        "clienttype": "tcp",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": true,
+        "tcpHost": "192.168.1.100",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyUSB0",
+        "serialType": "RTU-BUFFERD",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "0x3A",
+        "unit_id": "1",
+        "commandDelay": "1",
+        "clientTimeout": "1000",
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": "2000",
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {}
+    }
+]

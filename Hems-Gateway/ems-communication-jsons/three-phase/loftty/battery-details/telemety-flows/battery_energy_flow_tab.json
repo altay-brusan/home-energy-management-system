@@ -1,0 +1,179 @@
+[
+    {
+        "id": "battery_energy_flow_tab",
+        "type": "tab",
+        "label": "Battery Energy Flow",
+        "disabled": false,
+        "info": "BatteryEnergyFlowState - Combines Pylontech (0x35x) + 48100-LT-48 (0x14F00xxx)"
+    },
+    {
+        "id": "bef_can_in",
+        "type": "socketcan-out",
+        "z": "battery_energy_flow_tab",
+        "name": "CAN0 Input",
+        "config": "537471527fc35bc4",
+        "x": 120,
+        "y": 140,
+        "wires": [
+            ["bef_parse"]
+        ]
+    },
+    {
+        "id": "bef_parse",
+        "type": "function",
+        "z": "battery_energy_flow_tab",
+        "name": "Parse All CAN",
+        "func": "const frame = msg.payload || msg;\nconst canId = frame.canid;\nconst data = frame.data || [];\n\nlet state = flow.get(\"batteryEnergyFlow\") || {\n    kind: \"BatteryEnergyFlowState\",\n    version: 1,\n    bmsCount: 0,\n    socPercent: null,\n    sohPercent: null,\n    voltageV: null,\n    currentA: null,\n    temperatureC: null,\n    bmsList: []\n};\n\nfunction u16(buf, offset) {\n    return (buf[offset] & 0xFF) | ((buf[offset + 1] & 0xFF) << 8);\n}\n\nfunction s16(buf, offset) {\n    var val = u16(buf, offset);\n    return val > 0x7FFF ? val - 0x10000 : val;\n}\n\nfunction getBms(addr) {\n    var bms = state.bmsList.find(function(b) { return b.bmsAddress === addr; });\n    if (!bms) {\n        bms = { bmsAddress: addr };\n        state.bmsList.push(bms);\n        state.bmsList.sort(function(a, b) { return a.bmsAddress - b.bmsAddress; });\n    }\n    return bms;\n}\n\nvar processed = false;\n\nif (canId >= 0x351 && canId <= 0x35E) {\n    processed = true;\n    switch (canId) {\n        case 0x355:\n            state.socPercent = u16(data, 0);\n            state.sohPercent = u16(data, 2);\n            break;\n        case 0x356:\n            state.voltageV = s16(data, 0) * 0.01;\n            state.currentA = s16(data, 2) * 0.1;\n            state.temperatureC = s16(data, 4) * 0.1;\n            break;\n        case 0x359:\n            state.bmsCount = data[4];\n            break;\n    }\n}\n\nif ((canId & 0x1FFFF000) === 0x14F00000) {\n    processed = true;\n    var msgType = (canId >> 8) & 0x0F;\n    var bmsAddr = canId & 0xFF;\n    var bms = getBms(bmsAddr);\n    \n    switch (msgType) {\n        case 1:\n            bms.chargeDischargeStatus = data[0];\n            bms.currentA = s16(data, 2) * 0.1;\n            bms.batteryPackVoltageV = u16(data, 4) * 0.1;\n            bms.batteryRemainingCapacityAh = u16(data, 6) * 0.01;\n            break;\n        case 2:\n            bms.maxCellVoltageMv = u16(data, 0);\n            bms.minCellVoltageMv = u16(data, 2);\n            bms.avgCellVoltageMv = u16(data, 4);\n            bms.avgCellTempC = s16(data, 6) * 0.1;\n            break;\n        case 3:\n            bms.ratedCapacityAh = u16(data, 0) * 0.01;\n            bms.totalDischargeWh = u16(data, 4);\n            bms.cycleCount = u16(data, 6);\n            break;\n        case 4:\n            bms.sohPercent = u16(data, 2);\n            break;\n    }\n}\n\nif (!processed) {\n    return null;\n}\n\nstate.timestampUtc = new Date().toISOString();\nflow.set(\"batteryEnergyFlow\", state);\nmsg.payload = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 310,
+        "y": 140,
+        "wires": [
+            ["bef_debug", "bef_throttle"]
+        ]
+    },
+    {
+        "id": "bef_debug",
+        "type": "debug",
+        "z": "battery_energy_flow_tab",
+        "name": "Energy Flow State",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.socPercent",
+        "statusType": "msg",
+        "x": 530,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "bef_throttle",
+        "type": "delay",
+        "z": "battery_energy_flow_tab",
+        "name": "Throttle 5s",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "5",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 510,
+        "y": 180,
+        "wires": [
+            ["bef_mqtt"]
+        ]
+    },
+    {
+        "id": "bef_mqtt",
+        "type": "mqtt out",
+        "z": "battery_energy_flow_tab",
+        "name": "ThingsBoard Telemetry",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 720,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "bef_manual",
+        "type": "inject",
+        "z": "battery_energy_flow_tab",
+        "name": "Get Battery Energy Flow",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 170,
+        "y": 260,
+        "wires": [
+            ["bef_get_state"]
+        ]
+    },
+    {
+        "id": "bef_get_state",
+        "type": "function",
+        "z": "battery_energy_flow_tab",
+        "name": "Get State from Context",
+        "func": "var state = flow.get(\"batteryEnergyFlow\");\nif (state) {\n    msg.payload = state;\n    return msg;\n}\nmsg.payload = { error: \"No data yet\" };\nreturn msg;",
+        "outputs": 1,
+        "x": 410,
+        "y": 260,
+        "wires": [
+            ["bef_state_debug"]
+        ]
+    },
+    {
+        "id": "bef_state_debug",
+        "type": "debug",
+        "z": "battery_energy_flow_tab",
+        "name": "Full State",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 610,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "537471527fc35bc4",
+        "type": "socketcan-config",
+        "interface": "can0"
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

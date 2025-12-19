@@ -1,0 +1,190 @@
+[
+    {
+        "id": "bms_can_doc_tab",
+        "type": "tab",
+        "label": "BMS CAN (48100-LT-48)",
+        "disabled": false,
+        "info": "48100-LT-48-V2.0 - Strictly per documentation"
+    },
+    {
+        "id": "bms_can_parse_doc",
+        "type": "function",
+        "z": "bms_can_doc_tab",
+        "name": "Parse BMS CAN (Doc)",
+        "func": "const frame = msg.payload || msg;\nconst canId = frame.canid;\nconst data = frame.data || [];\n\nconst msgType = (canId >> 8) & 0x0F;\nconst bmsAddr = canId & 0xFF;\n\nif ((canId & 0x1FFFF000) !== 0x14F00000) {\n    return null;\n}\n\nconst contextKey = \"bms_\" + bmsAddr;\nlet bms = flow.get(contextKey) || {\n    kind: \"BmsCanState\",\n    version: 1,\n    bmsAddress: bmsAddr\n};\n\nfunction u16(buf, offset) {\n    return (buf[offset] & 0xFF) | ((buf[offset + 1] & 0xFF) << 8);\n}\n\nfunction s16(buf, offset) {\n    var val = u16(buf, offset);\n    return val > 0x7FFF ? val - 0x10000 : val;\n}\n\nfunction u32(buf, offset) {\n    return (buf[offset] & 0xFF) | ((buf[offset + 1] & 0xFF) << 8) | ((buf[offset + 2] & 0xFF) << 16) | ((buf[offset + 3] & 0xFF) << 24);\n}\n\nswitch (msgType) {\n    case 1:\n        bms.chargeDischargeStatus = data[0];\n        bms.currentA = s16(data, 2) * 0.1;\n        bms.batteryPackVoltageV = u16(data, 4) * 0.1;\n        bms.batteryRemainingCapacityAh = u16(data, 6) * 0.01;\n        break;\n    case 2:\n        bms.maxCellVoltageMv = u16(data, 0);\n        bms.minCellVoltageMv = u16(data, 2);\n        bms.avgCellVoltageMv = u16(data, 4);\n        bms.avgCellTempC = s16(data, 6) * 0.1;\n        break;\n    case 3:\n        bms.ratedCapacityAh = u16(data, 0) * 0.01;\n        bms.totalDischargeWh = u32(data, 2);\n        bms.cycleCount = u16(data, 6);\n        break;\n    case 4:\n        bms.softwareVersionMain = data[0];\n        bms.softwareVersionSub = data[1];\n        bms.sohPercent = u16(data, 2) * 0.1;\n        break;\n    case 5:\n        bms._sn1 = \"\";\n        for (var i = 0; i < 8; i++) { if (data[i] === 0) break; bms._sn1 += String.fromCharCode(data[i]); }\n        bms.serialNumber = (bms._sn1 || \"\") + (bms._sn2 || \"\") + (bms._sn3 || \"\");\n        break;\n    case 6:\n        bms._sn2 = \"\";\n        for (var j = 0; j < 8; j++) { if (data[j] === 0) break; bms._sn2 += String.fromCharCode(data[j]); }\n        bms.serialNumber = (bms._sn1 || \"\") + (bms._sn2 || \"\") + (bms._sn3 || \"\");\n        break;\n    case 7:\n        bms._sn3 = \"\";\n        for (var k = 0; k < 8; k++) { if (data[k] === 0) break; bms._sn3 += String.fromCharCode(data[k]); }\n        bms.serialNumber = (bms._sn1 || \"\") + (bms._sn2 || \"\") + (bms._sn3 || \"\");\n        break;\n    default:\n        return null;\n}\n\nbms.timestampUtc = new Date().toISOString();\nflow.set(contextKey, bms);\nmsg.payload = bms;\nmsg.topic = \"bms/\" + bmsAddr;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 340,
+        "y": 140,
+        "wires": [
+            [
+                "bms_debug_doc",
+                "bms_throttle_doc"
+            ]
+        ]
+    },
+    {
+        "id": "bms_debug_doc",
+        "type": "debug",
+        "z": "bms_can_doc_tab",
+        "name": "BMS State",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.batteryPackVoltageV",
+        "statusType": "msg",
+        "x": 570,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "bms_throttle_doc",
+        "type": "delay",
+        "z": "bms_can_doc_tab",
+        "name": "Throttle 5s",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "5",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 570,
+        "y": 180,
+        "wires": [
+            [
+                "bms_mqtt_doc"
+            ]
+        ]
+    },
+    {
+        "id": "bms_mqtt_doc",
+        "type": "mqtt out",
+        "z": "bms_can_doc_tab",
+        "name": "ThingsBoard Telemetry",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 780,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "bms_manual_doc",
+        "type": "inject",
+        "z": "bms_can_doc_tab",
+        "name": "Get All BMS States",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 150,
+        "y": 260,
+        "wires": [
+            [
+                "bms_get_all_doc"
+            ]
+        ]
+    },
+    {
+        "id": "bms_get_all_doc",
+        "type": "function",
+        "z": "bms_can_doc_tab",
+        "name": "Get All BMS from Context",
+        "func": "const allBms = [];\nfor (var i = 1; i <= 16; i++) {\n    var bms = flow.get(\"bms_\" + i);\n    if (bms) {\n        var clean = Object.assign({}, bms);\n        delete clean._sn1;\n        delete clean._sn2;\n        delete clean._sn3;\n        allBms.push(clean);\n    }\n}\nmsg.payload = {\n    kind: \"BmsCanStateList\",\n    timestampUtc: new Date().toISOString(),\n    bmsCount: allBms.length,\n    bmsList: allBms\n};\nreturn msg;",
+        "outputs": 1,
+        "x": 390,
+        "y": 260,
+        "wires": [
+            [
+                "bms_all_debug_doc"
+            ]
+        ]
+    },
+    {
+        "id": "bms_all_debug_doc",
+        "type": "debug",
+        "z": "bms_can_doc_tab",
+        "name": "All BMS States",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 620,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "25e63404967214b9",
+        "type": "socketcan-out",
+        "z": "bms_can_doc_tab",
+        "name": "socketcan-out",
+        "config": "537471527fc35bc4",
+        "x": 130,
+        "y": 140,
+        "wires": [
+            [
+                "bms_can_parse_doc"
+            ]
+        ]
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "537471527fc35bc4",
+        "type": "socketcan-config",
+        "interface": "can0"
+    }
+]
