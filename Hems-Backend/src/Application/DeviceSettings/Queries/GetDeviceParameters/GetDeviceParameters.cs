@@ -65,7 +65,7 @@ public record DeviceParameterDto
     public Guid? ParameterGroupId { get; init; }
     public string? ParameterGroupName { get; init; }
     public int SortOrder { get; init; }
-    public DateTime? LastModified { get; init; }
+    public DateTimeOffset? LastModified { get; init; }
 }
 
 /// <summary>
