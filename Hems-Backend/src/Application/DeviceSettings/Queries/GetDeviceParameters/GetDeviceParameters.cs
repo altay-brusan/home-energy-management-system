@@ -8,7 +8,7 @@ namespace Hems_Backend.Application.DeviceSettings.Queries.GetDeviceParameters;
 
 public record GetDeviceParametersQuery : IRequest<DeviceParametersVm>
 {
-    public Guid SetupDeviceId { get; init; }
+    public Guid DeviceId { get; init; }
 }
 
 public class GetDeviceParametersQueryHandler : IRequestHandler<GetDeviceParametersQuery, DeviceParametersVm>
@@ -24,8 +24,21 @@ public class GetDeviceParametersQueryHandler : IRequestHandler<GetDeviceParamete
 
     public async Task<DeviceParametersVm> Handle(GetDeviceParametersQuery request, CancellationToken cancellationToken)
     {
+        // Find SetupDevice by DeviceId
+        var setupDevice = await _context.SetupDevices
+            .FirstOrDefaultAsync(sd => sd.DeviceId == request.DeviceId, cancellationToken);
+
+        if (setupDevice == null)
+        {
+            return new DeviceParametersVm
+            {
+                DeviceId = request.DeviceId,
+                Parameters = new List<DeviceParameterDto>()
+            };
+        }
+
         var parameters = await _context.SetupDeviceParameterValues
-            .Where(sdpv => sdpv.SetupDeviceId == request.SetupDeviceId)
+            .Where(sdpv => sdpv.SetupDeviceId == setupDevice.Id)
             .Include(sdpv => sdpv.Parameter)
             .Include(sdpv => sdpv.ParameterGroup)
             .OrderBy(sdpv => sdpv.SortOrder)
@@ -34,7 +47,7 @@ public class GetDeviceParametersQueryHandler : IRequestHandler<GetDeviceParamete
 
         return new DeviceParametersVm
         {
-            SetupDeviceId = request.SetupDeviceId,
+            DeviceId = request.DeviceId,
             Parameters = parameters
         };
     }
@@ -45,7 +58,7 @@ public class GetDeviceParametersQueryHandler : IRequestHandler<GetDeviceParamete
 /// </summary>
 public record DeviceParametersVm
 {
-    public Guid SetupDeviceId { get; init; }
+    public Guid DeviceId { get; init; }
     public List<DeviceParameterDto> Parameters { get; init; } = new();
 }
 

@@ -8,7 +8,7 @@ namespace Hems_Backend.Application.DeviceSettings.Commands.SetDeviceMode;
 
 public record SetDeviceModeCommand : IRequest<SetDeviceModeResult>
 {
-    public Guid SetupDeviceId { get; init; }
+    public Guid DeviceId { get; init; }
     public DeviceMode Mode { get; init; }
 }
 
@@ -41,10 +41,10 @@ public class SetDeviceModeCommandHandler : IRequestHandler<SetDeviceModeCommand,
             };
         }
 
-        // Get device
+        // Find SetupDevice by DeviceId
         var setupDevice = await _context.SetupDevices
             .Include(sd => sd.Device)
-            .FirstOrDefaultAsync(sd => sd.Id == request.SetupDeviceId, cancellationToken);
+            .FirstOrDefaultAsync(sd => sd.DeviceId == request.DeviceId, cancellationToken);
 
         if (setupDevice?.Device == null)
         {
@@ -60,7 +60,7 @@ public class SetDeviceModeCommandHandler : IRequestHandler<SetDeviceModeCommand,
         // Get all parameter values for this device
         var allParameterValues = await _context.SetupDeviceParameterValues
             .Include(sdpv => sdpv.Parameter)
-            .Where(sdpv => sdpv.SetupDeviceId == request.SetupDeviceId)
+            .Where(sdpv => sdpv.SetupDeviceId == setupDevice.Id)
             .ToListAsync(cancellationToken);
 
         // Build parameter updates map (parameterName -> value)

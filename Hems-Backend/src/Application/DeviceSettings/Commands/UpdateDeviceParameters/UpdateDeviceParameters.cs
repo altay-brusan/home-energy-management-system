@@ -7,7 +7,7 @@ namespace Hems_Backend.Application.DeviceSettings.Commands.UpdateDeviceParameter
 
 public record UpdateDeviceParametersCommand : IRequest<UpdateDeviceParametersResult>
 {
-    public Guid SetupDeviceId { get; init; }
+    public Guid DeviceId { get; init; }
     public List<ParameterUpdate> Parameters { get; init; } = new();
 }
 
@@ -44,14 +44,26 @@ public class UpdateDeviceParametersCommandHandler : IRequestHandler<UpdateDevice
             };
         }
 
+        // Find SetupDevice by DeviceId
+        var setupDevice = await _context.SetupDevices
+            .Include(sd => sd.Device)
+            .FirstOrDefaultAsync(sd => sd.DeviceId == request.DeviceId, cancellationToken);
+
+        if (setupDevice?.Device == null)
+        {
+            return new UpdateDeviceParametersResult
+            {
+                Success = false,
+                ErrorMessage = "Device not found"
+            };
+        }
+
         // Get all parameter values for this device
         var parameterIds = request.Parameters.Select(p => p.ParameterId).ToList();
         var parameterValues = await _context.SetupDeviceParameterValues
             .Include(sdpv => sdpv.Parameter)
-            .Include(sdpv => sdpv.SetupDevice)
-                .ThenInclude(sd => sd!.Device)
             .Where(sdpv =>
-                sdpv.SetupDeviceId == request.SetupDeviceId &&
+                sdpv.SetupDeviceId == setupDevice.Id &&
                 parameterIds.Contains(sdpv.ParameterId))
             .ToListAsync(cancellationToken);
 
@@ -64,8 +76,7 @@ public class UpdateDeviceParametersCommandHandler : IRequestHandler<UpdateDevice
             };
         }
 
-        var device = parameterValues.First().SetupDevice?.Device;
-        Guard.Against.Null(device);
+        var device = setupDevice.Device;
 
         // Build parameter dictionary for RPC call (parameterName -> value)
         var parameterUpdates = new Dictionary<string, string>();

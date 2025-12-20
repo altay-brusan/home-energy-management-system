@@ -33,24 +33,24 @@ public class DeviceSettings : EndpointGroupBase
         app.MapGroup(this)
             .RequireAuthorization()
             // ==== RPC-SYNCED OPERATIONS (New - Recommended for users) ====
-            .MapGet(GetDeviceParameters, "{setupDeviceId:guid}/parameters")
-            .MapPut(UpdateDeviceParameter, "{setupDeviceId:guid}/parameters/{parameterId:guid}")
-            .MapPut(UpdateDeviceParameters, "{setupDeviceId:guid}/parameters")
+            .MapGet(GetDeviceParameters, "device/{deviceId:guid}/parameters")
+            .MapGet(GetDeviceParameterValuesTree, "device/{deviceId:guid}/tree")
+            .MapPut(UpdateDeviceParameter, "device/{deviceId:guid}/parameters/{parameterId:guid}")
+            .MapPut(UpdateDeviceParameters, "device/{deviceId:guid}/parameters")
             .MapGet(GetAvailableModes, "modes")
-            .MapPost(SetDeviceMode, "{setupDeviceId:guid}/mode")
+            .MapPost(SetDeviceMode, "device/{deviceId:guid}/mode")
 
-            // ==== DATABASE-ONLY OPERATIONS (Legacy - Admin tools) ====
-            .MapGet(GetSetupDeviceParameterValues, "raw")
-            .MapGet(GetSetupDeviceParameterValuesTree, "raw/tree")
-            .MapGet(GetDeviceParameterValuesTree, "raw/device/{deviceId}/tree")
-            .MapPost(CreateSetupDeviceParameterValue, "raw")
-            .MapPut(UpdateSetupDeviceParameterValue, "raw/{id}")
-            .MapDelete(DeleteSetupDeviceParameterValue, "raw/{id}")
-            .MapPost(InitializeDeviceSettings, "raw/device/{deviceId}/initialize")
-            .MapPut(UpdateDeviceParameterValueRaw, "raw/device/{deviceId}/parameter/{parameterId}")
+            // ==== DATABASE-ONLY OPERATIONS (Admin tools) ====
+            .MapGet(GetSetupDeviceParameterValues, "admin")
+            .MapGet(GetSetupDeviceParameterValuesTree, "admin/tree")
+            .MapPost(CreateSetupDeviceParameterValue, "admin")
+            .MapPut(UpdateSetupDeviceParameterValue, "admin/{id}")
+            .MapDelete(DeleteSetupDeviceParameterValue, "admin/{id}")
+            .MapPost(InitializeDeviceSettings, "admin/device/{deviceId}/initialize")
+            .MapPut(UpdateDeviceParameterValueRaw, "admin/device/{deviceId}/parameter/{parameterId}")
 
-            // ==== DEMO/LEGACY ====
-            .MapPost(ChangeExportStrategy, "ChangeExportStrategy");
+            // ==== DEMO/TESTING ====
+            .MapPost(ChangeExportStrategy, "demo/export-strategy");
     }
 
     // ========================================================================
@@ -59,17 +59,17 @@ public class DeviceSettings : EndpointGroupBase
     // ========================================================================
 
     /// <summary>
-    /// Get all parameters for a setup device with their current values
+    /// Get all parameters for a device with their current values
     /// </summary>
     /// <param name="sender">MediatR sender</param>
-    /// <param name="setupDeviceId">Setup device ID</param>
+    /// <param name="deviceId">Device ID</param>
     /// <returns>List of device parameters with current values</returns>
     [Authorize]
     public async Task<IResult> GetDeviceParameters(
         ISender sender,
-        Guid setupDeviceId)
+        Guid deviceId)
     {
-        var query = new GetDeviceParametersQuery { SetupDeviceId = setupDeviceId };
+        var query = new GetDeviceParametersQuery { DeviceId = deviceId };
         var result = await sender.Send(query);
         return Results.Ok(result);
     }
@@ -79,19 +79,19 @@ public class DeviceSettings : EndpointGroupBase
     /// Updates the device via RPC first, then updates the database if successful
     /// </summary>
     /// <param name="sender">MediatR sender</param>
-    /// <param name="setupDeviceId">Setup device ID</param>
+    /// <param name="deviceId">Device ID</param>
     /// <param name="parameterId">Parameter ID</param>
     /// <param name="request">Update request with new value</param>
     [Authorize]
     public async Task<IResult> UpdateDeviceParameter(
         ISender sender,
-        Guid setupDeviceId,
+        Guid deviceId,
         Guid parameterId,
         UpdateDeviceParameterRequest request)
     {
         var command = new UpdateDeviceParameterCommand
         {
-            SetupDeviceId = setupDeviceId,
+            DeviceId = deviceId,
             ParameterId = parameterId,
             Value = request.Value
         };
@@ -118,12 +118,12 @@ public class DeviceSettings : EndpointGroupBase
     [Authorize]
     public async Task<IResult> UpdateDeviceParameters(
         ISender sender,
-        Guid setupDeviceId,
+        Guid deviceId,
         UpdateDeviceParametersRequest request)
     {
         var command = new UpdateDeviceParametersCommand
         {
-            SetupDeviceId = setupDeviceId,
+            DeviceId = deviceId,
             Parameters = request.Parameters
         };
 
@@ -161,12 +161,12 @@ public class DeviceSettings : EndpointGroupBase
     [Authorize]
     public async Task<IResult> SetDeviceMode(
         ISender sender,
-        Guid setupDeviceId,
+        Guid deviceId,
         SetDeviceModeRequest request)
     {
         var command = new SetDeviceModeCommand
         {
-            SetupDeviceId = setupDeviceId,
+            DeviceId = deviceId,
             Mode = request.Mode
         };
 
@@ -187,12 +187,12 @@ public class DeviceSettings : EndpointGroupBase
     }
 
     // ========================================================================
-    // DATABASE-ONLY OPERATIONS (Raw) - No RPC synchronization
+    // DATABASE-ONLY OPERATIONS (Admin) - No RPC synchronization
     // Use only for admin tools, bulk operations, or when device is offline
     // ========================================================================
 
     /// <summary>
-    /// Get raw parameter values from database (no device sync)
+    /// Get parameter values from database (no device sync)
     /// </summary>
     [Authorize(Policies.AdminOnly)]
     public async Task<SetupDeviceParameterValuesVm> GetSetupDeviceParameterValues(
@@ -203,7 +203,7 @@ public class DeviceSettings : EndpointGroupBase
     }
 
     /// <summary>
-    /// Get raw parameter values in tree structure (no device sync)
+    /// Get parameter values in tree structure (no device sync)
     /// </summary>
     [Authorize(Policies.AdminOnly)]
     public async Task<SetupDeviceParameterValuesTreeVm> GetSetupDeviceParameterValuesTree(
@@ -214,7 +214,7 @@ public class DeviceSettings : EndpointGroupBase
     }
 
     /// <summary>
-    /// Get raw parameter values tree by device ID (no device sync)
+    /// Get parameter values tree by device ID (no device sync)
     /// </summary>
     [Authorize]
     public async Task<SetupDeviceParameterValuesTreeVm> GetDeviceParameterValuesTree(
@@ -225,7 +225,7 @@ public class DeviceSettings : EndpointGroupBase
     }
 
     /// <summary>
-    /// Create raw parameter value in database (no device sync)
+    /// Create parameter value in database (no device sync)
     /// </summary>
     [Authorize(Policies.AdminOnly)]
     public async Task<Created<Guid>> CreateSetupDeviceParameterValue(
@@ -233,11 +233,11 @@ public class DeviceSettings : EndpointGroupBase
         CreateSetupDeviceParameterValueCommand command)
     {
         var id = await sender.Send(command);
-        return TypedResults.Created($"/api/DeviceSettings/raw/{id}", id);
+        return TypedResults.Created($"/api/DeviceSettings/admin/{id}", id);
     }
 
     /// <summary>
-    /// Update raw parameter value in database (no device sync)
+    /// Update parameter value in database (no device sync)
     /// </summary>
     [Authorize(Policies.AdminOnly)]
     public async Task<Results<NoContent, BadRequest>> UpdateSetupDeviceParameterValue(
@@ -252,7 +252,7 @@ public class DeviceSettings : EndpointGroupBase
     }
 
     /// <summary>
-    /// Delete raw parameter value from database (no device sync)
+    /// Delete parameter value from database (no device sync)
     /// </summary>
     [Authorize(Policies.AdminOnly)]
     public async Task<Results<NoContent, BadRequest>> DeleteSetupDeviceParameterValue(
@@ -264,7 +264,7 @@ public class DeviceSettings : EndpointGroupBase
     }
 
     /// <summary>
-    /// Update raw device parameter value in database (no device sync)
+    /// Update device parameter value in database (no device sync)
     /// </summary>
     [Authorize]
     public async Task<Results<NoContent, BadRequest>> UpdateDeviceParameterValueRaw(
@@ -322,12 +322,12 @@ public class DeviceSettings : EndpointGroupBase
     }
 
     // ========================================================================
-    // DEMO/LEGACY OPERATIONS
+    // DEMO/TESTING OPERATIONS
     // ========================================================================
 
     /// <summary>
-    /// This endpoint allows changing the export strategy of a device.
-    /// It is for demonstration purposes only and may be removed in future releases.
+    /// Change export strategy of a device.
+    /// This endpoint is for demonstration and testing purposes only.
     /// </summary>
     [Authorize]
     public async Task<IResult> ChangeExportStrategy(

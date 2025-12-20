@@ -7,7 +7,7 @@ namespace Hems_Backend.Application.DeviceSettings.Commands.UpdateDeviceParameter
 
 public record UpdateDeviceParameterCommand : IRequest<UpdateDeviceParameterResult>
 {
-    public Guid SetupDeviceId { get; init; }
+    public Guid DeviceId { get; init; }
     public Guid ParameterId { get; init; }
     public string Value { get; init; } = string.Empty;
 }
@@ -30,13 +30,25 @@ public class UpdateDeviceParameterCommandHandler : IRequestHandler<UpdateDeviceP
 
     public async Task<UpdateDeviceParameterResult> Handle(UpdateDeviceParameterCommand request, CancellationToken cancellationToken)
     {
+        // Find SetupDevice by DeviceId
+        var setupDevice = await _context.SetupDevices
+            .Include(sd => sd.Device)
+            .FirstOrDefaultAsync(sd => sd.DeviceId == request.DeviceId, cancellationToken);
+
+        if (setupDevice?.Device == null)
+        {
+            return new UpdateDeviceParameterResult
+            {
+                Success = false,
+                ErrorMessage = "Device not found"
+            };
+        }
+
         // Get the parameter value record
         var parameterValue = await _context.SetupDeviceParameterValues
             .Include(sdpv => sdpv.Parameter)
-            .Include(sdpv => sdpv.SetupDevice)
-                .ThenInclude(sd => sd!.Device)
             .FirstOrDefaultAsync(sdpv =>
-                sdpv.SetupDeviceId == request.SetupDeviceId &&
+                sdpv.SetupDeviceId == setupDevice.Id &&
                 sdpv.ParameterId == request.ParameterId,
                 cancellationToken);
 
@@ -49,10 +61,9 @@ public class UpdateDeviceParameterCommandHandler : IRequestHandler<UpdateDeviceP
             };
         }
 
-        Guard.Against.Null(parameterValue.SetupDevice?.Device);
         Guard.Against.Null(parameterValue.Parameter);
 
-        var device = parameterValue.SetupDevice.Device;
+        var device = setupDevice.Device;
         var parameterName = parameterValue.Parameter.Name;
 
         // Step 1: Update device via RPC first

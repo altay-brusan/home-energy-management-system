@@ -25,30 +25,30 @@ This refactoring reorganized device parameter management endpoints into two clea
 ```
 /api/DeviceSettings
 ├── RPC-SYNCED OPERATIONS (User-facing, recommended)
-│   ├── GET    /{setupDeviceId}/parameters              - Get all parameters
-│   ├── PUT    /{setupDeviceId}/parameters/{parameterId} - Update single parameter
-│   ├── PUT    /{setupDeviceId}/parameters              - Update multiple parameters
+│   ├── GET    /device/{deviceId}/parameters            - Get all parameters
+│   ├── GET    /device/{deviceId}/tree                  - Get parameters tree structure
+│   ├── PUT    /device/{deviceId}/parameters/{parameterId} - Update single parameter
+│   ├── PUT    /device/{deviceId}/parameters            - Update multiple parameters
 │   ├── GET    /modes                                   - Get available modes
-│   └── POST   /{setupDeviceId}/mode                    - Set device mode
+│   └── POST   /device/{deviceId}/mode                  - Set device mode
 │
-├── DATABASE-ONLY OPERATIONS (Admin tools, under /raw prefix)
-│   ├── GET    /raw                                     - Get raw parameter values
-│   ├── GET    /raw/tree                                - Get tree structure
-│   ├── GET    /raw/device/{deviceId}/tree              - Get by device
-│   ├── POST   /raw                                     - Create parameter value
-│   ├── PUT    /raw/{id}                                - Update value (DB only)
-│   ├── DELETE /raw/{id}                                - Delete value
-│   ├── POST   /raw/device/{deviceId}/initialize        - Initialize device settings
-│   └── PUT    /raw/device/{deviceId}/parameter/{parameterId} - Update raw value
+├── DATABASE-ONLY OPERATIONS (Admin tools, under /admin prefix)
+│   ├── GET    /admin                                   - Get parameter values by setupDeviceId
+│   ├── GET    /admin/tree                              - Get tree structure by setupDeviceId
+│   ├── POST   /admin                                   - Create parameter value
+│   ├── PUT    /admin/{id}                              - Update value (DB only)
+│   ├── DELETE /admin/{id}                              - Delete value
+│   ├── POST   /admin/device/{deviceId}/initialize      - Initialize device settings
+│   └── PUT    /admin/device/{deviceId}/parameter/{parameterId} - Update value (DB only)
 │
-└── DEMO/LEGACY
-    └── POST   /ChangeExportStrategy                    - Old demo endpoint
+└── DEMO/TESTING
+    └── POST   /demo/export-strategy                    - Demo endpoint for testing
 ```
 
 **Authorization**:
 - RPC-synced operations: All authenticated users
-- Database-only operations (`/raw`): Admin only
-- Demo operations: All authenticated users
+- Database-only operations (`/admin`): Admin only
+- Demo operations (`/demo`): All authenticated users
 
 ---
 
@@ -160,7 +160,7 @@ This refactoring reorganized device parameter management endpoints into two clea
 
 ### Files Modified
 - `src/Infrastructure/DependencyInjection.cs` - Added DeviceRpcExecutorService registration
-- `src/Web/Endpoints/DeviceSettings.cs` - Reorganized with RPC-synced and raw operations
+- `src/Web/Endpoints/DeviceSettings.cs` - Reorganized with RPC-synced and admin operations
 - `src/Web/wwwroot/api/specification.json` - Updated OpenAPI specification
 
 ### Files Deleted
@@ -194,7 +194,8 @@ This refactoring reorganized device parameter management endpoints into two clea
 
 ### 5. Better Organization
 - Logical endpoint grouping under `/groups`, `/parameters`, `/values`
-- Raw operations clearly marked under `/raw` prefix
+- Admin operations clearly marked under `/admin` prefix
+- Demo/testing operations under `/demo` prefix
 - RESTful API design
 
 ---
@@ -215,13 +216,13 @@ PUT /api/SetupDeviceParameterValues/{id}
 **New API calls:**
 ```javascript
 // New: RPC-synced parameter update (recommended)
-PUT /api/DeviceSettings/{setupDeviceId}/parameters/{parameterId}
+PUT /api/DeviceSettings/device/{deviceId}/parameters/{parameterId}
 {
   "value": "true"
 }
 
 // New: Batch update
-PUT /api/DeviceSettings/{setupDeviceId}/parameters
+PUT /api/DeviceSettings/device/{deviceId}/parameters
 {
   "parameters": [
     {"parameterId": "guid-1", "value": "true"},
@@ -230,10 +231,13 @@ PUT /api/DeviceSettings/{setupDeviceId}/parameters
 }
 
 // New: Set device mode
-POST /api/DeviceSettings/{setupDeviceId}/mode
+POST /api/DeviceSettings/device/{deviceId}/mode
 {
   "mode": 1  // EnergySave mode
 }
+
+// New: Get parameters tree (available for all users)
+GET /api/DeviceSettings/device/{deviceId}/tree
 ```
 
 **Old schema API calls:**
@@ -281,6 +285,7 @@ GET /api/ParameterSchemas/values
 ## Notes
 
 - All existing SetupDeviceParameterValues Application layer commands/queries remain unchanged
-- They are now accessed via DeviceSettings endpoint under `/raw` prefix
+- They are now accessed via DeviceSettings endpoint under `/admin` prefix
 - RPC-synced operations are recommended for all user-facing features
 - Database-only operations should be reserved for admin tools and offline scenarios
+- Demo/testing operations are isolated under `/demo` prefix
