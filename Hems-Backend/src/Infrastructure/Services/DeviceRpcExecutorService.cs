@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Application.Common.Models;
+using Hems_Backend.Application.Common.Models.Rpc;
 
 namespace Hems_Backend.Infrastructure.Services;
 
@@ -35,48 +36,19 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
 
         try
         {
-            // Get current configuration first (to preserve other fields)
-            var getCurrentParams = new Dictionary<string, object>
-            {
-                ["kind"] = config.RpcKind
-            };
-
-            var currentResponse = await _tbService.SendTwoWayRpcAsync(
-                deviceId: tbDeviceId,
-                method: config.RpcGetMethod,
-                parameters: getCurrentParams,
-                timeoutMs: 10000,
-                cancellationToken: cancellationToken
-            );
-
-            if (currentResponse == null || !currentResponse.Success || currentResponse.Response == null)
-            {
-                return new RpcExecutionResult
-                {
-                    Success = false,
-                    ErrorMessage = "Failed to get current device configuration",
-                    RpcMethod = config.RpcGetMethod
-                };
-            }
-
-            // Parse current config
-            var currentConfig = JsonSerializer.Deserialize<Dictionary<string, object>>(
-                JsonSerializer.Serialize(currentResponse.Response)
-            ) ?? new Dictionary<string, object>();
-
-            // Update the specific field using nested path
+            // Build strongly-typed request with ONLY the changed field
             var mappedValue = config.ValueMapper != null ? config.ValueMapper(value) : value;
-            SetNestedValue(currentConfig, config.FieldPath, mappedValue);
+            var request = BuildRequestObject(config.RpcKind, config.FieldPath, mappedValue);
 
-            // Add kind to the payload
-            currentConfig["kind"] = config.RpcKind;
+            // Convert request object to dictionary for RPC call
+            var requestDict = SerializeToDict(request);
 
-            // Send updated configuration
+            // Send request (device will fill in undefined fields from current state)
             var updateResponse = await _tbService.SendTwoWayRpcAsync(
                 deviceId: tbDeviceId,
                 method: config.RpcMethod,
-                parameters: currentConfig,
-                timeoutMs: 10000,
+                parameters: requestDict,
+                timeoutMs: 60000, // 60 seconds - allows time for Modbus operations + network delays
                 cancellationToken: cancellationToken
             );
 
@@ -124,65 +96,35 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
                 Mapping = RpcMethodMapping.TryGetMapping(p.Key, out var config) ? config : null
             })
             .Where(p => p.Mapping != null)
-            .GroupBy(p => new { p.Mapping!.RpcMethod, p.Mapping.RpcGetMethod, p.Mapping.RpcKind })
+            .GroupBy(p => new { p.Mapping!.RpcMethod, p.Mapping.RpcKind })
             .ToList();
 
         foreach (var group in parametersByMethod)
         {
             try
             {
-                // Get current configuration
-                var getCurrentParams = new Dictionary<string, object>
-                {
-                    ["kind"] = group.Key.RpcKind
-                };
+                // Create empty request object for this RPC kind
+                var request = CreateEmptyRequest(group.Key.RpcKind);
 
-                var currentResponse = await _tbService.SendTwoWayRpcAsync(
-                    deviceId: tbDeviceId,
-                    method: group.Key.RpcGetMethod,
-                    parameters: getCurrentParams,
-                    timeoutMs: 10000,
-                    cancellationToken: cancellationToken
-                );
-
-                if (currentResponse == null || !currentResponse.Success || currentResponse.Response == null)
-                {
-                    // Mark all parameters in this group as failed
-                    foreach (var param in group)
-                    {
-                        results[param.ParameterName] = new RpcExecutionResult
-                        {
-                            Success = false,
-                            ErrorMessage = "Failed to get current device configuration",
-                            RpcMethod = group.Key.RpcGetMethod
-                        };
-                    }
-                    continue;
-                }
-
-                // Parse current config
-                var currentConfig = JsonSerializer.Deserialize<Dictionary<string, object>>(
-                    JsonSerializer.Serialize(currentResponse.Response)
-                ) ?? new Dictionary<string, object>();
-
-                // Update all fields in this group
+                // Populate request with all changed fields
                 foreach (var param in group)
                 {
                     var mappedValue = param.Mapping!.ValueMapper != null
                         ? param.Mapping.ValueMapper(param.Value)
                         : param.Value;
-                    SetNestedValue(currentConfig, param.Mapping.FieldPath, mappedValue);
+
+                    PopulateRequestField(request, param.Mapping.FieldPath, mappedValue);
                 }
 
-                // Add kind
-                currentConfig["kind"] = group.Key.RpcKind;
+                // Convert request object to dictionary for RPC call
+                var requestDict = SerializeToDict(request);
 
-                // Send updated configuration
+                // Send request (device will fill in undefined fields)
                 var updateResponse = await _tbService.SendTwoWayRpcAsync(
                     deviceId: tbDeviceId,
                     method: group.Key.RpcMethod,
-                    parameters: currentConfig,
-                    timeoutMs: 10000,
+                    parameters: requestDict,
+                    timeoutMs: 60000, // 60 seconds - only writes changed registers
                     cancellationToken: cancellationToken
                 );
 
@@ -237,7 +179,7 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
                 deviceId: tbDeviceId,
                 method: config.RpcGetMethod,
                 parameters: getCurrentParams,
-                timeoutMs: 10000,
+                timeoutMs: 60000, // 60 seconds - multiple Modbus reads
                 cancellationToken: cancellationToken
             );
 
@@ -294,7 +236,7 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
                     deviceId: tbDeviceId,
                     method: group.Key.RpcGetMethod,
                     parameters: getCurrentParams,
-                    timeoutMs: 10000,
+                    timeoutMs: 60000, // 60 seconds - multiple Modbus reads
                     cancellationToken: cancellationToken
                 );
 
@@ -329,44 +271,437 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
     }
 
     /// <summary>
-    /// Sets a value at a nested path (e.g., "inverterMode.solarSellEnabled")
+    /// Builds a strongly-typed request object with ONLY the specified field path and value.
     /// </summary>
-    private static void SetNestedValue(Dictionary<string, object> dict, string path, object value)
+    private static object BuildRequestObject(string rpcKind, string fieldPath, object value)
     {
-        var parts = path.Split('.');
-        var current = dict;
-
-        for (int i = 0; i < parts.Length - 1; i++)
-        {
-            if (!current.ContainsKey(parts[i]))
-            {
-                current[parts[i]] = new Dictionary<string, object>();
-            }
-
-            if (current[parts[i]] is JsonElement jsonElement)
-            {
-                var nestedDict = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonElement.GetRawText())
-                    ?? new Dictionary<string, object>();
-                current[parts[i]] = nestedDict;
-                current = nestedDict;
-            }
-            else if (current[parts[i]] is Dictionary<string, object> nestedDict)
-            {
-                current = nestedDict;
-            }
-            else
-            {
-                var newDict = new Dictionary<string, object>();
-                current[parts[i]] = newDict;
-                current = newDict;
-            }
-        }
-
-        current[parts[^1]] = value;
+        var request = CreateEmptyRequest(rpcKind);
+        PopulateRequestField(request, fieldPath, value);
+        return request;
     }
 
     /// <summary>
-    /// Gets a value from a nested path
+    /// Creates an empty request object for the specified RPC kind.
+    /// </summary>
+    private static object CreateEmptyRequest(string rpcKind)
+    {
+        return rpcKind switch
+        {
+            "SystemWorkModeConfigState" => new SystemWorkModeConfigRequest(),
+            "BatteryChargeSourceConfigState" => new BatteryChargeSourceConfigRequest(),
+            "BatteryThresholdConfigState" => new BatteryThresholdConfigRequest(),
+            _ => throw new NotSupportedException($"Unsupported RPC kind: {rpcKind}")
+        };
+    }
+
+    /// <summary>
+    /// Populates a field in a request object based on the field path.
+    /// </summary>
+    private static void PopulateRequestField(object request, string fieldPath, object value)
+    {
+        var parts = fieldPath.Split('.');
+
+        switch (request)
+        {
+            case SystemWorkModeConfigRequest systemRequest:
+                PopulateSystemWorkModeField(systemRequest, parts, value);
+                break;
+            case BatteryChargeSourceConfigRequest batteryChargeRequest:
+                PopulateBatteryChargeSourceField(batteryChargeRequest, parts, value);
+                break;
+            case BatteryThresholdConfigRequest batteryThresholdRequest:
+                PopulateBatteryThresholdField(batteryThresholdRequest, parts, value);
+                break;
+            default:
+                throw new NotSupportedException($"Unsupported request type: {request.GetType().Name}");
+        }
+    }
+
+    /// <summary>
+    /// Populates a field in SystemWorkModeConfigRequest
+    /// </summary>
+    private static void PopulateSystemWorkModeField(SystemWorkModeConfigRequest request, string[] parts, object value)
+    {
+        if (parts.Length == 0) return;
+
+        var section = parts[0];
+
+        switch (section)
+        {
+            case "inverterMode":
+                request.InverterMode ??= new InverterModeConfig();
+                if (parts.Length >= 2)
+                {
+                    SetInverterModeProperty(request.InverterMode, parts[1], value);
+                }
+                break;
+
+            case "energyPriority":
+                request.EnergyPriority ??= new EnergyPriorityConfig();
+                if (parts.Length >= 2 && parts[1] == "pattern")
+                {
+                    request.EnergyPriority.Pattern = value as string;
+                }
+                break;
+
+            case "gridPeakShaving":
+                request.GridPeakShaving ??= new GridPeakShavingConfig();
+                if (parts.Length >= 2)
+                {
+                    SetGridPeakShavingProperty(request.GridPeakShaving, parts[1], value);
+                }
+                break;
+
+            case "timeOfUse":
+                request.TimeOfUse ??= new TimeOfUseConfig();
+                if (parts.Length >= 2)
+                {
+                    SetTimeOfUseProperty(request.TimeOfUse, parts, value);
+                }
+                break;
+        }
+    }
+
+    private static void SetInverterModeProperty(InverterModeConfig config, string property, object value)
+    {
+        switch (property)
+        {
+            case "workModeCode":
+                config.WorkModeCode = Convert.ToInt32(value);
+                break;
+            case "exportStrategy":
+                config.ExportStrategy = value as string;
+                break;
+            case "solarSellEnabled":
+                config.SolarSellEnabled = Convert.ToBoolean(value);
+                break;
+            case "maxSellPowerW":
+                config.MaxSellPowerW = Convert.ToInt32(value);
+                break;
+            case "zeroExportLimitPowerW":
+                config.ZeroExportLimitPowerW = Convert.ToInt32(value);
+                break;
+            case "forceOffGrid":
+                config.ForceOffGrid = Convert.ToBoolean(value);
+                break;
+        }
+    }
+
+    private static void SetGridPeakShavingProperty(GridPeakShavingConfig config, string property, object value)
+    {
+        switch (property)
+        {
+            case "enabled":
+                config.Enabled = Convert.ToBoolean(value);
+                break;
+            case "limitPowerW":
+                config.LimitPowerW = Convert.ToInt32(value);
+                break;
+        }
+    }
+
+    private static void SetTimeOfUseProperty(TimeOfUseConfig config, string[] parts, object value)
+    {
+        if (parts.Length < 2) return;
+
+        var subSection = parts[1];
+
+        switch (subSection)
+        {
+            case "enabled":
+                config.Enabled = Convert.ToBoolean(value);
+                break;
+
+            case "daysActive":
+                config.DaysActive ??= new DaysActiveConfig();
+                if (parts.Length >= 3)
+                {
+                    SetDaysActiveProperty(config.DaysActive, parts[2], value);
+                }
+                break;
+
+            case var s when s.StartsWith("slots"):
+                var (_, arrayIndex) = ParseArrayNotation(s);
+                if (arrayIndex.HasValue && parts.Length >= 3)
+                {
+                    config.Slots ??= new List<TimeSlotConfig>();
+
+                    // Find existing slot with this slotIndex or create new one
+                    var existingSlot = config.Slots.FirstOrDefault(slot => slot?.SlotIndex == arrayIndex.Value + 1);
+
+                    if (existingSlot == null)
+                    {
+                        existingSlot = new TimeSlotConfig
+                        {
+                            SlotIndex = arrayIndex.Value + 1 // SlotIndex is 1-based
+                        };
+                        config.Slots.Add(existingSlot);
+                    }
+
+                    SetTimeSlotProperty(existingSlot, parts[2], value);
+                }
+                break;
+        }
+    }
+
+    private static void SetDaysActiveProperty(DaysActiveConfig config, string property, object value)
+    {
+        var boolValue = Convert.ToBoolean(value);
+        switch (property.ToLower())
+        {
+            case "monday":
+                config.Monday = boolValue;
+                break;
+            case "tuesday":
+                config.Tuesday = boolValue;
+                break;
+            case "wednesday":
+                config.Wednesday = boolValue;
+                break;
+            case "thursday":
+                config.Thursday = boolValue;
+                break;
+            case "friday":
+                config.Friday = boolValue;
+                break;
+            case "saturday":
+                config.Saturday = boolValue;
+                break;
+            case "sunday":
+                config.Sunday = boolValue;
+                break;
+        }
+    }
+
+    private static void SetTimeSlotProperty(TimeSlotConfig config, string property, object value)
+    {
+        switch (property)
+        {
+            case "startTimeLocal":
+                config.StartTimeLocal = value as string;
+                break;
+            case "endTimeLocal":
+                config.EndTimeLocal = value as string;
+                break;
+            case "allowGridCharge":
+                config.AllowGridCharge = Convert.ToBoolean(value);
+                break;
+            case "allowGeneratorCharge":
+                config.AllowGeneratorCharge = Convert.ToBoolean(value);
+                break;
+            case "maxBatteryDischargePowerW":
+                config.MaxBatteryDischargePowerW = Convert.ToInt32(value);
+                break;
+            case "batteryThresholdSocPercent":
+                config.BatteryThresholdSocPercent = Convert.ToInt32(value);
+                break;
+            case "batteryThresholdVoltageV":
+                config.BatteryThresholdVoltageV = Convert.ToDecimal(value);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Populates a field in BatteryChargeSourceConfigRequest
+    /// </summary>
+    private static void PopulateBatteryChargeSourceField(BatteryChargeSourceConfigRequest request, string[] parts, object value)
+    {
+        if (parts.Length == 0) return;
+
+        var section = parts[0];
+
+        switch (section)
+        {
+            case "generator":
+                request.Generator ??= new GeneratorChargeConfig();
+                if (parts.Length >= 2)
+                {
+                    SetGeneratorChargeProperty(request.Generator, parts[1], value);
+                }
+                break;
+
+            case "grid":
+                request.Grid ??= new GridChargeConfig();
+                if (parts.Length >= 2)
+                {
+                    SetGridChargeProperty(request.Grid, parts[1], value);
+                }
+                break;
+        }
+    }
+
+    private static void SetGeneratorChargeProperty(GeneratorChargeConfig config, string property, object value)
+    {
+        switch (property)
+        {
+            case "enabled":
+                config.Enabled = Convert.ToBoolean(value);
+                break;
+            case "startSocPercent":
+                config.StartSocPercent = Convert.ToInt32(value);
+                break;
+            case "chargeCurrentA":
+                config.ChargeCurrentA = Convert.ToInt32(value);
+                break;
+            case "maxRunTimeHours":
+                config.MaxRunTimeHours = Convert.ToDecimal(value);
+                break;
+            case "coolingTimeHours":
+                config.CoolingTimeHours = Convert.ToDecimal(value);
+                break;
+        }
+    }
+
+    private static void SetGridChargeProperty(GridChargeConfig config, string property, object value)
+    {
+        switch (property)
+        {
+            case "enabled":
+                config.Enabled = Convert.ToBoolean(value);
+                break;
+            case "startSocPercent":
+                config.StartSocPercent = Convert.ToInt32(value);
+                break;
+            case "chargeCurrentA":
+                config.ChargeCurrentA = Convert.ToInt32(value);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Populates a field in BatteryThresholdConfigRequest
+    /// </summary>
+    private static void PopulateBatteryThresholdField(BatteryThresholdConfigRequest request, string[] parts, object value)
+    {
+        if (parts.Length == 0) return;
+
+        var property = parts[0];
+
+        switch (property)
+        {
+            case "shutdownCapacityPercent":
+                request.ShutdownCapacityPercent = Convert.ToInt32(value);
+                break;
+            case "restartCapacityPercent":
+                request.RestartCapacityPercent = Convert.ToInt32(value);
+                break;
+            case "lowBatteryCapacityPercent":
+                request.LowBatteryCapacityPercent = Convert.ToInt32(value);
+                break;
+        }
+    }
+
+
+    /// <summary>
+    /// Serializes a strongly-typed request object to Dictionary<string, object> for RPC calls.
+    /// Null properties are automatically excluded thanks to JsonIgnore attributes.
+    /// Converts JsonElements to proper types for nested objects and arrays.
+    /// </summary>
+    private static Dictionary<string, object> SerializeToDict(object request)
+    {
+        var json = JsonSerializer.Serialize(request, new JsonSerializerOptions
+        {
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+        });
+
+        var jsonElement = JsonSerializer.Deserialize<JsonElement>(json);
+        return ConvertJsonElementToDict(jsonElement);
+    }
+
+    /// <summary>
+    /// Converts JsonElement to Dictionary<string, object> with proper nested object handling
+    /// </summary>
+    private static Dictionary<string, object> ConvertJsonElementToDict(JsonElement element)
+    {
+        var dict = new Dictionary<string, object>();
+
+        foreach (var property in element.EnumerateObject())
+        {
+            dict[property.Name] = ConvertJsonElementToValue(property.Value);
+        }
+
+        return dict;
+    }
+
+    /// <summary>
+    /// Converts JsonElement to appropriate C# types
+    /// </summary>
+    private static object ConvertJsonElementToValue(JsonElement element)
+    {
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.Object:
+                var dict = new Dictionary<string, object>();
+                foreach (var property in element.EnumerateObject())
+                {
+                    dict[property.Name] = ConvertJsonElementToValue(property.Value);
+                }
+                return dict;
+
+            case JsonValueKind.Array:
+                var list = new List<object>();
+                foreach (var item in element.EnumerateArray())
+                {
+                    list.Add(ConvertJsonElementToValue(item));
+                }
+                return list;
+
+            case JsonValueKind.String:
+                return element.GetString() ?? "";
+
+            case JsonValueKind.Number:
+                if (element.TryGetInt32(out var intValue))
+                    return intValue;
+                if (element.TryGetInt64(out var longValue))
+                    return longValue;
+                if (element.TryGetDecimal(out var decimalValue))
+                    return decimalValue;
+                return element.GetDouble();
+
+            case JsonValueKind.True:
+                return true;
+
+            case JsonValueKind.False:
+                return false;
+
+            case JsonValueKind.Null:
+                return null!;
+
+            default:
+                return element.ToString() ?? "";
+        }
+    }
+
+    /// <summary>
+    /// Parses array notation from a path part (e.g., "slots[2]" returns ("slots", 2))
+    /// </summary>
+    private static (string propertyName, int? arrayIndex) ParseArrayNotation(string pathPart)
+    {
+        var openBracket = pathPart.IndexOf('[');
+        if (openBracket == -1)
+        {
+            return (pathPart, null);
+        }
+
+        var closeBracket = pathPart.IndexOf(']', openBracket);
+        if (closeBracket == -1)
+        {
+            throw new ArgumentException($"Invalid array notation: {pathPart}");
+        }
+
+        var propertyName = pathPart.Substring(0, openBracket);
+        var indexStr = pathPart.Substring(openBracket + 1, closeBracket - openBracket - 1);
+
+        if (!int.TryParse(indexStr, out var index))
+        {
+            throw new ArgumentException($"Invalid array index: {indexStr}");
+        }
+
+        return (propertyName, index);
+    }
+
+    /// <summary>
+    /// Gets a value from a nested path (supports array notation: propertyName[index])
     /// </summary>
     private static object? GetNestedValue(Dictionary<string, object> dict, string path)
     {
@@ -375,19 +710,65 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
 
         foreach (var part in parts)
         {
+            var (propertyName, arrayIndex) = ParseArrayNotation(part);
+
             if (current is Dictionary<string, object> currentDict)
             {
-                if (!currentDict.TryGetValue(part, out current))
+                if (!currentDict.TryGetValue(propertyName, out current))
                 {
                     return null;
+                }
+
+                // Handle array access if index is specified
+                if (arrayIndex.HasValue)
+                {
+                    if (current is List<object> list)
+                    {
+                        if (arrayIndex.Value >= 0 && arrayIndex.Value < list.Count)
+                        {
+                            current = list[arrayIndex.Value];
+                        }
+                        else
+                        {
+                            return null;
+                        }
+                    }
+                    else if (current is JsonElement jsonArray && jsonArray.ValueKind == JsonValueKind.Array)
+                    {
+                        try
+                        {
+                            current = jsonArray[arrayIndex.Value];
+                        }
+                        catch
+                        {
+                            return null;
+                        }
+                    }
+                    else
+                    {
+                        return null;
+                    }
                 }
             }
             else if (current is JsonElement jsonElement)
             {
                 if (jsonElement.ValueKind == JsonValueKind.Object &&
-                    jsonElement.TryGetProperty(part, out var prop))
+                    jsonElement.TryGetProperty(propertyName, out var prop))
                 {
                     current = prop;
+
+                    // Handle array access for JsonElement
+                    if (arrayIndex.HasValue && prop.ValueKind == JsonValueKind.Array)
+                    {
+                        try
+                        {
+                            current = prop[arrayIndex.Value];
+                        }
+                        catch
+                        {
+                            return null;
+                        }
+                    }
                 }
                 else
                 {
