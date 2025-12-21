@@ -1,4 +1,5 @@
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Domain.Constants;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -21,15 +22,21 @@ public class UpdateDeviceParametersCommandHandler : IRequestHandler<UpdateDevice
 {
     private readonly IApplicationDbContext _context;
     private readonly IDeviceRpcExecutorService _rpcExecutor;
+    private readonly IIdentityService _identityService;
+    private readonly IUser _currentUser;
     private readonly ILogger<UpdateDeviceParametersCommandHandler> _logger;
 
     public UpdateDeviceParametersCommandHandler(
         IApplicationDbContext context,
         IDeviceRpcExecutorService rpcExecutor,
+        IIdentityService identityService,
+        IUser currentUser,
         ILogger<UpdateDeviceParametersCommandHandler> logger)
     {
         _context = context;
         _rpcExecutor = rpcExecutor;
+        _identityService = identityService;
+        _currentUser = currentUser;
         _logger = logger;
     }
 
@@ -78,18 +85,65 @@ public class UpdateDeviceParametersCommandHandler : IRequestHandler<UpdateDevice
 
         var device = setupDevice.Device;
 
+        // RBAC: Check if user is admin (needed for admin-only parameters)
+        bool isAdmin = false;
+        if (_currentUser.Id != null)
+        {
+            isAdmin = await _identityService.IsInRoleAsync(_currentUser.Id, Roles.Administrator);
+        }
+
         // Build parameter dictionary for RPC call (parameterName -> value)
         var parameterUpdates = new Dictionary<string, string>();
         var parameterValueMap = new Dictionary<string, Domain.Entities.SetupDeviceParameterValue>();
+        var unauthorizedParameters = new List<string>();
 
         foreach (var update in request.Parameters)
         {
             var paramValue = parameterValues.FirstOrDefault(pv => pv.ParameterId == update.ParameterId);
             if (paramValue?.Parameter != null)
             {
+                // RBAC: Check if user has permission to update this parameter
+                if (paramValue.Parameter.RoleType == "Admin" && !isAdmin)
+                {
+                    unauthorizedParameters.Add(paramValue.Parameter.Name);
+                    _logger.LogWarning(
+                        "User {UserId} attempted to update admin-only parameter {ParameterName}",
+                        _currentUser.Id,
+                        paramValue.Parameter.Name);
+                    continue; // Skip this parameter
+                }
+
                 parameterUpdates[paramValue.Parameter.Name] = update.Value;
                 parameterValueMap[paramValue.Parameter.Name] = paramValue;
             }
+        }
+
+        // If there are unauthorized parameters, return error
+        if (unauthorizedParameters.Count > 0)
+        {
+            var authorizationFailures = unauthorizedParameters.Select(name => new ParameterUpdateStatus
+            {
+                ParameterName = name,
+                Success = false,
+                ErrorMessage = "Access denied. This parameter requires administrator privileges."
+            }).ToList();
+
+            return new UpdateDeviceParametersResult
+            {
+                Success = false,
+                ErrorMessage = $"Access denied for {unauthorizedParameters.Count} admin-only parameter(s).",
+                FailedUpdates = authorizationFailures
+            };
+        }
+
+        // If no parameters left after authorization check
+        if (parameterUpdates.Count == 0)
+        {
+            return new UpdateDeviceParametersResult
+            {
+                Success = false,
+                ErrorMessage = "No parameters to update after authorization check"
+            };
         }
 
         // Step 1: Update device via RPC (batch optimized)

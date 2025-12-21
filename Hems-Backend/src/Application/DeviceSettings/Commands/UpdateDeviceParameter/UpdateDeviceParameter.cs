@@ -1,4 +1,5 @@
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Domain.Constants;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -16,15 +17,21 @@ public class UpdateDeviceParameterCommandHandler : IRequestHandler<UpdateDeviceP
 {
     private readonly IApplicationDbContext _context;
     private readonly IDeviceRpcExecutorService _rpcExecutor;
+    private readonly IIdentityService _identityService;
+    private readonly IUser _currentUser;
     private readonly ILogger<UpdateDeviceParameterCommandHandler> _logger;
 
     public UpdateDeviceParameterCommandHandler(
         IApplicationDbContext context,
         IDeviceRpcExecutorService rpcExecutor,
+        IIdentityService identityService,
+        IUser currentUser,
         ILogger<UpdateDeviceParameterCommandHandler> logger)
     {
         _context = context;
         _rpcExecutor = rpcExecutor;
+        _identityService = identityService;
+        _currentUser = currentUser;
         _logger = logger;
     }
 
@@ -62,6 +69,27 @@ public class UpdateDeviceParameterCommandHandler : IRequestHandler<UpdateDeviceP
         }
 
         Guard.Against.Null(parameterValue.Parameter);
+
+        // RBAC: Check if user has permission to update this parameter
+        var parameter = parameterValue.Parameter;
+        if (parameter.RoleType == "Admin" && _currentUser.Id != null)
+        {
+            var isAdmin = await _identityService.IsInRoleAsync(_currentUser.Id, Roles.Administrator);
+            if (!isAdmin)
+            {
+                _logger.LogWarning(
+                    "User {UserId} attempted to update admin-only parameter {ParameterName}",
+                    _currentUser.Id,
+                    parameter.Name);
+
+                return new UpdateDeviceParameterResult
+                {
+                    Success = false,
+                    ErrorMessage = "Access denied. This parameter requires administrator privileges.",
+                    ParameterName = parameter.Name
+                };
+            }
+        }
 
         var device = setupDevice.Device;
         var parameterName = parameterValue.Parameter.Name;

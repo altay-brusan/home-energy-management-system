@@ -75,6 +75,7 @@ public record DeviceParameterDto
     public string Value { get; init; } = string.Empty;
     public string Unit { get; init; } = string.Empty;
     public string ElementType { get; init; } = string.Empty;
+    public string RoleType { get; init; } = string.Empty;
     public Guid? ParameterGroupId { get; init; }
     public string? ParameterGroupName { get; init; }
     public int SortOrder { get; init; }
@@ -93,6 +94,7 @@ public class DeviceParameterMappingProfile : Profile
             .ForMember(d => d.ParameterDescription, opt => opt.MapFrom(s => s.Parameter != null ? s.Parameter.Description : string.Empty))
             .ForMember(d => d.Unit, opt => opt.MapFrom(s => s.Parameter != null ? s.Parameter.Unit : string.Empty))
             .ForMember(d => d.ElementType, opt => opt.MapFrom(s => s.Parameter != null ? s.Parameter.ElementType : string.Empty))
+            .ForMember(d => d.RoleType, opt => opt.MapFrom(s => s.Parameter != null ? s.Parameter.RoleType : string.Empty))
             .ForMember(d => d.ParameterGroupName, opt => opt.MapFrom(s => s.ParameterGroup != null ? s.ParameterGroup.Name : null));
     }
 }
