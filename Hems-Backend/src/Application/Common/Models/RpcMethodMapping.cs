@@ -625,6 +625,358 @@ public static class RpcMethodMapping
             RpcKind = "SystemWorkModeConfigState",
             ValueMapper = val => decimal.Parse(val)
         },
+
+        // ===== GENERATOR AND SMART LOAD CONFIGURATION =====
+        // RPC: getGeneratorAndSmartLoadConfig / setGeneratorAndSmartLoadConfig
+
+        ["GeneratorCharge"] = new()
+        {
+            RpcMethod = "setGeneratorAndSmartLoadConfig",
+            RpcGetMethod = "getGeneratorAndSmartLoadConfig",
+            FieldPath = "generatorChargeEnabled",
+            RpcKind = "GeneratorAndSmartLoadConfigState",
+            ValueMapper = val => bool.Parse(val)
+        },
+        ["GeneratorGridCharge"] = new()
+        {
+            RpcMethod = "setGeneratorAndSmartLoadConfig",
+            RpcGetMethod = "getGeneratorAndSmartLoadConfig",
+            FieldPath = "gridChargeEnabled",
+            RpcKind = "GeneratorAndSmartLoadConfigState",
+            ValueMapper = val => bool.Parse(val)
+        },
+        ["GeneratorStartSOC"] = new()
+        {
+            RpcMethod = "setGeneratorAndSmartLoadConfig",
+            RpcGetMethod = "getGeneratorAndSmartLoadConfig",
+            FieldPath = "startSocPercent",
+            RpcKind = "GeneratorAndSmartLoadConfigState",
+            ValueMapper = val => int.Parse(val)
+        },
+        ["GeneratorChargeCurrent"] = new()
+        {
+            RpcMethod = "setGeneratorAndSmartLoadConfig",
+            RpcGetMethod = "getGeneratorAndSmartLoadConfig",
+            FieldPath = "chargeCurrentA",
+            RpcKind = "GeneratorAndSmartLoadConfigState",
+            ValueMapper = val => int.Parse(val)
+        },
+        ["GeneratorPeakShavingEnabled"] = new()
+        {
+            RpcMethod = "setGeneratorAndSmartLoadConfig",
+            RpcGetMethod = "getGeneratorAndSmartLoadConfig",
+            FieldPath = "generatorPeakShaving.enabled",
+            RpcKind = "GeneratorAndSmartLoadConfigState",
+            ValueMapper = val => bool.Parse(val)
+        },
+        ["GeneratorPeakShavingLimitPower"] = new()
+        {
+            RpcMethod = "setGeneratorAndSmartLoadConfig",
+            RpcGetMethod = "getGeneratorAndSmartLoadConfig",
+            FieldPath = "generatorPeakShaving.limitPowerW",
+            RpcKind = "GeneratorAndSmartLoadConfigState",
+            ValueMapper = val => int.Parse(val)
+        },
+        ["SmartLoadEnabled"] = new()
+        {
+            RpcMethod = "setGeneratorAndSmartLoadConfig",
+            RpcGetMethod = "getGeneratorAndSmartLoadConfig",
+            FieldPath = "smartLoad.enabled",
+            RpcKind = "GeneratorAndSmartLoadConfigState",
+            ValueMapper = val => int.Parse(val)
+        },
+        ["SmartLoadOffSOC"] = new()
+        {
+            RpcMethod = "setGeneratorAndSmartLoadConfig",
+            RpcGetMethod = "getGeneratorAndSmartLoadConfig",
+            FieldPath = "smartLoad.offSocPercent",
+            RpcKind = "GeneratorAndSmartLoadConfigState",
+            ValueMapper = val => int.Parse(val)
+        },
+        ["SmartLoadOnSOC"] = new()
+        {
+            RpcMethod = "setGeneratorAndSmartLoadConfig",
+            RpcGetMethod = "getGeneratorAndSmartLoadConfig",
+            FieldPath = "smartLoad.onSocPercent",
+            RpcKind = "GeneratorAndSmartLoadConfigState",
+            ValueMapper = val => int.Parse(val)
+        },
+        ["SmartLoadPVPowerThreshold"] = new()
+        {
+            RpcMethod = "setGeneratorAndSmartLoadConfig",
+            RpcGetMethod = "getGeneratorAndSmartLoadConfig",
+            FieldPath = "smartLoad.pvPowerThresholdW",
+            RpcKind = "GeneratorAndSmartLoadConfigState",
+            ValueMapper = val => int.Parse(val)
+        },
+        ["SmartLoadOpenDelay"] = new()
+        {
+            RpcMethod = "setGeneratorAndSmartLoadConfig",
+            RpcGetMethod = "getGeneratorAndSmartLoadConfig",
+            FieldPath = "smartLoad.openDelayMinutes",
+            RpcKind = "GeneratorAndSmartLoadConfigState",
+            ValueMapper = val => int.Parse(val)
+        },
+        ["SmartLoadOnGridAlwaysOn"] = new()
+        {
+            RpcMethod = "setGeneratorAndSmartLoadConfig",
+            RpcGetMethod = "getGeneratorAndSmartLoadConfig",
+            FieldPath = "smartLoad.onGridAlwaysOn",
+            RpcKind = "GeneratorAndSmartLoadConfigState",
+            ValueMapper = val => bool.Parse(val)
+        },
+
+        // ===== BATTERY MAINTENANCE CONFIGURATION =====
+        // RPC: getBatteryMaintenanceConfig / setBatteryMaintenanceConfig
+
+        ["BatteryControlMode"] = new()
+        {
+            RpcMethod = "setBatteryMaintenanceConfig",
+            RpcGetMethod = "getBatteryMaintenanceConfig",
+            FieldPath = "batteryControlMode",
+            RpcKind = "BatteryMaintenanceConfigState",
+            ValueMapper = val => val.ToLower().Replace(" ", "_")
+        },
+        ["LithiumBatteryWakeUpEnabled"] = new()
+        {
+            RpcMethod = "setBatteryMaintenanceConfig",
+            RpcGetMethod = "getBatteryMaintenanceConfig",
+            FieldPath = "wakeUp.channel1Enabled",
+            RpcKind = "BatteryMaintenanceConfigState",
+            ValueMapper = val => bool.Parse(val)
+        },
+        ["BatteryResistance"] = new()
+        {
+            RpcMethod = "setBatteryMaintenanceConfig",
+            RpcGetMethod = "getBatteryMaintenanceConfig",
+            FieldPath = "batteryResistanceMilliOhm",
+            RpcKind = "BatteryMaintenanceConfigState",
+            ValueMapper = val => int.Parse(val)
+        },
+        ["ChargeEfficiency"] = new()
+        {
+            RpcMethod = "setBatteryMaintenanceConfig",
+            RpcGetMethod = "getBatteryMaintenanceConfig",
+            FieldPath = "chargeEfficiencyPercent",
+            RpcKind = "BatteryMaintenanceConfigState",
+            ValueMapper = val => decimal.Parse(val)
+        },
+
+        // ===== GRID CODE CONFIGURATION =====
+        // RPC: getGridCodeConfig / setGridCodeConfig
+
+        ["GridStandard"] = new()
+        {
+            RpcMethod = "setGridCodeConfig",
+            RpcGetMethod = "getGridCodeConfig",
+            FieldPath = "gridModeRaw",
+            RpcKind = "GridCodeConfigState",
+            ValueMapper = val => val switch
+            {
+                "General" => 0,
+                "UL1741" => 1,
+                "CPUC RULE21" => 2,
+                "SRD-UL1741" => 3,
+                "CEI 0-21" => 4,
+                _ => int.Parse(val)
+            }
+        },
+        ["GridFrequency"] = new()
+        {
+            RpcMethod = "setGridCodeConfig",
+            RpcGetMethod = "getGridCodeConfig",
+            FieldPath = "gridFrequencyHz",
+            RpcKind = "GridCodeConfigState",
+            ValueMapper = val => int.Parse(val)
+        },
+        ["OutputVoltageLevel"] = new()
+        {
+            RpcMethod = "setGridCodeConfig",
+            RpcGetMethod = "getGridCodeConfig",
+            FieldPath = "outputVoltageLevelCode",
+            RpcKind = "GridCodeConfigState",
+            ValueMapper = val => val switch
+            {
+                "220V" => 0,
+                "230V" => 1,
+                "240V" => 2,
+                "120V" => 3,
+                "133V" => 4,
+                _ => int.Parse(val)
+            }
+        },
+        ["GridVoltageHigh"] = new()
+        {
+            RpcMethod = "setGridCodeConfig",
+            RpcGetMethod = "getGridCodeConfig",
+            FieldPath = "normalConnect.voltageHighV",
+            RpcKind = "GridCodeConfigState",
+            ValueMapper = val => decimal.Parse(val)
+        },
+        ["GridVoltageLow"] = new()
+        {
+            RpcMethod = "setGridCodeConfig",
+            RpcGetMethod = "getGridCodeConfig",
+            FieldPath = "normalConnect.voltageLowV",
+            RpcKind = "GridCodeConfigState",
+            ValueMapper = val => decimal.Parse(val)
+        },
+        ["GridFrequencyHigh"] = new()
+        {
+            RpcMethod = "setGridCodeConfig",
+            RpcGetMethod = "getGridCodeConfig",
+            FieldPath = "normalConnect.frequencyHighHz",
+            RpcKind = "GridCodeConfigState",
+            ValueMapper = val => decimal.Parse(val)
+        },
+        ["GridFrequencyLow"] = new()
+        {
+            RpcMethod = "setGridCodeConfig",
+            RpcGetMethod = "getGridCodeConfig",
+            FieldPath = "normalConnect.frequencyLowHz",
+            RpcKind = "GridCodeConfigState",
+            ValueMapper = val => decimal.Parse(val)
+        },
+        ["ReconnectionTime"] = new()
+        {
+            RpcMethod = "setGridCodeConfig",
+            RpcGetMethod = "getGridCodeConfig",
+            FieldPath = "reconnectionTimeSeconds",
+            RpcKind = "GridCodeConfigState",
+            ValueMapper = val => int.Parse(val)
+        },
+        ["PowerFactorTarget"] = new()
+        {
+            RpcMethod = "setGridCodeConfig",
+            RpcGetMethod = "getGridCodeConfig",
+            FieldPath = "powerFactorTarget",
+            RpcKind = "GridCodeConfigState",
+            ValueMapper = val => int.Parse(val)
+        },
+        ["ActivePowerRegulation"] = new()
+        {
+            RpcMethod = "setGridCodeConfig",
+            RpcGetMethod = "getGridCodeConfig",
+            FieldPath = "activePowerRegulationPercentPerStep",
+            RpcKind = "GridCodeConfigState",
+            ValueMapper = val => decimal.Parse(val)
+        },
+        ["ReactivePowerRegulation"] = new()
+        {
+            RpcMethod = "setGridCodeConfig",
+            RpcGetMethod = "getGridCodeConfig",
+            FieldPath = "reactivePowerRegulationPercentPerStep",
+            RpcKind = "GridCodeConfigState",
+            ValueMapper = val => decimal.Parse(val)
+        },
+
+        // ===== INVERTER ADVANCED FUNCTION CONFIGURATION =====
+        // RPC: getInverterAdvancedFunctionConfig / setInverterAdvancedFunctionConfig
+
+        ["ArcFaultDetectionEnabled"] = new()
+        {
+            RpcMethod = "setInverterAdvancedFunctionConfig",
+            RpcGetMethod = "getInverterAdvancedFunctionConfig",
+            FieldPath = "arcFault.enabled",
+            RpcKind = "InverterAdvancedFunctionConfigState",
+            ValueMapper = val => bool.Parse(val)
+        },
+        ["IslandProtectionEnabled"] = new()
+        {
+            RpcMethod = "setInverterAdvancedFunctionConfig",
+            RpcGetMethod = "getInverterAdvancedFunctionConfig",
+            FieldPath = "islandProtectionEnabled",
+            RpcKind = "InverterAdvancedFunctionConfigState",
+            ValueMapper = val => bool.Parse(val)
+        },
+        ["ParallelEnabled"] = new()
+        {
+            RpcMethod = "setInverterAdvancedFunctionConfig",
+            RpcGetMethod = "getInverterAdvancedFunctionConfig",
+            FieldPath = "parallel.enabled",
+            RpcKind = "InverterAdvancedFunctionConfigState",
+            ValueMapper = val => bool.Parse(val)
+        },
+        ["ParallelRole"] = new()
+        {
+            RpcMethod = "setInverterAdvancedFunctionConfig",
+            RpcGetMethod = "getInverterAdvancedFunctionConfig",
+            FieldPath = "parallel.role",
+            RpcKind = "InverterAdvancedFunctionConfigState",
+            ValueMapper = val => val.ToLower()
+        },
+        ["ParallelPhase"] = new()
+        {
+            RpcMethod = "setInverterAdvancedFunctionConfig",
+            RpcGetMethod = "getInverterAdvancedFunctionConfig",
+            FieldPath = "parallel.phase",
+            RpcKind = "InverterAdvancedFunctionConfigState",
+            ValueMapper = val => val.ToUpper()
+        },
+        ["ModbusAddress"] = new()
+        {
+            RpcMethod = "setInverterAdvancedFunctionConfig",
+            RpcGetMethod = "getInverterAdvancedFunctionConfig",
+            FieldPath = "parallel.modbusAddress",
+            RpcKind = "InverterAdvancedFunctionConfigState",
+            ValueMapper = val => int.Parse(val)
+        },
+        ["ExternalCTRatio"] = new()
+        {
+            RpcMethod = "setInverterAdvancedFunctionConfig",
+            RpcGetMethod = "getInverterAdvancedFunctionConfig",
+            FieldPath = "externalMeter.ctRatio",
+            RpcKind = "InverterAdvancedFunctionConfigState",
+            ValueMapper = val => int.Parse(val)
+        },
+        ["ExternalMeterCTRatio"] = new()
+        {
+            RpcMethod = "setInverterAdvancedFunctionConfig",
+            RpcGetMethod = "getInverterAdvancedFunctionConfig",
+            FieldPath = "externalMeter.meterCtRatio",
+            RpcKind = "InverterAdvancedFunctionConfigState",
+            ValueMapper = val => int.Parse(val)
+        },
+        ["LithiumBatteryLossFaultEnabled"] = new()
+        {
+            RpcMethod = "setInverterAdvancedFunctionConfig",
+            RpcGetMethod = "getInverterAdvancedFunctionConfig",
+            FieldPath = "lithiumBatteryLossFaultEnabled",
+            RpcKind = "InverterAdvancedFunctionConfigState",
+            ValueMapper = val => bool.Parse(val)
+        },
+
+        // ===== EXTERNAL RELAY CONFIGURATION =====
+        // RPC: getExternalRelayConfig / setExternalRelayConfig
+
+        ["ExternalRelayFeatureEnabled"] = new()
+        {
+            RpcMethod = "setExternalRelayConfig",
+            RpcGetMethod = "getExternalRelayConfig",
+            FieldPath = "externalRelayFeatureEnabled",
+            RpcKind = "ExternalRelayConfigState",
+            ValueMapper = val => bool.Parse(val)
+        },
+        ["RelayBitmap"] = new()
+        {
+            RpcMethod = "setExternalRelayConfig",
+            RpcGetMethod = "getExternalRelayConfig",
+            FieldPath = "relayBitmapRaw",
+            RpcKind = "ExternalRelayConfigState",
+            ValueMapper = val => int.Parse(val)
+        },
+
+        // ===== GENERATOR SMART LOAD OVERRIDE =====
+        // RPC: getGeneratorSmartLoadOverride / setGeneratorSmartLoadOverride
+
+        ["ForceSmartLoadOn"] = new()
+        {
+            RpcMethod = "setGeneratorSmartLoadOverride",
+            RpcGetMethod = "getGeneratorSmartLoadOverride",
+            FieldPath = "forceSmartLoadOn",
+            RpcKind = "GeneratorSmartLoadOverride",
+            ValueMapper = val => bool.Parse(val)
+        },
     };
 
     /// <summary>
