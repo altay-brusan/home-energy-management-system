@@ -290,6 +290,7 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
             "SystemWorkModeConfigState" => new SystemWorkModeConfigRequest(),
             "BatteryChargeSourceConfigState" => new BatteryChargeSourceConfigRequest(),
             "BatteryThresholdConfigState" => new BatteryThresholdConfigRequest(),
+            "GeneratorAndSmartLoadConfigState" => new GeneratorAndSmartLoadConfigRequest(),
             _ => throw new NotSupportedException($"Unsupported RPC kind: {rpcKind}")
         };
     }
@@ -311,6 +312,9 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
                 break;
             case BatteryThresholdConfigRequest batteryThresholdRequest:
                 PopulateBatteryThresholdField(batteryThresholdRequest, parts, value);
+                break;
+            case GeneratorAndSmartLoadConfigRequest generatorSmartLoadRequest:
+                PopulateGeneratorAndSmartLoadField(generatorSmartLoadRequest, parts, value);
                 break;
             default:
                 throw new NotSupportedException($"Unsupported request type: {request.GetType().Name}");
@@ -587,6 +591,84 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
                 break;
             case "lowBatteryCapacityPercent":
                 request.LowBatteryCapacityPercent = Convert.ToInt32(value);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Populates a field in GeneratorAndSmartLoadConfigRequest
+    /// </summary>
+    private static void PopulateGeneratorAndSmartLoadField(GeneratorAndSmartLoadConfigRequest request, string[] parts, object value)
+    {
+        if (parts.Length == 0) return;
+
+        var section = parts[0];
+
+        switch (section)
+        {
+            case "generatorChargeEnabled":
+                request.GeneratorChargeEnabled = Convert.ToBoolean(value);
+                break;
+            case "gridChargeEnabled":
+                request.GridChargeEnabled = Convert.ToBoolean(value);
+                break;
+            case "startSocPercent":
+                request.StartSocPercent = Convert.ToInt32(value);
+                break;
+            case "chargeCurrentA":
+                request.ChargeCurrentA = Convert.ToInt32(value);
+                break;
+            case "generatorPeakShaving":
+                request.GeneratorPeakShaving ??= new GeneratorPeakShavingConfig();
+                if (parts.Length >= 2)
+                {
+                    SetGeneratorPeakShavingProperty(request.GeneratorPeakShaving, parts[1], value);
+                }
+                break;
+            case "smartLoad":
+                request.SmartLoad ??= new SmartLoadConfig();
+                if (parts.Length >= 2)
+                {
+                    SetSmartLoadProperty(request.SmartLoad, parts[1], value);
+                }
+                break;
+        }
+    }
+
+    private static void SetGeneratorPeakShavingProperty(GeneratorPeakShavingConfig config, string property, object value)
+    {
+        switch (property)
+        {
+            case "enabled":
+                config.Enabled = Convert.ToBoolean(value);
+                break;
+            case "limitPowerW":
+                config.LimitPowerW = Convert.ToInt32(value);
+                break;
+        }
+    }
+
+    private static void SetSmartLoadProperty(SmartLoadConfig config, string property, object value)
+    {
+        switch (property)
+        {
+            case "enabled":
+                config.Enabled = Convert.ToInt32(value);
+                break;
+            case "offSocPercent":
+                config.OffSocPercent = Convert.ToInt32(value);
+                break;
+            case "onSocPercent":
+                config.OnSocPercent = Convert.ToInt32(value);
+                break;
+            case "pvPowerThresholdW":
+                config.PvPowerThresholdW = Convert.ToInt32(value);
+                break;
+            case "openDelayMinutes":
+                config.OpenDelayMinutes = Convert.ToInt32(value);
+                break;
+            case "onGridAlwaysOn":
+                config.OnGridAlwaysOn = Convert.ToBoolean(value);
                 break;
         }
     }
