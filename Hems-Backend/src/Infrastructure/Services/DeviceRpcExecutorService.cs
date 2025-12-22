@@ -291,6 +291,11 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
             "BatteryChargeSourceConfigState" => new BatteryChargeSourceConfigRequest(),
             "BatteryThresholdConfigState" => new BatteryThresholdConfigRequest(),
             "GeneratorAndSmartLoadConfigState" => new GeneratorAndSmartLoadConfigRequest(),
+            "BatteryMaintenanceConfigState" => new BatteryMaintenanceConfigRequest(),
+            "GridCodeConfigState" => new GridCodeConfigRequest(),
+            "InverterAdvancedFunctionConfigState" => new InverterAdvancedFunctionConfigRequest(),
+            "ExternalRelayConfigState" => new ExternalRelayConfigRequest(),
+            "GeneratorSmartLoadOverride" => new GeneratorSmartLoadOverrideRequest(),
             _ => throw new NotSupportedException($"Unsupported RPC kind: {rpcKind}")
         };
     }
@@ -315,6 +320,21 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
                 break;
             case GeneratorAndSmartLoadConfigRequest generatorSmartLoadRequest:
                 PopulateGeneratorAndSmartLoadField(generatorSmartLoadRequest, parts, value);
+                break;
+            case BatteryMaintenanceConfigRequest batteryMaintenanceRequest:
+                PopulateBatteryMaintenanceField(batteryMaintenanceRequest, parts, value);
+                break;
+            case GridCodeConfigRequest gridCodeRequest:
+                PopulateGridCodeField(gridCodeRequest, parts, value);
+                break;
+            case InverterAdvancedFunctionConfigRequest inverterAdvancedRequest:
+                PopulateInverterAdvancedFunctionField(inverterAdvancedRequest, parts, value);
+                break;
+            case ExternalRelayConfigRequest externalRelayRequest:
+                PopulateExternalRelayField(externalRelayRequest, parts, value);
+                break;
+            case GeneratorSmartLoadOverrideRequest generatorSmartLoadOverrideRequest:
+                PopulateGeneratorSmartLoadOverrideField(generatorSmartLoadOverrideRequest, parts, value);
                 break;
             default:
                 throw new NotSupportedException($"Unsupported request type: {request.GetType().Name}");
@@ -669,6 +689,227 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
                 break;
             case "onGridAlwaysOn":
                 config.OnGridAlwaysOn = Convert.ToBoolean(value);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Populates a field in BatteryMaintenanceConfigRequest
+    /// </summary>
+    private static void PopulateBatteryMaintenanceField(BatteryMaintenanceConfigRequest request, string[] parts, object value)
+    {
+        if (parts.Length == 0) return;
+
+        var section = parts[0];
+
+        switch (section)
+        {
+            case "batteryControlMode":
+                request.BatteryControlMode = value as string;
+                break;
+            case "batteryResistanceMilliOhm":
+                request.BatteryResistanceMilliOhm = Convert.ToInt32(value);
+                break;
+            case "chargeEfficiencyPercent":
+                request.ChargeEfficiencyPercent = Convert.ToDecimal(value);
+                break;
+            case "wakeUp":
+                request.WakeUp ??= new BatteryWakeUpConfig();
+                if (parts.Length >= 2)
+                {
+                    SetBatteryWakeUpProperty(request.WakeUp, parts[1], value);
+                }
+                break;
+        }
+    }
+
+    private static void SetBatteryWakeUpProperty(BatteryWakeUpConfig config, string property, object value)
+    {
+        switch (property)
+        {
+            case "channel1Enabled":
+                config.Channel1Enabled = Convert.ToBoolean(value);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Populates a field in GridCodeConfigRequest
+    /// </summary>
+    private static void PopulateGridCodeField(GridCodeConfigRequest request, string[] parts, object value)
+    {
+        if (parts.Length == 0) return;
+
+        var section = parts[0];
+
+        switch (section)
+        {
+            case "gridModeRaw":
+                request.GridModeRaw = Convert.ToInt32(value);
+                break;
+            case "gridFrequencyHz":
+                request.GridFrequencyHz = Convert.ToInt32(value);
+                break;
+            case "outputVoltageLevelCode":
+                request.OutputVoltageLevelCode = Convert.ToInt32(value);
+                break;
+            case "reconnectionTimeSeconds":
+                request.ReconnectionTimeSeconds = Convert.ToInt32(value);
+                break;
+            case "powerFactorTarget":
+                request.PowerFactorTarget = Convert.ToInt32(value);
+                break;
+            case "activePowerRegulationPercentPerStep":
+                request.ActivePowerRegulationPercentPerStep = Convert.ToDecimal(value);
+                break;
+            case "reactivePowerRegulationPercentPerStep":
+                request.ReactivePowerRegulationPercentPerStep = Convert.ToDecimal(value);
+                break;
+            case "normalConnect":
+                request.NormalConnect ??= new NormalConnectConfig();
+                if (parts.Length >= 2)
+                {
+                    SetNormalConnectProperty(request.NormalConnect, parts[1], value);
+                }
+                break;
+        }
+    }
+
+    private static void SetNormalConnectProperty(NormalConnectConfig config, string property, object value)
+    {
+        switch (property)
+        {
+            case "voltageHighV":
+                config.VoltageHighV = Convert.ToDecimal(value);
+                break;
+            case "voltageLowV":
+                config.VoltageLowV = Convert.ToDecimal(value);
+                break;
+            case "frequencyHighHz":
+                config.FrequencyHighHz = Convert.ToDecimal(value);
+                break;
+            case "frequencyLowHz":
+                config.FrequencyLowHz = Convert.ToDecimal(value);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Populates a field in InverterAdvancedFunctionConfigRequest
+    /// </summary>
+    private static void PopulateInverterAdvancedFunctionField(InverterAdvancedFunctionConfigRequest request, string[] parts, object value)
+    {
+        if (parts.Length == 0) return;
+
+        var section = parts[0];
+
+        switch (section)
+        {
+            case "islandProtectionEnabled":
+                request.IslandProtectionEnabled = Convert.ToBoolean(value);
+                break;
+            case "lithiumBatteryLossFaultEnabled":
+                request.LithiumBatteryLossFaultEnabled = Convert.ToBoolean(value);
+                break;
+            case "arcFault":
+                request.ArcFault ??= new ArcFaultConfig();
+                if (parts.Length >= 2)
+                {
+                    SetArcFaultProperty(request.ArcFault, parts[1], value);
+                }
+                break;
+            case "parallel":
+                request.Parallel ??= new ParallelConfig();
+                if (parts.Length >= 2)
+                {
+                    SetParallelProperty(request.Parallel, parts[1], value);
+                }
+                break;
+            case "externalMeter":
+                request.ExternalMeter ??= new ExternalMeterConfig();
+                if (parts.Length >= 2)
+                {
+                    SetExternalMeterProperty(request.ExternalMeter, parts[1], value);
+                }
+                break;
+        }
+    }
+
+    private static void SetArcFaultProperty(ArcFaultConfig config, string property, object value)
+    {
+        switch (property)
+        {
+            case "enabled":
+                config.Enabled = Convert.ToBoolean(value);
+                break;
+        }
+    }
+
+    private static void SetParallelProperty(ParallelConfig config, string property, object value)
+    {
+        switch (property)
+        {
+            case "enabled":
+                config.Enabled = Convert.ToBoolean(value);
+                break;
+            case "role":
+                config.Role = value as string;
+                break;
+            case "phase":
+                config.Phase = value as string;
+                break;
+            case "modbusAddress":
+                config.ModbusAddress = Convert.ToInt32(value);
+                break;
+        }
+    }
+
+    private static void SetExternalMeterProperty(ExternalMeterConfig config, string property, object value)
+    {
+        switch (property)
+        {
+            case "ctRatio":
+                config.CtRatio = Convert.ToInt32(value);
+                break;
+            case "meterCtRatio":
+                config.MeterCtRatio = Convert.ToInt32(value);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Populates a field in ExternalRelayConfigRequest
+    /// </summary>
+    private static void PopulateExternalRelayField(ExternalRelayConfigRequest request, string[] parts, object value)
+    {
+        if (parts.Length == 0) return;
+
+        var section = parts[0];
+
+        switch (section)
+        {
+            case "externalRelayFeatureEnabled":
+                request.ExternalRelayFeatureEnabled = Convert.ToBoolean(value);
+                break;
+            case "relayBitmapRaw":
+                request.RelayBitmapRaw = Convert.ToInt32(value);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Populates a field in GeneratorSmartLoadOverrideRequest
+    /// </summary>
+    private static void PopulateGeneratorSmartLoadOverrideField(GeneratorSmartLoadOverrideRequest request, string[] parts, object value)
+    {
+        if (parts.Length == 0) return;
+
+        var section = parts[0];
+
+        switch (section)
+        {
+            case "forceSmartLoadOn":
+                request.ForceSmartLoadOn = Convert.ToBoolean(value);
                 break;
         }
     }

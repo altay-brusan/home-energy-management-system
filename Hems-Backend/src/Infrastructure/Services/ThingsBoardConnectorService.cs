@@ -532,7 +532,7 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
         try
         {
             await EnsureAuthenticatedAsync(cancellationToken);
-            
+
             _logger.LogInformation("Sending two-way RPC to device: {ThingsBoardDeviceId}, Method: {Method}", deviceId, method);
 
             var url = $"/api/plugins/rpc/twoway/{deviceId}?timeout={timeoutMs}";
