@@ -178,7 +178,7 @@ function TabNavigator () {
       {/* Settings tab'ı her zaman göster */}
       <Tab.Screen
         name="Settings"
-        component={EnergyProfileScreen}
+        component={SettingsScreen}
         options={{
           tabBarLabel: t('tabs.settings'),
           tabBarIcon: ({ color, size }) => (

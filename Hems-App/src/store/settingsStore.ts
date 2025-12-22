@@ -7,6 +7,14 @@ export type MeasurementSystem = 'metric' | 'imperial';
 export type TimeFormat = '12h' | '24h';
 export type DateFormat = 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD';
 export type PricingType = 'fixed' | 'dynamic';
+export type Currency = 'EUR' | 'USD' | 'GBP' | 'TRY';
+
+export const CURRENCY_SYMBOLS: Record<Currency, string> = {
+  EUR: '€',
+  USD: '$',
+  GBP: '£',
+  TRY: '₺',
+};
 
 export interface TimePeriodPrice {
   id: string;
@@ -24,8 +32,9 @@ type SettingsState = {
   dateFormat: DateFormat;
   // Pricing settings
   pricingType: PricingType;
-  fixedBuyPrice: number;  // €/kWh
-  fixedSellPrice: number; // €/kWh
+  currency: Currency;
+  fixedBuyPrice: number;  // per kWh
+  fixedSellPrice: number; // per kWh
   dynamicPrices: TimePeriodPrice[];
   // General settings actions
   setTemperatureUnit: (unit: TemperatureUnit) => void;
@@ -34,6 +43,7 @@ type SettingsState = {
   setDateFormat: (format: DateFormat) => void;
   // Pricing settings actions
   setPricingType: (type: PricingType) => void;
+  setCurrency: (currency: Currency) => void;
   setFixedBuyPrice: (price: number) => void;
   setFixedSellPrice: (price: number) => void;
   setDynamicPrices: (prices: TimePeriodPrice[]) => void;
@@ -58,6 +68,7 @@ export const useSettingsStore = create<SettingsState>()(
       dateFormat: 'DD/MM/YYYY',
       // Pricing settings defaults
       pricingType: 'fixed',
+      currency: 'EUR',
       fixedBuyPrice: 0.25,
       fixedSellPrice: 0.10,
       dynamicPrices: DEFAULT_DYNAMIC_PRICES,
@@ -68,6 +79,7 @@ export const useSettingsStore = create<SettingsState>()(
       setDateFormat: (dateFormat) => set({ dateFormat }),
       // Pricing settings actions
       setPricingType: (pricingType) => set({ pricingType }),
+      setCurrency: (currency) => set({ currency }),
       setFixedBuyPrice: (fixedBuyPrice) => set({ fixedBuyPrice }),
       setFixedSellPrice: (fixedSellPrice) => set({ fixedSellPrice }),
       setDynamicPrices: (dynamicPrices) => set({ dynamicPrices }),
@@ -90,6 +102,7 @@ export const useSettingsStore = create<SettingsState>()(
         timeFormat: state.timeFormat,
         dateFormat: state.dateFormat,
         pricingType: state.pricingType,
+        currency: state.currency,
         fixedBuyPrice: state.fixedBuyPrice,
         fixedSellPrice: state.fixedSellPrice,
         dynamicPrices: state.dynamicPrices,

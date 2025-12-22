@@ -141,24 +141,6 @@ const confirmLogout = async () => {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.card}
-            onPress={() => navigation.navigate('AppSettings')}
-          >
-            <FontAwesome
-              name="cog"
-              size={22}
-              color={COLORS.accent}
-              style={{ marginRight: 12 }}
-            />
-            <Text
-              style={styles.sectionTitle}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {t('settings.title')}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.card}
             onPress={handleLogout}
           >
             <FontAwesome

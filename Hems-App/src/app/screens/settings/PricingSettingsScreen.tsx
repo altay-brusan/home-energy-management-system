@@ -9,12 +9,14 @@ import {
   Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, Plus, Trash2, Clock, Euro } from 'lucide-react-native';
+import { ArrowLeft, Plus, Trash2, Clock } from 'lucide-react-native';
 import { useThemeStore } from '../../../store/themeStore';
 import {
   useSettingsStore,
   PricingType,
   TimePeriodPrice,
+  Currency,
+  CURRENCY_SYMBOLS,
 } from '../../../store/settingsStore';
 import { getThemeColors } from '../../../theme/constants';
 import { useI18n } from '../../../hooks/useI18n';
@@ -81,6 +83,7 @@ interface PriceInputProps {
   onChangeValue: (value: number) => void;
   colors: Record<string, string>;
   isDark: boolean;
+  currencySymbol: string;
 }
 
 const PriceInput: React.FC<PriceInputProps> = ({
@@ -89,6 +92,7 @@ const PriceInput: React.FC<PriceInputProps> = ({
   onChangeValue,
   colors,
   isDark,
+  currencySymbol,
 }) => {
   const [inputValue, setInputValue] = useState(value.toString());
 
@@ -125,7 +129,7 @@ const PriceInput: React.FC<PriceInputProps> = ({
           borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
         }}
       >
-        <Euro size={18} color={colors.accent} />
+        <Text style={{ fontSize: 18, color: colors.accent, fontWeight: '600' }}>{currencySymbol}</Text>
         <TextInput
           style={{
             flex: 1,
@@ -156,16 +160,27 @@ export default function PricingSettingsScreen({ navigation }: any) {
 
   const {
     pricingType,
+    currency,
     fixedBuyPrice,
     fixedSellPrice,
     dynamicPrices,
     setPricingType,
+    setCurrency,
     setFixedBuyPrice,
     setFixedSellPrice,
     updateDynamicPeriod,
     addDynamicPeriod,
     removeDynamicPeriod,
   } = useSettingsStore();
+
+  const currencySymbol = CURRENCY_SYMBOLS[currency];
+
+  const currencyOptions: { label: string; value: Currency }[] = [
+    { label: `€ EUR`, value: 'EUR' },
+    { label: `$ USD`, value: 'USD' },
+    { label: `£ GBP`, value: 'GBP' },
+    { label: `₺ TRY`, value: 'TRY' },
+  ];
 
   const [editingPeriod, setEditingPeriod] = useState<TimePeriodPrice | null>(null);
   const [showTimeModal, setShowTimeModal] = useState(false);
@@ -232,6 +247,45 @@ export default function PricingSettingsScreen({ navigation }: any) {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Currency Selection */}
+        <View style={[styles.card, { backgroundColor: isDark ? COLORS.surface : COLORS.white }]}>
+          <Text style={[styles.cardTitle, { color: COLORS.text }]}>
+            {t('pricing.currency')}
+          </Text>
+          <Text style={[styles.cardDesc, { color: COLORS.textSoft }]}>
+            {t('pricing.currencyDesc')}
+          </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
+            {currencyOptions.map((option) => {
+              const isSelected = option.value === currency;
+              return (
+                <TouchableOpacity
+                  key={option.value}
+                  onPress={() => setCurrency(option.value)}
+                  style={{
+                    paddingVertical: 10,
+                    paddingHorizontal: 16,
+                    borderRadius: 8,
+                    backgroundColor: isSelected ? COLORS.accent : isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                    borderWidth: 1,
+                    borderColor: isSelected ? COLORS.accent : isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: isSelected ? '600' : '500',
+                      color: isSelected ? '#fff' : COLORS.textSoft,
+                    }}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
         {/* Pricing Type Selection */}
         <View style={[styles.card, { backgroundColor: isDark ? COLORS.surface : COLORS.white }]}>
           <Text style={[styles.cardTitle, { color: COLORS.text }]}>
@@ -259,18 +313,20 @@ export default function PricingSettingsScreen({ navigation }: any) {
               {t('pricing.fixedPricing')}
             </Text>
             <PriceInput
-              label={t('pricing.buyPrice')}
+              label={t('pricing.buyPriceLabel', { symbol: currencySymbol })}
               value={fixedBuyPrice}
               onChangeValue={setFixedBuyPrice}
               colors={COLORS}
               isDark={isDark}
+              currencySymbol={currencySymbol}
             />
             <PriceInput
-              label={t('pricing.sellPrice')}
+              label={t('pricing.sellPriceLabel', { symbol: currencySymbol })}
               value={fixedSellPrice}
               onChangeValue={setFixedSellPrice}
               colors={COLORS}
               isDark={isDark}
+              currencySymbol={currencySymbol}
             />
           </View>
         )}
@@ -354,7 +410,7 @@ export default function PricingSettingsScreen({ navigation }: any) {
                         { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' },
                       ]}
                     >
-                      <Text style={[styles.currencySymbol, { color: COLORS.accent }]}>€</Text>
+                      <Text style={[styles.currencySymbol, { color: COLORS.accent }]}>{currencySymbol}</Text>
                       <TextInput
                         style={[styles.priceInput, { color: COLORS.text }]}
                         value={period.buyPrice.toString()}
@@ -380,7 +436,7 @@ export default function PricingSettingsScreen({ navigation }: any) {
                         { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)' },
                       ]}
                     >
-                      <Text style={[styles.currencySymbol, { color: COLORS.accent }]}>€</Text>
+                      <Text style={[styles.currencySymbol, { color: COLORS.accent }]}>{currencySymbol}</Text>
                       <TextInput
                         style={[styles.priceInput, { color: COLORS.text }]}
                         value={period.sellPrice.toString()}
