@@ -1,4 +1,4 @@
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation, useIsFocused } from "@react-navigation/native";
 import { ArrowLeft, Sun, Wifi, Zap } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -15,7 +15,8 @@ import {
 } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LinearGradient from 'react-native-linear-gradient';
-import Svg, { Path, Rect } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
+import { BatteryIcon } from "../../../components/ui/BatteryIcon";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { mobileDashboardService } from "../../../api/services/mobileDashboardService";
 import { sitesService } from "../../../api/services/sitesService";
@@ -32,61 +33,6 @@ import { getThemeColors, SPACING } from "../../../theme/constants";
 import { getStyles } from "./DeviceDetail.styles";
 import { DeviceDetailSkeleton } from "./DeviceDetailSkeleton";
 import type { ComponentSummaryDto, InverterSummaryDto, BatterySummaryDto } from "../../../api/types/deviceComponents.types";
-
-// Battery Icon with fill level
-const BatteryIcon: React.FC<{
-  percentage: number;
-  size?: number;
-  fillColor?: string;
-  borderColor?: string;
-}> = ({ percentage, size = 24, fillColor = '#22C55E', borderColor = '#9CA3AF' }) => {
-  const clampedPercentage = Math.max(0, Math.min(100, percentage));
-  const fillWidth = (clampedPercentage / 100) * 16; // Max fill width is 16
-
-  // Color based on percentage
-  const getFillColor = () => {
-    if (clampedPercentage <= 20) return '#EF4444'; // Red
-    if (clampedPercentage <= 40) return '#F59E0B'; // Orange
-    return fillColor; // Green
-  };
-
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      {/* Battery body outline */}
-      <Rect
-        x="2"
-        y="7"
-        width="18"
-        height="10"
-        rx="2"
-        ry="2"
-        fill="none"
-        stroke={borderColor}
-        strokeWidth="1.5"
-      />
-      {/* Battery terminal */}
-      <Rect
-        x="20"
-        y="10"
-        width="2"
-        height="4"
-        rx="0.5"
-        fill={borderColor}
-      />
-      {/* Battery fill level */}
-      {clampedPercentage > 0 && (
-        <Rect
-          x="4"
-          y="9"
-          width={fillWidth}
-          height="6"
-          rx="1"
-          fill={getFillColor()}
-        />
-      )}
-    </Svg>
-  );
-};
 
 // PV Icon from EnergyFlowRadial
 const PVIcon: React.FC<{ color: string; size?: number }> = ({ color, size = 32 }) => (
@@ -129,7 +75,8 @@ export default function DeviceDetail() {
 
   // New state for DeviceSummary API data
   const [summaryComponents, setSummaryComponents] = useState<ComponentSummaryDto[]>([]);
-  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isFocused = useIsFocused();
 
   const { fetchLiveData } = useDeviceLiveData(deviceId);
 
@@ -238,24 +185,32 @@ export default function DeviceDetail() {
     }
   }, [deviceId, fetchDeviceSummary]);
 
-  // Polling: Fetch summary every 5 seconds
+  // Polling: Fetch summary every 5 seconds (only when focused)
   useEffect(() => {
-    if (!deviceId) return;
+    if (!deviceId || !isFocused) {
+      // Clear interval when not focused
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+      return;
+    }
 
     // Start polling
     const interval = setInterval(() => {
       fetchDeviceSummary();
     }, 5000); // Poll every 5 seconds
 
-    setPollingInterval(interval);
+    pollingIntervalRef.current = interval;
 
-    // Cleanup on unmount
+    // Cleanup on unmount or when dependencies change
     return () => {
-      if (interval) {
-        clearInterval(interval);
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
       }
     };
-  }, [deviceId, fetchDeviceSummary]);
+  }, [deviceId, isFocused, fetchDeviceSummary]);
 
   // PERFORMANCE: Inverter live data'yı sayfa açılışında yükleme
   // Sadece gerektiğinde (manuel refresh veya kullanıcı istediğinde) yükle
@@ -322,12 +277,17 @@ export default function DeviceDetail() {
     }
   };
 
-  const inverterComp = components.find(c =>
-    c.name.toLowerCase().includes("inverter")
+  // Memoized component calculations to prevent unnecessary re-renders
+  const inverterComp = useMemo(() =>
+    components.find(c => c.name.toLowerCase().includes("inverter")),
+    [components]
   );
 
-  const batteryComps = components.filter(c =>
-    c.name.toLowerCase().includes("battery") && !c.name.toLowerCase().includes("bms")
+  const batteryComps = useMemo(() =>
+    components.filter(c =>
+      c.name.toLowerCase().includes("battery") && !c.name.toLowerCase().includes("bms")
+    ),
+    [components]
   );
 
   const batteryCount = batteryComps.length;
@@ -335,9 +295,16 @@ export default function DeviceDetail() {
     ? t("deviceDetail.battery.packCount", { count: batteryCount })
     : t("deviceDetail.battery.noBatteries");
 
-  // Get realtime data from DeviceSummary API
-  const inverterSummary = summaryComponents.find(c => c.type === 'inverter') as InverterSummaryDto | undefined;
-  const batterySummary = summaryComponents.find(c => c.type === 'battery') as BatterySummaryDto | undefined;
+  // Get realtime data from DeviceSummary API (memoized)
+  const inverterSummary = useMemo(() =>
+    summaryComponents.find(c => c.type === 'inverter') as InverterSummaryDto | undefined,
+    [summaryComponents]
+  );
+
+  const batterySummary = useMemo(() =>
+    summaryComponents.find(c => c.type === 'battery') as BatterySummaryDto | undefined,
+    [summaryComponents]
+  );
 
   const inverterActivePower = inverterSummary?.activePowerKw;
   const batteryStateOfCharge = batterySummary?.stateOfCharge;

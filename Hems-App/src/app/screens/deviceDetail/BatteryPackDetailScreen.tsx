@@ -1,7 +1,7 @@
 import FontAwesome from "@react-native-vector-icons/fontawesome";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute, useIsFocused } from "@react-navigation/native";
 import { ArrowLeft } from 'lucide-react-native';
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -53,7 +53,9 @@ export default function BatteryPackDetailScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [detailsData, setDetailsData] = useState<DeviceDetailsResponseDto | null>(null);
-  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isFocused = useIsFocused();
 
   // Helper function to get value from details
   const getDetailValue = (key: string): any => {
@@ -62,43 +64,76 @@ export default function BatteryPackDetailScreen() {
   };
 
   // Fetch component details from Details API
-  const fetchComponentDetails = async () => {
+  const fetchComponentDetails = useCallback(async (isPolling: boolean = false) => {
     if (!componentId) return;
+
+    // Clear error on new fetch attempt (not during polling)
+    if (!isPolling) {
+      setError(null);
+    }
 
     try {
       const details = await deviceComponentsService.getComponentDetails(componentId);
       setDetailsData(details);
-    } catch (error) {
-      console.error('Error fetching component details:', error);
+      setError(null);
+    } catch (err: any) {
+      console.error('Error fetching component details:', err);
+
+      // Only show error if we have no cached data
+      if (!detailsData) {
+        if (err?.response?.status === 404) {
+          setError(t('batteryDetail.notFound'));
+        } else if (err?.response?.status === 401) {
+          // Silent - token refresh will handle
+        } else if (err?.code === 'NETWORK_ERROR' || !err?.response) {
+          setError(t('batteryDetail.networkError'));
+        } else {
+          setError(t('batteryDetail.fetchError'));
+        }
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [componentId, detailsData, t]);
 
   useEffect(() => {
-    fetchComponentDetails();
-  }, [componentId]);
+    fetchComponentDetails(false);
+  }, []);
 
-  // Polling: Fetch details every 5 seconds
+  // Polling: Fetch details every 5 seconds (only when focused)
   useEffect(() => {
-    if (!componentId) return;
+    if (!componentId || !isFocused) {
+      // Clear interval when not focused
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+      return;
+    }
 
+    // Fetch immediately when becoming focused
+    fetchComponentDetails(true);
+
+    // Start polling
     const interval = setInterval(() => {
-      fetchComponentDetails();
+      fetchComponentDetails(true);
     }, 5000);
 
-    setPollingInterval(interval);
+    pollingIntervalRef.current = interval;
 
+    // Cleanup on unmount or when dependencies change
     return () => {
-      if (interval) {
-        clearInterval(interval);
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
       }
     };
-  }, [componentId]);
+  }, [componentId, isFocused, fetchComponentDetails]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchComponentDetails();
+    setError(null);
+    await fetchComponentDetails(false);
     setRefreshing(false);
   };
 
@@ -118,6 +153,72 @@ export default function BatteryPackDetailScreen() {
         <Text style={{ color: COLORS.textSoft, marginTop: 10 }}>
           {t("common.loading")}
         </Text>
+      </View>
+    );
+  }
+
+  // Error state with retry button
+  if (error && !detailsData) {
+    return (
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor: COLORS.dark,
+            paddingTop: insets.top,
+          },
+        ]}
+      >
+        {/* Header */}
+        <View
+          style={[
+            styles.header,
+            {
+              backgroundColor: COLORS.dark,
+            },
+          ]}
+        >
+          <Pressable
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <ArrowLeft size={24} color={COLORS.textSoft} strokeWidth={2} />
+          </Pressable>
+          <Text
+            style={[
+              styles.headerTitle,
+              {
+                color: COLORS.textSoft,
+              },
+            ]}
+            numberOfLines={1}
+          >
+            {batteryName || t("batteryDetail.title")}
+          </Text>
+          <View style={{ width: 40 }} />
+        </View>
+
+        {/* Error content */}
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <FontAwesome name="exclamation-triangle" size={48} color={COLORS.error} />
+          <Text style={{ color: COLORS.error, marginTop: 16, fontSize: 16, textAlign: 'center' }}>
+            {error}
+          </Text>
+          <Pressable
+            onPress={onRefresh}
+            style={{
+              marginTop: 20,
+              paddingHorizontal: 24,
+              paddingVertical: 12,
+              backgroundColor: `${COLORS.accent}15`,
+              borderRadius: 8,
+            }}
+          >
+            <Text style={{ color: COLORS.accent, fontWeight: '600' }}>
+              {t("common.retry")}
+            </Text>
+          </Pressable>
+        </View>
       </View>
     );
   }

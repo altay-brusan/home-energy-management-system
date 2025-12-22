@@ -1,10 +1,9 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Text, View, ScrollView, TextInput, TouchableOpacity, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import Input from '../../../../components/forms/Input';
-import Button from '../../../../components/ui/Button';
+import { ArrowLeft } from 'lucide-react-native';
 import { useThemeStore } from '../../../../store/themeStore';
 import { getThemeColors } from '../../../../theme/constants';
 import { makeChangePasswordStyles } from './ProfileInfoScreen.styles';
@@ -12,11 +11,11 @@ import { useI18n } from '../../../../hooks/useI18n';
 import useProfile from '../../../../hooks/useProfile';
 import { ChangePasswordForm, createChangePasswordSchema } from './changePassword.schema';
 
-export default function ChangePasswordScreen ({ navigation }: any) {
+export default function ChangePasswordScreen({ navigation }: any) {
   const mode = useThemeStore(s => s.mode);
   const isDark = mode === 'dark';
   const COLORS = getThemeColors(isDark);
-  const styles = makeChangePasswordStyles(COLORS);
+  const styles = makeChangePasswordStyles(COLORS, isDark);
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
   const { changePassword, changePasswordLoading, changePasswordSuccess, clearChangePasswordSuccess } = useProfile();
@@ -24,7 +23,7 @@ export default function ChangePasswordScreen ({ navigation }: any) {
   const {
     control,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
     reset,
   } = useForm<ChangePasswordForm>({
     resolver: zodResolver(createChangePasswordSchema(t)),
@@ -42,100 +41,131 @@ export default function ChangePasswordScreen ({ navigation }: any) {
     } catch (error) {}
   };
 
-  const handleCancel = () => {
-    if (navigation && navigation.goBack) {
-      navigation.goBack();
-    }
-  };
-
   return (
-    <View
-      style={[
-        styles.container,
-        { paddingTop: insets.top + 24, paddingBottom: 24 },
-      ]}
-    >
-      <Text style={styles.title}>{t('changePassword.title')}</Text>
-      <View style={styles.inputGroup}>
-        <Controller
-          control={control}
-          name="oldPassword"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <Input
-              label={t('changePassword.oldPassword')}
-              placeholder={t('changePassword.oldPassword')}
-              placeholderTextColor={COLORS.slate400}
-              value={value}
-              secureTextEntry
-              onChangeText={onChange}
-              onBlur={onBlur}
-              error={errors.oldPassword?.message}
-            />
-          )}
-        />
-        <Controller
-          control={control}
-          name="newPassword"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <Input
-              label={t('changePassword.newPassword')}
-              placeholder={t('changePassword.newPassword')}
-              placeholderTextColor={COLORS.slate400}
-              value={value}
-              secureTextEntry
-              onChangeText={onChange}
-              onBlur={onBlur}
-              error={errors.newPassword?.message}
-            />
-          )}
-        />
-        <Controller
-          control={control}
-          name="confirmPassword"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <Input
-              label={t('changePassword.repeatPassword')}
-              placeholder={t('changePassword.repeatPassword')}
-              placeholderTextColor={COLORS.slate400}
-              value={value}
-              secureTextEntry
-              onChangeText={onChange}
-              onBlur={onBlur}
-              error={errors.confirmPassword?.message}
-            />
-          )}
-        />
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <ArrowLeft size={24} color={COLORS.text} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{t('changePassword.title')}</Text>
+        <View style={{ width: 40 }} />
       </View>
 
-      <View style={styles.passwordRules}>
-        <Text style={styles.passwordRulesTitle}>{t('passwordRules.title')}</Text>
-        <Text style={styles.passwordRule}>• {t('passwordRules.minLength')}</Text>
-        <Text style={styles.passwordRule}>• {t('passwordRules.uppercase')}</Text>
-        <Text style={styles.passwordRule}>• {t('passwordRules.lowercase')}</Text>
-        <Text style={styles.passwordRule}>• {t('passwordRules.specialChar')}</Text>
-      </View>
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Password Fields Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('changePassword.securitySettings')}</Text>
 
-      {changePasswordSuccess && (
-        <View style={styles.messageBox}>
-          <Text style={[styles.messageText, styles.successText]}>
-            {t('changePassword.passwordUpdated')}
-          </Text>
+          <View style={styles.inputRow}>
+            <Text style={styles.inputLabel}>{t('changePassword.oldPassword')}</Text>
+            <Controller
+              control={control}
+              name="oldPassword"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  style={[styles.inputField, errors.oldPassword && { borderColor: COLORS.error }]}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  secureTextEntry
+                  placeholder="********"
+                  placeholderTextColor={COLORS.textSoft}
+                />
+              )}
+            />
+            {errors.oldPassword && (
+              <Text style={[styles.errorText, { fontSize: 12, marginTop: 4 }]}>
+                {errors.oldPassword.message}
+              </Text>
+            )}
+          </View>
+
+          <View style={styles.inputRow}>
+            <Text style={styles.inputLabel}>{t('changePassword.newPassword')}</Text>
+            <Controller
+              control={control}
+              name="newPassword"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  style={[styles.inputField, errors.newPassword && { borderColor: COLORS.error }]}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  secureTextEntry
+                  placeholder="********"
+                  placeholderTextColor={COLORS.textSoft}
+                />
+              )}
+            />
+            {errors.newPassword && (
+              <Text style={[styles.errorText, { fontSize: 12, marginTop: 4 }]}>
+                {errors.newPassword.message}
+              </Text>
+            )}
+          </View>
+
+          <View style={styles.inputRow}>
+            <Text style={styles.inputLabel}>{t('changePassword.repeatPassword')}</Text>
+            <Controller
+              control={control}
+              name="confirmPassword"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  style={[styles.inputField, errors.confirmPassword && { borderColor: COLORS.error }]}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  secureTextEntry
+                  placeholder="********"
+                  placeholderTextColor={COLORS.textSoft}
+                />
+              )}
+            />
+            {errors.confirmPassword && (
+              <Text style={[styles.errorText, { fontSize: 12, marginTop: 4 }]}>
+                {errors.confirmPassword.message}
+              </Text>
+            )}
+          </View>
         </View>
-      )}
-      <View style={styles.buttonRow}>
-        <Button
-          title={changePasswordLoading ? t('common.loading') : t('changePassword.save')}
-          style={styles.saveBtn}
-          textStyle={styles.saveBtnText}
+
+        {/* Password Rules Card */}
+        <View style={styles.passwordRulesCard}>
+          <Text style={styles.passwordRulesTitle}>{t('passwordRules.title')}</Text>
+          <Text style={styles.passwordRule}>• {t('passwordRules.minLength')}</Text>
+          <Text style={styles.passwordRule}>• {t('passwordRules.uppercase')}</Text>
+          <Text style={styles.passwordRule}>• {t('passwordRules.lowercase')}</Text>
+          <Text style={styles.passwordRule}>• {t('passwordRules.specialChar')}</Text>
+        </View>
+
+        {/* Success Message */}
+        {changePasswordSuccess && (
+          <View style={[styles.messageBox, styles.successBox]}>
+            <Text style={[styles.messageText, styles.successText]}>
+              {t('changePassword.passwordUpdated')}
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Bottom Buttons */}
+      <View style={[styles.buttonContainer, { paddingBottom: insets.bottom + 16 }]}>
+        <Pressable
+          style={[styles.saveButton, changePasswordLoading && { opacity: 0.6 }]}
           onPress={handleSubmit(onSubmit)}
           disabled={changePasswordLoading}
-        />
-        <Button
-          title={t('changePassword.cancel')}
-          style={styles.cancelBtn}
-          textStyle={styles.cancelBtnText}
-          onPress={handleCancel}
-        />
+        >
+          <Text style={styles.saveButtonText}>
+            {changePasswordLoading ? t('common.loading') : t('changePassword.save')}
+          </Text>
+        </Pressable>
+        <Pressable style={styles.cancelButton} onPress={() => navigation.goBack()}>
+          <Text style={styles.cancelButtonText}>{t('changePassword.cancel')}</Text>
+        </Pressable>
       </View>
     </View>
   );

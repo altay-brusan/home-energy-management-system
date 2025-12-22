@@ -102,6 +102,7 @@ const confirmLogout = async () => {
             </Text>
           </TouchableOpacity>
           )}
+{/* Troubleshooting - temporarily hidden
   <TouchableOpacity
   style={styles.card}
   onPress={() => navigation.navigate('Faults')}
@@ -112,7 +113,7 @@ const confirmLogout = async () => {
     color={COLORS.accent}
     style={{ marginRight: 12 }}
   />
-            <Text 
+            <Text
               style={styles.sectionTitle}
               numberOfLines={1}
               ellipsizeMode="tail"
@@ -120,6 +121,7 @@ const confirmLogout = async () => {
               {t('profile.troubleshooting')}
             </Text>
 </TouchableOpacity>
+*/}
 
           <TouchableOpacity
             style={styles.card}

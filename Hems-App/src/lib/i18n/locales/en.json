@@ -263,6 +263,7 @@
     },
     "changePassword": {
       "title": "Change Password",
+      "securitySettings": "Security Settings",
       "oldPassword": "Old Password",
       "newPassword": "New Password",
       "repeatPassword": "Repeat New Password",
@@ -383,10 +384,12 @@
     },
     "profileInfo": {
       "title": "Personal Information",
-      "firstName": "First Name*",
-      "lastName": "Last Name*",
+      "personalDetails": "Personal Details",
+      "contactDetails": "Contact Details",
+      "firstName": "First Name",
+      "lastName": "Last Name",
       "email": "Email",
-      "phone": "Phone*",
+      "phone": "Phone",
       "save": "Save",
       "cancel": "Cancel",
       "fillAllFields": "Please fill in all required fields.",
@@ -1520,7 +1523,10 @@
   "batteryList": {
     "title": "Battery Packs",
     "serialNumber": "Serial Number",
-    "empty": "No battery packs found"
+    "empty": "No battery packs found",
+    "deviceNotFound": "Device not found",
+    "networkError": "Connection error. Please check your internet connection.",
+    "fetchError": "Failed to load battery data. Please try again."
   },
   "batteryDetail": {
     "title": "Battery Details",
@@ -1543,7 +1549,10 @@
     "model": "Model",
     "serialNumber": "Serial Number",
     "firmwareVersion": "Firmware Version",
-    "lastUpdate": "Last Update"
+    "lastUpdate": "Last Update",
+    "notFound": "Battery not found",
+    "networkError": "Connection error. Please check your internet connection.",
+    "fetchError": "Failed to load battery details. Please try again."
   },
   "inverterDetail": {
     "title": "Inverter Details",

@@ -279,6 +279,7 @@
   },
   "changePassword": {
     "title": "Şifre Değiştir",
+    "securitySettings": "Güvenlik Ayarları",
     "oldPassword": "Eski Şifre",
     "newPassword": "Yeni Şifre",
     "repeatPassword": "Yeni Şifre Tekrar",
@@ -399,10 +400,12 @@
   },
   "profileInfo": {
     "title": "Kişisel Bilgiler",
-    "firstName": "Ad*",
-    "lastName": "Soyad*",
+    "personalDetails": "Kişisel Bilgiler",
+    "contactDetails": "İletişim Bilgileri",
+    "firstName": "Ad",
+    "lastName": "Soyad",
     "email": "E-posta",
-    "phone": "Telefon*",
+    "phone": "Telefon",
     "save": "Kaydet",
     "cancel": "İptal",
     "fillAllFields": "Lütfen tüm gerekli alanları doldurun.",
@@ -1523,7 +1526,10 @@
 "batteryList": {
   "title": "Batarya Paketleri",
   "serialNumber": "Seri Numarası",
-  "empty": "Batarya paketi bulunamadı"
+  "empty": "Batarya paketi bulunamadı",
+  "deviceNotFound": "Cihaz bulunamadı",
+  "networkError": "Bağlantı hatası. Lütfen internet bağlantınızı kontrol edin.",
+  "fetchError": "Batarya verileri yüklenemedi. Lütfen tekrar deneyin."
 },
 "batteryDetail": {
   "title": "Batarya Detayları",
@@ -1546,7 +1552,10 @@
   "model": "Model",
   "serialNumber": "Seri Numarası",
   "firmwareVersion": "Firmware Sürümü",
-  "lastUpdate": "Son Güncelleme"
+  "lastUpdate": "Son Güncelleme",
+  "notFound": "Batarya bulunamadı",
+  "networkError": "Bağlantı hatası. Lütfen internet bağlantınızı kontrol edin.",
+  "fetchError": "Batarya detayları yüklenemedi. Lütfen tekrar deneyin."
 },
 "inverterDetail": {
   "title": "İnvertör Detayları",

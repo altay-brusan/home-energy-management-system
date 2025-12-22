@@ -248,6 +248,7 @@
     },
     "changePassword": {
       "title": "Wachtwoord Wijzigen",
+      "securitySettings": "Beveiligingsinstellingen",
       "oldPassword": "Oud Wachtwoord",
       "newPassword": "Nieuw Wachtwoord",
       "repeatPassword": "Herhaal Nieuw Wachtwoord",
@@ -368,10 +369,12 @@
     },
     "profileInfo": {
       "title": "Persoonlijke Informatie",
-      "firstName": "Voornaam*",
-      "lastName": "Achternaam*",
+      "personalDetails": "Persoonlijke Gegevens",
+      "contactDetails": "Contactgegevens",
+      "firstName": "Voornaam",
+      "lastName": "Achternaam",
       "email": "E-mail",
-      "phone": "Telefoon*",
+      "phone": "Telefoon",
       "save": "Opslaan",
       "cancel": "Annuleren",
       "fillAllFields": "Vul alle verplichte velden in.",

@@ -1,7 +1,6 @@
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute, useIsFocused } from "@react-navigation/native";
 import { ArrowLeft } from 'lucide-react-native';
-import React, { useCallback, useEffect, useState } from "react";
-import Svg, { Rect } from 'react-native-svg';
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -13,68 +12,13 @@ import {
 } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { mobileDashboardService } from "../../../api/services/mobileDashboardService";
 import { deviceComponentsService } from "../../../api/services/deviceComponentsService";
+import { BatteryIcon } from "../../../components/ui/BatteryIcon";
 import { useI18n } from "../../../hooks/useI18n";
 import { useThemeStore } from "../../../store/themeStore";
 import { getThemeColors, SPACING, TYPOGRAPHY } from "../../../theme/constants";
 import { BatteryListSkeleton } from "./BatteryListSkeleton";
 import type { BatteryPackDto, BatterySummaryDto } from "../../../api/types/deviceComponents.types";
-
-// Battery Icon with fill level
-const BatteryIcon: React.FC<{
-  percentage: number;
-  size?: number;
-  fillColor?: string;
-  borderColor?: string;
-}> = ({ percentage, size = 24, fillColor = '#22C55E', borderColor = '#9CA3AF' }) => {
-  const clampedPercentage = Math.max(0, Math.min(100, percentage));
-  const fillWidth = (clampedPercentage / 100) * 16; // Max fill width is 16
-
-  // Color based on percentage
-  const getFillColor = () => {
-    if (clampedPercentage <= 20) return '#EF4444'; // Red
-    if (clampedPercentage <= 40) return '#F59E0B'; // Orange
-    return fillColor; // Green
-  };
-
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      {/* Battery body outline */}
-      <Rect
-        x="2"
-        y="7"
-        width="18"
-        height="10"
-        rx="2"
-        ry="2"
-        fill="none"
-        stroke={borderColor}
-        strokeWidth="1.5"
-      />
-      {/* Battery terminal */}
-      <Rect
-        x="20"
-        y="10"
-        width="2"
-        height="4"
-        rx="0.5"
-        fill={borderColor}
-      />
-      {/* Battery fill level */}
-      {clampedPercentage > 0 && (
-        <Rect
-          x="4"
-          y="9"
-          width={fillWidth}
-          height="6"
-          rx="1"
-          fill={getFillColor()}
-        />
-      )}
-    </Svg>
-  );
-};
 
 interface BatteryPack {
   id: string;
@@ -99,59 +43,69 @@ export default function BatteryListScreen() {
   const [batteries, setBatteries] = useState<BatteryPack[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isFocused = useIsFocused();
 
-  const fetchBatteries = useCallback(async () => {
+  const fetchBatteries = useCallback(async (isPolling: boolean = false) => {
     if (!deviceId) {
       setBatteries([]);
       setLoading(false);
       return;
     }
 
+    // Clear error on new fetch attempt
+    if (!isPolling) {
+      setError(null);
+    }
+
     try {
       // PERFORMANCE: Cache'ten instant yükle - summary'den kaydedilen pack'leri kullan
-      try {
-        const cacheKey = `@battery_packs_summary_${deviceId}`;
-        const cachedData = await AsyncStorage.getItem(cacheKey);
-        if (cachedData) {
-          const parsed = JSON.parse(cachedData);
-          const cachedPacks = parsed.packs || [];
+      if (!isPolling) {
+        try {
+          const cacheKey = `@battery_packs_summary_${deviceId}`;
+          const cachedData = await AsyncStorage.getItem(cacheKey);
+          if (cachedData) {
+            const parsed = JSON.parse(cachedData);
+            const cachedPacks = parsed.packs || [];
 
-          // Cache'deki pack'leri map et
-          const batteryPacks: BatteryPack[] = cachedPacks.map((pack: BatteryPackDto) => ({
-            id: pack.id,
-            name: pack.name,
-            componentData: pack.stateOfCharge || 0,
-            serialNumber: pack.serialNumber || "—",
-            description: '',
-            model: pack.model || "—",
-            manufacturer: pack.manufacturer || "—",
-          }));
+            // Cache'deki pack'leri map et
+            const batteryPacks: BatteryPack[] = cachedPacks.map((pack: BatteryPackDto) => ({
+              id: pack.id,
+              name: pack.name,
+              componentData: pack.stateOfCharge || 0,
+              serialNumber: pack.serialNumber || "—",
+              description: '',
+              model: pack.model || "—",
+              manufacturer: pack.manufacturer || "—",
+            }));
 
-          setBatteries(batteryPacks);
-          setLoading(false); // Cache varsa loading kapat
-        } else {
-          setLoading(true); // Cache yoksa skeleton göster
+            setBatteries(batteryPacks);
+            setLoading(false); // Cache varsa loading kapat
+          } else {
+            setLoading(true); // Cache yoksa skeleton göster
+          }
+        } catch {
+          setLoading(true);
         }
-      } catch {
-        setLoading(true);
       }
 
-      // API çağrısı - yeni DeviceSummary API kullan
+      // API call - use new DeviceSummary API
       const summaryData = await deviceComponentsService.getDeviceSummary(deviceId);
 
-      // Battery component'i bul
+      // Find battery component
       const batteryComponent = summaryData.components.find(
         c => c.type === 'battery'
       ) as BatterySummaryDto | undefined;
 
       if (!batteryComponent) {
         setBatteries([]);
+        setError(null);
         setLoading(false);
         return;
       }
 
-      // Battery pack'leri map et
+      // Map battery packs
       const batteryPacks: BatteryPack[] = batteryComponent.packs.map((pack: BatteryPackDto) => ({
         id: pack.id,
         name: pack.name,
@@ -163,48 +117,75 @@ export default function BatteryListScreen() {
       }));
 
       setBatteries(batteryPacks);
+      setError(null);
 
-      // Cache'e kaydet (background) - aynı key ile
+      // Save to cache (background)
       const cacheKey = `@battery_packs_summary_${deviceId}`;
       AsyncStorage.setItem(cacheKey, JSON.stringify({
         packs: batteryComponent.packs,
         timestamp: Date.now(),
-      })).catch(() => {});
+      })).catch((cacheErr) => {
+        console.warn('Cache write failed:', cacheErr);
+      });
 
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error fetching batteries:", err);
-      setBatteries([]);
+
+      // Only show error if we have no cached data
+      if (batteries.length === 0) {
+        if (err?.response?.status === 404) {
+          setError(t('batteryList.deviceNotFound'));
+        } else if (err?.response?.status === 401) {
+          // Silent - token refresh will handle
+        } else if (err?.code === 'NETWORK_ERROR' || !err?.response) {
+          setError(t('batteryList.networkError'));
+        } else {
+          setError(t('batteryList.fetchError'));
+        }
+      }
     } finally {
       setLoading(false);
     }
-  }, [deviceId]);
+  }, [deviceId, batteries.length, t]);
 
   useEffect(() => {
-    fetchBatteries();
-  }, [fetchBatteries]);
+    fetchBatteries(false);
+  }, []);
 
-  // Polling: Fetch battery data every 5 seconds
+  // Polling: Fetch battery data every 5 seconds (only when focused)
   useEffect(() => {
-    if (!deviceId) return;
+    if (!deviceId || !isFocused) {
+      // Clear interval when not focused
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+      return;
+    }
+
+    // Fetch immediately when becoming focused
+    fetchBatteries(true);
 
     // Start polling
     const interval = setInterval(() => {
-      fetchBatteries();
+      fetchBatteries(true);
     }, 5000); // Poll every 5 seconds
 
-    setPollingInterval(interval);
+    pollingIntervalRef.current = interval;
 
-    // Cleanup on unmount
+    // Cleanup on unmount or when dependencies change
     return () => {
-      if (interval) {
-        clearInterval(interval);
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
       }
     };
-  }, [deviceId, fetchBatteries]);
+  }, [deviceId, isFocused, fetchBatteries]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchBatteries();
+    setError(null);
+    await fetchBatteries(false);
     setRefreshing(false);
   };
 
@@ -333,12 +314,28 @@ export default function BatteryListScreen() {
         style={[
           styles.emptyText,
           {
-            color: COLORS.textSoft,
+            color: error ? COLORS.error : COLORS.textSoft,
           },
         ]}
       >
-        {t("batteryList.empty")}
+        {error || t("batteryList.empty")}
       </Text>
+      {error && (
+        <Pressable
+          onPress={onRefresh}
+          style={{
+            marginTop: SPACING.md,
+            paddingHorizontal: SPACING.lg,
+            paddingVertical: SPACING.sm,
+            backgroundColor: `${COLORS.accent}15`,
+            borderRadius: 8,
+          }}
+        >
+          <Text style={{ color: COLORS.accent, fontWeight: '600' }}>
+            {t("common.retry")}
+          </Text>
+        </Pressable>
+      )}
     </View>
   );
 

@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, Thermometer, Ruler, Clock } from 'lucide-react-native';
+import { ArrowLeft, Thermometer } from 'lucide-react-native';
 import { useThemeStore } from '../../../store/themeStore';
-import { useSettingsStore, TemperatureUnit, MeasurementSystem, TimeFormat, DateFormat } from '../../../store/settingsStore';
+import { useSettingsStore, TemperatureUnit } from '../../../store/settingsStore';
 import { getThemeColors } from '../../../theme/constants';
 import { useI18n } from '../../../hooks/useI18n';
 import { makeGeneralSettingsScreenStyles } from './GeneralSettingsScreen.styles';
@@ -73,13 +73,7 @@ export default function GeneralSettingsScreen({ navigation }: any) {
 
   const {
     temperatureUnit,
-    measurementSystem,
-    timeFormat,
-    dateFormat,
     setTemperatureUnit,
-    setMeasurementSystem,
-    setTimeFormat,
-    setDateFormat,
   } = useSettingsStore();
 
   return (
@@ -113,73 +107,6 @@ export default function GeneralSettingsScreen({ navigation }: any) {
               ]}
               selectedValue={temperatureUnit}
               onSelect={(value) => setTemperatureUnit(value as TemperatureUnit)}
-              colors={COLORS}
-              isDark={isDark}
-            />
-          </View>
-        </View>
-
-        {/* Measurement System */}
-        <View style={[styles.settingCard, { backgroundColor: isDark ? COLORS.surface : COLORS.white }]}>
-          <View style={styles.settingRow}>
-            <View style={styles.settingLabelRow}>
-              <Ruler size={20} color={COLORS.accent} style={{ marginRight: 10 }} />
-              <Text style={[styles.settingLabel, { color: COLORS.text }]}>
-                {t('settings.metricSystem')}
-              </Text>
-            </View>
-            <SegmentedButton
-              options={[
-                { label: t('settings.metric'), value: 'metric' },
-                { label: t('settings.imperial'), value: 'imperial' },
-              ]}
-              selectedValue={measurementSystem}
-              onSelect={(value) => setMeasurementSystem(value as MeasurementSystem)}
-              colors={COLORS}
-              isDark={isDark}
-            />
-          </View>
-        </View>
-
-        {/* Time Format */}
-        <View style={[styles.settingCard, { backgroundColor: isDark ? COLORS.surface : COLORS.white }]}>
-          <View style={styles.settingRow}>
-            <View style={styles.settingLabelRow}>
-              <Clock size={20} color={COLORS.accent} style={{ marginRight: 10 }} />
-              <Text style={[styles.settingLabel, { color: COLORS.text }]}>
-                {t('settings.timeFormat')}
-              </Text>
-            </View>
-            <SegmentedButton
-              options={[
-                { label: t('settings.24hour'), value: '24h' },
-                { label: t('settings.12hour'), value: '12h' },
-              ]}
-              selectedValue={timeFormat}
-              onSelect={(value) => setTimeFormat(value as TimeFormat)}
-              colors={COLORS}
-              isDark={isDark}
-            />
-          </View>
-        </View>
-
-        {/* Date Format */}
-        <View style={[styles.settingCard, { backgroundColor: isDark ? COLORS.surface : COLORS.white }]}>
-          <View style={styles.settingRow}>
-            <View style={styles.settingLabelRow}>
-              <Clock size={20} color={COLORS.accent} style={{ marginRight: 10 }} />
-              <Text style={[styles.settingLabel, { color: COLORS.text }]}>
-                {t('settings.dateFormat')}
-              </Text>
-            </View>
-            <SegmentedButton
-              options={[
-                { label: 'DD/MM', value: 'DD/MM/YYYY' },
-                { label: 'MM/DD', value: 'MM/DD/YYYY' },
-                { label: 'YYYY-MM', value: 'YYYY-MM-DD' },
-              ]}
-              selectedValue={dateFormat}
-              onSelect={(value) => setDateFormat(value as DateFormat)}
               colors={COLORS}
               isDark={isDark}
             />

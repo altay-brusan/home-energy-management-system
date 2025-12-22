@@ -7,8 +7,10 @@ import { useDeviceStatus } from '../../../../../hooks/useDeviceStatus';
 import { dashboardService } from '../../../../../api/services/dashboardService';
 import { useSelectedSiteUtils } from '../../../../../hooks/useSelectedSite';
 import { useThemeStore } from '../../../../../store/themeStore';
+import { useSettingsStore } from '../../../../../store/settingsStore';
 import { getThemeColors } from '../../../../../theme/constants';
 import { createStyles } from './WeatherStatus.styles';
+import { formatTemperature } from '../../../../../utils/temperatureUtils';
 import type { WeatherForecastDto } from '../../../../../api/types/dashboard.types';
 import type { DeviceStatusType, SignalRConnectionState } from '../../../../../api/types/signalR.types';
 
@@ -87,6 +89,7 @@ export const WeatherStatus: React.FC<WeatherStatusProps> = ({ deviceId }) => {
   const { t } = useI18n();
   const styles = createStyles(COLORS);
   const { selectedSite } = useSelectedSiteUtils();
+  const temperatureUnit = useSettingsStore(s => s.temperatureUnit);
 
   const [weather, setWeather] = useState<WeatherForecastDto | null>(null);
   const { registerRefreshCallback } = useDashboardRefresh();
@@ -147,7 +150,9 @@ export const WeatherStatus: React.FC<WeatherStatusProps> = ({ deviceId }) => {
                 resizeMode="contain"
               />
             )}
-            <Text style={styles.weatherTemp}>{weather.temperature}°</Text>
+            <Text style={styles.weatherTemp}>
+              {formatTemperature(weather.temperature, temperatureUnit)}
+            </Text>
           </>
         ) : (
           <Text style={styles.weatherTemp}>--°</Text>

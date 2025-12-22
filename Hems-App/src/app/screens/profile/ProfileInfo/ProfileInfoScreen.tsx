@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Image, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Text, TextInput, TouchableOpacity, View, ScrollView, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Input from '../../../../components/forms/Input';
-import Button from '../../../../components/ui/Button';
+import { ArrowLeft, Camera, User, Mail, Phone } from 'lucide-react-native';
 import useAuth from '../../../../hooks/useAuth';
 import { useI18n } from '../../../../hooks/useI18n';
 import useProfile from '../../../../hooks/useProfile';
@@ -13,22 +12,21 @@ import { makeProfileInfoStyles } from './ProfileInfoScreen.styles';
 const AVATAR_PLACEHOLDER =
   'https://ui-avatars.com/api/?name=User&background=2563eb&color=fff&size=128';
 
-export default function ProfileInfoScreen ({ navigation }: any) {
+export default function ProfileInfoScreen({ navigation }: any) {
   const mode = useThemeStore(s => s.mode);
   const isDark = mode === 'dark';
   const COLORS = getThemeColors(isDark);
-  const styles = makeProfileInfoStyles(COLORS);
+  const styles = makeProfileInfoStyles(COLORS, isDark);
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
   const { user } = useAuth();
-  const { getUserInfo, updateProfile, profileLoading, profileError, profileSuccess, clearProfileError, clearProfileSuccess } = useProfile();
+  const { getUserInfo, updateProfile, profileLoading, clearProfileError, clearProfileSuccess } = useProfile();
 
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
-    avatar: AVATAR_PLACEHOLDER,
   });
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -61,15 +59,13 @@ export default function ProfileInfoScreen ({ navigation }: any) {
             lastName: userInfo.surname || user.surname || '',
             email: userInfo.email || user.email || '',
             phone: formattedPhone,
-            avatar: userAvatar,
           });
-        } catch (error) {
+        } catch {
           setForm({
             firstName: user.name || '',
             lastName: user.surname || '',
             email: user.email || '',
             phone: '',
-            avatar: userAvatar,
           });
         }
         setAvatar(userAvatar);
@@ -114,15 +110,8 @@ export default function ProfileInfoScreen ({ navigation }: any) {
         email: form.email,
       });
       setMessage(t('profileInfo.profileUpdated'));
-    } catch (error: any) {setError(error.message || t('profileInfo.profileUpdateError'));
-    }
-  };
-
-  const handleCancel = () => {
-    setError('');
-    setMessage('');
-    if (navigation && navigation.goBack) {
-      navigation.goBack();
+    } catch (err: any) {
+      setError(err.message || t('profileInfo.profileUpdateError'));
     }
   };
 
@@ -138,77 +127,120 @@ export default function ProfileInfoScreen ({ navigation }: any) {
     setForm(f => ({ ...f, phone: formatted.trim() }));
   };
 
-  const handleAvatarPress: any = () => {
+  const handleAvatarPress = () => {
     Alert.alert(t('profileInfo.avatar'), t('profileInfo.avatarNotImplemented'));
   };
 
   return (
-    <View
-      style={[
-        styles.container,
-        { paddingTop: insets.top + 24, paddingBottom: 24 },
-      ]}
-    >
-      <View style={styles.avatarWrap}>
-        <TouchableOpacity
-          onPress={handleAvatarPress}
-          style={styles.avatarTouchable}
-          activeOpacity={0.8}
-        >
-          <Image source={{ uri: avatar }} style={styles.avatar} />
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <ArrowLeft size={24} color={COLORS.text} />
         </TouchableOpacity>
+        <Text style={styles.headerTitle}>{t('profileInfo.title')}</Text>
+        <View style={{ width: 40 }} />
       </View>
-      <Text style={styles.title}>{t('profileInfo.title')}</Text>
-      <View style={styles.inputGroup}>
-        <Input
-          placeholder={t('profileInfo.firstName')}
-          placeholderTextColor={COLORS.slate400}
-          value={form.firstName}
-          onChangeText={v => setForm(f => ({ ...f, firstName: v }))}
-        />
-        <Input
-          placeholder={t('profileInfo.lastName')}
-          placeholderTextColor={COLORS.slate400}
-          value={form.lastName}
-          onChangeText={v => setForm(f => ({ ...f, lastName: v }))}
-        />
-        <Input
-          placeholder={t('profileInfo.email')}
-          placeholderTextColor={COLORS.slate400}
-          value={form.email}
-          editable={false}
-        />
-        <Input
-          placeholder={t('profileInfo.phone')}
-          placeholderTextColor={COLORS.slate400}
-          value={form.phone}
-          keyboardType="phone-pad"
-          onChangeText={handlePhoneChange}
-          maxLength={17}
-        />
-      </View>
-      {message && (
-        <View style={styles.messageBox}>
-          <Text style={[styles.messageText, styles.successText]}>
-            {message}
+
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Avatar Section */}
+        <View style={styles.avatarSection}>
+          <TouchableOpacity onPress={handleAvatarPress} style={styles.avatarContainer} activeOpacity={0.8}>
+            <Image source={{ uri: avatar }} style={styles.avatar} />
+            <View style={styles.avatarEditBadge}>
+              <Camera size={16} color={COLORS.white} />
+            </View>
+          </TouchableOpacity>
+          <Text style={styles.avatarName}>
+            {form.firstName} {form.lastName}
           </Text>
+          <Text style={styles.avatarEmail}>{form.email}</Text>
         </View>
-      )}
-      <View style={styles.buttonRow}>
-        <Button
-          title={profileLoading ? t('common.loading') : t('profileInfo.save')}
-          style={styles.saveBtn}
-          textStyle={styles.saveBtnText}
+
+        {/* Personal Information Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('profileInfo.personalDetails')}</Text>
+
+          <View style={styles.inputRow}>
+            <Text style={styles.inputLabel}>{t('profileInfo.firstName')}</Text>
+            <TextInput
+              style={styles.inputField}
+              value={form.firstName}
+              onChangeText={v => setForm(f => ({ ...f, firstName: v }))}
+              placeholderTextColor={COLORS.textSoft}
+            />
+          </View>
+
+          <View style={styles.inputRow}>
+            <Text style={styles.inputLabel}>{t('profileInfo.lastName')}</Text>
+            <TextInput
+              style={styles.inputField}
+              value={form.lastName}
+              onChangeText={v => setForm(f => ({ ...f, lastName: v }))}
+              placeholderTextColor={COLORS.textSoft}
+            />
+          </View>
+        </View>
+
+        {/* Contact Information Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('profileInfo.contactDetails')}</Text>
+
+          <View style={styles.inputRow}>
+            <Text style={styles.inputLabel}>{t('profileInfo.email')}</Text>
+            <TextInput
+              style={[styles.inputField, styles.inputFieldDisabled]}
+              value={form.email}
+              editable={false}
+              placeholderTextColor={COLORS.textSoft}
+            />
+          </View>
+
+          <View style={styles.inputRow}>
+            <Text style={styles.inputLabel}>{t('profileInfo.phone')}</Text>
+            <TextInput
+              style={styles.inputField}
+              value={form.phone}
+              onChangeText={handlePhoneChange}
+              keyboardType="phone-pad"
+              maxLength={17}
+              placeholder="+90 5XX XXX XX XX"
+              placeholderTextColor={COLORS.textSoft}
+            />
+          </View>
+        </View>
+
+        {/* Messages */}
+        {message ? (
+          <View style={[styles.messageBox, styles.successBox]}>
+            <Text style={[styles.messageText, styles.successText]}>{message}</Text>
+          </View>
+        ) : null}
+
+        {error ? (
+          <View style={[styles.messageBox, styles.errorBox]}>
+            <Text style={[styles.messageText, styles.errorText]}>{error}</Text>
+          </View>
+        ) : null}
+      </ScrollView>
+
+      {/* Bottom Buttons */}
+      <View style={[styles.buttonContainer, { paddingBottom: insets.bottom + 16 }]}>
+        <Pressable
+          style={[styles.saveButton, profileLoading && { opacity: 0.6 }]}
           onPress={handleSave}
           disabled={profileLoading}
-        />
-        <Button
-          title={t('profileInfo.cancel')}
-          style={styles.cancelBtn}
-          textStyle={styles.cancelBtnText}
-          onPress={handleCancel}
-          disabled={profileLoading}
-        />
+        >
+          <Text style={styles.saveButtonText}>
+            {profileLoading ? t('common.loading') : t('profileInfo.save')}
+          </Text>
+        </Pressable>
+        <Pressable style={styles.cancelButton} onPress={() => navigation.goBack()}>
+          <Text style={styles.cancelButtonText}>{t('profileInfo.cancel')}</Text>
+        </Pressable>
       </View>
     </View>
   );
