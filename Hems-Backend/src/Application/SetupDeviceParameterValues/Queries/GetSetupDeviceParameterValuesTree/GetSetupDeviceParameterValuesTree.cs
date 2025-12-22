@@ -205,6 +205,7 @@ public class GetSetupDeviceParameterValuesTreeQueryHandler : IRequestHandler<Get
                         Unit = parameter.Unit,
                         DefaultValue = parameter.DefaultValue,
                         SortOrder = parameter.SortOrder,
+                        Visible = parameter.Visible,
                         SetupDeviceParameterValue = new SetupDeviceParameterValueTreeDto
                         {
                             Id = sdpv.Id,

@@ -22,6 +22,7 @@ public class ParameterTreeDto
     public string Unit { get; set; } = string.Empty;
     public string DefaultValue { get; set; } = string.Empty;
     public int SortOrder { get; set; }
+    public bool Visible { get; set; }
     public SetupDeviceParameterValueTreeDto SetupDeviceParameterValue { get; set; } = new();
 }
 
