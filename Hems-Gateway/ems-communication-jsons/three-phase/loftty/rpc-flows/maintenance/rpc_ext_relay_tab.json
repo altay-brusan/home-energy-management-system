@@ -1,6 +1,6 @@
 [
     {
-        "id": "rpc_ext_relay_tab",
+        "id": "37afb06248526c1b",
         "type": "tab",
         "label": "RPC_ExternalRelay",
         "disabled": false,
@@ -9,7 +9,7 @@
     {
         "id": "rpc_extrelay_mqtt_in",
         "type": "mqtt in",
-        "z": "rpc_ext_relay_tab",
+        "z": "37afb06248526c1b",
         "name": "RPC Request",
         "topic": "v1/devices/me/rpc/request/+",
         "qos": "2",
@@ -30,9 +30,9 @@
     {
         "id": "rpc_extrelay_handle",
         "type": "function",
-        "z": "rpc_ext_relay_tab",
+        "z": "37afb06248526c1b",
         "name": "Handle RPC",
-        "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\n\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\nif (msg.rpcMethod === 'getExternalRelayConfig') {\n    msg.operation = 'read';\n    return msg;\n}\nelse if (msg.rpcMethod === 'setExternalRelayConfig') {\n    msg.operation = 'write';\n    return msg;\n}\nelse {\n    return null;\n}",
+        "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\n\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\nif (msg.rpcMethod === 'getExternalRelayConfig') {\n    msg.operationType = 'read';\n    return msg;\n}\nelse if (msg.rpcMethod === 'setExternalRelayConfig') {\n    msg.operationType = 'write';\n    return msg;\n}\nelse {\n    return null;\n}",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -50,11 +50,11 @@
     {
         "id": "rpc_extrelay_link_out",
         "type": "link out",
-        "z": "rpc_ext_relay_tab",
+        "z": "37afb06248526c1b",
         "name": "To Main Flow",
         "mode": "link",
         "links": [
-            "extrelay_link_in_rpc"
+            "daeda110ae7dae45"
         ],
         "x": 495,
         "y": 160,
@@ -63,7 +63,7 @@
     {
         "id": "rpc_extrelay_comment",
         "type": "comment",
-        "z": "rpc_ext_relay_tab",
+        "z": "37afb06248526c1b",
         "name": "getExternalRelayConfig / setExternalRelayConfig",
         "info": "Read/Write external relay config:\n- externalRelayFeatureEnabled: bool (Reg280 Bit13)\n- relayBitmapRaw: number (Reg296 Bit0-7)\n- relays: array of relay objects",
         "x": 260,

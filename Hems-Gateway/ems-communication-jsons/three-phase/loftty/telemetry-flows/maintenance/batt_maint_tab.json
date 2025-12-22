@@ -1,41 +1,41 @@
 [
     {
-        "id": "batt_maint_tab",
+        "id": "e2984b0ab72138fd",
         "type": "tab",
         "label": "BatteryMaintenanceConfig",
         "disabled": false,
         "info": "Battery Maintenance Config - Registers 211-214\n\nValues:\n- 211: Battery control mode (0=voltage, 1=capacity, 2=no_battery)\n- 212: Wake up (0=enabled, 1=disabled - inverted!)\n- 213: Resistance [0-6000] mΩ\n- 214: Charge efficiency (0.1% scale)"
     },
     {
-        "id": "bmaint_link_in_rpc",
+        "id": "d37b770e860d21ec",
         "type": "link in",
-        "z": "batt_maint_tab",
+        "z": "e2984b0ab72138fd",
         "name": "RPC Request",
         "links": [
-            "rpc_bmaint_link_out"
+            "rpc_battmaint_link_out"
         ],
-        "x": 125,
-        "y": 80,
+        "x": 115,
+        "y": 180,
         "wires": [
             [
-                "bmaint_route_operation"
+                "d8e1a6075b90a385"
             ]
         ]
     },
     {
-        "id": "bmaint_comment_manual",
+        "id": "5c6d6ebe8eadfa03",
         "type": "comment",
-        "z": "batt_maint_tab",
+        "z": "e2984b0ab72138fd",
         "name": "══════ MANUAL TEST ══════",
         "info": "",
-        "x": 170,
-        "y": 140,
+        "x": 160,
+        "y": 240,
         "wires": []
     },
     {
-        "id": "bmaint_manual_read",
+        "id": "959ef94afe3513fd",
         "type": "inject",
-        "z": "batt_maint_tab",
+        "z": "e2984b0ab72138fd",
         "name": "Manual Read",
         "props": [
             {
@@ -54,18 +54,18 @@
         "topic": "",
         "payload": "",
         "payloadType": "date",
-        "x": 150,
-        "y": 180,
+        "x": 140,
+        "y": 280,
         "wires": [
             [
-                "bmaint_route_operation"
+                "d8e1a6075b90a385"
             ]
         ]
     },
     {
-        "id": "bmaint_manual_write",
+        "id": "96fe988ed56d913a",
         "type": "inject",
-        "z": "batt_maint_tab",
+        "z": "e2984b0ab72138fd",
         "name": "Test Write",
         "props": [
             {
@@ -89,18 +89,18 @@
         "topic": "",
         "payload": "",
         "payloadType": "date",
-        "x": 150,
-        "y": 220,
+        "x": 140,
+        "y": 320,
         "wires": [
             [
-                "bmaint_route_operation"
+                "d8e1a6075b90a385"
             ]
         ]
     },
     {
-        "id": "bmaint_route_operation",
+        "id": "d8e1a6075b90a385",
         "type": "function",
-        "z": "batt_maint_tab",
+        "z": "e2984b0ab72138fd",
         "name": "Route: Read or Write?",
         "func": "const opType = msg.operationType || 'read';\n\nif (opType === 'write') {\n    return [null, msg];\n} else {\n    return [msg, null];\n}",
         "outputs": 2,
@@ -109,31 +109,31 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 420,
-        "y": 180,
+        "x": 410,
+        "y": 280,
         "wires": [
             [
-                "bmaint_start_read"
+                "998b101762954dcc"
             ],
             [
-                "bmaint_queue_writes"
+                "4e944b01a50d36fc"
             ]
         ]
     },
     {
-        "id": "bmaint_comment_read",
+        "id": "fd1d25b61a472b7e",
         "type": "comment",
-        "z": "batt_maint_tab",
+        "z": "e2984b0ab72138fd",
         "name": "══════ READ ══════",
         "info": "",
-        "x": 640,
-        "y": 40,
+        "x": 630,
+        "y": 140,
         "wires": []
     },
     {
-        "id": "bmaint_start_read",
+        "id": "998b101762954dcc",
         "type": "function",
-        "z": "batt_maint_tab",
+        "z": "e2984b0ab72138fd",
         "name": "Start Read & Store Context",
         "func": "flow.set(\"bmaint_rpc_response_topic\", msg.rpcResponseTopic);\nflow.set(\"bmaint_write_result\", msg.writeResult || null);\n\nreturn msg;",
         "outputs": 1,
@@ -142,18 +142,18 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 680,
-        "y": 80,
+        "x": 670,
+        "y": 180,
         "wires": [
             [
-                "bmaint_prep_read"
+                "7b1f748dd2aa1249"
             ]
         ]
     },
     {
-        "id": "bmaint_prep_read",
+        "id": "7b1f748dd2aa1249",
         "type": "function",
-        "z": "batt_maint_tab",
+        "z": "e2984b0ab72138fd",
         "name": "Prep Read Regs 211-214",
         "func": "msg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 211,\n    quantity: 4\n};\nreturn msg;",
         "outputs": 1,
@@ -162,18 +162,18 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 670,
-        "y": 140,
+        "x": 970,
+        "y": 180,
         "wires": [
             [
-                "bmaint_modbus_read"
+                "2ef25d79e7b8b90d"
             ]
         ]
     },
     {
-        "id": "bmaint_modbus_read",
+        "id": "2ef25d79e7b8b90d",
         "type": "modbus-flex-getter",
-        "z": "batt_maint_tab",
+        "z": "e2984b0ab72138fd",
         "name": "Read 211-214",
         "showStatusActivities": true,
         "showErrors": true,
@@ -187,19 +187,19 @@
         "keepMsgProperties": true,
         "delayOnStart": false,
         "startDelayTime": "",
-        "x": 870,
-        "y": 140,
+        "x": 1170,
+        "y": 180,
         "wires": [
             [
-                "bmaint_build_read_response"
+                "cb415fdf3d24e0d5"
             ],
             []
         ]
     },
     {
-        "id": "bmaint_build_read_response",
+        "id": "cb415fdf3d24e0d5",
         "type": "function",
-        "z": "batt_maint_tab",
+        "z": "e2984b0ab72138fd",
         "name": "Build Read Response",
         "func": "let data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data) || data.length < 4) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Read failed\" });\n    return null;\n}\n\nconst reg211 = data[0];\nconst reg212 = data[1];\nconst reg213 = data[2];\nconst reg214 = data[3];\n\n// Parse battery control mode\nconst modeMap = {\n    0: \"voltage\",\n    1: \"capacity\",\n    2: \"no_battery\"\n};\nconst batteryControlMode = modeMap[reg211] || \"no_battery\";\n\n// Parse wake up (inverted: 0=enabled, 1=disabled)\nconst channel1Enabled = reg212 === 0;\n\n// Resistance\nconst batteryResistanceMilliOhm = reg213;\n\n// Charge efficiency (0.1% scale)\nconst chargeEfficiencyPercent = Math.round(reg214 * 0.1 * 10) / 10;\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\n\nconst state = {\n    kind: \"BatteryMaintenanceConfigState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    gatewayId: gatewayId,\n    batteryControlMode: batteryControlMode,\n    wakeUp: {\n        channel1Enabled: channel1Enabled,\n        channel2Enabled: null\n    },\n    batteryResistanceMilliOhm: batteryResistanceMilliOhm,\n    chargeEfficiencyPercent: chargeEfficiencyPercent\n};\n\n// Check if this is after a write\nconst writeResult = flow.get(\"bmaint_write_result\");\nflow.set(\"bmaint_write_result\", null);\n\nif (writeResult) {\n    msg.payload = {\n        success: true,\n        message: `Updated ${writeResult.count} register(s)`,\n        writes: writeResult.writes,\n        state: state\n    };\n} else {\n    msg.payload = state;\n}\n\nnode.status({ fill: \"green\", shape: \"dot\", text: batteryControlMode || \"no_battery\" });\n\nreturn msg;",
         "outputs": 1,
@@ -208,29 +208,29 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1080,
-        "y": 140,
+        "x": 1380,
+        "y": 180,
         "wires": [
             [
-                "bmaint_debug",
-                "bmaint_rpc_response"
+                "263f2b638247cbd3",
+                "469eb082cccad61d"
             ]
         ]
     },
     {
-        "id": "bmaint_comment_write",
+        "id": "3f94247b58a288a4",
         "type": "comment",
-        "z": "batt_maint_tab",
+        "z": "e2984b0ab72138fd",
         "name": "══════ WRITE ══════",
         "info": "",
-        "x": 650,
-        "y": 240,
+        "x": 950,
+        "y": 280,
         "wires": []
     },
     {
-        "id": "bmaint_queue_writes",
+        "id": "4e944b01a50d36fc",
         "type": "function",
-        "z": "batt_maint_tab",
+        "z": "e2984b0ab72138fd",
         "name": "Queue Writes",
         "func": "const params = msg.rpcParams || {};\nconst writes = [];\n\n// 211: batteryControlMode\nif (params.batteryControlMode !== undefined) {\n    let val = 1; // default capacity\n    if (params.batteryControlMode === \"voltage\") val = 0;\n    else if (params.batteryControlMode === \"capacity\") val = 1;\n    else if (params.batteryControlMode === \"no_battery\" || params.batteryControlMode === null) val = 2;\n    writes.push({ register: 211, value: val, name: \"Battery Control Mode\" });\n}\n\n// 212: wakeUp.channel1Enabled (inverted: 0=enabled, 1=disabled)\nif (params.wakeUp && params.wakeUp.channel1Enabled !== undefined) {\n    const val = params.wakeUp.channel1Enabled ? 0 : 1;\n    writes.push({ register: 212, value: val, name: \"Wake Up Channel 1\" });\n}\n\n// 213: batteryResistanceMilliOhm\nif (params.batteryResistanceMilliOhm !== undefined) {\n    const val = Math.max(0, Math.min(6000, params.batteryResistanceMilliOhm));\n    writes.push({ register: 213, value: val, name: \"Battery Resistance\" });\n}\n\n// 214: chargeEfficiencyPercent (0.1% scale)\nif (params.chargeEfficiencyPercent !== undefined) {\n    const val = Math.round(params.chargeEfficiencyPercent * 10);\n    const clampedVal = Math.max(0, Math.min(1000, val));\n    writes.push({ register: 214, value: clampedVal, name: \"Charge Efficiency\" });\n}\n\nif (writes.length === 0) {\n    node.warn(\"No valid parameters to write\");\n    return null;\n}\n\nglobal.set(\"bmaint_write_queue\", writes);\nglobal.set(\"bmaint_write_index\", 0);\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: writes.length + \" writes queued\" });\n\nreturn msg;",
         "outputs": 1,
@@ -239,18 +239,18 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 650,
-        "y": 280,
+        "x": 810,
+        "y": 340,
         "wires": [
             [
-                "bmaint_prepare_write"
+                "e81b36fb7d7b01de"
             ]
         ]
     },
     {
-        "id": "bmaint_prepare_write",
+        "id": "e81b36fb7d7b01de",
         "type": "function",
-        "z": "batt_maint_tab",
+        "z": "e2984b0ab72138fd",
         "name": "Prepare Write",
         "func": "const writes = global.get(\"bmaint_write_queue\") || [];\nconst index = global.get(\"bmaint_write_index\") || 0;\n\nif (index >= writes.length) {\n    return null;\n}\n\nconst current = writes[index];\n\nmsg.payload = {\n    fc: 16,\n    unitid: 1,\n    address: current.register,\n    quantity: 1,\n    value: [current.value]\n};\nmsg.currentWrite = current;\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: `[${index+1}/${writes.length}] ${current.name}` });\n\nreturn msg;",
         "outputs": 1,
@@ -259,18 +259,18 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 850,
-        "y": 280,
+        "x": 1010,
+        "y": 340,
         "wires": [
             [
-                "bmaint_write_register"
+                "dd1b9f7c7a42fbd5"
             ]
         ]
     },
     {
-        "id": "bmaint_write_register",
+        "id": "dd1b9f7c7a42fbd5",
         "type": "modbus-flex-write",
-        "z": "batt_maint_tab",
+        "z": "e2984b0ab72138fd",
         "name": "Write Register",
         "showStatusActivities": true,
         "showErrors": true,
@@ -278,19 +278,19 @@
         "server": "e4e4f3e2a4f4e004",
         "emptyMsgOnFail": true,
         "keepMsgProperties": true,
-        "x": 1050,
-        "y": 280,
+        "x": 1210,
+        "y": 340,
         "wires": [
             [
-                "bmaint_write_ok"
+                "bab7c4e34be7331f"
             ],
             []
         ]
     },
     {
-        "id": "bmaint_write_ok",
+        "id": "bab7c4e34be7331f",
         "type": "function",
-        "z": "batt_maint_tab",
+        "z": "e2984b0ab72138fd",
         "name": "Write OK",
         "func": "const writes = global.get(\"bmaint_write_queue\") || [];\nlet index = global.get(\"bmaint_write_index\") || 0;\n\nconst current = msg.currentWrite;\nconst results = global.get(\"bmaint_write_results\") || [];\n\nif (current) {\n    results.push({\n        register: current.register,\n        name: current.name,\n        value: current.value,\n        success: true\n    });\n    global.set(\"bmaint_write_results\", results);\n}\n\nindex++;\nglobal.set(\"bmaint_write_index\", index);\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `${current.name} OK` });\n\nif (index < writes.length) {\n    return [msg, null];\n}\n\n// All writes done - trigger read\nmsg.writeResult = {\n    count: results.length,\n    writes: results\n};\n\nglobal.set(\"bmaint_write_queue\", null);\nglobal.set(\"bmaint_write_index\", null);\nglobal.set(\"bmaint_write_results\", null);\n\nreturn [null, msg];",
         "outputs": 2,
@@ -299,21 +299,21 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 650,
-        "y": 360,
+        "x": 1550,
+        "y": 340,
         "wires": [
             [
-                "bmaint_write_delay"
+                "387f8e1bbf2850c6"
             ],
             [
-                "bmaint_start_read"
+                "998b101762954dcc"
             ]
         ]
     },
     {
-        "id": "bmaint_write_delay",
+        "id": "387f8e1bbf2850c6",
         "type": "delay",
-        "z": "batt_maint_tab",
+        "z": "e2984b0ab72138fd",
         "name": "500ms",
         "pauseType": "delay",
         "timeout": "500",
@@ -327,18 +327,18 @@
         "drop": false,
         "allowrate": false,
         "outputs": 1,
-        "x": 830,
-        "y": 360,
+        "x": 1730,
+        "y": 340,
         "wires": [
             [
-                "bmaint_prepare_write"
+                "e81b36fb7d7b01de"
             ]
         ]
     },
     {
-        "id": "bmaint_debug",
+        "id": "263f2b638247cbd3",
         "type": "debug",
-        "z": "batt_maint_tab",
+        "z": "e2984b0ab72138fd",
         "name": "Battery Maintenance",
         "active": true,
         "tosidebar": true,
@@ -348,14 +348,14 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1310,
-        "y": 100,
+        "x": 1610,
+        "y": 140,
         "wires": []
     },
     {
-        "id": "bmaint_rpc_response",
+        "id": "469eb082cccad61d",
         "type": "function",
-        "z": "batt_maint_tab",
+        "z": "e2984b0ab72138fd",
         "name": "RPC Response",
         "func": "const rpcTopic = flow.get(\"bmaint_rpc_response_topic\");\nflow.set(\"bmaint_rpc_response_topic\", null);\n\nif (!rpcTopic) {\n    return null;\n}\n\nmsg.topic = rpcTopic;\nreturn msg;",
         "outputs": 1,
@@ -364,18 +364,18 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1300,
-        "y": 160,
+        "x": 1600,
+        "y": 200,
         "wires": [
             [
-                "bmaint_mqtt_response"
+                "e6fbe09988ce1104"
             ]
         ]
     },
     {
-        "id": "bmaint_mqtt_response",
+        "id": "e6fbe09988ce1104",
         "type": "mqtt out",
-        "z": "batt_maint_tab",
+        "z": "e2984b0ab72138fd",
         "name": "MQTT Response",
         "topic": "",
         "qos": "1",
@@ -386,35 +386,35 @@
         "correl": "",
         "expiry": "",
         "broker": "tb-broker",
-        "x": 1500,
-        "y": 160,
+        "x": 1800,
+        "y": 200,
         "wires": []
     },
     {
         "id": "e4e4f3e2a4f4e004",
         "type": "modbus-client",
-        "name": "EC100 Modbus",
-        "clienttype": "tcp",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
         "bufferCommands": true,
         "stateLogEnabled": false,
         "queueLogEnabled": false,
-        "failureLogEnabled": true,
-        "tcpHost": "192.168.1.100",
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
         "tcpPort": "502",
         "tcpType": "DEFAULT",
-        "serialPort": "/dev/ttyUSB0",
-        "serialType": "RTU-BUFFERD",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
         "serialBaudrate": "9600",
         "serialDatabits": "8",
         "serialStopbits": "1",
         "serialParity": "none",
         "serialConnectionDelay": "100",
-        "serialAsciiResponseStartDelimiter": "0x3A",
-        "unit_id": "1",
-        "commandDelay": "1",
-        "clientTimeout": "1000",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
         "reconnectOnTimeout": true,
-        "reconnectTimeout": "2000",
+        "reconnectTimeout": 2000,
         "parallelUnitIdsAllowed": true,
         "showErrors": false,
         "showWarnings": true,
@@ -448,6 +448,8 @@
         "willQos": "0",
         "willRetain": "false",
         "willPayload": "",
-        "willMsg": {}
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
     }
 ]

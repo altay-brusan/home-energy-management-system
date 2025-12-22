@@ -1,0 +1,17 @@
+InverterControlState
+{
+  "version": 1,
+
+  "remoteLock": "string",                    // 160 - 远程锁定使能 Remote Lock
+                                             //   0x0000 = "unlocked" (inverter çalışır)
+                                             //   0x0002 = "locked" (inverter durdurulur)
+
+  "powerSwitch": "number",                   // 180 - 开关机使能 Switch on/off enable
+                                             //   0 = off, 1 = on, 2 = off
+
+  "factoryResetEnabled": "boolean",          // 181 - 恢复出厂使能 Factory reset enable
+                                             //   0 = disabled, 1 = enabled
+
+  "islandProtectionEnabled": "boolean"       // 183 - 孤岛保护使能 Island protection enable
+                                             //   0 = disabled, 1 = enabled
+}

@@ -1,6 +1,6 @@
 [
     {
-        "id": "rpc_inverter_info_tab",
+        "id": "07c807f73d1c2805",
         "type": "tab",
         "label": "RPC_InverterInfo",
         "disabled": false,
@@ -9,7 +9,7 @@
     {
         "id": "rpc_invinfo_mqtt_in",
         "type": "mqtt in",
-        "z": "rpc_inverter_info_tab",
+        "z": "07c807f73d1c2805",
         "name": "RPC Request",
         "topic": "v1/devices/me/rpc/request/+",
         "qos": "2",
@@ -30,7 +30,7 @@
     {
         "id": "rpc_invinfo_handle",
         "type": "function",
-        "z": "rpc_inverter_info_tab",
+        "z": "07c807f73d1c2805",
         "name": "Handle RPC",
         "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\n\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\nif (msg.rpcMethod === 'getInverterInfo') {\n    msg.isRpcRequest = true;\n    return msg;\n}\nelse {\n    return null;\n}",
         "outputs": 1,
@@ -50,11 +50,11 @@
     {
         "id": "rpc_invinfo_link_out",
         "type": "link out",
-        "z": "rpc_inverter_info_tab",
+        "z": "07c807f73d1c2805",
         "name": "To Main Flow",
         "mode": "link",
         "links": [
-            "invinfo_link_in_rpc"
+            "invinfo3p_link_in_rpc"
         ],
         "x": 495,
         "y": 160,
@@ -63,7 +63,7 @@
     {
         "id": "rpc_invinfo_comment",
         "type": "comment",
-        "z": "rpc_inverter_info_tab",
+        "z": "07c807f73d1c2805",
         "name": "getInverterInfo",
         "info": "Read-only inverter information:\n- Device type, serial number\n- Firmware versions\n- Rated power, MPPT count, phases\n- Grid voltage rating",
         "x": 150,

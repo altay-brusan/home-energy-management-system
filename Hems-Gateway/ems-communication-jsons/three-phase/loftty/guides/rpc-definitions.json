@@ -4,6 +4,38 @@
     "version": "1.0",
     "generatedAt": "2025-12-18T07:45:00.000Z",
     "totalRpcCount": 29,
+        "rpcs": [
+        {
+          "rpcName": "FlowManager",
+          "type": "getFlows | setFlows | deleteFlows | addFlow | updateFlow | removeFlow",
+          "response": {
+            "topic": "v1/devices/me/rpc/response/50599",
+            "payload": "object",
+            "qos": 1,
+            "retain": false,
+            "msgid": "51480642136516ef",
+            "rpcRequestId": "50599",
+            "rpcResponseTopic": "v1/devices/me/rpc/response/50599",
+            "rpcMethod": "getFlows",
+            "rpcParams": "object",
+            "empty": null,
+            "statusCode": 200,
+            "headers": {
+              "access-control-allow-origin": "*",
+              "content-type": "application/json; charset=utf-8",
+              "content-length": "400465",
+              "etag": "W/\"61c51-g7LKEuO8Q0gC247VKf9DeBtssv4\"",
+              "date": "Mon, 22 Dec 2025 10:16:28 GMT",
+              "connection": "keep-alive",
+              "keep-alive": "timeout=5",
+              "x-node-red-request-node": "7903225e"
+            },
+            "responseUrl": "http://localhost:1880/flows",
+            "redirectList": [],
+            "retry": 0
+          }
+        },
+      {
     "rpcs": [
       {
         "rpcName": "getBatterySocState",
@@ -842,107 +874,107 @@
         }
       },
       {
-  "rpcName": "getSystemConnectionStructure",
-  "kind": "SystemConnectionStructure",
-  "type": "read",
-  "pairedWith": "setSystemConnectionStructure",
-  "response": {
-    "kind": "SystemConnectionStructure",
-    "timestampUtc": "2025-12-18T07:37:11.063Z",
-    "version": 1,
-    "DeviceId": "EC100-GW-001",
-    "schemaVersion": 1,
-    "inverter": {
-      "deviceType": 5,
-      "inverterModel": "Three-phase LV hybrid",
-      "serialNumber": "2509080139",
-      "firmware": {
-        "protocolVersion": null,
-        "mcuBoardRaw": null,
-        "controlHardwareRaw": 0,
-        "controlMainRaw": 1,
-        "commField1Raw": 15,
-        "commField2Raw": 0,
-        "commMainRaw": 1
-      },
-      "ratedPowerW": 12000,
-      "acSide": {
-        "mpptAndPhasesRaw": null,
-        "batteryInputCount": null,
-        "outputTopology": null,
-        "gridType": null,
-        "regionVariant": null,
-        "safetyTypeRaw": null,
-        "gridPhaseCount": 3,
-        "gridStandardRaw": 0,
-        "gridFrequencyHz": 50,
-        "gridVoltageLevelCode": 0,
-        "gridPhaseSequence": "ABC_0_120_240",
-        "itSystemNeutralUngrounded": null
-      }
-    },
-    "battery": {
-      "batteryControlMode": "capacity",
-      "batteryChannels": [
-        {
-          "channelId": 1,
-          "ratedCapacityAh": 100,
-          "nominalVoltageV": null,
-          "batterySn": null,
-          "batteryPhysicalAddress": null,
-          "batterySoftwareVersion": null,
-          "lithiumBatteryType": null
-        }
-      ]
+      "rpcName": "getSystemConnectionStructure",
+      "kind": "SystemConnectionStructure",
+      "type": "read",
+      "pairedWith": "setSystemConnectionStructure",
+      "response": {
+        "kind": "SystemConnectionStructure",
+        "timestampUtc": "2025-12-18T07:37:11.063Z",
+        "version": 1,
+        "DeviceId": "EC100-GW-001",
+        "schemaVersion": 1,
+        "inverter": {
+          "deviceType": 5,
+          "inverterModel": "Three-phase LV hybrid",
+          "serialNumber": "2509080139",
+          "firmware": {
+            "protocolVersion": null,
+            "mcuBoardRaw": null,
+            "controlHardwareRaw": 0,
+            "controlMainRaw": 1,
+            "commField1Raw": 15,
+            "commField2Raw": 0,
+            "commMainRaw": 1
+          },
+          "ratedPowerW": 12000,
+          "acSide": {
+            "mpptAndPhasesRaw": null,
+            "batteryInputCount": null,
+            "outputTopology": null,
+            "gridType": null,
+            "regionVariant": null,
+            "safetyTypeRaw": null,
+            "gridPhaseCount": 3,
+            "gridStandardRaw": 0,
+            "gridFrequencyHz": 50,
+            "gridVoltageLevelCode": 0,
+            "gridPhaseSequence": "ABC_0_120_240",
+            "itSystemNeutralUngrounded": null
+          }
         },
-        "generator": {
-          "inputMode": "generator_input",
-          "connectedToGridInput": false
-        },
-        "pv": {
-          "mpptCount": null,
-          "mppt": [
+        "battery": {
+          "batteryControlMode": "capacity",
+          "batteryChannels": [
             {
-              "pvChannelId": 1,
-              "supportsInput": true,
-              "stringMaxCurrentA": null,
-              "stringMaxVoltageV": null,
-              "recommendedVocAtStcV": null
-            },
-            {
-              "pvChannelId": 2,
-              "supportsInput": true,
-              "stringMaxCurrentA": null,
-              "stringMaxVoltageV": null,
-              "recommendedVocAtStcV": null
-            },
-            {
-              "pvChannelId": 3,
-              "supportsInput": true,
-              "stringMaxCurrentA": null,
-              "stringMaxVoltageV": null,
-              "recommendedVocAtStcV": null
-            },
-            {
-              "pvChannelId": 4,
-              "supportsInput": true,
-              "stringMaxCurrentA": null,
-              "stringMaxVoltageV": null,
-              "recommendedVocAtStcV": null
+              "channelId": 1,
+              "ratedCapacityAh": 100,
+              "nominalVoltageV": null,
+              "batterySn": null,
+              "batteryPhysicalAddress": null,
+              "batterySoftwareVersion": null,
+              "lithiumBatteryType": null
             }
           ]
+            },
+            "generator": {
+              "inputMode": "generator_input",
+              "connectedToGridInput": false
+            },
+            "pv": {
+              "mpptCount": null,
+              "mppt": [
+                {
+                  "pvChannelId": 1,
+                  "supportsInput": true,
+                  "stringMaxCurrentA": null,
+                  "stringMaxVoltageV": null,
+                  "recommendedVocAtStcV": null
+                },
+                {
+                  "pvChannelId": 2,
+                  "supportsInput": true,
+                  "stringMaxCurrentA": null,
+                  "stringMaxVoltageV": null,
+                  "recommendedVocAtStcV": null
+                },
+                {
+                  "pvChannelId": 3,
+                  "supportsInput": true,
+                  "stringMaxCurrentA": null,
+                  "stringMaxVoltageV": null,
+                  "recommendedVocAtStcV": null
+                },
+                {
+                  "pvChannelId": 4,
+                  "supportsInput": true,
+                  "stringMaxCurrentA": null,
+                  "stringMaxVoltageV": null,
+                  "recommendedVocAtStcV": null
+                }
+              ]
+            },
+            "loadAndGrid": {
+              "homeLoadConnectionPoint": null,
+              "exportLimitMode": "internal_meter",
+              "currentTransformerOnGridSide": null,
+              "supportsBackupLoad": null,
+              "supportsZeroExport": null,
+              "supportsExternalMeter": null
+            }
+          }
         },
-        "loadAndGrid": {
-          "homeLoadConnectionPoint": null,
-          "exportLimitMode": "internal_meter",
-          "currentTransformerOnGridSide": null,
-          "supportsBackupLoad": null,
-          "supportsZeroExport": null,
-          "supportsExternalMeter": null
-        }
-      }
-    },
-    {
+        {
         "rpcName": "getInverterInfo",
         "kind": "InverterInfoState",
         "type": "read",
@@ -1079,6 +1111,69 @@
             }
           ]
         }
+      },
+      {
+        "rpcName": "getInverterTimeConfigState",
+        "kind": "InverterTimeConfigState",
+        "type": "read",
+        "pairedWith": "setInverterTimeConfigState",
+        "response": {
+          "kind": "InverterTimeConfigState",
+          "timestampUtc": "2025-12-22T10:21:37.428Z",
+          "gatewayId": "EC100-GW-001",
+          "version": 1,
+          "systemTime": {
+            "year": 25,
+            "month": 12,
+            "day": 22,
+            "hour": 13,
+            "minute": 20,
+            "second": 57
+          },
+          "localtimestamp": "2025-12-22T05:20:57.000Z"
+        }
+      },
+      {
+        "rpcName": "setInverterTimeConfigState",
+        "kind": "InverterTimeConfigState",
+        "type": "write",
+        "pairedWith": "getInverterTimeConfigState",
+        "request": {
+          "systemTime": {
+            "year": 25,
+            "month": 12,
+            "day": 22,
+            "hour": 11,
+            "minute": 45,
+            "second": 0
+          }
+        }
+      },
+      {
+        "rpcName": "getInverterControlState",
+        "kind": "InverterControlState",
+        "type": "read",
+        "pairedWith": "setInverterControlState",
+        "response": {
+          "kind": "InverterControlState",
+          "timestampUtc": "2025-12-22T10:27:13.645Z",
+          "gatewayId": "EC100-GW-001",
+          "version": 1,
+          "remoteLock": "unlocked",
+          "powerSwitch": 1,
+          "factoryResetEnabled": false,
+          "islandProtectionEnabled": false
+        }
+      },
+      {
+        "rpcName": "setInverterControlState",
+        "kind": "InverterControlState",
+        "type": "write",
+        "pairedWith": "getInverterControlState",
+        "request": {
+          "powerSwitch": 1,
+          "remoteLock": "locked"
+        }
       }
             },
   "summary": {
@@ -1093,7 +1188,7 @@
       "getTotalEnergyFlowState",
       "getSystemConnectionStructure"
       "getInverterInfo",
-      getBatteryEnergyFlowState,
+      "getBatteryEnergyFlowState",
       "getBatteryInfoState"
 
     ],
@@ -1152,11 +1247,26 @@
         "get": "getSystemConnectionStructure",
         "set": "setSystemConnectionStructure",
         "kind": "SystemConnectionStructureState"
+      },
+      {
+        "get": "getInverterTimeConfigState",
+        "set": "setInverterTimeConfigState",
+        "kind": "InverterTimeConfigState"
+      },
+      {
+        "get": "getInverterControlState",
+        "set": "setInverterControlState",
+        "kind": "InverterControlState"
+      },
+      {
+        "get": "getInverterDisplayConfigState",
+        "set": "setInverterDisplayConfigState",
+        "kind": "InverterDisplayConfigState"
       }
     ],
-    "totalMethods": 33,
+    "totalMethods": 36,
     "totalReadOnly": 12,
-    "totalReadWritePairs": 11,
-    "uniqueKinds": 23
+    "totalReadWritePairs": 14,
+    "uniqueKinds": 26
   }
 }

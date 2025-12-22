@@ -1,31 +1,31 @@
 [
     {
-        "id": "sys_workmode_config_tab",
+        "id": "f9196d90e2dd3914",
         "type": "tab",
         "label": "SystemWorkModeConfig",
         "disabled": false,
         "info": "System Work Mode Config - Read & Write\n\nRegisters:\n- 241: Work mode (Bit0-1: 10=battery first, 11=load first)\n- 242: Export strategy (0=selling_first, 1=zero_export_to_load, 2=zero_export_to_ct)\n- 243: Max sell power\n- 245: Solar sell enable\n- 246: TOU enable + days (bit field)\n- 248-253: TOU time points 1-6\n- 254-259: TOU power 1-6\n- 260-265: TOU voltage 1-6\n- 266-271: TOU capacity 1-6\n- 272-277: TOU charge enable 1-6 (bit field)\n- 278: Grid peak shaving (Bit4-5)\n- 279: Force off-grid (Bit2-3)\n- 291: Grid peak shaving power"
     },
     {
-        "id": "swm_link_in_rpc",
+        "id": "2a4281f73d35c168",
         "type": "link in",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "RPC Request",
         "links": [
             "rpc_swm_link_out"
         ],
-        "x": 135,
-        "y": 180,
+        "x": 195,
+        "y": 220,
         "wires": [
             [
-                "swm_route_operation"
+                "911e25de61a655c1"
             ]
         ]
     },
     {
-        "id": "swm_manual_read",
+        "id": "a64a69019fe2ca8f",
         "type": "inject",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "Manual Read",
         "props": [
             {
@@ -44,18 +44,18 @@
         "topic": "",
         "payload": "",
         "payloadType": "date",
-        "x": 150,
-        "y": 260,
+        "x": 210,
+        "y": 300,
         "wires": [
             [
-                "swm_route_operation"
+                "911e25de61a655c1"
             ]
         ]
     },
     {
-        "id": "swm_manual_write",
+        "id": "eec85484e600a994",
         "type": "inject",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "Test Write",
         "props": [
             {
@@ -68,7 +68,7 @@
             },
             {
                 "p": "rpcParams",
-                "v": "{\"inverterMode\":{\"exportStrategy\":\"zero_export_to_ct\",\"solarSellEnabled\":true,\"maxSellPowerW\":5000,\"forceOffGrid\":false},\"energyPriority\":{\"pattern\":\"battery_first\"},\"gridPeakShaving\":{\"enabled\":true,\"limitPowerW\":6000},\"timeOfUse\":{\"enabled\":true,\"daysActive\":{\"monday\":true,\"tuesday\":true,\"wednesday\":true,\"thursday\":true,\"friday\":true,\"saturday\":false,\"sunday\":false}}}",
+                "v": "{\"inverterMode\":{\"exportStrategy\":\"zero_export_to_ct\",\"solarSellEnabled\":true,\"maxSellPowerW\":11000,\"forceOffGrid\":false},\"energyPriority\":{\"pattern\":\"battery_first\"},\"gridPeakShaving\":{\"enabled\":true,\"limitPowerW\":7000},\"timeOfUse\":{\"enabled\":true,\"daysActive\":{\"monday\":true,\"tuesday\":true,\"wednesday\":true,\"thursday\":true,\"friday\":true,\"saturday\":false,\"sunday\":false}}}",
                 "vt": "json"
             }
         ],
@@ -79,18 +79,18 @@
         "topic": "",
         "payload": "",
         "payloadType": "date",
-        "x": 150,
-        "y": 320,
+        "x": 210,
+        "y": 360,
         "wires": [
             [
-                "swm_route_operation"
+                "911e25de61a655c1"
             ]
         ]
     },
     {
-        "id": "swm_route_operation",
+        "id": "911e25de61a655c1",
         "type": "function",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "Route: Read or Write?",
         "func": "const opType = msg.operationType || 'read';\n\nif (opType === 'write') {\n    return [null, msg];\n} else {\n    return [msg, null];\n}",
         "outputs": 2,
@@ -99,21 +99,21 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 360,
-        "y": 180,
+        "x": 420,
+        "y": 220,
         "wires": [
             [
-                "swm_start_read"
+                "f01736c76c45716e"
             ],
             [
-                "swm_start_write"
+                "faf8406ddc8545b2"
             ]
         ]
     },
     {
-        "id": "swm_start_read",
+        "id": "f01736c76c45716e",
         "type": "function",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "Start Read",
         "func": "flow.set(\"swm_rpc_response_topic\", msg.rpcResponseTopic);\nflow.set(\"swm_write_result\", msg.writeResult || null);\n\n// Clear all parts\nflow.set(\"swm_part_basic\", null);\nflow.set(\"swm_part_tou_times\", null);\nflow.set(\"swm_part_tou_power\", null);\nflow.set(\"swm_part_tou_voltage\", null);\nflow.set(\"swm_part_tou_capacity\", null);\nflow.set(\"swm_part_tou_charge\", null);\nflow.set(\"swm_part_reg278\", null);\nflow.set(\"swm_part_reg279\", null);\nflow.set(\"swm_part_reg291\", null);\n\nreturn msg;",
         "outputs": 1,
@@ -122,26 +122,26 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 550,
-        "y": 100,
+        "x": 970,
+        "y": 240,
         "wires": [
             [
-                "swm_prep_basic",
-                "swm_prep_tou_times",
-                "swm_prep_tou_power",
-                "swm_prep_tou_voltage",
-                "swm_prep_tou_capacity",
-                "swm_prep_tou_charge",
-                "swm_prep_reg278",
-                "swm_prep_reg279",
-                "swm_prep_reg291"
+                "08bd53b9e2a2a420",
+                "095bb911f5e11522",
+                "17d7d6ca3f12555d",
+                "0e9842096b57fbb9",
+                "dc8ad0b964956f6d",
+                "a76ff132fc49e975",
+                "54ad71305c07b771",
+                "4671c0e303641562",
+                "09d1b4b6879ff15f"
             ]
         ]
     },
     {
-        "id": "swm_prep_basic",
+        "id": "08bd53b9e2a2a420",
         "type": "function",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "Prep 241-246",
         "func": "msg.readGroup = \"basic\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 241,\n    quantity: 6\n};\nreturn msg;",
         "outputs": 1,
@@ -150,18 +150,18 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 750,
-        "y": 40,
+        "x": 1300,
+        "y": 140,
         "wires": [
             [
-                "swm_read_basic"
+                "aa92db20236fac04"
             ]
         ]
     },
     {
-        "id": "swm_prep_tou_times",
+        "id": "095bb911f5e11522",
         "type": "function",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "Prep 248-253",
         "func": "msg.readGroup = \"tou_times\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 248,\n    quantity: 6\n};\nreturn msg;",
         "outputs": 1,
@@ -170,18 +170,18 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 750,
-        "y": 80,
+        "x": 1300,
+        "y": 180,
         "wires": [
             [
-                "swm_read_tou_times"
+                "3d06da45cd648fcc"
             ]
         ]
     },
     {
-        "id": "swm_prep_tou_power",
+        "id": "17d7d6ca3f12555d",
         "type": "function",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "Prep 254-259",
         "func": "msg.readGroup = \"tou_power\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 254,\n    quantity: 6\n};\nreturn msg;",
         "outputs": 1,
@@ -190,18 +190,18 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 750,
-        "y": 120,
+        "x": 1300,
+        "y": 220,
         "wires": [
             [
-                "swm_read_tou_power"
+                "05c77c6c6bde7ae7"
             ]
         ]
     },
     {
-        "id": "swm_prep_tou_voltage",
+        "id": "0e9842096b57fbb9",
         "type": "function",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "Prep 260-265",
         "func": "msg.readGroup = \"tou_voltage\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 260,\n    quantity: 6\n};\nreturn msg;",
         "outputs": 1,
@@ -210,18 +210,18 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 750,
-        "y": 160,
+        "x": 1300,
+        "y": 260,
         "wires": [
             [
-                "swm_read_tou_voltage"
+                "3a3c0f5647b6ceb0"
             ]
         ]
     },
     {
-        "id": "swm_prep_tou_capacity",
+        "id": "dc8ad0b964956f6d",
         "type": "function",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "Prep 266-271",
         "func": "msg.readGroup = \"tou_capacity\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 266,\n    quantity: 6\n};\nreturn msg;",
         "outputs": 1,
@@ -230,18 +230,18 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 750,
-        "y": 200,
+        "x": 1300,
+        "y": 300,
         "wires": [
             [
-                "swm_read_tou_capacity"
+                "14c4f64189a308bb"
             ]
         ]
     },
     {
-        "id": "swm_prep_tou_charge",
+        "id": "a76ff132fc49e975",
         "type": "function",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "Prep 272-277",
         "func": "msg.readGroup = \"tou_charge\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 272,\n    quantity: 6\n};\nreturn msg;",
         "outputs": 1,
@@ -250,18 +250,18 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 750,
-        "y": 240,
+        "x": 1300,
+        "y": 340,
         "wires": [
             [
-                "swm_read_tou_charge"
+                "bc03cd5a95ce0a2e"
             ]
         ]
     },
     {
-        "id": "swm_prep_reg278",
+        "id": "54ad71305c07b771",
         "type": "function",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "Prep 278",
         "func": "msg.readGroup = \"reg278\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 278,\n    quantity: 1\n};\nreturn msg;",
         "outputs": 1,
@@ -270,18 +270,18 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 740,
-        "y": 280,
+        "x": 1290,
+        "y": 380,
         "wires": [
             [
-                "swm_read_reg278"
+                "c257237c95226672"
             ]
         ]
     },
     {
-        "id": "swm_prep_reg279",
+        "id": "4671c0e303641562",
         "type": "function",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "Prep 279",
         "func": "msg.readGroup = \"reg279\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 279,\n    quantity: 1\n};\nreturn msg;",
         "outputs": 1,
@@ -290,18 +290,18 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 740,
-        "y": 320,
+        "x": 1290,
+        "y": 420,
         "wires": [
             [
-                "swm_read_reg279"
+                "ce52fa63b23d5921"
             ]
         ]
     },
     {
-        "id": "swm_prep_reg291",
+        "id": "09d1b4b6879ff15f",
         "type": "function",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "Prep 291",
         "func": "msg.readGroup = \"reg291\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 291,\n    quantity: 1\n};\nreturn msg;",
         "outputs": 1,
@@ -310,18 +310,18 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 740,
-        "y": 360,
+        "x": 1290,
+        "y": 460,
         "wires": [
             [
-                "swm_read_reg291"
+                "89578b3bfdfbc565"
             ]
         ]
     },
     {
-        "id": "swm_read_basic",
+        "id": "aa92db20236fac04",
         "type": "modbus-flex-getter",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "Read 241-246",
         "showStatusActivities": true,
         "showErrors": true,
@@ -335,19 +335,19 @@
         "keepMsgProperties": true,
         "delayOnStart": false,
         "startDelayTime": "",
-        "x": 940,
-        "y": 40,
+        "x": 1490,
+        "y": 140,
         "wires": [
             [
-                "swm_build_json"
+                "8a77927877a992eb"
             ],
             []
         ]
     },
     {
-        "id": "swm_read_tou_times",
+        "id": "3d06da45cd648fcc",
         "type": "modbus-flex-getter",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "Read 248-253",
         "showStatusActivities": true,
         "showErrors": true,
@@ -361,19 +361,19 @@
         "keepMsgProperties": true,
         "delayOnStart": false,
         "startDelayTime": "",
-        "x": 940,
-        "y": 80,
+        "x": 1490,
+        "y": 180,
         "wires": [
             [
-                "swm_build_json"
+                "8a77927877a992eb"
             ],
             []
         ]
     },
     {
-        "id": "swm_read_tou_power",
+        "id": "05c77c6c6bde7ae7",
         "type": "modbus-flex-getter",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "Read 254-259",
         "showStatusActivities": true,
         "showErrors": true,
@@ -387,19 +387,19 @@
         "keepMsgProperties": true,
         "delayOnStart": false,
         "startDelayTime": "",
-        "x": 940,
-        "y": 120,
+        "x": 1490,
+        "y": 220,
         "wires": [
             [
-                "swm_build_json"
+                "8a77927877a992eb"
             ],
             []
         ]
     },
     {
-        "id": "swm_read_tou_voltage",
+        "id": "3a3c0f5647b6ceb0",
         "type": "modbus-flex-getter",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "Read 260-265",
         "showStatusActivities": true,
         "showErrors": true,
@@ -413,19 +413,19 @@
         "keepMsgProperties": true,
         "delayOnStart": false,
         "startDelayTime": "",
-        "x": 940,
-        "y": 160,
+        "x": 1490,
+        "y": 260,
         "wires": [
             [
-                "swm_build_json"
+                "8a77927877a992eb"
             ],
             []
         ]
     },
     {
-        "id": "swm_read_tou_capacity",
+        "id": "14c4f64189a308bb",
         "type": "modbus-flex-getter",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "Read 266-271",
         "showStatusActivities": true,
         "showErrors": true,
@@ -439,19 +439,19 @@
         "keepMsgProperties": true,
         "delayOnStart": false,
         "startDelayTime": "",
-        "x": 940,
-        "y": 200,
+        "x": 1490,
+        "y": 300,
         "wires": [
             [
-                "swm_build_json"
+                "8a77927877a992eb"
             ],
             []
         ]
     },
     {
-        "id": "swm_read_tou_charge",
+        "id": "bc03cd5a95ce0a2e",
         "type": "modbus-flex-getter",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "Read 272-277",
         "showStatusActivities": true,
         "showErrors": true,
@@ -465,19 +465,19 @@
         "keepMsgProperties": true,
         "delayOnStart": false,
         "startDelayTime": "",
-        "x": 940,
-        "y": 240,
+        "x": 1490,
+        "y": 340,
         "wires": [
             [
-                "swm_build_json"
+                "8a77927877a992eb"
             ],
             []
         ]
     },
     {
-        "id": "swm_read_reg278",
+        "id": "c257237c95226672",
         "type": "modbus-flex-getter",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "Read 278",
         "showStatusActivities": true,
         "showErrors": true,
@@ -491,19 +491,19 @@
         "keepMsgProperties": true,
         "delayOnStart": false,
         "startDelayTime": "",
-        "x": 920,
-        "y": 280,
+        "x": 1470,
+        "y": 380,
         "wires": [
             [
-                "swm_build_json"
+                "8a77927877a992eb"
             ],
             []
         ]
     },
     {
-        "id": "swm_read_reg279",
+        "id": "ce52fa63b23d5921",
         "type": "modbus-flex-getter",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "Read 279",
         "showStatusActivities": true,
         "showErrors": true,
@@ -517,19 +517,19 @@
         "keepMsgProperties": true,
         "delayOnStart": false,
         "startDelayTime": "",
-        "x": 920,
-        "y": 320,
+        "x": 1470,
+        "y": 420,
         "wires": [
             [
-                "swm_build_json"
+                "8a77927877a992eb"
             ],
             []
         ]
     },
     {
-        "id": "swm_read_reg291",
+        "id": "89578b3bfdfbc565",
         "type": "modbus-flex-getter",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "Read 291",
         "showStatusActivities": true,
         "showErrors": true,
@@ -543,19 +543,19 @@
         "keepMsgProperties": true,
         "delayOnStart": false,
         "startDelayTime": "",
-        "x": 920,
-        "y": 360,
+        "x": 1470,
+        "y": 460,
         "wires": [
             [
-                "swm_build_json"
+                "8a77927877a992eb"
             ],
             []
         ]
     },
     {
-        "id": "swm_build_json",
+        "id": "8a77927877a992eb",
         "type": "function",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "Build JSON State",
         "func": "let raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nconst group = msg.readGroup;\n\n// Export strategy mapping for register 242\nconst exportStrategyMap = {\n    0: \"selling_first\",\n    1: \"zero_export_to_load\",\n    2: \"zero_export_to_ct\"\n};\n\nif (group === \"basic\") {\n    // 241-246: workMode(bit field), exportStrategy, maxSell, skip, solarSell, touEnable\n    const workModeReg = data[0] || 0; // 241\n    const touReg = data[5] || 0; // 246\n    const exportStrategyCode = data[1] || 0; // 242\n    \n    // Extract work mode from 241 Bit0-1 (10=battery first, 11=load first)\n    const workModeBits = workModeReg & 0x03;\n    const workModeCode = workModeBits === 0x02 ? 0 : (workModeBits === 0x03 ? 1 : 0);\n    \n    flow.set(\"swm_part_basic\", {\n        workModeCode: workModeCode,\n        workModeRawValue: workModeReg,         // Store for write operations\n        exportStrategyCode: exportStrategyCode, // 242 (raw value)\n        exportStrategy: exportStrategyMap[exportStrategyCode] || \"selling_first\", // 242 (string)\n        maxSellPowerW: data[2] || 0,          // 243\n        solarSellEnabled: (data[4] || 0) === 1, // 245\n        touEnabled: (touReg & 0x01) === 1,\n        touDays: {\n            monday: ((touReg >> 1) & 0x01) === 1,\n            tuesday: ((touReg >> 2) & 0x01) === 1,\n            wednesday: ((touReg >> 3) & 0x01) === 1,\n            thursday: ((touReg >> 4) & 0x01) === 1,\n            friday: ((touReg >> 5) & 0x01) === 1,\n            saturday: ((touReg >> 6) & 0x01) === 1,\n            sunday: ((touReg >> 7) & 0x01) === 1\n        },\n        touRawValue: touReg\n    });\n}\nelse if (group === \"tou_times\") {\n    flow.set(\"swm_part_tou_times\", data.slice(0, 6));\n}\nelse if (group === \"tou_power\") {\n    flow.set(\"swm_part_tou_power\", data.slice(0, 6));\n}\nelse if (group === \"tou_voltage\") {\n    flow.set(\"swm_part_tou_voltage\", data.slice(0, 6));\n}\nelse if (group === \"tou_capacity\") {\n    flow.set(\"swm_part_tou_capacity\", data.slice(0, 6));\n}\nelse if (group === \"tou_charge\") {\n    flow.set(\"swm_part_tou_charge\", data.slice(0, 6));\n}\nelse if (group === \"reg278\") {\n    const val = data[0] || 0;\n    // Bit4-5: Grid peak shaving (10=disable, 11=enable)\n    const gridPeakShavingEnabled = ((val >> 4) & 0x03) === 0x03;\n    flow.set(\"swm_part_reg278\", {\n        rawValue: val,\n        gridPeakShavingEnabled: gridPeakShavingEnabled\n    });\n}\nelse if (group === \"reg279\") {\n    const val = data[0] || 0;\n    // Bit2-3: Force off-grid (10=disable, 11=enable)\n    const forceOffGrid = ((val >> 2) & 0x03) === 0x03;\n    flow.set(\"swm_part_reg279\", {\n        rawValue: val,\n        forceOffGrid: forceOffGrid\n    });\n}\nelse if (group === \"reg291\") {\n    flow.set(\"swm_part_reg291\", { limitPowerW: data[0] || 0 });\n}\nelse {\n    return null;\n}\n\n// Check if all parts received\nconst basic = flow.get(\"swm_part_basic\");\nconst touTimes = flow.get(\"swm_part_tou_times\");\nconst touPower = flow.get(\"swm_part_tou_power\");\nconst touVoltage = flow.get(\"swm_part_tou_voltage\");\nconst touCapacity = flow.get(\"swm_part_tou_capacity\");\nconst touCharge = flow.get(\"swm_part_tou_charge\");\nconst reg278 = flow.get(\"swm_part_reg278\");\nconst reg279 = flow.get(\"swm_part_reg279\");\nconst reg291 = flow.get(\"swm_part_reg291\");\n\nif (!basic || !touTimes || !touPower || !touVoltage || !touCapacity || !touCharge || !reg278 || !reg279 || !reg291) {\n    return null;\n}\n\n// Helper to format time from HHMM\nfunction formatTime(val) {\n    const hh = Math.floor(val / 100);\n    const mm = val % 100;\n    return String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');\n}\n\n// Build TOU slots\nconst slots = [];\nfor (let i = 0; i < 6; i++) {\n    const chargeReg = touCharge[i] || 0;\n    slots.push({\n        slotIndex: i + 1,\n        startTimeLocal: formatTime(touTimes[i] || 0),\n        endTimeLocal: i < 5 ? formatTime(touTimes[i + 1] || 0) : formatTime(touTimes[0] || 0),\n        allowGridCharge: (chargeReg & 0x01) === 1,\n        allowGeneratorCharge: ((chargeReg >> 1) & 0x01) === 1,\n        maxBatteryDischargePowerW: touPower[i] || 0,\n        batteryThresholdSocPercent: touCapacity[i] || 0,\n        batteryThresholdVoltageV: Math.round((touVoltage[i] || 0) * 0.01 * 100) / 100\n    });\n}\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\nconst inverterSN = global.get(\"INVERTER_SN\") || env.get(\"INVERTER_SN\") || \"Unknown\";\n\nconst state = {\n    kind: \"SystemWorkModeConfigState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    gatewayId: gatewayId,\n    inverterSerialNumber: inverterSN,\n    \n    inverterMode: {\n        workModeCode: basic.workModeCode,\n        exportStrategy: basic.exportStrategy,\n        solarSellEnabled: basic.solarSellEnabled,\n        maxSellPowerW: basic.maxSellPowerW,\n        forceOffGrid: reg279.forceOffGrid\n    },\n    \n    energyPriority: {\n        pattern: basic.workModeCode === 0 ? \"battery_first\" : \"load_first\"\n    },\n    \n    gridPeakShaving: {\n        enabled: reg278.gridPeakShavingEnabled,\n        limitPowerW: reg291.limitPowerW\n    },\n    \n    timeOfUse: {\n        enabled: basic.touEnabled,\n        daysActive: basic.touDays,\n        slots: slots\n    }\n};\n\n// Store raw values for write operations\nflow.set(\"swm_reg241_current\", basic.workModeRawValue);\nflow.set(\"swm_reg246_current\", basic.touRawValue);\nflow.set(\"swm_reg278_current\", reg278.rawValue);\nflow.set(\"swm_reg279_current\", reg279.rawValue);\n\n// Clear parts\nflow.set(\"swm_part_basic\", null);\nflow.set(\"swm_part_tou_times\", null);\nflow.set(\"swm_part_tou_power\", null);\nflow.set(\"swm_part_tou_voltage\", null);\nflow.set(\"swm_part_tou_capacity\", null);\nflow.set(\"swm_part_tou_charge\", null);\nflow.set(\"swm_part_reg278\", null);\nflow.set(\"swm_part_reg279\", null);\nflow.set(\"swm_part_reg291\", null);\n\nconst writeResult = flow.get(\"swm_write_result\");\nconst rpcResponseTopic = flow.get(\"swm_rpc_response_topic\");\n\nflow.set(\"swm_write_result\", null);\nflow.set(\"swm_rpc_response_topic\", null);\n\nif (writeResult) {\n    msg.payload = {\n        success: writeResult.success,\n        message: writeResult.message,\n        writes: writeResult.writes,\n        state: state\n    };\n} else {\n    msg.payload = state;\n}\n\nmsg.state = state;\nmsg.rpcResponseTopic = rpcResponseTopic;\n\nreturn msg;",
         "outputs": 1,
@@ -564,19 +564,19 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1130,
-        "y": 200,
+        "x": 1800,
+        "y": 320,
         "wires": [
             [
-                "swm_debug_json",
-                "swm_rpc_response"
+                "f98050cb37c70b62",
+                "8a655271dd924d6b"
             ]
         ]
     },
     {
-        "id": "swm_debug_json",
+        "id": "f98050cb37c70b62",
         "type": "debug",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "WorkMode Config JSON",
         "active": true,
         "tosidebar": true,
@@ -586,14 +586,14 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1350,
-        "y": 140,
+        "x": 2020,
+        "y": 260,
         "wires": []
     },
     {
-        "id": "swm_rpc_response",
+        "id": "8a655271dd924d6b",
         "type": "function",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "RPC Response",
         "func": "if (!msg.rpcResponseTopic) {\n    return null;\n}\n\nmsg.topic = msg.rpcResponseTopic;\nreturn msg;",
         "outputs": 1,
@@ -602,18 +602,18 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1340,
-        "y": 200,
+        "x": 2010,
+        "y": 320,
         "wires": [
             [
-                "swm_mqtt_response"
+                "42ec5e7f6e22bc7c"
             ]
         ]
     },
     {
-        "id": "swm_mqtt_response",
+        "id": "42ec5e7f6e22bc7c",
         "type": "mqtt out",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "MQTT Response",
         "topic": "",
         "qos": "1",
@@ -624,14 +624,14 @@
         "correl": "",
         "expiry": "",
         "broker": "tb-broker",
-        "x": 1540,
-        "y": 200,
+        "x": 2210,
+        "y": 320,
         "wires": []
     },
     {
-        "id": "swm_start_write",
+        "id": "faf8406ddc8545b2",
         "type": "function",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "Queue Writes",
         "func": "const params = msg.rpcParams || {};\nconst invMode = params.inverterMode || {};\nconst energyPri = params.energyPriority || {};\nconst gridPeak = params.gridPeakShaving || {};\nconst tou = params.timeOfUse || {};\nconst touSlots = tou.slots || [];\n\nconst writes = [];\n\n// Export strategy string to code mapping\nconst exportStrategyToCode = {\n    \"selling_first\": 0,\n    \"zero_export_to_load\": 1,\n    \"zero_export_to_ct\": 2\n};\n\n// Register 241 - Work mode (Bit0-1: 10=battery first, 11=load first)\nlet needReg241Write = false;\nlet reg241NewValue = flow.get(\"swm_reg241_current\") || 0;\n\nif (invMode.workModeCode !== undefined) {\n    needReg241Write = true;\n    reg241NewValue = reg241NewValue & ~0x0003; // Clear bits 0-1\n    if (invMode.workModeCode === 0) {\n        reg241NewValue = reg241NewValue | 0x0002; // Set bits to 10 (battery first)\n    } else {\n        reg241NewValue = reg241NewValue | 0x0003; // Set bits to 11 (load first)\n    }\n} else if (energyPri.pattern !== undefined) {\n    needReg241Write = true;\n    reg241NewValue = reg241NewValue & ~0x0003; // Clear bits 0-1\n    if (energyPri.pattern === \"battery_first\") {\n        reg241NewValue = reg241NewValue | 0x0002; // Set bits to 10\n    } else {\n        reg241NewValue = reg241NewValue | 0x0003; // Set bits to 11\n    }\n}\n\nif (needReg241Write) {\n    writes.push({ register: 241, value: reg241NewValue, name: \"Work Mode\" });\n}\n\n// Export strategy (242)\nif (invMode.exportStrategy !== undefined) {\n    const strategyCode = exportStrategyToCode[invMode.exportStrategy];\n    if (strategyCode !== undefined) {\n        writes.push({ register: 242, value: strategyCode, name: \"Export Strategy\" });\n    }\n}\n\n// Max sell power (243)\nif (invMode.maxSellPowerW !== undefined) {\n    writes.push({ register: 243, value: invMode.maxSellPowerW, name: \"Max Sell Power\" });\n}\n\n// Solar sell enable (245)\nif (invMode.solarSellEnabled !== undefined) {\n    writes.push({ register: 245, value: invMode.solarSellEnabled ? 1 : 0, name: \"Solar Sell\" });\n}\n\n// Grid peak shaving power (291)\nif (gridPeak.limitPowerW !== undefined) {\n    writes.push({ register: 291, value: gridPeak.limitPowerW, name: \"Grid Peak Power\" });\n}\n\n// Register 246 - TOU enable + days (bit field)\nlet needReg246Write = false;\nlet reg246NewValue = flow.get(\"swm_reg246_current\") || 0;\n\nif (tou.enabled !== undefined) {\n    needReg246Write = true;\n    if (tou.enabled) {\n        reg246NewValue = reg246NewValue | 0x01;\n    } else {\n        reg246NewValue = reg246NewValue & ~0x01;\n    }\n}\n\nif (tou.daysActive) {\n    needReg246Write = true;\n    const days = tou.daysActive;\n    if (days.monday !== undefined) {\n        reg246NewValue = days.monday ? (reg246NewValue | 0x02) : (reg246NewValue & ~0x02);\n    }\n    if (days.tuesday !== undefined) {\n        reg246NewValue = days.tuesday ? (reg246NewValue | 0x04) : (reg246NewValue & ~0x04);\n    }\n    if (days.wednesday !== undefined) {\n        reg246NewValue = days.wednesday ? (reg246NewValue | 0x08) : (reg246NewValue & ~0x08);\n    }\n    if (days.thursday !== undefined) {\n        reg246NewValue = days.thursday ? (reg246NewValue | 0x10) : (reg246NewValue & ~0x10);\n    }\n    if (days.friday !== undefined) {\n        reg246NewValue = days.friday ? (reg246NewValue | 0x20) : (reg246NewValue & ~0x20);\n    }\n    if (days.saturday !== undefined) {\n        reg246NewValue = days.saturday ? (reg246NewValue | 0x40) : (reg246NewValue & ~0x40);\n    }\n    if (days.sunday !== undefined) {\n        reg246NewValue = days.sunday ? (reg246NewValue | 0x80) : (reg246NewValue & ~0x80);\n    }\n}\n\nif (needReg246Write) {\n    writes.push({ register: 246, value: reg246NewValue, name: \"TOU Enable+Days\" });\n}\n\n// Register 278 - Grid peak shaving enable (Bit4-5: 10=disable, 11=enable)\nlet needReg278Write = false;\nlet reg278NewValue = flow.get(\"swm_reg278_current\") || 0;\n\nif (gridPeak.enabled !== undefined) {\n    needReg278Write = true;\n    reg278NewValue = reg278NewValue & ~0x0030; // Clear bits 4-5\n    if (gridPeak.enabled) {\n        reg278NewValue = reg278NewValue | 0x0030; // Set bits 4-5 (11)\n    } else {\n        reg278NewValue = reg278NewValue | 0x0020; // Set bit 5, clear bit 4 (10)\n    }\n}\n\nif (needReg278Write) {\n    writes.push({ register: 278, value: reg278NewValue, name: \"Reg278 GridPeak\" });\n}\n\n// Register 279 - Force off-grid (Bit2-3: 10=disable, 11=enable)\nlet needReg279Write = false;\nlet reg279NewValue = flow.get(\"swm_reg279_current\") || 0;\n\nif (invMode.forceOffGrid !== undefined) {\n    needReg279Write = true;\n    reg279NewValue = reg279NewValue & ~0x000C; // Clear bits 2-3\n    if (invMode.forceOffGrid) {\n        reg279NewValue = reg279NewValue | 0x000C; // Set bits 2-3 (11)\n    } else {\n        reg279NewValue = reg279NewValue | 0x0008; // Set bit 3, clear bit 2 (10)\n    }\n}\n\nif (needReg279Write) {\n    writes.push({ register: 279, value: reg279NewValue, name: \"Force Off-Grid\" });\n}\n\n// TOU Slots\nfor (const slot of touSlots) {\n    const idx = (slot.slotIndex || 1) - 1;\n    if (idx < 0 || idx > 5) continue;\n    \n    // Time point (248-253)\n    if (slot.startTimeLocal !== undefined) {\n        const parts = slot.startTimeLocal.split(':');\n        const hhmm = parseInt(parts[0]) * 100 + parseInt(parts[1] || 0);\n        writes.push({ register: 248 + idx, value: hhmm, name: `TOU Time ${idx+1}` });\n    }\n    \n    // Power (254-259)\n    if (slot.maxBatteryDischargePowerW !== undefined) {\n        writes.push({ register: 254 + idx, value: slot.maxBatteryDischargePowerW, name: `TOU Power ${idx+1}` });\n    }\n    \n    // Voltage (260-265)\n    if (slot.batteryThresholdVoltageV !== undefined) {\n        const volVal = Math.round(slot.batteryThresholdVoltageV * 100);\n        writes.push({ register: 260 + idx, value: volVal, name: `TOU Voltage ${idx+1}` });\n    }\n    \n    // Capacity (266-271)\n    if (slot.batteryThresholdSocPercent !== undefined) {\n        writes.push({ register: 266 + idx, value: slot.batteryThresholdSocPercent, name: `TOU Capacity ${idx+1}` });\n    }\n    \n    // Charge enable (272-277)\n    if (slot.allowGridCharge !== undefined || slot.allowGeneratorCharge !== undefined) {\n        let chargeVal = 0;\n        if (slot.allowGridCharge) chargeVal |= 0x01;\n        if (slot.allowGeneratorCharge) chargeVal |= 0x02;\n        writes.push({ register: 272 + idx, value: chargeVal, name: `TOU Charge ${idx+1}` });\n    }\n}\n\nif (writes.length === 0) {\n    msg.operationType = 'read';\n    return [null, msg];\n}\n\n// Store to GLOBAL context\nglobal.set(\"swm_write_queue\", writes);\nglobal.set(\"swm_write_index\", 0);\nglobal.set(\"swm_write_results\", []);\nglobal.set(\"swm_write_rpc_topic\", msg.rpcResponseTopic);\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: `${writes.length} writes queued` });\n\nreturn [msg, null];",
         "outputs": 2,
@@ -640,21 +640,21 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 560,
-        "y": 480,
+        "x": 720,
+        "y": 280,
         "wires": [
             [
-                "swm_prepare_write"
+                "7aaf278a33f9ec05"
             ],
             [
-                "swm_start_read"
+                "f01736c76c45716e"
             ]
         ]
     },
     {
-        "id": "swm_prepare_write",
+        "id": "7aaf278a33f9ec05",
         "type": "function",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "Prepare Write",
         "func": "const writes = global.get(\"swm_write_queue\") || [];\nconst index = global.get(\"swm_write_index\") || 0;\n\nif (index >= writes.length) {\n    return null;\n}\n\nconst current = writes[index];\n\nconst newMsg = {\n    payload: {\n        fc: 16,\n        unitid: 1,\n        address: current.register,\n        quantity: 1,\n        value: [current.value]\n    },\n    currentWrite: current,\n    writeIndex: index\n};\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: `[${index+1}/${writes.length}] ${current.name}` });\n\nreturn newMsg;",
         "outputs": 1,
@@ -663,18 +663,18 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 740,
-        "y": 480,
+        "x": 620,
+        "y": 680,
         "wires": [
             [
-                "swm_write_register"
+                "715dd6b476c0a159"
             ]
         ]
     },
     {
-        "id": "swm_write_register",
+        "id": "715dd6b476c0a159",
         "type": "modbus-flex-write",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "Write Register",
         "showStatusActivities": true,
         "showErrors": true,
@@ -682,21 +682,23 @@
         "server": "e4e4f3e2a4f4e004",
         "emptyMsgOnFail": true,
         "keepMsgProperties": true,
-        "x": 920,
-        "y": 480,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 800,
+        "y": 680,
         "wires": [
             [
-                "swm_write_result"
+                "0faf05676b84c84c"
             ],
             [
-                "swm_write_result"
+                "0faf05676b84c84c"
             ]
         ]
     },
     {
-        "id": "swm_write_result",
+        "id": "0faf05676b84c84c",
         "type": "function",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "Process Write Result",
         "func": "const writes = global.get(\"swm_write_queue\") || [];\nlet index = global.get(\"swm_write_index\") || 0;\nconst results = global.get(\"swm_write_results\") || [];\n\n// Check if this is just a confirmation (has address and length but no error)\nconst isConfirmation = msg.payload && \n                       msg.payload.address !== undefined && \n                       msg.payload.length !== undefined &&\n                       !msg.payload.error;\n\nif (isConfirmation) {\n    // This is the write confirmation from output 2 - ignore it\n    return null;\n}\n\nconst current = writes[index];\nif (current) {\n    results.push({ \n        register: current.register, \n        name: current.name, \n        value: current.value, \n        success: true \n    });\n    global.set(\"swm_write_results\", results);\n}\n\nindex++;\nglobal.set(\"swm_write_index\", index);\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `${current ? current.name : 'Unknown'} OK` });\n\nif (index < writes.length) {\n    return [{ doNext: true }, null];\n}\n\nconst rpcTopic = global.get(\"swm_write_rpc_topic\");\n\nglobal.set(\"swm_write_queue\", null);\nglobal.set(\"swm_write_index\", null);\nglobal.set(\"swm_write_rpc_topic\", null);\n\nconst finalMsg = {\n    writeResult: {\n        success: true,\n        message: `Successfully wrote ${results.length} register(s)`,\n        writes: results\n    },\n    rpcResponseTopic: rpcTopic\n};\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `All ${results.length} writes OK!` });\n\nreturn [null, finalMsg];",
         "outputs": 2,
@@ -705,22 +707,22 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1100,
-        "y": 480,
+        "x": 1080,
+        "y": 680,
         "wires": [
             [
-                "swm_next_delay"
+                "5e50ee6545652be6"
             ],
             [
-                "swm_start_read"
+                "f01736c76c45716e"
             ]
         ]
     },
     {
-        "id": "swm_next_delay",
+        "id": "5e50ee6545652be6",
         "type": "delay",
-        "z": "sys_workmode_config_tab",
-        "name": "500ms",
+        "z": "f9196d90e2dd3914",
+        "name": "100ms",
         "pauseType": "delay",
         "timeout": "500",
         "timeoutUnits": "milliseconds",
@@ -733,59 +735,59 @@
         "drop": false,
         "allowrate": false,
         "outputs": 1,
-        "x": 1250,
-        "y": 480,
+        "x": 1290,
+        "y": 680,
         "wires": [
             [
-                "swm_prepare_write"
+                "7aaf278a33f9ec05"
             ]
         ]
     },
     {
-        "id": "swm_comment_read",
+        "id": "99f5dc42c0ba6998",
         "type": "comment",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "═══ READ SECTION (9 parallel reads) ═══",
         "info": "",
-        "x": 820,
-        "y": 0,
+        "x": 1380,
+        "y": 80,
         "wires": []
     },
     {
-        "id": "swm_comment_write",
+        "id": "3eea7768148b4577",
         "type": "comment",
-        "z": "sys_workmode_config_tab",
+        "z": "f9196d90e2dd3914",
         "name": "═══ WRITE SECTION ═══",
         "info": "Reg241 Bit0-1: work mode (10=battery first, 11=load first)\nReg278 Bit4-5: grid peak shaving (10=disable, 11=enable)\nReg279 Bit2-3: force off-grid (10=disable, 11=enable)",
-        "x": 610,
-        "y": 440,
+        "x": 220,
+        "y": 420,
         "wires": []
     },
     {
         "id": "e4e4f3e2a4f4e004",
         "type": "modbus-client",
-        "name": "EC100 Modbus",
-        "clienttype": "tcp",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
         "bufferCommands": true,
         "stateLogEnabled": false,
         "queueLogEnabled": false,
-        "failureLogEnabled": true,
-        "tcpHost": "192.168.1.100",
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
         "tcpPort": "502",
         "tcpType": "DEFAULT",
-        "serialPort": "/dev/ttyUSB0",
-        "serialType": "RTU-BUFFERD",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
         "serialBaudrate": "9600",
         "serialDatabits": "8",
         "serialStopbits": "1",
         "serialParity": "none",
         "serialConnectionDelay": "100",
-        "serialAsciiResponseStartDelimiter": "0x3A",
-        "unit_id": "1",
-        "commandDelay": "1",
-        "clientTimeout": "1000",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
         "reconnectOnTimeout": true,
-        "reconnectTimeout": "2000",
+        "reconnectTimeout": 2000,
         "parallelUnitIdsAllowed": true,
         "showErrors": false,
         "showWarnings": true,
@@ -819,6 +821,8 @@
         "willQos": "0",
         "willRetain": "false",
         "willPayload": "",
-        "willMsg": {}
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
     }
 ]

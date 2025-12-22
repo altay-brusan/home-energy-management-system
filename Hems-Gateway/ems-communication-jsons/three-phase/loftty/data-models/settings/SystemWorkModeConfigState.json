@@ -26,9 +26,11 @@ SystemWorkModeConfigState
 
     "maxSellPowerW": "number",               // 243 - Limit max grid power output (1W)
 
-    "defaultMaxSellPowerW": null,            // Bu datasheet'te yok (244 = CT direction)
+    "maxSolarSellPowerW": "number",          // 440 - 光伏最大卖电功率 Max Solar Sell Power (1W)
 
-    "zeroExportLimitPowerW": null,           // Bu datasheet'te zero export power register yok
+    "defaultMaxSellPowerW": null,            // Bu datasheet'te yok
+
+    "zeroExportLimitPowerW": "number",       // 204 - 最小limit起作用功率 ZeroExport power (1W)
 
     "forceOffGrid": "boolean"                // 279 Bit2-3 - 强制离网工作 Forced off-grid
                                              //   10 = disable

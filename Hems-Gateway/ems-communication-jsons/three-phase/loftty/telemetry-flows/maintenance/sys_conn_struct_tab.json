@@ -1,31 +1,31 @@
 [
     {
-        "id": "sys_conn_struct_tab",
+        "id": "48027ae0f30c7022",
         "type": "tab",
         "label": "SystemConnectionStructure",
         "disabled": false,
         "info": "System Connection Structure - Read Only\n\nRegisters:\n- 100: deviceType\n- 103-107: Serial Number (5 regs = 10 ASCII)\n- 114-118: Firmware versions\n- 120-121: Rated power (32-bit)\n- 282: gridStandardRaw\n- 283: gridFrequencyHz\n- 238: gridVoltageLevelCode\n- 247: gridPhaseSequence\n- 211: batteryControlMode\n- 202: battery capacity\n- 233: generator inputMode\n- 289: generator connectedToGridInput\n- 242: exportLimitMode"
     },
     {
-        "id": "scs_link_in_rpc",
+        "id": "48a63907ca06c8c5",
         "type": "link in",
-        "z": "sys_conn_struct_tab",
+        "z": "48027ae0f30c7022",
         "name": "RPC Request",
         "links": [
-            "rpc_scs_link_out"
+            "rpc_sysconn_link_out"
         ],
         "x": 125,
         "y": 80,
         "wires": [
             [
-                "scs_prep_read"
+                "b90361c70e74e5e5"
             ]
         ]
     },
     {
-        "id": "scs_comment_manual",
+        "id": "49aaa1e801c2dba7",
         "type": "comment",
-        "z": "sys_conn_struct_tab",
+        "z": "48027ae0f30c7022",
         "name": "══════ MANUAL TEST ══════",
         "info": "",
         "x": 170,
@@ -33,9 +33,9 @@
         "wires": []
     },
     {
-        "id": "scs_manual_read",
+        "id": "52a45edebc0f359a",
         "type": "inject",
-        "z": "sys_conn_struct_tab",
+        "z": "48027ae0f30c7022",
         "name": "Manual Read",
         "props": [
             {
@@ -53,14 +53,14 @@
         "y": 180,
         "wires": [
             [
-                "scs_prep_read"
+                "b90361c70e74e5e5"
             ]
         ]
     },
     {
-        "id": "scs_comment_read",
+        "id": "8920682e713618eb",
         "type": "comment",
-        "z": "sys_conn_struct_tab",
+        "z": "48027ae0f30c7022",
         "name": "══════ READ ══════",
         "info": "",
         "x": 640,
@@ -68,9 +68,9 @@
         "wires": []
     },
     {
-        "id": "scs_prep_read",
+        "id": "b90361c70e74e5e5",
         "type": "function",
-        "z": "sys_conn_struct_tab",
+        "z": "48027ae0f30c7022",
         "name": "Prep Parallel Reads",
         "func": "// Read all registers in parallel\nconst reads = [\n    { name: 'deviceType', address: 100, quantity: 1 },\n    { name: 'serialNumber', address: 103, quantity: 5 },\n    { name: 'firmware', address: 114, quantity: 5 },  // 114-118\n    { name: 'ratedPower', address: 120, quantity: 2 },  // 120-121 (32-bit)\n    { name: 'gridStandard', address: 282, quantity: 1 },\n    { name: 'gridFrequency', address: 283, quantity: 1 },\n    { name: 'voltageLevel', address: 238, quantity: 1 },\n    { name: 'phaseSequence', address: 247, quantity: 1 },\n    { name: 'batteryMode', address: 211, quantity: 1 },\n    { name: 'batteryCapacity', address: 202, quantity: 1 },\n    { name: 'genInputMode', address: 233, quantity: 1 },\n    { name: 'genConnectedGrid', address: 289, quantity: 1 },\n    { name: 'exportLimitMode', address: 242, quantity: 1 }\n];\n\nconst messages = reads.map(r => ({\n    payload: {\n        fc: 3,\n        unitid: 1,\n        address: r.address,\n        quantity: r.quantity\n    },\n    readName: r.name\n}));\n\nreturn [messages];",
         "outputs": 1,
@@ -83,14 +83,14 @@
         "y": 80,
         "wires": [
             [
-                "scs_modbus_read"
+                "2ed280a751699b90"
             ]
         ]
     },
     {
-        "id": "scs_modbus_read",
+        "id": "2ed280a751699b90",
         "type": "modbus-flex-getter",
-        "z": "sys_conn_struct_tab",
+        "z": "48027ae0f30c7022",
         "name": "Read System Regs",
         "showStatusActivities": true,
         "showErrors": true,
@@ -108,15 +108,15 @@
         "y": 80,
         "wires": [
             [
-                "scs_collect_reads"
+                "a1965b1d27436a7f"
             ],
             []
         ]
     },
     {
-        "id": "scs_collect_reads",
+        "id": "a1965b1d27436a7f",
         "type": "function",
-        "z": "sys_conn_struct_tab",
+        "z": "48027ae0f30c7022",
         "name": "Collect All Reads",
         "func": "const flowKey = 'scs_reads';\nlet collected = flow.get(flowKey) || {};\nlet expectedCount = 13;\n\nlet data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data) || data.length < 1) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Read failed: \" + msg.readName });\n    return null;\n}\n\nconst readName = msg.readName;\n\n// Store the data based on type\nif (readName === 'serialNumber' || readName === 'firmware' || readName === 'ratedPower') {\n    // Multi-register reads - store array\n    collected[readName] = data;\n} else {\n    // Single register reads\n    collected[readName] = data[0];\n}\n\nflow.set(flowKey, collected);\n\nconst collectedCount = Object.keys(collected).length;\nnode.status({ fill: \"blue\", shape: \"dot\", text: `Collected ${collectedCount}/${expectedCount}` });\n\nif (collectedCount >= expectedCount) {\n    flow.set(flowKey, null);\n    msg.collectedData = collected;\n    msg.payload = collected;\n    return msg;\n}\n\nreturn null;",
         "outputs": 1,
@@ -129,14 +129,14 @@
         "y": 80,
         "wires": [
             [
-                "scs_build_response"
+                "75ee9a5caa3a14ff"
             ]
         ]
     },
     {
-        "id": "scs_build_response",
+        "id": "75ee9a5caa3a14ff",
         "type": "function",
-        "z": "sys_conn_struct_tab",
+        "z": "48027ae0f30c7022",
         "name": "Build System Connection Structure",
         "func": "const data = msg.collectedData;\n\nif (!data) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"No data\" });\n    return null;\n}\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\n\n// Parse Serial Number (5 registers = 10 ASCII)\nfunction parseSerialNumber(regs) {\n    let sn = \"\";\n    for (let i = 0; i < regs.length; i++) {\n        const highByte = (regs[i] >> 8) & 0xFF;\n        const lowByte = regs[i] & 0xFF;\n        sn += String.fromCharCode(highByte);\n        sn += String.fromCharCode(lowByte);\n    }\n    return sn.replace(/\\0/g, '').trim();\n}\n\nconst serialNumber = parseSerialNumber(data.serialNumber);\n\n// Parse device type and derive model\nconst deviceType = data.deviceType;\nlet inverterModel = \"Unknown\";\nif (deviceType === 0x03) inverterModel = \"Single-phase LV hybrid\";\nelse if (deviceType === 0x05) inverterModel = \"Three-phase LV hybrid\";\nelse if (deviceType === 0x06) inverterModel = \"Three-phase HV hybrid\";\n\nconst gridPhaseCount = (deviceType === 0x05 || deviceType === 0x06) ? 3 : 1;\n\n// Parse firmware versions\nconst fw = data.firmware;\nconst firmware = {\n    protocolVersion: null,\n    mcuBoardRaw: null,\n    controlHardwareRaw: fw[0],  // 114\n    controlMainRaw: fw[1],      // 115\n    commField1Raw: fw[2],       // 116\n    commField2Raw: fw[3],       // 117\n    commMainRaw: fw[4]          // 118\n};\n\n// Parse rated power (32-bit: low word + high word)\nconst ratedPowerRaw = (data.ratedPower[1] << 16) | data.ratedPower[0];\nconst ratedPowerW = ratedPowerRaw / 10;  // 0.1W scale\n\n// Parse grid frequency\nconst gridFrequencyHz = data.gridFrequency === 0 ? 50 : 60;\n\n// Parse grid phase sequence\nconst gridPhaseSequence = data.phaseSequence === 0 ? \"ABC_0_120_240\" : \"ACB_0_240_120\";\n\n// Parse battery control mode\nconst batteryModeMap = {\n    0: \"voltage\",\n    1: \"capacity\",\n    2: \"no_battery\"\n};\nconst batteryControlMode = batteryModeMap[data.batteryMode] || \"no_battery\";\n\n// Parse generator input mode\nconst genInputModeMap = {\n    0: \"generator_input\",\n    1: \"smart_load\",\n    2: \"micro_inverter_input\"\n};\nconst genInputMode = genInputModeMap[data.genInputMode] || \"generator_input\";\n\n// Parse export limit mode\nconst exportLimitModeMap = {\n    0x00: \"sell_enabled\",\n    0x01: \"internal_meter\",\n    0x02: \"external_ct\"\n};\nconst exportLimitMode = exportLimitModeMap[data.exportLimitMode] || \"sell_enabled\";\n\n// Build the complete structure\nconst structure = {\n    kind: \"SystemConnectionStructure\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    DeviceId: gatewayId,\n    schemaVersion: 1,\n    \n    inverter: {\n        deviceType: deviceType,\n        inverterModel: inverterModel,\n        serialNumber: serialNumber,\n        firmware: firmware,\n        ratedPowerW: ratedPowerW,\n        \n        acSide: {\n            mpptAndPhasesRaw: null,\n            batteryInputCount: null,\n            outputTopology: null,\n            gridType: null,\n            regionVariant: null,\n            safetyTypeRaw: null,\n            gridPhaseCount: gridPhaseCount,\n            gridStandardRaw: data.gridStandard,\n            gridFrequencyHz: gridFrequencyHz,\n            gridVoltageLevelCode: data.voltageLevel,\n            gridPhaseSequence: gridPhaseSequence,\n            itSystemNeutralUngrounded: null\n        }\n    },\n    \n    battery: {\n        batteryControlMode: batteryControlMode,\n        batteryChannels: [\n            {\n                channelId: 1,\n                ratedCapacityAh: data.batteryCapacity,\n                nominalVoltageV: null,\n                batterySn: null,\n                batteryPhysicalAddress: null,\n                batterySoftwareVersion: null,\n                lithiumBatteryType: null\n            }\n        ]\n    },\n    \n    generator: {\n        inputMode: genInputMode,\n        connectedToGridInput: data.genConnectedGrid === 1\n    },\n    \n    pv: {\n        mpptCount: null,\n        mppt: [\n            { pvChannelId: 1, supportsInput: true, stringMaxCurrentA: null, stringMaxVoltageV: null, recommendedVocAtStcV: null },\n            { pvChannelId: 2, supportsInput: true, stringMaxCurrentA: null, stringMaxVoltageV: null, recommendedVocAtStcV: null },\n            { pvChannelId: 3, supportsInput: true, stringMaxCurrentA: null, stringMaxVoltageV: null, recommendedVocAtStcV: null },\n            { pvChannelId: 4, supportsInput: true, stringMaxCurrentA: null, stringMaxVoltageV: null, recommendedVocAtStcV: null }\n        ]\n    },\n    \n    loadAndGrid: {\n        homeLoadConnectionPoint: null,\n        exportLimitMode: exportLimitMode,\n        currentTransformerOnGridSide: null,\n        supportsBackupLoad: null,\n        supportsZeroExport: null,\n        supportsExternalMeter: null\n    }\n};\n\nmsg.payload = structure;\nmsg.state = structure;\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `${inverterModel} - SN: ${serialNumber}` });\n\nreturn msg;",
         "outputs": 1,
@@ -149,15 +149,15 @@
         "y": 80,
         "wires": [
             [
-                "scs_debug",
-                "scs_rpc_response"
+                "130244c8ed81f5ea",
+                "41bf5d69c265bc38"
             ]
         ]
     },
     {
-        "id": "scs_debug",
+        "id": "130244c8ed81f5ea",
         "type": "debug",
-        "z": "sys_conn_struct_tab",
+        "z": "48027ae0f30c7022",
         "name": "System Connection",
         "active": true,
         "tosidebar": true,
@@ -172,9 +172,9 @@
         "wires": []
     },
     {
-        "id": "scs_rpc_response",
+        "id": "41bf5d69c265bc38",
         "type": "function",
-        "z": "sys_conn_struct_tab",
+        "z": "48027ae0f30c7022",
         "name": "RPC Response",
         "func": "if (!msg.rpcResponseTopic) {\n    return null;\n}\n\nmsg.topic = msg.rpcResponseTopic;\nreturn msg;",
         "outputs": 1,
@@ -187,14 +187,14 @@
         "y": 180,
         "wires": [
             [
-                "scs_mqtt_response"
+                "0e8eb32923594596"
             ]
         ]
     },
     {
-        "id": "scs_mqtt_response",
+        "id": "0e8eb32923594596",
         "type": "mqtt out",
-        "z": "sys_conn_struct_tab",
+        "z": "48027ae0f30c7022",
         "name": "MQTT Response",
         "topic": "",
         "qos": "1",
@@ -212,28 +212,28 @@
     {
         "id": "e4e4f3e2a4f4e004",
         "type": "modbus-client",
-        "name": "EC100 Modbus",
-        "clienttype": "tcp",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
         "bufferCommands": true,
         "stateLogEnabled": false,
         "queueLogEnabled": false,
-        "failureLogEnabled": true,
-        "tcpHost": "192.168.1.100",
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
         "tcpPort": "502",
         "tcpType": "DEFAULT",
-        "serialPort": "/dev/ttyUSB0",
-        "serialType": "RTU-BUFFERD",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
         "serialBaudrate": "9600",
         "serialDatabits": "8",
         "serialStopbits": "1",
         "serialParity": "none",
         "serialConnectionDelay": "100",
-        "serialAsciiResponseStartDelimiter": "0x3A",
-        "unit_id": "1",
-        "commandDelay": "1",
-        "clientTimeout": "1000",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
         "reconnectOnTimeout": true,
-        "reconnectTimeout": "2000",
+        "reconnectTimeout": 2000,
         "parallelUnitIdsAllowed": true,
         "showErrors": false,
         "showWarnings": true,
@@ -267,6 +267,8 @@
         "willQos": "0",
         "willRetain": "false",
         "willPayload": "",
-        "willMsg": {}
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
     }
 ]

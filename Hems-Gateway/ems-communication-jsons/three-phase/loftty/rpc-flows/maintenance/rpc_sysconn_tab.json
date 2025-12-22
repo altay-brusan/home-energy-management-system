@@ -1,6 +1,6 @@
 [
     {
-        "id": "rpc_sysconn_tab",
+        "id": "85b12fa4e969a934",
         "type": "tab",
         "label": "RPC_SystemConnectionStructure",
         "disabled": false,
@@ -9,7 +9,7 @@
     {
         "id": "rpc_sysconn_mqtt_in",
         "type": "mqtt in",
-        "z": "rpc_sysconn_tab",
+        "z": "85b12fa4e969a934",
         "name": "RPC Request",
         "topic": "v1/devices/me/rpc/request/+",
         "qos": "2",
@@ -30,9 +30,9 @@
     {
         "id": "rpc_sysconn_handle",
         "type": "function",
-        "z": "rpc_sysconn_tab",
+        "z": "85b12fa4e969a934",
         "name": "Handle RPC",
-        "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\n\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\nif (msg.rpcMethod === 'getSystemConnectionStructure') {\n    msg.operation = 'read';\n    return msg;\n}\nelse if (msg.rpcMethod === 'setSystemConnectionStructure') {\n    msg.operation = 'write';\n    return msg;\n}\nelse {\n    return null;\n}",
+        "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\n\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\nif (msg.rpcMethod === 'getSystemConnectionStructure') {\n    msg.operationType = 'read';\n    return msg;\n}\nelse if (msg.rpcMethod === 'setSystemConnectionStructure') {\n    msg.operationType = 'write';\n    return msg;\n}\nelse {\n    return null;\n}",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -50,11 +50,11 @@
     {
         "id": "rpc_sysconn_link_out",
         "type": "link out",
-        "z": "rpc_sysconn_tab",
+        "z": "85b12fa4e969a934",
         "name": "To Main Flow",
         "mode": "link",
         "links": [
-            "sysconn_link_in_rpc"
+            "48a63907ca06c8c5"
         ],
         "x": 495,
         "y": 160,
@@ -63,7 +63,7 @@
     {
         "id": "rpc_sysconn_comment",
         "type": "comment",
-        "z": "rpc_sysconn_tab",
+        "z": "85b12fa4e969a934",
         "name": "getSystemConnectionStructure / setSystemConnectionStructure",
         "info": "Read/Write system connection structure:\n\nR/W Registers:\n- 019: gridVoltageLevelCode\n- 051: gridStandardRaw\n- 204: ratedCapacityAh\n- 213: batteryControlMode\n- 235: generatorInputMode\n- 244: exportLimitMode\n- 285: gridFrequency\n- 286: gridType\n- 291: generatorConnectedToGrid\n- 325: lithiumBatteryType",
         "x": 290,

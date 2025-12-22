@@ -1,6 +1,6 @@
 [
     {
-        "id": "rpc_batt_maint_tab",
+        "id": "38491faff13bac50",
         "type": "tab",
         "label": "RPC_BatteryMaintenance",
         "disabled": false,
@@ -9,7 +9,7 @@
     {
         "id": "rpc_battmaint_mqtt_in",
         "type": "mqtt in",
-        "z": "rpc_batt_maint_tab",
+        "z": "38491faff13bac50",
         "name": "RPC Request",
         "topic": "v1/devices/me/rpc/request/+",
         "qos": "2",
@@ -30,9 +30,9 @@
     {
         "id": "rpc_battmaint_handle",
         "type": "function",
-        "z": "rpc_batt_maint_tab",
+        "z": "38491faff13bac50",
         "name": "Handle RPC",
-        "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\n\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\nif (msg.rpcMethod === 'getBatteryMaintenanceConfig') {\n    msg.operation = 'read';\n    return msg;\n}\nelse if (msg.rpcMethod === 'setBatteryMaintenanceConfig') {\n    msg.operation = 'write';\n    return msg;\n}\nelse {\n    return null;\n}",
+        "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\n\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\nif (msg.rpcMethod === 'getBatteryMaintenanceConfig') {\n    msg.operationType = 'read';\n    return msg;\n}\nelse if (msg.rpcMethod === 'setBatteryMaintenanceConfig') {\n    msg.operationType = 'write';\n    return msg;\n}\nelse {\n    return null;\n}",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -50,11 +50,12 @@
     {
         "id": "rpc_battmaint_link_out",
         "type": "link out",
-        "z": "rpc_batt_maint_tab",
+        "z": "38491faff13bac50",
         "name": "To Main Flow",
         "mode": "link",
         "links": [
-            "battmaint_link_in_rpc"
+            "2e70273d9a85ee65",
+            "d37b770e860d21ec"
         ],
         "x": 495,
         "y": 160,
@@ -63,7 +64,7 @@
     {
         "id": "rpc_battmaint_comment",
         "type": "comment",
-        "z": "rpc_batt_maint_tab",
+        "z": "38491faff13bac50",
         "name": "getBatteryMaintenanceConfig / setBatteryMaintenanceConfig",
         "info": "Read/Write battery maintenance config:\n- batteryControlMode: voltage | capacity | null\n- wakeUp.channel1Enabled: bool\n- batteryResistanceMilliOhm: number\n- chargeEfficiencyPercent: number (0-100)",
         "x": 290,

@@ -1,31 +1,31 @@
 [
     {
-        "id": "grid_code_tab",
+        "id": "35ad8b4b8859f8f7",
         "type": "tab",
         "label": "GridCodeConfigState",
         "disabled": false,
         "info": "Grid Code Configuration State\n\nRegisters:\n- 282: gridModeRaw (0-4)\n- 283: gridFrequencyHz (0=50Hz, 1=60Hz)\n- 238: outputVoltageLevelCode (0-4)\n- 285-288: normalConnect protection points (scaled)\n- 280: reconnectionTimeSeconds [10-300]\n- 293: powerFactorTarget (0.1% scale)\n- 177: activePowerRegulationPercentPerStep (0.1% scale)\n- 178: reactivePowerRegulationPercentPerStep (0.1% scale)"
     },
     {
-        "id": "gc_link_in_rpc",
+        "id": "560fcee04e40f9da",
         "type": "link in",
-        "z": "grid_code_tab",
+        "z": "35ad8b4b8859f8f7",
         "name": "RPC Request",
         "links": [
-            "rpc_gc_link_out"
+            "rpc_gridcode_link_out"
         ],
         "x": 125,
         "y": 80,
         "wires": [
             [
-                "gc_route_operation"
+                "d3b205229850af43"
             ]
         ]
     },
     {
-        "id": "gc_comment_manual",
+        "id": "03c33a02cedb399a",
         "type": "comment",
-        "z": "grid_code_tab",
+        "z": "35ad8b4b8859f8f7",
         "name": "══════ MANUAL TEST ══════",
         "info": "",
         "x": 170,
@@ -33,9 +33,9 @@
         "wires": []
     },
     {
-        "id": "gc_manual_read",
+        "id": "b4ff91692faa0ce3",
         "type": "inject",
-        "z": "grid_code_tab",
+        "z": "35ad8b4b8859f8f7",
         "name": "Manual Read",
         "props": [
             {
@@ -58,14 +58,14 @@
         "y": 180,
         "wires": [
             [
-                "gc_route_operation"
+                "d3b205229850af43"
             ]
         ]
     },
     {
-        "id": "gc_manual_write_example",
+        "id": "201c36b2baf97efc",
         "type": "inject",
-        "z": "grid_code_tab",
+        "z": "35ad8b4b8859f8f7",
         "name": "Set: Example Config",
         "props": [
             {
@@ -93,14 +93,14 @@
         "y": 220,
         "wires": [
             [
-                "gc_route_operation"
+                "d3b205229850af43"
             ]
         ]
     },
     {
-        "id": "gc_route_operation",
+        "id": "d3b205229850af43",
         "type": "function",
-        "z": "grid_code_tab",
+        "z": "35ad8b4b8859f8f7",
         "name": "Route: Read or Write?",
         "func": "const opType = msg.operationType || 'read';\n\nif (opType === 'write') {\n    return [null, msg];\n} else {\n    return [msg, null];\n}",
         "outputs": 2,
@@ -113,17 +113,17 @@
         "y": 180,
         "wires": [
             [
-                "gc_prep_read"
+                "fdcd7f2c3600cf23"
             ],
             [
-                "gc_prep_write"
+                "c78541f30766643c"
             ]
         ]
     },
     {
-        "id": "gc_comment_read",
+        "id": "84c229a4a0387e99",
         "type": "comment",
-        "z": "grid_code_tab",
+        "z": "35ad8b4b8859f8f7",
         "name": "══════ READ ══════",
         "info": "",
         "x": 640,
@@ -131,9 +131,9 @@
         "wires": []
     },
     {
-        "id": "gc_prep_read",
+        "id": "fdcd7f2c3600cf23",
         "type": "function",
-        "z": "grid_code_tab",
+        "z": "35ad8b4b8859f8f7",
         "name": "Prep Parallel Reads",
         "func": "// Read all registers in parallel\nconst reads = [\n    { name: 'gridModeRaw', address: 282, quantity: 1 },\n    { name: 'gridFrequencyHz', address: 283, quantity: 1 },\n    { name: 'outputVoltageLevelCode', address: 238, quantity: 1 },\n    { name: 'normalConnect', address: 285, quantity: 4 },  // 285-288\n    { name: 'reconnectionTimeSeconds', address: 280, quantity: 1 },\n    { name: 'powerFactorTarget', address: 293, quantity: 1 },\n    { name: 'activePowerReg', address: 177, quantity: 1 },\n    { name: 'reactivePowerReg', address: 178, quantity: 1 }\n];\n\nconst messages = reads.map(r => ({\n    payload: {\n        fc: 3,\n        unitid: 1,\n        address: r.address,\n        quantity: r.quantity\n    },\n    readName: r.name\n}));\n\nreturn [messages];",
         "outputs": 1,
@@ -146,14 +146,14 @@
         "y": 80,
         "wires": [
             [
-                "gc_modbus_read"
+                "eda8b758608f120e"
             ]
         ]
     },
     {
-        "id": "gc_modbus_read",
+        "id": "eda8b758608f120e",
         "type": "modbus-flex-getter",
-        "z": "grid_code_tab",
+        "z": "35ad8b4b8859f8f7",
         "name": "Read Grid Code Regs",
         "showStatusActivities": true,
         "showErrors": true,
@@ -171,15 +171,15 @@
         "y": 80,
         "wires": [
             [
-                "gc_collect_reads"
+                "e57f7ad79954a5e5"
             ],
             []
         ]
     },
     {
-        "id": "gc_collect_reads",
+        "id": "e57f7ad79954a5e5",
         "type": "function",
-        "z": "grid_code_tab",
+        "z": "35ad8b4b8859f8f7",
         "name": "Collect All Reads",
         "func": "const flowKey = 'gc_reads';\nlet collected = flow.get(flowKey) || {};\nlet expectedCount = 8;\n\nlet data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data) || data.length < 1) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Read failed: \" + msg.readName });\n    return null;\n}\n\nconst readName = msg.readName;\n\nif (readName === 'normalConnect') {\n    collected[readName] = {\n        voltageHighV: data[0],\n        voltageLowV: data[1],\n        frequencyHighHz: data[2],\n        frequencyLowHz: data[3]\n    };\n} else {\n    collected[readName] = data[0];\n}\n\nflow.set(flowKey, collected);\n\nconst collectedCount = Object.keys(collected).length;\nnode.status({ fill: \"blue\", shape: \"dot\", text: `Collected ${collectedCount}/${expectedCount}` });\n\nif (collectedCount >= expectedCount) {\n    flow.set(flowKey, null);\n    msg.collectedData = collected;\n    msg.payload = collected;\n    return msg;\n}\n\nreturn null;",
         "outputs": 1,
@@ -192,14 +192,14 @@
         "y": 80,
         "wires": [
             [
-                "gc_build_read_response"
+                "05a9efe1c299d9e2"
             ]
         ]
     },
     {
-        "id": "gc_build_read_response",
+        "id": "05a9efe1c299d9e2",
         "type": "function",
-        "z": "grid_code_tab",
+        "z": "35ad8b4b8859f8f7",
         "name": "Build Read Response",
         "func": "const data = msg.collectedData;\n\nif (!data) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"No data\" });\n    return null;\n}\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\n\n// Apply scaling factors\nconst normalConnect = data.normalConnect || {};\n\nconst state = {\n    kind: \"GridCodeConfigState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    gatewayId: gatewayId,\n    gridModeRaw: data.gridModeRaw,\n    gridFrequencyHz: data.gridFrequencyHz === 0 ? 50 : 60,\n    outputVoltageLevelCode: data.outputVoltageLevelCode,\n    normalConnect: {\n        voltageHighV: normalConnect.voltageHighV / 10,  // 0.1V scale\n        voltageLowV: normalConnect.voltageLowV / 10,    // 0.1V scale\n        frequencyHighHz: normalConnect.frequencyHighHz / 100,  // 0.01Hz scale\n        frequencyLowHz: normalConnect.frequencyLowHz / 100     // 0.01Hz scale\n    },\n    reconnectionTimeSeconds: data.reconnectionTimeSeconds,\n    powerFactorTarget: data.powerFactorTarget / 10,  // 0.1% scale -> percentage\n    activePowerRegulationPercentPerStep: data.activePowerReg === 65535 ? null : data.activePowerReg,\n    reactivePowerRegulationPercentPerStep: data.reactivePowerReg === 65535 ? null : data.reactivePowerReg\n};\n\nmsg.payload = state;\nmsg.state = state;\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `Mode: ${state.gridModeRaw}, ${state.gridFrequencyHz}Hz` });\n\nreturn msg;",
         "outputs": 1,
@@ -212,15 +212,15 @@
         "y": 80,
         "wires": [
             [
-                "gc_debug",
-                "gc_rpc_response"
+                "4ae217c303179c19",
+                "df9542c51facaaea"
             ]
         ]
     },
     {
-        "id": "gc_comment_write",
+        "id": "ed2ce8e6e1671752",
         "type": "comment",
-        "z": "grid_code_tab",
+        "z": "35ad8b4b8859f8f7",
         "name": "══════ WRITE ══════",
         "info": "",
         "x": 650,
@@ -228,9 +228,9 @@
         "wires": []
     },
     {
-        "id": "gc_prep_write",
+        "id": "c78541f30766643c",
         "type": "function",
-        "z": "grid_code_tab",
+        "z": "35ad8b4b8859f8f7",
         "name": "Prep Write Queue",
         "func": "const params = msg.rpcParams || {};\n\nconst writes = [];\n\n// 282: gridModeRaw\nif (params.gridModeRaw !== undefined) {\n    writes.push({\n        name: 'gridModeRaw',\n        address: 282,\n        value: [params.gridModeRaw]\n    });\n}\n\n// 283: gridFrequencyHz\nif (params.gridFrequencyHz !== undefined) {\n    const val = params.gridFrequencyHz === 50 ? 0 : 1;\n    writes.push({\n        name: 'gridFrequencyHz',\n        address: 283,\n        value: [val]\n    });\n}\n\n// 238: outputVoltageLevelCode\nif (params.outputVoltageLevelCode !== undefined) {\n    writes.push({\n        name: 'outputVoltageLevelCode',\n        address: 238,\n        value: [params.outputVoltageLevelCode]\n    });\n}\n\n// 285-288: normalConnect (with scaling)\nif (params.normalConnect) {\n    const nc = params.normalConnect;\n    const values = [\n        Math.round(nc.voltageHighV * 10),    // 0.1V scale\n        Math.round(nc.voltageLowV * 10),     // 0.1V scale\n        Math.round(nc.frequencyHighHz * 100), // 0.01Hz scale\n        Math.round(nc.frequencyLowHz * 100)   // 0.01Hz scale\n    ];\n    writes.push({\n        name: 'normalConnect',\n        address: 285,\n        value: values\n    });\n}\n\n// 280: reconnectionTimeSeconds\nif (params.reconnectionTimeSeconds !== undefined) {\n    writes.push({\n        name: 'reconnectionTimeSeconds',\n        address: 280,\n        value: [params.reconnectionTimeSeconds]\n    });\n}\n\n// 293: powerFactorTarget\nif (params.powerFactorTarget !== undefined) {\n    const val = Math.round(params.powerFactorTarget * 10);  // 0.1% scale\n    writes.push({\n        name: 'powerFactorTarget',\n        address: 293,\n        value: [val]\n    });\n}\n\n// 177: activePowerRegulationPercentPerStep (direct value)\nif (params.activePowerRegulationPercentPerStep !== undefined) {\n    writes.push({\n        name: 'activePowerRegulationPercentPerStep',\n        address: 177,\n        value: [params.activePowerRegulationPercentPerStep]\n    });\n}\n\n// 178: reactivePowerRegulationPercentPerStep (direct value)\nif (params.reactivePowerRegulationPercentPerStep !== undefined) {\n    writes.push({\n        name: 'reactivePowerRegulationPercentPerStep',\n        address: 178,\n        value: [params.reactivePowerRegulationPercentPerStep]\n    });\n}\n\nif (writes.length === 0) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"No valid params\" });\n    node.error(\"No valid parameters to write\");\n    return null;\n}\n\n// Store write queue in global context\nglobal.set('gc_write_queue', writes);\nglobal.set('gc_write_index', 0);\n\n// Store original message for later\nflow.set('gc_original_msg', msg);\n\nnode.status({ fill: \"yellow\", shape: \"dot\", text: `Queued ${writes.length} writes` });\n\n// Trigger first write\nreturn msg;",
         "outputs": 1,
@@ -243,14 +243,14 @@
         "y": 240,
         "wires": [
             [
-                "gc_write_executor"
+                "1db265ec7b58ec26"
             ]
         ]
     },
     {
-        "id": "gc_write_executor",
+        "id": "1db265ec7b58ec26",
         "type": "function",
-        "z": "grid_code_tab",
+        "z": "35ad8b4b8859f8f7",
         "name": "Execute Write Queue",
         "func": "const queue = global.get('gc_write_queue') || [];\nlet index = global.get('gc_write_index') || 0;\n\nif (index >= queue.length) {\n    node.status({ fill: \"green\", shape: \"dot\", text: \"All writes complete\" });\n    global.set('gc_write_queue', null);\n    global.set('gc_write_index', null);\n    \n    // Trigger auto-read after all writes\n    const originalMsg = flow.get('gc_original_msg');\n    if (originalMsg) {\n        const readMsg = { operationType: 'read' };\n        setTimeout(() => {\n            node.send([null, readMsg]);\n        }, 500);\n    }\n    return null;\n}\n\nconst write = queue[index];\n\nmsg.payload = {\n    fc: 16,\n    unitid: 1,\n    address: write.address,\n    quantity: write.value.length,\n    value: write.value\n};\n\nmsg.writeInfo = write;\n\nnode.status({ fill: \"yellow\", shape: \"dot\", text: `Writing ${write.name} (${index + 1}/${queue.length})` });\n\n// Increment index for next write\nglobal.set('gc_write_index', index + 1);\n\nreturn msg;",
         "outputs": 2,
@@ -263,17 +263,17 @@
         "y": 240,
         "wires": [
             [
-                "gc_modbus_write"
+                "59e22b9b5d226a7e"
             ],
             [
-                "gc_prep_read"
+                "fdcd7f2c3600cf23"
             ]
         ]
     },
     {
-        "id": "gc_modbus_write",
+        "id": "59e22b9b5d226a7e",
         "type": "modbus-flex-write",
-        "z": "grid_code_tab",
+        "z": "35ad8b4b8859f8f7",
         "name": "Write Grid Code Reg",
         "showStatusActivities": true,
         "showErrors": true,
@@ -285,17 +285,17 @@
         "y": 240,
         "wires": [
             [
-                "gc_write_delay"
+                "7a753e7482709184"
             ],
             [
-                "gc_write_delay"
+                "7a753e7482709184"
             ]
         ]
     },
     {
-        "id": "gc_write_delay",
+        "id": "7a753e7482709184",
         "type": "function",
-        "z": "grid_code_tab",
+        "z": "35ad8b4b8859f8f7",
         "name": "Delay 500ms",
         "func": "// Filter out confirmation messages\nconst isConfirmation = msg.payload && \n                       msg.payload.address !== undefined && \n                       msg.payload.length !== undefined &&\n                       !msg.payload.error;\n\nif (isConfirmation) {\n    // Continue to next write after delay\n    setTimeout(() => {\n        node.send(msg);\n    }, 500);\n    return null;\n}\n\n// Error case - still continue\nnode.warn(\"Write error, continuing: \" + JSON.stringify(msg.payload));\nsetTimeout(() => {\n    node.send(msg);\n}, 500);\nreturn null;",
         "outputs": 1,
@@ -308,14 +308,14 @@
         "y": 240,
         "wires": [
             [
-                "gc_write_executor"
+                "1db265ec7b58ec26"
             ]
         ]
     },
     {
-        "id": "gc_debug",
+        "id": "4ae217c303179c19",
         "type": "debug",
-        "z": "grid_code_tab",
+        "z": "35ad8b4b8859f8f7",
         "name": "Grid Code Config",
         "active": true,
         "tosidebar": true,
@@ -330,9 +330,9 @@
         "wires": []
     },
     {
-        "id": "gc_rpc_response",
+        "id": "df9542c51facaaea",
         "type": "function",
-        "z": "grid_code_tab",
+        "z": "35ad8b4b8859f8f7",
         "name": "RPC Response",
         "func": "if (!msg.rpcResponseTopic) {\n    return null;\n}\n\nmsg.topic = msg.rpcResponseTopic;\nreturn msg;",
         "outputs": 1,
@@ -345,14 +345,14 @@
         "y": 180,
         "wires": [
             [
-                "gc_mqtt_response"
+                "baf0b95ed72e9891"
             ]
         ]
     },
     {
-        "id": "gc_mqtt_response",
+        "id": "baf0b95ed72e9891",
         "type": "mqtt out",
-        "z": "grid_code_tab",
+        "z": "35ad8b4b8859f8f7",
         "name": "MQTT Response",
         "topic": "",
         "qos": "1",
@@ -370,28 +370,28 @@
     {
         "id": "e4e4f3e2a4f4e004",
         "type": "modbus-client",
-        "name": "EC100 Modbus",
-        "clienttype": "tcp",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
         "bufferCommands": true,
         "stateLogEnabled": false,
         "queueLogEnabled": false,
-        "failureLogEnabled": true,
-        "tcpHost": "192.168.1.100",
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
         "tcpPort": "502",
         "tcpType": "DEFAULT",
-        "serialPort": "/dev/ttyUSB0",
-        "serialType": "RTU-BUFFERD",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
         "serialBaudrate": "9600",
         "serialDatabits": "8",
         "serialStopbits": "1",
         "serialParity": "none",
         "serialConnectionDelay": "100",
-        "serialAsciiResponseStartDelimiter": "0x3A",
-        "unit_id": "1",
-        "commandDelay": "1",
-        "clientTimeout": "1000",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
         "reconnectOnTimeout": true,
-        "reconnectTimeout": "2000",
+        "reconnectTimeout": 2000,
         "parallelUnitIdsAllowed": true,
         "showErrors": false,
         "showWarnings": true,
@@ -425,6 +425,8 @@
         "willQos": "0",
         "willRetain": "false",
         "willPayload": "",
-        "willMsg": {}
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
     }
 ]

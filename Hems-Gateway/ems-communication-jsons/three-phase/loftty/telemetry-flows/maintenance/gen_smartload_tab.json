@@ -1,15 +1,15 @@
 [
     {
-        "id": "gen_smartload_tab",
+        "id": "e3f9191e40666dea",
         "type": "tab",
         "label": "GeneratorSmartLoadOverride",
         "disabled": false,
         "info": "Generator Smart Load Override - Register 232\n\nValues:\n- 0 = do not force\n- 1 = force enable"
     },
     {
-        "id": "gsl_link_in_rpc",
+        "id": "931c703c00392edf",
         "type": "link in",
-        "z": "gen_smartload_tab",
+        "z": "e3f9191e40666dea",
         "name": "RPC Request",
         "links": [
             "rpc_gsl_link_out"
@@ -18,14 +18,14 @@
         "y": 80,
         "wires": [
             [
-                "gsl_route_operation"
+                "2ad6e46029d76803"
             ]
         ]
     },
     {
-        "id": "gsl_comment_manual",
+        "id": "88293edf81857296",
         "type": "comment",
-        "z": "gen_smartload_tab",
+        "z": "e3f9191e40666dea",
         "name": "══════ MANUAL TEST ══════",
         "info": "",
         "x": 170,
@@ -33,9 +33,9 @@
         "wires": []
     },
     {
-        "id": "gsl_manual_read",
+        "id": "64b6259dbc1ba2fd",
         "type": "inject",
-        "z": "gen_smartload_tab",
+        "z": "e3f9191e40666dea",
         "name": "Manual Read",
         "props": [
             {
@@ -58,14 +58,14 @@
         "y": 180,
         "wires": [
             [
-                "gsl_route_operation"
+                "2ad6e46029d76803"
             ]
         ]
     },
     {
-        "id": "gsl_manual_force_on",
+        "id": "7bc7fd641ad64ee2",
         "type": "inject",
-        "z": "gen_smartload_tab",
+        "z": "e3f9191e40666dea",
         "name": "Set: Force ON",
         "props": [
             {
@@ -93,14 +93,14 @@
         "y": 220,
         "wires": [
             [
-                "gsl_route_operation"
+                "2ad6e46029d76803"
             ]
         ]
     },
     {
-        "id": "gsl_manual_force_off",
+        "id": "6273c5d7d0461846",
         "type": "inject",
-        "z": "gen_smartload_tab",
+        "z": "e3f9191e40666dea",
         "name": "Set: Force OFF",
         "props": [
             {
@@ -128,14 +128,14 @@
         "y": 260,
         "wires": [
             [
-                "gsl_route_operation"
+                "2ad6e46029d76803"
             ]
         ]
     },
     {
-        "id": "gsl_route_operation",
+        "id": "2ad6e46029d76803",
         "type": "function",
-        "z": "gen_smartload_tab",
+        "z": "e3f9191e40666dea",
         "name": "Route: Read or Write?",
         "func": "const opType = msg.operationType || 'read';\n\nif (opType === 'write') {\n    return [null, msg];\n} else {\n    return [msg, null];\n}",
         "outputs": 2,
@@ -148,17 +148,17 @@
         "y": 180,
         "wires": [
             [
-                "gsl_prep_read"
+                "64651b35f685f2f1"
             ],
             [
-                "gsl_prep_write"
+                "48d65c0023159749"
             ]
         ]
     },
     {
-        "id": "gsl_comment_read",
+        "id": "d720b34414c7736e",
         "type": "comment",
-        "z": "gen_smartload_tab",
+        "z": "e3f9191e40666dea",
         "name": "══════ READ ══════",
         "info": "",
         "x": 640,
@@ -166,9 +166,9 @@
         "wires": []
     },
     {
-        "id": "gsl_prep_read",
+        "id": "64651b35f685f2f1",
         "type": "function",
-        "z": "gen_smartload_tab",
+        "z": "e3f9191e40666dea",
         "name": "Prep Read Reg 232",
         "func": "msg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 232,\n    quantity: 1\n};\nreturn msg;",
         "outputs": 1,
@@ -181,14 +181,14 @@
         "y": 80,
         "wires": [
             [
-                "gsl_modbus_read"
+                "3a739f9654a2fa5a"
             ]
         ]
     },
     {
-        "id": "gsl_modbus_read",
+        "id": "3a739f9654a2fa5a",
         "type": "modbus-flex-getter",
-        "z": "gen_smartload_tab",
+        "z": "e3f9191e40666dea",
         "name": "Read Reg 232",
         "showStatusActivities": true,
         "showErrors": true,
@@ -206,15 +206,15 @@
         "y": 80,
         "wires": [
             [
-                "gsl_build_read_response"
+                "a2d47ecd151f2bc6"
             ],
             []
         ]
     },
     {
-        "id": "gsl_build_read_response",
+        "id": "a2d47ecd151f2bc6",
         "type": "function",
-        "z": "gen_smartload_tab",
+        "z": "e3f9191e40666dea",
         "name": "Build Read Response",
         "func": "let data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data) || data.length < 1) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Read failed\" });\n    return null;\n}\n\nconst forceSmartLoadOn = data[0] === 1;\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\n\nconst state = {\n    kind: \"GeneratorSmartLoadOverride\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    gatewayId: gatewayId,\n    forceSmartLoadOn: forceSmartLoadOn\n};\n\nmsg.payload = state;\nmsg.state = state;\n\nnode.status({ fill: \"green\", shape: \"dot\", text: forceSmartLoadOn ? \"Forced ON\" : \"Not Forced\" });\n\nreturn msg;",
         "outputs": 1,
@@ -227,15 +227,15 @@
         "y": 80,
         "wires": [
             [
-                "gsl_debug",
-                "gsl_rpc_response"
+                "36ee10a749fd3307",
+                "52e8935e3aecb942"
             ]
         ]
     },
     {
-        "id": "gsl_comment_write",
+        "id": "784b69ed6aa0b528",
         "type": "comment",
-        "z": "gen_smartload_tab",
+        "z": "e3f9191e40666dea",
         "name": "══════ WRITE ══════",
         "info": "",
         "x": 650,
@@ -243,9 +243,9 @@
         "wires": []
     },
     {
-        "id": "gsl_prep_write",
+        "id": "48d65c0023159749",
         "type": "function",
-        "z": "gen_smartload_tab",
+        "z": "e3f9191e40666dea",
         "name": "Prep Write Reg 232",
         "func": "const params = msg.rpcParams || {};\n\nlet code = null;\n\nif (params.forceSmartLoadOn !== undefined) {\n    code = params.forceSmartLoadOn ? 1 : 0;\n}\n\nif (code === null || code === undefined) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Invalid params\" });\n    node.error(\"Missing forceSmartLoadOn parameter\");\n    return null;\n}\n\nmsg.writeInfo = {\n    code: code,\n    enabled: code === 1\n};\n\nmsg.payload = {\n    fc: 16,\n    unitid: 1,\n    address: 232,\n    quantity: 1,\n    value: [code]\n};\n\nnode.status({ fill: \"yellow\", shape: \"dot\", text: \"Writing: \" + (code === 1 ? \"Force ON\" : \"Force OFF\") });\n\nreturn msg;",
         "outputs": 1,
@@ -258,14 +258,14 @@
         "y": 240,
         "wires": [
             [
-                "gsl_modbus_write"
+                "249bf12bb8c6779c"
             ]
         ]
     },
     {
-        "id": "gsl_modbus_write",
+        "id": "249bf12bb8c6779c",
         "type": "modbus-flex-write",
-        "z": "gen_smartload_tab",
+        "z": "e3f9191e40666dea",
         "name": "Write Reg 232",
         "showStatusActivities": true,
         "showErrors": true,
@@ -277,17 +277,17 @@
         "y": 240,
         "wires": [
             [
-                "gsl_build_write_response"
+                "918743ada28db7a4"
             ],
             [
-                "gsl_build_write_response"
+                "918743ada28db7a4"
             ]
         ]
     },
     {
-        "id": "gsl_build_write_response",
+        "id": "918743ada28db7a4",
         "type": "function",
-        "z": "gen_smartload_tab",
+        "z": "e3f9191e40666dea",
         "name": "Build Write Response",
         "func": "// Filter out confirmation messages\nconst isConfirmation = msg.payload && \n                       msg.payload.address !== undefined && \n                       msg.payload.length !== undefined &&\n                       !msg.payload.error;\n\nif (isConfirmation) {\n    return null;\n}\n\nconst writeInfo = msg.writeInfo || { code: -1, enabled: false };\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\n\nconst state = {\n    kind: \"GeneratorSmartLoadOverride\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    gatewayId: gatewayId,\n    success: true,\n    message: \"Force smart load setting updated\",\n    forceSmartLoadOn: writeInfo.enabled\n};\n\nmsg.payload = state;\nmsg.state = state;\n\nnode.status({ fill: \"green\", shape: \"dot\", text: \"OK: \" + (writeInfo.enabled ? \"Forced ON\" : \"Not Forced\") });\n\nreturn msg;",
         "outputs": 1,
@@ -300,15 +300,15 @@
         "y": 240,
         "wires": [
             [
-                "gsl_debug",
-                "gsl_rpc_response"
+                "36ee10a749fd3307",
+                "52e8935e3aecb942"
             ]
         ]
     },
     {
-        "id": "gsl_debug",
+        "id": "36ee10a749fd3307",
         "type": "debug",
-        "z": "gen_smartload_tab",
+        "z": "e3f9191e40666dea",
         "name": "Gen SmartLoad",
         "active": true,
         "tosidebar": true,
@@ -323,9 +323,9 @@
         "wires": []
     },
     {
-        "id": "gsl_rpc_response",
+        "id": "52e8935e3aecb942",
         "type": "function",
-        "z": "gen_smartload_tab",
+        "z": "e3f9191e40666dea",
         "name": "RPC Response",
         "func": "if (!msg.rpcResponseTopic) {\n    return null;\n}\n\nmsg.topic = msg.rpcResponseTopic;\nreturn msg;",
         "outputs": 1,
@@ -338,14 +338,14 @@
         "y": 180,
         "wires": [
             [
-                "gsl_mqtt_response"
+                "729998dfe0160421"
             ]
         ]
     },
     {
-        "id": "gsl_mqtt_response",
+        "id": "729998dfe0160421",
         "type": "mqtt out",
-        "z": "gen_smartload_tab",
+        "z": "e3f9191e40666dea",
         "name": "MQTT Response",
         "topic": "",
         "qos": "1",
@@ -363,28 +363,28 @@
     {
         "id": "e4e4f3e2a4f4e004",
         "type": "modbus-client",
-        "name": "EC100 Modbus",
-        "clienttype": "tcp",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
         "bufferCommands": true,
         "stateLogEnabled": false,
         "queueLogEnabled": false,
-        "failureLogEnabled": true,
-        "tcpHost": "192.168.1.100",
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
         "tcpPort": "502",
         "tcpType": "DEFAULT",
-        "serialPort": "/dev/ttyUSB0",
-        "serialType": "RTU-BUFFERD",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
         "serialBaudrate": "9600",
         "serialDatabits": "8",
         "serialStopbits": "1",
         "serialParity": "none",
         "serialConnectionDelay": "100",
-        "serialAsciiResponseStartDelimiter": "0x3A",
-        "unit_id": "1",
-        "commandDelay": "1",
-        "clientTimeout": "1000",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
         "reconnectOnTimeout": true,
-        "reconnectTimeout": "2000",
+        "reconnectTimeout": 2000,
         "parallelUnitIdsAllowed": true,
         "showErrors": false,
         "showWarnings": true,
@@ -418,6 +418,8 @@
         "willQos": "0",
         "willRetain": "false",
         "willPayload": "",
-        "willMsg": {}
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
     }
 ]

@@ -1,6 +1,6 @@
 [
     {
-        "id": "rpc_gridcode_tab",
+        "id": "cd2c09d1ea588f09",
         "type": "tab",
         "label": "RPC_GridCodeConfig",
         "disabled": false,
@@ -9,7 +9,7 @@
     {
         "id": "rpc_gridcode_mqtt_in",
         "type": "mqtt in",
-        "z": "rpc_gridcode_tab",
+        "z": "cd2c09d1ea588f09",
         "name": "RPC Request",
         "topic": "v1/devices/me/rpc/request/+",
         "qos": "2",
@@ -30,9 +30,9 @@
     {
         "id": "rpc_gridcode_handle",
         "type": "function",
-        "z": "rpc_gridcode_tab",
+        "z": "cd2c09d1ea588f09",
         "name": "Handle RPC",
-        "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\n\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\nif (msg.rpcMethod === 'getGridCodeConfig') {\n    msg.operation = 'read';\n    return msg;\n}\nelse if (msg.rpcMethod === 'setGridCodeConfig') {\n    msg.operation = 'write';\n    return msg;\n}\nelse {\n    return null;\n}",
+        "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\n\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\nif (msg.rpcMethod === 'getGridCodeConfig') {\n    msg.operationType = 'read';\n    return msg;\n}\nelse if (msg.rpcMethod === 'setGridCodeConfig') {\n    msg.operationType = 'write';\n    return msg;\n}\nelse {\n    return null;\n}",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -50,11 +50,11 @@
     {
         "id": "rpc_gridcode_link_out",
         "type": "link out",
-        "z": "rpc_gridcode_tab",
+        "z": "cd2c09d1ea588f09",
         "name": "To Main Flow",
         "mode": "link",
         "links": [
-            "gridcode_link_in_rpc"
+            "560fcee04e40f9da"
         ],
         "x": 495,
         "y": 160,
@@ -63,7 +63,7 @@
     {
         "id": "rpc_gridcode_comment",
         "type": "comment",
-        "z": "rpc_gridcode_tab",
+        "z": "cd2c09d1ea588f09",
         "name": "getGridCodeConfig / setGridCodeConfig",
         "info": "Read/Write grid code config:\n- gridModeRaw, gridFrequencyHz, gridVoltageLevelCode\n- normalConnect: voltage/frequency limits\n- reconnectionTimeSeconds\n- powerFactorTarget, activePowerReg, reactivePowerReg",
         "x": 230,
