@@ -6518,23 +6518,15 @@
         "type": "integer",
         "description": "",
         "x-enumNames": [
-          "EnergySave",
-          "MaxPerformance",
-          "SelfConsumption",
-          "Backup",
-          "TimeOfUse",
-          "OffGrid",
-          "GridSelling",
+          "BalancedHybrid",
+          "ZeroExport",
+          "MaximumSaving",
           "Custom"
         ],
         "enum": [
           1,
           2,
           3,
-          4,
-          5,
-          6,
-          7,
           99
         ]
       },
