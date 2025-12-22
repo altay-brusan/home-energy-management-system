@@ -485,7 +485,7 @@ CROSS JOIN (VALUES
     ('SmartLoadOffSOC', '95', 0),
     ('SmartLoadOnSOC', '100', 0),
     ('SmartLoadPVPowerThreshold', '0', 0),
-    ('SmartLoadOpenDelay', '100', 0),
+    ('SmartLoadOpenDelay', '1', 0),
     ('SmartLoadOnGridAlwaysOn', 'false', 0)
 ) AS v(param_name, value, sort_order)
 WHERE p."Name" = v.param_name;
