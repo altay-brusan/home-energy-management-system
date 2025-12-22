@@ -635,7 +635,7 @@ public static class RpcMethodMapping
             RpcGetMethod = "getGeneratorAndSmartLoadConfig",
             FieldPath = "generatorChargeEnabled",
             RpcKind = "GeneratorAndSmartLoadConfigState",
-            ValueMapper = val => bool.Parse(val)
+            ValueMapper = val => val.Equals("true", StringComparison.OrdinalIgnoreCase) || val == "1"
         },
         ["GeneratorGridCharge"] = new()
         {
@@ -643,7 +643,7 @@ public static class RpcMethodMapping
             RpcGetMethod = "getGeneratorAndSmartLoadConfig",
             FieldPath = "gridChargeEnabled",
             RpcKind = "GeneratorAndSmartLoadConfigState",
-            ValueMapper = val => bool.Parse(val)
+            ValueMapper = val => val.Equals("true", StringComparison.OrdinalIgnoreCase) || val == "1"
         },
         ["GeneratorStartSOC"] = new()
         {
@@ -667,7 +667,7 @@ public static class RpcMethodMapping
             RpcGetMethod = "getGeneratorAndSmartLoadConfig",
             FieldPath = "generatorPeakShaving.enabled",
             RpcKind = "GeneratorAndSmartLoadConfigState",
-            ValueMapper = val => bool.Parse(val)
+            ValueMapper = val => val.Equals("true", StringComparison.OrdinalIgnoreCase) || val == "1"
         },
         ["GeneratorPeakShavingLimitPower"] = new()
         {
@@ -723,7 +723,7 @@ public static class RpcMethodMapping
             RpcGetMethod = "getGeneratorAndSmartLoadConfig",
             FieldPath = "smartLoad.onGridAlwaysOn",
             RpcKind = "GeneratorAndSmartLoadConfigState",
-            ValueMapper = val => bool.Parse(val)
+            ValueMapper = val => val.Equals("true", StringComparison.OrdinalIgnoreCase) || val == "1"
         },
 
         // ===== BATTERY MAINTENANCE CONFIGURATION =====

@@ -145,6 +145,11 @@ public class SetDeviceModeCommandHandler : IRequestHandler<SetDeviceModeCommand,
 
         if (overallSuccess)
         {
+
+            // Update the WorkMode in SetupDevice when all parameters are successfully applied
+            setupDevice.WorkMode = (int)request.Mode;
+            await _context.SaveChangesAsync(cancellationToken);
+
             _logger.LogInformation(
                 "Successfully applied mode {Mode} to device {DeviceId}",
                 request.Mode,

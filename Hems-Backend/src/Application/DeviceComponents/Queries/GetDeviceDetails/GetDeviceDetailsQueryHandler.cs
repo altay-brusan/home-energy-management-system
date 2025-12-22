@@ -373,7 +373,7 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
                 "getInverterDeviceState",
                 new Dictionary<string, object>(),
                 timeoutMs: 10000,
-                cancellationToken);
+                cancellationToken: cancellationToken);
 
             if (rpcResponse?.Success == true && rpcResponse.Response != null)
             {
@@ -570,7 +570,7 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
                 "getBatterySocState",
                 new Dictionary<string, object>(),
                 timeoutMs: 10000,
-                cancellationToken);
+                cancellationToken: cancellationToken);
 
             if (rpcResponse?.Success == true && rpcResponse.Response != null)
             {

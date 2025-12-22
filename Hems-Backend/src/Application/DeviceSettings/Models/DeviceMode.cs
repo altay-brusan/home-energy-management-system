@@ -207,7 +207,7 @@ public static class DeviceModeConfigurations
             ["TimeSlot3Start"] = "09:00",
             ["TimeSlot3GridCharge"] = "true",
             ["TimeSlot3GenCharge"] = "false",
-            ["TimeSlot3MaxDischarge"] = "90000",
+            ["TimeSlot3MaxDischarge"] = "9000",
             ["TimeSlot3MinBatterySOC"] = "60",
             ["TimeSlot3MinBatteryVoltage"] = "48",
 
