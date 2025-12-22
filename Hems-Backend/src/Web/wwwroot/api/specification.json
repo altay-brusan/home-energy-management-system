@@ -1743,7 +1743,505 @@
         ]
       }
     },
-    "/api/DeviceSettings/ChangeExportStrategy": {
+    "/api/DeviceSettings/device/{deviceId}/parameters": {
+      "get": {
+        "tags": [
+          "DeviceSettings"
+        ],
+        "operationId": "GetDeviceParameters",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "DeviceSettings"
+        ],
+        "operationId": "UpdateDeviceParameters",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDeviceParametersRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/DeviceSettings/device/{deviceId}/tree": {
+      "get": {
+        "tags": [
+          "DeviceSettings"
+        ],
+        "operationId": "GetDeviceParameterValuesTree",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupDeviceParameterValuesTreeVm"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/DeviceSettings/device/{deviceId}/parameters/{parameterId}": {
+      "put": {
+        "tags": [
+          "DeviceSettings"
+        ],
+        "operationId": "UpdateDeviceParameter",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "parameterId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 2
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDeviceParameterRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 3
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/DeviceSettings/modes": {
+      "get": {
+        "tags": [
+          "DeviceSettings"
+        ],
+        "operationId": "GetAvailableModes",
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/DeviceSettings/device/{deviceId}/mode": {
+      "post": {
+        "tags": [
+          "DeviceSettings"
+        ],
+        "operationId": "SetDeviceMode",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetDeviceModeRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/DeviceSettings/admin": {
+      "get": {
+        "tags": [
+          "DeviceSettings"
+        ],
+        "operationId": "GetSetupDeviceParameterValues",
+        "parameters": [
+          {
+            "name": "setupDeviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupDeviceParameterValuesVm"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "DeviceSettings"
+        ],
+        "operationId": "CreateSetupDeviceParameterValue",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSetupDeviceParameterValueCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "guid"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/DeviceSettings/admin/tree": {
+      "get": {
+        "tags": [
+          "DeviceSettings"
+        ],
+        "operationId": "GetSetupDeviceParameterValuesTree",
+        "parameters": [
+          {
+            "name": "setupDeviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupDeviceParameterValuesTreeVm"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/DeviceSettings/admin/{id}": {
+      "put": {
+        "tags": [
+          "DeviceSettings"
+        ],
+        "operationId": "UpdateSetupDeviceParameterValue",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSetupDeviceParameterValueCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "DeviceSettings"
+        ],
+        "operationId": "DeleteSetupDeviceParameterValue",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/DeviceSettings/admin/device/{deviceId}/initialize": {
+      "post": {
+        "tags": [
+          "DeviceSettings"
+        ],
+        "operationId": "InitializeDeviceSettings",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/DeviceSettings/admin/device/{deviceId}/parameter/{parameterId}": {
+      "put": {
+        "tags": [
+          "DeviceSettings"
+        ],
+        "operationId": "UpdateDeviceParameterValueRaw",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "parameterId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 2
+          }
+        ],
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDeviceParameterValueCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 3
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "400": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/DeviceSettings/demo/export-strategy": {
       "post": {
         "tags": [
           "DeviceSettings"
@@ -2089,10 +2587,10 @@
         ]
       }
     },
-    "/api/ParameterGroups": {
+    "/api/ParameterSchemas/groups": {
       "get": {
         "tags": [
-          "ParameterGroups"
+          "ParameterSchemas"
         ],
         "operationId": "GetParameterGroups",
         "responses": {
@@ -2115,7 +2613,7 @@
       },
       "post": {
         "tags": [
-          "ParameterGroups"
+          "ParameterSchemas"
         ],
         "operationId": "CreateParameterGroup",
         "requestBody": {
@@ -2150,10 +2648,10 @@
         ]
       }
     },
-    "/api/ParameterGroups/{id}": {
+    "/api/ParameterSchemas/groups/{id}": {
       "get": {
         "tags": [
-          "ParameterGroups"
+          "ParameterSchemas"
         ],
         "operationId": "GetParameterGroup",
         "parameters": [
@@ -2197,7 +2695,7 @@
       },
       "put": {
         "tags": [
-          "ParameterGroups"
+          "ParameterSchemas"
         ],
         "operationId": "UpdateParameterGroup",
         "parameters": [
@@ -2240,7 +2738,7 @@
       },
       "delete": {
         "tags": [
-          "ParameterGroups"
+          "ParameterSchemas"
         ],
         "operationId": "DeleteParameterGroup",
         "parameters": [
@@ -2270,10 +2768,10 @@
         ]
       }
     },
-    "/api/Parameters": {
+    "/api/ParameterSchemas/parameters": {
       "get": {
         "tags": [
-          "Parameters"
+          "ParameterSchemas"
         ],
         "operationId": "GetParameters",
         "parameters": [
@@ -2308,7 +2806,7 @@
       },
       "post": {
         "tags": [
-          "Parameters"
+          "ParameterSchemas"
         ],
         "operationId": "CreateParameter",
         "requestBody": {
@@ -2343,10 +2841,10 @@
         ]
       }
     },
-    "/api/Parameters/{id}": {
+    "/api/ParameterSchemas/parameters/{id}": {
       "get": {
         "tags": [
-          "Parameters"
+          "ParameterSchemas"
         ],
         "operationId": "GetParameter",
         "parameters": [
@@ -2390,7 +2888,7 @@
       },
       "put": {
         "tags": [
-          "Parameters"
+          "ParameterSchemas"
         ],
         "operationId": "UpdateParameter",
         "parameters": [
@@ -2433,7 +2931,7 @@
       },
       "delete": {
         "tags": [
-          "Parameters"
+          "ParameterSchemas"
         ],
         "operationId": "DeleteParameter",
         "parameters": [
@@ -2463,10 +2961,10 @@
         ]
       }
     },
-    "/api/ParameterValueSettingSchemes": {
+    "/api/ParameterSchemas/values": {
       "get": {
         "tags": [
-          "ParameterValueSettingSchemes"
+          "ParameterSchemas"
         ],
         "operationId": "GetParameterValueSettingSchemes",
         "parameters": [
@@ -2500,7 +2998,7 @@
       },
       "post": {
         "tags": [
-          "ParameterValueSettingSchemes"
+          "ParameterSchemas"
         ],
         "operationId": "CreateParameterValueSettingScheme",
         "requestBody": {
@@ -2535,10 +3033,10 @@
         ]
       }
     },
-    "/api/ParameterValueSettingSchemes/tree": {
+    "/api/ParameterSchemas/values/tree": {
       "get": {
         "tags": [
-          "ParameterValueSettingSchemes"
+          "ParameterSchemas"
         ],
         "operationId": "GetParameterValueSettingSchemesTree",
         "parameters": [
@@ -2571,10 +3069,10 @@
         ]
       }
     },
-    "/api/ParameterValueSettingSchemes/{id}": {
+    "/api/ParameterSchemas/values/{id}": {
       "put": {
         "tags": [
-          "ParameterValueSettingSchemes"
+          "ParameterSchemas"
         ],
         "operationId": "UpdateParameterValueSettingScheme",
         "parameters": [
@@ -2617,7 +3115,7 @@
       },
       "delete": {
         "tags": [
-          "ParameterValueSettingSchemes"
+          "ParameterSchemas"
         ],
         "operationId": "DeleteParameterValueSettingScheme",
         "parameters": [
@@ -2795,322 +3293,6 @@
                 }
               }
             }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/SetupDeviceParameterValues": {
-      "get": {
-        "tags": [
-          "SetupDeviceParameterValues"
-        ],
-        "operationId": "GetSetupDeviceParameterValues",
-        "parameters": [
-          {
-            "name": "setupDeviceId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SetupDeviceParameterValuesVm"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      },
-      "post": {
-        "tags": [
-          "SetupDeviceParameterValues"
-        ],
-        "operationId": "CreateSetupDeviceParameterValue",
-        "requestBody": {
-          "x-name": "command",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateSetupDeviceParameterValueCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "string",
-                  "format": "guid"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/SetupDeviceParameterValues/tree": {
-      "get": {
-        "tags": [
-          "SetupDeviceParameterValues"
-        ],
-        "operationId": "GetSetupDeviceParameterValuesTree",
-        "parameters": [
-          {
-            "name": "setupDeviceId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SetupDeviceParameterValuesTreeVm"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/SetupDeviceParameterValues/device/{deviceId}/tree": {
-      "get": {
-        "tags": [
-          "SetupDeviceParameterValues"
-        ],
-        "operationId": "GetDeviceParameterValuesTree",
-        "parameters": [
-          {
-            "name": "deviceId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SetupDeviceParameterValuesTreeVm"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/SetupDeviceParameterValues/device/{deviceId}/initialize": {
-      "post": {
-        "tags": [
-          "SetupDeviceParameterValues"
-        ],
-        "operationId": "InitializeDeviceSettings",
-        "parameters": [
-          {
-            "name": "deviceId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "integer",
-                  "format": "int32"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/SetupDeviceParameterValues/{id}": {
-      "put": {
-        "tags": [
-          "SetupDeviceParameterValues"
-        ],
-        "operationId": "UpdateSetupDeviceParameterValue",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "requestBody": {
-          "x-name": "command",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateSetupDeviceParameterValueCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 2
-        },
-        "responses": {
-          "204": {
-            "description": ""
-          },
-          "400": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      },
-      "delete": {
-        "tags": [
-          "SetupDeviceParameterValues"
-        ],
-        "operationId": "DeleteSetupDeviceParameterValue",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": ""
-          },
-          "400": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/SetupDeviceParameterValues/device/{deviceId}/parameter/{parameterId}": {
-      "put": {
-        "tags": [
-          "SetupDeviceParameterValues"
-        ],
-        "operationId": "UpdateDeviceParameterValue",
-        "parameters": [
-          {
-            "name": "deviceId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          },
-          {
-            "name": "parameterId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 2
-          }
-        ],
-        "requestBody": {
-          "x-name": "command",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateDeviceParameterValueCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 3
-        },
-        "responses": {
-          "204": {
-            "description": ""
-          },
-          "400": {
-            "description": ""
           }
         },
         "security": [
@@ -6161,6 +6343,336 @@
           }
         }
       },
+      "SetupDeviceParameterValuesTreeVm": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "setupDeviceId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "parameterGroups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParameterGroupTreeDto"
+            }
+          }
+        }
+      },
+      "ParameterGroupTreeDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "version": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "parentId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParameterGroupTreeDto"
+            }
+          },
+          "parameters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParameterTreeDto"
+            }
+          }
+        }
+      },
+      "ParameterTreeDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "elementType": {
+            "type": "string"
+          },
+          "roleType": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "defaultValue": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "setupDeviceParameterValue": {
+            "$ref": "#/components/schemas/SetupDeviceParameterValueTreeDto"
+          }
+        }
+      },
+      "SetupDeviceParameterValueTreeDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "value": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "modelNumber": {
+            "type": "string"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastModified": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastModifiedBy": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "UpdateDeviceParameterRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateDeviceParametersRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParameterUpdate"
+            }
+          }
+        }
+      },
+      "ParameterUpdate": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "parameterId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "SetDeviceModeRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "$ref": "#/components/schemas/DeviceMode"
+          }
+        }
+      },
+      "DeviceMode": {
+        "type": "integer",
+        "description": "",
+        "x-enumNames": [
+          "EnergySave",
+          "MaxPerformance",
+          "SelfConsumption",
+          "Backup",
+          "TimeOfUse",
+          "OffGrid",
+          "GridSelling",
+          "Custom"
+        ],
+        "enum": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          99
+        ]
+      },
+      "SetupDeviceParameterValuesVm": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "setupDeviceParameterValues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SetupDeviceParameterValueDto"
+            }
+          }
+        }
+      },
+      "SetupDeviceParameterValueDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "parameterGroupId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "parameterId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "setupDeviceId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "value": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "modelNumber": {
+            "type": "string"
+          },
+          "parameterName": {
+            "type": "string",
+            "nullable": true
+          },
+          "parameterGroupName": {
+            "type": "string",
+            "nullable": true
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastModified": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastModifiedBy": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "CreateSetupDeviceParameterValueCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "parameterGroupId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "parameterId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "setupDeviceId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "value": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "modelNumber": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateSetupDeviceParameterValueCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "value": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "modelNumber": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateDeviceParameterValueCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "parameterId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
       "ChangeExportStrategyCommand": {
         "type": "object",
         "additionalProperties": false,
@@ -6800,12 +7312,12 @@
           "parameterGroups": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ParameterGroupTreeDto"
+              "$ref": "#/components/schemas/ParameterGroupTreeDto2"
             }
           }
         }
       },
-      "ParameterGroupTreeDto": {
+      "ParameterGroupTreeDto2": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -6835,18 +7347,18 @@
           "children": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ParameterGroupTreeDto"
+              "$ref": "#/components/schemas/ParameterGroupTreeDto2"
             }
           },
           "parameters": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ParameterTreeDto"
+              "$ref": "#/components/schemas/ParameterTreeDto2"
             }
           }
         }
       },
-      "ParameterTreeDto": {
+      "ParameterTreeDto2": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -7016,269 +7528,6 @@
             "items": {
               "type": "string"
             }
-          }
-        }
-      },
-      "SetupDeviceParameterValuesVm": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "setupDeviceParameterValues": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SetupDeviceParameterValueDto"
-            }
-          }
-        }
-      },
-      "SetupDeviceParameterValueDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
-          "parameterGroupId": {
-            "type": "string",
-            "format": "guid",
-            "nullable": true
-          },
-          "parameterId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "setupDeviceId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "value": {
-            "type": "string"
-          },
-          "sortOrder": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "modelNumber": {
-            "type": "string"
-          },
-          "parameterName": {
-            "type": "string",
-            "nullable": true
-          },
-          "parameterGroupName": {
-            "type": "string",
-            "nullable": true
-          },
-          "created": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "createdBy": {
-            "type": "string",
-            "nullable": true
-          },
-          "lastModified": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "lastModifiedBy": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "SetupDeviceParameterValuesTreeVm": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "setupDeviceId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "parameterGroups": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ParameterGroupTreeDto2"
-            }
-          }
-        }
-      },
-      "ParameterGroupTreeDto2": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string",
-            "nullable": true
-          },
-          "version": {
-            "type": "string"
-          },
-          "sortOrder": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "parentId": {
-            "type": "string",
-            "format": "guid",
-            "nullable": true
-          },
-          "children": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ParameterGroupTreeDto2"
-            }
-          },
-          "parameters": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ParameterTreeDto2"
-            }
-          }
-        }
-      },
-      "ParameterTreeDto2": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "elementType": {
-            "type": "string"
-          },
-          "roleType": {
-            "type": "string"
-          },
-          "unit": {
-            "type": "string"
-          },
-          "defaultValue": {
-            "type": "string"
-          },
-          "sortOrder": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "setupDeviceParameterValue": {
-            "$ref": "#/components/schemas/SetupDeviceParameterValueTreeDto"
-          }
-        }
-      },
-      "SetupDeviceParameterValueTreeDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
-          "value": {
-            "type": "string"
-          },
-          "sortOrder": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "modelNumber": {
-            "type": "string"
-          },
-          "created": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "createdBy": {
-            "type": "string",
-            "nullable": true
-          },
-          "lastModified": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "lastModifiedBy": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "CreateSetupDeviceParameterValueCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "parameterGroupId": {
-            "type": "string",
-            "format": "guid",
-            "nullable": true
-          },
-          "parameterId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "setupDeviceId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "value": {
-            "type": "string"
-          },
-          "sortOrder": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "modelNumber": {
-            "type": "string"
-          }
-        }
-      },
-      "UpdateSetupDeviceParameterValueCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
-          "value": {
-            "type": "string"
-          },
-          "sortOrder": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "modelNumber": {
-            "type": "string"
-          }
-        }
-      },
-      "UpdateDeviceParameterValueCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "deviceId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "parameterId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "value": {
-            "type": "string"
           }
         }
       },
