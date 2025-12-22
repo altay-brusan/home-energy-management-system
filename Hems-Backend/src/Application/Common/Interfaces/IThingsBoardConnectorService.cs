@@ -114,13 +114,15 @@ public interface IThingsBoardConnectorService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Sends a two-way RPC command to a device and waits for response
+    /// Sends a two-way RPC command to a device and waits for response.
+    /// When parameters exceed batchSize, they are sent in batches to avoid timeouts.
     /// </summary>
     Task<TbRpcResponse?> SendTwoWayRpcAsync(
         Guid deviceId,
         string method,
         Dictionary<string, object> parameters,
         int timeoutMs = 5000,
+        int batchSize = 10,
         CancellationToken cancellationToken = default);
 }
 
