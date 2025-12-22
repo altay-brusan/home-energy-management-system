@@ -1,31 +1,32 @@
 /**
  * TimeOfUseScreen
  * Time of Use zaman programlama ekranı
+ * API yapısına uyumlu - deviceSettingsStore kullanır
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Save, Clock } from 'lucide-react-native';
+import { ArrowLeft, Clock } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors } from '../../../theme/constants';
-import { useInverterModeStore } from '../../../store/inverterModeStore';
+import { useTimeOfUseSection } from '../../../hooks/useDeviceSettings';
 import {
   SettingToggle,
   TimelineBar,
   PeriodCard,
   DaySelector,
 } from '../../../components/inverterModes';
-import { TimeOfUsePeriod, TimeOfUsePeriodId } from '../../../api/types/inverterModes.types';
+import { TimeSlot } from '../../../api/types/inverterModes.types';
 
 // Fixed 6 periods as per inverter manual
 const FIXED_PERIOD_COUNT = 6;
@@ -39,47 +40,27 @@ const TimeOfUseScreen: React.FC = () => {
   const COLORS = getThemeColors(isDark);
 
   const {
-    customConfig,
-    updateTimeOfUseSettings,
-    updateTimeOfUsePeriod,
-  } = useInverterModeStore();
+    enabled,
+    activeDays,
+    timeSlots,
+    toggleEnabled,
+    toggleDay,
+    updateTimeSlot,
+    isLoading,
+  } = useTimeOfUseSection();
 
-  const { timeOfUse } = customConfig;
-
-  const handleUpdatePeriod = (periodId: TimeOfUsePeriodId, updates: Partial<TimeOfUsePeriod>) => {
-    updateTimeOfUsePeriod(periodId, updates);
+  const handleUpdatePeriod = (index: number, updates: Partial<TimeSlot>) => {
+    updateTimeSlot(index, updates);
   };
 
-  const handleSave = () => {
-    // Validate periods don't overlap
-    const sortedPeriods = [...timeOfUse.periods].sort((a, b) => {
-      const aStart = parseInt(a.startTime.replace(':', ''));
-      const bStart = parseInt(b.startTime.replace(':', ''));
-      return aStart - bStart;
-    });
-
-    for (let i = 0; i < sortedPeriods.length - 1; i++) {
-      const currentEnd = sortedPeriods[i].endTime;
-      const nextStart = sortedPeriods[i + 1].startTime;
-
-      const currentEndMinutes =
-        parseInt(currentEnd.split(':')[0]) * 60 + parseInt(currentEnd.split(':')[1]);
-      const nextStartMinutes =
-        parseInt(nextStart.split(':')[0]) * 60 + parseInt(nextStart.split(':')[1]);
-
-      if (currentEndMinutes > nextStartMinutes) {
-        Alert.alert(
-          t('timeOfUse.periodOverlap'),
-          t('timeOfUse.overlapError', { period1: i + 1, period2: i + 2 })
-        );
-        return;
-      }
-    }
-
-    Alert.alert(t('inverterModes.success'), t('timeOfUse.saved'), [
-      { text: t('inverterModes.ok'), onPress: () => navigation.goBack() },
-    ]);
-  };
+  // Loading state
+  if (isLoading) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: isDark ? COLORS.dark : COLORS.gray100 }]}>
+        <ActivityIndicator size="large" color={COLORS.accent} />
+      </View>
+    );
+  }
 
   return (
     <View
@@ -105,7 +86,7 @@ const TimeOfUseScreen: React.FC = () => {
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: insets.bottom + 100 },
+          { paddingBottom: insets.bottom + 20 },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -118,13 +99,13 @@ const TimeOfUseScreen: React.FC = () => {
         >
           <SettingToggle
             label={t('timeOfUse.enabled')}
-            value={timeOfUse.enabled}
-            onChange={(value) => updateTimeOfUseSettings({ enabled: value })}
+            value={enabled}
+            onChange={toggleEnabled}
             description={t('timeOfUse.enableDescription')}
           />
         </View>
 
-        {timeOfUse.enabled === 'on' && (
+        {enabled === 'on' && (
           <>
             {/* Day Selector */}
             <View
@@ -137,13 +118,19 @@ const TimeOfUseScreen: React.FC = () => {
                 {t('timeOfUse.activeDays')}
               </Text>
               <DaySelector
-                activeDays={timeOfUse.activeDays}
-                onChange={(days) => updateTimeOfUseSettings({ activeDays: days })}
+                activeDays={activeDays}
+                onChange={(days) => {
+                  Object.entries(days).forEach(([day, value]) => {
+                    if (activeDays[day as keyof typeof activeDays] !== value) {
+                      toggleDay(day as keyof typeof activeDays);
+                    }
+                  });
+                }}
               />
             </View>
 
             {/* Timeline Visualization */}
-            {timeOfUse.periods.length > 0 && (
+            {timeSlots.length > 0 && (
               <View
                 style={[
                   styles.card,
@@ -153,7 +140,7 @@ const TimeOfUseScreen: React.FC = () => {
                 <Text style={[styles.cardTitle, { color: COLORS.text }]}>
                   {t('timeOfUse.24HourView')}
                 </Text>
-                <TimelineBar periods={timeOfUse.periods} />
+                <TimelineBar periods={timeSlots} />
               </View>
             )}
 
@@ -171,12 +158,12 @@ const TimeOfUseScreen: React.FC = () => {
             </View>
 
             {/* Period Cards - Fixed 6 Periods */}
-            {timeOfUse.periods.map((period, index) => (
+            {timeSlots.map((period, index) => (
               <PeriodCard
                 key={period.id}
                 period={period}
                 index={index}
-                onUpdate={(updates) => handleUpdatePeriod(period.id, updates)}
+                onUpdate={(updates) => handleUpdatePeriod(index, updates)}
                 editable
               />
             ))}
@@ -195,33 +182,12 @@ const TimeOfUseScreen: React.FC = () => {
                 • {t('timeOfUse.tips.fixedPeriods', { count: FIXED_PERIOD_COUNT })}{'\n'}
                 • {t('timeOfUse.tips.fullCoverage')}{'\n'}
                 • {t('timeOfUse.tips.colors')}{'\n'}
-                • {t('timeOfUse.tips.targetSOC')}
+                • {t('timeOfUse.tips.minBatteryVoltage', 'Min Battery Voltage controls the discharge cutoff voltage')}
               </Text>
             </View>
           </>
         )}
       </ScrollView>
-
-      {/* Save Button */}
-      {timeOfUse.enabled === 'on' && (
-        <View
-          style={[
-            styles.footer,
-            {
-              backgroundColor: isDark ? COLORS.surface : COLORS.white,
-              paddingBottom: insets.bottom + 16,
-            },
-          ]}
-        >
-          <TouchableOpacity
-            onPress={handleSave}
-            style={[styles.saveButton, { backgroundColor: COLORS.accent }]}
-          >
-            <Save size={20} color="#fff" />
-            <Text style={styles.saveButtonText}>{t('timeOfUse.save')}</Text>
-          </TouchableOpacity>
-        </View>
-      )}
     </View>
   );
 };
@@ -229,6 +195,11 @@ const TimeOfUseScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',
@@ -290,29 +261,6 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: 13,
     lineHeight: 20,
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.1)',
-  },
-  saveButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    borderRadius: 12,
-    gap: 8,
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });
 

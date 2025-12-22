@@ -1,57 +1,110 @@
 /**
  * InverterModesScreen
- * 9 mod kartlı grid görünüm (3 sütun)
+ * API-driven mode selection with grid layout
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, RefreshCw } from 'lucide-react-native';
 import Reanimated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors } from '../../../theme/constants';
 import { useInverterModeStore } from '../../../store/inverterModeStore';
-import { PRESET_MODES } from '../../../data/presetModes';
 import { ModeCard } from '../../../components/inverterModes';
 
 const InverterModesScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const mode = useThemeStore((s) => s.mode);
-  const isDark = mode === 'dark';
+  const themeMode = useThemeStore((s) => s.mode);
+  const isDark = themeMode === 'dark';
   const COLORS = getThemeColors(isDark);
 
-  const { activeModeId } = useInverterModeStore();
+  const {
+    modes,
+    activeModeId,
+    isLoadingModes,
+    modesError,
+    fetchModes,
+  } = useInverterModeStore();
+
+  // Fetch modes on mount
+  useEffect(() => {
+    fetchModes();
+  }, [fetchModes]);
 
   const handleModePress = (modeId: string) => {
-    // Only navigate to detail screen, don't select mode here
-    // Mode will be activated from detail screen with confirmation
-    navigation.navigate('ModeDetail', { modeId });
-  };
-
-  // Get translated mode name
-  const getModeName = (modeItem: typeof PRESET_MODES[0]) => {
-    const modeKey = modeItem.id.replace('mode_', 'mode');
-    return t(`inverterModes.modes.${modeKey}.name`, { defaultValue: modeItem.name });
-  };
-
-  const getModeDescription = (modeItem: typeof PRESET_MODES[0]) => {
-    const modeKey = modeItem.id.replace('mode_', 'mode');
-    return t(`inverterModes.modes.${modeKey}.description`, { defaultValue: modeItem.description });
+    const mode = modes.find((m) => m.id === modeId);
+    if (mode?.isCustom) {
+      // Navigate directly to CustomModeScreen for custom mode
+      navigation.navigate('CustomMode');
+    } else {
+      // Navigate to detail screen for preset modes
+      navigation.navigate('ModeDetail', { modeId });
+    }
   };
 
   // Separate preset modes and custom mode
-  const presetModes = PRESET_MODES.filter((m) => !m.isCustom);
-  const customMode = PRESET_MODES.find((m) => m.isCustom);
+  const presetModes = modes.filter((m) => !m.isCustom);
+  const customMode = modes.find((m) => m.isCustom);
+
+  // Get active mode name
+  const getActiveModeName = () => {
+    const activeMode = modes.find((m) => m.id === activeModeId);
+    return activeMode?.name || t('inverterModes.noModeSelected');
+  };
+
+  // Loading state
+  if (isLoadingModes && modes.length === 0) {
+    return (
+      <View
+        style={[
+          styles.container,
+          styles.centerContent,
+          { backgroundColor: isDark ? COLORS.dark : COLORS.gray100 },
+        ]}
+      >
+        <ActivityIndicator size="large" color={COLORS.accent} />
+        <Text style={[styles.loadingText, { color: COLORS.textSoft }]}>
+          {t('common.loading')}
+        </Text>
+      </View>
+    );
+  }
+
+  // Error state
+  if (modesError && modes.length === 0) {
+    return (
+      <View
+        style={[
+          styles.container,
+          styles.centerContent,
+          { backgroundColor: isDark ? COLORS.dark : COLORS.gray100 },
+        ]}
+      >
+        <Text style={[styles.errorText, { color: COLORS.text }]}>
+          {modesError}
+        </Text>
+        <TouchableOpacity
+          onPress={fetchModes}
+          style={[styles.retryButton, { backgroundColor: COLORS.accent }]}
+        >
+          <RefreshCw size={18} color="#fff" />
+          <Text style={styles.retryText}>{t('common.retry')}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View
@@ -94,9 +147,7 @@ const InverterModesScreen: React.FC = () => {
               {t('inverterModes.activeMode')}
             </Text>
             <Text style={[styles.activeName, { color: COLORS.accent }]}>
-              {PRESET_MODES.find((m) => m.id === activeModeId)
-                ? getModeName(PRESET_MODES.find((m) => m.id === activeModeId)!)
-                : t('inverterModes.noModeSelected')}
+              {getActiveModeName()}
             </Text>
           </Reanimated.View>
         )}
@@ -120,8 +171,8 @@ const InverterModesScreen: React.FC = () => {
             >
               <ModeCard
                 id={item.id}
-                name={getModeName(item)}
-                description={getModeDescription(item)}
+                name={item.name}
+                description={item.description}
                 isActive={activeModeId === item.id}
                 isCustom={item.isCustom}
                 onPress={() => handleModePress(item.id)}
@@ -156,10 +207,10 @@ const InverterModesScreen: React.FC = () => {
                 <Text style={styles.customBadgeText}>{t('inverterModes.custom')}</Text>
               </View>
               <Text style={[styles.customTitle, { color: COLORS.text }]}>
-                {t('inverterModes.modes.custom.name')}
+                {customMode.name}
               </Text>
               <Text style={[styles.customDesc, { color: COLORS.textSoft }]}>
-                {t('inverterModes.modes.custom.description')}
+                {customMode.description}
               </Text>
               {activeModeId === customMode.id && (
                 <View style={styles.activeIndicator}>
@@ -194,6 +245,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -210,6 +265,29 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 16,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 14,
+  },
+  errorText: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 32,
+  },
+  retryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  retryText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   activeCard: {
     borderRadius: 12,

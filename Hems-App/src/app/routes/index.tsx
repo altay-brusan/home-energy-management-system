@@ -69,6 +69,7 @@ import {
   CustomModeScreen,
   TimeOfUseScreen,
 } from '../screens/inverterModes';
+import MaintenanceSettingsScreen from '../screens/settings/MaintenanceSettingsScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
 import GeneralSettingsScreen from '../screens/settings/GeneralSettingsScreen';
 import PricingSettingsScreen from '../screens/settings/PricingSettingsScreen';
@@ -457,6 +458,11 @@ export function RootNavigator () {
             <Stack.Screen
               name="TimeOfUse"
               component={TimeOfUseScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="MaintenanceSettings"
+              component={MaintenanceSettingsScreen}
               options={{ animation: 'slide_from_right' }}
             />
             <Stack.Screen

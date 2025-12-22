@@ -1,13 +1,13 @@
 /**
  * Inverter Mode Store
- * Hibrit inverter mod seçimi ve özel mod yapılandırması için Zustand store
+ * API-driven mode selection and custom mode configuration
  */
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-  PresetMode,
+  InverterMode,
   InverterConfig,
   WorkModeSettings,
   BatterySettings,
@@ -17,26 +17,41 @@ import {
   TimeOfUseSettings,
   TimeOfUsePeriod,
   TimeOfUsePeriodId,
+  CUSTOM_MODE_NUMBER,
   DEFAULT_ACTIVE_DAYS,
   DEFAULT_TIME_OF_USE_PERIODS,
 } from '../api/types/inverterModes.types';
-import { PRESET_MODES, getModeById, DEFAULT_MODE_ID } from '../data/presetModes';
+import { deviceSettingsService } from '../api/services/deviceSettingsService';
 
 // Store State Interface
 interface InverterModeState {
-  // State
+  // API Modes
+  modes: InverterMode[];
+  isLoadingModes: boolean;
+  modesError: string | null;
+
+  // Active Mode
   activeModeId: string | null;
-  activeMode: PresetMode | null;
+  activeModeNumber: number | null;
+
+  // Custom Config (for custom mode - legacy support)
   customConfig: InverterConfig;
-  isLoading: boolean;
-  error: string | null;
 
-  // Actions - Mode Selection
-  selectMode: (modeId: string) => void;
-  applyMode: () => void;
-  resetToDefault: () => void;
+  // Mode Application
+  isApplyingMode: boolean;
+  applyError: string | null;
 
-  // Actions - Custom Config Updates
+  // Actions - Fetch Modes
+  fetchModes: () => Promise<void>;
+
+  // Actions - Mode Selection & Application
+  selectAndApplyMode: (
+    mode: InverterMode,
+    deviceId: string,
+    onCustomMode: () => void
+  ) => Promise<boolean>;
+
+  // Actions - Custom Config Updates (legacy support)
   updateCustomConfig: (config: Partial<InverterConfig>) => void;
   updateWorkModeSettings: (settings: Partial<WorkModeSettings>) => void;
   updateBatterySettings: (settings: Partial<BatterySettings>) => void;
@@ -44,131 +59,136 @@ interface InverterModeState {
   updateGeneratorSettings: (settings: Partial<GeneratorSettings>) => void;
   updateAdvancedSettings: (settings: Partial<AdvancedSettings>) => void;
   updateTimeOfUseSettings: (settings: Partial<TimeOfUseSettings>) => void;
-
-  // Actions - Time of Use Periods (fixed 6 periods - no add/remove)
   updateTimeOfUsePeriod: (periodId: TimeOfUsePeriodId, updates: Partial<TimeOfUsePeriod>) => void;
 
-  // Actions - Copy from preset
-  copyPresetToCustom: (modeId: string) => void;
-
   // Actions - Error handling
-  clearError: () => void;
+  clearModesError: () => void;
+  clearApplyError: () => void;
 }
 
-// Default Custom Config (Dengeli Hibrit tabanlı)
-const getDefaultCustomConfig = (): InverterConfig => {
-  const defaultMode = getModeById(DEFAULT_MODE_ID);
-  if (defaultMode) {
-    return JSON.parse(JSON.stringify(defaultMode.config));
-  }
-  // Fallback config
-  return {
-    workMode: {
-      workMode: 'zero_export_to_ct',
-      solarSell: 'off',
-      energyPattern: 'load_first',
-      maxSellPower: 0,
-      zeroExportPower: 20,
-      gridPeakShaving: 'off',
-      gridPeakShavingPower: 0,
-      timeOfUse: 'off',
-    },
-    battery: {
-      batteryType: 'lithium',
-      batteryCapacity: 200,
-      maxACharge: 40,
-      maxADischarge: 100,
-      chargingSOC: 100,
-      shutdownSOC: 10,
-      lowBattSOC: 20,
-      restartSOC: 40,
-      floatVoltage: 53.6,
-      absorptionVoltage: 57.6,
-      equalizationVoltage: 57.6,
-    },
-    grid: {
-      gridCharge: 'off',
-      gridChargeSOC: 0,
-      gridChargeCurrent: 0,
-      gridSignal: 'off',
-    },
-    generator: {
-      genCharge: 'off',
-      genStartSOC: 0,
-      genChargeCurrent: 0,
-      genMaxRunTime: 0,
-      genDownTime: 0,
-      genSignal: 'off',
-      genPeakShaving: 'off',
-      genRatedPower: 0,
-    },
-    advanced: {
-      signalIslandMode: 'off',
-      bmsErrStop: 'on',
-      backupDelay: 0,
-      ctRatio: '1:1',
-      asymmetricPhaseFeeding: 'off',
-    },
-    timeOfUse: {
-      enabled: 'off',
-      periods: [...DEFAULT_TIME_OF_USE_PERIODS],
-      activeDays: { ...DEFAULT_ACTIVE_DAYS },
-    },
-  };
-};
+// Helper to transform API mode to internal format
+const transformApiMode = (apiMode: {
+  mode: number;
+  name: string;
+  description: string;
+}): InverterMode => ({
+  id: apiMode.mode === CUSTOM_MODE_NUMBER ? 'custom' : `mode_${apiMode.mode}`,
+  mode: apiMode.mode,
+  name: apiMode.name,
+  description: apiMode.description,
+  isCustom: apiMode.mode === CUSTOM_MODE_NUMBER,
+});
+
+// Default Custom Config
+const getDefaultCustomConfig = (): InverterConfig => ({
+  workMode: {
+    workMode: 'zero_export_to_ct',
+    solarSell: 'off',
+    energyPattern: 'load_first',
+    maxSellPower: 0,
+    zeroExportPower: 20,
+    gridPeakShaving: 'off',
+    gridPeakShavingPower: 0,
+    timeOfUse: 'off',
+  },
+  battery: {
+    batteryType: 'lithium',
+    batteryCapacity: 200,
+    maxACharge: 40,
+    maxADischarge: 100,
+    chargingSOC: 100,
+    shutdownSOC: 10,
+    lowBattSOC: 20,
+    restartSOC: 40,
+    floatVoltage: 53.6,
+    absorptionVoltage: 57.6,
+    equalizationVoltage: 57.6,
+  },
+  grid: {
+    gridCharge: 'off',
+    gridChargeSOC: 0,
+    gridChargeCurrent: 0,
+    gridSignal: 'off',
+  },
+  generator: {
+    genCharge: 'off',
+    genStartSOC: 0,
+    genChargeCurrent: 0,
+    genMaxRunTime: 0,
+    genDownTime: 0,
+    genSignal: 'off',
+    genPeakShaving: 'off',
+    genRatedPower: 0,
+  },
+  advanced: {
+    signalIslandMode: 'off',
+    bmsErrStop: 'on',
+    backupDelay: 0,
+    ctRatio: '1:1',
+    asymmetricPhaseFeeding: 'off',
+  },
+  timeOfUse: {
+    enabled: 'off',
+    periods: [...DEFAULT_TIME_OF_USE_PERIODS],
+    activeDays: { ...DEFAULT_ACTIVE_DAYS },
+  },
+});
 
 // Create Store
 export const useInverterModeStore = create<InverterModeState>()(
   persist(
     (set, get) => ({
       // Initial State
+      modes: [],
+      isLoadingModes: false,
+      modesError: null,
       activeModeId: null,
-      activeMode: null,
+      activeModeNumber: null,
       customConfig: getDefaultCustomConfig(),
-      isLoading: false,
-      error: null,
+      isApplyingMode: false,
+      applyError: null,
 
-      // Select a mode (doesn't apply yet)
-      selectMode: (modeId: string) => {
-        const mode = getModeById(modeId);
-        if (mode) {
+      // Fetch modes from API
+      fetchModes: async () => {
+        set({ isLoadingModes: true, modesError: null });
+        try {
+          const response = await deviceSettingsService.getModes();
+          const transformedModes = response.modes.map(transformApiMode);
+          set({ modes: transformedModes, isLoadingModes: false });
+        } catch (error: any) {
           set({
-            activeModeId: modeId,
-            activeMode: mode,
-            error: null,
+            modesError: error.message || 'Failed to fetch modes',
+            isLoadingModes: false,
           });
-        } else {
-          set({ error: `Mode not found: ${modeId}` });
         }
       },
 
-      // Apply selected mode
-      applyMode: () => {
-        const { activeModeId, activeMode, customConfig } = get();
-        if (!activeModeId || !activeMode) {
-          set({ error: 'No mode selected' });
-          return;
+      // Select and apply mode
+      selectAndApplyMode: async (mode, deviceId, onCustomMode) => {
+        // If custom mode, navigate to CustomModeScreen instead
+        if (mode.isCustom) {
+          onCustomMode();
+          return true;
         }
 
-        // If custom mode, use custom config; otherwise use preset config
-        if (activeMode.isCustom) {
-          // Custom mode uses the customConfig
-          set({ error: null });
-        } else {
-          // Preset mode - config is already in activeMode
-          set({ error: null });
+        set({ isApplyingMode: true, applyError: null });
+        try {
+          await deviceSettingsService.updateDeviceMode(deviceId, {
+            mode: mode.mode,
+          });
+          set({
+            activeModeId: mode.id,
+            activeModeNumber: mode.mode,
+            isApplyingMode: false,
+          });
+          return true;
+        } catch (error: any) {
+          set({
+            applyError: error.message || 'Failed to apply mode',
+            isApplyingMode: false,
+          });
+          return false;
         }
-      },
-
-      // Reset to default mode
-      resetToDefault: () => {
-        const defaultMode = getModeById(DEFAULT_MODE_ID);
-        set({
-          activeModeId: DEFAULT_MODE_ID,
-          activeMode: defaultMode || null,
-          customConfig: getDefaultCustomConfig(),
-          error: null,
-        });
       },
 
       // Update entire custom config
@@ -245,7 +265,7 @@ export const useInverterModeStore = create<InverterModeState>()(
         });
       },
 
-      // Update time of use period (fixed 6 periods - no add/remove)
+      // Update time of use period
       updateTimeOfUsePeriod: (periodId: TimeOfUsePeriodId, updates: Partial<TimeOfUsePeriod>) => {
         const { customConfig } = get();
         const periods = customConfig.timeOfUse.periods.map((p) =>
@@ -259,47 +279,28 @@ export const useInverterModeStore = create<InverterModeState>()(
         });
       },
 
-      // Copy preset config to custom
-      copyPresetToCustom: (modeId: string) => {
-        const mode = getModeById(modeId);
-        if (mode && !mode.isCustom) {
-          set({
-            customConfig: JSON.parse(JSON.stringify(mode.config)),
-          });
-        }
-      },
-
-      // Clear error
-      clearError: () => {
-        set({ error: null });
-      },
+      // Clear errors
+      clearModesError: () => set({ modesError: null }),
+      clearApplyError: () => set({ applyError: null }),
     }),
     {
       name: 'inverter-mode-storage',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         activeModeId: state.activeModeId,
+        activeModeNumber: state.activeModeNumber,
         customConfig: state.customConfig,
       }),
       onRehydrateStorage: () => (state) => {
-        // Rehydrate activeMode from activeModeId
-        if (state?.activeModeId) {
-          const mode = getModeById(state.activeModeId);
-          if (mode) {
-            state.activeMode = mode;
-          }
-        }
-
         // Migration: Ensure timeOfUse always has exactly 6 periods
         if (state?.customConfig?.timeOfUse) {
           const periods = state.customConfig.timeOfUse.periods;
           if (!periods || periods.length !== 6) {
-            // Reset to default 6 periods
             state.customConfig.timeOfUse.periods = [...DEFAULT_TIME_OF_USE_PERIODS];
           }
         }
 
-        // Migration: Ensure chargingSOC exists (for existing users)
+        // Migration: Ensure chargingSOC exists
         if (state?.customConfig?.battery && state.customConfig.battery.chargingSOC === undefined) {
           state.customConfig.battery.chargingSOC = 100;
         }
@@ -309,16 +310,15 @@ export const useInverterModeStore = create<InverterModeState>()(
 );
 
 // Selectors
-export const useActiveMode = () => useInverterModeStore((state) => state.activeMode);
+export const useModes = () => useInverterModeStore((state) => state.modes);
 export const useActiveModeId = () => useInverterModeStore((state) => state.activeModeId);
+export const useActiveModeNumber = () => useInverterModeStore((state) => state.activeModeNumber);
+export const useIsLoadingModes = () => useInverterModeStore((state) => state.isLoadingModes);
+export const useModesError = () => useInverterModeStore((state) => state.modesError);
 export const useCustomConfig = () => useInverterModeStore((state) => state.customConfig);
-export const useInverterModeError = () => useInverterModeStore((state) => state.error);
+export const useIsApplyingMode = () => useInverterModeStore((state) => state.isApplyingMode);
+export const useApplyError = () => useInverterModeStore((state) => state.applyError);
 
-// Get current config (active mode's config or custom config)
-export const useCurrentConfig = () =>
-  useInverterModeStore((state) => {
-    if (state.activeMode?.isCustom) {
-      return state.customConfig;
-    }
-    return state.activeMode?.config || state.customConfig;
-  });
+// Get mode by id from fetched modes
+export const useModeById = (modeId: string) =>
+  useInverterModeStore((state) => state.modes.find((m) => m.id === modeId));

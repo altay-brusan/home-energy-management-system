@@ -1,11 +1,12 @@
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
 import { Control, Controller, FieldErrors } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { Text, View } from 'react-native';
+import { Text, View, Pressable } from 'react-native';
 
 import Input from '../../../components/forms/Input';
 import Button from '../../../components/ui/Button';
 import ErrorMessage from '../../../components/feedback/ErrorMessage';
+import { LegalModal } from '../../../components';
 
 import type { SignUpForm } from './signup.schema';
 import type { SignUpStyles } from './SignUpScreen.styles';
@@ -32,6 +33,13 @@ function SignUpFormFields ({
   styles,
 }: SignUpFormFieldsProps) {
   const { t } = useTranslation();
+  const [legalModalVisible, setLegalModalVisible] = useState(false);
+  const [legalModalType, setLegalModalType] = useState<'privacy' | 'terms'>('terms');
+
+  const openLegalModal = (type: 'privacy' | 'terms') => {
+    setLegalModalType(type);
+    setLegalModalVisible(true);
+  };
 
   return (
     <View style={styles.formWrapper}>
@@ -144,6 +152,41 @@ function SignUpFormFields ({
           <Text style={styles.passwordRule}>• {t('passwordRules.specialChar')}</Text>
         </View>
 
+        <Controller
+          control={control}
+          name="acceptedTerms"
+          render={({ field: { onChange, value } }) => (
+            <Pressable
+              onPress={() => onChange(!value)}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: !!value }}
+              style={styles.tosRow}
+            >
+              <View
+                style={[
+                  styles.checkbox,
+                  value && styles.checkboxChecked,
+                ]}
+              >
+                {value && <Text style={styles.checkIcon}>✓</Text>}
+              </View>
+              <Text style={styles.tosText}>
+                {t('auth.agreeToTerms')}{' '}
+                <Text style={styles.tosLink} onPress={() => openLegalModal('terms')}>
+                  {t('auth.termsOfService')}
+                </Text>{' '}
+                {t('auth.and')}{' '}
+                <Text style={styles.tosLink} onPress={() => openLegalModal('privacy')}>
+                  {t('auth.privacyPolicy')}
+                </Text>
+              </Text>
+            </Pressable>
+          )}
+        />
+        {errors.acceptedTerms && (
+          <Text style={styles.errorText}>{errors.acceptedTerms.message}</Text>
+        )}
+
         <Button
           title={registerLoading ? t('auth.creatingAccount') : t('auth.createAccountButton')}
           onPress={onSubmit}
@@ -158,6 +201,12 @@ function SignUpFormFields ({
           style={styles.secondaryButton}
         />
       </View>
+
+      <LegalModal
+        visible={legalModalVisible}
+        type={legalModalType}
+        onClose={() => setLegalModalVisible(false)}
+      />
     </View>
   );
 }

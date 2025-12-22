@@ -51,7 +51,7 @@ export default function SignUpScreen () {
     reset,
   } = useForm<SignUpForm>({
     resolver: zodResolver(createSignupSchema(t)),
-    defaultValues: { firstName: '', surname: '', email: '', password: '', confirmPassword: '' },
+    defaultValues: { firstName: '', surname: '', email: '', password: '', confirmPassword: '', acceptedTerms: false as const },
   });
 
   const handleNavigateBack = useCallback(() => {

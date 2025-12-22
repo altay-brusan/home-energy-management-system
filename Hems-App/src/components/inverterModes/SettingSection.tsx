@@ -45,7 +45,7 @@ const SettingSection: React.FC<SettingSectionProps> = ({
         <View style={styles.titleRow}>
           {icon && (
             <FontAwesome
-              name={icon}
+              name={icon as any}
               size={18}
               color={COLORS.accent}
               style={styles.icon}

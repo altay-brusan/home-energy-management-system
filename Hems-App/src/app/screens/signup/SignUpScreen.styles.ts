@@ -89,9 +89,53 @@ export function getSignUpStyles (
     errorText: {
       color: COLORS.error || '#ef4444',
       fontSize: TYPOGRAPHY.sm,
-      textAlign: 'center',
-      marginTop: SPACING.sm,
+      textAlign: 'left',
+      marginTop: SPACING.xs,
       marginBottom: SPACING.xs,
+    },
+
+    tosRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: SPACING.sm,
+      marginTop: SPACING.md,
+      paddingRight: SPACING.sm,
+    },
+
+    checkbox: {
+      width: 20,
+      height: 20,
+      borderRadius: 6,
+      borderWidth: 1.5,
+      borderColor: isDark ? COLORS.border : '#D1D5DB',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'transparent',
+      marginTop: 2,
+    },
+
+    checkboxChecked: {
+      backgroundColor: COLORS.accent,
+      borderColor: COLORS.accent,
+    },
+
+    checkIcon: {
+      color: '#fff',
+      fontSize: 12,
+      fontWeight: '700',
+    },
+
+    tosText: {
+      color: COLORS.textSoft,
+      flex: 1,
+      flexWrap: 'wrap',
+      fontSize: TYPOGRAPHY.sm,
+      lineHeight: TYPOGRAPHY.sm * 1.5,
+    },
+
+    tosLink: {
+      color: COLORS.accent,
+      fontWeight: '600',
     },
 
     errorMessage: {

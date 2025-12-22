@@ -12,6 +12,9 @@ export const createSignupSchema = (t: (key: string) => string) => z
       .regex(/[a-z]/, t('validation.passwordLowercase'))
       .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, t('validation.passwordSpecialChar')),
     confirmPassword: z.string().min(1, t('validation.confirmPasswordRequired')),
+    acceptedTerms: z.literal(true, {
+      errorMap: () => ({ message: t('validation.termsRequired') }),
+    }),
   })
   .refine((data) => data.password === data.confirmPassword, {
     path: ['confirmPassword'],

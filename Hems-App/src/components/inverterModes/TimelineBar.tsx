@@ -7,13 +7,22 @@ import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { useThemeStore } from '../../store/themeStore';
 import { getThemeColors } from '../../theme/constants';
-import { TimeOfUsePeriod } from '../../api/types/inverterModes.types';
+import { OnOffStatus, TimeOfUsePeriodId } from '../../api/types/inverterModes.types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BAR_WIDTH = SCREEN_WIDTH - 48; // Padding on both sides
 
+// Common interface for both TimeSlot and TimeOfUsePeriod
+interface TimelinePeriod {
+  id: TimeOfUsePeriodId;
+  startTime: string;
+  endTime: string;
+  gridCharge: OnOffStatus;
+  genCharge: OnOffStatus;
+}
+
 interface TimelineBarProps {
-  periods: TimeOfUsePeriod[];
+  periods: TimelinePeriod[];
 }
 
 // Parse time string "HH:MM" to minutes from midnight
@@ -23,7 +32,7 @@ const timeToMinutes = (time: string): number => {
 };
 
 // Get color based on period settings
-const getPeriodColor = (period: TimeOfUsePeriod): string => {
+const getPeriodColor = (period: TimelinePeriod): string => {
   if (period.gridCharge === 'on') return '#4CAF50'; // Green for grid charging
   if (period.genCharge === 'on') return '#FF9800'; // Orange for generator charging
   return '#2196F3'; // Blue for discharge/normal

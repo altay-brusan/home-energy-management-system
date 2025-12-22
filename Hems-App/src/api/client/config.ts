@@ -165,6 +165,10 @@ export const ENDPOINTS = {
   },
   DEVICE_SETTINGS: {
     CHANGE_EXPORT_STRATEGY: '/DeviceSettings/ChangeExportStrategy',
+    GET_TREE: '/DeviceSettings/device/:deviceId/tree',
+    UPDATE_PARAMETERS: '/DeviceSettings/device/:deviceId/parameters',
+    GET_MODES: '/DeviceSettings/modes',
+    UPDATE_DEVICE_MODE: '/DeviceSettings/device/:deviceId/mode',
   },
 } as const;
 

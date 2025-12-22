@@ -13,3 +13,4 @@ export { default as LanguageSelector } from './ui/LanguageSelector';
 export { CitySelector } from './ui/CitySelector';
 export { CountrySelector } from './ui/CountrySelector';
 export { default as FlowSankey } from './FlowSankey';
+export { LegalModal } from './LegalModal';

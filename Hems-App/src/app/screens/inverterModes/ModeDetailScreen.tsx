@@ -1,9 +1,9 @@
 /**
  * ModeDetailScreen
- * Mod detay görüntüleme ve uygulama ekranı
+ * API-driven mode detail view and application
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -11,25 +11,16 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, CheckCircle, Settings, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { ArrowLeft, CheckCircle } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors } from '../../../theme/constants';
 import { useInverterModeStore } from '../../../store/inverterModeStore';
-import { getModeById, getModeNumber } from '../../../data/presetModes';
-import {
-  SettingSection,
-  SettingRow,
-  TimelineBar,
-} from '../../../components/inverterModes';
-import {
-  WORK_MODE_LABELS,
-  ENERGY_PATTERN_LABELS,
-  BATTERY_TYPE_LABELS,
-} from '../../../api/types/inverterModes.types';
+import { useSitesStore } from '../../../store/sitesStore';
 
 const ModeDetailScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -40,74 +31,83 @@ const ModeDetailScreen: React.FC = () => {
   const isDark = themeMode === 'dark';
   const COLORS = getThemeColors(isDark);
 
-  const { activeModeId, selectMode, applyMode, customConfig } = useInverterModeStore();
+  const {
+    modes,
+    activeModeId,
+    selectAndApplyMode,
+    isApplyingMode,
+    applyError,
+    clearApplyError,
+  } = useInverterModeStore();
 
-  // State for showing/hiding settings
-  const [showSettings, setShowSettings] = useState(false);
+  const { selectedSiteDevice } = useSitesStore();
+  const deviceId = selectedSiteDevice?.device?.id;
 
   const modeId = route.params?.modeId;
-  const mode = getModeById(modeId);
-
-  // Get translated mode name
-  const getModeName = () => {
-    if (!mode) return '';
-    const modeKey = mode.id.replace('mode_', 'mode');
-    return t(`inverterModes.modes.${modeKey}.name`, { defaultValue: mode.name });
-  };
-
-  const getModeDescription = () => {
-    if (!mode) return '';
-    const modeKey = mode.id.replace('mode_', 'mode');
-    return t(`inverterModes.modes.${modeKey}.description`, { defaultValue: mode.description });
-  };
-
-  const getModeTargetUser = () => {
-    if (!mode) return '';
-    const modeKey = mode.id.replace('mode_', 'mode');
-    return t(`inverterModes.modes.${modeKey}.targetUser`, { defaultValue: mode.targetUser });
-  };
-
-  const getModeRecommendedScenario = () => {
-    if (!mode) return '';
-    const modeKey = mode.id.replace('mode_', 'mode');
-    return t(`inverterModes.modes.${modeKey}.recommendedScenario`, { defaultValue: mode.recommendedScenario });
-  };
+  const mode = modes.find((m) => m.id === modeId);
 
   if (!mode) {
     return (
-      <View style={[styles.container, { backgroundColor: COLORS.dark, paddingTop: insets.top }]}>
+      <View
+        style={[
+          styles.container,
+          styles.centerContent,
+          { backgroundColor: isDark ? COLORS.dark : COLORS.gray100, paddingTop: insets.top },
+        ]}
+      >
         <Text style={{ color: COLORS.text }}>{t('inverterModes.modeNotFound')}</Text>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={[styles.retryButton, { backgroundColor: COLORS.accent, marginTop: 16 }]}
+        >
+          <Text style={styles.retryText}>{t('common.goBack')}</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
-  // Use custom config for custom mode, otherwise use preset config
-  const config = mode.isCustom ? customConfig : mode.config;
   const isActive = activeModeId === modeId;
 
-  const handleApplyMode = () => {
-    const modeName = getModeName();
+  const handleApplyMode = async () => {
+    if (!deviceId) {
+      Alert.alert(
+        t('common.error'),
+        t('inverterModes.noDeviceSelected', { defaultValue: 'No device selected. Please select a site with a device first.' })
+      );
+      return;
+    }
+
     Alert.alert(
       t('inverterModes.applyModeTitle'),
-      t('inverterModes.applyModeConfirm', { mode: modeName }),
+      t('inverterModes.applyModeConfirm', { mode: mode.name }),
       [
         { text: t('inverterModes.cancel'), style: 'cancel' },
         {
           text: t('inverterModes.apply'),
-          onPress: () => {
-            selectMode(modeId);
-            applyMode();
-            Alert.alert(t('inverterModes.success'), t('inverterModes.modeAppliedSuccess', { mode: modeName }), [
-              { text: t('inverterModes.ok'), onPress: () => navigation.goBack() },
-            ]);
+          onPress: async () => {
+            const success = await selectAndApplyMode(
+              mode,
+              deviceId,
+              () => navigation.navigate('CustomMode')
+            );
+
+            if (success) {
+              Alert.alert(
+                t('inverterModes.success'),
+                t('inverterModes.modeAppliedSuccess', { mode: mode.name }),
+                [{ text: t('inverterModes.ok'), onPress: () => navigation.goBack() }]
+              );
+            } else {
+              Alert.alert(
+                t('common.error'),
+                applyError || t('inverterModes.applyFailed', { defaultValue: 'Failed to apply mode. Please try again.' }),
+                [{ text: t('inverterModes.ok'), onPress: clearApplyError }]
+              );
+            }
           },
         },
       ]
     );
-  };
-
-  const handleEditCustomMode = () => {
-    navigation.navigate('CustomMode');
   };
 
   return (
@@ -126,15 +126,9 @@ const ModeDetailScreen: React.FC = () => {
           <ArrowLeft size={24} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={[styles.title, { color: COLORS.text }]} numberOfLines={1}>
-          {getModeName()}
+          {mode.name}
         </Text>
-        {mode.isCustom ? (
-          <TouchableOpacity onPress={handleEditCustomMode} style={styles.editButton}>
-            <Settings size={22} color={COLORS.accent} />
-          </TouchableOpacity>
-        ) : (
-          <View style={{ width: 40 }} />
-        )}
+        <View style={{ width: 40 }} />
       </View>
 
       <ScrollView
@@ -149,13 +143,11 @@ const ModeDetailScreen: React.FC = () => {
           <View
             style={[
               styles.badge,
-              {
-                backgroundColor: mode.isCustom ? '#9C27B0' : COLORS.accent,
-              },
+              { backgroundColor: COLORS.accent },
             ]}
           >
             <Text style={styles.badgeText}>
-              {mode.isCustom ? t('inverterModes.custom') : `${t('inverterModes.mode')} ${getModeNumber(mode.id)}`}
+              {`${t('inverterModes.mode')} ${mode.mode}`}
             </Text>
           </View>
           {isActive && (
@@ -166,283 +158,24 @@ const ModeDetailScreen: React.FC = () => {
           )}
         </View>
 
-        {/* Description */}
+        {/* Description from API */}
         <Text style={[styles.description, { color: COLORS.text }]}>
-          {getModeDescription()}
+          {mode.description}
         </Text>
 
-        {/* Info Cards */}
-        <View style={styles.infoCardsRow}>
-          <View
-            style={[
-              styles.infoCard,
-              { backgroundColor: isDark ? COLORS.surface : COLORS.white },
-            ]}
-          >
-            <Text style={[styles.infoCardLabel, { color: COLORS.textSoft }]}>
-              {t('inverterModes.targetUser')}
-            </Text>
-            <Text style={[styles.infoCardValue, { color: COLORS.text }]}>
-              {getModeTargetUser()}
-            </Text>
-          </View>
-          <View
-            style={[
-              styles.infoCard,
-              { backgroundColor: isDark ? COLORS.surface : COLORS.white },
-            ]}
-          >
-            <Text style={[styles.infoCardLabel, { color: COLORS.textSoft }]}>
-              {t('inverterModes.recommendedScenario')}
-            </Text>
-            <Text style={[styles.infoCardValue, { color: COLORS.text }]}>
-              {getModeRecommendedScenario()}
-            </Text>
-          </View>
-        </View>
-
-        {/* Show/Hide Settings Button */}
-        <TouchableOpacity
-          onPress={() => setShowSettings(!showSettings)}
+        {/* Info Box */}
+        <View
           style={[
-            styles.showSettingsButton,
-            { backgroundColor: isDark ? COLORS.surface : COLORS.white },
+            styles.infoBox,
+            { backgroundColor: isDark ? `${COLORS.accent}15` : '#E3F2FD' },
           ]}
         >
-          <Text style={[styles.showSettingsButtonText, { color: COLORS.accent }]}>
-            {showSettings ? t('inverterModes.hideSettings') : t('inverterModes.showSettings')}
+          <Text style={[styles.infoText, { color: COLORS.textSoft }]}>
+            {t('inverterModes.modeInfoText', {
+              defaultValue: 'This mode will configure your inverter settings automatically for optimal performance based on the selected profile.'
+            })}
           </Text>
-          {showSettings ? (
-            <ChevronUp size={20} color={COLORS.accent} />
-          ) : (
-            <ChevronDown size={20} color={COLORS.accent} />
-          )}
-        </TouchableOpacity>
-
-        {/* Settings Sections - Only show when expanded */}
-        {showSettings && (
-        <>
-        {/* Settings Sections */}
-        <Text style={[styles.sectionTitle, { color: COLORS.text, marginTop: 16 }]}>
-          {t('inverterModes.settingDetails')}
-        </Text>
-
-        {/* Work Mode Settings */}
-        <SettingSection title={t('inverterModes.settings.workMode')} icon="cog" defaultExpanded>
-          <SettingRow
-            label="Work Mode"
-            value={WORK_MODE_LABELS[config.workMode.workMode]}
-          />
-          <SettingRow
-            label="Solar Sell"
-            value=""
-            status={config.workMode.solarSell}
-          />
-          <SettingRow
-            label="Energy Pattern"
-            value={ENERGY_PATTERN_LABELS[config.workMode.energyPattern]}
-          />
-          <SettingRow
-            label="Max Sell Power"
-            value={config.workMode.maxSellPower}
-            unit="W"
-          />
-          <SettingRow
-            label="Zero Export Power"
-            value={config.workMode.zeroExportPower}
-            unit="W"
-          />
-          <SettingRow
-            label="Grid Peak Shaving"
-            value=""
-            status={config.workMode.gridPeakShaving}
-          />
-          {config.workMode.gridPeakShaving === 'on' && (
-            <SettingRow
-              label="Peak Shaving Power"
-              value={config.workMode.gridPeakShavingPower}
-              unit="W"
-            />
-          )}
-          <SettingRow
-            label="Time of Use"
-            value=""
-            status={config.workMode.timeOfUse}
-          />
-        </SettingSection>
-
-        {/* Battery Settings */}
-        <SettingSection title={t('inverterModes.settings.battery')} icon="battery-full">
-          <SettingRow
-            label={t('inverterModes.labels.batteryType')}
-            value={BATTERY_TYPE_LABELS[config.battery.batteryType]}
-          />
-          <SettingRow
-            label={t('inverterModes.labels.batteryCapacity')}
-            value={config.battery.batteryCapacity}
-            unit="Ah"
-          />
-          <SettingRow
-            label={t('inverterModes.labels.maxChargeCurrent')}
-            value={config.battery.maxACharge}
-            unit="A"
-          />
-          <SettingRow
-            label={t('inverterModes.labels.maxDischargeCurrent')}
-            value={config.battery.maxADischarge}
-            unit="A"
-          />
-          <SettingRow
-            label="Shutdown SOC"
-            value={config.battery.shutdownSOC}
-            unit="%"
-            highlight
-          />
-          <SettingRow
-            label="Low Batt SOC"
-            value={config.battery.lowBattSOC}
-            unit="%"
-            highlight
-          />
-          <SettingRow
-            label="Restart SOC"
-            value={config.battery.restartSOC}
-            unit="%"
-            highlight
-          />
-        </SettingSection>
-
-        {/* Grid Settings */}
-        <SettingSection title={t('inverterModes.settings.grid')} icon="plug">
-          <SettingRow
-            label="Grid Charge"
-            value=""
-            status={config.grid.gridCharge}
-          />
-          {config.grid.gridCharge === 'on' && (
-            <>
-              <SettingRow
-                label="Grid Charge SOC"
-                value={config.grid.gridChargeSOC}
-                unit="%"
-              />
-              <SettingRow
-                label="Grid Charge Current"
-                value={config.grid.gridChargeCurrent}
-                unit="A"
-              />
-            </>
-          )}
-          <SettingRow
-            label="Grid Signal"
-            value=""
-            status={config.grid.gridSignal}
-          />
-        </SettingSection>
-
-        {/* Generator Settings */}
-        <SettingSection title={t('inverterModes.settings.generator')} icon="bolt">
-          <SettingRow
-            label="Gen Charge"
-            value=""
-            status={config.generator.genCharge}
-          />
-          {config.generator.genCharge === 'on' && (
-            <>
-              <SettingRow
-                label="Gen Start SOC"
-                value={config.generator.genStartSOC}
-                unit="%"
-              />
-              <SettingRow
-                label="Gen Charge Current"
-                value={config.generator.genChargeCurrent}
-                unit="A"
-              />
-              <SettingRow
-                label={t('inverterModes.labels.genMaxRunTime')}
-                value={config.generator.genMaxRunTime}
-                unit={t('inverterModes.hours')}
-              />
-              <SettingRow
-                label={t('inverterModes.labels.genDownTime')}
-                value={config.generator.genDownTime}
-                unit={t('inverterModes.hours')}
-              />
-              <SettingRow
-                label="Rated Power"
-                value={config.generator.genRatedPower}
-                unit="W"
-              />
-            </>
-          )}
-          <SettingRow
-            label="Gen Signal"
-            value=""
-            status={config.generator.genSignal}
-          />
-          <SettingRow
-            label="Gen Peak Shaving"
-            value=""
-            status={config.generator.genPeakShaving}
-          />
-        </SettingSection>
-
-        {/* Advanced Settings */}
-        <SettingSection title={t('inverterModes.settings.advanced')} icon="sliders">
-          <SettingRow
-            label="Signal Island Mode"
-            value=""
-            status={config.advanced.signalIslandMode}
-          />
-          <SettingRow
-            label="BMS Error Stop"
-            value=""
-            status={config.advanced.bmsErrStop}
-          />
-          <SettingRow
-            label="Backup Delay"
-            value={config.advanced.backupDelay}
-            unit="ms"
-          />
-          <SettingRow label="CT Ratio" value={config.advanced.ctRatio} />
-        </SettingSection>
-
-        {/* Time of Use */}
-        {config.timeOfUse.enabled === 'on' && config.timeOfUse.periods.length > 0 && (
-          <SettingSection title={t('inverterModes.settings.timeOfUse')} icon="clock-o" defaultExpanded>
-            <TimelineBar periods={config.timeOfUse.periods} />
-            {config.timeOfUse.periods.map((period) => (
-              <View
-                key={period.id}
-                style={[
-                  styles.periodItem,
-                  { borderBottomColor: isDark ? COLORS.border : COLORS.gray200 },
-                ]}
-              >
-                <Text style={[styles.periodTime, { color: COLORS.accent }]}>
-                  {period.startTime} - {period.endTime}
-                </Text>
-                <Text style={[styles.periodDesc, { color: COLORS.textSoft }]}>
-                  {`SOC: ${period.targetSOC}%, Max: ${period.maxDischargePower}W`}
-                </Text>
-              </View>
-            ))}
-          </SettingSection>
-        )}
-        </>
-        )}
-
-        {/* Edit Button for Custom Mode */}
-        {mode.isCustom && (
-          <TouchableOpacity
-            onPress={handleEditCustomMode}
-            style={[styles.editModeButton, { backgroundColor: '#9C27B0' }]}
-          >
-            <Settings size={20} color="#fff" />
-            <Text style={styles.editModeButtonText}>{t('inverterModes.editSettingsButton')}</Text>
-          </TouchableOpacity>
-        )}
+        </View>
       </ScrollView>
 
       {/* Apply Button */}
@@ -457,15 +190,17 @@ const ModeDetailScreen: React.FC = () => {
       >
         <TouchableOpacity
           onPress={handleApplyMode}
-          disabled={isActive}
+          disabled={isActive || isApplyingMode}
           style={[
             styles.applyButton,
             {
-              backgroundColor: isActive ? COLORS.border : COLORS.accent,
+              backgroundColor: isActive || isApplyingMode ? COLORS.border : COLORS.accent,
             },
           ]}
         >
-          {isActive ? (
+          {isApplyingMode ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : isActive ? (
             <>
               <CheckCircle size={20} color={COLORS.textSoft} />
               <Text style={[styles.applyButtonText, { color: COLORS.textSoft }]}>
@@ -485,6 +220,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -493,9 +232,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   backButton: {
-    padding: 8,
-  },
-  editButton: {
     padding: 8,
   },
   title: {
@@ -540,68 +276,24 @@ const styles = StyleSheet.create({
   description: {
     fontSize: 15,
     lineHeight: 22,
-    marginBottom: 16,
-  },
-  infoCardsRow: {
-    flexDirection: 'row',
-    gap: 12,
     marginBottom: 24,
   },
-  infoCard: {
-    flex: 1,
+  infoBox: {
     borderRadius: 12,
-    padding: 14,
+    padding: 16,
   },
-  infoCardLabel: {
-    fontSize: 11,
-    marginBottom: 4,
-  },
-  infoCardValue: {
+  infoText: {
     fontSize: 13,
-    fontWeight: '600',
+    lineHeight: 18,
   },
-  showSettingsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 14,
-    borderRadius: 12,
-    marginBottom: 8,
-    gap: 8,
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
   },
-  showSettingsButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  periodItem: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-  },
-  periodTime: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  periodDesc: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  editModeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 14,
-    borderRadius: 12,
-    marginTop: 16,
-    gap: 8,
-  },
-  editModeButtonText: {
+  retryText: {
     color: '#fff',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
   },
   footer: {

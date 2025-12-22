@@ -22,7 +22,7 @@ import Svg, { Path, G } from 'react-native-svg';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { LanguageSelector, ThemeToggle } from '../../../components';
+import { LanguageSelector, ThemeToggle, LegalModal } from '../../../components';
 import Input from '../../../components/forms/Input';
 import Button from '../../../components/ui/Button';
 import useAuth from '../../../hooks/useAuth';
@@ -97,6 +97,13 @@ export default function LoginScreen (): JSX.Element {
   );
 
   const [agreed, setAgreed] = React.useState<boolean>(false);
+  const [legalModalVisible, setLegalModalVisible] = React.useState(false);
+  const [legalModalType, setLegalModalType] = React.useState<'privacy' | 'terms'>('terms');
+
+  const openLegalModal = (type: 'privacy' | 'terms') => {
+    setLegalModalType(type);
+    setLegalModalVisible(true);
+  };
 
   const scale = useSharedValue(1);
   const rotation = useSharedValue(0);
@@ -243,8 +250,13 @@ export default function LoginScreen (): JSX.Element {
                   </View>
                   <Text style={styles.tosText}>
                     {t('auth.agreeToTerms')}{' '}
-                    <Text style={styles.tosLink}>{t('auth.termsOfService')}</Text>{' '}
-                    {t('auth.and')} <Text style={styles.tosLink}>{t('auth.privacyPolicy')}</Text>
+                    <Text style={styles.tosLink} onPress={() => openLegalModal('terms')}>
+                      {t('auth.termsOfService')}
+                    </Text>{' '}
+                    {t('auth.and')}{' '}
+                    <Text style={styles.tosLink} onPress={() => openLegalModal('privacy')}>
+                      {t('auth.privacyPolicy')}
+                    </Text>
                   </Text>
                 </Pressable>
 
@@ -275,6 +287,12 @@ export default function LoginScreen (): JSX.Element {
           </ScrollView>
         </KeyboardAvoidingView>
       </TouchableWithoutFeedback>
+
+      <LegalModal
+        visible={legalModalVisible}
+        type={legalModalType}
+        onClose={() => setLegalModalVisible(false)}
+      />
     </SafeAreaView>
   );
 }

@@ -1,9 +1,10 @@
 /**
  * CustomModeScreen
- * Özel mod ayarlarını düzenleme ekranı
+ * API yapısına uyumlu cihaz ayarları ekranı
+ * Toplu kaydetme (Save butonu) ile çalışır
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,46 +12,25 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Save, RotateCcw, Clock } from 'lucide-react-native';
+import { ArrowLeft, Save, RotateCcw, Clock, AlertCircle, RefreshCw } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+
 import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors } from '../../../theme/constants';
-import { useInverterModeStore } from '../../../store/inverterModeStore';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useDeviceSettings } from '../../../hooks/useDeviceSettings';
+import { useSelectedSiteDevice } from '../../../hooks/useSelectedSiteDevice';
+
+// Section Components
 import {
-  SettingSection,
-  SettingToggle,
-  SettingSlider,
-  SettingPicker,
-  BatterySOCVisualizer,
-} from '../../../components/inverterModes';
-import {
-  WorkModeType,
-  EnergyPatternType,
-  BatteryType,
-  VALIDATION_RULES,
-} from '../../../api/types/inverterModes.types';
-
-const WORK_MODE_OPTIONS = [
-  { value: 'selling_first', label: 'Selling First' },
-  { value: 'zero_export_to_load', label: 'Zero Export to Load' },
-  { value: 'zero_export_to_ct', label: 'Zero Export to CT' },
-];
-
-const ENERGY_PATTERN_OPTIONS = [
-  { value: 'batt_first', label: 'Battery First' },
-  { value: 'load_first', label: 'Load First' },
-];
-
-const BATTERY_TYPE_OPTIONS = [
-  { value: 'lithium', label: 'Lithium' },
-  { value: 'agm', label: 'AGM' },
-  { value: 'gel', label: 'Gel' },
-  { value: 'flooded', label: 'Flooded' },
-];
+  BatterySettingsSection,
+  SystemWorkModeSection,
+  GeneratorSmartLoadSection,
+} from '../../../components/inverterModes/sections';
 
 const CustomModeScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -59,469 +39,337 @@ const CustomModeScreen: React.FC = () => {
   const themeMode = useThemeStore((s) => s.mode);
   const isDark = themeMode === 'dark';
   const COLORS = getThemeColors(isDark);
+  const { device } = useSelectedSiteDevice();
 
   const {
-    customConfig,
-    updateWorkModeSettings,
-    updateBatterySettings,
-    updateGridSettings,
-    updateGeneratorSettings,
-    updateAdvancedSettings,
-    selectMode,
-    applyMode,
-  } = useInverterModeStore();
+    settings,
+    isLoading,
+    isSaving,
+    isDirty,
+    error,
+    isAdmin,
+    saveSettings,
+    resetToOriginal,
+    resetToDefaults,
+    fetchSettings,
+    clearError,
+  } = useDeviceSettings();
 
-  const [_hasChanges, setHasChanges] = useState(false);
   const [scrollEnabled, setScrollEnabled] = useState(true);
+  const shownErrorRef = useRef<string | null>(null);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+  const hasFetchedRef = useRef(false);
 
-  const markChanged = () => setHasChanges(true);
+  // Fetch settings ONCE when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      if (device?.id && !hasFetchedRef.current) {
+        console.log('[CustomModeScreen] Fetching settings for device:', device.id);
+        hasFetchedRef.current = true;
+        fetchSettings();
+      }
 
-  const handleSave = () => {
-    // Validate SOC values (4-level constraint)
-    const { chargingSOC, shutdownSOC, lowBattSOC, restartSOC } = customConfig.battery;
-    // Constraint: shutdownSOC < lowBattSOC < restartSOC < chargingSOC
-    if (shutdownSOC >= lowBattSOC || lowBattSOC >= restartSOC || restartSOC >= chargingSOC) {
-      Alert.alert(
-        t('inverterModes.validationError'),
-        t('inverterModes.socValidation')
-      );
-      return;
+      // Reset on unfocus so it fetches again next time
+      return () => {
+        // Don't reset here - keep the data cached
+      };
+    }, [device?.id, fetchSettings])
+  );
+
+  // Loading timeout - show error if loading takes too long
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    if (isLoading) {
+      setLoadingTimeout(false);
+      timeoutId = setTimeout(() => {
+        setLoadingTimeout(true);
+      }, 15000); // 15 seconds timeout
     }
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [isLoading]);
 
-    selectMode('custom');
-    applyMode();
-    setHasChanges(false);
-    Alert.alert(t('inverterModes.success'), t('inverterModes.customModeApplied'), [
-      { text: t('inverterModes.ok'), onPress: () => navigation.goBack() },
-    ]);
+  // Show error alert only once per unique error
+  useEffect(() => {
+    if (error && error !== shownErrorRef.current) {
+      shownErrorRef.current = error;
+      Alert.alert(
+        t('common.error', 'Error'),
+        error,
+        [{
+          text: t('common.ok', 'OK'),
+          onPress: () => {
+            clearError();
+            shownErrorRef.current = null;
+          }
+        }]
+      );
+    } else if (!error) {
+      shownErrorRef.current = null;
+    }
+  }, [error, clearError, t]);
+
+  // Handle retry
+  const handleRetry = useCallback(() => {
+    clearError();
+    shownErrorRef.current = null;
+    hasFetchedRef.current = false; // Allow fetch again
+    fetchSettings();
+  }, [clearError, fetchSettings]);
+
+  const handleSave = async () => {
+    const success = await saveSettings();
+    if (success) {
+      // Optionally navigate back or show success
+    }
   };
 
   const handleReset = () => {
     Alert.alert(
-      t('inverterModes.resetSettings'),
-      t('inverterModes.resetConfirm'),
+      t('inverterModes.resetSettings', 'Reset Settings'),
+      t('inverterModes.resetConfirm', 'Are you sure you want to reset all settings to their original values?'),
       [
-        { text: t('inverterModes.cancel'), style: 'cancel' },
+        { text: t('common.cancel', 'Cancel'), style: 'cancel' },
         {
-          text: t('inverterModes.reset'),
+          text: t('inverterModes.reset', 'Reset'),
           style: 'destructive',
-          onPress: () => {
-            // Reset to default config - implement in store if needed
-            setHasChanges(false);
-          },
+          onPress: resetToOriginal,
         },
       ]
     );
+  };
+
+  const handleBack = () => {
+    if (isDirty) {
+      Alert.alert(
+        t('inverterModes.unsavedChanges', 'Unsaved Changes'),
+        t('inverterModes.unsavedChangesMessage', 'You have unsaved changes. Do you want to save before leaving?'),
+        [
+          {
+            text: t('common.discard', 'Discard'),
+            style: 'destructive',
+            onPress: () => navigation.goBack(),
+          },
+          {
+            text: t('common.save', 'Save'),
+            onPress: async () => {
+              const success = await saveSettings();
+              if (success) {
+                navigation.goBack();
+              }
+            },
+          },
+          { text: t('common.cancel', 'Cancel'), style: 'cancel' },
+        ]
+      );
+    } else {
+      navigation.goBack();
+    }
   };
 
   const navigateToTimeOfUse = () => {
     navigation.navigate('TimeOfUse');
   };
 
-  return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: isDark ? COLORS.dark : COLORS.gray100 },
-      ]}
-    >
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+  const navigateToMaintenanceSettings = () => {
+    navigation.navigate('MaintenanceSettings');
+  };
+
+  // No device state
+  if (!device) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: isDark ? COLORS.dark : COLORS.gray100 }]}>
+        <AlertCircle size={48} color={COLORS.warning} />
+        <Text style={[styles.loadingText, { color: COLORS.text, marginTop: 16 }]}>
+          {t('inverterModes.noDeviceSelected', 'No device selected')}
+        </Text>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={styles.backButton}
+          style={[styles.retryButton, { backgroundColor: COLORS.accent, marginTop: 16 }]}
         >
-          <ArrowLeft size={24} color={COLORS.text} />
-        </TouchableOpacity>
-        <Text style={[styles.title, { color: COLORS.text }]}>
-          {t('inverterModes.customModeSettings')}
-        </Text>
-        <TouchableOpacity onPress={handleReset} style={styles.resetButton}>
-          <RotateCcw size={20} color={COLORS.textSoft} />
+          <Text style={styles.retryButtonText}>{t('common.goBack', 'Go Back')}</Text>
         </TouchableOpacity>
       </View>
+    );
+  }
 
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: insets.bottom + 100 },
+  // Loading state
+  if (isLoading) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: isDark ? COLORS.dark : COLORS.gray100 }]}>
+        <ActivityIndicator size="large" color={COLORS.accent} />
+        <Text style={[styles.loadingText, { color: COLORS.textSoft }]}>
+          {t('common.loading', 'Loading...')}
+        </Text>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={[styles.retryButton, { backgroundColor: COLORS.gray200, marginTop: 24 }]}
+        >
+          <Text style={[styles.retryButtonText, { color: COLORS.text }]}>{t('common.goBack', 'Go Back')}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // Error state with retry option
+  if (error && !isLoading) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: isDark ? COLORS.dark : COLORS.gray100 }]}>
+        <AlertCircle size={48} color={COLORS.error || '#EF4444'} />
+        <Text style={[styles.loadingText, { color: COLORS.text, marginTop: 16 }]}>
+          {t('inverterModes.loadError', 'Failed to load settings')}
+        </Text>
+        <Text style={[styles.errorDetail, { color: COLORS.textSoft }]}>
+          {error}
+        </Text>
+        <View style={styles.errorButtons}>
+          <TouchableOpacity
+            onPress={handleRetry}
+            style={[styles.retryButton, { backgroundColor: COLORS.accent }]}
+          >
+            <RefreshCw size={16} color="#fff" />
+            <Text style={styles.retryButtonText}>{t('common.retry', 'Retry')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={[styles.retryButton, { backgroundColor: isDark ? COLORS.border : COLORS.gray200 }]}
+          >
+            <Text style={styles.retryButtonText}>{t('common.goBack', 'Go Back')}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View
+        style={[
+          styles.container,
+          { backgroundColor: isDark ? COLORS.dark : COLORS.gray100 },
         ]}
-        showsVerticalScrollIndicator={false}
-        scrollEnabled={scrollEnabled}
       >
-        {/* Work Mode Settings */}
-        <SettingSection title={t('inverterModes.settings.workMode')} icon="cog" defaultExpanded>
-          <SettingPicker
-            label="Work Mode"
-            value={customConfig.workMode.workMode}
-            options={WORK_MODE_OPTIONS}
-            onChange={(value) => {
-              updateWorkModeSettings({ workMode: value as WorkModeType });
-              markChanged();
-            }}
-          />
-          <SettingToggle
-            label="Solar Sell"
-            value={customConfig.workMode.solarSell}
-            onChange={(value) => {
-              updateWorkModeSettings({ solarSell: value });
-              markChanged();
-            }}
-            description={t('inverterModes.descriptions.solarSell')}
-          />
-          <SettingPicker
-            label="Energy Pattern"
-            value={customConfig.workMode.energyPattern}
-            options={ENERGY_PATTERN_OPTIONS}
-            onChange={(value) => {
-              updateWorkModeSettings({ energyPattern: value as EnergyPatternType });
-              markChanged();
-            }}
-          />
-          <SettingSlider
-            label="Max Sell Power"
-            value={customConfig.workMode.maxSellPower}
-            onChange={(value) => {
-              updateWorkModeSettings({ maxSellPower: value });
-              markChanged();
-            }}
-            min={VALIDATION_RULES.power.maxSellPower.min}
-            max={VALIDATION_RULES.power.maxSellPower.max}
-            step={VALIDATION_RULES.power.maxSellPower.step}
-            unit="W"
-          />
-          <SettingSlider
-            label="Zero Export Power"
-            value={customConfig.workMode.zeroExportPower}
-            onChange={(value) => {
-              updateWorkModeSettings({ zeroExportPower: value });
-              markChanged();
-            }}
-            min={VALIDATION_RULES.power.zeroExportPower.min}
-            max={VALIDATION_RULES.power.zeroExportPower.max}
-            step={VALIDATION_RULES.power.zeroExportPower.step}
-            unit="W"
-          />
-          <SettingToggle
-            label="Grid Peak Shaving"
-            value={customConfig.workMode.gridPeakShaving}
-            onChange={(value) => {
-              updateWorkModeSettings({ gridPeakShaving: value });
-              markChanged();
-            }}
-          />
-          {customConfig.workMode.gridPeakShaving === 'on' && (
-            <SettingSlider
-              label="Peak Shaving Power"
-              value={customConfig.workMode.gridPeakShavingPower}
-              onChange={(value) => {
-                updateWorkModeSettings({ gridPeakShavingPower: value });
-                markChanged();
-              }}
-              min={VALIDATION_RULES.power.gridPeakShaving.min}
-              max={VALIDATION_RULES.power.gridPeakShaving.max}
-              step={VALIDATION_RULES.power.gridPeakShaving.step}
-              unit="W"
-            />
-          )}
-          <SettingToggle
-            label="Time of Use"
-            value={customConfig.workMode.timeOfUse}
-            onChange={(value) => {
-              updateWorkModeSettings({ timeOfUse: value });
-              markChanged();
-            }}
-          />
-        </SettingSection>
+        {/* Header */}
+        <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+            <ArrowLeft size={24} color={COLORS.text} />
+          </TouchableOpacity>
+          <View style={styles.titleContainer}>
+            <Text style={[styles.title, { color: COLORS.text }]}>
+              {t('inverterModes.customModeSettings', 'Device Settings')}
+            </Text>
+            {isDirty && (
+              <View style={[styles.dirtyBadge, { backgroundColor: COLORS.warning }]}>
+                <Text style={styles.dirtyBadgeText}>
+                  {t('common.unsaved', 'Unsaved')}
+                </Text>
+              </View>
+            )}
+          </View>
+          <TouchableOpacity onPress={handleReset} style={styles.resetButton}>
+            <RotateCcw size={20} color={COLORS.textSoft} />
+          </TouchableOpacity>
+        </View>
 
-        {/* Time of Use Button */}
-        {customConfig.workMode.timeOfUse === 'on' && (
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: insets.bottom + 100 },
+          ]}
+          showsVerticalScrollIndicator={false}
+          scrollEnabled={scrollEnabled}
+        >
+          {/* sortOrder: 1 - Battery Settings */}
+          <BatterySettingsSection defaultExpanded />
+
+          {/* sortOrder: 2 - System Work Mode */}
+          <SystemWorkModeSection defaultExpanded />
+
+          {/* sortOrder: 3 - Time of Use Button */}
           <TouchableOpacity
             onPress={navigateToTimeOfUse}
             style={[
-              styles.timeOfUseButton,
+              styles.navigationButton,
               { backgroundColor: isDark ? COLORS.surface : COLORS.white },
             ]}
           >
             <Clock size={20} color={COLORS.accent} />
-            <Text style={[styles.timeOfUseButtonText, { color: COLORS.text }]}>
-              {t('inverterModes.editTimeOfUse')}
-            </Text>
+            <View style={styles.navigationButtonContent}>
+              <Text style={[styles.navigationButtonText, { color: COLORS.text }]}>
+                {t('inverterModes.timeOfUse', 'Time of Use')}
+              </Text>
+              <Text style={[styles.navigationButtonSubtext, { color: COLORS.textSoft }]}>
+                {settings.timeOfUse.enabled === 'on'
+                  ? t('inverterModes.enabled', 'Enabled')
+                  : t('inverterModes.disabled', 'Disabled')}
+              </Text>
+            </View>
             <Text style={[styles.periodCount, { color: COLORS.textSoft }]}>
-              {t('inverterModes.periodCount', { count: customConfig.timeOfUse.periods.length })}
+              {t('inverterModes.periodCount', '{{count}} periods', { count: 6 })}
             </Text>
           </TouchableOpacity>
-        )}
 
-        {/* Battery Settings */}
-        <SettingSection title={t('inverterModes.settings.battery')} icon="battery-full">
-          <SettingPicker
-            label={t('inverterModes.labels.batteryType')}
-            value={customConfig.battery.batteryType}
-            options={BATTERY_TYPE_OPTIONS}
-            onChange={(value) => {
-              updateBatterySettings({ batteryType: value as BatteryType });
-              markChanged();
-            }}
-          />
-          <SettingSlider
-            label={t('inverterModes.labels.batteryCapacity')}
-            value={customConfig.battery.batteryCapacity}
-            onChange={(value) => {
-              updateBatterySettings({ batteryCapacity: value });
-              markChanged();
-            }}
-            min={VALIDATION_RULES.capacity.battery.min}
-            max={VALIDATION_RULES.capacity.battery.max}
-            step={VALIDATION_RULES.capacity.battery.step}
-            unit="Ah"
-          />
-          <SettingSlider
-            label={t('inverterModes.labels.maxChargeCurrent')}
-            value={customConfig.battery.maxACharge}
-            onChange={(value) => {
-              updateBatterySettings({ maxACharge: value });
-              markChanged();
-            }}
-            min={VALIDATION_RULES.current.maxCharge.min}
-            max={VALIDATION_RULES.current.maxCharge.max}
-            step={VALIDATION_RULES.current.maxCharge.step}
-            unit="A"
-          />
-          <SettingSlider
-            label={t('inverterModes.labels.maxDischargeCurrent')}
-            value={customConfig.battery.maxADischarge}
-            onChange={(value) => {
-              updateBatterySettings({ maxADischarge: value });
-              markChanged();
-            }}
-            min={VALIDATION_RULES.current.maxDischarge.min}
-            max={VALIDATION_RULES.current.maxDischarge.max}
-            step={VALIDATION_RULES.current.maxDischarge.step}
-            unit="A"
-          />
-          {/* Visual Battery SOC Bar */}
-          <BatterySOCVisualizer
-            values={{
-              chargingSOC: customConfig.battery.chargingSOC ?? 100,
-              backupSOC: customConfig.battery.restartSOC,
-              warningSOC: customConfig.battery.lowBattSOC,
-              dischargeSOC: customConfig.battery.shutdownSOC,
-            }}
-            onValuesChange={(values) => {
-              updateBatterySettings({
-                chargingSOC: values.chargingSOC,
-                restartSOC: values.backupSOC,
-                lowBattSOC: values.warningSOC,
-                shutdownSOC: values.dischargeSOC,
-              });
-              markChanged();
-            }}
-            onGestureStart={() => setScrollEnabled(false)}
-            onGestureEnd={() => setScrollEnabled(true)}
-            COLORS={COLORS}
-            isDark={isDark}
-            barHeight={280}
-          />
-        </SettingSection>
+          {/* sortOrder: 4 - Generator & Smart Load */}
+          <GeneratorSmartLoadSection />
 
-        {/* Grid Settings */}
-        <SettingSection title={t('inverterModes.settings.grid')} icon="plug">
-          <SettingToggle
-            label={t('inverterModes.labels.gridCharge')}
-            value={customConfig.grid.gridCharge}
-            onChange={(value) => {
-              updateGridSettings({ gridCharge: value });
-              markChanged();
-            }}
-            description={t('inverterModes.descriptions.gridCharge')}
-          />
-          {customConfig.grid.gridCharge === 'on' && (
-            <>
-              <SettingSlider
-                label="Grid Charge SOC"
-                value={customConfig.grid.gridChargeSOC}
-                onChange={(value) => {
-                  updateGridSettings({ gridChargeSOC: value });
-                  markChanged();
-                }}
-                min={0}
-                max={100}
-                step={5}
-                unit="%"
-              />
-              <SettingSlider
-                label="Grid Charge Current"
-                value={customConfig.grid.gridChargeCurrent}
-                onChange={(value) => {
-                  updateGridSettings({ gridChargeCurrent: value });
-                  markChanged();
-                }}
-                min={VALIDATION_RULES.current.gridCharge.min}
-                max={VALIDATION_RULES.current.gridCharge.max}
-                step={VALIDATION_RULES.current.gridCharge.step}
-                unit="A"
-              />
-            </>
+          {/* sortOrder: 5 - Maintenance Settings (Admin Only) */}
+          {isAdmin && (
+            <TouchableOpacity
+              onPress={navigateToMaintenanceSettings}
+              style={[
+                styles.navigationButton,
+                styles.adminButton,
+                { backgroundColor: isDark ? COLORS.surface : COLORS.white },
+              ]}
+            >
+              <AlertCircle size={20} color={COLORS.warning} />
+              <View style={styles.navigationButtonContent}>
+                <Text style={[styles.navigationButtonText, { color: COLORS.text }]}>
+                  {t('inverterModes.maintenanceSettings', 'Maintenance Settings')}
+                </Text>
+                <Text style={[styles.navigationButtonSubtext, { color: COLORS.warning }]}>
+                  {t('inverterModes.adminOnly', 'Admin Only')}
+                </Text>
+              </View>
+            </TouchableOpacity>
           )}
-          <SettingToggle
-            label="Grid Signal"
-            value={customConfig.grid.gridSignal}
-            onChange={(value) => {
-              updateGridSettings({ gridSignal: value });
-              markChanged();
-            }}
-          />
-        </SettingSection>
+        </ScrollView>
 
-        {/* Generator Settings */}
-        <SettingSection title={t('inverterModes.settings.generator')} icon="bolt">
-          <SettingToggle
-            label={t('inverterModes.labels.genCharge')}
-            value={customConfig.generator.genCharge}
-            onChange={(value) => {
-              updateGeneratorSettings({ genCharge: value });
-              markChanged();
-            }}
-            description={t('inverterModes.descriptions.genCharge')}
-          />
-          {customConfig.generator.genCharge === 'on' && (
-            <>
-              <SettingSlider
-                label="Gen Start SOC"
-                value={customConfig.generator.genStartSOC}
-                onChange={(value) => {
-                  updateGeneratorSettings({ genStartSOC: value });
-                  markChanged();
-                }}
-                min={0}
-                max={100}
-                step={5}
-                unit="%"
-              />
-              <SettingSlider
-                label="Gen Charge Current"
-                value={customConfig.generator.genChargeCurrent}
-                onChange={(value) => {
-                  updateGeneratorSettings({ genChargeCurrent: value });
-                  markChanged();
-                }}
-                min={VALIDATION_RULES.current.genCharge.min}
-                max={VALIDATION_RULES.current.genCharge.max}
-                step={VALIDATION_RULES.current.genCharge.step}
-                unit="A"
-              />
-              <SettingSlider
-                label={t('inverterModes.labels.genMaxRunTime')}
-                value={customConfig.generator.genMaxRunTime}
-                onChange={(value) => {
-                  updateGeneratorSettings({ genMaxRunTime: value });
-                  markChanged();
-                }}
-                min={VALIDATION_RULES.time.genMaxRunTime.min}
-                max={VALIDATION_RULES.time.genMaxRunTime.max}
-                step={VALIDATION_RULES.time.genMaxRunTime.step}
-                unit={t('inverterModes.hours')}
-              />
-              <SettingSlider
-                label={t('inverterModes.labels.genDownTime')}
-                value={customConfig.generator.genDownTime}
-                onChange={(value) => {
-                  updateGeneratorSettings({ genDownTime: value });
-                  markChanged();
-                }}
-                min={VALIDATION_RULES.time.genDownTime.min}
-                max={VALIDATION_RULES.time.genDownTime.max}
-                step={VALIDATION_RULES.time.genDownTime.step}
-                unit={t('inverterModes.hours')}
-              />
-              <SettingSlider
-                label="Rated Power"
-                value={customConfig.generator.genRatedPower}
-                onChange={(value) => {
-                  updateGeneratorSettings({ genRatedPower: value });
-                  markChanged();
-                }}
-                min={VALIDATION_RULES.capacity.genRated.min}
-                max={VALIDATION_RULES.capacity.genRated.max}
-                step={VALIDATION_RULES.capacity.genRated.step}
-                unit="W"
-              />
-            </>
-          )}
-          <SettingToggle
-            label="Gen Signal"
-            value={customConfig.generator.genSignal}
-            onChange={(value) => {
-              updateGeneratorSettings({ genSignal: value });
-              markChanged();
-            }}
-          />
-          <SettingToggle
-            label="Gen Peak Shaving"
-            value={customConfig.generator.genPeakShaving}
-            onChange={(value) => {
-              updateGeneratorSettings({ genPeakShaving: value });
-              markChanged();
-            }}
-          />
-        </SettingSection>
-
-        {/* Advanced Settings */}
-        <SettingSection title={t('inverterModes.settings.advanced')} icon="sliders">
-          <SettingToggle
-            label={t('inverterModes.labels.signalIslandMode')}
-            value={customConfig.advanced.signalIslandMode}
-            onChange={(value) => {
-              updateAdvancedSettings({ signalIslandMode: value });
-              markChanged();
-            }}
-            description={t('inverterModes.descriptions.signalIslandMode')}
-          />
-          <SettingToggle
-            label={t('inverterModes.labels.bmsErrStop')}
-            value={customConfig.advanced.bmsErrStop}
-            onChange={(value) => {
-              updateAdvancedSettings({ bmsErrStop: value });
-              markChanged();
-            }}
-            description={t('inverterModes.descriptions.bmsErrStop')}
-          />
-          <SettingSlider
-            label="Backup Delay"
-            value={customConfig.advanced.backupDelay}
-            onChange={(value) => {
-              updateAdvancedSettings({ backupDelay: value });
-              markChanged();
-            }}
-            min={VALIDATION_RULES.time.backupDelay.min}
-            max={VALIDATION_RULES.time.backupDelay.max}
-            step={VALIDATION_RULES.time.backupDelay.step}
-            unit="ms"
-          />
-        </SettingSection>
-      </ScrollView>
-
-      {/* Save Button */}
-      <View
-        style={[
-          styles.footer,
-          {
-            backgroundColor: isDark ? COLORS.surface : COLORS.white,
-            paddingBottom: insets.bottom + 16,
-          },
-        ]}
-      >
-        <TouchableOpacity
-          onPress={handleSave}
-          style={[styles.saveButton, { backgroundColor: COLORS.accent }]}
+        {/* Save Button */}
+        <View
+          style={[
+            styles.footer,
+            {
+              backgroundColor: isDark ? COLORS.surface : COLORS.white,
+              paddingBottom: insets.bottom + 16,
+            },
+          ]}
         >
-          <Save size={20} color="#fff" />
-          <Text style={styles.saveButtonText}>{t('inverterModes.saveAndApply')}</Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleSave}
+            disabled={!isDirty || isSaving}
+            style={[
+              styles.saveButton,
+              {
+                backgroundColor: isDirty ? COLORS.accent : COLORS.gray200,
+                opacity: isSaving ? 0.7 : 1,
+              },
+            ]}
+          >
+            {isSaving ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Save size={20} color="#fff" />
+            )}
+            <Text style={styles.saveButtonText}>
+              {isSaving
+                ? t('common.saving', 'Saving...')
+                : t('inverterModes.saveAndApply', 'Save & Apply')}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
     </GestureHandlerRootView>
   );
 };
@@ -529,6 +377,15 @@ const CustomModeScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
   },
   header: {
     flexDirection: 'row',
@@ -543,16 +400,32 @@ const styles = StyleSheet.create({
   resetButton: {
     padding: 8,
   },
+  titleContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
   title: {
     fontSize: 18,
     fontWeight: '600',
-    flex: 1,
     textAlign: 'center',
+  },
+  dirtyBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  dirtyBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '600',
   },
   scrollContent: {
     paddingHorizontal: 16,
   },
-  timeOfUseButton: {
+  navigationButton: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
@@ -560,10 +433,20 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     gap: 12,
   },
-  timeOfUseButtonText: {
+  adminButton: {
+    borderWidth: 1,
+    borderColor: 'rgba(255, 193, 7, 0.3)',
+  },
+  navigationButtonContent: {
+    flex: 1,
+  },
+  navigationButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    flex: 1,
+  },
+  navigationButtonSubtext: {
+    fontSize: 12,
+    marginTop: 2,
   },
   periodCount: {
     fontSize: 12,
@@ -590,6 +473,35 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  errorDetail: {
+    fontSize: 13,
+    marginTop: 8,
+    textAlign: 'center',
+    paddingHorizontal: 32,
+  },
+  errorButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+  },
+  retryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    gap: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  debugText: {
+    fontSize: 11,
+    marginTop: 8,
+    fontFamily: 'monospace',
   },
 });
 
