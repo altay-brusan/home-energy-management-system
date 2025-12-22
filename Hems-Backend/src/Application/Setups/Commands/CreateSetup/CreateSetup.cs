@@ -1,6 +1,7 @@
 using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Application.Common.Mappings;
 using Hems_Backend.Application.Common.Exceptions;
+using Hems_Backend.Application.DeviceSettings.Models;
 using Hems_Backend.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -120,13 +121,14 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
             {
                 SetupId = setup.Id,
                 DeviceId = device.Id,
+                WorkMode = 1 // Default to BalancedHybrid mode
             };
 
             _context.SetupDevices.Add(setupDevice);
-            
+
             // Add device to heartbeat tracking immediately
             await _heartbeatCache.AddDeviceToCacheAsync(device.ThingsBoardDeviceId, cancellationToken);
-            
+
             var devicesettingSchemeValues = await _context.ParameterValueSettingSchemes.Where(f => f.ModelNumber == device.ModelNumber).ToListAsync();
 
             foreach (var item in devicesettingSchemeValues)
@@ -142,8 +144,31 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
                 };
                 _context.SetupDeviceParameterValues.Add(newSetupSettingsValue);
             }
+
+            // Apply default BalancedHybrid mode configuration
+            var defaultModeConfig = DeviceModeConfigurations.GetConfiguration(DeviceMode.BalancedHybrid);
+            if (defaultModeConfig != null)
+            {
+                // Save to get IDs for the parameter values
+                await _context.SaveChangesAsync(cancellationToken);
+
+                // Get all parameters with their values
+                var setupDeviceParameterValues = await _context.SetupDeviceParameterValues
+                    .Include(sdpv => sdpv.Parameter)
+                    .Where(sdpv => sdpv.SetupDeviceId == setupDevice.Id)
+                    .ToListAsync(cancellationToken);
+
+                // Update parameter values based on default mode configuration
+                foreach (var (paramName, value) in defaultModeConfig)
+                {
+                    var paramValue = setupDeviceParameterValues.FirstOrDefault(pv => pv.Parameter?.Name == paramName);
+                    if (paramValue != null)
+                    {
+                        paramValue.Value = value;
+                    }
+                }
+            }
         }
-        //TODO: Setting Olayı
 
         // Tek seferde kaydet - EF Core otomatik transaction yapar
         await _context.SaveChangesAsync(cancellationToken);
