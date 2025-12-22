@@ -16,8 +16,7 @@ public class GetDeviceModesQueryHandler : IRequestHandler<GetDeviceModesQuery, D
             {
                 Mode = kvp.Key,
                 Name = kvp.Key.ToString(),
-                Description = kvp.Value,
-                Configuration = DeviceModeConfigurations.GetConfiguration(kvp.Key)
+                Description = kvp.Value
             })
             .ToList();
 
