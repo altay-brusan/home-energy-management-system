@@ -12,6 +12,7 @@ public class Parameter : BaseGuidAuditableEntity
     public string Unit { get; set; } = string.Empty;
     public string DefaultValue { get; set; } = string.Empty;
     public int SortOrder { get; set; }
+    public bool Visible { get; set; } = true;
 
     // Navigation properties
     public ParameterGroup ParameterGroup { get; set; } = null!;
