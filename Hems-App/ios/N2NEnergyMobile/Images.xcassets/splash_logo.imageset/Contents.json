@@ -1,7 +1,18 @@
 {
   "images" : [
     {
-      "filename" : "splash_logo.png",
+      "filename" : "splash_logo_light.png",
+      "idiom" : "universal",
+      "scale" : "1x"
+    },
+    {
+      "appearances" : [
+        {
+          "appearance" : "luminosity",
+          "value" : "dark"
+        }
+      ],
+      "filename" : "splash_logo_dark.png",
       "idiom" : "universal",
       "scale" : "1x"
     }

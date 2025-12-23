@@ -29,6 +29,7 @@ import useAuth from '../../../hooks/useAuth';
 import { usePlatform } from '../../../hooks/usePlatform';
 import { useAuthStore } from '../../../store/authStore';
 import { useOnboardingStore } from '../../../store/onboardingStore';
+import { useSitesStore } from '../../../store/sitesStore';
 import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors } from '../../../theme/constants';
 import type { LoginForm } from './login.schema';
@@ -85,6 +86,7 @@ export default function LoginScreen (): JSX.Element {
   const { login, loginLoading, loginError, clearLoginError, isAuthenticated } = useAuth();
   const user = useAuthStore(s => s.user);
   const hasOnboarded = useOnboardingStore(s => s.hasOnboarded);
+  const { getUserSites, selectSiteById } = useSitesStore();
   const { t } = useTranslation();
 
   const { isIOS } = usePlatform();
@@ -131,15 +133,31 @@ export default function LoginScreen (): JSX.Element {
 
     const checkHomesAndNavigate = async () => {
       try {
-        const isAdminUser = user?.roles?.includes('Administrator');if (isAdminUser) {navigation.replace('MainTabs');
-        } else {navigation.replace('Home');
+        const isAdminUser = user?.roles?.includes('Administrator');
+        if (isAdminUser) {
+          navigation.replace('MainTabs');
+        } else {
+          // Normal kullanıcı için siteleri kontrol et
+          const sitesDashboard = await getUserSites();
+          const sites = sitesDashboard?.siteList || [];
+
+          if (sites.length === 1) {
+            // Tek site varsa direkt seç ve Dashboard'a git
+            const singleSite = sites[0];
+            await selectSiteById(singleSite.id);
+            navigation.replace('MainTabs');
+          } else {
+            // Birden fazla site veya hiç site yoksa Home'a git
+            navigation.replace('Home');
+          }
         }
-      } catch (error) {navigation.replace('Home');
+      } catch (error) {
+        navigation.replace('Home');
       }
     };
 
     checkHomesAndNavigate();
-  }, [isAuthenticated, user, navigation]);
+  }, [isAuthenticated, user, navigation, getUserSites, selectSiteById]);
 
   const onSubmit = (values: LoginForm) => {
     if (!agreed) return;
