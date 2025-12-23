@@ -863,45 +863,107 @@ public async Task<IResult> ReceiveAlarmTelemetry(
                 .Include(dn => dn.Device)
                 .Include(dn => dn.Site)
                 .Where(dn => result.CreatedNotificationIds.Contains(dn.Id))
-                .Select(dn => new DeviceNotificationDto
-                {
-                    Id = dn.Id,
-                    DeviceId = dn.DeviceId,
-                    SiteId = dn.SiteId,
-                    SetupDeviceId = dn.SetupDeviceId,
-                    DeviceNotificationTypeId = dn.DeviceNotificationTypeId,
-                    Timestamp = dn.Timestamp,
-                    AdditionalData = dn.AdditionalData,
-                    IsProcessed = dn.IsProcessed,
-                    Created = dn.Created,
-                    DeviceNotificationType = new DeviceNotificationTypeDto
-                    {
-                        Id = dn.DeviceNotificationType.Id,
-                        Code = dn.DeviceNotificationType.Code,
-                        Message = dn.DeviceNotificationType.Message,
-                        Status = dn.DeviceNotificationType.Status,
-                        Description = dn.DeviceNotificationType.Description,
-                        Register = dn.DeviceNotificationType.Register,
-                        Value = dn.DeviceNotificationType.Value,
-                        Category = dn.DeviceNotificationType.Category,
-                        Version = dn.DeviceNotificationType.Version,
-                        Manufacturer = dn.DeviceNotificationType.Manufacturer,
-                        IsActive = dn.DeviceNotificationType.IsActive
-                    },
-                    DeviceManufacturer = dn.Device.Manufacturer,
-                    SiteName = dn.Site.Name
-                })
                 .ToListAsync();
 
-            var criticalCategories = new[] { "WARNING", "ERROR", "ALARM" };
+            // Severity codes that should trigger SignalR notifications (FAT=Fault, WAR=Warning, ERR=Error)
+            var criticalSeverityCodes = new[] { "FAT", "WAR", "ERR" };
 
             foreach (var notification in notifications)
             {
-                if (criticalCategories.Contains(notification.DeviceNotificationType.Category))
+                // Check if notification type code indicates critical severity (e.g., INV-FAT-F01, BMS-WAR-A01)
+                var codeParts = notification.DeviceNotificationType.Code.Split('-');
+                var severityCode = codeParts.Length >= 2 ? codeParts[1] : "";
+
+                if (criticalSeverityCodes.Contains(severityCode))
                 {
+                    // Parse additional data to extract displayMessage and other relevant info
+                    var additionalDataDict = new Dictionary<string, object>();
+                    string displayMessage = notification.DeviceNotificationType.Description;
+                    string severity = "UNKNOWN";
+                    string sourceDevice = "UNKNOWN";
+                    string rawRegisterCode = "";
+                    bool isGeneric = false;
+
+                    try
+                    {
+                        if (!string.IsNullOrEmpty(notification.AdditionalData))
+                        {
+                            additionalDataDict = JsonSerializer.Deserialize<Dictionary<string, object>>(notification.AdditionalData)
+                                ?? new Dictionary<string, object>();
+
+                            // Get displayMessage from additionalData (set by ProcessDeviceAlarmCommand)
+                            if (additionalDataDict.TryGetValue("displayMessage", out var displayMsgObj))
+                            {
+                                displayMessage = displayMsgObj?.ToString() ?? displayMessage;
+                            }
+
+                            if (additionalDataDict.TryGetValue("severity", out var severityObj))
+                            {
+                                severity = severityObj?.ToString() ?? "UNKNOWN";
+                            }
+
+                            if (additionalDataDict.TryGetValue("sourceDevice", out var sourceObj))
+                            {
+                                sourceDevice = sourceObj?.ToString() ?? "UNKNOWN";
+                            }
+
+                            if (additionalDataDict.TryGetValue("rawRegisterCode", out var rawCodeObj))
+                            {
+                                rawRegisterCode = rawCodeObj?.ToString() ?? "";
+                            }
+
+                            if (additionalDataDict.TryGetValue("isGenericFallback", out var isGenericObj) &&
+                                isGenericObj is JsonElement je)
+                            {
+                                isGeneric = je.GetBoolean();
+                            }
+                        }
+                    }
+                    catch (JsonException)
+                    {
+                        // If parsing fails, use defaults
+                        logger.LogWarning("Failed to parse AdditionalData for notification {NotificationId}", notification.Id);
+                    }
+
+                    // Create SignalR notification DTO with meaningful data
+                    var signalRNotification = new DeviceNotificationDto
+                    {
+                        Id = notification.Id,
+                        DeviceId = notification.DeviceId,
+                        SiteId = notification.SiteId,
+                        SetupDeviceId = notification.SetupDeviceId,
+                        DeviceNotificationTypeId = notification.DeviceNotificationTypeId,
+                        Timestamp = notification.Timestamp,
+                        AdditionalData = notification.AdditionalData,
+                        IsProcessed = notification.IsProcessed,
+                        Created = notification.Created,
+                        DeviceNotificationType = new DeviceNotificationTypeDto
+                        {
+                            Id = notification.DeviceNotificationType.Id,
+                            Code = notification.DeviceNotificationType.Code,
+                            Message = notification.DeviceNotificationType.Message,
+                            Status = notification.DeviceNotificationType.Status,
+                            Description = notification.DeviceNotificationType.Description,
+                            Register = notification.DeviceNotificationType.Register,
+                            Value = notification.DeviceNotificationType.Value,
+                            Category = notification.DeviceNotificationType.Category,
+                            Version = notification.DeviceNotificationType.Version,
+                            Manufacturer = notification.DeviceNotificationType.Manufacturer,
+                            IsActive = notification.DeviceNotificationType.IsActive
+                        },
+                        DeviceManufacturer = notification.Device.Manufacturer,
+                        SiteName = notification.Site.Name,
+                        DeviceName = notification.Device.Name,
+                        DisplayMessage = displayMessage,
+                        Severity = severity,
+                        SourceDevice = sourceDevice,
+                        RawRegisterCode = rawRegisterCode,
+                        IsGeneric = isGeneric
+                    };
+
                     // Use internal device ID for frontend SignalR notifications
-                    await notificationService.SendNotificationToSiteAsync(notification.SiteId, notification);
-                    await notificationService.SendNotificationToDeviceAsync(notification.DeviceId, notification);
+                    await notificationService.SendNotificationToSiteAsync(notification.SiteId, signalRNotification);
+                    await notificationService.SendNotificationToDeviceAsync(notification.DeviceId, signalRNotification);
                 }
             }
         }

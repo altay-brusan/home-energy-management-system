@@ -6201,6 +6201,24 @@
           },
           "siteName": {
             "type": "string"
+          },
+          "deviceName": {
+            "type": "string"
+          },
+          "displayMessage": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string"
+          },
+          "sourceDevice": {
+            "type": "string"
+          },
+          "rawRegisterCode": {
+            "type": "string"
+          },
+          "isGeneric": {
+            "type": "boolean"
           }
         }
       },

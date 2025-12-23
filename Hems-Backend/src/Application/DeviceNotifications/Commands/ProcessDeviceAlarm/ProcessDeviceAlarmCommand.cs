@@ -184,6 +184,63 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
             : "Unknown alarm - no register data available";
     }
 
+    /// <summary>
+    /// Checks if any raw register values indicate active issues.
+    /// </summary>
+    private static bool HasActiveRegisterIssues(InverterAlarmStateDto alarmState)
+    {
+        return alarmState.WarningWord1Raw != 0 ||
+               alarmState.WarningWord2Raw != 0 ||
+               alarmState.FaultWord1Raw != 0 ||
+               alarmState.FaultWord2Raw != 0 ||
+               alarmState.FaultWord3Raw != 0 ||
+               alarmState.FaultWord4Raw != 0;
+    }
+
+    /// <summary>
+    /// Determines the severity based on raw register values.
+    /// </summary>
+    private static string DetermineRawRegisterSeverity(InverterAlarmStateDto alarmState)
+    {
+        // Faults are more severe than warnings
+        if (alarmState.FaultWord1Raw != 0 || alarmState.FaultWord2Raw != 0 ||
+            alarmState.FaultWord3Raw != 0 || alarmState.FaultWord4Raw != 0)
+        {
+            return "FAULT";
+        }
+
+        if (alarmState.WarningWord1Raw != 0 || alarmState.WarningWord2Raw != 0)
+        {
+            return "WARNING";
+        }
+
+        return "INFO";
+    }
+
+    /// <summary>
+    /// Builds the raw register code string for display.
+    /// Format: Fxx for faults, Wxx for warnings
+    /// </summary>
+    private static string BuildRawRegisterCode(InverterAlarmStateDto alarmState)
+    {
+        var parts = new List<string>();
+
+        if (alarmState.FaultWord1Raw != 0)
+            parts.Add($"FW1:0x{alarmState.FaultWord1Raw:X4}");
+        if (alarmState.FaultWord2Raw != 0)
+            parts.Add($"FW2:0x{alarmState.FaultWord2Raw:X4}");
+        if (alarmState.FaultWord3Raw != 0)
+            parts.Add($"FW3:0x{alarmState.FaultWord3Raw:X4}");
+        if (alarmState.FaultWord4Raw != 0)
+            parts.Add($"FW4:0x{alarmState.FaultWord4Raw:X4}");
+        if (alarmState.WarningWord1Raw != 0)
+            parts.Add($"WW1:0x{alarmState.WarningWord1Raw:X4}");
+        if (alarmState.WarningWord2Raw != 0)
+            parts.Add($"WW2:0x{alarmState.WarningWord2Raw:X4}");
+
+        return parts.Count > 0 ? string.Join(", ", parts) : "Unknown";
+    }
+
     public async Task<ProcessDeviceAlarmResult> Handle(ProcessDeviceAlarmCommand request, CancellationToken cancellationToken)
     {
         var errors = new List<string>();
@@ -211,6 +268,99 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
         var timestamp = DateTimeOffset.TryParse(request.AlarmState.TimestampUtc, out var parsedTime)
             ? parsedTime
             : DateTimeOffset.UtcNow;
+
+        // Handle case when activeAlarms is empty but raw registers indicate issues
+        if ((request.AlarmState.ActiveAlarms == null || !request.AlarmState.ActiveAlarms.Any()) &&
+            HasActiveRegisterIssues(request.AlarmState))
+        {
+            try
+            {
+                var severity = DetermineRawRegisterSeverity(request.AlarmState);
+                var rawCode = BuildRawRegisterCode(request.AlarmState);
+
+                // Determine generic notification type based on severity
+                var genericCode = severity == "FAULT" ? "INV-FAT-GENERIC" :
+                                  severity == "WARNING" ? "INV-WAR-GENERIC" : "INV-INF-GENERIC";
+
+                var notificationType = await _context.DeviceNotificationTypes
+                    .FirstOrDefaultAsync(nt => nt.Code == genericCode && nt.IsActive, cancellationToken);
+
+                if (notificationType != null)
+                {
+                    // Check if this notification already exists (avoid duplicates)
+                    var existingNotification = await _context.DeviceNotifications
+                        .Where(dn => dn.DeviceId == request.DeviceId &&
+                                     dn.DeviceNotificationTypeId == notificationType.Id &&
+                                     !dn.IsProcessed &&
+                                     dn.Timestamp >= timestamp.AddMinutes(-5))
+                        .FirstOrDefaultAsync(cancellationToken);
+
+                    if (existingNotification == null)
+                    {
+                        var additionalDataDict = new Dictionary<string, object>
+                        {
+                            ["resolvedCode"] = genericCode,
+                            ["severity"] = severity,
+                            ["sourceDevice"] = "INV",
+                            ["category"] = "raw-register",
+                            ["rawRegisterCode"] = rawCode,
+                            ["gatewayId"] = request.AlarmState.GatewayId ?? string.Empty,
+                            ["inverterSerialNumber"] = request.AlarmState.InverterSerialNumber ?? string.Empty,
+                            ["runStateRaw"] = request.AlarmState.RunStateRaw,
+                            ["warningWord1Raw"] = request.AlarmState.WarningWord1Raw,
+                            ["warningWord2Raw"] = request.AlarmState.WarningWord2Raw,
+                            ["faultWord1Raw"] = request.AlarmState.FaultWord1Raw,
+                            ["faultWord2Raw"] = request.AlarmState.FaultWord2Raw,
+                            ["faultWord3Raw"] = request.AlarmState.FaultWord3Raw,
+                            ["faultWord4Raw"] = request.AlarmState.FaultWord4Raw,
+                            ["isGenericFallback"] = true,
+                            ["displayMessage"] = $"Device issue detected (Code: {rawCode}). Please contact technical support for assistance."
+                        };
+
+                        var deviceNotification = new DeviceNotification
+                        {
+                            DeviceId = request.DeviceId,
+                            SiteId = device.SetupDevice.Setup.SiteId,
+                            SetupDeviceId = device.SetupDevice.Id,
+                            DeviceNotificationTypeId = notificationType.Id,
+                            Timestamp = timestamp,
+                            AdditionalData = JsonSerializer.Serialize(additionalDataDict),
+                            IsProcessed = false
+                        };
+
+                        _context.DeviceNotifications.Add(deviceNotification);
+                        createdNotificationIds.Add(deviceNotification.Id);
+                        await _context.SaveChangesAsync(cancellationToken);
+                    }
+                }
+                else
+                {
+                    errors.Add($"Generic notification type '{genericCode}' not found for raw register alarm");
+                }
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"Error processing raw register alarm: {ex.Message}");
+            }
+
+            return new ProcessDeviceAlarmResult
+            {
+                ProcessedAlarmsCount = 0,
+                CreatedNotificationIds = createdNotificationIds,
+                Errors = errors
+            };
+        }
+
+        // If activeAlarms is null or empty and no raw register issues, return early
+        if (request.AlarmState.ActiveAlarms == null || !request.AlarmState.ActiveAlarms.Any())
+        {
+            return new ProcessDeviceAlarmResult
+            {
+                ProcessedAlarmsCount = 0,
+                CreatedNotificationIds = createdNotificationIds,
+                Errors = errors
+            };
+        }
 
         // Process each active alarm
         foreach (var alarm in request.AlarmState.ActiveAlarms)
@@ -267,7 +417,7 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
                         additionalData["occurrenceCount"] = alarm.OccurrenceCount;
                     }
 
-                    additionalData["lastOccurredUtc"] = alarm.LastOccurredUtc;
+                    additionalData["lastOccurredUtc"] = alarm.LastOccurredUtc ?? string.Empty;
 
                     existingNotification.AdditionalData = JsonSerializer.Serialize(additionalData);
                     existingNotification.Timestamp = timestamp;
@@ -279,18 +429,18 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
                 var additionalDataDict = new Dictionary<string, object>
                 {
                     ["resolvedCode"] = notificationTypeCode,
-                    ["severity"] = alarm.Severity,
-                    ["sourceDevice"] = alarm.SourceDevice,
-                    ["category"] = alarm.Category,
-                    ["messageKey"] = alarm.MessageKey,
+                    ["severity"] = alarm.Severity ?? string.Empty,
+                    ["sourceDevice"] = alarm.SourceDevice ?? string.Empty,
+                    ["category"] = alarm.Category ?? string.Empty,
+                    ["messageKey"] = alarm.MessageKey ?? string.Empty,
                     ["vendorCode"] = alarm.VendorCode,
                     ["alarmCode"] = alarm.Code,
-                    ["messageParams"] = alarm.MessageParams,
-                    ["firstOccurredUtc"] = alarm.FirstOccurredUtc,
-                    ["lastOccurredUtc"] = alarm.LastOccurredUtc,
+                    ["messageParams"] = alarm.MessageParams ?? new Dictionary<string, object>(),
+                    ["firstOccurredUtc"] = alarm.FirstOccurredUtc ?? string.Empty,
+                    ["lastOccurredUtc"] = alarm.LastOccurredUtc ?? string.Empty,
                     ["occurrenceCount"] = alarm.OccurrenceCount,
-                    ["gatewayId"] = request.AlarmState.GatewayId,
-                    ["inverterSerialNumber"] = request.AlarmState.InverterSerialNumber,
+                    ["gatewayId"] = request.AlarmState.GatewayId ?? string.Empty,
+                    ["inverterSerialNumber"] = request.AlarmState.InverterSerialNumber ?? string.Empty,
                     ["runStateRaw"] = request.AlarmState.RunStateRaw,
                     ["warningWord1Raw"] = request.AlarmState.WarningWord1Raw,
                     ["warningWord2Raw"] = request.AlarmState.WarningWord2Raw,
@@ -301,10 +451,21 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
                     ["isGenericFallback"] = isGenericFallback
                 };
 
-                // Add raw register message for generic fallback notifications
-                if (isGenericFallback && !string.IsNullOrEmpty(rawRegisterMessage))
+                // Add display message - use notification type message for known alarms,
+                // or build a generic message for unknown alarms
+                if (isGenericFallback)
                 {
-                    additionalDataDict["rawRegisterMessage"] = rawRegisterMessage;
+                    var rawRegisterCode = BuildRawRegisterCode(request.AlarmState);
+                    additionalDataDict["displayMessage"] = $"Device issue detected (Code: {alarm.MessageKey ?? rawRegisterCode}). Please contact technical support for assistance.";
+                    if (!string.IsNullOrEmpty(rawRegisterMessage))
+                    {
+                        additionalDataDict["rawRegisterMessage"] = rawRegisterMessage;
+                    }
+                }
+                else
+                {
+                    // Use the notification type's description for known alarms
+                    additionalDataDict["displayMessage"] = notificationType.Description;
                 }
 
                 var deviceNotification = new DeviceNotification
