@@ -1067,6 +1067,29 @@
         }
       }
     },
+    "/api/DeviceData/Alarm": {
+      "post": {
+        "tags": [
+          "DeviceData"
+        ],
+        "operationId": "ReceiveAlarmTelemetry",
+        "requestBody": {
+          "x-name": "body",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/DeviceData": {
       "get": {
         "tags": [
@@ -6213,6 +6236,9 @@
             "type": "string"
           },
           "version": {
+            "type": "string"
+          },
+          "manufacturer": {
             "type": "string"
           },
           "isActive": {

@@ -32,6 +32,7 @@ public class GetDeviceNotificationTypesQueryHandler : IRequestHandler<GetDeviceN
                 Value = nt.Value,
                 Category = nt.Category,
                 Version = nt.Version,
+                Manufacturer = nt.Manufacturer,
                 IsActive = nt.IsActive
             })
             .ToListAsync(cancellationToken);

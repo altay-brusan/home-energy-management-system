@@ -23,43 +23,165 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
 {
     private readonly IApplicationDbContext _context;
 
-    // Mapping from Node-RED alarm codes to our DeviceNotificationType codes
-    private static readonly Dictionary<int, string> AlarmCodeMapping = new()
-    {
-        // Fault codes (1001-1099)
-        { 1001, "INV-ERR-DC-VOLTAGE-HIGH" },
-        { 1002, "INV-ERR-BUS-VOLTAGE-HIGH" },
-        { 1003, "INV-ERR-BUS-VOLTAGE-LOW" },
-        { 1004, "INV-ERR-BUS-VOLTAGE-UNBALANCED" },
-        { 1005, "INV-ERR-GRID-VOLTAGE-HIGH" },
-        { 1006, "INV-ERR-GRID-VOLTAGE-LOW" },
-        { 1007, "INV-ERR-GRID-FREQ-HIGH" },
-        { 1008, "INV-ERR-GRID-FREQ-LOW" },
-        { 1009, "INV-ERR-GRID-DISCONNECT" },
-        { 1010, "INV-ERR-OUTPUT-CURRENT-HIGH" },
-        { 1011, "INV-ERR-OVER-TEMP" },
-        { 1012, "INV-ERR-LEAKAGE-CURRENT" },
-        { 1013, "INV-ERR-HARDWARE-FAULT" },
-        { 1014, "INV-ERR-EEPROM-FAULT" },
-        { 1015, "INV-ERR-RELAY-FAULT" },
-        { 1016, "INV-ERR-DSP-FAULT" },
-
-        // Warning codes (2001-2099)
-        { 2001, "INV-WARN-BATTERY-VOLTAGE-HIGH" },
-        { 2002, "INV-WARN-BATTERY-VOLTAGE-LOW" },
-        { 2003, "INV-WARN-BATTERY-COMM-FAIL" },
-        { 2004, "INV-WARN-TEMP-HIGH" },
-        { 2005, "INV-WARN-PV-VOLTAGE-HIGH" },
-        { 2006, "INV-WARN-FAN-LOCKED" },
-        { 2007, "INV-WARN-FEED-IN-POWER-LIMIT" },
-        { 2008, "INV-WARN-FIRMWARE-UPDATE" },
-        { 2009, "INV-WARN-PHASE-IMBALANCE" },
-        { 2010, "INV-WARN-PHASE-VOLTAGE-UNBALANCED" }
-    };
-
     public ProcessDeviceAlarmCommandHandler(IApplicationDbContext context)
     {
         _context = context;
+    }
+
+    /// <summary>
+    /// Resolves the notification type code based on the alarm's source device, severity, and message key.
+    /// Template: [INV/BMS]-[CATEGORY]-[device's code]
+    /// Categories: INF (Info), DBG (Debug), ERR (Error), FAT (Fault), WAR (Warning)
+    /// </summary>
+    private static string ResolveNotificationTypeCode(AlarmDto alarm)
+    {
+        var sourceDevice = alarm.SourceDevice?.ToUpperInvariant() ?? "INV";
+        var severity = alarm.Severity?.ToUpperInvariant() ?? "FAULT";
+        var messageKey = alarm.MessageKey?.ToUpperInvariant() ?? "";
+
+        // Determine device prefix
+        var devicePrefix = sourceDevice switch
+        {
+            "BMS" or "BATTERY" => "BMS",
+            _ => "INV"
+        };
+
+        // Determine category based on severity
+        var category = severity switch
+        {
+            "FAULT" or "CRITICAL" or "PROTECTION" => "FAT",
+            "ERROR" => "ERR",
+            "WARNING" or "ALARM" => "WAR",
+            "INFO" or "INFORMATION" => "INF",
+            "DEBUG" => "DBG",
+            _ => "FAT" // Default to fault for unknown severity
+        };
+
+        // Extract the device code (e.g., F01, P01, A01, etc.)
+        // messageKey typically contains the fault/alarm code like "F01", "F58", "P01", "A01"
+        var deviceCode = messageKey;
+
+        // If messageKey doesn't look like a code, try to construct one
+        if (string.IsNullOrEmpty(deviceCode) || !IsValidDeviceCode(deviceCode))
+        {
+            // For inverter faults, use Fxx format
+            if (devicePrefix == "INV" && category == "FAT")
+            {
+                deviceCode = $"F{alarm.VendorCode:D2}";
+            }
+            // For BMS protections, use Pxx format
+            else if (devicePrefix == "BMS" && category == "FAT")
+            {
+                deviceCode = $"P{alarm.VendorCode:D2}";
+            }
+            // For BMS alarms/warnings, use Axx format
+            else if (devicePrefix == "BMS" && category == "WAR")
+            {
+                deviceCode = $"A{alarm.VendorCode:D2}";
+            }
+            // For BMS errors, use Exx format
+            else if (devicePrefix == "BMS" && category == "ERR")
+            {
+                deviceCode = $"E{alarm.VendorCode:D2}";
+            }
+            // For inverter warnings, use Wxx format
+            else if (devicePrefix == "INV" && category == "WAR")
+            {
+                deviceCode = $"W{alarm.VendorCode:D2}";
+            }
+            // For info messages, use Ixx format
+            else if (category == "INF")
+            {
+                deviceCode = $"I{alarm.VendorCode:D2}";
+            }
+            else
+            {
+                deviceCode = alarm.VendorCode.ToString("D2");
+            }
+        }
+
+        return $"{devicePrefix}-{category}-{deviceCode}";
+    }
+
+    /// <summary>
+    /// Checks if a string looks like a valid device code (e.g., F01, P02, A03)
+    /// </summary>
+    private static bool IsValidDeviceCode(string code)
+    {
+        if (string.IsNullOrEmpty(code) || code.Length < 2)
+            return false;
+
+        // Valid codes start with a letter followed by digits (F01, P02, A03, W01, E01, I01)
+        return char.IsLetter(code[0]) && code.Skip(1).All(char.IsDigit);
+    }
+
+    /// <summary>
+    /// Resolves the generic notification type code based on the alarm's source device and severity.
+    /// Template: [INV/BMS]-[CATEGORY]-GENERIC
+    /// </summary>
+    private static string ResolveGenericNotificationTypeCode(AlarmDto alarm)
+    {
+        var sourceDevice = alarm.SourceDevice?.ToUpperInvariant() ?? "INV";
+        var severity = alarm.Severity?.ToUpperInvariant() ?? "FAULT";
+
+        var devicePrefix = sourceDevice switch
+        {
+            "BMS" or "BATTERY" => "BMS",
+            _ => "INV"
+        };
+
+        var category = severity switch
+        {
+            "FAULT" or "CRITICAL" or "PROTECTION" => "FAT",
+            "ERROR" => "ERR",
+            "WARNING" or "ALARM" => "WAR",
+            _ => "FAT"
+        };
+
+        return $"{devicePrefix}-{category}-GENERIC";
+    }
+
+    /// <summary>
+    /// Builds a human-readable message from raw register values for unknown alarms.
+    /// </summary>
+    private static string BuildRawRegisterMessage(InverterAlarmStateDto alarmState, AlarmDto alarm)
+    {
+        var parts = new List<string>();
+
+        if (alarmState.RunStateRaw > 0)
+            parts.Add($"RunState: 0x{alarmState.RunStateRaw:X4}");
+
+        if (alarmState.WarningWord1Raw > 0)
+            parts.Add($"Warn1: 0x{alarmState.WarningWord1Raw:X4}");
+
+        if (alarmState.WarningWord2Raw > 0)
+            parts.Add($"Warn2: 0x{alarmState.WarningWord2Raw:X4}");
+
+        if (alarmState.FaultWord1Raw > 0)
+            parts.Add($"Fault1: 0x{alarmState.FaultWord1Raw:X4}");
+
+        if (alarmState.FaultWord2Raw > 0)
+            parts.Add($"Fault2: 0x{alarmState.FaultWord2Raw:X4}");
+
+        if (alarmState.FaultWord3Raw > 0)
+            parts.Add($"Fault3: 0x{alarmState.FaultWord3Raw:X4}");
+
+        if (alarmState.FaultWord4Raw > 0)
+            parts.Add($"Fault4: 0x{alarmState.FaultWord4Raw:X4}");
+
+        // Add alarm-specific info
+        if (!string.IsNullOrEmpty(alarm.MessageKey))
+            parts.Add($"Key: {alarm.MessageKey}");
+
+        if (alarm.VendorCode > 0)
+            parts.Add($"VendorCode: {alarm.VendorCode}");
+
+        if (alarm.Code > 0)
+            parts.Add($"Code: {alarm.Code}");
+
+        return parts.Count > 0
+            ? string.Join(" | ", parts)
+            : "Unknown alarm - no register data available";
     }
 
     public async Task<ProcessDeviceAlarmResult> Handle(ProcessDeviceAlarmCommand request, CancellationToken cancellationToken)
@@ -95,42 +217,35 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
         {
             try
             {
-                // Try to find notification type by mapped code
-                string? notificationTypeCode = null;
-
-                if (AlarmCodeMapping.TryGetValue(alarm.Code, out var mappedCode))
-                {
-                    notificationTypeCode = mappedCode;
-                }
-                else
-                {
-                    // Fallback: Try to construct code from severity and messageKey
-                    var level = alarm.Severity.ToUpper() switch
-                    {
-                        "FAULT" => "ERR",
-                        "WARNING" => "WARN",
-                        _ => "INFO"
-                    };
-
-                    notificationTypeCode = $"INV-{level}-{alarm.MessageKey}";
-                }
+                // Resolve the notification type code using the new template format
+                // Template: [INV/BMS]-[CATEGORY]-[device's code]
+                var notificationTypeCode = ResolveNotificationTypeCode(alarm);
+                var isGenericFallback = false;
+                string? rawRegisterMessage = null;
 
                 var notificationType = await _context.DeviceNotificationTypes
                     .FirstOrDefaultAsync(nt => nt.Code == notificationTypeCode && nt.IsActive, cancellationToken);
 
                 if (notificationType == null)
                 {
-                    // Create a generic notification type code for unknown alarms
-                    notificationTypeCode = $"INV-{(alarm.Severity.ToUpper() == "FAULT" ? "ERR" : "WARN")}-UNKNOWN-{alarm.Code}";
-
+                    // Try generic fallback
+                    var genericCode = ResolveGenericNotificationTypeCode(alarm);
                     notificationType = await _context.DeviceNotificationTypes
-                        .FirstOrDefaultAsync(nt => nt.Code == notificationTypeCode, cancellationToken);
+                        .FirstOrDefaultAsync(nt => nt.Code == genericCode && nt.IsActive, cancellationToken);
 
                     if (notificationType == null)
                     {
-                        errors.Add($"Notification type not found for alarm code {alarm.Code} ({alarm.MessageKey}). Skipping.");
+                        // Log detailed info for debugging - neither specific nor generic found
+                        errors.Add($"Notification type '{notificationTypeCode}' and generic '{genericCode}' not found for alarm " +
+                                  $"(code: {alarm.Code}, vendorCode: {alarm.VendorCode}, severity: {alarm.Severity}, " +
+                                  $"sourceDevice: {alarm.SourceDevice}, messageKey: {alarm.MessageKey}). Skipping.");
                         continue;
                     }
+
+                    // Using generic fallback - build raw register message
+                    isGenericFallback = true;
+                    rawRegisterMessage = BuildRawRegisterMessage(request.AlarmState, alarm);
+                    notificationTypeCode = genericCode;
                 }
 
                 // Check if this notification already exists (avoid duplicates)
@@ -163,6 +278,7 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
                 // Create new notification
                 var additionalDataDict = new Dictionary<string, object>
                 {
+                    ["resolvedCode"] = notificationTypeCode,
                     ["severity"] = alarm.Severity,
                     ["sourceDevice"] = alarm.SourceDevice,
                     ["category"] = alarm.Category,
@@ -181,8 +297,15 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
                     ["faultWord1Raw"] = request.AlarmState.FaultWord1Raw,
                     ["faultWord2Raw"] = request.AlarmState.FaultWord2Raw,
                     ["faultWord3Raw"] = request.AlarmState.FaultWord3Raw,
-                    ["faultWord4Raw"] = request.AlarmState.FaultWord4Raw
+                    ["faultWord4Raw"] = request.AlarmState.FaultWord4Raw,
+                    ["isGenericFallback"] = isGenericFallback
                 };
+
+                // Add raw register message for generic fallback notifications
+                if (isGenericFallback && !string.IsNullOrEmpty(rawRegisterMessage))
+                {
+                    additionalDataDict["rawRegisterMessage"] = rawRegisterMessage;
+                }
 
                 var deviceNotification = new DeviceNotification
                 {

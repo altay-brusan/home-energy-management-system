@@ -8,14 +8,17 @@ using Hems_Backend.Application.DeviceData.Commands.CreateDeviceEnergyData;
 using Hems_Backend.Application.DeviceData.Commands.CreateDevicePowerData;
 using Hems_Backend.Application.DeviceData.Queries.GetDeviceData;
 using Hems_Backend.Application.Devices.Queries.GetDeviceHeartbeatStatus;
+using Hems_Backend.Application.DeviceNotifications.Commands.ProcessDeviceAlarm;
+using Hems_Backend.Application.DeviceNotifications.Common.Models;
 using Hems_Backend.Domain.Constants;
 using Hems_Backend.Infrastructure.Hubs;
 using Hems_Backend.Web.Infrastructure;
 using Hems_Backend.Web.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http; // make sure this is present
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hems_Backend.Web.Endpoints;
 
@@ -29,7 +32,8 @@ public class DeviceData : EndpointGroupBase
             .MapPost(ReceiveBatterySocTelemetry, "BatterySoc")
             .MapPost(ReceiveDailyEnergyFlowTelemetry, "DailyEnergyFlow")
             .MapPost(ReceiveTotalEnergyFlowTelemetry, "TotalEnergyFlow")
-            .MapPost(ReceiveHeartbeat, "Heartbeat");
+            .MapPost(ReceiveHeartbeat, "Heartbeat")
+            .MapPost(ReceiveAlarmTelemetry, "Alarm");
 
         // User endpoints (require user authorization)
         app.MapGroup(this)
@@ -705,6 +709,220 @@ private async Task<IResult> ProcessPowerFlowTelemetry(
     catch (Exception ex)
     {
         logger.LogError(ex, "Error handling {DataType} power flow telemetry", dataType);
+        return Results.Problem(detail: ex.Message, statusCode: 500);
+    }
+}
+
+/// <summary>
+/// Receives alarm telemetry from ThingsBoard (InverterAlarmState)
+/// Accepts TB wrapper format: { deviceId, data: { ...InverterAlarmState } }
+/// Converts TB ID to internal ID and processes alarms
+/// </summary>
+public async Task<IResult> ReceiveAlarmTelemetry(
+    [FromBody] JsonElement body,
+    ILogger<DeviceData> logger,
+    ISender sender,
+    IDeviceMappingService deviceMapping,
+    IDeviceNotificationService notificationService,
+    IApplicationDbContext context)
+{
+    try
+    {
+        logger.LogInformation("Alarm telemetry received at {UtcNow}", DateTime.UtcNow);
+
+        // 1) Parse ThingsBoardDeviceId from root level "deviceId" field
+        Guid thingsBoardDeviceId = Guid.Empty;
+        if (body.TryGetProperty("deviceId", out var deviceIdElement))
+        {
+            var deviceIdStr = deviceIdElement.GetString();
+            if (!string.IsNullOrWhiteSpace(deviceIdStr) && Guid.TryParse(deviceIdStr, out var parsedDeviceId))
+            {
+                thingsBoardDeviceId = parsedDeviceId;
+            }
+            else
+            {
+                logger.LogWarning("Invalid deviceId format: {DeviceId}", deviceIdStr);
+                return Results.Problem("Invalid 'deviceId' format", statusCode: 400);
+            }
+        }
+        else
+        {
+            logger.LogWarning("Missing deviceId in root level");
+            return Results.Problem("Missing 'deviceId' in request", statusCode: 400);
+        }
+
+        // 2) Convert ThingsBoard ID to internal device ID
+        var internalDeviceId = await deviceMapping.GetDeviceIdAsync(thingsBoardDeviceId);
+        if (internalDeviceId == null)
+        {
+            logger.LogWarning("No device found for ThingsBoardDeviceId: {ThingsBoardDeviceId}", thingsBoardDeviceId);
+            return Results.Problem($"Device not found for ThingsBoardDeviceId: {thingsBoardDeviceId}", statusCode: 404);
+        }
+
+        // 3) Get the inner "data" object containing InverterAlarmState
+        if (!body.TryGetProperty("data", out var dataElement) ||
+            dataElement.ValueKind != JsonValueKind.Object)
+        {
+            logger.LogWarning("Received alarm telemetry without 'data' object");
+            return Results.Problem("Missing 'data' object", statusCode: 400);
+        }
+
+        // 4) Parse InverterAlarmState from data
+        var alarmState = new InverterAlarmStateDto();
+
+        if (dataElement.TryGetProperty("timestampUtc", out var tsEl))
+            alarmState.TimestampUtc = tsEl.GetString() ?? string.Empty;
+
+        if (dataElement.TryGetProperty("gatewayId", out var gwEl))
+            alarmState.GatewayId = gwEl.GetString() ?? string.Empty;
+
+        if (dataElement.TryGetProperty("inverterSerialNumber", out var snEl))
+            alarmState.InverterSerialNumber = snEl.GetString() ?? string.Empty;
+
+        if (dataElement.TryGetProperty("runStateRaw", out var rsEl))
+            alarmState.RunStateRaw = rsEl.GetInt32();
+
+        if (dataElement.TryGetProperty("warningWord1Raw", out var ww1El))
+            alarmState.WarningWord1Raw = ww1El.GetInt32();
+
+        if (dataElement.TryGetProperty("warningWord2Raw", out var ww2El))
+            alarmState.WarningWord2Raw = ww2El.GetInt32();
+
+        if (dataElement.TryGetProperty("faultWord1Raw", out var fw1El))
+            alarmState.FaultWord1Raw = fw1El.GetInt32();
+
+        if (dataElement.TryGetProperty("faultWord2Raw", out var fw2El))
+            alarmState.FaultWord2Raw = fw2El.GetInt32();
+
+        if (dataElement.TryGetProperty("faultWord3Raw", out var fw3El))
+            alarmState.FaultWord3Raw = fw3El.GetInt32();
+
+        if (dataElement.TryGetProperty("faultWord4Raw", out var fw4El))
+            alarmState.FaultWord4Raw = fw4El.GetInt32();
+
+        // Parse activeAlarms array
+        if (dataElement.TryGetProperty("activeAlarms", out var alarmsEl) &&
+            alarmsEl.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var alarmEl in alarmsEl.EnumerateArray())
+            {
+                var alarm = new AlarmDto();
+
+                if (alarmEl.TryGetProperty("code", out var codeEl))
+                    alarm.Code = codeEl.GetInt32();
+
+                if (alarmEl.TryGetProperty("vendorCode", out var vcEl))
+                    alarm.VendorCode = vcEl.GetInt32();
+
+                if (alarmEl.TryGetProperty("severity", out var sevEl))
+                    alarm.Severity = sevEl.GetString() ?? string.Empty;
+
+                if (alarmEl.TryGetProperty("sourceDevice", out var sdEl))
+                    alarm.SourceDevice = sdEl.GetString() ?? string.Empty;
+
+                if (alarmEl.TryGetProperty("category", out var catEl))
+                    alarm.Category = catEl.GetString() ?? string.Empty;
+
+                if (alarmEl.TryGetProperty("messageKey", out var mkEl))
+                    alarm.MessageKey = mkEl.GetString() ?? string.Empty;
+
+                if (alarmEl.TryGetProperty("messageParams", out var mpEl) &&
+                    mpEl.ValueKind == JsonValueKind.Object)
+                {
+                    alarm.MessageParams = JsonSerializer.Deserialize<Dictionary<string, object>>(mpEl.GetRawText())
+                        ?? new Dictionary<string, object>();
+                }
+
+                if (alarmEl.TryGetProperty("firstOccurredUtc", out var foEl))
+                    alarm.FirstOccurredUtc = foEl.GetString() ?? string.Empty;
+
+                if (alarmEl.TryGetProperty("lastOccurredUtc", out var loEl))
+                    alarm.LastOccurredUtc = loEl.GetString() ?? string.Empty;
+
+                if (alarmEl.TryGetProperty("occurrenceCount", out var ocEl))
+                    alarm.OccurrenceCount = ocEl.GetInt32();
+
+                alarmState.ActiveAlarms.Add(alarm);
+            }
+        }
+
+        // 5) Create command with internal device ID
+        var command = new ProcessDeviceAlarmCommand
+        {
+            DeviceId = internalDeviceId.Value,
+            AlarmState = alarmState
+        };
+
+        var result = await sender.Send(command);
+
+        // 6) Send SignalR notifications for created notifications
+        if (result.CreatedNotificationIds.Any())
+        {
+            var notifications = await context.DeviceNotifications
+                .Include(dn => dn.DeviceNotificationType)
+                .Include(dn => dn.Device)
+                .Include(dn => dn.Site)
+                .Where(dn => result.CreatedNotificationIds.Contains(dn.Id))
+                .Select(dn => new DeviceNotificationDto
+                {
+                    Id = dn.Id,
+                    DeviceId = dn.DeviceId,
+                    SiteId = dn.SiteId,
+                    SetupDeviceId = dn.SetupDeviceId,
+                    DeviceNotificationTypeId = dn.DeviceNotificationTypeId,
+                    Timestamp = dn.Timestamp,
+                    AdditionalData = dn.AdditionalData,
+                    IsProcessed = dn.IsProcessed,
+                    Created = dn.Created,
+                    DeviceNotificationType = new DeviceNotificationTypeDto
+                    {
+                        Id = dn.DeviceNotificationType.Id,
+                        Code = dn.DeviceNotificationType.Code,
+                        Message = dn.DeviceNotificationType.Message,
+                        Status = dn.DeviceNotificationType.Status,
+                        Description = dn.DeviceNotificationType.Description,
+                        Register = dn.DeviceNotificationType.Register,
+                        Value = dn.DeviceNotificationType.Value,
+                        Category = dn.DeviceNotificationType.Category,
+                        Version = dn.DeviceNotificationType.Version,
+                        Manufacturer = dn.DeviceNotificationType.Manufacturer,
+                        IsActive = dn.DeviceNotificationType.IsActive
+                    },
+                    DeviceManufacturer = dn.Device.Manufacturer,
+                    SiteName = dn.Site.Name
+                })
+                .ToListAsync();
+
+            var criticalCategories = new[] { "WARNING", "ERROR", "ALARM" };
+
+            foreach (var notification in notifications)
+            {
+                if (criticalCategories.Contains(notification.DeviceNotificationType.Category))
+                {
+                    // Use internal device ID for frontend SignalR notifications
+                    await notificationService.SendNotificationToSiteAsync(notification.SiteId, notification);
+                    await notificationService.SendNotificationToDeviceAsync(notification.DeviceId, notification);
+                }
+            }
+        }
+
+        logger.LogInformation(
+            "Alarm telemetry processed for device {DeviceId} (TB: {ThingsBoardDeviceId}). " +
+            "Processed: {ProcessedCount}, Created: {CreatedCount}, Errors: {ErrorCount}",
+            internalDeviceId, thingsBoardDeviceId,
+            result.ProcessedAlarmsCount, result.CreatedNotificationIds.Count, result.Errors.Count);
+
+        return Results.Ok(new
+        {
+            success = result.Errors.Count == 0,
+            processedCount = result.ProcessedAlarmsCount,
+            createdCount = result.CreatedNotificationIds.Count,
+            errors = result.Errors
+        });
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error handling alarm telemetry");
         return Results.Problem(detail: ex.Message, statusCode: 500);
     }
 }
