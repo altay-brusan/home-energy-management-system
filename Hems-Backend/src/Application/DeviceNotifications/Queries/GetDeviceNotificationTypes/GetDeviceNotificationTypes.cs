@@ -31,6 +31,7 @@ public class GetDeviceNotificationTypesQueryHandler : IRequestHandler<GetDeviceN
                 Register = nt.Register,
                 Value = nt.Value,
                 Category = nt.Category,
+                Severity = nt.Severity,
                 Version = nt.Version,
                 Manufacturer = nt.Manufacturer,
                 IsActive = nt.IsActive

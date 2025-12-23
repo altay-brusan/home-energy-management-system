@@ -16,7 +16,39 @@ public record ProcessDeviceAlarmResult
 {
     public int ProcessedAlarmsCount { get; init; }
     public List<Guid> CreatedNotificationIds { get; init; } = new();
+    public List<ProcessedNotificationInfo> Notifications { get; init; } = new();
     public List<string> Errors { get; init; } = new();
+}
+
+/// <summary>
+/// Contains detailed information about a processed notification.
+/// </summary>
+public record ProcessedNotificationInfo
+{
+    /// <summary>
+    /// The notification ID.
+    /// </summary>
+    public Guid Id { get; init; }
+
+    /// <summary>
+    /// The notification type code (e.g., INV-FAT-F01, BMS-WAR-A01).
+    /// </summary>
+    public string Key { get; init; } = string.Empty;
+
+    /// <summary>
+    /// The human-readable message for this notification type.
+    /// </summary>
+    public string Message { get; init; } = string.Empty;
+
+    /// <summary>
+    /// The severity level: ALARM, WARNING, or ERROR.
+    /// </summary>
+    public string Severity { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Detailed description including register values and diagnostic information.
+    /// </summary>
+    public string Description { get; init; } = string.Empty;
 }
 
 public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAlarmCommand, ProcessDeviceAlarmResult>
@@ -30,8 +62,8 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
 
     /// <summary>
     /// Resolves the notification type code based on the alarm's source device, severity, and message key.
-    /// Template: [INV/BMS]-[CATEGORY]-[device's code]
-    /// Categories: INF (Info), DBG (Debug), ERR (Error), FAT (Fault), WAR (Warning)
+    /// Template: [INV/BMS]-[SEVERITY_CODE]-[device's code]
+    /// Severity Codes: ALM (Alarm), ERR (Error), WAR (Warning)
     /// </summary>
     private static string ResolveNotificationTypeCode(AlarmDto alarm)
     {
@@ -46,15 +78,13 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
             _ => "INV"
         };
 
-        // Determine category based on severity
-        var category = severity switch
+        // Determine severity code based on alarm severity
+        var severityCode = severity switch
         {
-            "FAULT" or "CRITICAL" or "PROTECTION" => "FAT",
+            "ALARM" or "FAULT" or "CRITICAL" or "PROTECTION" => "ALM",
             "ERROR" => "ERR",
-            "WARNING" or "ALARM" => "WAR",
-            "INFO" or "INFORMATION" => "INF",
-            "DEBUG" => "DBG",
-            _ => "FAT" // Default to fault for unknown severity
+            "WARNING" => "WAR",
+            _ => "ALM" // Default to alarm for unknown severity
         };
 
         // Extract the device code (e.g., F01, P01, A01, etc.)
@@ -64,35 +94,30 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
         // If messageKey doesn't look like a code, try to construct one
         if (string.IsNullOrEmpty(deviceCode) || !IsValidDeviceCode(deviceCode))
         {
-            // For inverter faults, use Fxx format
-            if (devicePrefix == "INV" && category == "FAT")
+            // For inverter alarms (critical), use Fxx format
+            if (devicePrefix == "INV" && severityCode == "ALM")
             {
                 deviceCode = $"F{alarm.VendorCode:D2}";
             }
-            // For BMS protections, use Pxx format
-            else if (devicePrefix == "BMS" && category == "FAT")
+            // For BMS alarms (protections), use Pxx format
+            else if (devicePrefix == "BMS" && severityCode == "ALM")
             {
                 deviceCode = $"P{alarm.VendorCode:D2}";
             }
-            // For BMS alarms/warnings, use Axx format
-            else if (devicePrefix == "BMS" && category == "WAR")
+            // For BMS warnings, use Axx format
+            else if (devicePrefix == "BMS" && severityCode == "WAR")
             {
                 deviceCode = $"A{alarm.VendorCode:D2}";
             }
             // For BMS errors, use Exx format
-            else if (devicePrefix == "BMS" && category == "ERR")
+            else if (devicePrefix == "BMS" && severityCode == "ERR")
             {
                 deviceCode = $"E{alarm.VendorCode:D2}";
             }
             // For inverter warnings, use Wxx format
-            else if (devicePrefix == "INV" && category == "WAR")
+            else if (devicePrefix == "INV" && severityCode == "WAR")
             {
                 deviceCode = $"W{alarm.VendorCode:D2}";
-            }
-            // For info messages, use Ixx format
-            else if (category == "INF")
-            {
-                deviceCode = $"I{alarm.VendorCode:D2}";
             }
             else
             {
@@ -100,7 +125,7 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
             }
         }
 
-        return $"{devicePrefix}-{category}-{deviceCode}";
+        return $"{devicePrefix}-{severityCode}-{deviceCode}";
     }
 
     /// <summary>
@@ -117,7 +142,7 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
 
     /// <summary>
     /// Resolves the generic notification type code based on the alarm's source device and severity.
-    /// Template: [INV/BMS]-[CATEGORY]-GENERIC
+    /// Template: [INV/BMS]-[SEVERITY_CODE]-GENERIC
     /// </summary>
     private static string ResolveGenericNotificationTypeCode(AlarmDto alarm)
     {
@@ -130,15 +155,93 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
             _ => "INV"
         };
 
-        var category = severity switch
+        var severityCode = severity switch
         {
-            "FAULT" or "CRITICAL" or "PROTECTION" => "FAT",
+            "ALARM" or "FAULT" or "CRITICAL" or "PROTECTION" => "ALM",
             "ERROR" => "ERR",
-            "WARNING" or "ALARM" => "WAR",
-            _ => "FAT"
+            "WARNING" => "WAR",
+            _ => "ALM"
         };
 
-        return $"{devicePrefix}-{category}-GENERIC";
+        return $"{devicePrefix}-{severityCode}-GENERIC";
+    }
+
+    /// <summary>
+    /// Maps severity code (ALM, WAR, ERR) to severity value (ALARM, WARNING, ERROR).
+    /// </summary>
+    private static string MapSeverityCodeToValue(string severityCode)
+    {
+        return severityCode switch
+        {
+            "ALM" => "ALARM",
+            "WAR" => "WARNING",
+            "ERR" => "ERROR",
+            _ => "ALARM"
+        };
+    }
+
+    /// <summary>
+    /// Builds a detailed description including register values for diagnostic purposes.
+    /// </summary>
+    private static string BuildDetailedDescription(
+        InverterAlarmStateDto alarmState,
+        AlarmDto? alarm,
+        string notificationTypeDescription,
+        bool isGenericFallback)
+    {
+        var parts = new List<string>();
+
+        // Start with the notification type description
+        parts.Add(notificationTypeDescription);
+
+        // Add register values for diagnostic purposes
+        var registerInfo = new List<string>();
+
+        if (alarmState.RunStateRaw > 0)
+            registerInfo.Add($"RunState: 0x{alarmState.RunStateRaw:X4}");
+
+        if (alarmState.WarningWord1Raw > 0)
+            registerInfo.Add($"Warning1: 0x{alarmState.WarningWord1Raw:X4}");
+
+        if (alarmState.WarningWord2Raw > 0)
+            registerInfo.Add($"Warning2: 0x{alarmState.WarningWord2Raw:X4}");
+
+        if (alarmState.FaultWord1Raw > 0)
+            registerInfo.Add($"Fault1: 0x{alarmState.FaultWord1Raw:X4}");
+
+        if (alarmState.FaultWord2Raw > 0)
+            registerInfo.Add($"Fault2: 0x{alarmState.FaultWord2Raw:X4}");
+
+        if (alarmState.FaultWord3Raw > 0)
+            registerInfo.Add($"Fault3: 0x{alarmState.FaultWord3Raw:X4}");
+
+        if (alarmState.FaultWord4Raw > 0)
+            registerInfo.Add($"Fault4: 0x{alarmState.FaultWord4Raw:X4}");
+
+        if (registerInfo.Count > 0)
+        {
+            parts.Add($"Registers: [{string.Join(", ", registerInfo)}]");
+        }
+
+        // Add alarm-specific info if available
+        if (alarm != null)
+        {
+            if (!string.IsNullOrEmpty(alarm.MessageKey))
+                parts.Add($"MessageKey: {alarm.MessageKey}");
+
+            if (alarm.VendorCode > 0)
+                parts.Add($"VendorCode: {alarm.VendorCode}");
+
+            if (alarm.Code > 0)
+                parts.Add($"Code: {alarm.Code}");
+        }
+
+        if (isGenericFallback)
+        {
+            parts.Add("(Generic fallback - specific alarm type not found)");
+        }
+
+        return string.Join(" | ", parts);
     }
 
     /// <summary>
@@ -202,11 +305,11 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
     /// </summary>
     private static string DetermineRawRegisterSeverity(InverterAlarmStateDto alarmState)
     {
-        // Faults are more severe than warnings
+        // Alarms (faults) are more severe than warnings
         if (alarmState.FaultWord1Raw != 0 || alarmState.FaultWord2Raw != 0 ||
             alarmState.FaultWord3Raw != 0 || alarmState.FaultWord4Raw != 0)
         {
-            return "FAULT";
+            return "ALARM";
         }
 
         if (alarmState.WarningWord1Raw != 0 || alarmState.WarningWord2Raw != 0)
@@ -214,7 +317,7 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
             return "WARNING";
         }
 
-        return "INFO";
+        return "WARNING";
     }
 
     /// <summary>
@@ -245,6 +348,7 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
     {
         var errors = new List<string>();
         var createdNotificationIds = new List<Guid>();
+        var processedNotifications = new List<ProcessedNotificationInfo>();
 
         // Get device with related entities
         var device = await _context.Devices
@@ -279,8 +383,8 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
                 var rawCode = BuildRawRegisterCode(request.AlarmState);
 
                 // Determine generic notification type based on severity
-                var genericCode = severity == "FAULT" ? "INV-FAT-GENERIC" :
-                                  severity == "WARNING" ? "INV-WAR-GENERIC" : "INV-INF-GENERIC";
+                var genericCode = severity == "ALARM" ? "INV-ALM-GENERIC" :
+                                  severity == "WARNING" ? "INV-WAR-GENERIC" : "INV-ERR-GENERIC";
 
                 var notificationType = await _context.DeviceNotificationTypes
                     .FirstOrDefaultAsync(nt => nt.Code == genericCode && nt.IsActive, cancellationToken);
@@ -330,6 +434,23 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
 
                         _context.DeviceNotifications.Add(deviceNotification);
                         createdNotificationIds.Add(deviceNotification.Id);
+
+                        // Build detailed description with register values
+                        var detailedDescription = BuildDetailedDescription(
+                            request.AlarmState,
+                            null,
+                            notificationType.Description,
+                            isGenericFallback: true);
+
+                        processedNotifications.Add(new ProcessedNotificationInfo
+                        {
+                            Id = deviceNotification.Id,
+                            Key = notificationType.Code,
+                            Message = notificationType.Message,
+                            Severity = notificationType.Severity,
+                            Description = detailedDescription
+                        });
+
                         await _context.SaveChangesAsync(cancellationToken);
                     }
                 }
@@ -347,6 +468,7 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
             {
                 ProcessedAlarmsCount = 0,
                 CreatedNotificationIds = createdNotificationIds,
+                Notifications = processedNotifications,
                 Errors = errors
             };
         }
@@ -358,6 +480,7 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
             {
                 ProcessedAlarmsCount = 0,
                 CreatedNotificationIds = createdNotificationIds,
+                Notifications = processedNotifications,
                 Errors = errors
             };
         }
@@ -481,6 +604,22 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
 
                 _context.DeviceNotifications.Add(deviceNotification);
                 createdNotificationIds.Add(deviceNotification.Id);
+
+                // Build detailed description with register values
+                var detailedDescription = BuildDetailedDescription(
+                    request.AlarmState,
+                    alarm,
+                    notificationType.Description,
+                    isGenericFallback);
+
+                processedNotifications.Add(new ProcessedNotificationInfo
+                {
+                    Id = deviceNotification.Id,
+                    Key = notificationType.Code,
+                    Message = notificationType.Message,
+                    Severity = notificationType.Severity,
+                    Description = detailedDescription
+                });
             }
             catch (Exception ex)
             {
@@ -497,6 +636,7 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
         {
             ProcessedAlarmsCount = request.AlarmState.ActiveAlarms.Count,
             CreatedNotificationIds = createdNotificationIds,
+            Notifications = processedNotifications,
             Errors = errors
         };
     }
