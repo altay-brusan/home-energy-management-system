@@ -1955,6 +1955,144 @@
         ]
       }
     },
+    "/api/EnergyRevenue/{deviceId}/prices": {
+      "post": {
+        "tags": [
+          "EnergyRevenue"
+        ],
+        "operationId": "SetEnergyPrice",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetEnergyPriceRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      },
+      "get": {
+        "tags": [
+          "EnergyRevenue"
+        ],
+        "operationId": "GetEnergyPrices",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "includeHistory",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/EnergyRevenue/{deviceId}": {
+      "get": {
+        "tags": [
+          "EnergyRevenue"
+        ],
+        "operationId": "GetEnergyRevenue",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "includeHistory",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "x-position": 2
+          },
+          {
+            "name": "revenueStartDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 3
+          },
+          {
+            "name": "revenueEndDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 4
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/Invitations/create": {
       "post": {
         "tags": [
@@ -5033,6 +5171,9 @@
             "type": "number",
             "format": "double"
           },
+          "currency": {
+            "type": "string"
+          },
           "data": {
             "type": "array",
             "items": {
@@ -5064,6 +5205,14 @@
             "format": "double"
           },
           "price": {
+            "type": "number",
+            "format": "double"
+          },
+          "buyPriceUsed": {
+            "type": "number",
+            "format": "double"
+          },
+          "sellPriceUsed": {
             "type": "number",
             "format": "double"
           }
@@ -6436,6 +6585,53 @@
           7,
           99
         ]
+      },
+      "SetEnergyPriceRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "unit": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "prices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PriceEntryRequest"
+            }
+          }
+        }
+      },
+      "PriceEntryRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sellPrice": {
+            "type": "number",
+            "format": "decimal"
+          },
+          "buyPrice": {
+            "type": "number",
+            "format": "decimal"
+          },
+          "effectiveFrom": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "beginHour": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "endHour": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          }
+        }
       },
       "CreateInvitationCommand": {
         "type": "object",

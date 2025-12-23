@@ -11,14 +11,19 @@ public record EnergyRevenueDto
     public string Period { get; init; } = string.Empty;
 
     /// <summary>
-    /// Price per kWh for buying energy from grid in EUR
+    /// Current price per kWh for buying energy from grid
     /// </summary>
     public double BuyPricePerKWh { get; init; }
 
     /// <summary>
-    /// Price per kWh for selling energy to grid in EUR
+    /// Current price per kWh for selling energy to grid
     /// </summary>
     public double SellPricePerKWh { get; init; }
+
+    /// <summary>
+    /// Currency code (e.g., "EUR", "USD", "TRY")
+    /// </summary>
+    public string Currency { get; init; } = "EUR";
 
     /// <summary>
     /// List of revenue data points for the specified period
@@ -58,11 +63,23 @@ public record EnergyRevenueDataPoint
     public double Net { get; init; }
 
     /// <summary>
-    /// Calculated revenue/cost in EUR
+    /// Calculated revenue/cost
     /// Formula: (Sell × SellPrice) - (Buy × BuyPrice)
     /// Positive = revenue/profit, Negative = cost/loss
     /// </summary>
     public double Price { get; init; }
+
+    /// <summary>
+    /// Buy price per kWh used for this data point's calculation
+    /// This reflects the price that was effective at the time of this data point
+    /// </summary>
+    public double BuyPriceUsed { get; init; }
+
+    /// <summary>
+    /// Sell price per kWh used for this data point's calculation
+    /// This reflects the price that was effective at the time of this data point
+    /// </summary>
+    public double SellPriceUsed { get; init; }
 }
 
 /// <summary>
