@@ -2,8 +2,6 @@ import { useFocusEffect, useNavigation, useIsFocused } from "@react-navigation/n
 import { ArrowLeft, Sun, Wifi, Zap } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Animated,
   Image,
   Pressable,
   RefreshControl,
@@ -63,8 +61,6 @@ export default function DeviceDetail() {
     }, [isAdminUser, selectedSite, navigation])
   );
 
-  const headerOpacity = useRef(new Animated.Value(0)).current;
-  const headerY = useRef(new Animated.Value(-50)).current;
 
   const [components, setComponents] = useState<any[]>([]);
   const [deviceId, setDeviceId] = useState<string | null>(null);
@@ -232,21 +228,6 @@ export default function DeviceDetail() {
   //   }
   // }, [components]);
 
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(headerOpacity, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.spring(headerY, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 50,
-        friction: 8,
-      }),
-    ]).start();
-  }, []);
 
   const navigateToInverterDetail = () => {
     const inverterComp = components.find((c) =>
@@ -330,47 +311,27 @@ export default function DeviceDetail() {
         />
       )}
 
-      {/* Header - Her zaman göster (cached) */}
-      <Animated.View
-        style={[
-          styles.header,
-          {
-            paddingTop: insets.top,
-            opacity: headerOpacity,
-            transform: [{ translateY: headerY }],
-          },
-        ]}
-      >
-        <View style={[styles.headerContent, { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-            <Pressable
-              style={{ paddingVertical: 8, paddingRight: 8, marginLeft: -4 }}
-              onPress={() => navigation.goBack()}
-            >
-              <ArrowLeft size={26} color={COLORS.textSoft} strokeWidth={2.5} />
-            </Pressable>
-
-            <Text style={styles.headerTitle}>
-              {t("deviceDetail.title")}
-            </Text>
-          </View>
-
-          {/* Notification Icon */}
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Notifications')}
-            style={{ padding: 8 }}
-          >
-            <View style={{ position: 'relative' }}>
-              <Svg width={20} height={25} viewBox="0 0 57.03 72">
-                <Path
-                  d="M7.53,62.8h10.2c.8,5.2,5.3,9.2,10.8,9.2s10-4,10.8-9.2h10.2c2.1,0,4.1-.9,5.6-2.5,1.4-1.6,2.1-3.7,1.9-5.8-.2-1.8-1.8-5.9-4.8-12.8-.4-1-.9-2.2-1.2-2.7v-10.8c0-11.7-8.8-21.6-20-22.8v-2.9c0-1.4-1.1-2.5-2.5-2.5s-2.5,1.1-2.5,2.5v2.9c-4.9.5-9.5,2.7-13.1,6.2-4.4,4.3-6.9,10-6.9,16.2v11.2c-.2.5-.7,1.7-1.2,2.7C1.83,48.6.23,52.6.03,54.5c-.2,2.1.5,4.2,1.9,5.8,1.5,1.6,3.5,2.5,5.6,2.5ZM28.53,67c-2.7,0-5-1.8-5.7-4.2h11.5c-.8,2.4-3.1,4.2-5.8,4.2ZM9.43,43.7c1.5-3.5,1.6-3.6,1.6-4.3v-11.6c0-4.8,1.9-9.3,5.3-12.6,3.3-3.2,7.6-4.9,12.1-4.9h.6c9.3.3,16.9,8.4,16.9,18v11.2c0,.7.1.8,1.6,4.3,1.2,2.7,4.3,9.8,4.4,11.3.1.7-.2,1.4-.6,1.9-.5.5-1.1.8-1.9.8H7.53c-.7,0-1.4-.3-1.9-.8s-.7-1.2-.6-1.9c.2-1.5,3.3-8.7,4.4-11.4Z"
-                  fill={COLORS.textSoft}
-                />
-              </Svg>
-            </View>
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
+      {/* Header - Settings tarzı */}
+      <View style={[styles.pageHeader, { paddingTop: insets.top + 12 }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBackButton}>
+          <ArrowLeft size={24} color={COLORS.text} />
+        </TouchableOpacity>
+        <Text style={[styles.pageHeaderTitle, { color: COLORS.text }]}>
+          {t("deviceDetail.title")}
+        </Text>
+        {/* Notification Icon */}
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Notifications')}
+          style={styles.headerBackButton}
+        >
+          <Svg width={20} height={24} viewBox="0 0 57.03 72">
+            <Path
+              d="M7.53,62.8h10.2c.8,5.2,5.3,9.2,10.8,9.2s10-4,10.8-9.2h10.2c2.1,0,4.1-.9,5.6-2.5,1.4-1.6,2.1-3.7,1.9-5.8-.2-1.8-1.8-5.9-4.8-12.8-.4-1-.9-2.2-1.2-2.7v-10.8c0-11.7-8.8-21.6-20-22.8v-2.9c0-1.4-1.1-2.5-2.5-2.5s-2.5,1.1-2.5,2.5v2.9c-4.9.5-9.5,2.7-13.1,6.2-4.4,4.3-6.9,10-6.9,16.2v11.2c-.2.5-.7,1.7-1.2,2.7C1.83,48.6.23,52.6.03,54.5c-.2,2.1.5,4.2,1.9,5.8,1.5,1.6,3.5,2.5,5.6,2.5ZM28.53,67c-2.7,0-5-1.8-5.7-4.2h11.5c-.8,2.4-3.1,4.2-5.8,4.2ZM9.43,43.7c1.5-3.5,1.6-3.6,1.6-4.3v-11.6c0-4.8,1.9-9.3,5.3-12.6,3.3-3.2,7.6-4.9,12.1-4.9h.6c9.3.3,16.9,8.4,16.9,18v11.2c0,.7.1.8,1.6,4.3,1.2,2.7,4.3,9.8,4.4,11.3.1.7-.2,1.4-.6,1.9-.5.5-1.1.8-1.9.8H7.53c-.7,0-1.4-.3-1.9-.8s-.7-1.2-.6-1.9c.2-1.5,3.3-8.7,4.4-11.4Z"
+              fill={COLORS.text}
+            />
+          </Svg>
+        </TouchableOpacity>
+      </View>
 
       {/* Content - Skeleton veya gerçek içerik */}
       {loading ? (
@@ -391,7 +352,7 @@ export default function DeviceDetail() {
         }
       >
         {/* Top Section: Device Image + Info Cards */}
-        <View style={[styles.topSection, { marginTop: insets.top + 80 }]}>
+        <View style={[styles.topSection, { marginTop: 16 }]}>
           {/* Left: Device Image */}
           <View style={styles.deviceImageContainer}>
             <Image

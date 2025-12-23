@@ -32,6 +32,25 @@ export function getStyles (COLORS: Record<string, string>) {
       color: COLORS.textSoft,
       letterSpacing: -0.5,
     },
+    // New page header styles (Settings style)
+    pageHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      zIndex: 10,
+    },
+    headerBackButton: {
+      padding: 8,
+    },
+    pageHeaderTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      flex: 1,
+      textAlign: 'center',
+      marginHorizontal: 8,
+    },
     backButton: {
       width: 36,
       height: 36,

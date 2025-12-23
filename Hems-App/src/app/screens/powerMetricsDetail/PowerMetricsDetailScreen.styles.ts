@@ -17,6 +17,24 @@ export const getPowerMetricsDetailStyles = (COLORS: Record<string, string>, isDa
       color: COLORS.textSoft,
       letterSpacing: -0.5,
     },
+    // New page header styles (Settings style)
+    pageHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+    },
+    headerBackButton: {
+      padding: 8,
+    },
+    pageHeaderTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      flex: 1,
+      textAlign: 'center',
+      marginHorizontal: 8,
+    },
     timeSelectorContainer: {
       flexDirection: 'row',
       alignItems: 'center',

@@ -953,16 +953,14 @@ export default function PowerMetricsDetailScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.dark, paddingTop: insets.top + 8 }}>
       {/* Header */}
-      <View style={styles.header}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={{ paddingVertical: 8, paddingRight: 8, marginLeft: -4 }}
-          >
-            <ArrowLeft size={26} color={COLORS.textSoft} strokeWidth={2.5} />
-          </TouchableOpacity>
-          <Text style={styles.title}>{t('powerMetrics24H.title', 'Power Metrics')}</Text>
-        </View>
+      <View style={styles.pageHeader}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBackButton}>
+          <ArrowLeft size={24} color={COLORS.text} />
+        </TouchableOpacity>
+        <Text style={[styles.pageHeaderTitle, { color: COLORS.text }]}>
+          {t('powerMetrics24H.title', 'Power Metrics')}
+        </Text>
+        <View style={{ width: 40 }} />
       </View>
 
       {/* Time Selector */}
