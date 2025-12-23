@@ -1,306 +1,93 @@
 namespace Hems_Backend.Application.DeviceSettings.Models;
 
 /// <summary>
-/// Predefined device operating modes
+/// Device operating modes based on Export Strategy
+/// Each mode controls how excess energy is handled
 /// </summary>
 public enum DeviceMode
 {
     /// <summary>
-    /// Energy saving mode - prioritizes battery preservation
+    /// Sell To Grid - Export excess solar/battery energy to the grid for income
+    /// Maps to: ExportStrategySelection = SellingFirst
     /// </summary>
-    EnergySave = 1,
+    SellToGrid = 1,
 
     /// <summary>
-    /// Maximum performance mode - prioritizes power output
+    /// Self Consumption - Use all energy at home, prevent any export to grid
+    /// Ideal for maximizing self-use and avoiding feed-in restrictions
+    /// Maps to: ExportStrategySelection = ZeroExportToLoad
     /// </summary>
-    MaxPerformance = 2,
+    SelfConsumption = 2,
 
     /// <summary>
-    /// Self-consumption mode - use solar power for own consumption
+    /// Smart Zero Export - Zero export with smart meter/CT sensing for precise control
+    /// Uses CT (Current Transformer) readings for accurate grid measurement
+    /// Maps to: ExportStrategySelection = ZeroExportToCT
     /// </summary>
-    SelfConsumption = 3,
-
-    /// <summary>
-    /// Backup mode - prioritizes keeping battery charged for backup
-    /// </summary>
-    Backup = 4,
-
-    /// <summary>
-    /// Time of use optimization mode - optimizes based on electricity rates
-    /// </summary>
-    TimeOfUse = 5,
-
-    /// <summary>
-    /// Off-grid mode - operates independently from grid
-    /// </summary>
-    OffGrid = 6,
-
-    /// <summary>
-    /// Grid selling mode - prioritizes selling excess solar to grid
-    /// </summary>
-    GridSelling = 7,
-
-    /// <summary>
-    /// Custom mode - user-defined settings
-    /// </summary>
-    Custom = 99
+    SmartZeroExport = 3
 }
 
 /// <summary>
-/// Configuration for each device mode
-/// Maps mode to parameter values
+/// Maps DeviceMode to the actual ExportStrategySelection parameter value
 /// </summary>
 public static class DeviceModeConfigurations
 {
-    public static readonly Dictionary<DeviceMode, Dictionary<string, string>> ModeSettings = new()
+    /// <summary>
+    /// Get the ExportStrategySelection value for a device mode
+    /// </summary>
+    public static string? GetExportStrategyValue(DeviceMode mode)
     {
-        [DeviceMode.EnergySave] = new()
-        {
-            // Battery Settings
-            ["GridChargingEnabled"] = "false",
-            ["GeneratorChargingEnabled"] = "false",
-            ["ShutdownSOC"] = "15",
-            ["LowBatteryWarning"] = "30",
-            ["RestartSOC"] = "40",
-
-            // System Work Mode
-            ["ExportStrategySelection"] = "ZeroExportToCT",
-            ["EnergyPrioritySelection"] = "BatteryFirst",
-            ["SolarSell"] = "false",
-            ["ForceOffGrid"] = "false",
-            ["GridPeakShavingEnabled"] = "true",
-            ["GridPeakShavingLimitPower"] = "5000",
-
-            // Generator & Smart Load
-            ["SmartLoadEnabled"] = "true",
-            ["SmartLoadOffSOC"] = "95",
-            ["SmartLoadOnSOC"] = "100",
-            ["GeneratorPeakShavingEnabled"] = "true"
-        },
-
-        [DeviceMode.MaxPerformance] = new()
-        {
-            // Battery Settings
-            ["GridChargingEnabled"] = "true",
-            ["GeneratorChargingEnabled"] = "true",
-            ["ShutdownSOC"] = "10",
-            ["LowBatteryWarning"] = "20",
-            ["RestartSOC"] = "50",
-
-            // System Work Mode
-            ["ExportStrategySelection"] = "SellingFirst",
-            ["EnergyPrioritySelection"] = "LoadFirst",
-            ["SolarSell"] = "true",
-            ["MaxSellPower"] = "12000",
-            ["ForceOffGrid"] = "false",
-            ["GridPeakShavingEnabled"] = "false",
-
-            // Generator & Smart Load
-            ["SmartLoadEnabled"] = "false",
-            ["GeneratorPeakShavingEnabled"] = "false"
-        },
-
-        [DeviceMode.SelfConsumption] = new()
-        {
-            // Battery Settings
-            ["GridChargingEnabled"] = "false",
-            ["GeneratorChargingEnabled"] = "false",
-            ["ShutdownSOC"] = "20",
-            ["LowBatteryWarning"] = "35",
-            ["RestartSOC"] = "50",
-
-            // System Work Mode
-            ["ExportStrategySelection"] = "ZeroExportToCT",
-            ["EnergyPrioritySelection"] = "BatteryFirst",
-            ["SolarSell"] = "false",
-            ["ForceOffGrid"] = "false",
-            ["GridPeakShavingEnabled"] = "false",
-
-            // Generator & Smart Load
-            ["SmartLoadEnabled"] = "true",
-            ["SmartLoadOffSOC"] = "90",
-            ["SmartLoadOnSOC"] = "95",
-            ["GeneratorPeakShavingEnabled"] = "false"
-        },
-
-        [DeviceMode.Backup] = new()
-        {
-            // Battery Settings
-            ["GridChargingEnabled"] = "true",
-            ["GridChargingStartSOC"] = "80",
-            ["GeneratorChargingEnabled"] = "true",
-            ["GeneratorChargingStartSOC"] = "70",
-            ["ShutdownSOC"] = "30",
-            ["LowBatteryWarning"] = "50",
-            ["RestartSOC"] = "60",
-
-            // System Work Mode
-            ["ExportStrategySelection"] = "ZeroExportToLoad",
-            ["EnergyPrioritySelection"] = "BatteryFirst",
-            ["SolarSell"] = "false",
-            ["ForceOffGrid"] = "false",
-            ["GridPeakShavingEnabled"] = "true",
-            ["GridPeakShavingLimitPower"] = "3000",
-
-            // Generator & Smart Load
-            ["SmartLoadEnabled"] = "false",
-            ["GeneratorPeakShavingEnabled"] = "true",
-            ["GeneratorPeakShavingLimitPower"] = "3000"
-        },
-
-        [DeviceMode.TimeOfUse] = new()
-        {
-            // Battery Settings
-            ["GridChargingEnabled"] = "true",
-            ["GridChargingStartSOC"] = "50",
-            ["GeneratorChargingEnabled"] = "false",
-            ["ShutdownSOC"] = "20",
-            ["LowBatteryWarning"] = "35",
-            ["RestartSOC"] = "50",
-
-            // System Work Mode
-            ["ExportStrategySelection"] = "ZeroExportToLoad",
-            ["EnergyPrioritySelection"] = "BatteryFirst",
-            ["SolarSell"] = "false",
-            ["ForceOffGrid"] = "false",
-            ["GridPeakShavingEnabled"] = "true",
-            ["GridPeakShavingLimitPower"] = "6000",
-
-            // Time of Use
-            ["TimeOfUseEnabled"] = "true",
-            ["Monday"] = "true",
-            ["Tuesday"] = "true",
-            ["Wednesday"] = "true",
-            ["Thursday"] = "true",
-            ["Friday"] = "true",
-            ["Saturday"] = "true",
-            ["Sunday"] = "true",
-
-            // Generator & Smart Load
-            ["SmartLoadEnabled"] = "false",
-            ["GeneratorPeakShavingEnabled"] = "false"
-        },
-
-        [DeviceMode.OffGrid] = new()
-        {
-            // Battery Settings
-            ["GridChargingEnabled"] = "false",
-            ["GeneratorChargingEnabled"] = "true",
-            ["GeneratorChargingStartSOC"] = "30",
-            ["ShutdownSOC"] = "20",
-            ["LowBatteryWarning"] = "35",
-            ["RestartSOC"] = "50",
-
-            // System Work Mode
-            ["ExportStrategySelection"] = "ZeroExportToLoad",
-            ["EnergyPrioritySelection"] = "BatteryFirst",
-            ["SolarSell"] = "false",
-            ["ForceOffGrid"] = "true",
-            ["GridPeakShavingEnabled"] = "false",
-
-            // Generator & Smart Load
-            ["GeneratorCharge"] = "true",
-            ["GeneratorStartSOC"] = "30",
-            ["SmartLoadEnabled"] = "true",
-            ["SmartLoadOffSOC"] = "85",
-            ["SmartLoadOnSOC"] = "95",
-            ["GeneratorPeakShavingEnabled"] = "true",
-            ["GeneratorPeakShavingLimitPower"] = "8000"
-        },
-
-        [DeviceMode.GridSelling] = new()
-        {
-            // Battery Settings
-            ["GridChargingEnabled"] = "false",
-            ["GeneratorChargingEnabled"] = "false",
-            ["ShutdownSOC"] = "15",
-            ["LowBatteryWarning"] = "25",
-            ["RestartSOC"] = "40",
-
-            // System Work Mode
-            ["ExportStrategySelection"] = "SellingFirst",
-            ["EnergyPrioritySelection"] = "LoadFirst",
-            ["SolarSell"] = "true",
-            ["MaxSellPower"] = "12000",
-            ["ForceOffGrid"] = "false",
-            ["GridPeakShavingEnabled"] = "false",
-
-            // Generator & Smart Load
-            ["SmartLoadEnabled"] = "false",
-            ["GeneratorPeakShavingEnabled"] = "false"
-        }
+        return ExportStrategyMapping.TryGetValue(mode, out var value) ? value : null;
+    }
     };
 
     /// <summary>
-    /// Get configuration for a specific mode
+    /// Mode to ExportStrategySelection value mapping
     /// </summary>
-    public static Dictionary<string, string>? GetModeConfiguration(DeviceMode mode)
+    public static readonly Dictionary<DeviceMode, string> ExportStrategyMapping = new()
     {
-        return ModeSettings.TryGetValue(mode, out var config) ? config : null;
-    }
+        [DeviceMode.SellToGrid] = "SellingFirst",
+        [DeviceMode.SelfConsumption] = "ZeroExportToLoad",
+        [DeviceMode.SmartZeroExport] = "ZeroExportToCT"
+    };
 
     /// <summary>
-    /// Get all available modes with descriptions
+    /// Get all available modes with their user-friendly descriptions
     /// </summary>
-    public static List<DeviceModeInfo> GetAvailableModes()
+    public static Dictionary<DeviceMode, DeviceModeInfo> GetAllModesWithDescriptions()
     {
-        return new List<DeviceModeInfo>
+        return new Dictionary<DeviceMode, DeviceModeInfo>
         {
-            new()
+            [DeviceMode.SellToGrid] = new DeviceModeInfo
             {
-                Mode = DeviceMode.EnergySave,
-                Name = "Energy Save",
-                Description = "Prioritizes battery preservation and minimizes grid consumption"
+                Name = "Sell to Grid",
+                Description = "Export excess solar and battery energy to the grid for income",
+                Icon = "sell"
             },
-            new()
-            {
-                Mode = DeviceMode.MaxPerformance,
-                Name = "Max Performance",
-                Description = "Prioritizes power output and allows grid charging"
-            },
-            new()
+            [DeviceMode.SelfConsumption] = new DeviceModeInfo
             {
                 Mode = DeviceMode.SelfConsumption,
                 Name = "Self Consumption",
-                Description = "Maximizes use of solar power for own consumption"
+                Description = "Use all energy at home - no export to grid",
+                Icon = "home"
             },
-            new()
+            [DeviceMode.SmartZeroExport] = new DeviceModeInfo
             {
-                Mode = DeviceMode.Backup,
-                Name = "Backup",
-                Description = "Keeps battery charged for backup power during outages"
-            },
-            new()
-            {
-                Mode = DeviceMode.TimeOfUse,
-                Name = "Time of Use",
-                Description = "Optimizes based on electricity rate schedules"
-            },
-            new()
-            {
-                Mode = DeviceMode.OffGrid,
-                Name = "Off-Grid",
-                Description = "Operates independently from the grid"
-            },
-            new()
-            {
-                Mode = DeviceMode.GridSelling,
-                Name = "Grid Selling",
-                Description = "Prioritizes selling excess solar power to the grid"
-            },
-            new()
-            {
-                Mode = DeviceMode.Custom,
-                Name = "Custom",
-                Description = "User-defined custom settings"
+                Name = "Smart Zero Export",
+                Description = "Zero export with precise smart meter control",
+                Icon = "smart"
             }
         };
     }
 }
 
+/// <summary>
+/// Information about a device mode for display purposes
+/// </summary>
 public class DeviceModeInfo
 {
     public DeviceMode Mode { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+    public string Icon { get; set; } = string.Empty;
 }

@@ -6,6 +6,7 @@ public class SetupDevice : BaseGuidAuditableEntity
 {
     public Guid SetupId { get; set; }
     public Guid DeviceId { get; set; }
+    public int WorkMode { get; set; } = 1; // Default: BalancedHybrid (DeviceMode.BalancedHybrid)
 
     // Navigation properties
     public Setup Setup { get; set; } = null!;

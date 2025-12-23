@@ -1028,6 +1028,9 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<bool>("Visible")
+                        .HasColumnType("boolean");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ParameterGroupId")
@@ -1210,6 +1213,9 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
 
                     b.Property<Guid>("SetupId")
                         .HasColumnType("uuid");
+
+                    b.Property<int>("WorkMode")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 

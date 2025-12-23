@@ -527,28 +527,74 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
         string method,
         Dictionary<string, object> parameters,
         int timeoutMs = 5000,
+        int batchSize = 10,
         CancellationToken cancellationToken = default)
     {
         try
         {
             await EnsureAuthenticatedAsync(cancellationToken);
-            
-            _logger.LogInformation("Sending two-way RPC to device: {ThingsBoardDeviceId}, Method: {Method}", deviceId, method);
 
-            var url = $"/api/plugins/rpc/twoway/{deviceId}?timeout={timeoutMs}";
-            var payload = new { method, @params = parameters };
-
-            var response = await PostAsync<Dictionary<string, object>>(url, payload, cancellationToken);
-
-            if (response == null)
+            // If parameters fit in a single batch, send directly
+            if (parameters.Count <= batchSize)
             {
-                return new TbRpcResponse { Success = false, Error = "No response from device" };
+                return await SendSingleRpcAsync(deviceId, method, parameters, timeoutMs, cancellationToken);
+            }
+
+            // Split parameters into batches
+            var batches = parameters
+                .Select((kvp, index) => new { kvp, index })
+                .GroupBy(x => x.index / batchSize)
+                .Select(g => g.ToDictionary(x => x.kvp.Key, x => x.kvp.Value))
+                .ToList();
+
+            _logger.LogInformation(
+                "Splitting RPC into {BatchCount} batches of max {BatchSize} for device: {ThingsBoardDeviceId}, Method: {Method}",
+                batches.Count, batchSize, deviceId, method);
+
+            var aggregatedResponse = new Dictionary<string, object>();
+            var errors = new List<string>();
+
+            for (int i = 0; i < batches.Count; i++)
+            {
+                var batch = batches[i];
+                _logger.LogDebug("Sending batch {BatchNumber}/{TotalBatches} with {ParamCount} parameters",
+                    i + 1, batches.Count, batch.Count);
+
+                var batchResult = await SendSingleRpcAsync(deviceId, method, batch, timeoutMs, cancellationToken);
+
+                if (batchResult == null || !batchResult.Success)
+                {
+                    var error = $"Batch {i + 1}/{batches.Count} failed: {batchResult?.Error ?? "No response"}";
+                    errors.Add(error);
+                    _logger.LogWarning(error);
+                    continue;
+                }
+
+                // Merge successful batch responses
+                if (batchResult.Response != null)
+                {
+                    foreach (var kvp in batchResult.Response)
+                    {
+                        aggregatedResponse[kvp.Key] = kvp.Value;
+                    }
+                }
+            }
+
+            if (errors.Count == batches.Count)
+            {
+                // All batches failed
+                return new TbRpcResponse
+                {
+                    Success = false,
+                    Error = $"All {batches.Count} batches failed. Errors: {string.Join("; ", errors)}"
+                };
             }
 
             return new TbRpcResponse
             {
-                Success = true,
-                Response = response
+                Success = errors.Count == 0,
+                Response = aggregatedResponse,
+                Error = errors.Count > 0 ? string.Join("; ", errors) : null
             };
         }
         catch (Exception ex)
@@ -556,6 +602,33 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
             _logger.LogError(ex, "Error sending two-way RPC to device: {ThingsBoardDeviceId}, Method: {Method}", deviceId, method);
             return new TbRpcResponse { Success = false, Error = ex.Message };
         }
+    }
+
+    private async Task<TbRpcResponse?> SendSingleRpcAsync(
+        Guid deviceId,
+        string method,
+        Dictionary<string, object> parameters,
+        int timeoutMs,
+        CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Sending two-way RPC to device: {ThingsBoardDeviceId}, Method: {Method}, ParamCount: {ParamCount}",
+            deviceId, method, parameters.Count);
+
+        var url = $"/api/plugins/rpc/twoway/{deviceId}?timeout={timeoutMs}";
+        var payload = new { method, @params = parameters };
+
+        var response = await PostAsync<Dictionary<string, object>>(url, payload, cancellationToken);
+
+        if (response == null)
+        {
+            return new TbRpcResponse { Success = false, Error = "No response from device" };
+        }
+
+        return new TbRpcResponse
+        {
+            Success = true,
+            Response = response
+        };
     }
 
     // ============ HELPER METHODS ============

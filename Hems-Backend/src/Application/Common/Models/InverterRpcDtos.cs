@@ -27,60 +27,106 @@ public class InverterIdentityDto
 }
 
 /// <summary>
-/// RPC response for getInverterState
+/// RPC response for getInverterDeviceState
 /// </summary>
 public class InverterDeviceStateDto
 {
+    [JsonPropertyName("kind")]
+    public string? Kind { get; set; }
+
     [JsonPropertyName("timestampUtc")]
     public string? TimestampUtc { get; set; }
 
     [JsonPropertyName("version")]
     public int? Version { get; set; }
 
-    [JsonPropertyName("deviceId")]
+    [JsonPropertyName("DeviceId")]
     public string? DeviceId { get; set; }
 
     [JsonPropertyName("runState")]
     public string? RunState { get; set; } // "standby" | "selfcheck" | "normal" | "alarm" | "fault" | "activating"
 
-    // --- Output to AC bus ---
-    [JsonPropertyName("outputActivePowerW")]
-    public int? OutputActivePowerW { get; set; }
+    [JsonPropertyName("output")]
+    public InverterOutputDto? Output { get; set; }
 
-    [JsonPropertyName("outputApparentPowerVA")]
-    public int? OutputApparentPowerVA { get; set; }
+    [JsonPropertyName("gridSide")]
+    public GridSideDto? GridSide { get; set; }
 
-    [JsonPropertyName("outputVoltageV")]
-    public double? OutputVoltageV { get; set; }
-
-    [JsonPropertyName("outputCurrentA")]
-    public double? OutputCurrentA { get; set; }
-
-    [JsonPropertyName("outputFrequencyHz")]
-    public double? OutputFrequencyHz { get; set; }
-
-    // --- Grid-side view (import/export) ---
-    [JsonPropertyName("gridSideActivePowerW")]
-    public int? GridSideActivePowerW { get; set; }
-
-    [JsonPropertyName("gridSidePhaseAPowerW")]
-    public int? GridSidePhaseAPowerW { get; set; }
-
-    [JsonPropertyName("gridSidePhaseBPowerW")]
-    public int? GridSidePhaseBPowerW { get; set; }
-
-    [JsonPropertyName("gridSidePhaseCPowerW")]
-    public int? GridSidePhaseCPowerW { get; set; }
-
-    // --- Temperatures ---
-    [JsonPropertyName("inverterHeatsinkTempC")]
-    public double? InverterHeatsinkTempC { get; set; }
-
-    [JsonPropertyName("internalAmbientTempC")]
-    public double? InternalAmbientTempC { get; set; }
+    [JsonPropertyName("temperatures")]
+    public TemperaturesDto? Temperatures { get; set; }
 
     [JsonPropertyName("acInputStatus")]
     public AcInputStatusDto? AcInputStatus { get; set; }
+
+    // Convenience properties for backward compatibility
+    public int? OutputActivePowerW => Output?.TotalActivePowerW;
+    public int? OutputApparentPowerVA => Output?.TotalApparentPowerVA;
+    public double? OutputVoltageV => Output?.PhaseA?.VoltageV;
+    public double? OutputCurrentA => Output?.PhaseA?.CurrentA;
+    public double? OutputFrequencyHz => Output?.FrequencyHz;
+    public int? GridSideActivePowerW => GridSide?.TotalActivePowerW;
+    public int? GridSidePhaseAPowerW => GridSide?.PhaseAPowerW;
+    public int? GridSidePhaseBPowerW => GridSide?.PhaseBPowerW;
+    public int? GridSidePhaseCPowerW => GridSide?.PhaseCPowerW;
+    public double? InverterHeatsinkTempC => Temperatures?.HeatsinkTempC;
+    public double? InternalAmbientTempC => Temperatures?.DcTransformerTempC;
+}
+
+public class InverterOutputDto
+{
+    [JsonPropertyName("totalActivePowerW")]
+    public int? TotalActivePowerW { get; set; }
+
+    [JsonPropertyName("totalApparentPowerVA")]
+    public int? TotalApparentPowerVA { get; set; }
+
+    [JsonPropertyName("frequencyHz")]
+    public double? FrequencyHz { get; set; }
+
+    [JsonPropertyName("phaseA")]
+    public PhaseDataDto? PhaseA { get; set; }
+
+    [JsonPropertyName("phaseB")]
+    public PhaseDataDto? PhaseB { get; set; }
+
+    [JsonPropertyName("phaseC")]
+    public PhaseDataDto? PhaseC { get; set; }
+}
+
+public class PhaseDataDto
+{
+    [JsonPropertyName("voltageV")]
+    public double? VoltageV { get; set; }
+
+    [JsonPropertyName("currentA")]
+    public double? CurrentA { get; set; }
+
+    [JsonPropertyName("activePowerW")]
+    public int? ActivePowerW { get; set; }
+}
+
+public class GridSideDto
+{
+    [JsonPropertyName("totalActivePowerW")]
+    public int? TotalActivePowerW { get; set; }
+
+    [JsonPropertyName("phaseAPowerW")]
+    public int? PhaseAPowerW { get; set; }
+
+    [JsonPropertyName("phaseBPowerW")]
+    public int? PhaseBPowerW { get; set; }
+
+    [JsonPropertyName("phaseCPowerW")]
+    public int? PhaseCPowerW { get; set; }
+}
+
+public class TemperaturesDto
+{
+    [JsonPropertyName("dcTransformerTempC")]
+    public double? DcTransformerTempC { get; set; }
+
+    [JsonPropertyName("heatsinkTempC")]
+    public double? HeatsinkTempC { get; set; }
 }
 
 public class AcInputStatusDto
