@@ -173,5 +173,84 @@ export const createStyles = (COLORS: Record<string, string>) => {
     sellColor: {
       color: '#10b981', // Green for selling
     },
+    // Floating info box styles
+    floatingInfoBox: {
+      position: 'absolute',
+      top: 5,
+      width: 180,
+      zIndex: 100,
+      backgroundColor: COLORS.cardBg,
+      borderRadius: 12,
+      padding: SPACING.sm,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 8,
+      borderWidth: 1,
+      borderColor: COLORS.border,
+    },
+    floatingInfoDate: {
+      fontSize: TYPOGRAPHY.sm,
+      fontWeight: '700',
+      color: COLORS.textSoft,
+      marginBottom: SPACING.xs,
+      textAlign: 'center',
+    },
+    floatingInfoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: SPACING.sm,
+      marginTop: 4,
+    },
+    floatingInfoItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    floatingDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+    },
+    floatingInfoLabel: {
+      fontSize: 10,
+      color: COLORS.textSoft,
+      opacity: 0.7,
+      fontWeight: '500',
+    },
+    floatingInfoValue: {
+      fontSize: TYPOGRAPHY.sm,
+      fontWeight: '700',
+    },
+    floatingNetLabel: {
+      fontSize: 10,
+      color: COLORS.textSoft,
+      opacity: 0.7,
+      fontWeight: '500',
+    },
+    floatingNetValue: {
+      fontSize: TYPOGRAPHY.sm,
+      fontWeight: '700',
+    },
+    floatingPriceValue: {
+      fontSize: 10,
+      fontWeight: '600',
+    },
+    floatingArrow: {
+      position: 'absolute',
+      bottom: -8,
+      left: '50%',
+      marginLeft: -8,
+      width: 0,
+      height: 0,
+      borderLeftWidth: 8,
+      borderRightWidth: 8,
+      borderTopWidth: 8,
+      borderLeftColor: 'transparent',
+      borderRightColor: 'transparent',
+      borderTopColor: COLORS.cardBg,
+    },
   });
 };

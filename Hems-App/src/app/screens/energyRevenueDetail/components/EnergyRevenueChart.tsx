@@ -27,7 +27,7 @@ const EnergyRevenueChart: React.FC<EnergyRevenueChartProps> = ({
 }) => {
   const { t } = useTranslation();
   const screenWidth = Dimensions.get('window').width;
-  const padding = { top: 80, right: 20, bottom: 40, left: 30 }; // Top increased for floating box
+  const padding = { top: 20, right: 20, bottom: 40, left: 30 };
   const chartWidth = screenWidth;
   const innerWidth = chartWidth - padding.left - padding.right;
   const innerHeight = height - padding.top - padding.bottom;
@@ -282,16 +282,25 @@ const EnergyRevenueChart: React.FC<EnergyRevenueChartProps> = ({
                 x2={touchX}
                 y2={innerHeight}
                 stroke={textColor}
-                strokeWidth={1.5}
-                strokeDasharray="4,4"
-                opacity={0.5}
+                strokeWidth={1}
+                strokeDasharray="4,3"
+                opacity={0.7}
               />
               <Circle
                 cx={touchX}
                 cy={centerY}
                 r={4}
                 fill={textColor}
-                opacity={0.8}
+                opacity={0.9}
+              />
+              <Circle
+                cx={touchX}
+                cy={centerY}
+                r={7}
+                fill="transparent"
+                stroke={textColor}
+                strokeWidth={1.5}
+                opacity={0.4}
               />
             </>
           )}
@@ -323,70 +332,83 @@ const EnergyRevenueChart: React.FC<EnergyRevenueChartProps> = ({
       </Svg>
 
       {/* Floating info box */}
-      {selectedDataPoint && (
+      {touchX !== null && selectedDataPoint && (
         <View style={{
           position: 'absolute',
-          top: 10,
-          left: 20,
-          right: 20,
+          top: -85,
+          left: Math.max(10, Math.min((touchX + padding.left) - 100, chartWidth - 210)),
           backgroundColor: cardBgColor,
           borderRadius: 12,
           padding: 12,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.25,
-          shadowRadius: 8,
+          shadowRadius: 3.84,
           elevation: 5,
+          minWidth: 180,
+          zIndex: 100,
         }}>
-          <Text style={{ color: textColor, fontSize: 12, fontWeight: '600', marginBottom: 8 }}>
-            {new Date(selectedDataPoint.timestamp).toLocaleDateString('en-US', {
-              day: '2-digit',
-              month: 'short',
-              year: 'numeric',
-            })}
+          {/* Date/Time */}
+          <Text style={{ color: textColor, fontSize: 13, fontWeight: '700', marginBottom: 8 }}>
+            {range === 'Day'
+              ? new Date(selectedDataPoint.timestamp).toLocaleString('en-US', {
+                  day: '2-digit',
+                  month: 'short',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false,
+                })
+              : new Date(selectedDataPoint.timestamp).toLocaleDateString('en-US', {
+                  day: '2-digit',
+                  month: 'short',
+                })
+            }
           </Text>
 
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: '#ef4444', fontSize: 11, fontWeight: '500', marginBottom: 2 }}>
+          {/* Buy Row */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#ef4444' }} />
+              <Text style={{ color: textColor, fontSize: 12, fontWeight: '500' }}>
                 {t('energyRevenueDetail.chart.gridBuy')}
               </Text>
-              <Text style={{ color: textColor, fontSize: 14, fontWeight: '700' }}>
-                {selectedDataPoint.buy.toFixed(1)} kWh
-              </Text>
             </View>
+            <Text style={{ color: '#ef4444', fontSize: 12, fontWeight: '700' }}>
+              {selectedDataPoint.buy.toFixed(1)} kWh
+            </Text>
+          </View>
 
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: '#10b981', fontSize: 11, fontWeight: '500', marginBottom: 2 }}>
+          {/* Sell Row */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#10b981' }} />
+              <Text style={{ color: textColor, fontSize: 12, fontWeight: '500' }}>
                 {t('energyRevenueDetail.chart.gridSell')}
               </Text>
-              <Text style={{ color: textColor, fontSize: 14, fontWeight: '700' }}>
-                {selectedDataPoint.sell.toFixed(1)} kWh
-              </Text>
             </View>
+            <Text style={{ color: '#10b981', fontSize: 12, fontWeight: '700' }}>
+              {selectedDataPoint.sell.toFixed(1)} kWh
+            </Text>
+          </View>
 
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: textColor, fontSize: 11, fontWeight: '500', marginBottom: 2, opacity: 0.7 }}>
-                {t('energyRevenueDetail.chart.net')}
-              </Text>
-              <Text style={{
-                color: (selectedDataPoint.sell - selectedDataPoint.buy) >= 0 ? '#10b981' : '#ef4444',
-                fontSize: 14,
-                fontWeight: '700'
-              }}>
-                {(selectedDataPoint.sell - selectedDataPoint.buy) >= 0 ? '+' : ''}
-                {(selectedDataPoint.sell - selectedDataPoint.buy).toFixed(1)} kWh
-              </Text>
-            </View>
+          {/* Net Row */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
+            <Text style={{ color: textColor, fontSize: 12, fontWeight: '500' }}>
+              {t('energyRevenueDetail.chart.net')}
+            </Text>
+            <Text style={{ color: (selectedDataPoint.sell - selectedDataPoint.buy) >= 0 ? '#10b981' : '#ef4444', fontSize: 12, fontWeight: '700' }}>
+              {(selectedDataPoint.sell - selectedDataPoint.buy) >= 0 ? '+' : ''}{(selectedDataPoint.sell - selectedDataPoint.buy).toFixed(1)} kWh
+            </Text>
+          </View>
 
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: '#f59e0b', fontSize: 11, fontWeight: '500', marginBottom: 2 }}>
-                {t('energyRevenueDetail.chart.price')}
-              </Text>
-              <Text style={{ color: textColor, fontSize: 14, fontWeight: '700' }}>
-                €{selectedDataPoint.price.toFixed(2)}
-              </Text>
-            </View>
+          {/* Price Row */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{ color: textColor, fontSize: 12, fontWeight: '500' }}>
+              {t('energyRevenueDetail.chart.price')}
+            </Text>
+            <Text style={{ color: selectedDataPoint.price >= 0 ? '#10b981' : '#ef4444', fontSize: 12, fontWeight: '700' }}>
+              {selectedDataPoint.price >= 0 ? '+' : ''}€{selectedDataPoint.price.toFixed(2)}
+            </Text>
           </View>
         </View>
       )}

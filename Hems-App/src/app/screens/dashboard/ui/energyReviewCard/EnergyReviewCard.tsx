@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { View, Text, LayoutChangeEvent, ActivityIndicator, PanResponder, TouchableOpacity } from 'react-native';
-import Svg, { Line, Path, Text as SvgText, Rect, G } from 'react-native-svg';
+import Svg, { Line, Path, Text as SvgText, Rect, G, Circle } from 'react-native-svg';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import { useI18n } from '../../../../../hooks/useI18n';
@@ -86,6 +86,8 @@ export default function EnergyReviewCard() {
 
   // Set initial selected data to last day
   const [selectedData, setSelectedData] = useState<EnergyTransaction | null>(null);
+  // Track touch position for vertical line indicator
+  const [touchX, setTouchX] = useState<number | null>(null);
 
   // Fetch energy revenue data
   const fetchEnergyRevenue = useCallback(async () => {
@@ -133,8 +135,8 @@ export default function EnergyReviewCard() {
     setChartSize({ width, height });
   }, []);
 
-  // Chart dimensions (fixed padding) - top increased for info box space
-  const padding = useMemo(() => ({ top: 100, right: 20, bottom: 40, left: 30 }), []);
+  // Chart dimensions (fixed padding)
+  const padding = useMemo(() => ({ top: 20, right: 20, bottom: 40, left: 30 }), []);
   const chartWidth = chartSize.width - padding.left - padding.right;
   const chartHeight = chartSize.height - padding.top - padding.bottom;
 
@@ -162,18 +164,24 @@ export default function EnergyReviewCard() {
   const { barWidth, xScale, maxValue, centerY, yScale } = chartParams;
 
   // Calculate which bar is at the touch position
-  const getBarAtPosition = useCallback((touchX: number) => {
+  const getBarAtPosition = useCallback((touchPosition: number) => {
     if (!data) return null;
 
     // Adjust for padding
-    const adjustedX = touchX - padding.left;
+    const adjustedX = touchPosition - padding.left;
 
     // Calculate which bar index
     const barIndex = Math.floor(adjustedX / xScale);
 
     // Check if valid index
     if (barIndex >= 0 && barIndex < data.transactions.length) {
-      return data.transactions[barIndex];
+      // Calculate bar center X position for snapping the vertical line
+      const barCenterX = padding.left + (barIndex * xScale) + (xScale / 2);
+      return {
+        transaction: data.transactions[barIndex],
+        centerX: barCenterX,
+        index: barIndex,
+      };
     }
 
     return null;
@@ -184,21 +192,25 @@ export default function EnergyReviewCard() {
     onStartShouldSetPanResponder: () => true,
     onMoveShouldSetPanResponder: () => true,
     onPanResponderGrant: (evt) => {
-      const touchX = evt.nativeEvent.locationX;
-      const transaction = getBarAtPosition(touchX);
-      if (transaction) {
-        setSelectedData(transaction);
+      const touchPosition = evt.nativeEvent.locationX;
+      const barData = getBarAtPosition(touchPosition);
+      if (barData) {
+        setSelectedData(barData.transaction);
+        setTouchX(barData.centerX);
       }
     },
     onPanResponderMove: (evt) => {
-      const touchX = evt.nativeEvent.locationX;
-      const transaction = getBarAtPosition(touchX);
-      if (transaction) {
-        setSelectedData(transaction);
+      const touchPosition = evt.nativeEvent.locationX;
+      const barData = getBarAtPosition(touchPosition);
+      if (barData) {
+        setSelectedData(barData.transaction);
+        setTouchX(barData.centerX);
       }
     },
     onPanResponderRelease: () => {
-      // Keep the info box visible after release
+      // Clear the touch indicator when finger is released
+      setTouchX(null);
+      // Keep the info box visible with last selected data
     },
     onPanResponderTerminationRequest: () => true,
   }), [getBarAtPosition]);
@@ -362,45 +374,75 @@ export default function EnergyReviewCard() {
 
       {/* Chart Wrapper - for absolute positioning of info box */}
       <View style={styles.chartWrapper}>
-        {/* Info Box - Outside chart container but above it */}
-        {selectedData && (
-          <View style={styles.infoBox}>
-            <Text style={styles.infoDate}>
+        {/* Floating Info Box - Shows when touching the chart */}
+        {touchX !== null && selectedData && (
+          <View style={{
+            position: 'absolute',
+            top: -85,
+            left: Math.max(10, Math.min(touchX - 100, chartSize.width - 210)),
+            backgroundColor: COLORS.cardBg,
+            borderRadius: 12,
+            padding: 12,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.25,
+            shadowRadius: 3.84,
+            elevation: 5,
+            minWidth: 180,
+            zIndex: 100,
+          }}>
+            {/* Date */}
+            <Text style={{ color: COLORS.textSoft, fontSize: 13, fontWeight: '700', marginBottom: 8 }}>
               {new Date(selectedData.timestamp).toLocaleDateString(locale, {
                 day: '2-digit',
-                month: 'long',
-                year: 'numeric',
+                month: 'short',
               })}
             </Text>
 
-            <View style={styles.infoGrid}>
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>{t('dashboardEnergyReview.buy', 'Alış')}</Text>
-                <Text style={[styles.infoValue, styles.buyColor]}>
-                  {selectedData.buy.toFixed(1)} kWh
+            {/* Buy Row */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#ef4444' }} />
+                <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '500' }}>
+                  {t('dashboardEnergyReview.buy', 'Buy')}
                 </Text>
               </View>
+              <Text style={{ color: '#ef4444', fontSize: 12, fontWeight: '700' }}>
+                {selectedData.buy.toFixed(1)} kWh
+              </Text>
+            </View>
 
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>{t('dashboardEnergyReview.sell', 'Satış')}</Text>
-                <Text style={[styles.infoValue, styles.sellColor]}>
-                  {selectedData.sell.toFixed(1)} kWh
+            {/* Sell Row */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#10b981' }} />
+                <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '500' }}>
+                  {t('dashboardEnergyReview.sell', 'Sell')}
                 </Text>
               </View>
+              <Text style={{ color: '#10b981', fontSize: 12, fontWeight: '700' }}>
+                {selectedData.sell.toFixed(1)} kWh
+              </Text>
+            </View>
 
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>{t('dashboardEnergyReview.net', 'Net')}</Text>
-                <Text style={[styles.infoValue, (selectedData.sell - selectedData.buy) >= 0 ? styles.sellColor : styles.buyColor]}>
-                  {(selectedData.sell - selectedData.buy) >= 0 ? '+' : ''}{(selectedData.sell - selectedData.buy).toFixed(1)} kWh
-                </Text>
-              </View>
+            {/* Net Row */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
+              <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '500' }}>
+                {t('dashboardEnergyReview.net', 'Net')}
+              </Text>
+              <Text style={{ color: (selectedData.sell - selectedData.buy) >= 0 ? '#10b981' : '#ef4444', fontSize: 12, fontWeight: '700' }}>
+                {(selectedData.sell - selectedData.buy) >= 0 ? '+' : ''}{(selectedData.sell - selectedData.buy).toFixed(1)} kWh
+              </Text>
+            </View>
 
-              <View style={styles.infoItem}>
-                <Text style={styles.infoLabel}>{t('dashboardEnergyReview.price', 'Fiyat')}</Text>
-                <Text style={[styles.infoValue, selectedData.price >= 0 ? styles.sellColor : styles.buyColor]}>
-                  {selectedData.price >= 0 ? '+' : ''}€{selectedData.price.toFixed(2)}
-                </Text>
-              </View>
+            {/* Price Row */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '500' }}>
+                {t('dashboardEnergyReview.price', 'Tutar')}
+              </Text>
+              <Text style={{ color: selectedData.price >= 0 ? '#10b981' : '#ef4444', fontSize: 12, fontWeight: '700' }}>
+                {selectedData.price >= 0 ? '+' : ''}€{selectedData.price.toFixed(2)}
+              </Text>
             </View>
           </View>
         )}
@@ -413,7 +455,7 @@ export default function EnergyReviewCard() {
             </View>
           ) : (
             <Svg width={chartSize.width} height={chartSize.height}>
-            <G x={padding.left} y={padding.top}>
+            <G transform={`translate(${padding.left}, ${padding.top})`}>
               {/* Grid lines */}
               {yLabels.map((label, i) => (
                 <Line
@@ -478,6 +520,41 @@ export default function EnergyReviewCard() {
                   </G>
                 );
               })}
+
+              {/* Vertical line indicator when touching */}
+              {touchX !== null && (
+                <>
+                  {/* Dashed vertical line */}
+                  <Line
+                    x1={touchX - padding.left}
+                    y1={0}
+                    x2={touchX - padding.left}
+                    y2={chartHeight}
+                    stroke={COLORS.accent}
+                    strokeWidth={1}
+                    strokeDasharray="4,3"
+                    opacity={0.7}
+                  />
+                  {/* Circle indicator at center */}
+                  <Circle
+                    cx={touchX - padding.left}
+                    cy={centerY}
+                    r={4}
+                    fill={COLORS.accent}
+                    opacity={0.9}
+                  />
+                  {/* Outer circle ring */}
+                  <Circle
+                    cx={touchX - padding.left}
+                    cy={centerY}
+                    r={7}
+                    fill="transparent"
+                    stroke={COLORS.accent}
+                    strokeWidth={1.5}
+                    opacity={0.4}
+                  />
+                </>
+              )}
 
               {/* X-axis labels */}
               {timeLabels.map((label, i) => (
