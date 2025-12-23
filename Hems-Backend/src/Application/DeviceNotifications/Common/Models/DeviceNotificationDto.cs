@@ -10,6 +10,7 @@ public class DeviceNotificationTypeDto
     public int Register { get; init; }
     public int Value { get; init; }
     public string Category { get; init; } = string.Empty;
+    public string Severity { get; init; } = string.Empty;
     public string Version { get; init; } = string.Empty;
     public string Manufacturer { get; init; } = string.Empty;
     public bool IsActive { get; init; }
@@ -40,4 +41,14 @@ public class DeviceNotificationDto
     public string SourceDevice { get; init; } = string.Empty;
     public string RawRegisterCode { get; init; } = string.Empty;
     public bool IsGeneric { get; init; }
+
+    /// <summary>
+    /// The notification type code (e.g., INV-FAT-F01, BMS-WAR-A01).
+    /// </summary>
+    public string Key { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Detailed description including register values and diagnostic information.
+    /// </summary>
+    public string DetailedDescription { get; init; } = string.Empty;
 }

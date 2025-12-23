@@ -548,6 +548,11 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.Property<int>("Register")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -568,6 +573,8 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .IsUnique();
 
                     b.HasIndex("IsActive");
+
+                    b.HasIndex("Severity");
 
                     b.ToTable("DeviceNotificationTypes");
                 });

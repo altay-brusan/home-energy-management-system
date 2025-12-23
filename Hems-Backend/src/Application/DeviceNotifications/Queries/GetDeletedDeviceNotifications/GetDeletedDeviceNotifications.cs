@@ -81,6 +81,7 @@ public class GetDeletedDeviceNotificationsQueryHandler : IRequestHandler<GetDele
                     Register = dn.DeviceNotificationType.Register,
                     Value = dn.DeviceNotificationType.Value,
                     Category = dn.DeviceNotificationType.Category,
+                    Severity = dn.DeviceNotificationType.Severity,
                     Version = dn.DeviceNotificationType.Version,
                     Manufacturer = dn.DeviceNotificationType.Manufacturer,
                     IsActive = dn.DeviceNotificationType.IsActive
