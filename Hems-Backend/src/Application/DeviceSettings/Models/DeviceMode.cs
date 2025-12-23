@@ -39,7 +39,6 @@ public static class DeviceModeConfigurations
     {
         return ExportStrategyMapping.TryGetValue(mode, out var value) ? value : null;
     }
-    };
 
     /// <summary>
     /// Mode to ExportStrategySelection value mapping
@@ -66,7 +65,6 @@ public static class DeviceModeConfigurations
             },
             [DeviceMode.SelfConsumption] = new DeviceModeInfo
             {
-                Mode = DeviceMode.SelfConsumption,
                 Name = "Self Consumption",
                 Description = "Use all energy at home - no export to grid",
                 Icon = "home"
@@ -86,7 +84,6 @@ public static class DeviceModeConfigurations
 /// </summary>
 public class DeviceModeInfo
 {
-    public DeviceMode Mode { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string Icon { get; set; } = string.Empty;
