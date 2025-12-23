@@ -576,7 +576,9 @@
             "workModeCode": 0,
             "exportStrategy": "zero_export_to_load",
             "solarSellEnabled": false,
-            "maxSellPowerW": 11000,
+            "maxSellPowerW": 110,
+            "maxSolarSellPowerW": 11500,
+            "zeroExportLimitPowerW": 25,
             "forceOffGrid": true
           },
           "energyPriority": {
