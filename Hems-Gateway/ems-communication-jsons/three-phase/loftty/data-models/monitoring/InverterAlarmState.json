@@ -1,21 +1,44 @@
+InverterAlarmState
 {
-  "timestampUtc": "string",
-  "gatewayId": "string",
-  "inverterSerialNumber": "string",
+  "version": "1",
 
-  "runStateRaw": "number",                   // 600 - Run state (0=standby, 1=selfcheck, 2=normal, 3=alarm, 4=fault)
+
+  "runStateRaw": "number",                   // 600 - Run state
+                                             //   0 = standby (待机)
+                                             //   1 = selfcheck (自检)
+                                             //   2 = normal (正常)
+                                             //   3 = alarm (告警)
+                                             //   4 = fault (故障)
+
+  "commBoardFaultRaw": "number",             // 648 - 通讯板的故障状态 Comm board failure status
+                                             //   Bit0: Flash chip error
+                                             //   Bit1: Time error
+                                             //   Bit2: EEPROM error
+
   "warningWord1Raw": "number",               // 653 - Warning message word 1
+                                             //   Bit0: Reserved
+                                             //   Bit1: FAN_WARN (fan uyarısı)
+                                             //   Bit2: Grid phase wrong (şebeke faz hatası)
+                                             //   Bit3: meter_Comm_Fail (sayaç iletişim hatası) - from fault table
+                                             //   Bit4-15: ...
+
   "warningWord2Raw": "number",               // 654 - Warning message word 2
+                                             //   Bit0-13: ...
+                                             //   Bit14: 锂电池丢失告警 (Lithium battery lost warning)
+                                             //   Bit15: 并联通讯质量告警 (Parallel comm quality warning)
+
   "faultWord1Raw": "number",                 // 655 - Fault information word 1
   "faultWord2Raw": "number",                 // 656 - Fault information word 2
   "faultWord3Raw": "number",                 // 657 - Fault information word 3
   "faultWord4Raw": "number",                 // 658 - Fault information word 4
 
+  "workFlagTripData": "number",              // 659 - WorkFlag.ON_OFF_Trip_DATA
+
   "activeAlarms": [
     {
       "code": "number",
       "vendorCode": "number",
-      "severity": "string",                  // "warning" | "fault"
+      "severity": "string",                  // "WARNING", "ERROR", "ALARM"
       "sourceDevice": "string",
       "category": "string",
       "messageKey": "string",
@@ -27,5 +50,30 @@
       "lastOccurredUtc": "string",
       "occurrenceCount": "number"
     }
-  ]
+  ],
+
+  // unknowns bit Fault code mapping (from datasheet section 5.4) this is not gonna use
+  "faultCodeReference": {
+    "F07": "DC/DC Softstart Fault",
+    "F10": "Auxiliary Power Supply Failure",
+    "F13": "Working Mode Change",
+    "F18": "AC Over Current (Hardware)",
+    "F20": "DC Over Current (Hardware)",
+    "F22": "Emergency Stop Fault (Inverter Locked)",
+    "F23": "AC Leakage Current Transient Over Current",
+    "F24": "DC Insulation Impedance Failure (PV Isolation Low)",
+    "F26": "DC Busbar Unbalanced",
+    "F29": "Parallel CANBus Fault",
+    "F35": "No AC Grid (No Utility)",
+    "F41": "Parallel System Stop",
+    "F42": "AC Line Low Voltage",
+    "F46": "Backup Battery Fault",
+    "F47": "AC Over Frequency",
+    "F48": "AC Lower Frequency",
+    "F49": "Backup Battery Fault",
+    "F56": "DC Busbar Voltage Too Low",
+    "F58": "BMS Communication Fault",
+    "F63": "ARC Fault",
+    "F64": "Heat Sink High Temperature"
+  }
 }

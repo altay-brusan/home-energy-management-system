@@ -1,15 +1,15 @@
 [
     {
-        "id": "inverter_alarm_state_tab",
+        "id": "alarm_state_tab_id",
         "type": "tab",
         "label": "InverterAlarmState",
         "disabled": false,
-        "info": "Reads Inverter Alarm State from registers:\n- 600: Run state (0=standby, 1=selfcheck, 2=normal, 3=alarm, 4=fault)\n- 653-654: Warning words 1-2\n- 655-658: Fault words 1-4\n\nTriggers:\n1. Periodic: Every 1 minute\n\nNote: Only sends to ThingsBoard if:\n- runState != 2 (not normal)\n- OR any fault/warning word != 0\n- OR activeAlarms array is not empty"
+        "info": "THREE-PHASE Polls 1 min (only sends if alarm/warning present or state change) - Includes phase imbalance warnings"
     },
     {
-        "id": "ias_poll_inject",
+        "id": "inject_1min_poll",
         "type": "inject",
-        "z": "inverter_alarm_state_tab",
+        "z": "alarm_state_tab_id",
         "name": "Poll Alarms (1 min)",
         "props": [
             {
@@ -18,24 +18,23 @@
         ],
         "repeat": "60",
         "crontab": "",
-        "once": true,
-        "onceDelay": 5,
+        "once": false,
+        "onceDelay": 0.1,
         "topic": "",
         "payload": "",
         "payloadType": "date",
-        "x": 160,
-        "y": 120,
+        "x": 150,
+        "y": 80,
         "wires": [
             [
-                "ias_prepare_runstate",
-                "ias_prepare_warnings_faults"
+                "prep_parallel_reads"
             ]
         ]
     },
     {
-        "id": "ias_manual_inject",
+        "id": "inject_manual_trigger",
         "type": "inject",
-        "z": "inverter_alarm_state_tab",
+        "z": "alarm_state_tab_id",
         "name": "Manual Trigger",
         "props": [
             {
@@ -50,189 +49,124 @@
         "payload": "",
         "payloadType": "date",
         "x": 150,
-        "y": 180,
+        "y": 140,
         "wires": [
             [
-                "ias_prepare_runstate",
-                "ias_prepare_warnings_faults"
+                "prep_parallel_reads"
             ]
         ]
     },
     {
-        "id": "ias_prepare_runstate",
+        "id": "prep_parallel_reads",
         "type": "function",
-        "z": "inverter_alarm_state_tab",
-        "name": "Prepare read (RunState 600)",
-        "func": "// Run state\n// 600: 0=standby, 1=selfcheck, 2=normal, 3=alarm, 4=fault\n\nmsg.baseAddr = 600;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 600,\n    quantity: 1\n};\nreturn msg;",
-        "outputs": 1,
-        "timeout": "",
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 480,
-        "y": 100,
-        "wires": [
-            [
-                "ias_read_runstate"
-            ]
-        ]
-    },
-    {
-        "id": "ias_prepare_warnings_faults",
-        "type": "function",
-        "z": "inverter_alarm_state_tab",
-        "name": "Prepare read (Warnings/Faults 653-658)",
-        "func": "// Warning and Fault words\n// 653: Warning message word 1\n// 654: Warning message word 2\n// 655: Fault information word 1\n// 656: Fault information word 2\n// 657: Fault information word 3\n// 658: Fault information word 4\n\nmsg.baseAddr = 653;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 653,\n    quantity: 6  // 653-658\n};\nreturn msg;",
-        "outputs": 1,
-        "timeout": "",
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 520,
-        "y": 160,
-        "wires": [
-            [
-                "ias_read_warnings_faults"
-            ]
-        ]
-    },
-    {
-        "id": "ias_read_runstate",
-        "type": "modbus-flex-getter",
-        "z": "inverter_alarm_state_tab",
-        "name": "Read RunState (600)",
-        "showStatusActivities": true,
-        "showErrors": true,
-        "showWarnings": true,
-        "logIOActivities": false,
-        "server": "e4e4f3e2a4f4e004",
-        "useIOFile": false,
-        "ioFile": "",
-        "useIOForPayload": false,
-        "emptyMsgOnFail": true,
-        "keepMsgProperties": true,
-        "delayOnStart": false,
-        "startDelayTime": "",
-        "x": 760,
-        "y": 100,
-        "wires": [
-            [
-                "ias_build_json"
-            ],
-            [
-                "ias_error_debug"
-            ]
-        ]
-    },
-    {
-        "id": "ias_read_warnings_faults",
-        "type": "modbus-flex-getter",
-        "z": "inverter_alarm_state_tab",
-        "name": "Read Warnings/Faults (653-658)",
-        "showStatusActivities": true,
-        "showErrors": true,
-        "showWarnings": true,
-        "logIOActivities": false,
-        "server": "e4e4f3e2a4f4e004",
-        "useIOFile": false,
-        "ioFile": "",
-        "useIOForPayload": false,
-        "emptyMsgOnFail": true,
-        "keepMsgProperties": true,
-        "delayOnStart": false,
-        "startDelayTime": "",
-        "x": 790,
-        "y": 160,
-        "wires": [
-            [
-                "ias_build_json"
-            ],
-            [
-                "ias_error_debug"
-            ]
-        ]
-    },
-    {
-        "id": "ias_build_json",
-        "type": "function",
-        "z": "inverter_alarm_state_tab",
-        "name": "Build InverterAlarmState JSON",
-        "func": "// Build InverterAlarmState from multiple Modbus reads.\n\nlet raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nlet baseAddr = msg.baseAddr;\nif (typeof baseAddr !== \"number\") {\n    baseAddr = (msg.modbusRequest && msg.modbusRequest.address);\n}\nif (typeof baseAddr !== \"number\") {\n    node.warn(\"InverterAlarmState: missing base address\");\n    return null;\n}\n\n// ---- Store partials ----\n\n// RunState 600\nif (baseAddr === 600) {\n    flow.set(\"ias_part_runstate\", {\n        runStateRaw: data[0] || 0\n    });\n}\n\n// Warnings/Faults 653-658\nelse if (baseAddr === 653) {\n    flow.set(\"ias_part_warnings_faults\", {\n        warningWord1Raw: data[0] || 0,   // 653\n        warningWord2Raw: data[1] || 0,   // 654\n        faultWord1Raw: data[2] || 0,     // 655\n        faultWord2Raw: data[3] || 0,     // 656\n        faultWord3Raw: data[4] || 0,     // 657\n        faultWord4Raw: data[5] || 0      // 658\n    });\n}\nelse {\n    return null;\n}\n\n// ---- Try to assemble ----\n\nconst runstatePart = flow.get(\"ias_part_runstate\");\nconst warningsFaultsPart = flow.get(\"ias_part_warnings_faults\");\n\nif (!runstatePart || !warningsFaultsPart) {\n    return null;\n}\n\nconst gatewayId = msg.gatewayId\n    || global.get(\"GATEWAY_ID\")\n    || env.get(\"GATEWAY_ID\")\n    || \"EC100\";\n\nconst inverterSerial = msg.inverterSerialNumber\n    || global.get(\"INVERTER_SERIAL\")\n    || env.get(\"INVERTER_SERIAL\")\n    || \"Unknown\";\n\n// Decode active alarms from fault/warning words\nconst activeAlarms = [];\nconst now = new Date().toISOString();\n\n// Three-phase Fault Word 1 (655) bit definitions\nconst faultWord1Bits = {\n    0: { code: 1001, severity: \"fault\", sourceDevice: \"inverter\", category: \"dc_voltage\", messageKey: \"DC_VOLTAGE_HIGH\" },\n    1: { code: 1002, severity: \"fault\", sourceDevice: \"inverter\", category: \"dc_voltage\", messageKey: \"BUS_VOLTAGE_HIGH\" },\n    2: { code: 1003, severity: \"fault\", sourceDevice: \"inverter\", category: \"dc_voltage\", messageKey: \"BUS_VOLTAGE_LOW\" },\n    3: { code: 1004, severity: \"fault\", sourceDevice: \"inverter\", category: \"dc_voltage\", messageKey: \"BUS_VOLTAGE_UNBALANCED\" },\n    4: { code: 1005, severity: \"fault\", sourceDevice: \"grid\", category: \"ac_voltage\", messageKey: \"GRID_VOLTAGE_HIGH\" },\n    5: { code: 1006, severity: \"fault\", sourceDevice: \"grid\", category: \"ac_voltage\", messageKey: \"GRID_VOLTAGE_LOW\" },\n    6: { code: 1007, severity: \"fault\", sourceDevice: \"grid\", category: \"frequency\", messageKey: \"GRID_FREQ_HIGH\" },\n    7: { code: 1008, severity: \"fault\", sourceDevice: \"grid\", category: \"frequency\", messageKey: \"GRID_FREQ_LOW\" },\n    8: { code: 1009, severity: \"fault\", sourceDevice: \"grid\", category: \"connection\", messageKey: \"GRID_DISCONNECT\" },\n    9: { code: 1010, severity: \"fault\", sourceDevice: \"inverter\", category: \"current\", messageKey: \"OUTPUT_CURRENT_HIGH\" },\n    10: { code: 1011, severity: \"fault\", sourceDevice: \"inverter\", category: \"over_temp\", messageKey: \"INVERTER_OVER_TEMP\" },\n    11: { code: 1012, severity: \"fault\", sourceDevice: \"inverter\", category: \"leakage\", messageKey: \"LEAKAGE_CURRENT_HIGH\" },\n    12: { code: 1013, severity: \"fault\", sourceDevice: \"inverter\", category: \"hardware\", messageKey: \"HARDWARE_FAULT\" },\n    13: { code: 1014, severity: \"fault\", sourceDevice: \"inverter\", category: \"communication\", messageKey: \"EEPROM_FAULT\" },\n    14: { code: 1015, severity: \"fault\", sourceDevice: \"inverter\", category: \"relay\", messageKey: \"RELAY_FAULT\" },\n    15: { code: 1016, severity: \"fault\", sourceDevice: \"inverter\", category: \"hardware\", messageKey: \"DSP_FAULT\" }\n};\n\n// Three-phase Warning Word 1 (653) bit definitions\nconst warningWord1Bits = {\n    0: { code: 2001, severity: \"warning\", sourceDevice: \"battery\", category: \"voltage\", messageKey: \"BATTERY_VOLTAGE_HIGH\" },\n    1: { code: 2002, severity: \"warning\", sourceDevice: \"battery\", category: \"voltage\", messageKey: \"BATTERY_VOLTAGE_LOW\" },\n    2: { code: 2003, severity: \"warning\", sourceDevice: \"battery\", category: \"communication\", messageKey: \"BATTERY_COMM_FAIL\" },\n    3: { code: 2004, severity: \"warning\", sourceDevice: \"inverter\", category: \"over_temp\", messageKey: \"INVERTER_TEMP_HIGH\" },\n    4: { code: 2005, severity: \"warning\", sourceDevice: \"pv\", category: \"voltage\", messageKey: \"PV_VOLTAGE_HIGH\" },\n    5: { code: 2006, severity: \"warning\", sourceDevice: \"inverter\", category: \"fan\", messageKey: \"FAN_LOCKED\" },\n    6: { code: 2007, severity: \"warning\", sourceDevice: \"grid\", category: \"power\", messageKey: \"FEED_IN_POWER_LIMIT\" },\n    7: { code: 2008, severity: \"warning\", sourceDevice: \"inverter\", category: \"firmware\", messageKey: \"FIRMWARE_UPDATE\" },\n    8: { code: 2009, severity: \"warning\", sourceDevice: \"grid\", category: \"phase_balance\", messageKey: \"PHASE_IMBALANCE\" },\n    9: { code: 2010, severity: \"warning\", sourceDevice: \"inverter\", category: \"phase_voltage\", messageKey: \"PHASE_VOLTAGE_UNBALANCED\" }\n};\n\n// Decode fault bits\nfunction decodeBits(word, bitDefs) {\n    const alarms = [];\n    for (let bit = 0; bit < 16; bit++) {\n        if ((word & (1 << bit)) !== 0 && bitDefs[bit]) {\n            const def = bitDefs[bit];\n            alarms.push({\n                code: def.code,\n                vendorCode: bit,\n                severity: def.severity,\n                sourceDevice: def.sourceDevice,\n                category: def.category,\n                messageKey: def.messageKey,\n                messageParams: {},\n                firstOccurredUtc: now,\n                lastOccurredUtc: now,\n                occurrenceCount: 1\n            });\n        }\n    }\n    return alarms;\n}\n\n// Decode all words\nactiveAlarms.push(...decodeBits(warningsFaultsPart.faultWord1Raw, faultWord1Bits));\nactiveAlarms.push(...decodeBits(warningsFaultsPart.warningWord1Raw, warningWord1Bits));\n// Add more decoders for faultWord2-4, warningWord2 as needed\n\nconst state = {\n    kind: \"InverterAlarmState\",\n    timestampUtc: now,\n    gatewayId: gatewayId,\n    inverterSerialNumber: inverterSerial,\n    \n    runStateRaw: runstatePart.runStateRaw,\n    warningWord1Raw: warningsFaultsPart.warningWord1Raw,\n    warningWord2Raw: warningsFaultsPart.warningWord2Raw,\n    faultWord1Raw: warningsFaultsPart.faultWord1Raw,\n    faultWord2Raw: warningsFaultsPart.faultWord2Raw,\n    faultWord3Raw: warningsFaultsPart.faultWord3Raw,\n    faultWord4Raw: warningsFaultsPart.faultWord4Raw,\n    \n    activeAlarms: activeAlarms\n};\n\n// Clear partials\nflow.set(\"ias_part_runstate\", null);\nflow.set(\"ias_part_warnings_faults\", null);\n\nflow.set(\"inverterAlarmStateSnapshot\", state);\n\nmsg.payload = state;\nmsg.state = state;\nreturn msg;",
-        "outputs": 1,
-        "timeout": "",
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 1050,
-        "y": 130,
-        "wires": [
-            [
-                "ias_debug_json",
-                "ias_check_should_send"
-            ]
-        ]
-    },
-    {
-        "id": "ias_check_should_send",
-        "type": "function",
-        "z": "inverter_alarm_state_tab",
-        "name": "Check if should send",
-        "func": "// Only send to ThingsBoard if there's an actual problem:\n// 1. runState != 2 (not normal)\n// 2. OR any fault word != 0\n// 3. OR any warning word != 0\n// 4. OR activeAlarms array has items\n\nconst state = msg.payload;\n\nconst runStateNormal = state.runStateRaw === 2;\nconst noFaults = state.faultWord1Raw === 0 && \n                 state.faultWord2Raw === 0 && \n                 state.faultWord3Raw === 0 && \n                 state.faultWord4Raw === 0;\nconst noWarnings = state.warningWord1Raw === 0 && \n                   state.warningWord2Raw === 0;\nconst noActiveAlarms = state.activeAlarms.length === 0;\n\n// If everything is normal, don't send\nif (runStateNormal && noFaults && noWarnings && noActiveAlarms) {\n    // Check if we need to send \"all clear\" once\n    const previousHadAlarm = flow.get(\"ias_previous_had_alarm\") || false;\n    \n    if (previousHadAlarm) {\n        // Send one \"all clear\" message\n        flow.set(\"ias_previous_had_alarm\", false);\n        node.status({ fill: \"green\", shape: \"dot\", text: \"All clear - sent\" });\n        return msg;\n    } else {\n        // Already sent all clear, don't spam\n        node.status({ fill: \"green\", shape: \"ring\", text: \"Normal - skipped\" });\n        return null;\n    }\n}\n\n// There's an alarm/warning - send it\nflow.set(\"ias_previous_had_alarm\", true);\n\nconst alarmCount = state.activeAlarms.length;\nconst runStateText = {\n    0: \"standby\",\n    1: \"selfcheck\",\n    2: \"normal\",\n    3: \"ALARM\",\n    4: \"FAULT\"\n}[state.runStateRaw] || \"unknown\";\n\nnode.status({ \n    fill: state.runStateRaw >= 3 ? \"red\" : \"yellow\", \n    shape: \"dot\", \n    text: `${runStateText} - ${alarmCount} alarms` \n});\n\nreturn msg;",
+        "z": "alarm_state_tab_id",
+        "name": "Prep Parallel Reads",
+        "func": "// Prepare all 9 register reads in parallel\nconst reads = [\n    { name: 'runState', address: 600, quantity: 1 },\n    { name: 'commBoard', address: 648, quantity: 1 },\n    { name: 'warning1', address: 653, quantity: 1 },\n    { name: 'warning2', address: 654, quantity: 1 },\n    { name: 'fault1', address: 655, quantity: 1 },\n    { name: 'fault2', address: 656, quantity: 1 },\n    { name: 'fault3', address: 657, quantity: 1 },\n    { name: 'fault4', address: 658, quantity: 1 },\n    { name: 'workFlag', address: 659, quantity: 1 }\n];\n\nconst messages = reads.map(r => ({\n    payload: {\n        fc: 3,\n        unitid: 1,\n        address: r.address,\n        quantity: r.quantity\n    },\n    readName: r.name,\n    registerAddress: r.address\n}));\n\nreturn [messages];",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1320,
-        "y": 130,
+        "x": 390,
+        "y": 110,
         "wires": [
             [
-                "ias_mqtt_telemetry"
+                "modbus_read_alarm_registers"
             ]
         ]
     },
     {
-        "id": "ias_debug_json",
-        "type": "debug",
-        "z": "inverter_alarm_state_tab",
-        "name": "InverterAlarmState JSON",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "payload",
-        "targetType": "msg",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 1330,
-        "y": 70,
-        "wires": []
+        "id": "modbus_read_alarm_registers",
+        "type": "modbus-flex-getter",
+        "z": "alarm_state_tab_id",
+        "name": "Read Alarm Registers",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 640,
+        "y": 110,
+        "wires": [
+            [
+                "collect_all_reads"
+            ],
+            []
+        ]
     },
     {
-        "id": "ias_error_debug",
-        "type": "debug",
-        "z": "inverter_alarm_state_tab",
-        "name": "InverterAlarmState Error",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": true,
-        "complete": "payload",
-        "targetType": "msg",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 1050,
-        "y": 250,
-        "wires": []
+        "id": "collect_all_reads",
+        "type": "function",
+        "z": "alarm_state_tab_id",
+        "name": "Collect All Reads",
+        "func": "const flowKey = 'alarm_state_reads';\nlet collected = flow.get(flowKey) || {};\nconst expectedCount = 9;\n\nlet data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data) || data.length < 1) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Read failed: \" + msg.readName });\n    return null;\n}\n\nconst value = data[0] || 0;\n\n// Store by register address for clarity\nswitch(msg.readName) {\n    case 'runState':\n        collected.runStateRaw = value;\n        break;\n    case 'commBoard':\n        collected.commBoardFaultRaw = value;\n        break;\n    case 'warning1':\n        collected.warningWord1Raw = value;\n        break;\n    case 'warning2':\n        collected.warningWord2Raw = value;\n        break;\n    case 'fault1':\n        collected.faultWord1Raw = value;\n        break;\n    case 'fault2':\n        collected.faultWord2Raw = value;\n        break;\n    case 'fault3':\n        collected.faultWord3Raw = value;\n        break;\n    case 'fault4':\n        collected.faultWord4Raw = value;\n        break;\n    case 'workFlag':\n        collected.workFlagTripData = value;\n        break;\n}\n\nflow.set(flowKey, collected);\n\nconst collectedCount = Object.keys(collected).length;\nnode.status({ fill: \"blue\", shape: \"dot\", text: `Collected ${collectedCount}/${expectedCount}` });\n\nif (collectedCount >= expectedCount) {\n    flow.set(flowKey, null);\n    msg.collectedData = collected;\n    msg.payload = collected;\n    return msg;\n}\n\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 110,
+        "wires": [
+            [
+                "build_inverter_alarm_state_json"
+            ]
+        ]
     },
     {
-        "id": "ias_mqtt_telemetry",
+        "id": "build_inverter_alarm_state_json",
+        "type": "function",
+        "z": "alarm_state_tab_id",
+        "name": "Build InverterAlarmState JSON",
+        "func": "const data = msg.collectedData;\n\nif (!data) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"No data\" });\n    return null;\n}\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\nconst inverterSN = global.get(\"INVERTER_SN\") || env.get(\"INVERTER_SN\") || \"Unknown\";\nconst now = new Date().toISOString();\n\nconst activeAlarms = [];\n\n// Helper function to add alarm\nfunction addAlarm(code, vendorCode, severity, category) {\n    if (vendorCode > 0) {\n        activeAlarms.push({\n            code: code,\n            vendorCode: vendorCode,\n            severity: severity,\n            sourceDevice: \"inverter\",\n            category: category,\n            messageKey: `${category}_${code}`,\n            messageParams: null,\n            firstOccurredUtc: now,\n            lastOccurredUtc: now,\n            occurrenceCount: 1\n        });\n    }\n}\n\n// Check warnings (653-654)\naddAlarm(653, data.warningWord1Raw, \"WARNING\", \"warning\");\naddAlarm(654, data.warningWord2Raw, \"WARNING\", \"warning\");\n\n// Check faults (655-658)\naddAlarm(655, data.faultWord1Raw, \"ERROR\", \"fault\");\naddAlarm(656, data.faultWord2Raw, \"ERROR\", \"fault\");\naddAlarm(657, data.faultWord3Raw, \"ERROR\", \"fault\");\naddAlarm(658, data.faultWord4Raw, \"ERROR\", \"fault\");\n\n// Check comm board fault (648)\naddAlarm(648, data.commBoardFaultRaw, \"ALARM\", \"comm_fault\");\n\nconst state = {\n    kind: \"InverterAlarmState\",\n    timestampUtc: now,\n    version: 1,\n    gatewayId: gatewayId,\n    inverterSerialNumber: inverterSN,\n    \n    runStateRaw: data.runStateRaw,\n    commBoardFaultRaw: data.commBoardFaultRaw,\n    \n    warningWord1Raw: data.warningWord1Raw,\n    warningWord2Raw: data.warningWord2Raw,\n    \n    faultWord1Raw: data.faultWord1Raw,\n    faultWord2Raw: data.faultWord2Raw,\n    faultWord3Raw: data.faultWord3Raw,\n    faultWord4Raw: data.faultWord4Raw,\n    \n    workFlagTripData: data.workFlagTripData,\n    \n    activeAlarms: activeAlarms\n};\n\nmsg.payload = state;\nmsg.state = state;\nmsg.hasAlarms = activeAlarms.length > 0;\n\nnode.status({ \n    fill: activeAlarms.length > 0 ? \"red\" : \"green\", \n    shape: \"dot\", \n    text: `${activeAlarms.length} alarm(s)` \n});\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1180,
+        "y": 110,
+        "wires": [
+            [
+                "check_if_should_send",
+                "debug_alarm_state"
+            ]
+        ]
+    },
+    {
+        "id": "check_if_should_send",
+        "type": "function",
+        "z": "alarm_state_tab_id",
+        "name": "Check if should send",
+        "func": "// Only send to ThingsBoard if there are active alarms\nif (msg.hasAlarms) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Sending alarms\" });\n    return msg;\n}\n\nnode.status({ fill: \"green\", shape: \"dot\", text: \"No alarms - skipped\" });\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1460,
+        "y": 80,
+        "wires": [
+            [
+                "mqtt_send_to_thingsboard"
+            ]
+        ]
+    },
+    {
+        "id": "mqtt_send_to_thingsboard",
         "type": "mqtt out",
-        "z": "inverter_alarm_state_tab",
+        "z": "alarm_state_tab_id",
         "name": "Send to ThingsBoard",
         "topic": "v1/devices/me/telemetry",
         "qos": "1",
@@ -243,45 +177,52 @@
         "correl": "",
         "expiry": "",
         "broker": "tb-broker",
-        "x": 1580,
-        "y": 130,
+        "x": 1700,
+        "y": 80,
         "wires": []
     },
     {
-        "id": "ias_comment",
-        "type": "comment",
-        "z": "inverter_alarm_state_tab",
-        "name": "THREE-PHASE: Polls 1 min (only sends if alarm/warning present or state change) - Includes phase imbalance warnings",
-        "info": "",
-        "x": 450,
-        "y": 40,
+        "id": "debug_alarm_state",
+        "type": "debug",
+        "z": "alarm_state_tab_id",
+        "name": "InverterAlarmState Error",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1470,
+        "y": 160,
         "wires": []
     },
     {
         "id": "e4e4f3e2a4f4e004",
         "type": "modbus-client",
-        "name": "EC100 Modbus",
-        "clienttype": "tcp",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
         "bufferCommands": true,
         "stateLogEnabled": false,
         "queueLogEnabled": false,
-        "failureLogEnabled": true,
-        "tcpHost": "192.168.1.100",
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
         "tcpPort": "502",
         "tcpType": "DEFAULT",
-        "serialPort": "/dev/ttyUSB0",
-        "serialType": "RTU-BUFFERD",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
         "serialBaudrate": "9600",
         "serialDatabits": "8",
         "serialStopbits": "1",
         "serialParity": "none",
         "serialConnectionDelay": "100",
-        "serialAsciiResponseStartDelimiter": "0x3A",
-        "unit_id": "1",
-        "commandDelay": "1",
-        "clientTimeout": "1000",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
         "reconnectOnTimeout": true,
-        "reconnectTimeout": "2000",
+        "reconnectTimeout": 2000,
         "parallelUnitIdsAllowed": true,
         "showErrors": false,
         "showWarnings": true,
@@ -315,6 +256,8 @@
         "willQos": "0",
         "willRetain": "false",
         "willPayload": "",
-        "willMsg": {}
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
     }
 ]

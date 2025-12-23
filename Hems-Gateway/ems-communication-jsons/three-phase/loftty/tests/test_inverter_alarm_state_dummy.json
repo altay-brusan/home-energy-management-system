@@ -1,0 +1,260 @@
+[
+    {
+        "id": "test_alarm_dummy_tab",
+        "type": "tab",
+        "label": "TEST - InverterAlarmState Dummy",
+        "disabled": false,
+        "info": "Dummy test flow for InverterAlarmState - sends hardcoded alarm data to ThingsBoard"
+    },
+    {
+        "id": "inject_test_warning_only",
+        "type": "inject",
+        "z": "test_alarm_dummy_tab",
+        "name": "Test 1: WARNING Only",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 160,
+        "y": 80,
+        "wires": [
+            [
+                "build_warning_only"
+            ]
+        ]
+    },
+    {
+        "id": "inject_test_error_only",
+        "type": "inject",
+        "z": "test_alarm_dummy_tab",
+        "name": "Test 2: ERROR Only",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 160,
+        "y": 160,
+        "wires": [
+            [
+                "build_error_only"
+            ]
+        ]
+    },
+    {
+        "id": "inject_test_mixed_alarms",
+        "type": "inject",
+        "z": "test_alarm_dummy_tab",
+        "name": "Test 3: Mixed (WARNING+ERROR+ALARM)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 210,
+        "y": 240,
+        "wires": [
+            [
+                "build_mixed_alarms"
+            ]
+        ]
+    },
+    {
+        "id": "inject_test_no_alarms",
+        "type": "inject",
+        "z": "test_alarm_dummy_tab",
+        "name": "Test 4: No Alarms (Should NOT send)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 220,
+        "y": 320,
+        "wires": [
+            [
+                "build_no_alarms"
+            ]
+        ]
+    },
+    {
+        "id": "build_warning_only",
+        "type": "function",
+        "z": "test_alarm_dummy_tab",
+        "name": "Build WARNING Only",
+        "func": "const gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\nconst inverterSN = global.get(\"INVERTER_SN\") || env.get(\"INVERTER_SN\") || \"LFT3PH-TEST-001\";\nconst now = new Date().toISOString();\n\nconst state = {\n    kind: \"InverterAlarmState\",\n    timestampUtc: now,\n    version: 1,\n    gatewayId: gatewayId,\n    inverterSerialNumber: inverterSN,\n    \n    runStateRaw: 3,\n    commBoardFaultRaw: 0,\n    \n    warningWord1Raw: 6,\n    warningWord2Raw: 0,\n    \n    faultWord1Raw: 0,\n    faultWord2Raw: 0,\n    faultWord3Raw: 0,\n    faultWord4Raw: 0,\n    \n    workFlagTripData: 0,\n    \n    activeAlarms: [\n        {\n            code: 653,\n            vendorCode: 6,\n            severity: \"WARNING\",\n            sourceDevice: \"inverter\",\n            category: \"warning\",\n            messageKey: \"warning_653\",\n            messageParams: null,\n            firstOccurredUtc: now,\n            lastOccurredUtc: now,\n            occurrenceCount: 1\n        }\n    ]\n};\n\nmsg.payload = state;\nnode.status({ fill: \"yellow\", shape: \"dot\", text: \"1 WARNING\" });\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 450,
+        "y": 80,
+        "wires": [
+            [
+                "debug_alarm_payload",
+                "send_to_thingsboard"
+            ]
+        ]
+    },
+    {
+        "id": "build_error_only",
+        "type": "function",
+        "z": "test_alarm_dummy_tab",
+        "name": "Build ERROR Only",
+        "func": "const gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\nconst inverterSN = global.get(\"INVERTER_SN\") || env.get(\"INVERTER_SN\") || \"LFT3PH-TEST-001\";\nconst now = new Date().toISOString();\n\nconst state = {\n    kind: \"InverterAlarmState\",\n    timestampUtc: now,\n    version: 1,\n    gatewayId: gatewayId,\n    inverterSerialNumber: inverterSN,\n    \n    runStateRaw: 4,\n    commBoardFaultRaw: 0,\n    \n    warningWord1Raw: 0,\n    warningWord2Raw: 0,\n    \n    faultWord1Raw: 128,\n    faultWord2Raw: 2048,\n    faultWord3Raw: 0,\n    faultWord4Raw: 0,\n    \n    workFlagTripData: 1,\n    \n    activeAlarms: [\n        {\n            code: 655,\n            vendorCode: 128,\n            severity: \"ERROR\",\n            sourceDevice: \"inverter\",\n            category: \"fault\",\n            messageKey: \"fault_655\",\n            messageParams: null,\n            firstOccurredUtc: now,\n            lastOccurredUtc: now,\n            occurrenceCount: 1\n        },\n        {\n            code: 656,\n            vendorCode: 2048,\n            severity: \"ERROR\",\n            sourceDevice: \"inverter\",\n            category: \"fault\",\n            messageKey: \"fault_656\",\n            messageParams: null,\n            firstOccurredUtc: now,\n            lastOccurredUtc: now,\n            occurrenceCount: 1\n        }\n    ]\n};\n\nmsg.payload = state;\nnode.status({ fill: \"red\", shape: \"dot\", text: \"2 ERROR\" });\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 440,
+        "y": 160,
+        "wires": [
+            [
+                "debug_alarm_payload",
+                "send_to_thingsboard"
+            ]
+        ]
+    },
+    {
+        "id": "build_mixed_alarms",
+        "type": "function",
+        "z": "test_alarm_dummy_tab",
+        "name": "Build Mixed Alarms",
+        "func": "const gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\nconst inverterSN = global.get(\"INVERTER_SN\") || env.get(\"INVERTER_SN\") || \"LFT3PH-TEST-001\";\nconst now = new Date().toISOString();\n\nconst state = {\n    kind: \"InverterAlarmState\",\n    timestampUtc: now,\n    version: 1,\n    gatewayId: gatewayId,\n    inverterSerialNumber: inverterSN,\n    \n    runStateRaw: 4,\n    commBoardFaultRaw: 7,\n    \n    warningWord1Raw: 12,\n    warningWord2Raw: 16384,\n    \n    faultWord1Raw: 256,\n    faultWord2Raw: 0,\n    faultWord3Raw: 512,\n    faultWord4Raw: 32,\n    \n    workFlagTripData: 3,\n    \n    activeAlarms: [\n        {\n            code: 653,\n            vendorCode: 12,\n            severity: \"WARNING\",\n            sourceDevice: \"inverter\",\n            category: \"warning\",\n            messageKey: \"warning_653\",\n            messageParams: null,\n            firstOccurredUtc: now,\n            lastOccurredUtc: now,\n            occurrenceCount: 1\n        },\n        {\n            code: 654,\n            vendorCode: 16384,\n            severity: \"WARNING\",\n            sourceDevice: \"inverter\",\n            category: \"warning\",\n            messageKey: \"warning_654\",\n            messageParams: null,\n            firstOccurredUtc: now,\n            lastOccurredUtc: now,\n            occurrenceCount: 1\n        },\n        {\n            code: 655,\n            vendorCode: 256,\n            severity: \"ERROR\",\n            sourceDevice: \"inverter\",\n            category: \"fault\",\n            messageKey: \"fault_655\",\n            messageParams: null,\n            firstOccurredUtc: now,\n            lastOccurredUtc: now,\n            occurrenceCount: 1\n        },\n        {\n            code: 657,\n            vendorCode: 512,\n            severity: \"ERROR\",\n            sourceDevice: \"inverter\",\n            category: \"fault\",\n            messageKey: \"fault_657\",\n            messageParams: null,\n            firstOccurredUtc: now,\n            lastOccurredUtc: now,\n            occurrenceCount: 1\n        },\n        {\n            code: 658,\n            vendorCode: 32,\n            severity: \"ERROR\",\n            sourceDevice: \"inverter\",\n            category: \"fault\",\n            messageKey: \"fault_658\",\n            messageParams: null,\n            firstOccurredUtc: now,\n            lastOccurredUtc: now,\n            occurrenceCount: 1\n        },\n        {\n            code: 648,\n            vendorCode: 7,\n            severity: \"ALARM\",\n            sourceDevice: \"inverter\",\n            category: \"comm_fault\",\n            messageKey: \"comm_fault_648\",\n            messageParams: null,\n            firstOccurredUtc: now,\n            lastOccurredUtc: now,\n            occurrenceCount: 1\n        }\n    ]\n};\n\nmsg.payload = state;\nnode.status({ fill: \"red\", shape: \"dot\", text: \"6 alarms (2W+3E+1A)\" });\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 240,
+        "wires": [
+            [
+                "debug_alarm_payload",
+                "send_to_thingsboard"
+            ]
+        ]
+    },
+    {
+        "id": "build_no_alarms",
+        "type": "function",
+        "z": "test_alarm_dummy_tab",
+        "name": "Build No Alarms",
+        "func": "const gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\nconst inverterSN = global.get(\"INVERTER_SN\") || env.get(\"INVERTER_SN\") || \"LFT3PH-TEST-001\";\nconst now = new Date().toISOString();\n\nconst state = {\n    kind: \"InverterAlarmState\",\n    timestampUtc: now,\n    version: 1,\n    gatewayId: gatewayId,\n    inverterSerialNumber: inverterSN,\n    \n    runStateRaw: 2,\n    commBoardFaultRaw: 0,\n    \n    warningWord1Raw: 0,\n    warningWord2Raw: 0,\n    \n    faultWord1Raw: 0,\n    faultWord2Raw: 0,\n    faultWord3Raw: 0,\n    faultWord4Raw: 0,\n    \n    workFlagTripData: 0,\n    \n    activeAlarms: []\n};\n\nmsg.payload = state;\nnode.status({ fill: \"green\", shape: \"dot\", text: \"No alarms (TEST - will send anyway)\" });\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 450,
+        "y": 320,
+        "wires": [
+            [
+                "debug_alarm_payload",
+                "send_to_thingsboard"
+            ]
+        ]
+    },
+    {
+        "id": "send_to_thingsboard",
+        "type": "mqtt out",
+        "z": "test_alarm_dummy_tab",
+        "name": "Send to ThingsBoard",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 760,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "debug_alarm_payload",
+        "type": "debug",
+        "z": "test_alarm_dummy_tab",
+        "name": "Alarm Payload",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 750,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]
