@@ -1,0 +1,325 @@
+[
+    {
+        "id": "battery_low_soc_tab",
+        "type": "tab",
+        "label": "Battery Low SOC Alarm",
+        "disabled": false,
+        "info": "Battery Low SOC Alarm - Polls every 5 minutes\n\nRegisters:\n- 217: lowBatteryCapacityPercent (threshold)\n- 688: socPercent (current battery SOC)\n\nLogic:\n- If socPercent < threshold: Check step (5% increments)\n- Only send if step decreased from last sent\n- Reset when socPercent >= threshold"
+    },
+    {
+        "id": "inject_poll_low_soc_5min",
+        "type": "inject",
+        "z": "battery_low_soc_tab",
+        "name": "Poll LowSOC (5 min)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "300",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 160,
+        "y": 80,
+        "wires": [
+            [
+                "prep_parallel_reads_soc"
+            ]
+        ]
+    },
+    {
+        "id": "inject_manual_trigger_soc",
+        "type": "inject",
+        "z": "battery_low_soc_tab",
+        "name": "Manual Trigger",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 140,
+        "wires": [
+            [
+                "prep_parallel_reads_soc"
+            ]
+        ]
+    },
+    {
+        "id": "prep_parallel_reads_soc",
+        "type": "function",
+        "z": "battery_low_soc_tab",
+        "name": "Prep Parallel Reads",
+        "func": "// Read registers 217 and 688\nconst reads = [\n    { name: 'lowBatteryThreshold', address: 217, quantity: 1 },\n    { name: 'currentSoc', address: 688, quantity: 1 }\n];\n\nconst messages = reads.map(r => ({\n    payload: {\n        fc: 3,\n        unitid: 1,\n        address: r.address,\n        quantity: r.quantity\n    },\n    readName: r.name,\n    registerAddress: r.address\n}));\n\nreturn [messages];",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 390,
+        "y": 110,
+        "wires": [
+            [
+                "read_soc_registers"
+            ]
+        ]
+    },
+    {
+        "id": "read_soc_registers",
+        "type": "modbus-flex-getter",
+        "z": "battery_low_soc_tab",
+        "name": "Read Registers 217, 688",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 650,
+        "y": 110,
+        "wires": [
+            [
+                "collect_soc_reads"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "collect_soc_reads",
+        "type": "function",
+        "z": "battery_low_soc_tab",
+        "name": "Collect Reads",
+        "func": "const flowKey = 'low_soc_reads';\nlet collected = flow.get(flowKey) || {};\nconst expectedCount = 2;\n\nlet data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data) || data.length < 1) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Read failed: \" + msg.readName });\n    return null;\n}\n\nconst value = data[0] || 0;\n\nif (msg.readName === 'lowBatteryThreshold') {\n    collected.lowBatteryCapacityPercent = value;\n} else if (msg.readName === 'currentSoc') {\n    collected.socPercent = value;\n}\n\nflow.set(flowKey, collected);\n\nconst collectedCount = Object.keys(collected).length;\nnode.status({ fill: \"blue\", shape: \"dot\", text: `Collected ${collectedCount}/${expectedCount}` });\n\nif (collectedCount >= expectedCount) {\n    flow.set(flowKey, null);\n    msg.collectedData = collected;\n    msg.payload = collected;\n    return msg;\n}\n\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 890,
+        "y": 110,
+        "wires": [
+            [
+                "check_and_build_alarm"
+            ]
+        ]
+    },
+    {
+        "id": "check_and_build_alarm",
+        "type": "function",
+        "z": "battery_low_soc_tab",
+        "name": "Check & Build Alarm",
+        "func": "const data = msg.collectedData;\n\nif (!data) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"No data\" });\n    return null;\n}\n\nconst lowBatteryCapacityPercent = data.lowBatteryCapacityPercent;\nconst socPercent = data.socPercent;\n\n// Get last sent step from flow context\nlet lastSentLowBatterySoc = flow.get(\"lastSentLowBatterySoc\");\n\n// First run: initialize lastSentLowBatterySoc\nif (lastSentLowBatterySoc === null || lastSentLowBatterySoc === undefined) {\n    lastSentLowBatterySoc = lowBatteryCapacityPercent;\n    flow.set(\"lastSentLowBatterySoc\", lastSentLowBatterySoc);\n    node.status({ fill: \"blue\", shape: \"dot\", text: `Initialized: lastSent=${lastSentLowBatterySoc}` });\n}\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\nconst inverterSN = global.get(\"INVERTER_SN\") || env.get(\"INVERTER_SN\") || \"Unknown\";\nconst now = new Date().toISOString();\n\nlet shouldSend = false;\nlet alarm = null;\n\n// Check if SOC is below threshold\nif (socPercent < lowBatteryCapacityPercent) {\n    // Calculate current step (5% increments, rounded down)\n    const currentStep = Math.floor(socPercent / 5) * 5;\n    \n    // Only send if step decreased from last sent\n    if (currentStep < lastSentLowBatterySoc) {\n        shouldSend = true;\n        flow.set(\"lastSentLowBatterySoc\", currentStep);\n        \n        alarm = {\n            code: \"W11\",\n            vendorCode: null,\n            severity: \"WARNING\",\n            sourceDevice: \"inverter\",\n            category: \"battery\",\n            messageKey: \"Battery_LowSOC\",\n            messageParams: {\n                currentSocPercent: socPercent,\n                thresholdPercent: lowBatteryCapacityPercent,\n                triggeredAtStep: currentStep\n            },\n            firstOccurredUtc: now,\n            lastOccurredUtc: now,\n            occurrenceCount: 1\n        };\n        \n        node.status({ \n            fill: \"red\", \n            shape: \"dot\", \n            text: `ALARM: SOC=${socPercent}% (step=${currentStep}, lastSent=${lastSentLowBatterySoc})` \n        });\n    } else {\n        node.status({ \n            fill: \"yellow\", \n            shape: \"dot\", \n            text: `SKIP: SOC=${socPercent}% (step=${currentStep} already sent)` \n        });\n    }\n} else {\n    // SOC is above or equal to threshold - reset\n    flow.set(\"lastSentLowBatterySoc\", lowBatteryCapacityPercent);\n    node.status({ \n        fill: \"green\", \n        shape: \"dot\", \n        text: `OK: SOC=${socPercent}% >= ${lowBatteryCapacityPercent}% (reset)` \n    });\n}\n\n// Build InverterAlarmState format\nconst state = {\n    kind: \"InverterAlarmState\",\n    timestampUtc: now,\n    version: 1,\n    gatewayId: gatewayId,\n    inverterSerialNumber: inverterSN,\n    \n    runStateRaw: null,\n    commBoardFaultRaw: null,\n    \n    warningWord1Raw: null,\n    warningWord2Raw: null,\n    \n    faultWord1Raw: null,\n    faultWord2Raw: null,\n    faultWord3Raw: null,\n    faultWord4Raw: null,\n    \n    workFlagTripData: null,\n    \n    activeAlarms: alarm ? [alarm] : []\n};\n\nmsg.payload = state;\nmsg.state = state;\nmsg.hasAlarms = alarm !== null;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1140,
+        "y": 110,
+        "wires": [
+            [
+                "check_if_should_send_soc",
+                "debug_low_soc_alarm"
+            ]
+        ]
+    },
+    {
+        "id": "check_if_should_send_soc",
+        "type": "function",
+        "z": "battery_low_soc_tab",
+        "name": "Check if should send",
+        "func": "// Only send to ThingsBoard if there is an alarm\nif (msg.hasAlarms) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Sending LOW SOC alarm\" });\n    return msg;\n}\n\nnode.status({ fill: \"green\", shape: \"dot\", text: \"No alarm - skipped\" });\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1400,
+        "y": 80,
+        "wires": [
+            [
+                "send_to_thingsboard_soc"
+            ]
+        ]
+    },
+    {
+        "id": "send_to_thingsboard_soc",
+        "type": "mqtt out",
+        "z": "battery_low_soc_tab",
+        "name": "Send to ThingsBoard",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1660,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "debug_low_soc_alarm",
+        "type": "debug",
+        "z": "battery_low_soc_tab",
+        "name": "Low SOC Alarm",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1390,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "inject_reset_last_sent",
+        "type": "inject",
+        "z": "battery_low_soc_tab",
+        "name": "RESET lastSentLowBatterySoc",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 200,
+        "y": 240,
+        "wires": [
+            [
+                "reset_last_sent_context"
+            ]
+        ]
+    },
+    {
+        "id": "reset_last_sent_context",
+        "type": "function",
+        "z": "battery_low_soc_tab",
+        "name": "Reset Context",
+        "func": "flow.set(\"lastSentLowBatterySoc\", null);\nnode.status({ fill: \"green\", shape: \"dot\", text: \"Reset complete\" });\nmsg.payload = \"lastSentLowBatterySoc reset to null\";\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 470,
+        "y": 240,
+        "wires": [
+            [
+                "debug_reset_confirm"
+            ]
+        ]
+    },
+    {
+        "id": "debug_reset_confirm",
+        "type": "debug",
+        "z": "battery_low_soc_tab",
+        "name": "Reset Confirmation",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 710,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]
