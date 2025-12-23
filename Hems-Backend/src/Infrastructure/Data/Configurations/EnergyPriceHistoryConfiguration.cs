@@ -4,9 +4,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Hems_Backend.Infrastructure.Data.Configurations;
 
-public class DevicePriceConfiguration : IEntityTypeConfiguration<DevicePrice>
+public class EnergyPriceHistoryConfiguration : IEntityTypeConfiguration<EnergyPriceHistory>
 {
-    public void Configure(EntityTypeBuilder<DevicePrice> builder)
+    public void Configure(EntityTypeBuilder<EnergyPriceHistory> builder)
     {
         builder.Property(t => t.Unit)
             .HasMaxLength(20)
@@ -29,7 +29,7 @@ public class DevicePriceConfiguration : IEntityTypeConfiguration<DevicePrice>
         builder.Property(t => t.IsActive)
             .HasDefaultValue(true);
 
-        // Hour range validation: 0-23
+        // Hour range: 0-23 for BeginHour, 0-24 for EndHour
         builder.Property(t => t.BeginHour);
         builder.Property(t => t.EndHour);
 
@@ -39,15 +39,12 @@ public class DevicePriceConfiguration : IEntityTypeConfiguration<DevicePrice>
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasIndex(d => d.DeviceId)
-            .HasDatabaseName("IX_DevicePrices_DeviceId");
-
-        builder.HasIndex(d => d.EffectiveFrom)
-            .HasDatabaseName("IX_DevicePrices_EffectiveFrom");
-
-        builder.HasIndex(d => new { d.DeviceId, d.EffectiveFrom })
-            .HasDatabaseName("IX_DevicePrices_DeviceId_EffectiveFrom");
+            .HasDatabaseName("IX_EnergyPriceHistory_DeviceId");
 
         builder.HasIndex(d => d.IsActive)
-            .HasDatabaseName("IX_DevicePrices_IsActive");
+            .HasDatabaseName("IX_EnergyPriceHistory_IsActive");
+
+        builder.HasIndex(d => new { d.DeviceId, d.IsActive })
+            .HasDatabaseName("IX_EnergyPriceHistory_DeviceId_IsActive");
     }
 }

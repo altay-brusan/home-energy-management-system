@@ -2,6 +2,7 @@ using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Application.DeviceSettings.Commands.ChangeExportStrategy;
 using Hems_Backend.Application.DeviceSettings.Commands.SetDeviceMode;
+using Hems_Backend.Application.DeviceSettings.Commands.SetEnergyPrice;
 using Hems_Backend.Application.DeviceSettings.Commands.UpdateDeviceParameter;
 using Hems_Backend.Application.DeviceSettings.Commands.UpdateDeviceParameters;
 using Hems_Backend.Application.DeviceSettings.Commands.CreateSetupDeviceParameterValue;
@@ -11,6 +12,7 @@ using Hems_Backend.Application.DeviceSettings.Commands.UpdateDeviceParameterValu
 using Hems_Backend.Application.DeviceSettings.Commands.InitializeDeviceSettings;
 using Hems_Backend.Application.DeviceSettings.Queries.GetDeviceModes;
 using Hems_Backend.Application.DeviceSettings.Queries.GetDeviceParameters;
+using Hems_Backend.Application.DeviceSettings.Queries.GetEnergyPrices;
 using Hems_Backend.Application.DeviceSettings.Queries.GetSetupDeviceParameterValues;
 using Hems_Backend.Application.DeviceSettings.Queries.GetSetupDeviceParameterValuesTree;
 using Hems_Backend.Application.DeviceSettings.Queries.GetDeviceParameterValuesTree;
@@ -39,6 +41,10 @@ public class DeviceSettings : EndpointGroupBase
             .MapPut(UpdateDeviceParameters, "device/{deviceId:guid}/parameters")
             .MapGet(GetAvailableModes, "modes")
             .MapPost(SetDeviceMode, "device/{deviceId:guid}/mode")
+
+            // ==== PRICE SETTINGS ====
+            .MapGet(GetEnergyPrices, "device/{deviceId:guid}/price")
+            .MapPut(SetEnergyPrices, "device/{deviceId:guid}/price")
 
             // ==== DATABASE-ONLY OPERATIONS (Admin tools) ====
             .MapGet(GetSetupDeviceParameterValues, "admin")
@@ -181,6 +187,89 @@ public class DeviceSettings : EndpointGroupBase
         {
             success = false,
             message = result.ErrorMessage ?? "Failed to set device mode"
+        });
+    }
+
+    // ========================================================================
+    // PRICE SETTINGS - Energy price configuration
+    // ========================================================================
+
+    /// <summary>
+    /// Get energy prices for a device
+    /// </summary>
+    /// <remarks>
+    /// Returns active energy price entries for the device.
+    /// Each entry can have a time-of-day range (BeginHour, EndHour).
+    /// </remarks>
+    [Authorize]
+    public async Task<IResult> GetEnergyPrices(
+        ISender sender,
+        Guid deviceId)
+    {
+        var query = new GetEnergyPricesQuery { DeviceId = deviceId };
+        var result = await sender.Send(query);
+
+        if (result.Success)
+        {
+            return Results.Ok(result);
+        }
+
+        return Results.BadRequest(new
+        {
+            success = false,
+            message = result.ErrorMessage ?? "Failed to get energy prices"
+        });
+    }
+
+    /// <summary>
+    /// Set energy prices for a device
+    /// </summary>
+    /// <remarks>
+    /// Sets sell and buy prices for a device. Supports time-of-day pricing.
+    /// Previous prices are deactivated when new prices are set.
+    ///
+    /// Example request:
+    /// {
+    ///   "unit": "kWh",
+    ///   "currency": "EUR",
+    ///   "prices": [
+    ///     { "sellPrice": 0.08, "buyPrice": 0.15, "beginHour": 0, "endHour": 6 },
+    ///     { "sellPrice": 0.12, "buyPrice": 0.25, "beginHour": 6, "endHour": 22 },
+    ///     { "sellPrice": 0.08, "buyPrice": 0.15, "beginHour": 22, "endHour": 24 }
+    ///   ]
+    /// }
+    /// </remarks>
+    [Authorize]
+    public async Task<IResult> SetEnergyPrices(
+        ISender sender,
+        Guid deviceId,
+        SetEnergyPriceRequest request)
+    {
+        var command = new SetEnergyPriceCommand
+        {
+            DeviceId = deviceId,
+            Unit = request.Unit,
+            Currency = request.Currency,
+            Prices = request.Prices.Select(p => new PriceEntry
+            {
+                SellPrice = p.SellPrice,
+                BuyPrice = p.BuyPrice,
+                BeginHour = p.BeginHour,
+                EndHour = p.EndHour
+            }).ToList()
+        };
+
+        var result = await sender.Send(command);
+
+        if (result.Success)
+        {
+            return Results.Ok(result);
+        }
+
+        return Results.BadRequest(new
+        {
+            success = false,
+            message = result.ErrorMessage ?? "Failed to set energy prices"
         });
     }
 
@@ -368,4 +457,45 @@ public record UpdateDeviceParametersRequest
 public record SetDeviceModeRequest
 {
     public Hems_Backend.Application.DeviceSettings.Models.DeviceMode Mode { get; init; }
+}
+
+public record SetEnergyPriceRequest
+{
+    /// <summary>
+    /// Unit of energy measurement (e.g., "kWh")
+    /// </summary>
+    public string Unit { get; init; } = "kWh";
+
+    /// <summary>
+    /// Currency code (e.g., "EUR", "USD", "TRY")
+    /// </summary>
+    public string Currency { get; init; } = "EUR";
+
+    /// <summary>
+    /// List of price entries
+    /// </summary>
+    public List<PriceEntryRequest> Prices { get; init; } = new();
+}
+
+public record PriceEntryRequest
+{
+    /// <summary>
+    /// Price at which energy is sold to the grid (export)
+    /// </summary>
+    public decimal SellPrice { get; init; }
+
+    /// <summary>
+    /// Price at which energy is bought from the grid (import)
+    /// </summary>
+    public decimal BuyPrice { get; init; }
+
+    /// <summary>
+    /// Start hour of the day when this price is valid (0-23)
+    /// </summary>
+    public int? BeginHour { get; init; }
+
+    /// <summary>
+    /// End hour of the day when this price is valid (0-24)
+    /// </summary>
+    public int? EndHour { get; init; }
 }
