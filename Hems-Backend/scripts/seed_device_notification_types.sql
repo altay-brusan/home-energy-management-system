@@ -200,6 +200,9 @@ VALUES
 -- W07: Phase imbalance warning
 (gen_random_uuid(), 'INV-WAR-W07', 'Phase Imbalance Warning', 'ACTIVE', 'Three-phase imbalance detected. Check load distribution across phases.', 0, 0, 'phase', 'WARNING', '1.0', 'LOFTTY', true, NOW(), 'system', NOW(), 'system'),
 
+-- W11: Battery low SOC warning
+(gen_random_uuid(), 'INV-WAR-W11', 'Battery Low SOC Warning', 'ACTIVE', 'Battery state of charge is low. Consider charging the battery or reducing load to prevent discharge protection.', 0, 0, 'battery', 'WARNING', '1.0', 'LOFTTY', true, NOW(), 'system', NOW(), 'system'),
+
 -- =====================================================
 -- INFORMATIONAL MESSAGES (INV-WAR-Ixx / BMS-WAR-Ixx)
 -- Severity: WARNING - Informational status messages (low priority warnings)
