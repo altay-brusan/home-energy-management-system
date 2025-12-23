@@ -121,7 +121,7 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
             {
                 SetupId = setup.Id,
                 DeviceId = device.Id,
-                WorkMode = 1 // Default to BalancedHybrid mode
+                WorkMode = (int)DeviceMode.SellToGrid // Default mode
             };
 
             _context.SetupDevices.Add(setupDevice);
@@ -143,30 +143,6 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
                     SetupDeviceId = setupDevice.Id,
                 };
                 _context.SetupDeviceParameterValues.Add(newSetupSettingsValue);
-            }
-
-            // Apply default BalancedHybrid mode configuration
-            var defaultModeConfig = DeviceModeConfigurations.GetConfiguration(DeviceMode.BalancedHybrid);
-            if (defaultModeConfig != null)
-            {
-                // Save to get IDs for the parameter values
-                await _context.SaveChangesAsync(cancellationToken);
-
-                // Get all parameters with their values
-                var setupDeviceParameterValues = await _context.SetupDeviceParameterValues
-                    .Include(sdpv => sdpv.Parameter)
-                    .Where(sdpv => sdpv.SetupDeviceId == setupDevice.Id)
-                    .ToListAsync(cancellationToken);
-
-                // Update parameter values based on default mode configuration
-                foreach (var (paramName, value) in defaultModeConfig)
-                {
-                    var paramValue = setupDeviceParameterValues.FirstOrDefault(pv => pv.Parameter?.Name == paramName);
-                    if (paramValue != null)
-                    {
-                        paramValue.Value = value;
-                    }
-                }
             }
         }
 
