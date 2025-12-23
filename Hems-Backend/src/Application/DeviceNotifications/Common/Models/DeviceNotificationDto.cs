@@ -11,6 +11,7 @@ public class DeviceNotificationTypeDto
     public int Value { get; init; }
     public string Category { get; init; } = string.Empty;
     public string Version { get; init; } = string.Empty;
+    public string Manufacturer { get; init; } = string.Empty;
     public bool IsActive { get; init; }
 }
 

@@ -12,6 +12,7 @@ public class DeviceNotificationType : BaseGuidAuditableEntity
     public int Value { get; set; }
     public string Category { get; set; } = string.Empty; // INFO, WARNING, ERROR
     public string Version { get; set; } = string.Empty; // Notification type version
+    public string Manufacturer { get; set; } = string.Empty; // Device manufacturer (e.g., LOFTTY)
     public bool IsActive { get; set; } = true;
 
     // Navigation properties

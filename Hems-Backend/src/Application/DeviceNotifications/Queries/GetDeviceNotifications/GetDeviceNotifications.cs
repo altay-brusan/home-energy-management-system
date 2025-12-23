@@ -99,6 +99,7 @@ public class GetDeviceNotificationsQueryHandler : IRequestHandler<GetDeviceNotif
                     Value = dn.DeviceNotificationType.Value,
                     Category = dn.DeviceNotificationType.Category,
                     Version = dn.DeviceNotificationType.Version,
+                    Manufacturer = dn.DeviceNotificationType.Manufacturer,
                     IsActive = dn.DeviceNotificationType.IsActive
                 },
                 DeviceManufacturer = dn.Device.Manufacturer,
