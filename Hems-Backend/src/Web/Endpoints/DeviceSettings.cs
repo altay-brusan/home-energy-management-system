@@ -180,9 +180,7 @@ public class DeviceSettings : EndpointGroupBase
         return Results.BadRequest(new
         {
             success = false,
-            message = result.ErrorMessage ?? "Failed to set device mode",
-            successfulParameters = result.SuccessfulParameters,
-            failedParameters = result.FailedParameters
+            message = result.ErrorMessage ?? "Failed to set device mode"
         });
     }
 

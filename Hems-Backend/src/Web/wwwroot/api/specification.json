@@ -6521,16 +6521,14 @@
         "type": "integer",
         "description": "",
         "x-enumNames": [
-          "BalancedHybrid",
-          "ZeroExport",
-          "MaximumSaving",
-          "Custom"
+          "SellToGrid",
+          "SelfConsumption",
+          "SmartZeroExport"
         ],
         "enum": [
           1,
           2,
-          3,
-          99
+          3
         ]
       },
       "SetupDeviceParameterValuesVm": {
