@@ -27,9 +27,17 @@ public class DeviceNotificationDto
     public bool IsProcessed { get; init; }
     public bool IsDeleted { get; init; }
     public DateTimeOffset Created { get; init; }
-    
+
     // Navigation properties
     public DeviceNotificationTypeDto DeviceNotificationType { get; init; } = null!;
     public string DeviceManufacturer { get; init; } = string.Empty;
     public string SiteName { get; init; } = string.Empty;
+
+    // Display properties for SignalR notifications
+    public string DeviceName { get; init; } = string.Empty;
+    public string DisplayMessage { get; init; } = string.Empty;
+    public string Severity { get; init; } = string.Empty;
+    public string SourceDevice { get; init; } = string.Empty;
+    public string RawRegisterCode { get; init; } = string.Empty;
+    public bool IsGeneric { get; init; }
 }
