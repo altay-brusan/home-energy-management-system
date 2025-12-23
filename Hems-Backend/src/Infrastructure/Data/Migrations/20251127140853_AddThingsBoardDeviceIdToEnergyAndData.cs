@@ -46,11 +46,24 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                 nullable: false,
                 defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
 
+            // Add Name column to Devices table (if not exists)
+            migrationBuilder.Sql(@"
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                        WHERE table_name = 'Devices' AND column_name = 'Name'
+                    ) THEN
+                        ALTER TABLE ""Devices"" ADD ""Name"" text NOT NULL DEFAULT '';
+                    END IF;
+                END $$;
+            ");
+
             // Populate ThingsBoardDeviceId with Device.Id for existing devices where ThingsBoardDeviceId is empty
             migrationBuilder.Sql(@"
-                UPDATE ""Devices"" 
-                SET ""ThingsBoardDeviceId"" = ""Id"" 
-                WHERE ""ThingsBoardDeviceId"" = '00000000-0000-0000-0000-000000000000'::uuid 
+                UPDATE ""Devices""
+                SET ""ThingsBoardDeviceId"" = ""Id""
+                WHERE ""ThingsBoardDeviceId"" = '00000000-0000-0000-0000-000000000000'::uuid
                    OR ""ThingsBoardDeviceId"" IS NULL;
             ");
 
@@ -94,6 +107,11 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
             // Drop ThingsBoardDeviceId column from Devices table
             migrationBuilder.DropColumn(
                 name: "ThingsBoardDeviceId",
+                table: "Devices");
+
+            // Drop Name column from Devices table
+            migrationBuilder.DropColumn(
+                name: "Name",
                 table: "Devices");
 
             migrationBuilder.RenameColumn(
