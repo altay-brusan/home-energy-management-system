@@ -15,8 +15,9 @@ public class GetDeviceModesQueryHandler : IRequestHandler<GetDeviceModesQuery, D
             .Select(kvp => new DeviceModeDto
             {
                 Mode = kvp.Key,
-                Name = kvp.Key.ToString(),
-                Description = kvp.Value
+                Name = kvp.Value.Name,
+                Description = kvp.Value.Description,
+                Icon = kvp.Value.Icon
             })
             .ToList();
 
@@ -43,5 +44,5 @@ public record DeviceModeDto
     public DeviceMode Mode { get; init; }
     public string Name { get; init; } = string.Empty;
     public string Description { get; init; } = string.Empty;
-    public Dictionary<string, string>? Configuration { get; init; }
+    public string Icon { get; init; } = string.Empty;
 }

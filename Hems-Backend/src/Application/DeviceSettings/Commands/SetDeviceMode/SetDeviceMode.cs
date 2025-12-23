@@ -18,6 +18,8 @@ public class SetDeviceModeCommandHandler : IRequestHandler<SetDeviceModeCommand,
     private readonly IDeviceRpcExecutorService _rpcExecutor;
     private readonly ILogger<SetDeviceModeCommandHandler> _logger;
 
+    private const string ExportStrategyParameterName = "ExportStrategySelection";
+
     public SetDeviceModeCommandHandler(
         IApplicationDbContext context,
         IDeviceRpcExecutorService rpcExecutor,
@@ -30,14 +32,14 @@ public class SetDeviceModeCommandHandler : IRequestHandler<SetDeviceModeCommand,
 
     public async Task<SetDeviceModeResult> Handle(SetDeviceModeCommand request, CancellationToken cancellationToken)
     {
-        // Get mode configuration
-        var modeConfig = DeviceModeConfigurations.GetConfiguration(request.Mode);
-        if (modeConfig == null)
+        // Get export strategy value for this mode
+        var exportStrategyValue = DeviceModeConfigurations.GetExportStrategyValue(request.Mode);
+        if (exportStrategyValue == null)
         {
             return new SetDeviceModeResult
             {
                 Success = false,
-                ErrorMessage = $"No configuration found for mode: {request.Mode}"
+                ErrorMessage = $"No export strategy mapping found for mode: {request.Mode}"
             };
         }
 
@@ -57,107 +59,66 @@ public class SetDeviceModeCommandHandler : IRequestHandler<SetDeviceModeCommand,
 
         var device = setupDevice.Device;
 
-        // Get all parameter values for this device
-        var allParameterValues = await _context.SetupDeviceParameterValues
+        // Find the ExportStrategySelection parameter value for this device
+        var exportStrategyParam = await _context.SetupDeviceParameterValues
             .Include(sdpv => sdpv.Parameter)
-            .Where(sdpv => sdpv.SetupDeviceId == setupDevice.Id)
-            .ToListAsync(cancellationToken);
+            .FirstOrDefaultAsync(
+                sdpv => sdpv.SetupDeviceId == setupDevice.Id &&
+                        sdpv.Parameter != null &&
+                        sdpv.Parameter.Name == ExportStrategyParameterName,
+                cancellationToken);
 
-        // Build parameter updates map (parameterName -> value)
-        var parameterUpdates = new Dictionary<string, string>();
-        var parameterValueMap = new Dictionary<string, Domain.Entities.SetupDeviceParameterValue>();
-
-        foreach (var (paramName, value) in modeConfig)
-        {
-            var paramValue = allParameterValues.FirstOrDefault(pv => pv.Parameter?.Name == paramName);
-            if (paramValue?.Parameter != null)
-            {
-                parameterUpdates[paramValue.Parameter.Name] = value;
-                parameterValueMap[paramValue.Parameter.Name] = paramValue;
-            }
-        }
-
-        if (parameterUpdates.Count == 0)
+        if (exportStrategyParam?.Parameter == null)
         {
             return new SetDeviceModeResult
             {
                 Success = false,
-                ErrorMessage = "No matching parameters found for this mode configuration"
+                ErrorMessage = $"Parameter '{ExportStrategyParameterName}' not found for this device"
             };
         }
 
-        // Step 1: Update device via RPC (batch optimized)
-        var rpcResults = await _rpcExecutor.ExecuteParameterUpdatesAsync(
+        // Update device via RPC
+        _logger.LogInformation(
+            "Setting device {DeviceId} to mode {Mode} (ExportStrategy: {ExportStrategy})",
+            device.Id, request.Mode, exportStrategyValue);
+
+        var rpcResult = await _rpcExecutor.ExecuteParameterUpdateAsync(
             device.ThingsBoardDeviceId,
-            parameterUpdates,
+            ExportStrategyParameterName,
+            exportStrategyValue,
             cancellationToken);
 
-        // Track successes and failures
-        var successfulParameters = new List<string>();
-        var failedParameters = new List<ModeParameterFailure>();
-
-        // Step 2: Update database for successful RPC calls only
-        foreach (var (parameterName, rpcResult) in rpcResults)
+        if (!rpcResult.Success)
         {
-            if (parameterValueMap.TryGetValue(parameterName, out var paramValue))
+            _logger.LogWarning(
+                "Failed to set mode {Mode} on device {DeviceId}: {Error}",
+                request.Mode, device.Id, rpcResult.ErrorMessage);
+
+            return new SetDeviceModeResult
             {
-                if (rpcResult.Success)
-                {
-                    // Update database value
-                    var newValue = parameterUpdates[parameterName];
-                    paramValue.Value = newValue;
-                    successfulParameters.Add(parameterName);
-
-                    _logger.LogInformation(
-                        "Mode {Mode}: Successfully updated parameter {ParameterName} on device {DeviceId}",
-                        request.Mode,
-                        parameterName,
-                        device.Id);
-                }
-                else
-                {
-                    failedParameters.Add(new ModeParameterFailure
-                    {
-                        ParameterName = parameterName,
-                        ErrorMessage = rpcResult.ErrorMessage ?? "Unknown error"
-                    });
-
-                    _logger.LogWarning(
-                        "Mode {Mode}: Failed to update parameter {ParameterName} on device {DeviceId}: {Error}",
-                        request.Mode,
-                        parameterName,
-                        device.Id,
-                        rpcResult.ErrorMessage);
-                }
-            }
+                Success = false,
+                ErrorMessage = rpcResult.ErrorMessage ?? "Failed to update device",
+                Mode = request.Mode
+            };
         }
 
-        // Save all successful updates to database
-        if (successfulParameters.Count > 0)
-        {
-            await _context.SaveChangesAsync(cancellationToken);
-        }
+        // Update database value
+        exportStrategyParam.Value = exportStrategyValue;
 
-        var overallSuccess = failedParameters.Count == 0;
-        var errorMessage = !overallSuccess
-            ? $"Mode partially applied: {failedParameters.Count} out of {rpcResults.Count} parameters failed"
-            : null;
+        // Update WorkMode in SetupDevice
+        setupDevice.WorkMode = (int)request.Mode;
 
-        if (overallSuccess)
-        {
-            _logger.LogInformation(
-                "Successfully applied mode {Mode} to device {DeviceId}",
-                request.Mode,
-                device.Id);
-        }
+        await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation(
+            "Successfully set device {DeviceId} to mode {Mode}",
+            device.Id, request.Mode);
 
         return new SetDeviceModeResult
         {
-            Success = overallSuccess,
-            ErrorMessage = errorMessage,
+            Success = true,
             Mode = request.Mode,
-            SuccessfulParameters = successfulParameters,
-            FailedParameters = failedParameters
+            ExportStrategy = exportStrategyValue
         };
     }
 }
@@ -170,15 +131,5 @@ public record SetDeviceModeResult
     public bool Success { get; init; }
     public string? ErrorMessage { get; init; }
     public DeviceMode Mode { get; init; }
-    public List<string> SuccessfulParameters { get; init; } = new();
-    public List<ModeParameterFailure> FailedParameters { get; init; } = new();
-}
-
-/// <summary>
-/// Information about a parameter that failed during mode application
-/// </summary>
-public record ModeParameterFailure
-{
-    public string ParameterName { get; init; } = string.Empty;
-    public string ErrorMessage { get; init; } = string.Empty;
+    public string? ExportStrategy { get; init; }
 }

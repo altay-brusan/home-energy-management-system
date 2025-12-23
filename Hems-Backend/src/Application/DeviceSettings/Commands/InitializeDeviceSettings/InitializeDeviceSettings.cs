@@ -2,7 +2,7 @@ using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Domain.Entities;
 using MediatR;
 
-namespace Hems_Backend.Application.SetupDeviceParameterValues.Commands.InitializeDeviceSettings;
+namespace Hems_Backend.Application.DeviceSettings.Commands.InitializeDeviceSettings;
 
 public record InitializeDeviceSettingsCommand : IRequest<int>
 {

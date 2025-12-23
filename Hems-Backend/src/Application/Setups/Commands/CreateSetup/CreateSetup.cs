@@ -1,6 +1,7 @@
 using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Application.Common.Mappings;
 using Hems_Backend.Application.Common.Exceptions;
+using Hems_Backend.Application.DeviceSettings.Models;
 using Hems_Backend.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -120,13 +121,14 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
             {
                 SetupId = setup.Id,
                 DeviceId = device.Id,
+                WorkMode = (int)DeviceMode.SellToGrid // Default mode
             };
 
             _context.SetupDevices.Add(setupDevice);
-            
+
             // Add device to heartbeat tracking immediately
             await _heartbeatCache.AddDeviceToCacheAsync(device.ThingsBoardDeviceId, cancellationToken);
-            
+
             var devicesettingSchemeValues = await _context.ParameterValueSettingSchemes.Where(f => f.ModelNumber == device.ModelNumber).ToListAsync();
 
             foreach (var item in devicesettingSchemeValues)
@@ -143,7 +145,6 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
                 _context.SetupDeviceParameterValues.Add(newSetupSettingsValue);
             }
         }
-        //TODO: Setting Olayı
 
         // Tek seferde kaydet - EF Core otomatik transaction yapar
         await _context.SaveChangesAsync(cancellationToken);

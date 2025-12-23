@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace Hems_Backend.Application.SetupDeviceParameterValues.Commands.CreateSetupDeviceParameterValue;
+namespace Hems_Backend.Application.DeviceSettings.Commands.CreateSetupDeviceParameterValue;
 
 public class CreateSetupDeviceParameterValueCommandValidator : AbstractValidator<CreateSetupDeviceParameterValueCommand>
 {

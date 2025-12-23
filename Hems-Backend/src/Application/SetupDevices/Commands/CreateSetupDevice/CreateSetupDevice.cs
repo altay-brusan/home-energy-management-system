@@ -1,5 +1,5 @@
 using Hems_Backend.Application.Common.Interfaces;
-using Hems_Backend.Application.SetupDeviceParameterValues.Commands.InitializeDeviceSettings;
+using Hems_Backend.Application.DeviceSettings.Commands.InitializeDeviceSettings;
 using Hems_Backend.Domain.Entities;
 using MediatR;
 

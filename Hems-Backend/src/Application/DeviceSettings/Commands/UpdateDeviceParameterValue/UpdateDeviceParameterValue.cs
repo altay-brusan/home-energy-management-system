@@ -1,7 +1,7 @@
 using Hems_Backend.Application.Common.Interfaces;
 using MediatR;
 
-namespace Hems_Backend.Application.SetupDeviceParameterValues.Commands.UpdateDeviceParameterValue;
+namespace Hems_Backend.Application.DeviceSettings.Commands.UpdateDeviceParameterValue;
 
 public record UpdateDeviceParameterValueCommand : IRequest
 {

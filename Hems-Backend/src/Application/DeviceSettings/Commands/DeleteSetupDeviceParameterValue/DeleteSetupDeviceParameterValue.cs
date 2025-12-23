@@ -1,7 +1,7 @@
 using Hems_Backend.Application.Common.Interfaces;
 using MediatR;
 
-namespace Hems_Backend.Application.SetupDeviceParameterValues.Commands.DeleteSetupDeviceParameterValue;
+namespace Hems_Backend.Application.DeviceSettings.Commands.DeleteSetupDeviceParameterValue;
 
 public record DeleteSetupDeviceParameterValueCommand : IRequest
 {

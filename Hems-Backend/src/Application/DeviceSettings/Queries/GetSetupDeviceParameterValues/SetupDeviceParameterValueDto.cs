@@ -1,4 +1,4 @@
-namespace Hems_Backend.Application.SetupDeviceParameterValues.Queries.GetSetupDeviceParameterValues;
+namespace Hems_Backend.Application.DeviceSettings.Queries.GetSetupDeviceParameterValues;
 
 public class SetupDeviceParameterValueDto
 {

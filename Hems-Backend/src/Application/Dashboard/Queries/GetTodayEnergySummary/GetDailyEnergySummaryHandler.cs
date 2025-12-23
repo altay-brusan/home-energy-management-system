@@ -85,8 +85,19 @@ public class GetDailyEnergySummaryHandler : IRequestHandler<GetDailyEnergySummar
         DailyEnergyFlowStateDto? deviceData;
         try
         {
-            var json = JsonSerializer.Serialize(rpcResponse.Response);
-            deviceData = JsonSerializer.Deserialize<DailyEnergyFlowStateDto>(json);
+            // Response may be wrapped: {"success": true, "data": {...}}
+            // Extract the "data" property if present
+            if (rpcResponse.Response.TryGetValue("data", out var dataObj) && dataObj != null)
+            {
+                var dataJson = JsonSerializer.Serialize(dataObj);
+                deviceData = JsonSerializer.Deserialize<DailyEnergyFlowStateDto>(dataJson);
+            }
+            else
+            {
+                // Fallback: try deserializing the whole response
+                var json = JsonSerializer.Serialize(rpcResponse.Response);
+                deviceData = JsonSerializer.Deserialize<DailyEnergyFlowStateDto>(json);
+            }
         }
         catch (JsonException)
         {
