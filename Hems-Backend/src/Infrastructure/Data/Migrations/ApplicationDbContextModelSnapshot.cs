@@ -663,6 +663,83 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.ToTable("DevicePowerData", (string)null);
                 });
 
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.DevicePrice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("BeginHour")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("BuyPrice")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasDefaultValue("EUR");
+
+                    b.Property<Guid>("DeviceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("EffectiveFrom")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("EffectiveTo")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("EndHour")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("SellPrice")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)");
+
+                    b.Property<string>("Unit")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("kWh");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeviceId")
+                        .HasDatabaseName("IX_DevicePrices_DeviceId");
+
+                    b.HasIndex("EffectiveFrom")
+                        .HasDatabaseName("IX_DevicePrices_EffectiveFrom");
+
+                    b.HasIndex("IsActive")
+                        .HasDatabaseName("IX_DevicePrices_IsActive");
+
+                    b.HasIndex("DeviceId", "EffectiveFrom")
+                        .HasDatabaseName("IX_DevicePrices_DeviceId_EffectiveFrom");
+
+                    b.ToTable("DevicePrices");
+                });
+
             modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceWeatherData", b =>
                 {
                     b.Property<int>("Id")
@@ -1691,6 +1768,17 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .WithMany()
                         .HasForeignKey("ThingsBoardDeviceId")
                         .HasPrincipalKey("ThingsBoardDeviceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Device");
+                });
+
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.DevicePrice", b =>
+                {
+                    b.HasOne("Hems_Backend.Domain.Entities.Device", "Device")
+                        .WithMany()
+                        .HasForeignKey("DeviceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
