@@ -1,3 +1,5 @@
+using Hems_Backend.Application.DeviceSettings.Models;
+
 namespace Hems_Backend.Application.Common.Interfaces;
 
 /// <summary>

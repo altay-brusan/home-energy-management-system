@@ -59,6 +59,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
 
     public DbSet<ParameterValueSettingScheme> ParameterValueSettingSchemes => Set<ParameterValueSettingScheme>();
 
+    public DbSet<DevicePrice> DevicePrices => Set<DevicePrice>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

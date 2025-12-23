@@ -53,5 +53,7 @@ public interface IApplicationDbContext
 
     DbSet<ParameterValueSettingScheme> ParameterValueSettingSchemes { get; }
 
+    DbSet<DevicePrice> DevicePrices { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }
