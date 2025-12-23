@@ -35,11 +35,11 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    await app.InitialiseDatabaseAsync();
+    // await app.InitialiseDatabaseAsync(); // Temporarily disabled for migration
 }
 else
 {
-    await app.InitialiseDatabaseAsync();
+    // await app.InitialiseDatabaseAsync(); // Temporarily disabled for migration
     app.UseHsts();
 }
 
@@ -51,7 +51,7 @@ app.Use(async (context, next) =>
     // Skip HTTPS redirection for DeviceData endpoints (ThingsBoard integration)
     if (!context.Request.Path.StartsWithSegments("/api/DeviceData"))
     {
-        if (!context.Request.IsHttps && !app.Environment.IsDevelopment())
+        if (!context.Request.IsHttps && !app.Environment.IsDevelopment() && !app.Environment.IsStaging())
         {
             var httpsUrl = $"https://{context.Request.Host}{context.Request.Path}{context.Request.QueryString}";
             context.Response.Redirect(httpsUrl, permanent: true);
@@ -83,6 +83,7 @@ app.MapEndpoints();
 app.MapHub<DeviceNotificationHub>("/deviceNotificationHub");
 app.MapHub<PowerFlowHub>("/powerFlowHub");
 app.MapHub<Hems_Backend.Infrastructure.Hubs.DeviceStatusHub>("/deviceStatusHub");
+
 app.Run();
 
 public partial class Program { }
