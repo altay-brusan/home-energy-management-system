@@ -12,8 +12,6 @@ namespace Hems_Backend.Infrastructure.Services;
 public class DeviceRpcExecutorService : IDeviceRpcExecutorService
 {
     private readonly IThingsBoardConnectorService _tbService;
-    private readonly IApplicationDbContext _context;
-    private readonly ILogger<DeviceRpcExecutorService> _logger;
 
     // TODO: REFACTOR - These parameters are temporarily disabled due to RPC execution issues.
     // The GeneratorAndSmartLoadConfig RPC needs investigation and proper fix.
@@ -36,8 +34,6 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
     public DeviceRpcExecutorService(IThingsBoardConnectorService tbService)
     {
         _tbService = tbService;
-        _context = context;
-        _logger = logger;
     }
 
     public async Task<RpcExecutionResult> ExecuteParameterUpdateAsync(
@@ -49,7 +45,6 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
         // TODO: REFACTOR - Skip temporarily disabled parameters
         if (SkippedParameters.Contains(parameterName))
         {
-            _logger.LogWarning("No RPC mapping found for parameter: {ParameterName}", parameterName);
             return new RpcExecutionResult
             {
                 Success = true,
@@ -195,14 +190,6 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
                             Response = updateResponse?.Response
                         };
                     }
-
-                results.Add(new RpcExecutionResult
-                {
-                    Success = true,
-                    RpcMethod = rpcMethod,
-                    UpdatedParameters = rpcGroup.Select(p => p.ParameterName).ToList(),
-                    ResponsePayload = rpcResponse.Response
-                });
                 }
                 catch (Exception ex)
                 {
@@ -230,7 +217,6 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
     {
         if (!RpcMethodMapping.TryGetMapping(parameterName, out var config) || config == null)
         {
-            _logger.LogWarning("No RPC mapping found for parameter: {ParameterName}", parameterName);
             return null;
         }
 
