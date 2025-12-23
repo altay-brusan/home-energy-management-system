@@ -4,16 +4,16 @@ using Hems_Backend.Application.DeviceSettings.Commands.ChangeExportStrategy;
 using Hems_Backend.Application.DeviceSettings.Commands.SetDeviceMode;
 using Hems_Backend.Application.DeviceSettings.Commands.UpdateDeviceParameter;
 using Hems_Backend.Application.DeviceSettings.Commands.UpdateDeviceParameters;
+using Hems_Backend.Application.DeviceSettings.Commands.CreateSetupDeviceParameterValue;
+using Hems_Backend.Application.DeviceSettings.Commands.DeleteSetupDeviceParameterValue;
+using Hems_Backend.Application.DeviceSettings.Commands.UpdateSetupDeviceParameterValue;
+using Hems_Backend.Application.DeviceSettings.Commands.UpdateDeviceParameterValue;
+using Hems_Backend.Application.DeviceSettings.Commands.InitializeDeviceSettings;
 using Hems_Backend.Application.DeviceSettings.Queries.GetDeviceModes;
 using Hems_Backend.Application.DeviceSettings.Queries.GetDeviceParameters;
-using Hems_Backend.Application.SetupDeviceParameterValues.Commands.CreateSetupDeviceParameterValue;
-using Hems_Backend.Application.SetupDeviceParameterValues.Commands.DeleteSetupDeviceParameterValue;
-using Hems_Backend.Application.SetupDeviceParameterValues.Commands.UpdateSetupDeviceParameterValue;
-using Hems_Backend.Application.SetupDeviceParameterValues.Commands.UpdateDeviceParameterValue;
-using Hems_Backend.Application.SetupDeviceParameterValues.Commands.InitializeDeviceSettings;
-using Hems_Backend.Application.SetupDeviceParameterValues.Queries.GetSetupDeviceParameterValues;
-using Hems_Backend.Application.SetupDeviceParameterValues.Queries.GetSetupDeviceParameterValuesTree;
-using Hems_Backend.Application.SetupDeviceParameterValues.Queries.GetDeviceParameterValuesTree;
+using Hems_Backend.Application.DeviceSettings.Queries.GetSetupDeviceParameterValues;
+using Hems_Backend.Application.DeviceSettings.Queries.GetSetupDeviceParameterValuesTree;
+using Hems_Backend.Application.DeviceSettings.Queries.GetDeviceParameterValuesTree;
 using Hems_Backend.Domain.Constants;
 using Hems_Backend.Web.Infrastructure;
 using Microsoft.AspNetCore.Authorization;
@@ -269,7 +269,7 @@ public class DeviceSettings : EndpointGroupBase
         ISender sender,
         Guid deviceId,
         Guid parameterId,
-        Application.SetupDeviceParameterValues.Commands.UpdateDeviceParameterValue.UpdateDeviceParameterValueCommand command)
+        UpdateDeviceParameterValueCommand command)
     {
         if (deviceId != command.DeviceId || parameterId != command.ParameterId)
             return TypedResults.BadRequest();

@@ -2,7 +2,7 @@ using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Domain.Entities;
 using MediatR;
 
-namespace Hems_Backend.Application.SetupDeviceParameterValues.Commands.CreateSetupDeviceParameterValue;
+namespace Hems_Backend.Application.DeviceSettings.Commands.CreateSetupDeviceParameterValue;
 
 public record CreateSetupDeviceParameterValueCommand : IRequest<Guid>
 {
@@ -41,7 +41,7 @@ public class CreateSetupDeviceParameterValueCommandHandler : IRequestHandler<Cre
         // ParameterId doğrulama
         var parameterExists = await _context.Parameters
             .AnyAsync(p => p.Id == request.ParameterId, cancellationToken);
-        
+
         if (!parameterExists)
         {
             throw new ArgumentException("Parametre bulunamadı.");
@@ -50,7 +50,7 @@ public class CreateSetupDeviceParameterValueCommandHandler : IRequestHandler<Cre
         // SetupDeviceId doğrulama
         var setupDeviceExists = await _context.SetupDevices
             .AnyAsync(sd => sd.Id == request.SetupDeviceId, cancellationToken);
-        
+
         if (!setupDeviceExists)
         {
             throw new ArgumentException("Setup device bulunamadı.");
@@ -61,7 +61,7 @@ public class CreateSetupDeviceParameterValueCommandHandler : IRequestHandler<Cre
         {
             var groupExists = await _context.ParameterGroups
                 .AnyAsync(pg => pg.Id == request.ParameterGroupId.Value, cancellationToken);
-            
+
             if (!groupExists)
             {
                 throw new ArgumentException("Parametre grubu bulunamadı.");

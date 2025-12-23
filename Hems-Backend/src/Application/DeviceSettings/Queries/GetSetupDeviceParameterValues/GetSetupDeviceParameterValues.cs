@@ -2,7 +2,7 @@ using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Application.Common.Mappings;
 using MediatR;
 
-namespace Hems_Backend.Application.SetupDeviceParameterValues.Queries.GetSetupDeviceParameterValues;
+namespace Hems_Backend.Application.DeviceSettings.Queries.GetSetupDeviceParameterValues;
 
 public record GetSetupDeviceParameterValuesQuery : IRequest<SetupDeviceParameterValuesVm>
 {

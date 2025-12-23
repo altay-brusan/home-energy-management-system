@@ -1,8 +1,8 @@
 using Hems_Backend.Application.Common.Interfaces;
-using Hems_Backend.Application.SetupDeviceParameterValues.Queries.GetSetupDeviceParameterValuesTree;
+using Hems_Backend.Application.DeviceSettings.Queries.GetSetupDeviceParameterValuesTree;
 using MediatR;
 
-namespace Hems_Backend.Application.SetupDeviceParameterValues.Queries.GetDeviceParameterValuesTree;
+namespace Hems_Backend.Application.DeviceSettings.Queries.GetDeviceParameterValuesTree;
 
 public record GetDeviceParameterValuesTreeQuery : IRequest<SetupDeviceParameterValuesTreeVm>
 {

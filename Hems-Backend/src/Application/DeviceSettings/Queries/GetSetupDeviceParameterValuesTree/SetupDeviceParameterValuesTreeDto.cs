@@ -1,4 +1,4 @@
-namespace Hems_Backend.Application.SetupDeviceParameterValues.Queries.GetSetupDeviceParameterValuesTree;
+namespace Hems_Backend.Application.DeviceSettings.Queries.GetSetupDeviceParameterValuesTree;
 
 public class ParameterGroupTreeDto
 {
