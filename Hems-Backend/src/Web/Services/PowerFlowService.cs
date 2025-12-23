@@ -55,7 +55,7 @@ public class PowerFlowService : IPowerFlowService
             "getPowerFlowState",
             new Dictionary<string, object>(),
             timeoutMs: 10000,
-            cancellationToken);
+            cancellationToken: cancellationToken);
 
         if (rpcResponse?.Success != true || rpcResponse.Response == null)
         {

@@ -373,10 +373,19 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
                 "getInverterDeviceState",
                 new Dictionary<string, object>(),
                 timeoutMs: 10000,
-                cancellationToken);
+                cancellationToken: cancellationToken);
 
             if (rpcResponse?.Success == true && rpcResponse.Response != null)
             {
+                // Response is wrapped: {"success": true, "data": {...}}
+                // Extract the "data" property if present
+                if (rpcResponse.Response.TryGetValue("data", out var dataObj) && dataObj != null)
+                {
+                    var dataJson = JsonSerializer.Serialize(dataObj);
+                    return JsonSerializer.Deserialize<InverterDeviceStateDto>(dataJson);
+                }
+
+                // Fallback: try deserializing the whole response
                 var json = JsonSerializer.Serialize(rpcResponse.Response);
                 return JsonSerializer.Deserialize<InverterDeviceStateDto>(json);
             }
@@ -570,7 +579,7 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
                 "getBatterySocState",
                 new Dictionary<string, object>(),
                 timeoutMs: 10000,
-                cancellationToken);
+                cancellationToken: cancellationToken);
 
             if (rpcResponse?.Success == true && rpcResponse.Response != null)
             {

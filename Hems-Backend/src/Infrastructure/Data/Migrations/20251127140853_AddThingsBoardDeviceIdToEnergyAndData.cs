@@ -38,6 +38,14 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                 table: "DeviceData",
                 newName: "ThingsBoardDeviceId");
 
+            // Add ThingsBoardDeviceId column to Devices table
+            migrationBuilder.AddColumn<Guid>(
+                name: "ThingsBoardDeviceId",
+                table: "Devices",
+                type: "uuid",
+                nullable: false,
+                defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
+
             // Populate ThingsBoardDeviceId with Device.Id for existing devices where ThingsBoardDeviceId is empty
             migrationBuilder.Sql(@"
                 UPDATE ""Devices"" 
@@ -81,6 +89,11 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
 
             migrationBuilder.DropUniqueConstraint(
                 name: "AK_Devices_ThingsBoardDeviceId",
+                table: "Devices");
+
+            // Drop ThingsBoardDeviceId column from Devices table
+            migrationBuilder.DropColumn(
+                name: "ThingsBoardDeviceId",
                 table: "Devices");
 
             migrationBuilder.RenameColumn(

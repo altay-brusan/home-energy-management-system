@@ -2,6 +2,7 @@ using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Application.Devices.Queries.CheckDeviceAccess;
 using Hems_Backend.Domain.Constants;
+using Hems_Backend.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
@@ -33,9 +34,9 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
     private readonly ISender _sender;
     private readonly IDeviceMappingService _deviceMapping;
 
-    // Netherlands energy market prices (EUR per kWh)
-    private const double BuyPricePerKWh = 0.35;  // Retail electricity price
-    private const double SellPricePerKWh = 0.10; // Feed-in tariff
+    // All prices for the device (loaded once per request)
+    private List<DevicePrice> _allPrices = new();
+    private string _currency = "EUR";
 
     public GetEnergyRevenueQueryHandler(
         IApplicationDbContext context,
@@ -62,6 +63,19 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
         {
             throw new ArgumentException($"Device with ID {request.DeviceId} not found or has no ThingsBoard mapping.");
         }
+
+        // Load ALL prices for this device (for time-based calculations)
+        _allPrices = await _context.DevicePrices
+            .Where(dp => dp.DeviceId == request.DeviceId && dp.IsActive)
+            .OrderByDescending(dp => dp.EffectiveFrom)
+            .ToListAsync(cancellationToken);
+
+        if (!_allPrices.Any())
+        {
+            throw new InvalidOperationException("No energy prices configured for this device. Please set sell and buy prices first using the EnergyRevenue API.");
+        }
+
+        _currency = _allPrices.First().Currency;
 
         var period = request.Period.ToLower();
         List<EnergyRevenueDataPoint> dataPoints;
@@ -92,18 +106,22 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
                 throw new ArgumentException($"Invalid period: {period}. Must be one of: day, week, month, year");
         }
 
-        // Calculate totals in EUR
+        // Calculate totals (prices are already calculated per data point)
         var totalBuyKWh = dataPoints.Sum(d => d.Buy);
         var totalSellKWh = dataPoints.Sum(d => d.Sell);
-        var totalBuyPrice = totalBuyKWh * BuyPricePerKWh;
-        var totalSellPrice = totalSellKWh * SellPricePerKWh;
+        var totalBuyPrice = dataPoints.Sum(d => d.Buy * d.BuyPriceUsed);
+        var totalSellPrice = dataPoints.Sum(d => d.Sell * d.SellPriceUsed);
         var totalNetPrice = totalSellPrice - totalBuyPrice;
+
+        // Get current average prices for display
+        var currentPrices = GetAveragePricesForDate(DateTime.UtcNow);
 
         return new EnergyRevenueDto
         {
             Period = period,
-            BuyPricePerKWh = BuyPricePerKWh,
-            SellPricePerKWh = SellPricePerKWh,
+            BuyPricePerKWh = currentPrices.BuyPrice,
+            SellPricePerKWh = currentPrices.SellPrice,
+            Currency = _currency,
             Data = dataPoints,
             Total = new EnergyRevenueTotal
             {
@@ -112,6 +130,118 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
                 NetPrice = Math.Round(totalNetPrice, 2)
             }
         };
+    }
+
+    /// <summary>
+    /// Get prices effective for a specific date and hour
+    /// </summary>
+    private List<DevicePrice> GetEffectivePricesForDateTime(DateTime dateTime)
+    {
+        var dateTimeOffset = new DateTimeOffset(dateTime, TimeSpan.Zero);
+        var hour = dateTime.Hour;
+
+        return _allPrices
+            .Where(dp => dp.EffectiveFrom <= dateTimeOffset &&
+                        (dp.EffectiveTo == null || dp.EffectiveTo > dateTimeOffset))
+            .Where(dp =>
+                // No hour restriction (all day)
+                (!dp.BeginHour.HasValue && !dp.EndHour.HasValue) ||
+                // Has hour restriction and current hour falls within
+                (dp.BeginHour.HasValue && dp.EndHour.HasValue &&
+                 hour >= dp.BeginHour.Value && hour < dp.EndHour.Value))
+            .ToList();
+    }
+
+    /// <summary>
+    /// Get average sell and buy prices for a specific date
+    /// If multiple prices exist with hour ranges, calculate weighted average
+    /// </summary>
+    private (double SellPrice, double BuyPrice) GetAveragePricesForDate(DateTime date)
+    {
+        var dateTimeOffset = new DateTimeOffset(date.Date, TimeSpan.Zero);
+
+        // Get all prices effective on this date
+        var effectivePrices = _allPrices
+            .Where(dp => dp.EffectiveFrom.Date <= date.Date &&
+                        (dp.EffectiveTo == null || dp.EffectiveTo.Value.Date >= date.Date))
+            .ToList();
+
+        if (!effectivePrices.Any())
+        {
+            // Fallback to most recent price before this date
+            var fallbackPrice = _allPrices
+                .Where(dp => dp.EffectiveFrom.Date <= date.Date)
+                .OrderByDescending(dp => dp.EffectiveFrom)
+                .FirstOrDefault();
+
+            if (fallbackPrice != null)
+            {
+                return ((double)fallbackPrice.SellPrice, (double)fallbackPrice.BuyPrice);
+            }
+
+            // If no price found, return 0
+            return (0, 0);
+        }
+
+        // Separate all-day prices from hour-specific prices
+        var allDayPrices = effectivePrices.Where(p => !p.BeginHour.HasValue && !p.EndHour.HasValue).ToList();
+        var hourlyPrices = effectivePrices.Where(p => p.BeginHour.HasValue && p.EndHour.HasValue).ToList();
+
+        // If only all-day prices exist, average them
+        if (!hourlyPrices.Any())
+        {
+            var avgSell = allDayPrices.Average(p => (double)p.SellPrice);
+            var avgBuy = allDayPrices.Average(p => (double)p.BuyPrice);
+            return (avgSell, avgBuy);
+        }
+
+        // Calculate weighted average based on hours covered
+        double totalSell = 0;
+        double totalBuy = 0;
+        int totalHours = 0;
+
+        foreach (var price in hourlyPrices)
+        {
+            var hours = price.EndHour!.Value - price.BeginHour!.Value;
+            totalSell += (double)price.SellPrice * hours;
+            totalBuy += (double)price.BuyPrice * hours;
+            totalHours += hours;
+        }
+
+        // Fill remaining hours with all-day price if available
+        if (totalHours < 24 && allDayPrices.Any())
+        {
+            var remainingHours = 24 - totalHours;
+            var allDaySell = allDayPrices.Average(p => (double)p.SellPrice);
+            var allDayBuy = allDayPrices.Average(p => (double)p.BuyPrice);
+            totalSell += allDaySell * remainingHours;
+            totalBuy += allDayBuy * remainingHours;
+            totalHours = 24;
+        }
+
+        if (totalHours == 0)
+            return (0, 0);
+
+        return (totalSell / totalHours, totalBuy / totalHours);
+    }
+
+    /// <summary>
+    /// Get price for a specific hour on a specific date
+    /// </summary>
+    private (double SellPrice, double BuyPrice) GetPriceForHour(DateTime dateTime)
+    {
+        var effectivePrices = GetEffectivePricesForDateTime(dateTime);
+
+        if (!effectivePrices.Any())
+        {
+            // Fallback to average for the date
+            return GetAveragePricesForDate(dateTime.Date);
+        }
+
+        // If multiple prices match, average them
+        var avgSell = effectivePrices.Average(p => (double)p.SellPrice);
+        var avgBuy = effectivePrices.Average(p => (double)p.BuyPrice);
+        return (avgSell, avgBuy);
     }
 
     /// <summary>
@@ -164,6 +294,9 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
             var hourStart = dayStart.AddHours(hour);
             var hourEnd = hourStart.AddHours(1);
 
+            // Get price for this specific hour
+            var (sellPrice, buyPrice) = GetPriceForHour(hourStart);
+
             // Get all power samples for this hour
             var hourSamples = interpolatedData
                 .Where(x => x.DataDateTime >= hourStart && x.DataDateTime < hourEnd)
@@ -196,9 +329,9 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
                 }
             }
 
-            // Calculate revenue for this hour
+            // Calculate revenue for this hour using hour-specific prices
             var net = sellEnergyKWh - buyEnergyKWh;
-            var price = (sellEnergyKWh * SellPricePerKWh) - (buyEnergyKWh * BuyPricePerKWh);
+            var price = (sellEnergyKWh * sellPrice) - (buyEnergyKWh * buyPrice);
 
             result.Add(new EnergyRevenueDataPoint
             {
@@ -206,7 +339,9 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
                 Buy = Math.Round(buyEnergyKWh, 3),
                 Sell = Math.Round(sellEnergyKWh, 3),
                 Net = Math.Round(net, 3),
-                Price = Math.Round(price, 2)
+                Price = Math.Round(price, 2),
+                BuyPriceUsed = buyPrice,
+                SellPriceUsed = sellPrice
             });
         }
 
@@ -217,14 +352,14 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
     /// Interpolate missing power flow data using simple averaging
     /// When gaps exceed the expected sampling interval, fill with average of surrounding samples
     /// </summary>
-    private List<Domain.Entities.DevicePowerData> InterpolatePowerFlowGaps(
-        List<Domain.Entities.DevicePowerData> data,
+    private List<DevicePowerData> InterpolatePowerFlowGaps(
+        List<DevicePowerData> data,
         TimeSpan expectedInterval)
     {
         if (data.Count < 2)
             return data;
 
-        var interpolated = new List<Domain.Entities.DevicePowerData>();
+        var interpolated = new List<DevicePowerData>();
 
         for (int i = 0; i < data.Count; i++)
         {
@@ -245,7 +380,7 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
                     // Create interpolated samples
                     for (int j = 1; j <= missingIntervals; j++)
                     {
-                        var interpolatedSample = new Domain.Entities.DevicePowerData
+                        var interpolatedSample = new DevicePowerData
                         {
                             ThingsBoardDeviceId = current.ThingsBoardDeviceId,
                             DataDateTime = current.DataDateTime.AddMinutes(expectedInterval.TotalMinutes * j),
@@ -326,12 +461,15 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
                 break;
             }
 
+            // Get average prices for this specific day
+            var (sellPrice, buyPrice) = GetAveragePricesForDate(currentDate);
+
             if (latestDailyData.TryGetValue(currentDate.Date, out var data))
             {
                 var buy = data.GridImportEnergyKWh ?? 0;
                 var sell = data.GridExportEnergyKWh ?? 0;
                 var net = sell - buy;
-                var price = (sell * SellPricePerKWh) - (buy * BuyPricePerKWh);
+                var price = (sell * sellPrice) - (buy * buyPrice);
 
                 result.Add(new EnergyRevenueDataPoint
                 {
@@ -339,7 +477,9 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
                     Buy = Math.Round(buy, 2),
                     Sell = Math.Round(sell, 2),
                     Net = Math.Round(net, 2),
-                    Price = Math.Round(price, 2)
+                    Price = Math.Round(price, 2),
+                    BuyPriceUsed = buyPrice,
+                    SellPriceUsed = sellPrice
                 });
             }
             else
@@ -351,7 +491,9 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
                     Buy = 0,
                     Sell = 0,
                     Net = 0,
-                    Price = 0
+                    Price = 0,
+                    BuyPriceUsed = buyPrice,
+                    SellPriceUsed = sellPrice
                 });
             }
         }
@@ -399,12 +541,15 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
 
         while (currentDate <= lastDate)
         {
+            // Get average prices for this specific day
+            var (sellPrice, buyPrice) = GetAveragePricesForDate(currentDate);
+
             if (latestDailyData.TryGetValue(currentDate, out var data))
             {
                 var buy = data.GridImportEnergyKWh ?? 0;
                 var sell = data.GridExportEnergyKWh ?? 0;
                 var net = sell - buy;
-                var price = (sell * SellPricePerKWh) - (buy * BuyPricePerKWh);
+                var price = (sell * sellPrice) - (buy * buyPrice);
 
                 result.Add(new EnergyRevenueDataPoint
                 {
@@ -412,7 +557,9 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
                     Buy = Math.Round(buy, 2),
                     Sell = Math.Round(sell, 2),
                     Net = Math.Round(net, 2),
-                    Price = Math.Round(price, 2)
+                    Price = Math.Round(price, 2),
+                    BuyPriceUsed = buyPrice,
+                    SellPriceUsed = sellPrice
                 });
             }
             else
@@ -424,7 +571,9 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
                     Buy = 0,
                     Sell = 0,
                     Net = 0,
-                    Price = 0
+                    Price = 0,
+                    BuyPriceUsed = buyPrice,
+                    SellPriceUsed = sellPrice
                 });
             }
 
@@ -460,19 +609,8 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
         // Group by date and take the most recent entry for each day
         var latestDailyData = dailyData
             .GroupBy(d => d.DataDateTime.Date)
-            .Select(g => g.OrderByDescending(d => d.DataDateTime).First());
-
-        // Group by month and sum the values
-        var monthlyData = latestDailyData
-            .GroupBy(d => new { d.DataDateTime.Year, d.DataDateTime.Month })
-            .Select(g => new
-            {
-                Year = g.Key.Year,
-                Month = g.Key.Month,
-                Buy = g.Sum(d => d.GridImportEnergyKWh ?? 0),
-                Sell = g.Sum(d => d.GridExportEnergyKWh ?? 0)
-            })
-            .ToDictionary(x => x.Month);
+            .Select(g => g.OrderByDescending(d => d.DataDateTime).First())
+            .ToList();
 
         var result = new List<EnergyRevenueDataPoint>();
         var today = DateTime.UtcNow.Date;
@@ -494,32 +632,70 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
         // Generate months up to lastMonth
         for (int month = 1; month <= lastMonth; month++)
         {
-            if (monthlyData.TryGetValue(month, out var data))
+            var monthStart = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var monthEnd = monthStart.AddMonths(1);
+
+            // Get daily data for this month
+            var monthDailyData = latestDailyData
+                .Where(d => d.DataDateTime >= monthStart && d.DataDateTime < monthEnd)
+                .ToList();
+
+            if (monthDailyData.Any())
             {
-                var buy = data.Buy;
-                var sell = data.Sell;
-                var net = sell - buy;
-                var price = (sell * SellPricePerKWh) - (buy * BuyPricePerKWh);
+                // Calculate revenue for each day with its specific price, then sum
+                double totalBuy = 0;
+                double totalSell = 0;
+                double totalPrice = 0;
+                double avgBuyPrice = 0;
+                double avgSellPrice = 0;
+                int priceCount = 0;
+
+                foreach (var dayData in monthDailyData)
+                {
+                    var (sellPrice, buyPrice) = GetAveragePricesForDate(dayData.DataDateTime.Date);
+                    var buy = dayData.GridImportEnergyKWh ?? 0;
+                    var sell = dayData.GridExportEnergyKWh ?? 0;
+
+                    totalBuy += buy;
+                    totalSell += sell;
+                    totalPrice += (sell * sellPrice) - (buy * buyPrice);
+                    avgBuyPrice += buyPrice;
+                    avgSellPrice += sellPrice;
+                    priceCount++;
+                }
+
+                // Average price for the month (for display)
+                avgBuyPrice = priceCount > 0 ? avgBuyPrice / priceCount : 0;
+                avgSellPrice = priceCount > 0 ? avgSellPrice / priceCount : 0;
+
+                var net = totalSell - totalBuy;
 
                 result.Add(new EnergyRevenueDataPoint
                 {
                     Timestamp = $"{year}-{month:D2}",
-                    Buy = Math.Round(buy, 2),
-                    Sell = Math.Round(sell, 2),
+                    Buy = Math.Round(totalBuy, 2),
+                    Sell = Math.Round(totalSell, 2),
                     Net = Math.Round(net, 2),
-                    Price = Math.Round(price, 2)
+                    Price = Math.Round(totalPrice, 2),
+                    BuyPriceUsed = avgBuyPrice,
+                    SellPriceUsed = avgSellPrice
                 });
             }
             else
             {
-                // No data for this month, add zeros
+                // No data for this month - get average prices for mid-month
+                var midMonth = new DateTime(year, month, 15, 0, 0, 0, DateTimeKind.Utc);
+                var (sellPrice, buyPrice) = GetAveragePricesForDate(midMonth);
+
                 result.Add(new EnergyRevenueDataPoint
                 {
                     Timestamp = $"{year}-{month:D2}",
                     Buy = 0,
                     Sell = 0,
                     Net = 0,
-                    Price = 0
+                    Price = 0,
+                    BuyPriceUsed = buyPrice,
+                    SellPriceUsed = sellPrice
                 });
             }
         }
