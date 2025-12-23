@@ -27,8 +27,8 @@ public class DeviceNotifications : EndpointGroupBase
         // Device endpoints (require device-only authorization)
         app.MapGroup(this)
             .RequireAuthorization(Policies.DeviceOnly)
-            .MapPost(CreateDeviceNotification)
-            .MapPost(ProcessDeviceAlarm, "alarm");
+            .MapPost(CreateDeviceNotification);
+            // .MapPost(ProcessDeviceAlarm, "alarm"); // Disabled - use DeviceData/Alarm instead
 
         // User endpoints (require user authorization)
         app.MapGroup(this)
@@ -51,12 +51,12 @@ public class DeviceNotifications : EndpointGroupBase
     {
         var result = await sender.Send(command);
 
-        // Sadece WARNING, ERROR ve ALARM kategorisindeki notification'ları SignalR ile gönder
-        var criticalCategories = new[] { "WARNING", "ERROR", "ALARM" };
+        // Only send SignalR notifications for critical severity levels: ALARM, WARNING, ERROR
+        var criticalSeverities = new[] { "ALARM", "WARNING", "ERROR" };
 
-        if (criticalCategories.Contains(result.DeviceNotificationType.Category))
+        if (criticalSeverities.Contains(result.DeviceNotificationType.Severity))
         {
-            // SignalR ile canlı bildirim gönder
+            // SignalR ile canl? bildirim g�nder
             await notificationService.SendNotificationToSiteAsync(result.SiteId, result);
             await notificationService.SendNotificationToDeviceAsync(result.DeviceId, result);
         }
@@ -112,12 +112,12 @@ public class DeviceNotifications : EndpointGroupBase
                 })
                 .ToListAsync();
 
-            // Send notifications via SignalR
-            var criticalCategories = new[] { "WARNING", "ERROR", "ALARM" };
+            // Send notifications via SignalR for critical severity levels
+            var criticalSeverities = new[] { "ALARM", "WARNING", "ERROR" };
 
             foreach (var notification in notifications)
             {
-                if (criticalCategories.Contains(notification.DeviceNotificationType.Category))
+                if (criticalSeverities.Contains(notification.DeviceNotificationType.Severity))
                 {
                     await notificationService.SendNotificationToSiteAsync(notification.SiteId, notification);
                     await notificationService.SendNotificationToDeviceAsync(notification.DeviceId, notification);
