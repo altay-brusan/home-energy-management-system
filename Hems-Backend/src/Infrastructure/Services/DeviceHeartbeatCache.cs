@@ -22,6 +22,7 @@ public class DeviceHeartbeatCache : IDeviceHeartbeatCache
     private const int MissedHeartbeatsForPending = 1;
     private const int MissedHeartbeatsForWaiting = 2;
     private const int MissedHeartbeatsForDisconnected = 3;
+    private const int StaleDeviceHours = 24; // Remove devices from tracking after 24 hours of being disconnected
 
     public DeviceHeartbeatCache(
         IMemoryCache cache,
@@ -272,4 +273,62 @@ public class DeviceHeartbeatCache : IDeviceHeartbeatCache
         _deviceStates.TryGetValue(thingsBoardDeviceId, out var state);
         return state;
     }
+
+    /// <summary>
+    /// Remove a device from tracking (e.g., when device is deleted)
+    /// </summary>
+    public Task<bool> RemoveDeviceAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken = default)
+    {
+        var removed = _deviceStates.TryRemove(thingsBoardDeviceId, out _);
+        if (removed)
+        {
+            _logger.LogInformation("Device {DeviceId} removed from heartbeat tracking", thingsBoardDeviceId);
+        }
+        return Task.FromResult(removed);
+    }
+
+    /// <summary>
+    /// Clean up stale devices that have been DISCONNECTED for too long.
+    /// Returns list of removed device IDs.
+    /// </summary>
+    public Task<List<Guid>> CleanupStaleDevicesAsync(CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+        var staleThreshold = TimeSpan.FromHours(StaleDeviceHours);
+        var removedDevices = new List<Guid>();
+
+        foreach (var kvp in _deviceStates)
+        {
+            var deviceId = kvp.Key;
+            var state = kvp.Value;
+
+            // Only remove devices that are DISCONNECTED and haven't sent data for staleThreshold
+            if (state.Status == DeviceStatus.DISCONNECTED)
+            {
+                var timeSinceLastHeartbeat = now - state.LastHeartbeat;
+                if (timeSinceLastHeartbeat > staleThreshold)
+                {
+                    if (_deviceStates.TryRemove(deviceId, out _))
+                    {
+                        removedDevices.Add(deviceId);
+                        _logger.LogInformation(
+                            "Stale device {DeviceId} removed from tracking (disconnected for {Hours:F1} hours)",
+                            deviceId, timeSinceLastHeartbeat.TotalHours);
+                    }
+                }
+            }
+        }
+
+        if (removedDevices.Count > 0)
+        {
+            _logger.LogInformation("Cleaned up {Count} stale devices from heartbeat tracking", removedDevices.Count);
+        }
+
+        return Task.FromResult(removedDevices);
+    }
+
+    /// <summary>
+    /// Get count of currently tracked devices (for monitoring/diagnostics)
+    /// </summary>
+    public int GetTrackedDeviceCount() => _deviceStates.Count;
 }

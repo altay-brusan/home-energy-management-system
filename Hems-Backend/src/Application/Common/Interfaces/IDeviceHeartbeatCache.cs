@@ -79,6 +79,22 @@ public interface IDeviceHeartbeatCache
     /// Initialize cache on startup - not needed for heartbeat-driven model
     /// </summary>
     Task InitializeCacheAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Remove a device from tracking (e.g., when device is deleted)
+    /// </summary>
+    Task<bool> RemoveDeviceAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Clean up stale devices that have been DISCONNECTED for too long (default: 24 hours).
+    /// Returns list of removed device IDs.
+    /// </summary>
+    Task<List<Guid>> CleanupStaleDevicesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get count of currently tracked devices (for monitoring/diagnostics)
+    /// </summary>
+    int GetTrackedDeviceCount();
 }
 
 /// <summary>
