@@ -186,7 +186,7 @@ public class GetGridPerformanceQueryHandler : IRequestHandler<GetGridPerformance
         var latestDailyData = dailyData
             .GroupBy(d => d.DeviceLocalTime.Date)
             .Select(g => g.OrderByDescending(d => d.DeviceLocalTime).First())
-            .OrderBy(d => d.DeviceLocalTime);
+            .OrderBy(d => d.DeviceLocalTime).ToList();
 
         return latestDailyData.Select(d => new GridPerformanceDataPoint
         {
