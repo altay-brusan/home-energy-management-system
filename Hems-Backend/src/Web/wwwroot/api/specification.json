@@ -6657,12 +6657,14 @@
         "x-enumNames": [
           "SellToGrid",
           "SelfConsumption",
-          "SmartZeroExport"
+          "SmartZeroExport",
+          "Custom"
         ],
         "enum": [
           1,
           2,
-          3
+          3,
+          99
         ]
       },
       "SetEnergyPriceRequest": {
