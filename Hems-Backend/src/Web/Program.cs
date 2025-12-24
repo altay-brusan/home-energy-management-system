@@ -83,6 +83,7 @@ app.MapEndpoints();
 app.MapHub<DeviceNotificationHub>("/deviceNotificationHub");
 app.MapHub<PowerFlowHub>("/powerFlowHub");
 app.MapHub<Hems_Backend.Infrastructure.Hubs.DeviceStatusHub>("/deviceStatusHub");
+app.MapHub<DeviceSettingsHub>("/deviceSettingsHub");
 app.Run();
 
 public partial class Program { }
