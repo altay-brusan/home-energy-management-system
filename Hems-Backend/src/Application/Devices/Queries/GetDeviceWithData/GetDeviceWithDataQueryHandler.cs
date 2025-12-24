@@ -95,7 +95,7 @@ public class GetDeviceWithDataQueryHandler : IRequestHandler<GetDeviceWithDataQu
     {
         var batteryData = await _context.DeviceData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && x.DataType == "BatteryClusterData")
-            .OrderByDescending(x => x.RequestDate)
+            .OrderByDescending(x => x.DeviceLocalTime)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (batteryData == null) return null;
@@ -115,7 +115,7 @@ public class GetDeviceWithDataQueryHandler : IRequestHandler<GetDeviceWithDataQu
     {
         var batteryData = await _context.DeviceData
             .Where(x => x.DataType == "BatteryData")
-            .OrderByDescending(x => x.RequestDate)
+            .OrderByDescending(x => x.DeviceLocalTime)
             .ToListAsync(cancellationToken);
 
         foreach (var data in batteryData)
@@ -150,7 +150,7 @@ public class GetDeviceWithDataQueryHandler : IRequestHandler<GetDeviceWithDataQu
     {
         var energyData = await _context.DeviceEnergyData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId)
-            .OrderByDescending(x => x.DataDateTime)
+            .OrderByDescending(x => x.DeviceLocalTime)
             .Take(2)
             .ToListAsync(cancellationToken);
 

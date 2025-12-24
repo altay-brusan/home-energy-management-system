@@ -12,7 +12,7 @@ public record SaveDeviceDataCommand : IRequest<SaveDeviceDataResult>
     public Guid ComponentId { get; init; }
     public string DataType { get; init; } = string.Empty;
     public JsonDocument Data { get; init; } = JsonDocument.Parse("{}");
-    public DateTime RequestDate { get; init; }
+    public DateTime DeviceLocalTime { get; init; }
 }
 
 public record SaveDeviceDataResult
@@ -40,7 +40,7 @@ public class SaveDeviceDataCommandHandler : IRequestHandler<SaveDeviceDataComman
                 ThingsBoardDeviceId = request.DeviceId,
                 DataType = request.DataType,
                 Data = request.Data,
-                RequestDate = request.RequestDate,
+                DeviceLocalTime = request.DeviceLocalTime,
                 Created = DateTime.UtcNow,
                 CreatedBy = "MobileDashboard" // Mobile dashboard'dan gelen veri
             };

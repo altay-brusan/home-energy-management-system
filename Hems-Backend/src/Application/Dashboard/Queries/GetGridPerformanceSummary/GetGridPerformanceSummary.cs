@@ -72,15 +72,15 @@ public class GetGridPerformanceSummaryQueryHandler : IRequestHandler<GetGridPerf
 
         var monthlyData = await _context.DeviceEnergyData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId &&
-                       x.DataDateTime >= monthStart &&
-                       x.DataDateTime < monthEnd &&
+                       x.DeviceLocalTime >= monthStart &&
+                       x.DeviceLocalTime < monthEnd &&
                        x.DataType == DataTypes.DailyCumulativeEnergy)
             .ToListAsync(cancellationToken);
 
         // Group by date and take the most recent entry for each day to handle duplicates
         var latestDailyData = monthlyData
-            .GroupBy(d => d.DataDateTime.Date)
-            .Select(g => g.OrderByDescending(d => d.DataDateTime).First())
+            .GroupBy(d => d.DeviceLocalTime.Date)
+            .Select(g => g.OrderByDescending(d => d.DeviceLocalTime).First())
             .ToList();
 
         var totalImport = latestDailyData.Sum(x => x.GridImportEnergyKWh ?? 0);
@@ -104,15 +104,15 @@ public class GetGridPerformanceSummaryQueryHandler : IRequestHandler<GetGridPerf
 
         var yearlyData = await _context.DeviceEnergyData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId &&
-                       x.DataDateTime >= yearStart &&
-                       x.DataDateTime < yearEnd &&
+                       x.DeviceLocalTime >= yearStart &&
+                       x.DeviceLocalTime < yearEnd &&
                        x.DataType == DataTypes.DailyCumulativeEnergy)
             .ToListAsync(cancellationToken);
 
         // Group by date and take the most recent entry for each day to handle duplicates
         var latestDailyData = yearlyData
-            .GroupBy(d => d.DataDateTime.Date)
-            .Select(g => g.OrderByDescending(d => d.DataDateTime).First())
+            .GroupBy(d => d.DeviceLocalTime.Date)
+            .Select(g => g.OrderByDescending(d => d.DeviceLocalTime).First())
             .ToList();
 
         var totalImport = latestDailyData.Sum(x => x.GridImportEnergyKWh ?? 0);
@@ -138,8 +138,8 @@ public class GetGridPerformanceSummaryQueryHandler : IRequestHandler<GetGridPerf
 
         // Group by date and take the most recent entry for each day to handle duplicates
         var latestDailyData = allDailyData
-            .GroupBy(d => d.DataDateTime.Date)
-            .Select(g => g.OrderByDescending(d => d.DataDateTime).First())
+            .GroupBy(d => d.DeviceLocalTime.Date)
+            .Select(g => g.OrderByDescending(d => d.DeviceLocalTime).First())
             .ToList();
 
         var totalImport = latestDailyData.Sum(x => x.GridImportEnergyKWh ?? 0);

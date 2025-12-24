@@ -40,7 +40,7 @@ public class GetSocQueryHandler : IRequestHandler<GetSocQuery, SocResponseDto>
         // Query the latest BatterySoc data for the device using ThingsBoardDeviceId
         var latestSocData = await _context.DeviceData
             .Where(dd => dd.ThingsBoardDeviceId == thingsBoardDeviceId && dd.DataType == "BatterySoc")
-            .OrderByDescending(dd => dd.RequestDate)
+            .OrderByDescending(dd => dd.DeviceLocalTime)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (latestSocData == null)

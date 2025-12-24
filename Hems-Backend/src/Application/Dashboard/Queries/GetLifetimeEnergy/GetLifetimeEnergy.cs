@@ -48,7 +48,7 @@ public class GetLifetimeEnergyQueryHandler : IRequestHandler<GetLifetimeEnergyQu
         var lifetimeRecord = await _context.DeviceEnergyData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId.Value &&
                        x.DataType == DataTypes.LifetimeEnergy)
-            .OrderByDescending(x => x.DataDateTime)
+            .OrderByDescending(x => x.DeviceLocalTime)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (lifetimeRecord == null)
@@ -59,7 +59,7 @@ public class GetLifetimeEnergyQueryHandler : IRequestHandler<GetLifetimeEnergyQu
 
         return new LifetimeEnergyDto
         {
-            Timestamp = lifetimeRecord.DataDateTime,
+            Timestamp = lifetimeRecord.DeviceLocalTime,
             GridImport = Math.Round(lifetimeRecord.GridImportEnergyKWh ?? 0, 2),
             GridExport = Math.Round(lifetimeRecord.GridExportEnergyKWh ?? 0, 2)
         };

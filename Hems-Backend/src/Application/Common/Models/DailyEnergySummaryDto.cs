@@ -9,7 +9,7 @@ namespace Hems_Backend.Application.Common.Models;
 public class DailyEnergySummaryDto
 {
     public Guid DeviceId { get; init; }
-    public DateTime DataDateTime { get; init; }
+    public DateTime DeviceLocalTime { get; init; }
 
     public double? GridImport { get; init; }
     public double? GridExport { get; init; }

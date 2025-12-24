@@ -104,21 +104,21 @@ public class GetGridPerformanceQueryHandler : IRequestHandler<GetGridPerformance
 
         var dailyData = await _context.DeviceEnergyData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId &&
-                       x.DataDateTime >= monthStart &&
-                       x.DataDateTime < monthEnd &&
+                       x.DeviceLocalTime >= monthStart &&
+                       x.DeviceLocalTime < monthEnd &&
                        x.DataType == DataTypes.DailyCumulativeEnergy)
-            .OrderBy(x => x.DataDateTime)
+            .OrderBy(x => x.DeviceLocalTime)
             .ToListAsync(cancellationToken);
 
         // Group by date and take the most recent entry for each day
         var latestDailyData = dailyData
-            .GroupBy(d => d.DataDateTime.Date)
-            .Select(g => g.OrderByDescending(d => d.DataDateTime).First())
-            .OrderBy(d => d.DataDateTime);
+            .GroupBy(d => d.DeviceLocalTime.Date)
+            .Select(g => g.OrderByDescending(d => d.DeviceLocalTime).First())
+            .OrderBy(d => d.DeviceLocalTime);
 
         return latestDailyData.Select(d => new GridPerformanceDataPoint
         {
-            Timestamp = d.DataDateTime.ToString("yyyy-MM-dd"),
+            Timestamp = d.DeviceLocalTime.ToString("yyyy-MM-dd"),
             GridImport = Math.Round(d.GridImportEnergyKWh ?? 0, 2),
             GridExport = Math.Round(d.GridExportEnergyKWh ?? 0, 2)
         }).ToList();
@@ -135,20 +135,20 @@ public class GetGridPerformanceQueryHandler : IRequestHandler<GetGridPerformance
 
         var dailyData = await _context.DeviceEnergyData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId &&
-                       x.DataDateTime >= yearStart &&
-                       x.DataDateTime < yearEnd &&
+                       x.DeviceLocalTime >= yearStart &&
+                       x.DeviceLocalTime < yearEnd &&
                        x.DataType == DataTypes.DailyCumulativeEnergy)
-            .OrderBy(x => x.DataDateTime)
+            .OrderBy(x => x.DeviceLocalTime)
             .ToListAsync(cancellationToken);
 
         // Group by date and take the most recent entry for each day
         var latestDailyData = dailyData
-            .GroupBy(d => d.DataDateTime.Date)
-            .Select(g => g.OrderByDescending(d => d.DataDateTime).First());
+            .GroupBy(d => d.DeviceLocalTime.Date)
+            .Select(g => g.OrderByDescending(d => d.DeviceLocalTime).First());
 
         // Group by month and sum the values
         var monthlyData = latestDailyData
-            .GroupBy(d => new { d.DataDateTime.Year, d.DataDateTime.Month })
+            .GroupBy(d => new { d.DeviceLocalTime.Year, d.DeviceLocalTime.Month })
             .Select(g => new GridPerformanceDataPoint
             {
                 Timestamp = $"{g.Key.Year}-{g.Key.Month:D2}",
@@ -176,21 +176,21 @@ public class GetGridPerformanceQueryHandler : IRequestHandler<GetGridPerformance
 
         var dailyData = await _context.DeviceEnergyData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId &&
-                       x.DataDateTime >= rangeStart &&
-                       x.DataDateTime < rangeEnd &&
+                       x.DeviceLocalTime >= rangeStart &&
+                       x.DeviceLocalTime < rangeEnd &&
                        x.DataType == DataTypes.DailyCumulativeEnergy)
-            .OrderBy(x => x.DataDateTime)
+            .OrderBy(x => x.DeviceLocalTime)
             .ToListAsync(cancellationToken);
 
         // Group by date and take the most recent entry for each day
         var latestDailyData = dailyData
-            .GroupBy(d => d.DataDateTime.Date)
-            .Select(g => g.OrderByDescending(d => d.DataDateTime).First())
-            .OrderBy(d => d.DataDateTime);
+            .GroupBy(d => d.DeviceLocalTime.Date)
+            .Select(g => g.OrderByDescending(d => d.DeviceLocalTime).First())
+            .OrderBy(d => d.DeviceLocalTime);
 
         return latestDailyData.Select(d => new GridPerformanceDataPoint
         {
-            Timestamp = d.DataDateTime.ToString("yyyy-MM-dd"),
+            Timestamp = d.DeviceLocalTime.ToString("yyyy-MM-dd"),
             GridImport = Math.Round(d.GridImportEnergyKWh ?? 0, 2),
             GridExport = Math.Round(d.GridExportEnergyKWh ?? 0, 2)
         }).ToList();

@@ -15,7 +15,7 @@ public class DeviceEnergyDataConfiguration : IEntityTypeConfiguration<DeviceEner
         builder.Property(x => x.ThingsBoardDeviceId)
             .IsRequired();
 
-        builder.Property(x => x.DataDateTime)
+        builder.Property(x => x.DeviceLocalTime)
             .IsRequired();
 
         builder.Property(x => x.DataType)
@@ -75,10 +75,10 @@ public class DeviceEnergyDataConfiguration : IEntityTypeConfiguration<DeviceEner
         // Indexes
         builder.HasIndex(x => x.ThingsBoardDeviceId);
         
-        builder.HasIndex(x => new { x.ThingsBoardDeviceId, x.DataDateTime, x.DataType })
-            .HasDatabaseName("IX_DeviceEnergyData_ThingsBoardDeviceId_DataDateTime_DataType");
+        builder.HasIndex(x => new { x.ThingsBoardDeviceId, x.DeviceLocalTime, x.DataType })
+            .HasDatabaseName("IX_DeviceEnergyData_ThingsBoardDeviceId_DeviceLocalTime_DataType");
 
-        builder.HasIndex(x => x.DataDateTime)
-            .HasDatabaseName("IX_DeviceEnergyData_DataDateTime");
+        builder.HasIndex(x => x.DeviceLocalTime)
+            .HasDatabaseName("IX_DeviceEnergyData_DeviceLocalTime");
     }
 }
