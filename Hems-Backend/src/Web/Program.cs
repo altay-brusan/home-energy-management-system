@@ -35,11 +35,11 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    // await app.InitialiseDatabaseAsync(); // Temporarily disabled for migration
+    await app.InitialiseDatabaseAsync();
 }
 else
 {
-    // await app.InitialiseDatabaseAsync(); // Temporarily disabled for migration
+    await app.InitialiseDatabaseAsync();
     app.UseHsts();
 }
 
@@ -83,7 +83,7 @@ app.MapEndpoints();
 app.MapHub<DeviceNotificationHub>("/deviceNotificationHub");
 app.MapHub<PowerFlowHub>("/powerFlowHub");
 app.MapHub<Hems_Backend.Infrastructure.Hubs.DeviceStatusHub>("/deviceStatusHub");
-
+app.MapHub<DeviceSettingsHub>("/deviceSettingsHub");
 app.Run();
 
 public partial class Program { }

@@ -42,17 +42,20 @@ public class DeviceStatusHub : Hub
         }
 
         await Groups.AddToGroupAsync(Context.ConnectionId, $"device_{localDeviceId}");
-        
-        // Get status using ThingsBoard ID (internal)
-        var currentStatus = _heartbeatCache.GetDeviceStatus(thingsBoardDeviceId.Value);
-        
+
+        // Get full state using ThingsBoard ID (internal) - includes missedHeartbeats
+        var deviceState = _heartbeatCache.GetDeviceState(thingsBoardDeviceId.Value);
+        var currentStatus = deviceState?.Status ?? DeviceStatus.NOT_TRACKED;
+        var missedHeartbeats = deviceState?.MissedHeartbeats ?? 0;
+        var lastHeartbeat = deviceState?.LastHeartbeat;
+
         // Send response with local deviceId (frontend doesn't know about TB ID)
         await Clients.Caller.SendAsync("DeviceStatusChanged", new
         {
             deviceId = localDeviceId, // ← Local ID for frontend
             status = currentStatus.ToString(),
-            missedHeartbeats = 0,
-            timestamp = DateTime.UtcNow,
+            missedHeartbeats = missedHeartbeats,
+            timestamp = lastHeartbeat ?? DateTime.UtcNow,
             isInitialStatus = true
         });
     }

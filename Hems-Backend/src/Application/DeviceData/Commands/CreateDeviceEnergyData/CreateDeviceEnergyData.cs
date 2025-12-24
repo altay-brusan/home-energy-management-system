@@ -10,7 +10,7 @@ public record CreateDeviceEnergyDataCommand : IRequest<int>
 {
     public string DataType { get; init; } = string.Empty;
     public Guid DeviceId { get; init; }
-    public DateTime DataDateTime { get; init; }
+    public DateTime DeviceLocalTime { get; init; }
     
     // Cihazdan gelen veriler (Today/Total formatında)
     public double? PvEnergyKWhToday { get; init; }
@@ -69,16 +69,16 @@ public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDevice
             throw new ArgumentException($"Device with ThingsBoardDeviceId {request.DeviceId} not found.");
         }
 
-        // Convert UTC DataDateTime to device local time using cached timezone service
+        // Convert UTC DeviceLocalTime to device local time using cached timezone service
         var localDeviceId = await _deviceMapping.GetDeviceIdAsync(request.DeviceId, cancellationToken);
         if (localDeviceId == null)
         {
             throw new ArgumentException($"Device mapping not found for ThingsBoardDeviceId {request.DeviceId}");
         }
         
-        var localDataDateTime = await _timezoneService.ConvertUtcToDeviceTimeAsync(
+        var localDeviceLocalTime = await _timezoneService.ConvertUtcToDeviceTimeAsync(
             localDeviceId.Value, 
-            request.DataDateTime, 
+            request.DeviceLocalTime, 
             cancellationToken);
 
         var site = device.SetupDevice?.Setup?.Site;
@@ -97,7 +97,7 @@ public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDevice
         var existingRecord = await _context.DeviceEnergyData
             .FirstOrDefaultAsync(x => 
                 x.ThingsBoardDeviceId == request.DeviceId && 
-                x.DataDateTime == localDataDateTime && 
+                x.DeviceLocalTime == localDeviceLocalTime && 
                 x.DataType == request.DataType, 
                 cancellationToken);
 
@@ -121,7 +121,7 @@ public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDevice
             var energyData = new DeviceEnergyData
             {
                 ThingsBoardDeviceId = request.DeviceId,
-                DataDateTime = localDataDateTime, // Store in device local time
+                DeviceLocalTime = localDeviceLocalTime, // Store in device local time
                 DataType = request.DataType,
                 MessageType = MessageTypes.Telemetry,
                 PhaseType = PhaseTypes.SinglePhase,

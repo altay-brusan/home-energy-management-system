@@ -61,7 +61,7 @@ public class GetBatteryComponentQueryHandler : IRequestHandler<GetBatteryCompone
         var batteryData = await _context.DeviceData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
                        x.DataType == "BatteryClusterData")
-            .OrderByDescending(x => x.RequestDate)
+            .OrderByDescending(x => x.DeviceLocalTime)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (batteryData == null)
@@ -92,10 +92,10 @@ public class GetBatteryComponentQueryHandler : IRequestHandler<GetBatteryCompone
         
         var todayData = await _context.DeviceEnergyData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
-                       x.DataDateTime >= startOfDay &&
-                       x.DataDateTime < endOfDay &&
+                       x.DeviceLocalTime >= startOfDay &&
+                       x.DeviceLocalTime < endOfDay &&
                        x.DataType == "DailyCumulativeEnergyData")
-            .OrderByDescending(x => x.DataDateTime)
+            .OrderByDescending(x => x.DeviceLocalTime)
             .FirstOrDefaultAsync(cancellationToken);
 
         return todayData?.BatteryChargeEnergyKWh ?? 0;

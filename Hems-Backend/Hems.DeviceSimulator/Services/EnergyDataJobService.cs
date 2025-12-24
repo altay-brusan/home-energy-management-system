@@ -306,7 +306,7 @@ public class EnergyDataJobService : IEnergyDataJobService
             {
                 DataType = dataType,
                 DeviceId = deviceId,
-                DataDateTime = DateTime.UtcNow,
+                DeviceLocalTime = DateTime.UtcNow,
                 
                 // Günlük değerler
                 PvEnergyKWhToday = energyData.PvEnergyKWhToday,

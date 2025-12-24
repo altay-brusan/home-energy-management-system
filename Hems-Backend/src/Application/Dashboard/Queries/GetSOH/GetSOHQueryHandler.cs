@@ -108,11 +108,11 @@ public class GetSohQueryHandler : IRequestHandler<GetSohQuery, SohResponseDto>
                 // Range'e göre timestamp formatı belirle
                 var timestamp = range switch
                 {
-                    "Day" => data.RequestDate.ToString("HH:mm"),
-                    "Week" => data.RequestDate.ToString("MM-dd"),
-                    "Month" => data.RequestDate.ToString("MM-dd"),
-                    "Year" => data.RequestDate.ToString("MM"),
-                    _ => data.RequestDate.ToString("HH:mm")
+                    "Day" => data.DeviceLocalTime.ToString("HH:mm"),
+                    "Week" => data.DeviceLocalTime.ToString("MM-dd"),
+                    "Month" => data.DeviceLocalTime.ToString("MM-dd"),
+                    "Year" => data.DeviceLocalTime.ToString("MM"),
+                    _ => data.DeviceLocalTime.ToString("HH:mm")
                 };
                 
                 sohDataPoints.Add(new SohDataPoint
@@ -246,9 +246,9 @@ public class GetSohQueryHandler : IRequestHandler<GetSohQuery, SohResponseDto>
         var startDate = DateTime.SpecifyKind(DateTime.UtcNow.AddDays(-1), DateTimeKind.Utc);
         return await _context.DeviceData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
-                       x.RequestDate >= startDate &&
+                       x.DeviceLocalTime >= startDate &&
                        x.DataType == "BatteryData")
-            .OrderBy(x => x.RequestDate)
+            .OrderBy(x => x.DeviceLocalTime)
             .ToListAsync(cancellationToken);
     }
 
@@ -265,10 +265,10 @@ public class GetSohQueryHandler : IRequestHandler<GetSohQuery, SohResponseDto>
             
             var lastDataOfDay = await _context.DeviceData
                 .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
-                           x.RequestDate >= startOfDay &&
-                           x.RequestDate < endOfDay &&
+                           x.DeviceLocalTime >= startOfDay &&
+                           x.DeviceLocalTime < endOfDay &&
                            x.DataType == "BatteryData")
-                .OrderByDescending(x => x.RequestDate)
+                .OrderByDescending(x => x.DeviceLocalTime)
                 .FirstOrDefaultAsync(cancellationToken);
                 
             if (lastDataOfDay != null)
@@ -277,7 +277,7 @@ public class GetSohQueryHandler : IRequestHandler<GetSohQuery, SohResponseDto>
             }
         }
         
-        return result.OrderBy(x => x.RequestDate).ToList();
+        return result.OrderBy(x => x.DeviceLocalTime).ToList();
     }
 
     private async Task<List<Hems_Backend.Domain.Entities.DeviceData>> GetMonthData(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
@@ -293,10 +293,10 @@ public class GetSohQueryHandler : IRequestHandler<GetSohQuery, SohResponseDto>
             
             var lastDataOfDay = await _context.DeviceData
                 .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
-                           x.RequestDate >= startOfDay &&
-                           x.RequestDate < endOfDay &&
+                           x.DeviceLocalTime >= startOfDay &&
+                           x.DeviceLocalTime < endOfDay &&
                            x.DataType == "BatteryData")
-                .OrderByDescending(x => x.RequestDate)
+                .OrderByDescending(x => x.DeviceLocalTime)
                 .FirstOrDefaultAsync(cancellationToken);
                 
             if (lastDataOfDay != null)
@@ -305,7 +305,7 @@ public class GetSohQueryHandler : IRequestHandler<GetSohQuery, SohResponseDto>
             }
         }
         
-        return result.OrderBy(x => x.RequestDate).ToList();
+        return result.OrderBy(x => x.DeviceLocalTime).ToList();
     }
 
     private async Task<List<Hems_Backend.Domain.Entities.DeviceData>> GetYearData(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
@@ -321,10 +321,10 @@ public class GetSohQueryHandler : IRequestHandler<GetSohQuery, SohResponseDto>
             
             var lastDataOfMonth = await _context.DeviceData
                 .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
-                           x.RequestDate >= startOfMonth &&
-                           x.RequestDate < endOfMonth &&
+                           x.DeviceLocalTime >= startOfMonth &&
+                           x.DeviceLocalTime < endOfMonth &&
                            x.DataType == "BatteryData")
-                .OrderByDescending(x => x.RequestDate)
+                .OrderByDescending(x => x.DeviceLocalTime)
                 .FirstOrDefaultAsync(cancellationToken);
                 
             if (lastDataOfMonth != null)
@@ -333,7 +333,7 @@ public class GetSohQueryHandler : IRequestHandler<GetSohQuery, SohResponseDto>
             }
         }
         
-        return result.OrderBy(x => x.RequestDate).ToList();
+        return result.OrderBy(x => x.DeviceLocalTime).ToList();
     }
 
     private static SohResponseDto CreateEmptyResponse()

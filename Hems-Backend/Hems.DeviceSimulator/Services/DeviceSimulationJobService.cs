@@ -219,7 +219,7 @@ public class DeviceSimulationJobService : IDeviceSimulationJobService
             {
                 DataType = data.GetType().Name,
                 DeviceId = device.Device.Id,
-                RequestDate = DateTime.UtcNow,
+                DeviceLocalTime = DateTime.UtcNow,
                 Data = JsonSerializer.SerializeToDocument(data)
             };
 

@@ -43,10 +43,10 @@
 //        // Bugünün DailyCumulativeEnergyData verilerini çek
 //        var energyData = await _context.DeviceEnergyData
 //            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId.Value && 
-//                       x.DataDateTime >= startOfDay &&
-//                       x.DataDateTime < endOfDay &&
+//                       x.DeviceLocalTime >= startOfDay &&
+//                       x.DeviceLocalTime < endOfDay &&
 //                       x.DataType == "DailyCumulativeEnergyData")
-//            .OrderBy(x => x.DataDateTime)
+//            .OrderBy(x => x.DeviceLocalTime)
 //            .ToListAsync(cancellationToken);
 
 //        if (!energyData.Any())
@@ -70,12 +70,12 @@
 
 //        // Saatlik gruplama ve power hesaplama (son değerleri al)
 //        var dataPoints = energyData
-//            .GroupBy(x => x.DataDateTime.Hour)
+//            .GroupBy(x => x.DeviceLocalTime.Hour)
 //            .Select(g => new Hems_Backend.Application.Dashboard.Queries.GetChargeDischarge.ChargeDischargeDataPoint
 //            {
-//                DateTime = g.First().DataDateTime,
-//                ChargePowerKw = Math.Round(g.OrderByDescending(x => x.DataDateTime).First().BatteryChargeEnergyKWh ?? 0, 3),
-//                DischargePowerKw = Math.Round(g.OrderByDescending(x => x.DataDateTime).First().BatteryDischargeEnergyKWh ?? 0, 3),
+//                DateTime = g.First().DeviceLocalTime,
+//                ChargePowerKw = Math.Round(g.OrderByDescending(x => x.DeviceLocalTime).First().BatteryChargeEnergyKWh ?? 0, 3),
+//                DischargePowerKw = Math.Round(g.OrderByDescending(x => x.DeviceLocalTime).First().BatteryDischargeEnergyKWh ?? 0, 3),
 //                Label = $"Hour-{g.Key:00}:00"
 //            })
 //            .OrderBy(x => x.DateTime)

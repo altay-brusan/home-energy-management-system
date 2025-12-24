@@ -115,19 +115,19 @@ public class CreateInvitationCommandHandler : IRequestHandler<CreateInvitationCo
     private async Task<string> GenerateUniqueTokenAsync(CancellationToken cancellationToken)
     {
         var random = new Random();
-        var tenMinutesAgo = _timeProvider.GetUtcNow().AddMinutes(-10);
-        
+        var twentyFourHoursAgo = _timeProvider.GetUtcNow().AddHours(-24);
+
         string token;
         bool isUnique;
-        
+
         do
         {
             // 6 haneli rastgele sayı
             token = random.Next(100000, 999999).ToString();
-            
-            // Son 10 dakikada bu token kullanılmış mı kontrol et
+
+            // Son 24 saatte bu token kullanılmış mı kontrol et
             isUnique = !await _context.Invitations
-                .AnyAsync(i => i.Token == token && i.Created > tenMinutesAgo, cancellationToken);
+                .AnyAsync(i => i.Token == token && i.Created > twentyFourHoursAgo, cancellationToken);
                 
         } while (!isUnique);
 

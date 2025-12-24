@@ -13,7 +13,7 @@ public class CreateDeviceEnergyDataCommandValidator : AbstractValidator<CreateDe
         RuleFor(v => v.DeviceId)
             .NotEmpty();
 
-        RuleFor(v => v.DataDateTime)
+        RuleFor(v => v.DeviceLocalTime)
             .NotEmpty();
 
         // Günlük değerler için validasyon

@@ -17,6 +17,8 @@ public class DeviceHeartbeatMonitorService : BackgroundService
     private readonly ILogger<DeviceHeartbeatMonitorService> _logger;
     private readonly IServiceScopeFactory _serviceScopeFactory;
     private const int CheckIntervalSeconds = 60; // Check every 1 minute
+    private const int CleanupIntervalCycles = 60; // Run cleanup every 60 cycles (1 hour)
+    private int _cycleCount = 0;
 
     public DeviceHeartbeatMonitorService(
         ILogger<DeviceHeartbeatMonitorService> logger,
@@ -66,6 +68,25 @@ public class DeviceHeartbeatMonitorService : BackgroundService
         var context = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
         var hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<DeviceStatusHub>>();
         var deviceMapping = scope.ServiceProvider.GetRequiredService<IDeviceMappingService>();
+
+        _cycleCount++;
+
+        // Log tracked device count periodically (every 10 cycles = 10 minutes)
+        if (_cycleCount % 10 == 0)
+        {
+            var trackedCount = cache.GetTrackedDeviceCount();
+            _logger.LogDebug("Heartbeat monitor cycle {Cycle}: tracking {Count} devices", _cycleCount, trackedCount);
+        }
+
+        // Run cleanup periodically (every CleanupIntervalCycles = 1 hour)
+        if (_cycleCount % CleanupIntervalCycles == 0)
+        {
+            var removedDevices = await cache.CleanupStaleDevicesAsync(cancellationToken);
+            if (removedDevices.Count > 0)
+            {
+                _logger.LogInformation("Hourly cleanup: removed {Count} stale devices from tracking", removedDevices.Count);
+            }
+        }
 
         // Check all tracked devices for missed heartbeats
         var statusChanges = await cache.CheckMissedHeartbeatsAsync(cancellationToken);

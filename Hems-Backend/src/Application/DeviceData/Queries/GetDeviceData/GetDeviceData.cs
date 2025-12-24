@@ -52,13 +52,13 @@ public class GetDeviceDataQueryHandler : IRequestHandler<GetDeviceDataQuery, Pag
         }
 
         return await query
-            .OrderByDescending(x => x.RequestDate)
+            .OrderByDescending(x => x.DeviceLocalTime)
             .Select(x => new DeviceDataDto
             {
                 Id = x.Id,
                 DataType = x.DataType,
                 DeviceId = x.ThingsBoardDeviceId,
-                RequestDate = x.RequestDate,
+                DeviceLocalTime = x.DeviceLocalTime,
                 Data = x.Data,
                 Created = x.Created,
                 CreatedBy = x.CreatedBy
@@ -72,7 +72,7 @@ public class DeviceDataDto
     public int Id { get; set; }
     public string DataType { get; set; } = string.Empty;
     public Guid DeviceId { get; set; }
-    public DateTime RequestDate { get; set; }
+    public DateTime DeviceLocalTime { get; set; }
     public JsonDocument Data { get; set; } = JsonDocument.Parse("{}");
     public DateTimeOffset Created { get; set; }
     public string? CreatedBy { get; set; }

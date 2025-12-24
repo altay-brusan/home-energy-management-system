@@ -15,7 +15,7 @@ public class DeviceWeatherDataConfiguration : IEntityTypeConfiguration<DeviceWea
         builder.Property(x => x.ThingsBoardDeviceId)
             .IsRequired();
 
-        builder.Property(x => x.DataDateTime)
+        builder.Property(x => x.DeviceLocalTime)
             .IsRequired();
 
         builder.Property(x => x.Temperature)
@@ -55,7 +55,7 @@ public class DeviceWeatherDataConfiguration : IEntityTypeConfiguration<DeviceWea
         // Indexes
         builder.HasIndex(x => x.ThingsBoardDeviceId);
         
-        builder.HasIndex(x => new { x.ThingsBoardDeviceId, x.DataDateTime })
-            .HasDatabaseName("IX_DeviceWeatherData_ThingsBoardDeviceId_DataDateTime");
+        builder.HasIndex(x => new { x.ThingsBoardDeviceId, x.DeviceLocalTime })
+            .HasDatabaseName("IX_DeviceWeatherData_ThingsBoardDeviceId_DeviceLocalTime");
     }
 }

@@ -12,7 +12,7 @@ public class DevicePowerData : BaseAuditableEntity
     public Guid ThingsBoardDeviceId { get; set; }
     
     [Required]
-    public DateTime DataDateTime { get; set; }
+    public DateTime DeviceLocalTime { get; set; }
     
     [Required]
     [MaxLength(50)]

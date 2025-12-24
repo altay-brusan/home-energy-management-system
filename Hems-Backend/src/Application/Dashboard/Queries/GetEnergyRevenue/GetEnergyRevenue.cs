@@ -283,10 +283,10 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
         // Get all PowerFlow data for the day (5-minute intervals)
         var powerFlowData = await _context.DevicePowerData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId &&
-                       x.DataDateTime >= dayStart &&
-                       x.DataDateTime < dayEnd &&
+                       x.DeviceLocalTime >= dayStart &&
+                       x.DeviceLocalTime < dayEnd &&
                        x.DataType == DataTypes.PowerFlow)
-            .OrderBy(x => x.DataDateTime)
+            .OrderBy(x => x.DeviceLocalTime)
             .ToListAsync(cancellationToken);
 
         // If no data exists for this period, return empty array
@@ -326,7 +326,7 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
 
             // Get all power samples for this hour
             var hourSamples = interpolatedData
-                .Where(x => x.DataDateTime >= hourStart && x.DataDateTime < hourEnd)
+                .Where(x => x.DeviceLocalTime >= hourStart && x.DeviceLocalTime < hourEnd)
                 .ToList();
 
             double buyEnergyKWh = 0;
@@ -387,7 +387,7 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
             {
                 var current = data[i];
                 var next = data[i + 1];
-                var gap = next.DataDateTime - current.DataDateTime;
+                var gap = next.DeviceLocalTime - current.DeviceLocalTime;
 
                 if (gap > expectedInterval * 2)
                 {
@@ -398,7 +398,7 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
                         var interpolatedSample = new DevicePowerData
                         {
                             ThingsBoardDeviceId = current.ThingsBoardDeviceId,
-                            DataDateTime = current.DataDateTime.AddMinutes(expectedInterval.TotalMinutes * j),
+                            DeviceLocalTime = current.DeviceLocalTime.AddMinutes(expectedInterval.TotalMinutes * j),
                             DataType = current.DataType,
                             MessageType = current.MessageType,
                             PhaseType = current.PhaseType,
@@ -437,10 +437,10 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
 
         var dailyData = await _context.DeviceEnergyData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId &&
-                       x.DataDateTime >= weekStartUtc &&
-                       x.DataDateTime < weekEnd &&
+                       x.DeviceLocalTime >= weekStartUtc &&
+                       x.DeviceLocalTime < weekEnd &&
                        x.DataType == DataTypes.DailyCumulativeEnergy)
-            .OrderBy(x => x.DataDateTime)
+            .OrderBy(x => x.DeviceLocalTime)
             .ToListAsync(cancellationToken);
 
         if (!dailyData.Any())
@@ -450,9 +450,9 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
 
         // Group by date and take the most recent entry for each day
         var latestDailyData = dailyData
-            .GroupBy(d => d.DataDateTime.Date)
-            .Select(g => g.OrderByDescending(d => d.DataDateTime).First())
-            .ToDictionary(d => d.DataDateTime.Date);
+            .GroupBy(d => d.DeviceLocalTime.Date)
+            .Select(g => g.OrderByDescending(d => d.DeviceLocalTime).First())
+            .ToDictionary(d => d.DeviceLocalTime.Date);
 
         var result = new List<EnergyRevenueDataPoint>();
         var today = DateTime.UtcNow.Date;
@@ -517,17 +517,17 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
 
         var dailyData = await _context.DeviceEnergyData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId &&
-                       x.DataDateTime >= monthStart &&
-                       x.DataDateTime < monthEnd &&
+                       x.DeviceLocalTime >= monthStart &&
+                       x.DeviceLocalTime < monthEnd &&
                        x.DataType == DataTypes.DailyCumulativeEnergy)
-            .OrderBy(x => x.DataDateTime)
+            .OrderBy(x => x.DeviceLocalTime)
             .ToListAsync(cancellationToken);
 
         // Group by date and take the most recent entry for each day
         var latestDailyData = dailyData
-            .GroupBy(d => d.DataDateTime.Date)
-            .Select(g => g.OrderByDescending(d => d.DataDateTime).First())
-            .ToDictionary(d => d.DataDateTime.Date);
+            .GroupBy(d => d.DeviceLocalTime.Date)
+            .Select(g => g.OrderByDescending(d => d.DeviceLocalTime).First())
+            .ToDictionary(d => d.DeviceLocalTime.Date);
 
         var result = new List<EnergyRevenueDataPoint>();
         var daysInMonth = DateTime.DaysInMonth(year, month);
@@ -588,10 +588,10 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
 
         var powerFlowData = await _context.DevicePowerData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId &&
-                       x.DataDateTime >= dayStart &&
-                       x.DataDateTime <= now &&
+                       x.DeviceLocalTime >= dayStart &&
+                       x.DeviceLocalTime <= now &&
                        x.DataType == DataTypes.PowerFlow)
-            .OrderBy(x => x.DataDateTime)
+            .OrderBy(x => x.DeviceLocalTime)
             .ToListAsync(cancellationToken);
 
         if (!powerFlowData.Any())
@@ -640,16 +640,16 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
 
         var dailyData = await _context.DeviceEnergyData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId &&
-                       x.DataDateTime >= yearStart &&
-                       x.DataDateTime < yearEnd &&
+                       x.DeviceLocalTime >= yearStart &&
+                       x.DeviceLocalTime < yearEnd &&
                        x.DataType == DataTypes.DailyCumulativeEnergy)
-            .OrderBy(x => x.DataDateTime)
+            .OrderBy(x => x.DeviceLocalTime)
             .ToListAsync(cancellationToken);
 
         // Group by date and take the most recent entry for each day
         var latestDailyData = dailyData
-            .GroupBy(d => d.DataDateTime.Date)
-            .Select(g => g.OrderByDescending(d => d.DataDateTime).First())
+            .GroupBy(d => d.DeviceLocalTime.Date)
+            .Select(g => g.OrderByDescending(d => d.DeviceLocalTime).First())
             .ToList();
 
         var result = new List<EnergyRevenueDataPoint>();
@@ -662,7 +662,7 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
 
             // Get daily data for this month
             var monthDailyData = latestDailyData
-                .Where(d => d.DataDateTime >= monthStart && d.DataDateTime < monthEnd)
+                .Where(d => d.DeviceLocalTime >= monthStart && d.DeviceLocalTime < monthEnd)
                 .ToList();
 
             // Calculate energy totals
@@ -724,7 +724,7 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
 
         foreach (var dayData in monthDailyData)
         {
-            var prices = await GetPricesEffectiveAtAsync(dayData.DataDateTime, cancellationToken);
+            var prices = await GetPricesEffectiveAtAsync(dayData.DeviceLocalTime, cancellationToken);
             var (sellPrice, buyPrice) = GetWeightedDailyAveragePrice(prices);
 
             var daySell = dayData.GridExportEnergyKWh ?? 0;
