@@ -43,6 +43,9 @@ public static class DependencyInjection
 
         // Add Device Notification Service
         builder.Services.AddScoped<IDeviceNotificationService, DeviceNotificationService>();
+
+        // Add Device Settings Notification Service (for parameter update SignalR notifications)
+        builder.Services.AddScoped<IDeviceSettingsNotificationService, DeviceSettingsNotificationService>();
   
         // Add Authorization Policies
         //builder.Services.AddAuthorization(options =>

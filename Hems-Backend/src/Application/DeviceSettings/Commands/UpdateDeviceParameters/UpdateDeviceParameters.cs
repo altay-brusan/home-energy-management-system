@@ -21,20 +21,20 @@ public record ParameterUpdate
 public class UpdateDeviceParametersCommandHandler : IRequestHandler<UpdateDeviceParametersCommand, UpdateDeviceParametersResult>
 {
     private readonly IApplicationDbContext _context;
-    private readonly IDeviceRpcExecutorService _rpcExecutor;
+    private readonly IParameterUpdateQueueService _updateQueue;
     private readonly IIdentityService _identityService;
     private readonly IUser _currentUser;
     private readonly ILogger<UpdateDeviceParametersCommandHandler> _logger;
 
     public UpdateDeviceParametersCommandHandler(
         IApplicationDbContext context,
-        IDeviceRpcExecutorService rpcExecutor,
+        IParameterUpdateQueueService updateQueue,
         IIdentityService identityService,
         IUser currentUser,
         ILogger<UpdateDeviceParametersCommandHandler> logger)
     {
         _context = context;
-        _rpcExecutor = rpcExecutor;
+        _updateQueue = updateQueue;
         _identityService = identityService;
         _currentUser = currentUser;
         _logger = logger;
@@ -92,147 +92,118 @@ public class UpdateDeviceParametersCommandHandler : IRequestHandler<UpdateDevice
             isAdmin = await _identityService.IsInRoleAsync(_currentUser.Id, Roles.Administrator);
         }
 
-        // Build parameter dictionary for RPC call (parameterName -> value)
-        var parameterUpdates = new Dictionary<string, string>();
-        var parameterValueMap = new Dictionary<string, Domain.Entities.SetupDeviceParameterValue>();
+        // Validate parameters and check authorization
+        var validParameters = new List<ParameterUpdateQueueItem>();
         var unauthorizedParameters = new List<string>();
+        var notFoundParameters = new List<Guid>();
 
         foreach (var update in request.Parameters)
         {
             var paramValue = parameterValues.FirstOrDefault(pv => pv.ParameterId == update.ParameterId);
-            if (paramValue?.Parameter != null)
+            if (paramValue?.Parameter == null)
             {
-                // RBAC: Check if user has permission to update this parameter
-                if (paramValue.Parameter.RoleType == "Admin" && !isAdmin)
-                {
-                    unauthorizedParameters.Add(paramValue.Parameter.Name);
-                    _logger.LogWarning(
-                        "User {UserId} attempted to update admin-only parameter {ParameterName}",
-                        _currentUser.Id,
-                        paramValue.Parameter.Name);
-                    continue; // Skip this parameter
-                }
-
-                parameterUpdates[paramValue.Parameter.Name] = update.Value;
-                parameterValueMap[paramValue.Parameter.Name] = paramValue;
+                notFoundParameters.Add(update.ParameterId);
+                continue;
             }
+
+            // RBAC: Check if user has permission to update this parameter
+            if (paramValue.Parameter.RoleType == "Admin" && !isAdmin)
+            {
+                unauthorizedParameters.Add(paramValue.Parameter.Name);
+                _logger.LogWarning(
+                    "User {UserId} attempted to update admin-only parameter {ParameterName}",
+                    _currentUser.Id,
+                    paramValue.Parameter.Name);
+                continue;
+            }
+
+            validParameters.Add(new ParameterUpdateQueueItem
+            {
+                ParameterId = update.ParameterId,
+                ParameterName = paramValue.Parameter.Name,
+                Value = update.Value
+            });
         }
 
         // If there are unauthorized parameters, return error
         if (unauthorizedParameters.Count > 0)
         {
-            var authorizationFailures = unauthorizedParameters.Select(name => new ParameterUpdateStatus
-            {
-                ParameterName = name,
-                Success = false,
-                ErrorMessage = "Access denied. This parameter requires administrator privileges."
-            }).ToList();
-
             return new UpdateDeviceParametersResult
             {
                 Success = false,
-                ErrorMessage = $"Access denied for {unauthorizedParameters.Count} admin-only parameter(s).",
-                FailedUpdates = authorizationFailures
+                ErrorMessage = $"Access denied for {unauthorizedParameters.Count} admin-only parameter(s): {string.Join(", ", unauthorizedParameters)}"
             };
         }
 
-        // If no parameters left after authorization check
-        if (parameterUpdates.Count == 0)
+        // If no parameters left after validation
+        if (validParameters.Count == 0)
         {
             return new UpdateDeviceParametersResult
             {
                 Success = false,
-                ErrorMessage = "No parameters to update after authorization check"
+                ErrorMessage = "No valid parameters to update"
             };
         }
 
-        // Step 1: Update device via RPC (batch optimized)
-        var rpcResults = await _rpcExecutor.ExecuteParameterUpdatesAsync(
-            device.ThingsBoardDeviceId,
-            parameterUpdates,
-            cancellationToken);
+        // Generate correlation ID for tracking this batch operation
+        var correlationId = Guid.NewGuid().ToString("N");
 
-        // Track successes and failures
-        var successfulUpdates = new List<ParameterUpdateStatus>();
-        var failedUpdates = new List<ParameterUpdateStatus>();
-
-        // Step 2: Update database for successful RPC calls only
-        foreach (var (parameterName, rpcResult) in rpcResults)
+        // Queue the update request for background processing
+        await _updateQueue.QueueParameterUpdateAsync(new ParameterUpdateQueueRequest
         {
-            if (parameterValueMap.TryGetValue(parameterName, out var paramValue))
-            {
-                if (rpcResult.Success)
-                {
-                    // Update database value
-                    var newValue = parameterUpdates[parameterName];
-                    paramValue.Value = newValue;
+            CorrelationId = correlationId,
+            DeviceId = request.DeviceId,
+            SetupDeviceId = setupDevice.Id,
+            ThingsBoardDeviceId = device.ThingsBoardDeviceId,
+            Parameters = validParameters,
+            UserId = _currentUser.Id,
+            IsAdmin = isAdmin
+        }, cancellationToken);
 
-                    successfulUpdates.Add(new ParameterUpdateStatus
-                    {
-                        ParameterName = parameterName,
-                        Success = true,
-                        RpcMethod = rpcResult.RpcMethod,
-                        NewValue = newValue
-                    });
+        _logger.LogInformation(
+            "Queued {Count} parameter updates for device {DeviceId} with correlation ID {CorrelationId}",
+            validParameters.Count,
+            request.DeviceId,
+            correlationId);
 
-                    _logger.LogInformation(
-                        "Successfully updated parameter {ParameterName} on device {DeviceId}",
-                        parameterName,
-                        device.Id);
-                }
-                else
-                {
-                    failedUpdates.Add(new ParameterUpdateStatus
-                    {
-                        ParameterName = parameterName,
-                        Success = false,
-                        ErrorMessage = rpcResult.ErrorMessage,
-                        RpcMethod = rpcResult.RpcMethod
-                    });
-
-                    _logger.LogWarning(
-                        "Failed to update parameter {ParameterName} on device {DeviceId}: {Error}",
-                        parameterName,
-                        device.Id,
-                        rpcResult.ErrorMessage);
-                }
-            }
-        }
-
-        // Save all successful updates to database
-        if (successfulUpdates.Count > 0)
-        {
-            await _context.SaveChangesAsync(cancellationToken);
-        }
-
-        var overallSuccess = failedUpdates.Count == 0;
-        var errorMessage = !overallSuccess
-            ? $"{failedUpdates.Count} out of {rpcResults.Count} parameters failed to update"
-            : null;
-
+        // Return immediately with correlation ID
+        // Frontend should subscribe to SignalR with this correlation ID to receive updates
         return new UpdateDeviceParametersResult
         {
-            Success = overallSuccess,
-            ErrorMessage = errorMessage,
-            SuccessfulUpdates = successfulUpdates,
-            FailedUpdates = failedUpdates
+            Success = true,
+            CorrelationId = correlationId,
+            TotalParameters = validParameters.Count,
+            Message = $"Parameter update queued. Subscribe to SignalR hub 'deviceSettingsHub' with correlation ID '{correlationId}' to receive progress updates."
         };
     }
 }
 
 /// <summary>
-/// Result of batch parameter update
+/// Result of batch parameter update - returns immediately with correlation ID
 /// </summary>
 public record UpdateDeviceParametersResult
 {
     public bool Success { get; init; }
     public string? ErrorMessage { get; init; }
+    public string? Message { get; init; }
+
+    /// <summary>
+    /// Correlation ID to track this batch operation via SignalR
+    /// </summary>
+    public string? CorrelationId { get; init; }
+
+    /// <summary>
+    /// Total number of parameters queued for update
+    /// </summary>
+    public int TotalParameters { get; init; }
+
+    // Legacy properties for backward compatibility (will be empty for async operations)
     public List<ParameterUpdateStatus> SuccessfulUpdates { get; init; } = new();
     public List<ParameterUpdateStatus> FailedUpdates { get; init; } = new();
 }
 
 /// <summary>
-/// Status of a single parameter update
+/// Status of a single parameter update (for legacy compatibility)
 /// </summary>
 public record ParameterUpdateStatus
 {

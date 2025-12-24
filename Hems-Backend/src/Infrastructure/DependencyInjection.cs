@@ -72,6 +72,11 @@ public static class DependencyInjection
         builder.Services.AddSingleton<IDeviceHeartbeatCache, DeviceHeartbeatCache>();
         builder.Services.AddHostedService<DeviceHeartbeatMonitorService>();
 
+        // Parameter Update Background Service (SignalR-based async updates)
+        builder.Services.AddSingleton<ParameterUpdateBackgroundService>();
+        builder.Services.AddSingleton<IParameterUpdateQueueService>(sp => sp.GetRequiredService<ParameterUpdateBackgroundService>());
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<ParameterUpdateBackgroundService>());
+
         // ThingsBoard Services
         builder.Services.AddHttpClient<IThingsBoardConnectorService, ThingsBoardConnectorService>();
 
