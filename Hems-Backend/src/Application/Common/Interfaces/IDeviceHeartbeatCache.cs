@@ -54,6 +54,12 @@ public interface IDeviceHeartbeatCache
     DeviceStatus GetDeviceStatus(Guid thingsBoardDeviceId);
 
     /// <summary>
+    /// Get full monitoring state of a device (status, missedHeartbeats, timestamps)
+    /// Returns null if device is not tracked
+    /// </summary>
+    DeviceMonitoringState? GetDeviceState(Guid thingsBoardDeviceId);
+
+    /// <summary>
     /// Get all devices currently being tracked
     /// </summary>
     List<Guid> GetTrackedDevices();

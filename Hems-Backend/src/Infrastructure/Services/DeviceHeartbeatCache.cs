@@ -48,7 +48,7 @@ public class DeviceHeartbeatCache : IDeviceHeartbeatCache
 
         _deviceStates.AddOrUpdate(
             thingsBoardDeviceId,
-            // Add new device
+            // Add new device - send notification for NOT_TRACKED → OK transition
             deviceId => {
                 var state = new DeviceMonitoringState
                 {
@@ -57,6 +57,17 @@ public class DeviceHeartbeatCache : IDeviceHeartbeatCache
                     MissedHeartbeats = 0,
                     Status = DeviceStatus.OK
                 };
+
+                // Create status change for first heartbeat - notify frontend of NOT_TRACKED → OK
+                statusChange = new DeviceStatusChange
+                {
+                    ThingsBoardDeviceId = deviceId,
+                    PreviousStatus = DeviceStatus.NOT_TRACKED,
+                    NewStatus = DeviceStatus.OK,
+                    MissedHeartbeats = 0,
+                    Timestamp = timestamp
+                };
+
                 _logger.LogInformation("Device {DeviceId} started tracking (first heartbeat)", deviceId);
                 return state;
             },
@@ -96,7 +107,7 @@ public class DeviceHeartbeatCache : IDeviceHeartbeatCache
         
         _deviceStates.AddOrUpdate(
             thingsBoardDeviceId,
-            // Add new device (PowerFlow can also start tracking)
+            // Add new device (PowerFlow can also start tracking) - send notification for NOT_TRACKED → OK
             deviceId => {
                 var state = new DeviceMonitoringState
                 {
@@ -106,6 +117,17 @@ public class DeviceHeartbeatCache : IDeviceHeartbeatCache
                     MissedHeartbeats = 0,
                     Status = DeviceStatus.OK
                 };
+
+                // Create status change for first PowerFlow - notify frontend of NOT_TRACKED → OK
+                statusChange = new DeviceStatusChange
+                {
+                    ThingsBoardDeviceId = deviceId,
+                    PreviousStatus = DeviceStatus.NOT_TRACKED,
+                    NewStatus = DeviceStatus.OK,
+                    MissedHeartbeats = 0,
+                    Timestamp = timestamp
+                };
+
                 _logger.LogInformation("Device {DeviceId} started tracking (first PowerFlow)", deviceId);
                 return state;
             },
