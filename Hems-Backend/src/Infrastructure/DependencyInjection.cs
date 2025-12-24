@@ -57,6 +57,9 @@ public static class DependencyInjection
         
         // Device Authorization
         builder.Services.AddScoped<IAuthorizationHandler, DeviceOnlyAuthorizationHandler>();
+
+        // Device Settings Initializer
+        builder.Services.AddScoped<IDeviceSettingsInitializerService, DeviceSettingsInitializerService>();
         
         // Email services
         builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
