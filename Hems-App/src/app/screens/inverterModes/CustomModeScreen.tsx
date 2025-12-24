@@ -56,6 +56,7 @@ const CustomModeScreen: React.FC = () => {
     resetToDefaults,
     fetchSettings,
     clearError,
+    canSave,
   } = useDeviceSettings();
 
   // Update progress store
@@ -393,11 +394,11 @@ const CustomModeScreen: React.FC = () => {
         >
           <TouchableOpacity
             onPress={handleSave}
-            disabled={!isDirty || isSaving}
+            disabled={!canSave || isSaving}
             style={[
               styles.saveButton,
               {
-                backgroundColor: isDirty ? COLORS.accent : COLORS.gray200,
+                backgroundColor: canSave ? COLORS.accent : COLORS.gray200,
                 opacity: isSaving ? 0.7 : 1,
               },
             ]}

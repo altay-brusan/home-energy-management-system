@@ -110,7 +110,11 @@ export function LegalModal({ visible, type, onClose }: LegalModalProps) {
       animationType="fade"
       onRequestClose={onClose}
     >
-      <Pressable style={styles.overlay} onPress={onClose}>
+      <View style={styles.overlay}>
+        {/* Background overlay - closes modal when tapped */}
+        <Pressable style={styles.backgroundOverlay} onPress={onClose} />
+
+        {/* Modal content container - doesn't close on tap */}
         <View style={styles.container}>
           <View style={styles.header}>
             <Text style={styles.title}>{title}</Text>
@@ -135,7 +139,7 @@ export function LegalModal({ visible, type, onClose }: LegalModalProps) {
             </TouchableOpacity>
           </View>
         </View>
-      </Pressable>
+      </View>
     </Modal>
   );
 }

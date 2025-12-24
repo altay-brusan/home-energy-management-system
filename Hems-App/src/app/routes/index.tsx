@@ -17,7 +17,7 @@ import { useRoles } from '../../hooks/useRoles';
 import { getUserData, removeUserData } from '../../lib/storage/token';
 import { useAuthStore } from '../../store/authStore';
 import { useInvitationStore } from '../../store/invitationStore';
-import { useSitesStore } from '../../store/sitesStore';
+import { useSitesStore, useHasValidSiteWithDevice } from '../../store/sitesStore';
 import { useThemeStore } from '../../store/themeStore';
 import { getThemeColors } from '../../theme/constants';
 import { toast } from '../../utils/toast';
@@ -100,8 +100,9 @@ function TabNavigator () {
   const COLORS = getThemeColors(isDark);
   const { t } = useTranslation();
   const { isAdmin, hasRole } = useRoles();
-  const { setSelectedSite, selectedSite } = useSitesStore();
+  const { setSelectedSite, selectedSite, sites } = useSitesStore();
   const { user } = useAuthStore();
+  const hasValidSiteWithDevice = useHasValidSiteWithDevice();
 
   // Admin'den gelen site seçimini handle et
   useEffect(() => {
@@ -122,15 +123,22 @@ function TabNavigator () {
   // User state değiştiğinde TabNavigator yeniden mount olmalı
   // User ID ve admin rolünü key'e dahil et
   const isAdminUser = (isAdmin || hasRole('Administrator')) && user;
-  const navigatorKey = user ? (isAdminUser ? `admin-${user.id}` : `user-${user.id}`) : 'default';
+  // Include hasValidSiteWithDevice in key to re-render tabs when user completes setup
+  const navigatorKey = user
+    ? (isAdminUser
+        ? `admin-${user.id}-${selectedSite?.id || 'nosite'}`
+        : `user-${user.id}-${hasValidSiteWithDevice ? 'valid' : 'setup'}`)
+    : 'default';
 
-  // Admin kullanıcı ev seçmemişse diğer tab'ları göster
-  const hasSelectedSite = !!selectedSite;
+  // Show Dashboard/Device tabs only if user has a valid site with device
+  // For admin users, they need to select a site first
+  // For regular users, they need to complete site+device setup
+  const canShowDashboard = isAdminUser ? !!selectedSite : hasValidSiteWithDevice;
 
   return (
     <Tab.Navigator
       key={navigatorKey}
-      initialRouteName={isAdminUser ? 'Admin' : 'Dashboard'}
+      initialRouteName={isAdminUser ? 'Admin' : (canShowDashboard ? 'Dashboard' : 'Profile')}
       tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
@@ -138,8 +146,8 @@ function TabNavigator () {
         tabBarInactiveTintColor: COLORS.slate400,
       }}
     >
-      {/* Admin kullanıcı ev seçmemişse sadece Admin ve Profile tab'larını göster */}
-      {(!isAdminUser || hasSelectedSite) && (
+      {/* Show Dashboard/Device only if user has valid site with device */}
+      {canShowDashboard && (
         <>
           <Tab.Screen
             name="Dashboard"
@@ -213,7 +221,7 @@ export function RootNavigator () {
   const navTheme = isDark ? DarkTheme : DefaultTheme;
   const COLORS = getThemeColors(isDark);
   const { user, setUser, clearAuth, hasRole } = useAuthStore();
-  const { getUserSites } = useSitesStore();
+  const { getUserSites, setSelectedSite, sites: currentSites } = useSitesStore();
   const {
     pendingInvitationCode,
     isInvitationModalVisible,
@@ -222,7 +230,7 @@ export function RootNavigator () {
     clearPendingInvitation
   } = useInvitationStore();
   const [isLoading, setIsLoading] = useState(true);
-  const [initialRoute, setInitialRoute] = useState<'Login' | 'Home' | 'MainTabs'>('Login');
+  const [initialRoute, setInitialRoute] = useState<'Login' | 'Home' | 'MainTabs' | 'HomeSetup'>('Login');
 
   // Invitation modal logic
   const handleAcceptInvitation = async () => {
@@ -234,10 +242,35 @@ export function RootNavigator () {
         return;
       }
 
+      // Store current site IDs to find the new one after refresh
+      const previousSiteIds = new Set(currentSites.map(s => s.id));
+
       await invitationsService.acceptInvitation({ token: pendingInvitationCode });
 
       // Ev listesini yenile
-      await getUserSites();
+      const updatedDashboard = await getUserSites();
+      const updatedSites = updatedDashboard?.siteList || [];
+
+      // Find the newly added site (the one that wasn't in the previous list)
+      const newSite = updatedSites.find(s => !previousSiteIds.has(s.id));
+
+      if (newSite) {
+        // Select the newly added site
+        setSelectedSite(newSite);
+
+        // Navigate to MainTabs (Dashboard)
+        navigationRef.current?.reset({
+          index: 0,
+          routes: [{ name: 'MainTabs' }],
+        });
+      } else if (updatedSites.length > 0) {
+        // Fallback: select the first site if we couldn't find the new one
+        setSelectedSite(updatedSites[0]);
+        navigationRef.current?.reset({
+          index: 0,
+          routes: [{ name: 'MainTabs' }],
+        });
+      }
 
       toast.success(t('invitation.accepted'), t('invitation.homeListUpdated'));
       clearPendingInvitation();
@@ -278,7 +311,31 @@ export function RootNavigator () {
           if (!isExpired) {
             setUser(storedUser);
             const hasAdminRole = storedUser?.roles?.includes('Administrator');
-            setInitialRoute('MainTabs');
+
+            // Pre-fetch sites to determine correct initial route
+            try {
+              const sitesDashboard = await getUserSites();
+              const userSites = sitesDashboard?.siteList || [];
+
+              // Admin users always go to MainTabs
+              if (hasAdminRole) {
+                setInitialRoute('MainTabs');
+              } else if (userSites.length === 0) {
+                // No sites - force to HomeSetup
+                setInitialRoute('HomeSetup');
+              } else {
+                // Has sites - go to MainTabs
+                setInitialRoute('MainTabs');
+              }
+            } catch (sitesError) {
+              // Sites fetch failed - go to HomeSetup to be safe
+              console.log('[RootNavigator] Sites fetch error:', sitesError);
+              if (hasAdminRole) {
+                setInitialRoute('MainTabs');
+              } else {
+                setInitialRoute('HomeSetup');
+              }
+            }
           } else {
             await apiClient.clearTokens();
             await removeUserData();
@@ -296,7 +353,7 @@ export function RootNavigator () {
     };
 
     checkAuthAndHomes();
-  }, [setUser]);
+  }, [setUser, getUserSites]);
 
   if (isLoading) {
     return (

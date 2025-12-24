@@ -74,7 +74,7 @@ export default function NotificationScreen(): JSX.Element {
     switch (filter) {
       case 'today': return notifications.filter(n => isToday(n.createdAt));
       case 'unread': return notifications.filter(n => !n.read);
-      case 'critical': return notifications.filter(n => n.severity === 'critical');
+      case 'critical': return notifications.filter(n => n.severityLevel === 'ERROR');
       default: return notifications;
     }
   }, [notifications, filter]);

@@ -98,7 +98,6 @@ export default function LoginScreen (): JSX.Element {
     [COLORS, isDark],
   );
 
-  const [agreed, setAgreed] = React.useState<boolean>(false);
   const [legalModalVisible, setLegalModalVisible] = React.useState(false);
   const [legalModalType, setLegalModalType] = React.useState<'privacy' | 'terms'>('terms');
 
@@ -160,7 +159,6 @@ export default function LoginScreen (): JSX.Element {
   }, [isAuthenticated, user, navigation, getUserSites, selectSiteById]);
 
   const onSubmit = (values: LoginForm) => {
-    if (!agreed) return;
     onPressFancy();
     void login(values);
   };
@@ -252,33 +250,7 @@ export default function LoginScreen (): JSX.Element {
                   <Text style={styles.forgot}>{t('auth.forgotPassword')}</Text>
                 </Pressable>
 
-                <Pressable
-                  onPress={() => setAgreed(v => !v)}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: agreed }}
-                  style={styles.tosRow}
-                >
-                  <View
-                    style={[
-                      styles.checkbox,
-                      agreed && styles.checkboxChecked,
-                    ]}
-                  >
-                    {agreed && <Text style={styles.checkIcon}>✓</Text>}
-                  </View>
-                  <Text style={styles.tosText}>
-                    {t('auth.agreeToTerms')}{' '}
-                    <Text style={styles.tosLink} onPress={() => openLegalModal('terms')}>
-                      {t('auth.termsOfService')}
-                    </Text>{' '}
-                    {t('auth.and')}{' '}
-                    <Text style={styles.tosLink} onPress={() => openLegalModal('privacy')}>
-                      {t('auth.privacyPolicy')}
-                    </Text>
-                  </Text>
-                </Pressable>
-
-                <Pressable onPress={onPressFancy} disabled={!agreed}>
+                <Pressable onPress={onPressFancy}>
                   <Button
                     title={
                       loginLoading || isSubmitting
@@ -287,13 +259,26 @@ export default function LoginScreen (): JSX.Element {
                     }
                     onPress={handleSubmit(onSubmit)}
                     variant="primary"
-                    style={[
-                      styles.primaryBtn,
-                      !agreed && styles.loginBtnDisabled,
-                    ]}
-                    disabled={!agreed || loginLoading || isSubmitting}
+                    style={styles.primaryBtn}
+                    disabled={loginLoading || isSubmitting}
                   />
                 </Pressable>
+
+                {/* Legal Links */}
+                <View style={styles.legalLinksContainer}>
+                  <Text style={styles.legalText}>
+                    {t('auth.byLoggingIn', 'By logging in, you agree to our')}{' '}
+                  </Text>
+                  <View style={styles.legalLinksRow}>
+                    <Text style={styles.tosLink} onPress={() => openLegalModal('terms')}>
+                      {t('auth.termsOfService')}
+                    </Text>
+                    <Text style={styles.legalText}> {t('auth.and')} </Text>
+                    <Text style={styles.tosLink} onPress={() => openLegalModal('privacy')}>
+                      {t('auth.privacyPolicy')}
+                    </Text>
+                  </View>
+                </View>
 
                 <Pressable onPress={() => navigation.navigate('SignUp')} style={styles.signupContainer}>
                   <Text style={styles.signupLink}>

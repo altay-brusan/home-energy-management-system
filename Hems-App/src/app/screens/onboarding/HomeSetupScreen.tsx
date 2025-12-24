@@ -11,17 +11,20 @@ import {
   PermissionsAndroid, Platform,
   ScrollView,
   Text,
+  TouchableOpacity,
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
+import { LogOut } from 'lucide-react-native';
 import Geolocation from 'react-native-geolocation-service';
 
-import { Card, CitySelector, CountrySelector, ThemeToggle } from '../../../components';
+import { Card, CitySelector, CountrySelector, ThemeToggle, LanguageSelector } from '../../../components';
 import Input from '../../../components/forms/Input';
 import Button from '../../../components/ui/Button';
 import type { City } from '../../../components/ui/CitySelector/CitySelector';
 import type { Country } from '../../../components/ui/CountrySelector/CountrySelector';
 import { usePlatform } from '../../../hooks/usePlatform';
+import useAuth from '../../../hooks/useAuth';
 import { useOnboardingStore } from '../../../store/onboardingStore';
 import { useSitesStore } from '../../../store/sitesStore';
 import { useThemeStore } from '../../../store/themeStore';
@@ -43,8 +46,10 @@ export default function HomeSetupScreen () {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { setHome } = useOnboardingStore();
-  const { createSite } = useSitesStore();
+  const { createSite, sites } = useSitesStore();
+  const hasSites = sites.length > 0;
   const { isIOS } = usePlatform();
+  const { logout } = useAuth();
   const { show: showToast } = useToastStore();
   const mode = useThemeStore(s => s.mode);
   const isDark = mode === 'dark';
@@ -292,8 +297,31 @@ export default function HomeSetupScreen () {
     <MainLayout>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <View style={styles.root}>
-          <View style={styles.topBar}>
-            <ThemeToggle style={styles.themeToggle} />
+          <View style={[styles.topBar, { justifyContent: 'space-between', paddingHorizontal: 16 }]}>
+            {/* Logout Button - only show when user has no sites (forced to stay here) */}
+            {!hasSites ? (
+              <TouchableOpacity
+                onPress={() => {
+                  Alert.alert(
+                    t('profile.logoutConfirm.title', 'Logout'),
+                    t('profile.logoutConfirm.message', 'Are you sure you want to logout?'),
+                    [
+                      { text: t('common.cancel', 'Cancel'), style: 'cancel' },
+                      { text: t('profile.logout', 'Logout'), style: 'destructive', onPress: logout },
+                    ]
+                  );
+                }}
+                style={{ padding: 8 }}
+              >
+                <LogOut size={22} color={COLORS.textSoft} />
+              </TouchableOpacity>
+            ) : (
+              <View style={{ width: 38 }} />
+            )}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <LanguageSelector />
+              <ThemeToggle style={styles.themeToggle} />
+            </View>
           </View>
 
           <View style={styles.content}>
@@ -422,13 +450,16 @@ export default function HomeSetupScreen () {
                         style={styles.primaryButton}
                         textStyle={styles.primaryButtonText}
                       />
-                      <Button
-                        title={t('homeSetup.goBack')}
-                        onPress={() => navigation.goBack()}
-                        variant="secondary"
-                        style={[styles.secondaryButton, { marginTop: 12 }]}
-                        textStyle={styles.secondaryButtonText}
-                      />
+                      {/* Only show back button if user already has sites (adding another site) */}
+                      {hasSites && (
+                        <Button
+                          title={t('homeSetup.goBack')}
+                          onPress={() => navigation.goBack()}
+                          variant="secondary"
+                          style={[styles.secondaryButton, { marginTop: 12 }]}
+                          textStyle={styles.secondaryButtonText}
+                        />
+                      )}
                     </View>
                   </View>
                 </Card>

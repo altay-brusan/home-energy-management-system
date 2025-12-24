@@ -15,11 +15,11 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Clock } from 'lucide-react-native';
+import { ArrowLeft, Clock, AlertCircle } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors } from '../../../theme/constants';
-import { useTimeOfUseSection } from '../../../hooks/useDeviceSettings';
+import { useTimeOfUseSection, useDeviceSettings } from '../../../hooks/useDeviceSettings';
 import {
   SettingToggle,
   TimelineBar,
@@ -43,14 +43,23 @@ const TimeOfUseScreen: React.FC = () => {
     enabled,
     activeDays,
     timeSlots,
+    timeSlotVisibility,
     toggleEnabled,
     toggleDay,
     updateTimeSlot,
     isLoading,
+    timeOfUseValidationError,
   } = useTimeOfUseSection();
+
+  const { isDirty, canSave } = useDeviceSettings();
 
   const handleUpdatePeriod = (index: number, updates: Partial<TimeSlot>) => {
     updateTimeSlot(index, updates);
+  };
+
+  // Just go back - changes are kept in store, actual save happens in CustomModeScreen
+  const handleDone = () => {
+    navigation.goBack();
   };
 
   // Loading state
@@ -86,7 +95,7 @@ const TimeOfUseScreen: React.FC = () => {
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: insets.bottom + 20 },
+          { paddingBottom: 100 }, // Space for fixed button
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -144,6 +153,21 @@ const TimeOfUseScreen: React.FC = () => {
               </View>
             )}
 
+            {/* Validation Warning */}
+            {timeOfUseValidationError && (
+              <View
+                style={[
+                  styles.warningCard,
+                  { backgroundColor: isDark ? '#FF57571A' : '#FFEBEE' },
+                ]}
+              >
+                <AlertCircle size={20} color="#F44336" />
+                <Text style={[styles.warningText, { color: '#F44336' }]}>
+                  {t(`timeOfUse.validation.${timeOfUseValidationError}`)}
+                </Text>
+              </View>
+            )}
+
             {/* Periods Section Header */}
             <View style={styles.periodHeader}>
               <View style={styles.periodTitleRow}>
@@ -165,6 +189,7 @@ const TimeOfUseScreen: React.FC = () => {
                 index={index}
                 onUpdate={(updates) => handleUpdatePeriod(index, updates)}
                 editable
+                visibility={timeSlotVisibility[index]}
               />
             ))}
 
@@ -188,6 +213,32 @@ const TimeOfUseScreen: React.FC = () => {
           </>
         )}
       </ScrollView>
+
+      {/* Fixed Done Button */}
+      <View
+        style={[
+          styles.saveButtonContainer,
+          {
+            backgroundColor: isDark ? COLORS.dark : COLORS.gray100,
+            paddingBottom: insets.bottom + 16,
+          },
+        ]}
+      >
+        <TouchableOpacity
+          onPress={handleDone}
+          disabled={!canSave && isDirty}
+          style={[
+            styles.saveButton,
+            {
+              backgroundColor: (!isDirty || canSave) ? COLORS.accent : isDark ? COLORS.border : COLORS.gray200,
+            },
+          ]}
+        >
+          <Text style={styles.saveButtonText}>
+            {isDirty ? t('common.done', 'Done') : t('common.back', 'Back')}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -261,6 +312,40 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: 13,
     lineHeight: 20,
+  },
+  warningCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  warningText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  saveButtonContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.1)',
+  },
+  saveButton: {
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

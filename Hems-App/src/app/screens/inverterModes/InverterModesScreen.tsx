@@ -11,6 +11,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -46,8 +47,29 @@ const InverterModesScreen: React.FC = () => {
   const handleModePress = (modeId: string) => {
     const mode = modes.find((m) => m.id === modeId);
     if (mode?.isCustom) {
-      // Navigate directly to CustomModeScreen for custom mode
-      navigation.navigate('CustomMode');
+      // Check if custom mode is already active
+      const isCustomModeActive = activeModeId === modeId;
+
+      if (!isCustomModeActive) {
+        // Show warning dialog for non-active custom mode
+        Alert.alert(
+          t('inverterModes.customModeWarning.title'),
+          t('inverterModes.customModeWarning.message'),
+          [
+            {
+              text: t('common.no'),
+              style: 'cancel',
+            },
+            {
+              text: t('common.yes'),
+              onPress: () => navigation.navigate('CustomMode'),
+            },
+          ]
+        );
+      } else {
+        // Custom mode is already active, navigate directly
+        navigation.navigate('CustomMode');
+      }
     } else {
       // Navigate to detail screen for preset modes
       navigation.navigate('ModeDetail', { modeId });
@@ -207,10 +229,10 @@ const InverterModesScreen: React.FC = () => {
                 <Text style={styles.customBadgeText}>{t('inverterModes.custom')}</Text>
               </View>
               <Text style={[styles.customTitle, { color: COLORS.text }]}>
-                {customMode.name}
+                {t('inverterModes.modes.custom.name')}
               </Text>
               <Text style={[styles.customDesc, { color: COLORS.textSoft }]}>
-                {customMode.description}
+                {t('inverterModes.modes.custom.description')}
               </Text>
               {activeModeId === customMode.id && (
                 <View style={styles.activeIndicator}>

@@ -15,6 +15,7 @@ import { useDeviceSettingsHub } from './useDeviceSettingsHub';
 import {
   DeviceSettingsConfig,
   TimeSlot,
+  TimeSlotVisibility,
   BatterySettingsConfig,
   SystemWorkModeSettings,
   TimeOfUseConfig,
@@ -37,6 +38,10 @@ export interface UseDeviceSettingsReturn {
   isSaving: boolean;
   isDirty: boolean;
   error: string | null;
+
+  // TimeOfUse validation
+  timeOfUseValidationError: string | null;
+  canSave: boolean;
 
   // Auth
   isAdmin: boolean;
@@ -74,6 +79,10 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
   const isSaving = useDeviceSettingsStore((state) => state.isSaving);
   const isDirty = useDeviceSettingsStore((state) => state.isDirty);
   const error = useDeviceSettingsStore((state) => state.error);
+  const timeOfUseValidationError = useDeviceSettingsStore((state) => state.timeOfUseValidationError);
+
+  // Compute canSave
+  const canSave = isDirty && !timeOfUseValidationError;
 
   // Get actions directly from store (stable references)
   const storeFetchSettings = useDeviceSettingsStore((state) => state.fetchSettings);
@@ -240,6 +249,10 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
     isDirty,
     error,
 
+    // TimeOfUse validation
+    timeOfUseValidationError,
+    canSave,
+
     // Auth
     isAdmin,
     canEditMaintenanceSettings: isAdmin,
@@ -328,7 +341,8 @@ export const useSystemWorkModeSection = () => {
 };
 
 export const useTimeOfUseSection = () => {
-  const { timeOfUse, updateSetting, updateTimeSlot, isLoading, isDirty } = useDeviceSettings();
+  const { timeOfUse, updateSetting, updateTimeSlot, isLoading, isDirty, timeOfUseValidationError } = useDeviceSettings();
+  const timeSlotVisibility = useDeviceSettingsStore((state) => state.timeSlotVisibility);
 
   const toggleEnabled = useCallback(() => {
     updateSetting('timeOfUse.enabled', timeOfUse.enabled === 'on' ? 'off' : 'on');
@@ -345,11 +359,13 @@ export const useTimeOfUseSection = () => {
     enabled: timeOfUse.enabled,
     activeDays: timeOfUse.activeDays,
     timeSlots: timeOfUse.timeSlots,
+    timeSlotVisibility,
     toggleEnabled,
     toggleDay,
     updateTimeSlot,
     isLoading,
     isDirty,
+    timeOfUseValidationError,
   };
 };
 

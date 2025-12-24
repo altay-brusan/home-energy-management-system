@@ -27,7 +27,7 @@ import { useI18n } from "../../../hooks/useI18n";
 import { useRoles } from "../../../hooks/useRoles";
 import { useSelectedSiteUtils } from "../../../hooks/useSelectedSite";
 import { useThemeStore } from "../../../store/themeStore";
-import { useSitesStore } from "../../../store/sitesStore";
+import { useSitesStore, useNeedsSetup } from "../../../store/sitesStore";
 import { getThemeColors, SPACING } from "../../../theme/constants";
 import { getStyles } from "./DeviceDetail.styles";
 import { DeviceDetailSkeleton } from "./DeviceDetailSkeleton";
@@ -53,6 +53,7 @@ export default function DeviceDetail() {
   const { isAdmin, hasRole } = useRoles();
   const isAdminUser = isAdmin || hasRole("Administrator");
   const { selectedSite } = useSelectedSiteUtils();
+  const needsSetup = useNeedsSetup();
 
   // Get notifications for badge (must be before useFocusEffect)
   const { notifications, refreshNotifications } = useDeviceNotifications({ isProcessed: false });
@@ -67,6 +68,23 @@ export default function DeviceDetail() {
       refreshNotifications();
     }, [isAdminUser, selectedSite, navigation, refreshNotifications])
   );
+
+  // Redirect users without valid site/device to appropriate setup screen
+  useEffect(() => {
+    // Skip for admin users - they have different flow
+    if (isAdminUser) return;
+
+    if (needsSetup === 'no_sites') {
+      navigation.reset({ index: 0, routes: [{ name: 'HomeSetup' }] });
+    } else if (needsSetup === 'no_selected_site') {
+      navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+    } else if (needsSetup === 'no_device') {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'DeviceSetup', params: { siteId: selectedSite?.id } }],
+      });
+    }
+  }, [needsSetup, isAdminUser, navigation, selectedSite?.id]);
 
 
   const [components, setComponents] = useState<any[]>([]);

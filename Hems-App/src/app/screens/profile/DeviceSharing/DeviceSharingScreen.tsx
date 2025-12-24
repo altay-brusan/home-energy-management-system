@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useCallback, useRef } from 'react';
-import { RefreshControl, View, FlatList, ActivityIndicator, Text } from 'react-native';
+import { RefreshControl, View, FlatList, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import { ArrowLeft } from 'lucide-react-native';
 import { useThemeStore } from '../../../../store/themeStore';
 import { getThemeColors } from '../../../../theme/constants';
 import { makeDeviceSharingStyles } from './DeviceSharingScreen.styles';
@@ -10,7 +11,6 @@ import { useI18n } from '../../../../hooks/useI18n';
 import { useInvitation } from '../../../../hooks/useInvitation';
 
 import {
-  DeviceSharingHeader,
   DeviceSharingForm,
   DeviceSharingUserItem,
 } from './ui';
@@ -41,8 +41,8 @@ export default function DeviceSharingScreen({ navigation }: any) {
     }, [])
   );
 
-  const handleAdd = useCallback(async () => { 
-    await sendInvitation(); 
+  const handleAdd = useCallback(async () => {
+    await sendInvitation();
   }, [sendInvitation]);
 
   const handleCancel = useCallback(() => {
@@ -52,10 +52,10 @@ export default function DeviceSharingScreen({ navigation }: any) {
   const onRefresh = useCallback(async () => {
     if (!isConnected) return;
     setRefreshing(true);
-    try { 
-      await reload(); 
-    } finally { 
-      setRefreshing(false); 
+    try {
+      await reload();
+    } finally {
+      setRefreshing(false);
     }
   }, [isConnected, reload]);
 
@@ -105,46 +105,67 @@ export default function DeviceSharingScreen({ navigation }: any) {
     />
   ), [styles, COLORS, navigation, handleRemoveUser]);
 
+  const ListHeaderContent = useMemo(() => (
+    <View style={styles.listHeaderContent}>
+      <Text style={[styles.sectionTitle, { color: COLORS.text }]}>
+        {t('deviceSharing.subtitle', 'Share your device with family members')}
+      </Text>
+      <DeviceSharingForm
+        COLORS={COLORS}
+        styles={styles}
+        navigation={navigation}
+      />
+      {allUsers.length > 0 && (
+        <Text style={[styles.sharedWithTitle, { color: COLORS.text }]}>
+          {t('deviceSharing.sharedWith', 'Shared With')}
+        </Text>
+      )}
+    </View>
+  ), [styles, COLORS, t, navigation, allUsers.length]);
+
   return (
-    <FlatList
-      style={[styles.container, { paddingTop: insets.top + 16 }]}
-      data={allUsers}
-      extraData={invitations} // Force re-render when invitations object changes (new reference)
-      keyExtractor={(item) => item.id || `invitation-${item.email}`} // Use ID or email as fallback
-      renderItem={renderUser}
-      ItemSeparatorComponent={() => <View style={styles.separator} />}
-      ListEmptyComponent={
-        loading ? (
-          <ActivityIndicator color={COLORS.accent} style={{ marginTop: 40 }} />
-        ) : (
-          <Text style={styles.emptyText}>{t('deviceSharing.noInvitations')}</Text>
-        )
-      }
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          enabled={!!isConnected}
-          colors={[COLORS.accent ?? '#00D1A1']}
-          tintColor={COLORS.accent ?? '#00D1A1'}
-        />
-      }
-      contentContainerStyle={[
-        styles.pageScroll,
-        { paddingBottom: insets.bottom + 80 },
-      ]}
-      ListHeaderComponent={
-        <View style={styles.pageScroll}>
-          <DeviceSharingHeader styles={styles} />
-          <DeviceSharingForm
-            COLORS={COLORS}
-            styles={styles}
-            navigation={navigation}
+    <View style={[styles.container, { backgroundColor: isDark ? COLORS.dark : COLORS.gray100 }]}>
+      {/* Header */}
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <ArrowLeft size={24} color={COLORS.text} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: COLORS.text }]}>
+          {t('deviceSharing.title')}
+        </Text>
+        <View style={{ width: 40 }} />
+      </View>
+
+      <FlatList
+        style={styles.list}
+        data={allUsers}
+        extraData={invitations}
+        keyExtractor={(item) => item.id || `invitation-${item.email}`}
+        renderItem={renderUser}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        ListEmptyComponent={
+          loading ? (
+            <ActivityIndicator color={COLORS.accent} style={{ marginTop: 40 }} />
+          ) : (
+            <Text style={styles.emptyText}>{t('deviceSharing.noInvitations')}</Text>
+          )
+        }
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            enabled={!!isConnected}
+            colors={[COLORS.accent ?? '#00D1A1']}
+            tintColor={COLORS.accent ?? '#00D1A1'}
           />
-        </View>
-      }
-      ListFooterComponent={<View style={{ height: insets.bottom + 40 }} />}
-      showsVerticalScrollIndicator
-    />
+        }
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: insets.bottom + 40 },
+        ]}
+        ListHeaderComponent={ListHeaderContent}
+        showsVerticalScrollIndicator={false}
+      />
+    </View>
   );
 }

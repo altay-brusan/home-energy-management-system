@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, Settings, ChevronRight, DollarSign, Smartphone, Wrench } from 'lucide-react-native';
+import { ArrowLeft, Settings, ChevronRight, DollarSign } from 'lucide-react-native';
+// Hidden for now: Smartphone, Wrench
 import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors } from '../../../theme/constants';
 import { useI18n } from '../../../hooks/useI18n';
@@ -70,7 +71,7 @@ export default function SettingsScreen({ navigation }: any) {
           <ChevronRight size={20} color={COLORS.textSoft} />
         </TouchableOpacity>
 
-        {/* Device Settings Card */}
+        {/* Device Settings Card - Hidden for now
         <TouchableOpacity
           style={[styles.card, { backgroundColor: isDark ? COLORS.surface : COLORS.white }]}
           onPress={() => navigation.navigate('DeviceSettings')}
@@ -89,8 +90,9 @@ export default function SettingsScreen({ navigation }: any) {
           </View>
           <ChevronRight size={20} color={COLORS.textSoft} />
         </TouchableOpacity>
+        */}
 
-        {/* Procedures Card */}
+        {/* Procedures Card - Hidden for now
         <TouchableOpacity
           style={[styles.card, { backgroundColor: isDark ? COLORS.surface : COLORS.white }]}
           onPress={() => navigation.navigate('Procedures')}
@@ -109,6 +111,7 @@ export default function SettingsScreen({ navigation }: any) {
           </View>
           <ChevronRight size={20} color={COLORS.textSoft} />
         </TouchableOpacity>
+        */}
       </ScrollView>
     </View>
   );

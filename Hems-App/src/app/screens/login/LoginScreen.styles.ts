@@ -149,8 +149,22 @@ export function makeLoginStyles(
       borderRadius: 14,
     },
 
-    loginBtnDisabled: {
-      opacity: 0.5,
+    legalLinksContainer: {
+      alignItems: 'center',
+      marginTop: SPACING.md,
+    },
+
+    legalText: {
+      color: COLORS.textSoft,
+      fontSize: TYPOGRAPHY.xs,
+      textAlign: 'center',
+    },
+
+    legalLinksRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexWrap: 'wrap',
     },
 
     signupContainer: {

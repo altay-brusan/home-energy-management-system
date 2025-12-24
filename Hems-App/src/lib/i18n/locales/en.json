@@ -8,6 +8,8 @@
       "dutch": "Dutch",
       "cancel": "Cancel",
       "confirm": "Confirm",
+      "yes": "Yes",
+      "no": "No",
       "save": "Save",
       "delete": "Delete",
       "loading": "Loading...",
@@ -117,6 +119,7 @@
       "termsOfService": "Terms of Service",
       "and": "and",
       "privacyPolicy": "Privacy Policy",
+      "byLoggingIn": "By logging in, you agree to our",
       "forgotPasswordTitle": "Forgot Password",
       "forgotPasswordSubtitle": "Enter your email address and we'll send you a reset code",
       "sendResetCode": "Send Reset Code",
@@ -342,7 +345,9 @@
       }
     },
     "deviceSharing": {
-      "title": "Device Sharing & Authorization",
+      "title": "Device Sharing",
+      "subtitle": "Share your device with family members",
+      "sharedWith": "Shared With",
       "invalidEmail": "Please enter a valid email address.",
       "invitationSent": "Invitation sent successfully.",
       "enterEmail": "Enter email",
@@ -1723,6 +1728,10 @@
   "inverterModes": {
     "title": "Device Modes",
     "subtitle": "Select the most suitable operating mode for your hybrid inverter. Preset modes provide automatic configuration, while custom mode offers full control.",
+    "customModeWarning": {
+      "title": "Advanced Settings",
+      "message": "Custom mode is designed for advanced users. Are you sure you want to continue to custom mode settings?"
+    },
     "presetModes": "Preset Modes",
     "infoText": "Tap on a mode to view details and apply it. Use the custom mode option to manually configure all settings.",
     "selectMode": "Select Mode",
@@ -1733,6 +1742,8 @@
     "tapToConfigure": "Tap to configure",
     "modeApplied": "Mode applied successfully",
     "modeApplyError": "Error applying mode",
+    "applyFailed": "Failed to apply mode. Please try again.",
+    "modeInfoText": "This mode optimizes your system for the selected scenario. Review the settings below before applying.",
     "confirmApply": "Are you sure you want to apply this mode?",
     "custom": "Custom",
     "editSettings": "Edit Settings",
@@ -1789,6 +1800,7 @@
     "settings": {
       "workMode": "Work Mode",
       "battery": "Battery Settings",
+      "batterySettings": "Battery Settings",
       "grid": "Grid Settings",
       "generator": "Generator Settings",
       "advanced": "Advanced Settings",
@@ -1797,11 +1809,13 @@
       "generatorCharging": "Generator Charging",
       "protectionThresholds": "Protection Thresholds",
       "systemWorkMode": "System Work Mode",
+      "workModeStrategy": "Work Mode Strategy",
       "inverterMode": "Inverter Mode",
       "gridPeakShaving": "Grid Peak Shaving",
       "generatorSettings": "Generator Settings",
       "generatorPeakShaving": "Generator Peak Shaving",
       "smartLoad": "Smart Load",
+      "generatorSmartLoad": "Generator & Smart Load",
       "batteryMaintenance": "Battery Maintenance",
       "gridCode": "Grid Code Configuration"
     },
@@ -1985,6 +1999,11 @@
       "fullCoverage": "Periods cover the entire 24-hour day without gaps",
       "colors": "Green: Grid charge | Orange: Generator charge",
       "targetSOC": "Target SOC: Desired battery level during that period"
+    },
+    "validation": {
+      "firstPeriodStart": "First period must start at 00:00",
+      "lastPeriodEnd": "Last period must end at 00:00",
+      "periodGap": "Periods must cover full 24 hours without gaps"
     }
   },
   "legal": {

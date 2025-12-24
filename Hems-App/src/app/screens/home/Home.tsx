@@ -69,6 +69,13 @@ export default function Home () {
     }, [loadSites])
   );
 
+  // Auto-redirect to HomeSetup when no sites exist and not loading
+  useEffect(() => {
+    if (!isLoading && sites.length === 0) {
+      navigation.navigate('HomeSetup');
+    }
+  }, [isLoading, sites.length, navigation]);
+
   useEffect(() => {
     const saveSitesToStorageAndNavigate = async () => {
       try {

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Platform, RefreshControl, SafeAreaView, ScrollView, Text, View, TouchableOpacity } from 'react-native';
 import Svg, { Path, G } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSitesStore, useNeedsSetup } from '../../../store/sitesStore';
 import LinearGradient from 'react-native-linear-gradient';
 import { useDeviceNotifications } from '../../../hooks/useDeviceNotifications';
 import { apiClient } from '../../../api/client/apiClient';
@@ -82,6 +83,8 @@ export default function DashboardScreen (): JSX.Element {
   const [loading, setLoading] = useState(false);
 
   const { selectedSite, getSelectedSiteName } = useSelectedSiteUtils();
+  const needsSetup = useNeedsSetup();
+  const { sites } = useSitesStore();
 
   const { selectedSiteDevice, hasDevice, device, externalDevices, setupInfo, loadSelectedSiteDevice } = useSelectedSiteDevice();
 
@@ -107,6 +110,26 @@ export default function DashboardScreen (): JSX.Element {
       refreshNotifications();
     }, [isAdminUser, selectedSite, siteIdFromParam, navigation, refreshNotifications])
   );
+
+  // Redirect users without valid site/device to appropriate setup screen
+  useEffect(() => {
+    // Skip for admin users - they have different flow
+    if (isAdminUser) return;
+
+    if (needsSetup === 'no_sites') {
+      // User has no sites - go to HomeSetup
+      navigation.reset({ index: 0, routes: [{ name: 'HomeSetup' }] });
+    } else if (needsSetup === 'no_selected_site') {
+      // User has sites but none selected - go to Home to select one
+      navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+    } else if (needsSetup === 'no_device') {
+      // User has site but no device - go to DeviceSetup
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'DeviceSetup', params: { siteId: selectedSite?.id } }],
+      });
+    }
+  }, [needsSetup, isAdminUser, navigation, selectedSite?.id]);
 
   React.useEffect(() => {
     if (isAdminUser) {

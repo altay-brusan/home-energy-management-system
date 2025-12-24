@@ -40,6 +40,19 @@ interface SitesState {
   clearSites: () => Promise<void>;
 }
 
+// Selector hooks for navigation guards
+export const useNeedsSetup = () => useSitesStore((state) => {
+  // User needs setup if they have no sites or no selected site with a device
+  if (state.sites.length === 0) return 'no_sites';
+  if (!state.selectedSite) return 'no_selected_site';
+  if (!state.selectedSite.hasDevice) return 'no_device';
+  return false;
+});
+
+export const useHasValidSiteWithDevice = () => useSitesStore((state) => {
+  return state.selectedSite !== null && state.selectedSite.hasDevice === true;
+});
+
 export const useSitesStore = create<SitesState>((set, get) => ({
   sites: [],
   sitesDashboard: null,

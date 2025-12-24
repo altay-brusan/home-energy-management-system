@@ -36,13 +36,13 @@ export function makeSidebarStyles(isDark: boolean, COLORS: Record<string, string
       zIndex: 900,
     },
     sidebar: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      bottom: 0,
       width: width * 0.85,
-      height: "100%",
-      paddingTop: SPACING.xl,
       paddingHorizontal: SPACING.lg,
       backgroundColor: isDark ? 'rgba(28, 34, 43, 1)' : 'rgba(243, 243, 245, 1)',
-      borderTopRightRadius: 0,
-      borderBottomRightRadius: 0,
       zIndex: 950,
       shadowColor: COLORS.black,
       shadowOpacity: 0.3,
@@ -51,13 +51,12 @@ export function makeSidebarStyles(isDark: boolean, COLORS: Record<string, string
       elevation: 50,
     },
     headerContainer: {
-      marginBottom: SPACING.sm,
+      marginBottom: SPACING.md,
     },
     header: {
-      fontSize: 24,
+      fontSize: 22,
       fontWeight: "700",
       color: COLORS.textSoft,
-      marginBottom: SPACING.xs,
       letterSpacing: 0.3,
     },
 selectedSiteInfo: {
@@ -156,7 +155,7 @@ selectedSiteImage: {
       marginBottom: SPACING.md,
     },
     scrollContent: {
-      paddingBottom: SPACING.xxl,
+      flexGrow: 1,
     },
     loadingOverlay: {
       position: 'absolute',

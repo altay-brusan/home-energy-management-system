@@ -123,16 +123,16 @@ export const SolarLineChart: React.FC<SolarLineChartProps> = ({
   }), [innerWidth, findNearestDataPoint, padding.left]);
 
   // X-axis labels based on range
-  const getXLabels = useCallback((): { label: string; index: number }[] => {
+  const getXLabels = useCallback((): { label: string; index: number; hour?: number }[] => {
     switch (range) {
       case 'Day':
-        // Show 00:00, 06:00, 12:00, 18:00, 23:00
+        // Show 00:00, 06:00, 12:00, 18:00, 23:00 - use hour for positioning
         return [
-          { label: '00:00', index: 0 },
-          { label: '06:00', index: 6 },
-          { label: '12:00', index: 12 },
-          { label: '18:00', index: 18 },
-          { label: '23:00', index: 23 },
+          { label: '00:00', index: 0, hour: 0 },
+          { label: '06:00', index: 6, hour: 6 },
+          { label: '12:00', index: 12, hour: 12 },
+          { label: '18:00', index: 18, hour: 18 },
+          { label: '23:00', index: 23, hour: 23 },
         ];
       case 'Week':
         // Show all days
@@ -150,6 +150,16 @@ export const SolarLineChart: React.FC<SolarLineChartProps> = ({
         return [];
     }
   }, [range, data]);
+
+  // Get X position for label (handles Day view differently)
+  const getLabelX = useCallback((item: { label: string; index: number; hour?: number }) => {
+    if (range === 'Day' && item.hour !== undefined) {
+      // For Day view, position based on 24-hour span (0-23)
+      return padding.left + (item.hour / 23) * innerWidth;
+    }
+    // For other views, use data index
+    return indexToX(item.index);
+  }, [range, padding.left, innerWidth, indexToX]);
 
   // Y-axis labels
   const yLabels = useMemo(() => {
@@ -338,7 +348,7 @@ export const SolarLineChart: React.FC<SolarLineChartProps> = ({
 
           {/* X-axis labels */}
           {xLabels.map((item, i) => {
-            const x = indexToX(item.index);
+            const x = getLabelX(item);
             const textAnchor = i === 0 ? 'start' : i === xLabels.length - 1 ? 'end' : 'middle';
             return (
               <SvgText

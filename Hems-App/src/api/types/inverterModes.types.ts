@@ -112,6 +112,19 @@ export interface TimeSlot {
 }
 
 /**
+ * TimeSlot Visibility - API'den gelen visible parametresi
+ */
+export interface TimeSlotVisibility {
+  startTime: boolean;
+  endTime: boolean;
+  gridCharge: boolean;
+  genCharge: boolean;
+  maxDischarge: boolean;
+  minBatterySOC: boolean;
+  minBatteryVoltage: boolean;
+}
+
+/**
  * ActiveDays
  */
 export interface ActiveDays {

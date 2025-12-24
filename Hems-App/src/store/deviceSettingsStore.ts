@@ -11,6 +11,7 @@ import {
   DeviceSettingsConfig,
   DEFAULT_DEVICE_SETTINGS,
   TimeSlot,
+  TimeSlotVisibility,
 } from '../api/types/inverterModes.types';
 import {
   DeviceSettingsTreeVm,
@@ -50,6 +51,9 @@ interface DeviceSettingsState {
   // Parameter metadata (ID'ler ve original değerler)
   parameterMetadata: Record<string, ParameterMetadata>;
 
+  // TimeSlot visibility (API'den gelen visible değerleri)
+  timeSlotVisibility: TimeSlotVisibility[];
+
   // Status
   isLoading: boolean;
   isSaving: boolean;
@@ -59,6 +63,9 @@ interface DeviceSettingsState {
   // Dirty tracking
   isDirty: boolean;
   dirtyFields: Set<string>;
+
+  // TimeOfUse validation
+  timeOfUseValidationError: string | null;
 
   // Actions
   fetchSettings: (deviceId: string) => Promise<void>;
@@ -99,10 +106,63 @@ const setNestedValue = <T>(obj: T, path: string, value: any): T => {
   return result;
 };
 
+// Default TimeSlot visibility (all visible)
+const DEFAULT_TIMESLOT_VISIBILITY: TimeSlotVisibility = {
+  startTime: true,
+  endTime: true,
+  gridCharge: true,
+  genCharge: true,
+  maxDischarge: true,
+  minBatterySOC: true,
+  minBatteryVoltage: true,
+};
+
+// Helper: Extract TimeSlot visibility from API tree
+const extractTimeSlotVisibility = (tree: DeviceSettingsTreeVm): TimeSlotVisibility[] => {
+  const visibility: TimeSlotVisibility[] = Array(6).fill(null).map(() => ({ ...DEFAULT_TIMESLOT_VISIBILITY }));
+
+  // Map API parameter names to visibility keys
+  const paramToVisibilityKey: Record<string, keyof TimeSlotVisibility> = {
+    'Start': 'startTime',
+    'End': 'endTime',
+    'GridCharge': 'gridCharge',
+    'GenCharge': 'genCharge',
+    'MaxDischarge': 'maxDischarge',
+    'MinBatterySOC': 'minBatterySOC',
+    'MinBatteryVoltage': 'minBatteryVoltage',
+  };
+
+  const processGroup = (group: ParameterGroupTreeDto) => {
+    // Check if this is a TimeSlot group (e.g., "TimeSlot1", "TimeSlot6")
+    const timeSlotMatch = group.name.match(/^TimeSlot(\d)$/);
+    if (timeSlotMatch) {
+      const slotIndex = parseInt(timeSlotMatch[1], 10) - 1; // 0-indexed
+      if (slotIndex >= 0 && slotIndex < 6) {
+        // Process parameters in this TimeSlot group
+        group.parameters.forEach((param) => {
+          // Extract the parameter type (e.g., "TimeSlot1GridCharge" -> "GridCharge")
+          const paramType = param.name.replace(`TimeSlot${slotIndex + 1}`, '');
+          const visibilityKey = paramToVisibilityKey[paramType];
+          if (visibilityKey && param.visible !== undefined) {
+            visibility[slotIndex][visibilityKey] = param.visible;
+          }
+        });
+      }
+    }
+
+    // Recursively process children
+    group.children.forEach(processGroup);
+  };
+
+  tree.parameterGroups.forEach(processGroup);
+
+  return visibility;
+};
+
 // Helper: Transform API tree to app settings
 const transformApiTreeToSettings = (
   tree: DeviceSettingsTreeVm
-): { settings: DeviceSettingsConfig; metadata: Record<string, ParameterMetadata> } => {
+): { settings: DeviceSettingsConfig; metadata: Record<string, ParameterMetadata>; visibility: TimeSlotVisibility[] } => {
   const settings: DeviceSettingsConfig = JSON.parse(JSON.stringify(DEFAULT_DEVICE_SETTINGS));
   const metadata: Record<string, ParameterMetadata> = {};
 
@@ -153,7 +213,10 @@ const transformApiTreeToSettings = (
 
   tree.parameterGroups.forEach(processGroup);
 
-  return { settings, metadata };
+  // Extract visibility
+  const visibility = extractTimeSlotVisibility(tree);
+
+  return { settings, metadata, visibility };
 };
 
 // Helper: Get changed parameters for saving
@@ -218,6 +281,28 @@ const getChangedParameters = (
   return changes;
 };
 
+// Helper: Validate TimeOfUse 24-hour coverage
+const validateTimeOfUseCoverage = (timeSlots: TimeSlot[]): string | null => {
+  // 1. First period must start at 00:00
+  if (timeSlots[0].startTime !== '00:00') {
+    return 'firstPeriodStart';
+  }
+
+  // 2. Last period must end at 00:00 (midnight = next day)
+  if (timeSlots[5].endTime !== '00:00') {
+    return 'lastPeriodEnd';
+  }
+
+  // 3. Each period's end time must match next period's start time
+  for (let i = 0; i < 5; i++) {
+    if (timeSlots[i].endTime !== timeSlots[i + 1].startTime) {
+      return 'periodGap';
+    }
+  }
+
+  return null; // Valid
+};
+
 // Create Store
 export const useDeviceSettingsStore = create<DeviceSettingsState>()(
   persist(
@@ -227,12 +312,14 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
       deviceId: null,
       settings: JSON.parse(JSON.stringify(DEFAULT_DEVICE_SETTINGS)),
       parameterMetadata: {},
+      timeSlotVisibility: Array(6).fill(null).map(() => ({ ...DEFAULT_TIMESLOT_VISIBILITY })),
       isLoading: false,
       isSaving: false,
       error: null,
       lastFetchedAt: null,
       isDirty: false,
       dirtyFields: new Set<string>(),
+      timeOfUseValidationError: null,
 
       // Fetch settings from API
       fetchSettings: async (deviceId: string) => {
@@ -248,16 +335,21 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
         try {
           console.log('[DeviceSettings] Fetching tree for deviceId:', deviceId);
           const tree = await deviceSettingsService.getTree(deviceId);
-          const { settings, metadata } = transformApiTreeToSettings(tree);
+          const { settings, metadata, visibility } = transformApiTreeToSettings(tree);
+
+          // Validate initial state
+          const validationError = validateTimeOfUseCoverage(settings.timeOfUse.timeSlots);
 
           set({
             apiTree: tree,
             settings,
             parameterMetadata: metadata,
+            timeSlotVisibility: visibility,
             isLoading: false,
             lastFetchedAt: Date.now(),
             isDirty: false,
             dirtyFields: new Set<string>(),
+            timeOfUseValidationError: validationError,
           });
           console.log('[DeviceSettings] Fetch completed successfully');
         } catch (err: any) {
@@ -372,19 +464,27 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
           }
         });
 
+        // Validate reset state
+        const validationError = validateTimeOfUseCoverage(settings.timeOfUse.timeSlots);
+
         set({
           settings,
           isDirty: false,
           dirtyFields: new Set<string>(),
+          timeOfUseValidationError: validationError,
         });
       },
 
       // Reset to default values
       resetToDefaults: () => {
+        const defaultSettings = JSON.parse(JSON.stringify(DEFAULT_DEVICE_SETTINGS));
+        const validationError = validateTimeOfUseCoverage(defaultSettings.timeOfUse.timeSlots);
+
         set({
-          settings: JSON.parse(JSON.stringify(DEFAULT_DEVICE_SETTINGS)),
+          settings: defaultSettings,
           isDirty: true,
           dirtyFields: new Set(ALL_MAPPINGS.map((m) => m.storePath)),
+          timeOfUseValidationError: validationError,
         });
       },
 
@@ -430,7 +530,7 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
         });
       },
 
-      // Update TimeSlot
+      // Update TimeSlot with auto-sync and validation
       updateTimeSlot: (slotIndex: number, updates: Partial<TimeSlot>) => {
         const { settings, dirtyFields } = get();
         const newTimeSlots = [...settings.timeOfUse.timeSlots] as DeviceSettingsConfig['timeOfUse']['timeSlots'];
@@ -440,6 +540,18 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
         Object.keys(updates).forEach((key) => {
           newDirtyFields.add(`timeOfUse.timeSlots.${slotIndex}.${key}`);
         });
+
+        // AUTO-SYNC: When endTime changes, update next slot's startTime
+        if (updates.endTime !== undefined && slotIndex < 5) {
+          newTimeSlots[slotIndex + 1] = {
+            ...newTimeSlots[slotIndex + 1],
+            startTime: updates.endTime,
+          };
+          newDirtyFields.add(`timeOfUse.timeSlots.${slotIndex + 1}.startTime`);
+        }
+
+        // Run validation
+        const validationError = validateTimeOfUseCoverage(newTimeSlots);
 
         set({
           settings: {
@@ -451,6 +563,7 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
           },
           isDirty: true,
           dirtyFields: newDirtyFields,
+          timeOfUseValidationError: validationError,
         });
       },
 
@@ -494,3 +607,11 @@ export const useMaintenanceSettings = () =>
 // TimeSlot selector
 export const useTimeSlot = (index: number) =>
   useDeviceSettingsStore((state) => state.settings.timeOfUse.timeSlots[index]);
+
+// TimeOfUse validation selector
+export const useTimeOfUseValidationError = () =>
+  useDeviceSettingsStore((state) => state.timeOfUseValidationError);
+
+// TimeSlot visibility selector
+export const useTimeSlotVisibility = () =>
+  useDeviceSettingsStore((state) => state.timeSlotVisibility);

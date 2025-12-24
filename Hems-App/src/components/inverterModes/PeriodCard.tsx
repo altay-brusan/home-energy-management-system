@@ -18,13 +18,14 @@ import MaterialIcons from '@react-native-vector-icons/material-icons';
 import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../store/themeStore';
 import { getThemeColors } from '../../theme/constants';
-import { TimeSlot, DEVICE_SETTINGS_VALIDATION } from '../../api/types/inverterModes.types';
+import { TimeSlot, TimeSlotVisibility, DEVICE_SETTINGS_VALIDATION } from '../../api/types/inverterModes.types';
 
 interface PeriodCardProps {
   period: TimeSlot;
   index: number;
   onUpdate: (updates: Partial<TimeSlot>) => void;
   editable?: boolean;
+  visibility?: TimeSlotVisibility;
 }
 
 // Time Picker Modal Component
@@ -185,11 +186,23 @@ const SimpleSlider: React.FC<{
   );
 };
 
+// Default visibility (all visible)
+const DEFAULT_VISIBILITY: TimeSlotVisibility = {
+  startTime: true,
+  endTime: true,
+  gridCharge: true,
+  genCharge: true,
+  maxDischarge: true,
+  minBatterySOC: true,
+  minBatteryVoltage: true,
+};
+
 const PeriodCard: React.FC<PeriodCardProps> = ({
   period,
   index,
   onUpdate,
   editable = true,
+  visibility = DEFAULT_VISIBILITY,
 }) => {
   const { t } = useTranslation();
   const mode = useThemeStore((s) => s.mode);
@@ -200,6 +213,9 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
   const [showEndPicker, setShowEndPicker] = useState(false);
 
   const validation = DEVICE_SETTINGS_VALIDATION;
+
+  // Merge with defaults to ensure all keys exist
+  const vis = { ...DEFAULT_VISIBILITY, ...visibility };
 
   return (
     <View
@@ -224,92 +240,110 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
       </View>
 
       {/* Time Range */}
-      <View style={styles.timeRow}>
-        <TouchableOpacity
-          onPress={() => editable && setShowStartPicker(true)}
-          style={[styles.timeButton, { backgroundColor: isDark ? COLORS.border : COLORS.gray100 }]}
-          disabled={!editable}
-        >
-          <Text style={[styles.timeLabel, { color: COLORS.textSoft }]}>{t('timeOfUse.startTime')}</Text>
-          <Text style={[styles.timeValue, { color: COLORS.text }]}>{period.startTime}</Text>
-        </TouchableOpacity>
+      {(vis.startTime || vis.endTime) && (
+        <View style={styles.timeRow}>
+          {vis.startTime && (
+            <TouchableOpacity
+              onPress={() => editable && setShowStartPicker(true)}
+              style={[styles.timeButton, { backgroundColor: isDark ? COLORS.border : COLORS.gray100 }]}
+              disabled={!editable}
+            >
+              <Text style={[styles.timeLabel, { color: COLORS.textSoft }]}>{t('timeOfUse.startTime')}</Text>
+              <Text style={[styles.timeValue, { color: COLORS.text }]}>{period.startTime}</Text>
+            </TouchableOpacity>
+          )}
 
-        <MaterialIcons name="arrow-forward" size={20} color={COLORS.textSoft} />
+          {vis.startTime && vis.endTime && (
+            <MaterialIcons name="arrow-forward" size={20} color={COLORS.textSoft} />
+          )}
 
-        <TouchableOpacity
-          onPress={() => editable && setShowEndPicker(true)}
-          style={[styles.timeButton, { backgroundColor: isDark ? COLORS.border : COLORS.gray100 }]}
-          disabled={!editable}
-        >
-          <Text style={[styles.timeLabel, { color: COLORS.textSoft }]}>{t('timeOfUse.endTime')}</Text>
-          <Text style={[styles.timeValue, { color: COLORS.text }]}>{period.endTime}</Text>
-        </TouchableOpacity>
-      </View>
+          {vis.endTime && (
+            <TouchableOpacity
+              onPress={() => editable && setShowEndPicker(true)}
+              style={[styles.timeButton, { backgroundColor: isDark ? COLORS.border : COLORS.gray100 }]}
+              disabled={!editable}
+            >
+              <Text style={[styles.timeLabel, { color: COLORS.textSoft }]}>{t('timeOfUse.endTime')}</Text>
+              <Text style={[styles.timeValue, { color: COLORS.text }]}>{period.endTime}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
 
       {/* Grid Charge Toggle */}
-      <View style={styles.settingRow}>
-        <Text style={[styles.settingLabel, { color: COLORS.text }]}>{t('timeOfUse.gridCharge')}</Text>
-        <Switch
-          value={period.gridCharge === 'on'}
-          onValueChange={(value) => {
-            if (editable) onUpdate({ gridCharge: value ? 'on' : 'off' });
-          }}
-          disabled={!editable}
-          thumbColor={period.gridCharge === 'on' ? COLORS.accent : '#ccc'}
-          trackColor={{ false: '#ccc', true: `${COLORS.accent}66` }}
-        />
-      </View>
+      {vis.gridCharge && (
+        <View style={styles.settingRow}>
+          <Text style={[styles.settingLabel, { color: COLORS.text }]}>{t('timeOfUse.gridCharge')}</Text>
+          <Switch
+            value={period.gridCharge === 'on'}
+            onValueChange={(value) => {
+              if (editable) onUpdate({ gridCharge: value ? 'on' : 'off' });
+            }}
+            disabled={!editable}
+            thumbColor={period.gridCharge === 'on' ? COLORS.accent : '#ccc'}
+            trackColor={{ false: '#ccc', true: `${COLORS.accent}66` }}
+          />
+        </View>
+      )}
 
       {/* Gen Charge Toggle */}
-      <View style={styles.settingRow}>
-        <Text style={[styles.settingLabel, { color: COLORS.text }]}>{t('timeOfUse.genCharge')}</Text>
-        <Switch
-          value={period.genCharge === 'on'}
-          onValueChange={(value) => {
-            if (editable) onUpdate({ genCharge: value ? 'on' : 'off' });
-          }}
-          disabled={!editable}
-          thumbColor={period.genCharge === 'on' ? '#FF9800' : '#ccc'}
-          trackColor={{ false: '#ccc', true: '#FF980066' }}
-        />
-      </View>
+      {vis.genCharge && (
+        <View style={styles.settingRow}>
+          <Text style={[styles.settingLabel, { color: COLORS.text }]}>{t('timeOfUse.genCharge')}</Text>
+          <Switch
+            value={period.genCharge === 'on'}
+            onValueChange={(value) => {
+              if (editable) onUpdate({ genCharge: value ? 'on' : 'off' });
+            }}
+            disabled={!editable}
+            thumbColor={period.genCharge === 'on' ? '#FF9800' : '#ccc'}
+            trackColor={{ false: '#ccc', true: '#FF980066' }}
+          />
+        </View>
+      )}
 
       {/* Min Battery SOC */}
-      <SimpleSlider
-        label={t('timeOfUse.minBatterySOC', 'Min Battery SOC')}
-        value={period.minBatterySOC}
-        onChange={(value) => editable && onUpdate({ minBatterySOC: value })}
-        min={0}
-        max={100}
-        step={5}
-        unit="%"
-        disabled={!editable}
-      />
+      {vis.minBatterySOC && (
+        <SimpleSlider
+          label={t('timeOfUse.minBatterySOC', 'Min Battery SOC')}
+          value={period.minBatterySOC}
+          onChange={(value) => editable && onUpdate({ minBatterySOC: value })}
+          min={0}
+          max={100}
+          step={5}
+          unit="%"
+          disabled={!editable}
+        />
+      )}
 
       {/* Max Discharge Power */}
-      <SimpleSlider
-        label={t('timeOfUse.maxDischargePower', 'Max Discharge')}
-        value={period.maxDischarge}
-        onChange={(value) => editable && onUpdate({ maxDischarge: value })}
-        min={validation.power.maxDischarge.min}
-        max={validation.power.maxDischarge.max}
-        step={validation.power.maxDischarge.step}
-        unit="W"
-        disabled={!editable}
-      />
+      {vis.maxDischarge && (
+        <SimpleSlider
+          label={t('timeOfUse.maxDischargePower', 'Max Discharge')}
+          value={period.maxDischarge}
+          onChange={(value) => editable && onUpdate({ maxDischarge: value })}
+          min={validation.power.maxDischarge.min}
+          max={validation.power.maxDischarge.max}
+          step={validation.power.maxDischarge.step}
+          unit="W"
+          disabled={!editable}
+        />
+      )}
 
-      {/* Min Battery Voltage (YENİ) */}
-      <SimpleSlider
-        label={t('timeOfUse.minBatteryVoltage', 'Min Battery Voltage')}
-        value={period.minBatteryVoltage}
-        onChange={(value) => editable && onUpdate({ minBatteryVoltage: value })}
-        min={validation.voltage.minBattery.min}
-        max={validation.voltage.minBattery.max}
-        step={validation.voltage.minBattery.step}
-        unit="V"
-        disabled={!editable}
-        color="#9C27B0"
-      />
+      {/* Min Battery Voltage */}
+      {vis.minBatteryVoltage && (
+        <SimpleSlider
+          label={t('timeOfUse.minBatteryVoltage', 'Min Battery Voltage')}
+          value={period.minBatteryVoltage}
+          onChange={(value) => editable && onUpdate({ minBatteryVoltage: value })}
+          min={validation.voltage.minBattery.min}
+          max={validation.voltage.minBattery.max}
+          step={validation.voltage.minBattery.step}
+          unit="V"
+          disabled={!editable}
+          color="#9C27B0"
+        />
+      )}
 
       {/* Time Picker Modals */}
       <TimePickerModal

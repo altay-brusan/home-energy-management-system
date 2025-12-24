@@ -4,9 +4,11 @@ import {
   Animated,
   Dimensions,
   ScrollView,
+  View,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useThemeStore } from "../../../../../store/themeStore";
 import { getThemeColors } from "../../../../../theme/constants";
 import { makeSidebarStyles } from "./Sidebar.styles";
@@ -26,6 +28,7 @@ type RootStackParamList = {
 const Sidebar = forwardRef((props, ref) => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
 
   const { sites, selectedSite, getUserSites, selectSiteById } = useSitesStore();
 
@@ -98,7 +101,10 @@ const Sidebar = forwardRef((props, ref) => {
             style={[styles.sidebar, { transform: [{ translateX }] }]}
           >
             <ScrollView
-              contentContainerStyle={styles.scrollContent}
+              contentContainerStyle={[
+                styles.scrollContent,
+                { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24 }
+              ]}
               showsVerticalScrollIndicator={false}
               bounces={false}
             >
