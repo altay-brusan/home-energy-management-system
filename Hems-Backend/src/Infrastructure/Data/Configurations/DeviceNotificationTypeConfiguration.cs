@@ -28,6 +28,10 @@ public class DeviceNotificationTypeConfiguration : IEntityTypeConfiguration<Devi
             .HasMaxLength(50)
             .IsRequired();
 
+        builder.Property(t => t.Severity)
+            .HasMaxLength(20)
+            .IsRequired();
+
         builder.Property(t => t.IsActive)
             .IsRequired()
             .HasDefaultValue(true);
@@ -35,6 +39,7 @@ public class DeviceNotificationTypeConfiguration : IEntityTypeConfiguration<Devi
         // Indexes for performance
         builder.HasIndex(x => x.Code).IsUnique();
         builder.HasIndex(x => x.Category);
+        builder.HasIndex(x => x.Severity);
         builder.HasIndex(x => x.IsActive);
     }
 }
