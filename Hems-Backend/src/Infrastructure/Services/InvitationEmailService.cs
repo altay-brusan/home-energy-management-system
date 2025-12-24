@@ -29,7 +29,7 @@ public class InvitationEmailService : IInvitationEmailService
         {
             _logger.LogInformation("🚀 Starting to send invitation email to {Email} for site {SiteName}", email, siteName);
             
-            var subject = $"{ownerName} size {siteName} evini paylaştı";
+            var subject = $"{ownerName} has shared {siteName} home with you";
             
             var htmlMessage = GenerateInvitationEmailTemplate(ownerName, siteName, token,_smtpSettings.InvitationUrl);
             Console.WriteLine(htmlMessage);
@@ -55,143 +55,80 @@ public class InvitationEmailService : IInvitationEmailService
 
         return $@"
 <!DOCTYPE html>
-<html lang=""tr"">
+<html lang=""en"">
 <head>
     <meta charset=""UTF-8"">
     <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
-    <title>Ev Paylaşım Daveti</title>
-    <style>
-        body {{
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-        }}
-        .container {{
-            max-width: 600px;
-            margin: 40px auto;
-            background-color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }}
-        .header {{
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #ffffff;
-            padding: 30px;
-            text-align: center;
-        }}
-        .header h1 {{
-            margin: 0;
-            font-size: 24px;
-            font-weight: 600;
-        }}
-        .content {{
-            padding: 40px 30px;
-            color: #333333;
-        }}
-        .content p {{
-            line-height: 1.6;
-            margin: 15px 0;
-            font-size: 16px;
-        }}
-        .token-box {{
-            background-color: #f8f9fa;
-            border: 2px dashed #667eea;
-            border-radius: 8px;
-            padding: 25px;
-            text-align: center;
-            margin: 30px 0;
-        }}
-        .token-label {{
-            color: #666;
-            font-size: 14px;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }}
-        .token {{
-            font-size: 36px;
-            font-weight: bold;
-            color: #667eea;
-            letter-spacing: 8px;
-            font-family: 'Courier New', monospace;
-        }}
-        .cta-button {{
-            display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #ffffff;
-            text-decoration: none;
-            padding: 15px 40px;
-            border-radius: 5px;
-            font-weight: 600;
-            margin-top: 20px;
-            transition: transform 0.2s;
-        }}
-        .cta-button:hover {{
-            transform: translateY(-2px);
-        }}
-        .info-box {{
-            background-color: #e7f3ff;
-            border-left: 4px solid #667eea;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 4px;
-        }}
-        .footer {{
-            background-color: #f8f9fa;
-            padding: 20px;
-            text-align: center;
-            color: #666;
-            font-size: 14px;
-        }}
-        .highlight {{
-            color: #667eea;
-            font-weight: 600;
-        }}
-    </style>
+    <title>Home Sharing Invitation</title>
 </head>
-<body>
-    <div class=""container"">
-        <div class=""header"">
-            <h1>🏠 Ev Paylaşım Daveti</h1>
-        </div>
-        <div class=""content"">
-            <p>Merhaba,</p>
-            <p>
-                <span class=""highlight"">{ownerName}</span> sizinle 
-                <span class=""highlight"">{siteName}</span> evini paylaştı.
-            </p>
-            <div class=""info-box"">
-                <p style=""margin: 0;"">
-                    Bu paylaşımı kabul ederek eve ait cihazları görüntüleyebilir ve 
-                    enerji tüketim verilerine erişebilirsiniz.
-                </p>
-            </div>
-            <p>
-                Paylaşımı kabul etmek için mobil uygulamaya giriş yapın ve 
-                aşağıdaki <strong>6 haneli kodu</strong> kullanın:
-            </p>
-            <div class=""token-box"">
-                <div class=""token-label"">Davet Kodu</div>
-                <div class=""token"">{token}</div>
-            </div>
-            <p style=""color: #666; font-size: 14px;"">
-                ⏰ Bu kod 10 dakika içerisinde benzersizdir ve güvenlik amacıyla 
-                her davetiye için farklı bir kod oluşturulmaktadır.
-            </p>
-            <div style=""text-align: center;"">
-                <a href=""{fallback}"" class=""cta-button"" style=""display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; padding: 15px 40px; border-radius: 5px; font-weight: 600; margin-top: 20px;"">Uygulamaya Git</a>
-            </div>
-            <p style=""text-align: center; color: #888; font-size: 12px; margin-top: 15px; word-break: break-all;"">
-                Veya bu linke tıklayın: <a href=""{fallback}"" style=""color: #667eea;"">{fallback}</a>
-            </p>
-        </div>
-        <div class=""footer"">
-            <p>Bu daveti kabul etmek istemiyorsanız, bu e-postayı görmezden gelebilirsiniz.</p>
-            <p style=""margin-top: 10px;"">© 2025 Residential EMS. Tüm hakları saklıdır.</p>
-        </div>
-    </div>
+<body style=""margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f5f5f5;"">
+    <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" style=""width: 100%; background-color: #f5f5f5;"">
+        <tr>
+            <td style=""padding: 20px 10px;"">
+                <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" style=""max-width: 600px; width: 100%; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden;"">
+                    <!-- Header -->
+                    <tr>
+                        <td style=""background-color: #00A270; padding: 30px 20px; text-align: center;"">
+                            <h1 style=""margin: 0; color: #ffffff; font-size: 22px; font-weight: 600;"">Green Power Energy</h1>
+                        </td>
+                    </tr>
+                    <!-- Content -->
+                    <tr>
+                        <td style=""padding: 30px 20px; background-color: #ffffff;"">
+                            <h2 style=""margin: 0 0 20px 0; color: #00A270; font-size: 18px; text-align: center;"">Home Sharing Invitation</h2>
+                            <p style=""margin: 0 0 15px 0; color: #333333; font-size: 15px; line-height: 1.6;"">Hello,</p>
+                            <p style=""margin: 0 0 15px 0; color: #333333; font-size: 15px; line-height: 1.6;"">
+                                <strong style=""color: #00A270;"">{ownerName}</strong> has shared
+                                <strong style=""color: #00A270;"">{siteName}</strong> home with you.
+                            </p>
+                            <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" style=""width: 100%; background-color: #f0faf6; border-left: 4px solid #00A270; margin: 20px 0;"">
+                                <tr>
+                                    <td style=""padding: 15px;"">
+                                        <p style=""margin: 0; color: #333333; font-size: 14px; line-height: 1.5;"">
+                                            By accepting this invitation, you can view devices and access energy consumption data for this home.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style=""margin: 0 0 20px 0; color: #333333; font-size: 15px; line-height: 1.6;"">
+                                To accept the invitation, sign in to the mobile app and use the <strong>6-digit code</strong> below:
+                            </p>
+                            <!-- Token Box -->
+                            <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" style=""width: 100%; background-color: #f8f9fa; border: 2px dashed #00A270; border-radius: 8px; margin: 20px 0;"">
+                                <tr>
+                                    <td style=""padding: 25px; text-align: center;"">
+                                        <p style=""margin: 0 0 10px 0; color: #666666; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;"">Invitation Code</p>
+                                        <p style=""margin: 0; color: #00A270; font-size: 32px; font-weight: bold; letter-spacing: 6px; font-family: 'Courier New', monospace;"">{token}</p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style=""margin: 20px 0; color: #666666; font-size: 13px; line-height: 1.5;"">
+                                This code is valid for 10 minutes and is uniquely generated for each invitation.
+                            </p>
+                            <!-- CTA Button -->
+                            <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" style=""width: 100%; margin: 25px 0;"">
+                                <tr>
+                                    <td style=""text-align: center;"">
+                                        <a href=""{fallback}"" style=""display: inline-block; background-color: #00A270; color: #ffffff; text-decoration: none; padding: 14px 35px; border-radius: 5px; font-size: 15px; font-weight: 600;"">Open App</a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style=""margin: 15px 0 0 0; color: #888888; font-size: 12px; text-align: center; word-break: break-all;"">
+                                Or click this link: <a href=""{fallback}"" style=""color: #00A270;"">{fallback}</a>
+                            </p>
+                        </td>
+                    </tr>
+                    <!-- Footer -->
+                    <tr>
+                        <td style=""background-color: #f8f9fa; padding: 20px; text-align: center;"">
+                            <p style=""margin: 0 0 10px 0; color: #666666; font-size: 13px;"">If you do not wish to accept this invitation, you can ignore this email.</p>
+                            <p style=""margin: 0; color: #888888; font-size: 12px;"">© 2025 Green Power Energy. All rights reserved.</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>";
     }
