@@ -280,15 +280,15 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<DateTime>("DeviceLocalTime")
+                        .HasColumnType("timestamp without time zone");
+
                     b.Property<DateTimeOffset>("LastModified")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("LastModifiedBy")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
-
-                    b.Property<DateTime>("RequestDate")
-                        .HasColumnType("timestamp without time zone");
 
                     b.Property<Guid>("ThingsBoardDeviceId")
                         .HasColumnType("uuid");
@@ -298,17 +298,17 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.HasIndex("DataType")
                         .HasDatabaseName("IX_DeviceData_DataType");
 
-                    b.HasIndex("RequestDate")
-                        .HasDatabaseName("IX_DeviceData_RequestDate");
+                    b.HasIndex("DeviceLocalTime")
+                        .HasDatabaseName("IX_DeviceData_DeviceLocalTime");
 
                     b.HasIndex("ThingsBoardDeviceId")
                         .HasDatabaseName("IX_DeviceData_DeviceId");
 
-                    b.HasIndex("ThingsBoardDeviceId", "RequestDate")
-                        .HasDatabaseName("IX_DeviceData_DeviceId_RequestDate");
+                    b.HasIndex("ThingsBoardDeviceId", "DeviceLocalTime")
+                        .HasDatabaseName("IX_DeviceData_DeviceId_DeviceLocalTime");
 
-                    b.HasIndex("ThingsBoardDeviceId", "DataType", "RequestDate")
-                        .HasDatabaseName("IX_DeviceData_DeviceId_DataType_RequestDate");
+                    b.HasIndex("ThingsBoardDeviceId", "DataType", "DeviceLocalTime")
+                        .HasDatabaseName("IX_DeviceData_DeviceId_DataType_DeviceLocalTime");
 
                     b.ToTable("DeviceData", (string)null);
                 });
@@ -364,13 +364,13 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("DataDateTime")
-                        .HasColumnType("timestamp without time zone");
-
                     b.Property<string>("DataType")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("DeviceLocalTime")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<double?>("GeneratorEnergyKWh")
                         .HasPrecision(18, 3)
@@ -431,13 +431,13 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DataDateTime")
-                        .HasDatabaseName("IX_DeviceEnergyData_DataDateTime");
+                    b.HasIndex("DeviceLocalTime")
+                        .HasDatabaseName("IX_DeviceEnergyData_DeviceLocalTime");
 
                     b.HasIndex("ThingsBoardDeviceId");
 
-                    b.HasIndex("ThingsBoardDeviceId", "DataDateTime", "DataType")
-                        .HasDatabaseName("IX_DeviceEnergyData_ThingsBoardDeviceId_DataDateTime_DataType");
+                    b.HasIndex("ThingsBoardDeviceId", "DeviceLocalTime", "DataType")
+                        .HasDatabaseName("IX_DeviceEnergyData_ThingsBoardDeviceId_DeviceLocalTime_DataType");
 
                     b.ToTable("DeviceEnergyData", (string)null);
                 });
@@ -597,13 +597,13 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("DataDateTime")
-                        .HasColumnType("timestamp without time zone");
-
                     b.Property<string>("DataType")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("DeviceLocalTime")
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<double?>("GeneratorTotalPowerW")
                         .HasPrecision(18, 3)
@@ -663,13 +663,13 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DataDateTime")
-                        .HasDatabaseName("IX_DevicePowerData_DataDateTime");
+                    b.HasIndex("DeviceLocalTime")
+                        .HasDatabaseName("IX_DevicePowerData_DeviceLocalTime");
 
                     b.HasIndex("ThingsBoardDeviceId");
 
-                    b.HasIndex("ThingsBoardDeviceId", "DataDateTime", "DataType")
-                        .HasDatabaseName("IX_DevicePowerData_ThingsBoardDeviceId_DataDateTime_DataType");
+                    b.HasIndex("ThingsBoardDeviceId", "DeviceLocalTime", "DataType")
+                        .HasDatabaseName("IX_DevicePowerData_ThingsBoardDeviceId_DeviceLocalTime_DataType");
 
                     b.ToTable("DevicePowerData", (string)null);
                 });
@@ -696,7 +696,7 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.Property<string>("CreatedBy")
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("DataDateTime")
+                    b.Property<DateTime>("DeviceLocalTime")
                         .HasColumnType("timestamp without time zone");
 
                     b.Property<decimal?>("Humidity")
@@ -740,8 +740,8 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
 
                     b.HasIndex("ThingsBoardDeviceId");
 
-                    b.HasIndex("ThingsBoardDeviceId", "DataDateTime")
-                        .HasDatabaseName("IX_DeviceWeatherData_ThingsBoardDeviceId_DataDateTime");
+                    b.HasIndex("ThingsBoardDeviceId", "DeviceLocalTime")
+                        .HasDatabaseName("IX_DeviceWeatherData_ThingsBoardDeviceId_DeviceLocalTime");
 
                     b.ToTable("DeviceWeatherData", (string)null);
                 });

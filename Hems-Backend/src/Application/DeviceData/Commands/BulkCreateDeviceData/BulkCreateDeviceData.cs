@@ -16,7 +16,7 @@ public record DeviceDataItem
 {
     public string DataType { get; init; } = string.Empty;
     public Guid DeviceId { get; init; }
-    public DateTime RequestDate { get; init; }
+    public DateTime DeviceLocalTime { get; init; }
     public JsonDocument Data { get; init; } = JsonDocument.Parse("{}");
 }
 
@@ -89,9 +89,9 @@ public class BulkCreateDeviceDataCommandHandler : IRequestHandler<BulkCreateDevi
                         }
 
                         // Validate request date
-                        if (item.RequestDate > DateTime.UtcNow.AddMinutes(5))
+                        if (item.DeviceLocalTime > DateTime.UtcNow.AddMinutes(5))
                         {
-                            errors.Add($"RequestDate for device {item.DeviceId} is too far in the future");
+                            errors.Add($"DeviceLocalTime for device {item.DeviceId} is too far in the future");
                             failureCount++;
                             continue;
                         }
@@ -100,7 +100,7 @@ public class BulkCreateDeviceDataCommandHandler : IRequestHandler<BulkCreateDevi
                         {
                             DataType = item.DataType,
                             ThingsBoardDeviceId = item.DeviceId,
-                            RequestDate = item.RequestDate,
+                            DeviceLocalTime = item.DeviceLocalTime,
                             Data = item.Data
                         };
 

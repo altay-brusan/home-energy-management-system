@@ -72,6 +72,11 @@ public static class DependencyInjection
         builder.Services.AddSingleton<IDeviceHeartbeatCache, DeviceHeartbeatCache>();
         builder.Services.AddHostedService<DeviceHeartbeatMonitorService>();
 
+        // Parameter Update Background Service (SignalR-based async updates)
+        builder.Services.AddSingleton<ParameterUpdateBackgroundService>();
+        builder.Services.AddSingleton<IParameterUpdateQueueService>(sp => sp.GetRequiredService<ParameterUpdateBackgroundService>());
+        builder.Services.AddHostedService(sp => sp.GetRequiredService<ParameterUpdateBackgroundService>());
+
         // ThingsBoard Services
         builder.Services.AddHttpClient<IThingsBoardConnectorService, ThingsBoardConnectorService>();
 
@@ -80,6 +85,9 @@ public static class DependencyInjection
 
         // Device Authorization
         builder.Services.AddScoped<IAuthorizationHandler, DeviceOnlyAuthorizationHandler>();
+
+        // Device Settings Initializer
+        builder.Services.AddScoped<IDeviceSettingsInitializerService, DeviceSettingsInitializerService>();
         
         // Email services
         builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));

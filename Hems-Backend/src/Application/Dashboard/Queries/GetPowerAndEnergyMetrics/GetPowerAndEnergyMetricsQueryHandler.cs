@@ -67,13 +67,13 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
         var endOfDay = startOfDay.AddDays(1);
 
         // Get all power samples for today (5-min intervals) from DevicePowerData
-        // DataDateTime is in device local time, so we compare with device local time ranges
+        // DeviceLocalTime is in device local time, so we compare with device local time ranges
         var powerData = await _context.DevicePowerData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId &&
-                       x.DataDateTime >= startOfDay &&
-                       x.DataDateTime < endOfDay &&
+                       x.DeviceLocalTime >= startOfDay &&
+                       x.DeviceLocalTime < endOfDay &&
                        x.DataType == DataTypes.PowerFlow)
-            .OrderBy(x => x.DataDateTime)
+            .OrderBy(x => x.DeviceLocalTime)
             .ToListAsync(cancellationToken);
 
         if (!powerData.Any())
@@ -88,7 +88,7 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
         var dataPoints = interpolatedPowerData
             .Select(sample => new PowerAndEnergyMetricsDataPoint
             {
-                Timestamp = sample.DataDateTime.ToString("HH:mm"),
+                Timestamp = sample.DeviceLocalTime.ToString("HH:mm"),
 
                 // Power values in Watts
                 SolarPower = Math.Round(sample.PvTotalPowerW ?? 0, 2),
@@ -118,13 +118,13 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
         var weekEnd = weekStartLocal.AddDays(7);
 
         // Get all DailyCumulativeEnergy samples for the week (one sample per day)
-        // DataDateTime is in device local time
+        // DeviceLocalTime is in device local time
         var dailyEnergyData = await _context.DeviceEnergyData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId &&
-                       x.DataDateTime >= weekStartLocal &&
-                       x.DataDateTime < weekEnd &&
+                       x.DeviceLocalTime >= weekStartLocal &&
+                       x.DeviceLocalTime < weekEnd &&
                        x.DataType == DataTypes.DailyCumulativeEnergy)
-            .OrderBy(x => x.DataDateTime)
+            .OrderBy(x => x.DeviceLocalTime)
             .ToListAsync(cancellationToken);
 
         // Apply energy interpolation for missing days
@@ -140,7 +140,7 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
             var dayEnd = dayStart.AddDays(1);
 
             // Find the daily cumulative energy for this day (after interpolation)
-            var dayEnergy = interpolatedEnergyData.FirstOrDefault(x => x.DataDateTime >= dayStart && x.DataDateTime < dayEnd);
+            var dayEnergy = interpolatedEnergyData.FirstOrDefault(x => x.DeviceLocalTime >= dayStart && x.DeviceLocalTime < dayEnd);
 
             if (dayEnergy != null)
             {
@@ -185,13 +185,13 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
         var monthEnd = monthStart.AddMonths(1);
 
         // Get all DailyCumulativeEnergy samples for the month
-        // DataDateTime is in device local time
+        // DeviceLocalTime is in device local time
         var dailyEnergyData = await _context.DeviceEnergyData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId &&
-                       x.DataDateTime >= monthStartLocal &&
-                       x.DataDateTime < monthEnd &&
+                       x.DeviceLocalTime >= monthStartLocal &&
+                       x.DeviceLocalTime < monthEnd &&
                        x.DataType == DataTypes.DailyCumulativeEnergy)
-            .OrderBy(x => x.DataDateTime)
+            .OrderBy(x => x.DeviceLocalTime)
             .ToListAsync(cancellationToken);
 
         // Apply energy interpolation for missing days
@@ -209,7 +209,7 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
             var dayEnd = dayStart.AddDays(1);
 
             // Find the daily cumulative energy for this day (after interpolation)
-            var dayEnergy = interpolatedEnergyData.FirstOrDefault(x => x.DataDateTime >= dayStart && x.DataDateTime < dayEnd);
+            var dayEnergy = interpolatedEnergyData.FirstOrDefault(x => x.DeviceLocalTime >= dayStart && x.DeviceLocalTime < dayEnd);
 
             if (dayEnergy != null)
             {
@@ -254,13 +254,13 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
         var yearEnd = yearStart.AddYears(1);
 
         // Get all DailyCumulativeEnergy samples for the year
-        // DataDateTime is in device local time
+        // DeviceLocalTime is in device local time
         var dailyEnergyData = await _context.DeviceEnergyData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId &&
-                       x.DataDateTime >= yearStartLocal &&
-                       x.DataDateTime < yearEnd &&
+                       x.DeviceLocalTime >= yearStartLocal &&
+                       x.DeviceLocalTime < yearEnd &&
                        x.DataType == DataTypes.DailyCumulativeEnergy)
-            .OrderBy(x => x.DataDateTime)
+            .OrderBy(x => x.DeviceLocalTime)
             .ToListAsync(cancellationToken);
 
         // Apply energy interpolation for missing days
@@ -276,7 +276,7 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
 
             // Get all daily energy data for this month (after interpolation)
             var monthEnergyData = interpolatedEnergyData
-                .Where(x => x.DataDateTime >= monthStart && x.DataDateTime < monthEnd)
+                .Where(x => x.DeviceLocalTime >= monthStart && x.DeviceLocalTime < monthEnd)
                 .ToList();
 
             if (monthEnergyData.Any())
@@ -339,7 +339,7 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
             {
                 var current = data[i];
                 var next = data[i + 1];
-                var gap = next.DataDateTime - current.DataDateTime;
+                var gap = next.DeviceLocalTime - current.DeviceLocalTime;
 
                 // If gap is more than 2x expected interval, interpolate
                 if (gap > expectedInterval * 2)
@@ -352,7 +352,7 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
                         var interpolatedSample = new DevicePowerData
                         {
                             ThingsBoardDeviceId = current.ThingsBoardDeviceId,
-                            DataDateTime = current.DataDateTime.AddMinutes(expectedInterval.TotalMinutes * j),
+                            DeviceLocalTime = current.DeviceLocalTime.AddMinutes(expectedInterval.TotalMinutes * j),
                             DataType = current.DataType,
                             MessageType = current.MessageType,
                             PhaseType = current.PhaseType,
@@ -411,7 +411,7 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
             {
                 var current = data[i];
                 var next = data[i + 1];
-                var gap = next.DataDateTime - current.DataDateTime;
+                var gap = next.DeviceLocalTime - current.DeviceLocalTime;
 
                 // If gap is more than 2x expected interval, interpolate
                 if (gap > expectedInterval * 2)
@@ -424,7 +424,7 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
                         var interpolatedSample = new DeviceEnergyData
                         {
                             ThingsBoardDeviceId = current.ThingsBoardDeviceId,
-                            DataDateTime = current.DataDateTime.AddDays(expectedInterval.TotalDays * j),
+                            DeviceLocalTime = current.DeviceLocalTime.AddDays(expectedInterval.TotalDays * j),
                             DataType = current.DataType,
                             MessageType = current.MessageType,
                             PhaseType = current.PhaseType,

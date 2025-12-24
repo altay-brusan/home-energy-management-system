@@ -72,7 +72,7 @@ public class GetDailyEnergySummaryHandler : IRequestHandler<GetDailyEnergySummar
             // Return empty response if RPC failed
             return new DailyEnergySummaryDto
             {
-                DataDateTime = DateTime.UtcNow,
+                DeviceLocalTime = DateTime.UtcNow,
                 DeviceId = request.DeviceId,
                 GridImport = 0.0,
                 GridExport = 0.0,
@@ -104,7 +104,7 @@ public class GetDailyEnergySummaryHandler : IRequestHandler<GetDailyEnergySummar
             // Return empty response if deserialization fails
             return new DailyEnergySummaryDto
             {
-                DataDateTime = DateTime.UtcNow,
+                DeviceLocalTime = DateTime.UtcNow,
                 DeviceId = request.DeviceId,
                 GridImport = 0.0,
                 GridExport = 0.0,
@@ -118,7 +118,7 @@ public class GetDailyEnergySummaryHandler : IRequestHandler<GetDailyEnergySummar
             // Return empty response if data is null
             return new DailyEnergySummaryDto
             {
-                DataDateTime = DateTime.UtcNow,
+                DeviceLocalTime = DateTime.UtcNow,
                 DeviceId = request.DeviceId,
                 GridImport = 0.0,
                 GridExport = 0.0,
@@ -140,7 +140,7 @@ public class GetDailyEnergySummaryHandler : IRequestHandler<GetDailyEnergySummar
         // Production = PV + Generator
         var result = new DailyEnergySummaryDto
         {
-            DataDateTime = dataDateTime,
+            DeviceLocalTime = dataDateTime,
             DeviceId = request.DeviceId,
             GridImport = deviceData.Grid?.ImportEnergyKWh ?? 0.0,
             GridExport = deviceData.Grid?.ExportEnergyKWh ?? 0.0,

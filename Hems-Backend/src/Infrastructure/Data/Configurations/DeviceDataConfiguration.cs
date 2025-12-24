@@ -19,7 +19,7 @@ public class DeviceDataConfiguration : IEntityTypeConfiguration<Hems_Backend.Dom
         builder.Property(x => x.ThingsBoardDeviceId)
             .IsRequired();
 
-        builder.Property(x => x.RequestDate)
+        builder.Property(x => x.DeviceLocalTime)
             .IsRequired();
 
         builder.Property(x => x.Data)
@@ -30,18 +30,18 @@ public class DeviceDataConfiguration : IEntityTypeConfiguration<Hems_Backend.Dom
         builder.HasIndex(x => x.ThingsBoardDeviceId)
             .HasDatabaseName("IX_DeviceData_DeviceId");
 
-        builder.HasIndex(x => x.RequestDate)
-            .HasDatabaseName("IX_DeviceData_RequestDate");
+        builder.HasIndex(x => x.DeviceLocalTime)
+            .HasDatabaseName("IX_DeviceData_DeviceLocalTime");
 
         builder.HasIndex(x => x.DataType)
             .HasDatabaseName("IX_DeviceData_DataType");
 
         // Composite index for common query patterns
-        builder.HasIndex(x => new { x.ThingsBoardDeviceId, x.RequestDate })
-            .HasDatabaseName("IX_DeviceData_DeviceId_RequestDate");
+        builder.HasIndex(x => new { x.ThingsBoardDeviceId, x.DeviceLocalTime })
+            .HasDatabaseName("IX_DeviceData_DeviceId_DeviceLocalTime");
 
-        builder.HasIndex(x => new { x.ThingsBoardDeviceId, x.DataType, x.RequestDate })
-            .HasDatabaseName("IX_DeviceData_DeviceId_DataType_RequestDate");
+        builder.HasIndex(x => new { x.ThingsBoardDeviceId, x.DataType, x.DeviceLocalTime })
+            .HasDatabaseName("IX_DeviceData_DeviceId_DataType_DeviceLocalTime");
 
         // Foreign key relationship - ThingsBoardDeviceId in DeviceData references Id in Device table
         builder.HasOne(x => x.Device)

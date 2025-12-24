@@ -54,18 +54,18 @@
 
 //        var dailyData = await _context.DeviceEnergyData
 //            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
-//                       x.DataDateTime >= startOfDay &&
-//                       x.DataDateTime < endOfDay &&
+//                       x.DeviceLocalTime >= startOfDay &&
+//                       x.DeviceLocalTime < endOfDay &&
 //                       x.DataType == "DailyCumulativeEnergyData")
-//            .OrderBy(x => x.DataDateTime)
+//            .OrderBy(x => x.DeviceLocalTime)
 //            .ToListAsync(cancellationToken);
 
 //        var dataPoints = dailyData
-//            .GroupBy(x => x.DataDateTime.Hour)
+//            .GroupBy(x => x.DeviceLocalTime.Hour)
 //            .Select(g => new Hems_Backend.Application.Common.Models.EnergyProductionDataPoint
 //            {
 //                Timestamp = $"{g.Key:00}:00",
-//                Value = Math.Round((g.OrderByDescending(x => x.DataDateTime).First().PvTotalEnergyKWh ?? 0) + (g.OrderByDescending(x => x.DataDateTime).First().GeneratorEnergyKWh ?? 0), 3),
+//                Value = Math.Round((g.OrderByDescending(x => x.DeviceLocalTime).First().PvTotalEnergyKWh ?? 0) + (g.OrderByDescending(x => x.DeviceLocalTime).First().GeneratorEnergyKWh ?? 0), 3),
 //                Unit = "kWh"
 //            })
 //            .OrderBy(x => x.Timestamp)
@@ -108,8 +108,8 @@
 
 //            var lifetimeData = await _context.DeviceEnergyData
 //                .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
-//                           x.DataDateTime >= dayStart &&
-//                           x.DataDateTime < dayEnd &&
+//                           x.DeviceLocalTime >= dayStart &&
+//                           x.DeviceLocalTime < dayEnd &&
 //                           x.DataType == "LifetimeEnergyData")
 //                .FirstOrDefaultAsync(cancellationToken);
 
@@ -143,10 +143,10 @@
         
 //        var todayData = await _context.DeviceEnergyData
 //            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
-//                       x.DataDateTime >= startOfDay &&
-//                       x.DataDateTime < endOfDay &&
+//                       x.DeviceLocalTime >= startOfDay &&
+//                       x.DeviceLocalTime < endOfDay &&
 //                       x.DataType == "DailyCumulativeEnergyData")
-//            .OrderByDescending(x => x.DataDateTime)
+//            .OrderByDescending(x => x.DeviceLocalTime)
 //            .FirstOrDefaultAsync(cancellationToken);
 
 //        if (todayData != null)
@@ -201,10 +201,10 @@
                 
 //                var todayData = await _context.DeviceEnergyData
 //                    .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
-//                               x.DataDateTime >= dayStart &&
-//                               x.DataDateTime < dayEnd &&
+//                               x.DeviceLocalTime >= dayStart &&
+//                               x.DeviceLocalTime < dayEnd &&
 //                               x.DataType == "DailyCumulativeEnergyData")
-//                    .OrderByDescending(x => x.DataDateTime)
+//                    .OrderByDescending(x => x.DeviceLocalTime)
 //                    .FirstOrDefaultAsync(cancellationToken);
 
 //                if (todayData != null)
@@ -225,8 +225,8 @@
                 
 //                var lifetimeData = await _context.DeviceEnergyData
 //                    .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
-//                               x.DataDateTime >= dayStart &&
-//                               x.DataDateTime < dayEnd &&
+//                               x.DeviceLocalTime >= dayStart &&
+//                               x.DeviceLocalTime < dayEnd &&
 //                               x.DataType == "LifetimeEnergyData")
 //                    .FirstOrDefaultAsync(cancellationToken);
 
@@ -269,12 +269,12 @@
 
 //        var energyData = await _context.DeviceEnergyData
 //            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
-//                       x.DataDateTime >= yearStartUtc &&
+//                       x.DeviceLocalTime >= yearStartUtc &&
 //                       x.DataType == "LifetimeEnergyData")
 //            .ToListAsync();
 
 //        var dataPoints = energyData
-//            .GroupBy(x => x.DataDateTime.Month)
+//            .GroupBy(x => x.DeviceLocalTime.Month)
 //            .Select(g => new Hems_Backend.Application.Common.Models.EnergyProductionDataPoint
 //            {
 //                Timestamp = g.Key switch
@@ -293,7 +293,7 @@
 //                    12 => "December",
 //                    _ => $"Month {g.Key}"
 //                },
-//                Value = Math.Round((g.OrderByDescending(x => x.DataDateTime).First().PvTotalEnergyKWh ?? 0) + (g.OrderByDescending(x => x.DataDateTime).First().GeneratorEnergyKWh ?? 0), 3),
+//                Value = Math.Round((g.OrderByDescending(x => x.DeviceLocalTime).First().PvTotalEnergyKWh ?? 0) + (g.OrderByDescending(x => x.DeviceLocalTime).First().GeneratorEnergyKWh ?? 0), 3),
 //                Unit = "kWh"
 //            })
 //            .OrderBy(x => x.Timestamp)
