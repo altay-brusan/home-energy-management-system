@@ -29,7 +29,7 @@ public class InvitationEmailService : IInvitationEmailService
         {
             _logger.LogInformation("🚀 Starting to send invitation email to {Email} for site {SiteName}", email, siteName);
             
-            var subject = $"{ownerName} has shared {siteName} home with you";
+            var subject = $"{ownerName} has invited you to access {siteName}";
             
             var htmlMessage = GenerateInvitationEmailTemplate(ownerName, siteName, token,_smtpSettings.InvitationUrl);
             Console.WriteLine(htmlMessage);
@@ -59,7 +59,7 @@ public class InvitationEmailService : IInvitationEmailService
 <head>
     <meta charset=""UTF-8"">
     <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
-    <title>Home Sharing Invitation</title>
+    <title>Device Access Invitation</title>
 </head>
 <body style=""margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f5f5f5;"">
     <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" style=""width: 100%; background-color: #f5f5f5;"">
@@ -75,17 +75,17 @@ public class InvitationEmailService : IInvitationEmailService
                     <!-- Content -->
                     <tr>
                         <td style=""padding: 30px 20px; background-color: #ffffff;"">
-                            <h2 style=""margin: 0 0 20px 0; color: #00A270; font-size: 18px; text-align: center;"">Home Sharing Invitation</h2>
+                            <h2 style=""margin: 0 0 20px 0; color: #00A270; font-size: 18px; text-align: center;"">Device Access Invitation</h2>
                             <p style=""margin: 0 0 15px 0; color: #333333; font-size: 15px; line-height: 1.6;"">Hello,</p>
                             <p style=""margin: 0 0 15px 0; color: #333333; font-size: 15px; line-height: 1.6;"">
-                                <strong style=""color: #00A270;"">{ownerName}</strong> has shared
-                                <strong style=""color: #00A270;"">{siteName}</strong> home with you.
+                                <strong style=""color: #00A270;"">{ownerName}</strong> has invited you to access the energy system at
+                                <strong style=""color: #00A270;"">{siteName}</strong>.
                             </p>
                             <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" style=""width: 100%; background-color: #f0faf6; border-left: 4px solid #00A270; margin: 20px 0;"">
                                 <tr>
                                     <td style=""padding: 15px;"">
                                         <p style=""margin: 0; color: #333333; font-size: 14px; line-height: 1.5;"">
-                                            By accepting this invitation, you can view devices and access energy consumption data for this home.
+                                            By accepting this invitation, you can monitor the hybrid inverter and view energy consumption data.
                                         </p>
                                     </td>
                                 </tr>
