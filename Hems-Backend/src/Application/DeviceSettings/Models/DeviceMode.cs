@@ -24,7 +24,15 @@ public enum DeviceMode
     /// Uses CT (Current Transformer) readings for accurate grid measurement
     /// Maps to: ExportStrategySelection = ZeroExportToCT
     /// </summary>
-    SmartZeroExport = 3
+    SmartZeroExport = 3,
+
+
+    /// <summary>
+    /// Define a custom mode not covered by standard options
+    /// </summary>
+    Custom = 99
+
+
 }
 
 /// <summary>
