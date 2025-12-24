@@ -24,7 +24,15 @@ public enum DeviceMode
     /// Uses CT (Current Transformer) readings for accurate grid measurement
     /// Maps to: ExportStrategySelection = ZeroExportToCT
     /// </summary>
-    SmartZeroExport = 3
+    SmartZeroExport = 3,
+
+
+    /// <summary>
+    /// Define customized mode settings based on user preferences
+    /// </summary>
+    Custom = 99
+
+
 }
 
 /// <summary>
@@ -74,6 +82,12 @@ public static class DeviceModeConfigurations
                 Name = "Smart Zero Export",
                 Description = "Zero export with precise smart meter control",
                 Icon = "smart"
+            },
+            [DeviceMode.Custom] = new DeviceModeInfo
+            {
+                Name = "Custom Mode",
+                Description = "Define customized mode settings based on user preferences",
+                Icon = "custom"
             }
         };
     }

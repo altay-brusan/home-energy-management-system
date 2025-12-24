@@ -32,7 +32,17 @@ public class SetDeviceModeCommandHandler : IRequestHandler<SetDeviceModeCommand,
 
     public async Task<SetDeviceModeResult> Handle(SetDeviceModeCommand request, CancellationToken cancellationToken)
     {
-        // Get export strategy value for this mode
+
+        // we can not update mode to custom at this endpoint
+        if (request.Mode == DeviceMode.Custom)
+        {
+             return new SetDeviceModeResult
+            {
+                Success = false,
+                ErrorMessage = "Cannot set device mode to Custom!"
+            };
+        }     
+       // Get export strategy value for this mode
         var exportStrategyValue = DeviceModeConfigurations.GetExportStrategyValue(request.Mode);
         if (exportStrategyValue == null)
         {
