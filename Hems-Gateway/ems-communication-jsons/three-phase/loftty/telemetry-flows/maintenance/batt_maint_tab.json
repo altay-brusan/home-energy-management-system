@@ -78,7 +78,7 @@
             },
             {
                 "p": "rpcParams",
-                "v": "{\"batteryControlMode\":\"capacity\",\"wakeUp\":{\"channel1Enabled\":true},\"batteryResistanceMilliOhm\":50,\"chargeEfficiencyPercent\":98.5}",
+                "v": "{\"batteryControlMode\":\"capacity\",\"wakeUp\":{\"channel1Enabled\":true},\"batteryResistanceMilliOhm\":25,\"chargeEfficiencyPercent\":99}",
                 "vt": "json"
             }
         ],

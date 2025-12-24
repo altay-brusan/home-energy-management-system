@@ -1,25 +1,25 @@
 [
     {
-        "id": "system_capacity_state_tab",
+        "id": "f4c7e7e8f7dce6c4",
         "type": "tab",
         "label": "SystemCapacityState",
         "disabled": false,
         "info": "Reads System Capacity State from registers:\n- 100: Device type\n- 120-121: Rated power (32-bit, 0.1W)\n- 202: Battery capacity (Ah)\n- 211: Battery control mode\n- 688: Battery SOC %\n\nTriggers:\n1. Periodic: Every 5 minutes (sends to ThingsBoard only if values changed)\n2. RPC: getSystemCapacityState (always returns current value)"
     },
     {
-        "id": "scs_comment_periodic",
+        "id": "4db5c16e6f2d8c39",
         "type": "comment",
-        "z": "system_capacity_state_tab",
-        "name": "Periodic polling (5 min) - sends only if changed",
+        "z": "f4c7e7e8f7dce6c4",
+        "name": "Periodic polling (12 hours) - sends only if changed",
         "info": "",
-        "x": 230,
+        "x": 250,
         "y": 80,
         "wires": []
     },
     {
-        "id": "scs_comment_rpc",
+        "id": "c5024eb19e7c051c",
         "type": "comment",
-        "z": "system_capacity_state_tab",
+        "z": "f4c7e7e8f7dce6c4",
         "name": "RPC Trigger (getSystemCapacityState) - always responds",
         "info": "",
         "x": 250,
@@ -27,10 +27,10 @@
         "wires": []
     },
     {
-        "id": "scs_poll_inject",
+        "id": "588c0262fe9a994c",
         "type": "inject",
-        "z": "system_capacity_state_tab",
-        "name": "Poll SystemCapacityState (5 min)",
+        "z": "f4c7e7e8f7dce6c4",
+        "name": "Poll SystemCapacityState (12hours)",
         "props": [
             {
                 "p": "payload"
@@ -41,41 +41,39 @@
                 "vt": "bool"
             }
         ],
-        "repeat": "300",
+        "repeat": "43200",
         "crontab": "",
         "once": true,
         "onceDelay": 2,
         "topic": "",
         "payload": "",
         "payloadType": "date",
-        "x": 200,
+        "x": 210,
         "y": 120,
         "wires": [
             [
-                "scs_prep_read"
+                "6cce8a309e0da02c"
             ]
         ]
     },
     {
-        "id": "scs_link_in_rpc",
+        "id": "3f72382ac3ff4b3a",
         "type": "link in",
-        "z": "system_capacity_state_tab",
+        "z": "f4c7e7e8f7dce6c4",
         "name": "RPC getSystemCapacityState",
-        "links": [
-            "rpc_scs_link_out"
-        ],
+        "links": [],
         "x": 155,
         "y": 220,
         "wires": [
             [
-                "scs_prep_read"
+                "6cce8a309e0da02c"
             ]
         ]
     },
     {
-        "id": "scs_prep_read",
+        "id": "6cce8a309e0da02c",
         "type": "function",
-        "z": "system_capacity_state_tab",
+        "z": "f4c7e7e8f7dce6c4",
         "name": "Prep Parallel Reads",
         "func": "// Read all capacity-related registers in parallel\nconst reads = [\n    { name: 'deviceType', address: 100, quantity: 1 },\n    { name: 'ratedPower', address: 120, quantity: 2 },  // 32-bit\n    { name: 'batteryCapacity', address: 202, quantity: 1 },\n    { name: 'batteryMode', address: 211, quantity: 1 },\n    { name: 'batterySoc', address: 688, quantity: 1 }\n];\n\nconst messages = reads.map(r => ({\n    payload: {\n        fc: 3,\n        unitid: 1,\n        address: r.address,\n        quantity: r.quantity\n    },\n    readName: r.name\n}));\n\nreturn [messages];",
         "outputs": 1,
@@ -88,14 +86,14 @@
         "y": 160,
         "wires": [
             [
-                "scs_modbus_read"
+                "af791e41dd15836d"
             ]
         ]
     },
     {
-        "id": "scs_modbus_read",
+        "id": "af791e41dd15836d",
         "type": "modbus-flex-getter",
-        "z": "system_capacity_state_tab",
+        "z": "f4c7e7e8f7dce6c4",
         "name": "Read Capacity Regs",
         "showStatusActivities": true,
         "showErrors": true,
@@ -113,15 +111,15 @@
         "y": 160,
         "wires": [
             [
-                "scs_collect_reads"
+                "81d8127709b81336"
             ],
             []
         ]
     },
     {
-        "id": "scs_collect_reads",
+        "id": "81d8127709b81336",
         "type": "function",
-        "z": "system_capacity_state_tab",
+        "z": "f4c7e7e8f7dce6c4",
         "name": "Collect All Reads",
         "func": "const flowKey = 'scs_reads';\nlet collected = flow.get(flowKey) || {};\nlet expectedCount = 5;\n\nlet data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data) || data.length < 1) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Read failed: \" + msg.readName });\n    return null;\n}\n\nconst readName = msg.readName;\n\n// Store the data based on type\nif (readName === 'ratedPower') {\n    // 32-bit value (2 registers)\n    collected[readName] = data;\n} else {\n    // Single register reads\n    collected[readName] = data[0];\n}\n\nflow.set(flowKey, collected);\n\nconst collectedCount = Object.keys(collected).length;\nnode.status({ fill: \"blue\", shape: \"dot\", text: `Collected ${collectedCount}/${expectedCount}` });\n\nif (collectedCount >= expectedCount) {\n    flow.set(flowKey, null);\n    msg.collectedData = collected;\n    msg.payload = collected;\n    return msg;\n}\n\nreturn null;",
         "outputs": 1,
@@ -134,14 +132,14 @@
         "y": 160,
         "wires": [
             [
-                "scs_build_json"
+                "74813bfbf0b48e5e"
             ]
         ]
     },
     {
-        "id": "scs_build_json",
+        "id": "74813bfbf0b48e5e",
         "type": "function",
-        "z": "system_capacity_state_tab",
+        "z": "f4c7e7e8f7dce6c4",
         "name": "Build SystemCapacityState JSON",
         "func": "// Build SystemCapacityState from Modbus reads\n\nconst data = msg.collectedData;\n\nif (!data) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"No data\" });\n    return null;\n}\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\nconst serialNumber = global.get(\"INVERTER_SN\") || \"Unknown\";\n\n// Parse device type\nconst deviceType = data.deviceType;\n\n// Parse rated power (32-bit: high word << 16 | low word)\nconst ratedPowerRaw = (data.ratedPower[1] << 16) | data.ratedPower[0];\nconst ratedPowerW = ratedPowerRaw / 10;  // 0.1W scale\nconst ratedPowerKw = ratedPowerW / 1000;\n\n// Parse battery data\nconst capacityAh = data.batteryCapacity;\nconst socPercent = data.batterySoc;\nconst controlMode = data.batteryMode;\n\n// Assume nominal voltage (typical for LFP batteries)\nconst nominalVoltageV = 51.2;  // Standard LFP voltage\nconst capacityKwh = (capacityAh * nominalVoltageV) / 1000;\n\n// Build state object\nconst state = {\n    kind: \"SystemCapacityState\",\n    version: 1,\n    timestampUtc: new Date().toISOString(),\n    gatewayId: gatewayId,\n    inverterSerialNumber: serialNumber,\n    \n    inverter: {\n        deviceType: deviceType,\n        ratedPowerW: ratedPowerW,\n        ratedPowerKw: ratedPowerKw\n    },\n    \n    battery: {\n        capacityAh: capacityAh,\n        nominalVoltageV: nominalVoltageV,\n        capacityKwh: capacityKwh,\n        socPercent: socPercent,\n        controlMode: controlMode\n    },\n    \n    rawRegisters: {\n        reg100: deviceType,\n        reg120: data.ratedPower[0],\n        reg121: data.ratedPower[1],\n        reg202: capacityAh,\n        reg211: controlMode,\n        reg688: socPercent\n    }\n};\n\n// Create a hash for change detection\nconst stateHash = JSON.stringify({\n    deviceType: deviceType,\n    ratedPowerW: ratedPowerW,\n    capacityAh: capacityAh,\n    socPercent: socPercent,\n    controlMode: controlMode\n});\n\nmsg.currentStateHash = stateHash;\nmsg.previousStateHash = flow.get(\"lastCapacityStateHash\");\n\n// Update stored hash\nflow.set(\"lastCapacityStateHash\", stateHash);\n\nmsg.payload = state;\nmsg.state = state;\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `${ratedPowerKw}kW / ${capacityAh}Ah (${socPercent}%)` });\n\nreturn msg;",
         "outputs": 1,
@@ -154,14 +152,15 @@
         "y": 160,
         "wires": [
             [
-                "scs_check_change"
+                "4a157f9635615ec0",
+                "8e46008efe5241c7"
             ]
         ]
     },
     {
-        "id": "scs_check_change",
+        "id": "4a157f9635615ec0",
         "type": "function",
-        "z": "system_capacity_state_tab",
+        "z": "f4c7e7e8f7dce6c4",
         "name": "Check State Change",
         "func": "// Check if capacity state has changed\n// RPC requests always get response\n// Periodic polls only send to ThingsBoard if value changed\n\nconst currentHash = msg.currentStateHash;\nconst previousHash = msg.previousStateHash;\nconst isRpc = msg.isRpcRequest === true;\n\n// Determine if state changed\nconst stateChanged = (previousHash === undefined || previousHash === null || currentHash !== previousHash);\n\nmsg.stateChanged = stateChanged;\n\n// Debug status\nif (stateChanged) {\n    node.status({ fill: \"green\", shape: \"dot\", text: \"State changed - sending to TB\" });\n} else {\n    node.status({ fill: \"grey\", shape: \"ring\", text: \"No change\" });\n}\n\n// Output routing:\n// Output 1: Debug (always)\n// Output 2: MQTT ThingsBoard (only if changed)\n// Output 3: RPC Response (only if RPC request)\n\nconst debugMsg = { ...msg };\nconst mqttMsg = stateChanged ? { ...msg } : null;\nconst rpcMsg = isRpc ? { ...msg } : null;\n\nreturn [debugMsg, mqttMsg, rpcMsg];",
         "outputs": 3,
@@ -170,26 +169,24 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1390,
+        "x": 1520,
         "y": 160,
         "wires": [
             [
-                "scs_debug_json"
+                "a4f027486857f811"
             ],
             [
-                "scs_mqtt_telemetry"
+                "3b088688f5561011"
             ],
-            [
-                "scs_rpc_response"
-            ]
+            []
         ]
     },
     {
-        "id": "scs_debug_json",
+        "id": "a4f027486857f811",
         "type": "debug",
-        "z": "system_capacity_state_tab",
+        "z": "f4c7e7e8f7dce6c4",
         "name": "SystemCapacityState JSON",
-        "active": true,
+        "active": false,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
@@ -197,14 +194,14 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1660,
+        "x": 1790,
         "y": 100,
         "wires": []
     },
     {
-        "id": "scs_mqtt_telemetry",
+        "id": "3b088688f5561011",
         "type": "mqtt out",
-        "z": "system_capacity_state_tab",
+        "z": "f4c7e7e8f7dce6c4",
         "name": "Send to ThingsBoard (if changed)",
         "topic": "v1/devices/me/telemetry",
         "qos": "1",
@@ -215,14 +212,14 @@
         "correl": "",
         "expiry": "",
         "broker": "tb-broker",
-        "x": 1700,
+        "x": 1830,
         "y": 160,
         "wires": []
     },
     {
-        "id": "scs_rpc_response",
+        "id": "8e46008efe5241c7",
         "type": "function",
-        "z": "system_capacity_state_tab",
+        "z": "f4c7e7e8f7dce6c4",
         "name": "Prepare RPC Response",
         "func": "// Only respond if this came from RPC\nif (!msg.rpcResponseTopic) {\n    return null;\n}\n\nconst state = msg.state || msg.payload;\n\nmsg.payload = state;\nmsg.topic = msg.rpcResponseTopic;\n\nreturn msg;",
         "outputs": 1,
@@ -231,18 +228,18 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1650,
-        "y": 220,
+        "x": 1610,
+        "y": 300,
         "wires": [
             [
-                "scs_mqtt_rpc_response"
+                "1a3451eab82a30fb"
             ]
         ]
     },
     {
-        "id": "scs_mqtt_rpc_response",
+        "id": "1a3451eab82a30fb",
         "type": "mqtt out",
-        "z": "system_capacity_state_tab",
+        "z": "f4c7e7e8f7dce6c4",
         "name": "RPC Response",
         "topic": "",
         "qos": "1",
@@ -253,35 +250,35 @@
         "correl": "",
         "expiry": "",
         "broker": "tb-broker",
-        "x": 1870,
-        "y": 220,
+        "x": 1830,
+        "y": 300,
         "wires": []
     },
     {
         "id": "e4e4f3e2a4f4e004",
         "type": "modbus-client",
-        "name": "EC100 Modbus",
-        "clienttype": "tcp",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
         "bufferCommands": true,
         "stateLogEnabled": false,
         "queueLogEnabled": false,
-        "failureLogEnabled": true,
-        "tcpHost": "192.168.1.100",
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
         "tcpPort": "502",
         "tcpType": "DEFAULT",
-        "serialPort": "/dev/ttyUSB0",
-        "serialType": "RTU-BUFFERD",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
         "serialBaudrate": "9600",
         "serialDatabits": "8",
         "serialStopbits": "1",
         "serialParity": "none",
         "serialConnectionDelay": "100",
-        "serialAsciiResponseStartDelimiter": "0x3A",
-        "unit_id": "1",
-        "commandDelay": "1",
-        "clientTimeout": "1000",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
         "reconnectOnTimeout": true,
-        "reconnectTimeout": "2000",
+        "reconnectTimeout": 2000,
         "parallelUnitIdsAllowed": true,
         "showErrors": false,
         "showWarnings": true,
@@ -315,6 +312,8 @@
         "willQos": "0",
         "willRetain": "false",
         "willPayload": "",
-        "willMsg": {}
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
     }
 ]

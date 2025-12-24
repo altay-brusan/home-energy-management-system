@@ -1,15 +1,15 @@
 [
     {
-        "id": "daaeac32c375cb57",
+        "id": "10bde1f224543056",
         "type": "tab",
         "label": "InverterAdvancedFunctionConfig",
         "disabled": false,
         "info": "Inverter Advanced Function Config State\n\nRegisters:\n- 278: advancedFunctionWord1Raw (bit fields)\n- 279: advancedFunctionWord2Raw\n- 281: arcFault mode\n- 183: islandProtectionEnabled\n- 447: CT ratio\n- 448: Meter CT ratio\n- 436: parallel config (bit fields)"
     },
     {
-        "id": "ffc9b74489d8efbc",
+        "id": "f2a076a21f18092c",
         "type": "link in",
-        "z": "daaeac32c375cb57",
+        "z": "10bde1f224543056",
         "name": "RPC Request",
         "links": [
             "rpc_invadv_link_out"
@@ -18,14 +18,14 @@
         "y": 80,
         "wires": [
             [
-                "02b542bbd4fddf3f"
+                "ba935e7cea5d916f"
             ]
         ]
     },
     {
-        "id": "ff4b9745fce2e2be",
+        "id": "291cc076dc726f89",
         "type": "comment",
-        "z": "daaeac32c375cb57",
+        "z": "10bde1f224543056",
         "name": "══════ MANUAL TEST ══════",
         "info": "",
         "x": 170,
@@ -33,9 +33,9 @@
         "wires": []
     },
     {
-        "id": "a618a1740aeabba5",
+        "id": "047540fe4e1d8178",
         "type": "inject",
-        "z": "daaeac32c375cb57",
+        "z": "10bde1f224543056",
         "name": "Manual Read",
         "props": [
             {
@@ -58,14 +58,14 @@
         "y": 180,
         "wires": [
             [
-                "02b542bbd4fddf3f"
+                "ba935e7cea5d916f"
             ]
         ]
     },
     {
-        "id": "30f6c07ab459fa59",
+        "id": "85b614a7b6057776",
         "type": "inject",
-        "z": "daaeac32c375cb57",
+        "z": "10bde1f224543056",
         "name": "Test Write: Enable Grid+Relay Only",
         "props": [
             {
@@ -93,14 +93,14 @@
         "y": 280,
         "wires": [
             [
-                "02b542bbd4fddf3f"
+                "ba935e7cea5d916f"
             ]
         ]
     },
     {
-        "id": "02b542bbd4fddf3f",
+        "id": "ba935e7cea5d916f",
         "type": "function",
-        "z": "daaeac32c375cb57",
+        "z": "10bde1f224543056",
         "name": "Route: Read or Write?",
         "func": "const opType = msg.operationType || 'read';\n\nif (opType === 'write') {\n    return [null, msg];\n} else {\n    return [msg, null];\n}",
         "outputs": 2,
@@ -113,17 +113,17 @@
         "y": 180,
         "wires": [
             [
-                "34686dde6b849a50"
+                "ea1295ccc2a67e5b"
             ],
             [
-                "d3a61ec31775df45"
+                "11c70118d911a96b"
             ]
         ]
     },
     {
-        "id": "3fb155145eecfe3b",
+        "id": "94ba7561d8700676",
         "type": "comment",
-        "z": "daaeac32c375cb57",
+        "z": "10bde1f224543056",
         "name": "══════ READ ══════",
         "info": "",
         "x": 640,
@@ -131,9 +131,9 @@
         "wires": []
     },
     {
-        "id": "34686dde6b849a50",
+        "id": "ea1295ccc2a67e5b",
         "type": "function",
-        "z": "daaeac32c375cb57",
+        "z": "10bde1f224543056",
         "name": "Start Read & Store Context",
         "func": "flow.set(\"iaf_rpc_response_topic\", msg.rpcResponseTopic);\nflow.set(\"iaf_write_result\", msg.writeResult || null);\n\nreturn msg;",
         "outputs": 1,
@@ -146,14 +146,14 @@
         "y": 80,
         "wires": [
             [
-                "fdb5bd0aed80e996"
+                "90de00c6ef88b5dc"
             ]
         ]
     },
     {
-        "id": "fdb5bd0aed80e996",
+        "id": "90de00c6ef88b5dc",
         "type": "function",
-        "z": "daaeac32c375cb57",
+        "z": "10bde1f224543056",
         "name": "Prep Parallel Reads",
         "func": "// Read all registers in parallel\nconst reads = [\n    { name: 'reg278', address: 278, quantity: 1 },\n    { name: 'reg279', address: 279, quantity: 1 },\n    { name: 'arcFaultMode', address: 281, quantity: 1 },\n    { name: 'islandProtection', address: 183, quantity: 1 },\n    { name: 'ctRatio', address: 447, quantity: 1 },\n    { name: 'meterCtRatio', address: 448, quantity: 1 },\n    { name: 'parallelConfig', address: 436, quantity: 1 }\n];\n\nconst messages = reads.map(r => ({\n    payload: {\n        fc: 3,\n        unitid: 1,\n        address: r.address,\n        quantity: r.quantity\n    },\n    readName: r.name\n}));\n\nreturn [messages];",
         "outputs": 1,
@@ -166,14 +166,14 @@
         "y": 80,
         "wires": [
             [
-                "aa3f58d0c4816e3e"
+                "ff300cab2a3a8021"
             ]
         ]
     },
     {
-        "id": "aa3f58d0c4816e3e",
+        "id": "ff300cab2a3a8021",
         "type": "modbus-flex-getter",
-        "z": "daaeac32c375cb57",
+        "z": "10bde1f224543056",
         "name": "Read Inv Adv Func Regs",
         "showStatusActivities": true,
         "showErrors": true,
@@ -191,15 +191,15 @@
         "y": 80,
         "wires": [
             [
-                "4edae655deba27fa"
+                "d8b57b6f9b59061c"
             ],
             []
         ]
     },
     {
-        "id": "4edae655deba27fa",
+        "id": "d8b57b6f9b59061c",
         "type": "function",
-        "z": "daaeac32c375cb57",
+        "z": "10bde1f224543056",
         "name": "Collect All Reads",
         "func": "const flowKey = 'iaf_reads';\nlet collected = flow.get(flowKey) || {};\nlet expectedCount = 7;\n\nlet data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data) || data.length < 1) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Read failed: \" + msg.readName });\n    return null;\n}\n\ncollected[msg.readName] = data[0];\n\nflow.set(flowKey, collected);\n\nconst collectedCount = Object.keys(collected).length;\nnode.status({ fill: \"blue\", shape: \"dot\", text: `Collected ${collectedCount}/${expectedCount}` });\n\nif (collectedCount >= expectedCount) {\n    flow.set(flowKey, null);\n    msg.collectedData = collected;\n    msg.payload = collected;\n    return msg;\n}\n\nreturn null;",
         "outputs": 1,
@@ -212,14 +212,14 @@
         "y": 80,
         "wires": [
             [
-                "59cdc4bb3a591df0"
+                "b1e36291c26b371c"
             ]
         ]
     },
     {
-        "id": "59cdc4bb3a591df0",
+        "id": "b1e36291c26b371c",
         "type": "function",
-        "z": "daaeac32c375cb57",
+        "z": "10bde1f224543056",
         "name": "Build Read Response",
         "func": "const data = msg.collectedData;\n\nif (!data) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"No data\" });\n    return null;\n}\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\n\nconst reg278 = data.reg278;\nconst reg279 = data.reg279;\nconst reg436 = data.parallelConfig;\n\n// Parse 278 bit fields (10=disable, 11=enable)\nconst genPeakShavingBits = (reg278 >> 2) & 0x03;\nconst gridPeakShavingBits = (reg278 >> 4) & 0x03;\nconst smartLoadOnGridBits = (reg278 >> 6) & 0x03;\nconst externalRelayBits = (reg278 >> 8) & 0x03;\nconst lithiumBatteryLossBits = (reg278 >> 10) & 0x03;\n\n// Parse arc fault mode\nconst arcFaultMode = data.arcFaultMode;\n\n// Parse parallel config (436)\nconst parallelEnabled = (reg436 & 0x01) === 1;\nconst parallelRoleBit = (reg436 >> 1) & 0x01;\nconst parallelPhaseBits = (reg436 >> 8) & 0x03;\nconst modbusAddress = (reg436 >> 10) & 0x3F;\n\nlet parallelRole = \"standalone\";\nif (parallelEnabled) {\n    parallelRole = parallelRoleBit === 1 ? \"master\" : \"slave\";\n}\n\nlet parallelPhase = \"A\";\nswitch(parallelPhaseBits) {\n    case 0: parallelPhase = \"A\"; break;\n    case 1: parallelPhase = \"B\"; break;\n    case 2: parallelPhase = \"C\"; break;\n    case 3: parallelPhase = \"void\"; break;\n}\n\nconst state = {\n    kind: \"InverterAdvancedFunctionConfigState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    gatewayId: gatewayId,\n    \n    advancedFunctionWord1Raw: reg278,\n    advancedFunctionWord2Raw: reg279,\n    \n    arcFault: {\n        mode: arcFaultMode,\n        enabled: arcFaultMode === 0x01\n    },\n    \n    systemSelfCheckEnabled: null,\n    \n    generatorPeakShavingEnabled: genPeakShavingBits === 0x03,\n    gridPeakShavingEnabled: gridPeakShavingBits === 0x03,\n    \n    smartLoadOnGridAlwaysOn: smartLoadOnGridBits === 0x03,\n    externalRelayEnabled: externalRelayBits === 0x03,\n    \n    islandProtectionEnabled: data.islandProtection === 1,\n    \n    externalMeter: {\n        ctRatio: data.ctRatio,\n        meterCtRatio: data.meterCtRatio,\n        phase: null\n    },\n    \n    lithiumBatteryLossFaultEnabled: lithiumBatteryLossBits === 0x03,\n    \n    drmEnabled: null,\n    \n    parallel: {\n        enabled: parallelEnabled,\n        role: parallelRole,\n        phase: parallelPhase,\n        modbusAddress: modbusAddress\n    }\n};\n\n// Check if this is after a write\nconst writeResult = flow.get(\"iaf_write_result\");\nflow.set(\"iaf_write_result\", null);\n\nif (writeResult) {\n    msg.payload = {\n        success: true,\n        message: `Updated ${writeResult.count} register(s)`,\n        writes: writeResult.writes,\n        state: state\n    };\n} else {\n    msg.payload = state;\n}\n\nmsg.state = state;\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `Parallel: ${parallelRole}` });\n\nreturn msg;",
         "outputs": 1,
@@ -232,15 +232,15 @@
         "y": 80,
         "wires": [
             [
-                "6188c25b54d3832f",
-                "becf4f005a4df6d3"
+                "159f5b948ce3c807",
+                "3ced8235200f9214"
             ]
         ]
     },
     {
-        "id": "fb0843ad594e925b",
+        "id": "ea23adb03af3089e",
         "type": "comment",
-        "z": "daaeac32c375cb57",
+        "z": "10bde1f224543056",
         "name": "══════ WRITE ══════",
         "info": "",
         "x": 650,
@@ -248,9 +248,9 @@
         "wires": []
     },
     {
-        "id": "d3a61ec31775df45",
+        "id": "11c70118d911a96b",
         "type": "function",
-        "z": "daaeac32c375cb57",
+        "z": "10bde1f224543056",
         "name": "Queue Writes",
         "func": "const params = msg.rpcParams || {};\nconst writes = [];\n\n// For bit field writes to 278, we need to read current value first\nlet needs278Read = false;\n\nif (params.generatorPeakShavingEnabled !== undefined ||\n    params.gridPeakShavingEnabled !== undefined ||\n    params.smartLoadOnGridAlwaysOn !== undefined ||\n    params.externalRelayEnabled !== undefined ||\n    params.lithiumBatteryLossFaultEnabled !== undefined) {\n    needs278Read = true;\n    writes.push({\n        name: 'reg278_bitfields',\n        address: 278,\n        isBitField: true,\n        params: {\n            generatorPeakShavingEnabled: params.generatorPeakShavingEnabled,\n            gridPeakShavingEnabled: params.gridPeakShavingEnabled,\n            smartLoadOnGridAlwaysOn: params.smartLoadOnGridAlwaysOn,\n            externalRelayEnabled: params.externalRelayEnabled,\n            lithiumBatteryLossFaultEnabled: params.lithiumBatteryLossFaultEnabled\n        }\n    });\n}\n\n// Arc fault mode (281)\nif (params.arcFault && params.arcFault.mode !== undefined) {\n    writes.push({\n        name: 'arcFaultMode',\n        address: 281,\n        value: [params.arcFault.mode]\n    });\n}\n\n// Island protection (183)\nif (params.islandProtectionEnabled !== undefined) {\n    writes.push({\n        name: 'islandProtection',\n        address: 183,\n        value: [params.islandProtectionEnabled ? 1 : 0]\n    });\n}\n\n// CT ratios\nif (params.externalMeter) {\n    if (params.externalMeter.ctRatio !== undefined) {\n        writes.push({\n            name: 'ctRatio',\n            address: 447,\n            value: [params.externalMeter.ctRatio]\n        });\n    }\n    if (params.externalMeter.meterCtRatio !== undefined) {\n        writes.push({\n            name: 'meterCtRatio',\n            address: 448,\n            value: [params.externalMeter.meterCtRatio]\n        });\n    }\n}\n\n// Parallel config (436) - bit fields\nif (params.parallel) {\n    const p = params.parallel;\n    if (p.enabled !== undefined || p.role !== undefined || \n        p.phase !== undefined || p.modbusAddress !== undefined) {\n        \n        let val = 0;\n        \n        // Bit 0: enabled\n        if (p.enabled) val |= 0x01;\n        \n        // Bit 1: role (0=slave, 1=master)\n        if (p.enabled && p.role === \"master\") val |= 0x02;\n        \n        // Bits 8-9: phase\n        let phaseBits = 0;\n        if (p.phase === \"A\") phaseBits = 0;\n        else if (p.phase === \"B\") phaseBits = 1;\n        else if (p.phase === \"C\") phaseBits = 2;\n        else if (p.phase === \"void\") phaseBits = 3;\n        val |= (phaseBits << 8);\n        \n        // Bits 10-15: modbus address (0-63)\n        if (p.modbusAddress !== undefined) {\n            val |= ((p.modbusAddress & 0x3F) << 10);\n        }\n        \n        writes.push({\n            name: 'parallelConfig',\n            address: 436,\n            value: [val]\n        });\n    }\n}\n\nif (writes.length === 0) {\n    node.warn(\"No valid parameters to write\");\n    return null;\n}\n\nglobal.set('iaf_write_queue', writes);\nglobal.set('iaf_write_index', 0);\nglobal.set('iaf_needs_278_read', needs278Read);\n\nnode.status({ fill: \"yellow\", shape: \"dot\", text: `Queued ${writes.length} writes` });\n\nreturn msg;",
         "outputs": 1,
@@ -263,14 +263,14 @@
         "y": 260,
         "wires": [
             [
-                "f13d9141d247d25e"
+                "aafc985cf4a02e6e"
             ]
         ]
     },
     {
-        "id": "f13d9141d247d25e",
+        "id": "aafc985cf4a02e6e",
         "type": "function",
-        "z": "daaeac32c375cb57",
+        "z": "10bde1f224543056",
         "name": "Prepare Write (with 278 bit read)",
         "func": "const writes = global.get('iaf_write_queue') || [];\nconst index = global.get('iaf_write_index') || 0;\n\nif (index >= writes.length) {\n    return null;\n}\n\nconst write = writes[index];\n\n// If this is a bit field write for 278, handle specially\nif (write.isBitField && write.address === 278) {\n    const reg278Current = global.get('iaf_reg278_current');\n    \n    if (reg278Current === null || reg278Current === undefined) {\n        // Need to read 278 first\n        msg.payload = {\n            fc: 3,\n            unitid: 1,\n            address: 278,\n            quantity: 1\n        };\n        msg.writeInfo = write;\n        msg.needsBitFieldRead = true;\n        node.status({ fill: \"blue\", shape: \"dot\", text: \"Reading reg 278 first\" });\n        return msg;\n    }\n    \n    // We have current value, do bit manipulation\n    let newVal = reg278Current;\n    const p = write.params;\n    \n    // Bits 2-3: generatorPeakShavingEnabled\n    if (p.generatorPeakShavingEnabled !== undefined) {\n        newVal = newVal & ~0x0C;\n        newVal |= p.generatorPeakShavingEnabled ? 0x0C : 0x08;\n    }\n    \n    // Bits 4-5: gridPeakShavingEnabled\n    if (p.gridPeakShavingEnabled !== undefined) {\n        newVal = newVal & ~0x30;\n        newVal |= p.gridPeakShavingEnabled ? 0x30 : 0x20;\n    }\n    \n    // Bits 6-7: smartLoadOnGridAlwaysOn\n    if (p.smartLoadOnGridAlwaysOn !== undefined) {\n        newVal = newVal & ~0xC0;\n        newVal |= p.smartLoadOnGridAlwaysOn ? 0xC0 : 0x80;\n    }\n    \n    // Bits 8-9: externalRelayEnabled\n    if (p.externalRelayEnabled !== undefined) {\n        newVal = newVal & ~0x0300;\n        newVal |= p.externalRelayEnabled ? 0x0300 : 0x0200;\n    }\n    \n    // Bits 10-11: lithiumBatteryLossFaultEnabled\n    if (p.lithiumBatteryLossFaultEnabled !== undefined) {\n        newVal = newVal & ~0x0C00;\n        newVal |= p.lithiumBatteryLossFaultEnabled ? 0x0C00 : 0x0800;\n    }\n    \n    msg.payload = {\n        fc: 16,\n        unitid: 1,\n        address: 278,\n        quantity: 1,\n        value: [newVal]\n    };\n    msg.writeInfo = write;\n    msg.needsBitFieldRead = false;\n    node.status({ fill: \"yellow\", shape: \"dot\", text: `[${index + 1}/${writes.length}] ${write.name}` });\n    return msg;\n}\n\n// Regular write\nmsg.payload = {\n    fc: 16,\n    unitid: 1,\n    address: write.address,\n    quantity: write.value.length,\n    value: write.value\n};\nmsg.writeInfo = write;\nmsg.needsBitFieldRead = false;\n\nnode.status({ fill: \"yellow\", shape: \"dot\", text: `[${index + 1}/${writes.length}] ${write.name}` });\n\nreturn msg;",
         "outputs": 1,
@@ -283,14 +283,14 @@
         "y": 260,
         "wires": [
             [
-                "e90673a209fb4b48"
+                "2b39898bdbc15cb8"
             ]
         ]
     },
     {
-        "id": "e90673a209fb4b48",
+        "id": "2b39898bdbc15cb8",
         "type": "function",
-        "z": "daaeac32c375cb57",
+        "z": "10bde1f224543056",
         "name": "Route: Bit Read or Write?",
         "func": "if (msg.needsBitFieldRead) {\n    return [msg, null];\n} else {\n    return [null, msg];\n}",
         "outputs": 2,
@@ -303,17 +303,17 @@
         "y": 260,
         "wires": [
             [
-                "f59f633316be161d"
+                "b4d56b9dac9a369f"
             ],
             [
-                "10d5922bb73ba446"
+                "22a69af7cedcc47a"
             ]
         ]
     },
     {
-        "id": "f59f633316be161d",
+        "id": "b4d56b9dac9a369f",
         "type": "modbus-flex-getter",
-        "z": "daaeac32c375cb57",
+        "z": "10bde1f224543056",
         "name": "Read 278 for Bit Manipulation",
         "showStatusActivities": true,
         "showErrors": true,
@@ -331,15 +331,15 @@
         "y": 200,
         "wires": [
             [
-                "a4c5f2bc8b1e0931"
+                "e9eaa1daac1a1e20"
             ],
             []
         ]
     },
     {
-        "id": "a4c5f2bc8b1e0931",
+        "id": "e9eaa1daac1a1e20",
         "type": "function",
-        "z": "daaeac32c375cb57",
+        "z": "10bde1f224543056",
         "name": "Store 278 & Retry",
         "func": "let data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nconst reg278 = Array.isArray(data) ? data[0] : 0;\nglobal.set('iaf_reg278_current', reg278);\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: \"Reg 278 read: \" + reg278 });\n\n// Retry the write preparation\nreturn msg;",
         "outputs": 1,
@@ -352,14 +352,14 @@
         "y": 200,
         "wires": [
             [
-                "f13d9141d247d25e"
+                "aafc985cf4a02e6e"
             ]
         ]
     },
     {
-        "id": "10d5922bb73ba446",
+        "id": "22a69af7cedcc47a",
         "type": "modbus-flex-write",
-        "z": "daaeac32c375cb57",
+        "z": "10bde1f224543056",
         "name": "Write Register",
         "showStatusActivities": true,
         "showErrors": true,
@@ -371,15 +371,15 @@
         "y": 320,
         "wires": [
             [
-                "51504c9b071ed2b0"
+                "3eb8aec438692917"
             ],
             []
         ]
     },
     {
-        "id": "51504c9b071ed2b0",
+        "id": "3eb8aec438692917",
         "type": "function",
-        "z": "daaeac32c375cb57",
+        "z": "10bde1f224543056",
         "name": "Write OK",
         "func": "const writes = global.get('iaf_write_queue') || [];\nlet index = global.get('iaf_write_index') || 0;\n\nconst current = msg.writeInfo;\nconst results = global.get('iaf_write_results') || [];\n\nif (current) {\n    results.push({\n        register: current.address,\n        name: current.name,\n        value: current.isBitField ? \"bit manipulation\" : current.value[0],\n        success: true\n    });\n    global.set('iaf_write_results', results);\n}\n\nindex++;\nglobal.set('iaf_write_index', index);\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `${current.name} OK` });\n\nif (index < writes.length) {\n    return [msg, null];\n}\n\n// All writes done - trigger read\nmsg.writeResult = {\n    count: results.length,\n    writes: results\n};\n\nglobal.set('iaf_write_queue', null);\nglobal.set('iaf_write_index', null);\nglobal.set('iaf_write_results', null);\nglobal.set('iaf_reg278_current', null);\n\nreturn [null, msg];",
         "outputs": 2,
@@ -392,17 +392,17 @@
         "y": 320,
         "wires": [
             [
-                "387f8e1bbf2850c6"
+                "b857795113b45b43"
             ],
             [
-                "34686dde6b849a50"
+                "ea1295ccc2a67e5b"
             ]
         ]
     },
     {
-        "id": "387f8e1bbf2850c6",
+        "id": "b857795113b45b43",
         "type": "delay",
-        "z": "daaeac32c375cb57",
+        "z": "10bde1f224543056",
         "name": "500ms",
         "pauseType": "delay",
         "timeout": "500",
@@ -420,14 +420,14 @@
         "y": 320,
         "wires": [
             [
-                "f13d9141d247d25e"
+                "aafc985cf4a02e6e"
             ]
         ]
     },
     {
-        "id": "6188c25b54d3832f",
+        "id": "159f5b948ce3c807",
         "type": "debug",
-        "z": "daaeac32c375cb57",
+        "z": "10bde1f224543056",
         "name": "Inv Adv Func",
         "active": true,
         "tosidebar": true,
@@ -442,9 +442,9 @@
         "wires": []
     },
     {
-        "id": "becf4f005a4df6d3",
+        "id": "3ced8235200f9214",
         "type": "function",
-        "z": "daaeac32c375cb57",
+        "z": "10bde1f224543056",
         "name": "RPC Response",
         "func": "const rpcTopic = flow.get(\"iaf_rpc_response_topic\");\nflow.set(\"iaf_rpc_response_topic\", null);\n\nif (!rpcTopic) {\n    return null;\n}\n\nmsg.topic = rpcTopic;\nreturn msg;",
         "outputs": 1,
@@ -457,14 +457,14 @@
         "y": 100,
         "wires": [
             [
-                "8a9478ddb84fc29c"
+                "7964014ab789868b"
             ]
         ]
     },
     {
-        "id": "8a9478ddb84fc29c",
+        "id": "7964014ab789868b",
         "type": "mqtt out",
-        "z": "daaeac32c375cb57",
+        "z": "10bde1f224543056",
         "name": "MQTT Response",
         "topic": "",
         "qos": "1",

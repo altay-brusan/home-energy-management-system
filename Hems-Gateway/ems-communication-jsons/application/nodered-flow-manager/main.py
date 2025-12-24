@@ -215,6 +215,7 @@ class FlowManagerApp:
         if self.settings:
             self.url_var.set(self.settings.get('thingsboard_url', ''))
             self.username_var.set(self.settings.get('username', ''))
+            self.device_var.set(self.settings.get('device_name', ''))
 
         # Log startup
         self.log("Application started", "INFO")
@@ -288,14 +289,11 @@ class FlowManagerApp:
                 font=("Segoe UI", 9)).grid(row=row, column=1, sticky='ew', pady=5, padx=(10, 0))
         row += 1
 
-        # Device selection
-        tk.Label(inner, text="Device:", bg=self.COLORS['white'],
+        # Device Name
+        tk.Label(inner, text="Device Name:", bg=self.COLORS['white'],
                 font=("Segoe UI", 9)).grid(row=row, column=0, sticky='w', pady=5)
-        self.device_combo = ttk.Combobox(inner, textvariable=self.device_var,
-                                        state='readonly', width=47,
-                                        font=("Segoe UI", 9))
-        self.device_combo.grid(row=row, column=1, sticky='ew', pady=5, padx=(10, 0))
-        self.device_combo.bind('<<ComboboxSelected>>', self._on_device_selected)
+        tk.Entry(inner, textvariable=self.device_var, width=50,
+                font=("Segoe UI", 9)).grid(row=row, column=1, sticky='ew', pady=5, padx=(10, 0))
         row += 1
 
         # Buttons and status
@@ -429,7 +427,7 @@ class FlowManagerApp:
             settings = {
                 'thingsboard_url': self.url_var.get(),
                 'username': self.username_var.get(),
-                'last_device_id': self.current_device_id
+                'device_name': self.device_var.get()
             }
 
             with open(self.config_file, 'w') as f:
@@ -455,13 +453,18 @@ class FlowManagerApp:
         self.status_label.config(fg=color)
 
     def connect(self):
-        """Connect to ThingsBoard and load devices"""
+        """Connect to ThingsBoard and load device flows"""
         url = self.url_var.get().strip()
         username = self.username_var.get().strip()
         password = self.password_var.get().strip()
+        device_name = self.device_var.get().strip()
 
         if not url or not username or not password:
             messagebox.showwarning("Warning", "Please fill in all connection fields")
+            return
+
+        if not device_name:
+            messagebox.showwarning("Warning", "Please enter the device name")
             return
 
         def _connect_thread():
@@ -485,27 +488,43 @@ class FlowManagerApp:
                 if not devices:
                     raise Exception("No devices found")
 
-                # Populate device dropdown
+                # Build device map
                 self.devices_map = {dev['name']: dev['id']['id'] for dev in devices}
-                device_names = list(self.devices_map.keys())
 
-                self.device_combo['values'] = device_names
+                # Find the specified device
+                if device_name not in self.devices_map:
+                    raise Exception(f"Device '{device_name}' not found.\nAvailable devices: {', '.join(self.devices_map.keys())}")
 
-                # Select last used device if available
-                if self.settings.get('last_device_id'):
-                    for name, dev_id in self.devices_map.items():
-                        if dev_id == self.settings['last_device_id']:
-                            self.device_var.set(name)
-                            break
-                elif device_names:
-                    self.device_var.set(device_names[0])
-
-                self.log(f"Loaded {len(devices)} device(s)", "SUCCESS")
+                # Set current device
+                self.current_device_id = self.devices_map[device_name]
+                self.log(f"Connected to device: {device_name}", "SUCCESS")
                 self.update_status("🟢 Connected", self.COLORS['success'])
 
-                # Auto-load flows if device selected
-                if self.device_var.get():
-                    self._on_device_selected(None)
+                # Load flows from device
+                self.log("Loading flows from device...", "INFO")
+                response = self.client.get_flows(self.current_device_id)
+
+                if not response.get('success'):
+                    raise Exception(response.get('message', 'Failed to get flows'))
+
+                flows = response.get('flows', [])
+
+                # Filter only tab-type flows
+                self.flows_data = [f for f in flows if f.get('type') == 'tab']
+
+                # Update treeview
+                self.tree.delete(*self.tree.get_children())
+
+                for flow in self.flows_data:
+                    flow_id = flow.get('id', '')
+                    label = flow.get('label', 'Unnamed Flow')
+
+                    # Check if protected
+                    status = "🔒 Protected" if flow_id == self.PROTECTED_FLOW_ID else ""
+
+                    self.tree.insert('', tk.END, values=(flow_id, label, status))
+
+                self.log(f"Loaded {len(self.flows_data)} flow(s)", "SUCCESS")
 
             except Exception as e:
                 self.log(f"Connection failed: {str(e)}", "ERROR")

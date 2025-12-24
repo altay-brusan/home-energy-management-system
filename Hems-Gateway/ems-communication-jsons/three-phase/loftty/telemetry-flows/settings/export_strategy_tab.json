@@ -1,15 +1,15 @@
 [
     {
-        "id": "export_strategy_tab",
+        "id": "3874bba10065de29",
         "type": "tab",
         "label": "ExportStrategy",
         "disabled": false,
         "info": "Export Strategy Config - Register 242\n\nValues:\n- 0 = selling_first\n- 1 = zero_export_to_load\n- 2 = zero_export_to_ct"
     },
     {
-        "id": "es_link_in_rpc",
+        "id": "4f0622aea61be01b",
         "type": "link in",
-        "z": "export_strategy_tab",
+        "z": "3874bba10065de29",
         "name": "RPC Request",
         "links": [
             "rpc_es_link_out"
@@ -18,14 +18,14 @@
         "y": 80,
         "wires": [
             [
-                "es_route_operation"
+                "0252c81ca8e3cb39"
             ]
         ]
     },
     {
-        "id": "es_comment_manual",
+        "id": "00707e88737ef0a8",
         "type": "comment",
-        "z": "export_strategy_tab",
+        "z": "3874bba10065de29",
         "name": "══════ MANUAL TEST ══════",
         "info": "",
         "x": 170,
@@ -33,9 +33,9 @@
         "wires": []
     },
     {
-        "id": "es_manual_read",
+        "id": "f0627ab697318992",
         "type": "inject",
-        "z": "export_strategy_tab",
+        "z": "3874bba10065de29",
         "name": "Manual Read",
         "props": [
             {
@@ -58,14 +58,14 @@
         "y": 180,
         "wires": [
             [
-                "es_route_operation"
+                "0252c81ca8e3cb39"
             ]
         ]
     },
     {
-        "id": "es_manual_selling",
+        "id": "8c04f51f3d241eaa",
         "type": "inject",
-        "z": "export_strategy_tab",
+        "z": "3874bba10065de29",
         "name": "Set: Selling First",
         "props": [
             {
@@ -93,14 +93,14 @@
         "y": 220,
         "wires": [
             [
-                "es_route_operation"
+                "0252c81ca8e3cb39"
             ]
         ]
     },
     {
-        "id": "es_manual_load",
+        "id": "e9d254bf04864586",
         "type": "inject",
-        "z": "export_strategy_tab",
+        "z": "3874bba10065de29",
         "name": "Set: Zero Export to Load",
         "props": [
             {
@@ -128,14 +128,14 @@
         "y": 260,
         "wires": [
             [
-                "es_route_operation"
+                "0252c81ca8e3cb39"
             ]
         ]
     },
     {
-        "id": "es_manual_ct",
+        "id": "49b918b7568d2f98",
         "type": "inject",
-        "z": "export_strategy_tab",
+        "z": "3874bba10065de29",
         "name": "Set: Zero Export to CT",
         "props": [
             {
@@ -163,14 +163,14 @@
         "y": 300,
         "wires": [
             [
-                "es_route_operation"
+                "0252c81ca8e3cb39"
             ]
         ]
     },
     {
-        "id": "es_route_operation",
+        "id": "0252c81ca8e3cb39",
         "type": "function",
-        "z": "export_strategy_tab",
+        "z": "3874bba10065de29",
         "name": "Route: Read or Write?",
         "func": "const opType = msg.operationType || 'read';\n\nif (opType === 'write') {\n    return [null, msg];\n} else {\n    return [msg, null];\n}",
         "outputs": 2,
@@ -183,17 +183,17 @@
         "y": 180,
         "wires": [
             [
-                "es_prep_read"
+                "3d28e38f4a546f4d"
             ],
             [
-                "es_prep_write"
+                "b9e111eda41ff1b2"
             ]
         ]
     },
     {
-        "id": "es_comment_read",
+        "id": "a4ab5245b17061e6",
         "type": "comment",
-        "z": "export_strategy_tab",
+        "z": "3874bba10065de29",
         "name": "══════ READ ══════",
         "info": "",
         "x": 640,
@@ -201,9 +201,9 @@
         "wires": []
     },
     {
-        "id": "es_prep_read",
+        "id": "3d28e38f4a546f4d",
         "type": "function",
-        "z": "export_strategy_tab",
+        "z": "3874bba10065de29",
         "name": "Prep Read Reg 242",
         "func": "msg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 242,\n    quantity: 1\n};\nreturn msg;",
         "outputs": 1,
@@ -216,14 +216,14 @@
         "y": 80,
         "wires": [
             [
-                "es_modbus_read"
+                "1f7e7fe329ae0178"
             ]
         ]
     },
     {
-        "id": "es_modbus_read",
+        "id": "1f7e7fe329ae0178",
         "type": "modbus-flex-getter",
-        "z": "export_strategy_tab",
+        "z": "3874bba10065de29",
         "name": "Read Reg 242",
         "showStatusActivities": true,
         "showErrors": true,
@@ -241,15 +241,15 @@
         "y": 80,
         "wires": [
             [
-                "es_build_read_response"
+                "8b7fbec5626e0bea"
             ],
             []
         ]
     },
     {
-        "id": "es_build_read_response",
+        "id": "8b7fbec5626e0bea",
         "type": "function",
-        "z": "export_strategy_tab",
+        "z": "3874bba10065de29",
         "name": "Build Read Response",
         "func": "let data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data) || data.length < 1) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Read failed\" });\n    return null;\n}\n\nconst code = data[0];\n\nconst strategyMap = {\n    0: \"selling_first\",\n    1: \"zero_export_to_load\",\n    2: \"zero_export_to_ct\"\n};\n\nconst strategy = strategyMap[code] || \"unknown\";\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\n\nconst state = {\n    kind: \"ExportStrategyState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    gatewayId: gatewayId,\n    exportStrategy: strategy,\n    exportStrategyCode: code\n};\n\nmsg.payload = state;\nmsg.state = state;\n\nnode.status({ fill: \"green\", shape: \"dot\", text: strategy });\n\nreturn msg;",
         "outputs": 1,
@@ -262,15 +262,15 @@
         "y": 80,
         "wires": [
             [
-                "es_debug",
-                "es_rpc_response"
+                "56a05af442c1aae5",
+                "d2ab1e05a5821975"
             ]
         ]
     },
     {
-        "id": "es_comment_write",
+        "id": "e180b1cc914bc662",
         "type": "comment",
-        "z": "export_strategy_tab",
+        "z": "3874bba10065de29",
         "name": "══════ WRITE ══════",
         "info": "",
         "x": 650,
@@ -278,9 +278,9 @@
         "wires": []
     },
     {
-        "id": "es_prep_write",
+        "id": "b9e111eda41ff1b2",
         "type": "function",
-        "z": "export_strategy_tab",
+        "z": "3874bba10065de29",
         "name": "Prep Write Reg 242",
         "func": "const params = msg.rpcParams || {};\n\nconst strategyToCode = {\n    \"selling_first\": 0,\n    \"zero_export_to_load\": 1,\n    \"zero_export_to_ct\": 2\n};\n\nlet code = null;\n\n// Accept both string and code\nif (params.exportStrategy !== undefined) {\n    code = strategyToCode[params.exportStrategy];\n} else if (params.exportStrategyCode !== undefined) {\n    code = params.exportStrategyCode;\n}\n\nif (code === null || code === undefined) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Invalid params\" });\n    node.error(\"Missing exportStrategy or exportStrategyCode\");\n    return null;\n}\n\nconst codeToStrategy = {\n    0: \"selling_first\",\n    1: \"zero_export_to_load\",\n    2: \"zero_export_to_ct\"\n};\n\nmsg.writeInfo = {\n    code: code,\n    strategy: codeToStrategy[code] || \"unknown\"\n};\n\nmsg.payload = {\n    fc: 16,\n    unitid: 1,\n    address: 242,\n    quantity: 1,\n    value: [code]\n};\n\nnode.status({ fill: \"yellow\", shape: \"dot\", text: \"Writing: \" + msg.writeInfo.strategy });\n\nreturn msg;",
         "outputs": 1,
@@ -293,14 +293,14 @@
         "y": 240,
         "wires": [
             [
-                "es_modbus_write"
+                "ee34ed87be3557f4"
             ]
         ]
     },
     {
-        "id": "es_modbus_write",
+        "id": "ee34ed87be3557f4",
         "type": "modbus-flex-write",
-        "z": "export_strategy_tab",
+        "z": "3874bba10065de29",
         "name": "Write Reg 242",
         "showStatusActivities": true,
         "showErrors": true,
@@ -312,17 +312,17 @@
         "y": 240,
         "wires": [
             [
-                "es_build_write_response"
+                "db75ab1daa9dafa9"
             ],
             [
-                "es_build_write_response"
+                "db75ab1daa9dafa9"
             ]
         ]
     },
     {
-        "id": "es_build_write_response",
+        "id": "db75ab1daa9dafa9",
         "type": "function",
-        "z": "export_strategy_tab",
+        "z": "3874bba10065de29",
         "name": "Build Write Response",
         "func": "// Filter out confirmation messages\nconst isConfirmation = msg.payload && \n                       msg.payload.address !== undefined && \n                       msg.payload.length !== undefined &&\n                       !msg.payload.error;\n\nif (isConfirmation) {\n    return null;\n}\n\nconst writeInfo = msg.writeInfo || { code: -1, strategy: 'unknown' };\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\n\nconst state = {\n    kind: \"ExportStrategyState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    gatewayId: gatewayId,\n    success: true,\n    message: \"Export strategy updated\",\n    exportStrategy: writeInfo.strategy,\n    exportStrategyCode: writeInfo.code\n};\n\nmsg.payload = state;\nmsg.state = state;\n\nnode.status({ fill: \"green\", shape: \"dot\", text: \"OK: \" + writeInfo.strategy });\n\nreturn msg;",
         "outputs": 1,
@@ -335,15 +335,15 @@
         "y": 240,
         "wires": [
             [
-                "es_debug",
-                "es_rpc_response"
+                "56a05af442c1aae5",
+                "d2ab1e05a5821975"
             ]
         ]
     },
     {
-        "id": "es_debug",
+        "id": "56a05af442c1aae5",
         "type": "debug",
-        "z": "export_strategy_tab",
+        "z": "3874bba10065de29",
         "name": "Export Strategy",
         "active": true,
         "tosidebar": true,
@@ -358,9 +358,9 @@
         "wires": []
     },
     {
-        "id": "es_rpc_response",
+        "id": "d2ab1e05a5821975",
         "type": "function",
-        "z": "export_strategy_tab",
+        "z": "3874bba10065de29",
         "name": "RPC Response",
         "func": "if (!msg.rpcResponseTopic) {\n    return null;\n}\n\nmsg.topic = msg.rpcResponseTopic;\nreturn msg;",
         "outputs": 1,
@@ -373,14 +373,14 @@
         "y": 180,
         "wires": [
             [
-                "es_mqtt_response"
+                "b351debac265fbe9"
             ]
         ]
     },
     {
-        "id": "es_mqtt_response",
+        "id": "b351debac265fbe9",
         "type": "mqtt out",
-        "z": "export_strategy_tab",
+        "z": "3874bba10065de29",
         "name": "MQTT Response",
         "topic": "",
         "qos": "1",
@@ -398,28 +398,28 @@
     {
         "id": "e4e4f3e2a4f4e004",
         "type": "modbus-client",
-        "name": "EC100 Modbus",
-        "clienttype": "tcp",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
         "bufferCommands": true,
         "stateLogEnabled": false,
         "queueLogEnabled": false,
-        "failureLogEnabled": true,
-        "tcpHost": "192.168.1.100",
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
         "tcpPort": "502",
         "tcpType": "DEFAULT",
-        "serialPort": "/dev/ttyUSB0",
-        "serialType": "RTU-BUFFERD",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
         "serialBaudrate": "9600",
         "serialDatabits": "8",
         "serialStopbits": "1",
         "serialParity": "none",
         "serialConnectionDelay": "100",
-        "serialAsciiResponseStartDelimiter": "0x3A",
-        "unit_id": "1",
-        "commandDelay": "1",
-        "clientTimeout": "1000",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
         "reconnectOnTimeout": true,
-        "reconnectTimeout": "2000",
+        "reconnectTimeout": 2000,
         "parallelUnitIdsAllowed": true,
         "showErrors": false,
         "showWarnings": true,
@@ -453,6 +453,8 @@
         "willQos": "0",
         "willRetain": "false",
         "willPayload": "",
-        "willMsg": {}
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
     }
 ]
