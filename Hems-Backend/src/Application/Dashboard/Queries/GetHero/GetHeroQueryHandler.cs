@@ -43,10 +43,10 @@
 //        // Bugünün son hourly verisini al
 //        var lastHourlyData = await _context.DeviceEnergyData
 //            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId.Value && 
-//                       x.DataDateTime >= startOfDay &&
-//                       x.DataDateTime < endOfDay &&
+//                       x.DeviceLocalTime >= startOfDay &&
+//                       x.DeviceLocalTime < endOfDay &&
 //                       x.DataType == "DailyCumulativeEnergyData")
-//            .OrderByDescending(x => x.DataDateTime)
+//            .OrderByDescending(x => x.DeviceLocalTime)
 //            .FirstOrDefaultAsync(cancellationToken);
 
 //        if (lastHourlyData == null)
@@ -74,11 +74,11 @@
 //        // Current Power için bir önceki veriyi al
 //        var previousHourlyData = await _context.DeviceEnergyData
 //            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId.Value && 
-//                       x.DataDateTime >= startOfDay &&
-//                       x.DataDateTime < endOfDay &&
+//                       x.DeviceLocalTime >= startOfDay &&
+//                       x.DeviceLocalTime < endOfDay &&
 //                       x.DataType == "DailyCumulativeEnergyData" &&
-//                       x.DataDateTime < lastHourlyData.DataDateTime)
-//            .OrderByDescending(x => x.DataDateTime)
+//                       x.DeviceLocalTime < lastHourlyData.DeviceLocalTime)
+//            .OrderByDescending(x => x.DeviceLocalTime)
 //            .FirstOrDefaultAsync(cancellationToken);
 
 //        double currentPower = 0;
@@ -95,7 +95,7 @@
 //        }
 
 //        // Last Sync hesapla
-//        var timeDiff = DateTime.UtcNow - lastHourlyData.DataDateTime;
+//        var timeDiff = DateTime.UtcNow - lastHourlyData.DeviceLocalTime;
 //        string lastSync = GetTimeAgoString(timeDiff);
 
 //        return new HeroResponseDto

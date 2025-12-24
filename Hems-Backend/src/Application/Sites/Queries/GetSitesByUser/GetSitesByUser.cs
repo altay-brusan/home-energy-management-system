@@ -49,9 +49,9 @@ public class GetSitesByUserQueryHandler : IRequestHandler<GetSitesByUserQuery, S
                 var lastEnergyData = await _context.DeviceEnergyData
                     .Where(x => x.ThingsBoardDeviceId == deviceId && 
                                x.DataType == "DailyCumulativeEnergyData" &&
-                               x.DataDateTime >= startOfDay &&
-                               x.DataDateTime < endOfDay)
-                    .OrderByDescending(x => x.DataDateTime)
+                               x.DeviceLocalTime >= startOfDay &&
+                               x.DeviceLocalTime < endOfDay)
+                    .OrderByDescending(x => x.DeviceLocalTime)
                     .FirstOrDefaultAsync(cancellationToken);
                 
                 if (lastEnergyData != null)

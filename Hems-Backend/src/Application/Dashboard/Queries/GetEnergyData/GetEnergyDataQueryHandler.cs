@@ -63,15 +63,15 @@
 //        {
 //            // Son gün bugün ise: önceki günler Lifetime, bugün Daily
 //            var previousDays = await query
-//                .Where(x => x.DataDateTime.Date >= startDate.Date && 
-//                           x.DataDateTime.Date < endDate.Date &&
+//                .Where(x => x.DeviceLocalTime.Date >= startDate.Date && 
+//                           x.DeviceLocalTime.Date < endDate.Date &&
 //                           x.DataType == "LifetimeEnergyData")
 //                .ToListAsync(cancellationToken);
 
 //            var todayData = await query
-//                .Where(x => x.DataDateTime.Date == endDate.Date && 
+//                .Where(x => x.DeviceLocalTime.Date == endDate.Date && 
 //                           x.DataType == "DailyCumulativeEnergyData")
-//                .OrderByDescending(x => x.DataDateTime)
+//                .OrderByDescending(x => x.DeviceLocalTime)
 //                .FirstOrDefaultAsync(cancellationToken);
 
 //            var result = previousDays.ToList();
@@ -84,8 +84,8 @@
 //        {
 //            // Son gün bugün değilse: tüm günler Lifetime
 //            return await query
-//                .Where(x => x.DataDateTime.Date >= startDate.Date && 
-//                           x.DataDateTime.Date <= endDate.Date &&
+//                .Where(x => x.DeviceLocalTime.Date >= startDate.Date && 
+//                           x.DeviceLocalTime.Date <= endDate.Date &&
 //                           x.DataType == "LifetimeEnergyData")
 //                .ToListAsync(cancellationToken);
 //        }

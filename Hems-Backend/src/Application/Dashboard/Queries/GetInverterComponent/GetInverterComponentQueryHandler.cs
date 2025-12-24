@@ -62,7 +62,7 @@ public class GetInverterComponentQueryHandler : IRequestHandler<GetInverterCompo
         var hourlyData = await _context.DeviceEnergyData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
                        x.DataType == "DailyCumulativeEnergyData")
-            .OrderByDescending(x => x.DataDateTime)
+            .OrderByDescending(x => x.DeviceLocalTime)
             .Take(2)
             .ToListAsync(cancellationToken);
 
@@ -77,7 +77,7 @@ public class GetInverterComponentQueryHandler : IRequestHandler<GetInverterCompo
         var previousPower = CalculateNetPower(previousData);
 
         // Saatlik farkı hesapla (kWh -> kW dönüşümü için saat farkına böl)
-        var timeDiffHours = (latestData.DataDateTime - previousData.DataDateTime).TotalHours;
+        var timeDiffHours = (latestData.DeviceLocalTime - previousData.DeviceLocalTime).TotalHours;
         
         if (timeDiffHours <= 0)
             return (0, "kW");
@@ -129,10 +129,10 @@ public class GetInverterComponentQueryHandler : IRequestHandler<GetInverterCompo
         
         var todayData = await _context.DeviceEnergyData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
-                       x.DataDateTime >= startOfDay &&
-                       x.DataDateTime < endOfDay &&
+                       x.DeviceLocalTime >= startOfDay &&
+                       x.DeviceLocalTime < endOfDay &&
                        x.DataType == "DailyCumulativeEnergyData")
-            .OrderByDescending(x => x.DataDateTime)
+            .OrderByDescending(x => x.DeviceLocalTime)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (todayData == null)
@@ -146,7 +146,7 @@ public class GetInverterComponentQueryHandler : IRequestHandler<GetInverterCompo
         var totalData = await _context.DeviceEnergyData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId && 
                        x.DataType == "LifetimeEnergyData")
-            .OrderByDescending(x => x.DataDateTime)
+            .OrderByDescending(x => x.DeviceLocalTime)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (totalData == null)

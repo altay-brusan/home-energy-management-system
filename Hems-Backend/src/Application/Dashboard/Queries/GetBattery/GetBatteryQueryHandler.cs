@@ -43,9 +43,9 @@ public class GetBatteryQueryHandler : IRequestHandler<GetBatteryQuery, BatteryRe
         // Bugünün BatteryClusterData verilerini çek
         var batteryData = await _context.DeviceData
             .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId.Value && 
-                       x.RequestDate.Date == todayUtc.Date &&
+                       x.DeviceLocalTime.Date == todayUtc.Date &&
                        x.DataType == "BatteryClusterData")
-            .OrderBy(x => x.RequestDate)
+            .OrderBy(x => x.DeviceLocalTime)
             .ToListAsync(cancellationToken);
 
         if (!batteryData.Any())
@@ -81,9 +81,9 @@ public class GetBatteryQueryHandler : IRequestHandler<GetBatteryQuery, BatteryRe
 
                     socDataPoints.Add(new BatteryDataPoint
                     {
-                        DateTime = data.RequestDate,
+                        DateTime = data.DeviceLocalTime,
                         Soc = soc,
-                        Label = data.RequestDate.ToString("HH:mm")
+                        Label = data.DeviceLocalTime.ToString("HH:mm")
                     });
                 }
             }

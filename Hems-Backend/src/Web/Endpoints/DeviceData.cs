@@ -388,7 +388,7 @@ private async Task<IResult> ProcessEnergyFlowTelemetry(
         var command = new CreateDeviceEnergyDataCommand
         {
             DeviceId = deviceId,
-            DataDateTime = dataDateTime,
+            DeviceLocalTime = dataDateTime,
             DataType = dataType,
             PvEnergyKWhTotal = pvTotalEnergy ?? 0,
             PvEnergyKWhToday = pvTotalEnergy ?? 0,
@@ -449,7 +449,7 @@ private async Task<IResult> ProcessTelemetry(
             return Results.Problem("Missing 'data' object", statusCode: 400);
         }
 
-        // 2) RequestDate comes from data.timestampUtc
+        // 2) DeviceLocalTime comes from data.timestampUtc
         DateTime requestDate = DateTime.UtcNow;
         if (dataElement.TryGetProperty("timestampUtc", out var tsEl))
         {
@@ -509,7 +509,7 @@ private async Task<IResult> ProcessTelemetry(
         {
             DataType = dataType,
             DeviceId = deviceId,
-            RequestDate = requestDate,
+            DeviceLocalTime = requestDate,
             Data = dataJson
         };
 
@@ -682,7 +682,7 @@ private async Task<IResult> ProcessPowerFlowTelemetry(
         var command = new CreateDevicePowerDataCommand
         {
             DeviceId = deviceId,
-            DataDateTime = dataDateTime,
+            DeviceLocalTime = dataDateTime,
             DataType = dataType,
             Version = version,
             PvTotalPowerW = pvTotalPowerW,

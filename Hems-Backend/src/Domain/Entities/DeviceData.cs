@@ -9,7 +9,7 @@ public class DeviceData : BaseAuditableEntity
     
     public Guid ThingsBoardDeviceId { get; set; }
     
-    public DateTime RequestDate { get; set; }
+    public DateTime DeviceLocalTime { get; set; }
     
     public JsonDocument Data { get; set; } = JsonDocument.Parse("{}");
     

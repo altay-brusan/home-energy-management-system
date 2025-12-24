@@ -5007,7 +5007,7 @@
             "type": "string",
             "format": "guid"
           },
-          "dataDateTime": {
+          "deviceLocalTime": {
             "type": "string",
             "format": "date-time"
           },
@@ -5868,7 +5868,7 @@
             "type": "string",
             "format": "guid"
           },
-          "requestDate": {
+          "deviceLocalTime": {
             "type": "string",
             "format": "date-time"
           },

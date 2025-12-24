@@ -12,7 +12,7 @@ public class DeviceWeatherData : BaseAuditableEntity
     public Guid ThingsBoardDeviceId { get; set; }
     
     [Required]
-    public DateTime DataDateTime { get; set; }
+    public DateTime DeviceLocalTime { get; set; }
     
     // Weather information
     public decimal? Temperature { get; set; }

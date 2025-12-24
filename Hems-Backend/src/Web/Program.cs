@@ -35,11 +35,11 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    // await app.InitialiseDatabaseAsync(); // Temporarily disabled for migration
+    await app.InitialiseDatabaseAsync();
 }
 else
 {
-    // await app.InitialiseDatabaseAsync(); // Temporarily disabled for migration
+    await app.InitialiseDatabaseAsync();
     app.UseHsts();
 }
 

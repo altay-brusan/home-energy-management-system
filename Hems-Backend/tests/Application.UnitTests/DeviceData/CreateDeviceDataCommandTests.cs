@@ -52,7 +52,7 @@ public class CreateDeviceDataCommandTests
         {
             DataType = "temperature_sensor",
             DeviceId = deviceId,
-            RequestDate = requestDate,
+            DeviceLocalTime = requestDate,
             Data = data
         };
 
@@ -78,7 +78,7 @@ public class CreateDeviceDataCommandTests
         var createdEntity = deviceDataList.First();
         Assert.That(createdEntity.DataType, Is.EqualTo("temperature_sensor"));
         Assert.That(createdEntity.ThingsBoardDeviceId, Is.EqualTo(deviceId));
-        Assert.That(createdEntity.RequestDate, Is.EqualTo(requestDate));
+        Assert.That(createdEntity.DeviceLocalTime, Is.EqualTo(requestDate));
         Assert.That(createdEntity.Data.RootElement.GetRawText(), Is.EqualTo(data.RootElement.GetRawText()));
         
         _deviceDataDbSet.Verify(d => d.Add(It.IsAny<Hems_Backend.Domain.Entities.DeviceData>()), Times.Once);
@@ -112,7 +112,7 @@ public class CreateDeviceDataCommandTests
         {
             DataType = "battery_info",
             DeviceId = deviceId,
-            RequestDate = requestDate,
+            DeviceLocalTime = requestDate,
             Data = batteryData
         };
 
@@ -138,7 +138,7 @@ public class CreateDeviceDataCommandTests
         var createdEntity = deviceDataList.First();
         Assert.That(createdEntity.DataType, Is.EqualTo("battery_info"));
         Assert.That(createdEntity.ThingsBoardDeviceId, Is.EqualTo(deviceId));
-        Assert.That(createdEntity.RequestDate, Is.EqualTo(requestDate));
+        Assert.That(createdEntity.DeviceLocalTime, Is.EqualTo(requestDate));
         
         // Verify JSON data structure
         var jsonData = createdEntity.Data.RootElement;
@@ -175,7 +175,7 @@ public class CreateDeviceDataCommandTests
         {
             DataType = "inverter_realtime_info",
             DeviceId = deviceId,
-            RequestDate = requestDate,
+            DeviceLocalTime = requestDate,
             Data = inverterData
         };
 
@@ -201,7 +201,7 @@ public class CreateDeviceDataCommandTests
         var createdEntity = deviceDataList.First();
         Assert.That(createdEntity.DataType, Is.EqualTo("inverter_realtime_info"));
         Assert.That(createdEntity.ThingsBoardDeviceId, Is.EqualTo(deviceId));
-        Assert.That(createdEntity.RequestDate, Is.EqualTo(requestDate));
+        Assert.That(createdEntity.DeviceLocalTime, Is.EqualTo(requestDate));
         
         // Verify JSON data structure
         var jsonData = createdEntity.Data.RootElement;
@@ -220,7 +220,7 @@ public class CreateDeviceDataCommandTests
         {
             DataType = "test_data",
             DeviceId = deviceId,
-            RequestDate = DateTime.UtcNow,
+            DeviceLocalTime = DateTime.UtcNow,
             Data = JsonDocument.Parse("{\"test\": \"value\"}")
         };
 

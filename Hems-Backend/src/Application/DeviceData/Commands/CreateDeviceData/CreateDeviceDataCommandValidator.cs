@@ -23,10 +23,10 @@ public class CreateDeviceDataCommandValidator : AbstractValidator<CreateDeviceDa
             .MustAsync(BeValidDevice)
             .WithMessage("Device must exist and be active.");
 
-        RuleFor(v => v.RequestDate)
+        RuleFor(v => v.DeviceLocalTime)
             .NotEmpty()
             .LessThanOrEqualTo(DateTime.UtcNow.AddMinutes(5))
-            .WithMessage("RequestDate cannot be more than 5 minutes in the future.");
+            .WithMessage("DeviceLocalTime cannot be more than 5 minutes in the future.");
 
         RuleFor(v => v.Data)
             .NotNull()
