@@ -39,10 +39,15 @@ export const sitesService = {
   },
 
   async create(data: CreateSiteCommand): Promise<string> {
+    console.log('🟢 [SitesService] POST /Sites - Creating site with data:', JSON.stringify(data, null, 2));
+    console.log('🟢 [SitesService] Latitude:', data.latitude, 'Longitude:', data.longitude);
+
     const response = await apiClient.post<string>(
       ENDPOINTS.SITES.CREATE,
       data
     );
+
+    console.log('🟢 [SitesService] Create response:', response.data);
     return response.data;
   },
 

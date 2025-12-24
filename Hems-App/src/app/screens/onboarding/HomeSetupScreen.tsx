@@ -154,13 +154,24 @@ export default function HomeSetupScreen () {
           reject,
           {
             enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 10000,
+            timeout: 30000,
+            maximumAge: 0,  // Her zaman taze konum al, cache kullanma
+            forceRequestLocation: true,  // Android'de zorla konum iste
+            showLocationDialog: true,  // Android'de konum servisi kapalıysa dialog göster
           }
         );
       });
 
-      const { latitude, longitude } = position.coords;setCoordinates({ latitude, longitude });
+      const { latitude, longitude } = position.coords;
+
+      console.log('📍 [Location] Raw position from GPS:', {
+        latitude,
+        longitude,
+        accuracy: position.coords.accuracy,
+        timestamp: position.timestamp,
+      });
+
+      setCoordinates({ latitude, longitude });
 
       return { latitude, longitude };
     } catch (error) {Alert.alert(
@@ -257,7 +268,11 @@ export default function HomeSetupScreen () {
           timezone: getTimezoneForCountry(country),
           latitude: coordinates?.latitude || null,
           longitude: coordinates?.longitude || null,
-        };await createSite(siteData);
+        };
+
+        console.log('📤 [HomeSetup] Sending site data to backend:', JSON.stringify(siteData, null, 2));
+
+        await createSite(siteData);
         
         showToast({
           type: 'success',

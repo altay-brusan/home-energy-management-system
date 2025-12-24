@@ -103,6 +103,17 @@ function TabNavigator () {
   const { setSelectedSite, selectedSite, sites } = useSitesStore();
   const { user } = useAuthStore();
   const hasValidSiteWithDevice = useHasValidSiteWithDevice();
+  const isAdminUserCheck = isAdmin || hasRole('Administrator');
+
+  // Site'ı olmayan kullanıcıları HomeSetup'a yönlendir
+  useEffect(() => {
+    if (!isAdminUserCheck && sites.length === 0) {
+      navigationRef.current?.reset({
+        index: 0,
+        routes: [{ name: 'HomeSetup' }],
+      });
+    }
+  }, [sites, isAdminUserCheck]);
 
   // Admin'den gelen site seçimini handle et
   useEffect(() => {

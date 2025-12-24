@@ -9,9 +9,8 @@ import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors } from '../../../theme/constants';
 import { getHomeStyles } from './Home.styles';
 import { useTranslation } from 'react-i18next';
-import { HomeHeader, HomeStats, EmptyState, HomeCard } from './ui';
+import { HomeHeader, EmptyState, HomeCard } from './ui';
 import { useSitesStore } from '../../../store/sitesStore';
-import { SiteDto } from '../../../api/types/sites.types';
 import { useToastStore } from '../../../store/toastStore';
 
 type RootStackParamList = {
@@ -35,7 +34,6 @@ export default function Home () {
   // Sites store integration
   const {
     sites,
-    sitesDashboard,
     selectedSite,
     isLoading,
     error,
@@ -209,12 +207,6 @@ export default function Home () {
           showsVerticalScrollIndicator={false}
         >
           <HomeHeader navigation={navigation} styles={styles} COLORS={COLORS} />
-          <HomeStats
-            homes={homes}
-            sitesDashboard={sitesDashboard}
-            styles={styles}
-            COLORS={COLORS}
-          />
 
           <Text style={styles.sectionTitle}>{t('homeScreen.myHomes')}</Text>
           <View style={styles.cardsWrapper}>

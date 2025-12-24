@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text } from 'react-native';
-import MaterialIcons from '@react-native-vector-icons/material-icons';
+import { Home } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 
 type Props = {
@@ -13,7 +13,7 @@ export function EmptyState({ styles, COLORS }: Props) {
 
   return (
     <View style={styles.emptyState}>
-      <MaterialIcons name="home" size={64} color={COLORS.slate400} />
+      <Home size={48} color={COLORS.textSoft} strokeWidth={1.5} />
       <Text style={styles.emptyTitle}>{t('homeEmptyState.title')}</Text>
       <Text style={styles.emptySubtitle}>{t('homeEmptyState.subtitle')}</Text>
     </View>

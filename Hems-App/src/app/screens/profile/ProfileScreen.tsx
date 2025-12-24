@@ -1,7 +1,8 @@
 import FontAwesome from '@react-native-vector-icons/fontawesome';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Image, ScrollView, Text, TouchableOpacity, View, Pressable, Modal } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CommonActions } from '@react-navigation/native';
 import Button from '../../../components/ui/Button';
 import RegionSelector, {
   type Region,
@@ -9,6 +10,7 @@ import RegionSelector, {
 import ThemeToggle from '../../../components/ui/ThemeToggle';
 import useAuth from '../../../hooks/useAuth';
 import { useAuthStore } from '../../../store/authStore';
+import { useSitesStore } from '../../../store/sitesStore';
 import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors, SPACING } from '../../../theme/constants';
 import { makeProfileScreenStyles } from './ProfileScreenStyles';
@@ -29,6 +31,19 @@ export default function ProfileScreen ({ navigation }: any) {
   const { user, logout } = useAuth();
   const hasRole = useAuthStore(s => s.hasRole);
   const isAdmin = hasRole('Admin') || hasRole('Administrator');
+  const { sites } = useSitesStore();
+
+  // Site'ı olmayan kullanıcıları HomeSetup'a yönlendir
+  useEffect(() => {
+    if (!isAdmin && sites.length === 0) {
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'HomeSetup' }],
+        })
+      );
+    }
+  }, [sites, isAdmin, navigation]);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const avatarUrl = user?.name && user?.surname 

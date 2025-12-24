@@ -44,6 +44,7 @@ type RootStackParamList = {
   SignUp: undefined;
   Onboarding: undefined;
   Home: undefined;
+  HomeSetup: undefined;
 };
 
 // GRP Logo Component
@@ -124,7 +125,7 @@ export default function LoginScreen (): JSX.Element {
     formState: { errors, isSubmitting },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: "administrator@localhost", password: "***REMOVED***" },
+    defaultValues: { email: "demo-user@oklidis.com.tr", password: "***REMOVED***" },
   });
 
   React.useEffect(() => {
@@ -133,25 +134,53 @@ export default function LoginScreen (): JSX.Element {
     const checkHomesAndNavigate = async () => {
       try {
         const isAdminUser = user?.roles?.includes('Administrator');
+        console.log('🔐 [Login] User roles:', user?.roles, 'isAdmin:', isAdminUser);
+
         if (isAdminUser) {
-          navigation.replace('MainTabs');
+          console.log('🔐 [Login] Admin user - going to MainTabs');
+          navigation.reset({
+            index: 0,
+            routes: [{ name: 'MainTabs' }],
+          });
         } else {
           // Normal kullanıcı için siteleri kontrol et
+          console.log('🔐 [Login] Fetching user sites...');
           const sitesDashboard = await getUserSites();
           const sites = sitesDashboard?.siteList || [];
+          console.log('🔐 [Login] Sites count:', sites.length, sites);
 
-          if (sites.length === 1) {
+          if (sites.length === 0) {
+            // Hiç site yoksa HomeSetup'a git
+            console.log('🔐 [Login] No sites - navigating to HomeSetup');
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'HomeSetup' }],
+            });
+          } else if (sites.length === 1) {
             // Tek site varsa direkt seç ve Dashboard'a git
+            console.log('🔐 [Login] Single site - selecting and going to MainTabs');
             const singleSite = sites[0];
             await selectSiteById(singleSite.id);
-            navigation.replace('MainTabs');
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'MainTabs' }],
+            });
           } else {
-            // Birden fazla site veya hiç site yoksa Home'a git
-            navigation.replace('Home');
+            // Birden fazla site varsa Home'a git (site seçimi için)
+            console.log('🔐 [Login] Multiple sites - going to Home');
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Home' }],
+            });
           }
         }
       } catch (error) {
-        navigation.replace('Home');
+        console.log('🔐 [Login] Error fetching sites:', error);
+        // Hata durumunda HomeSetup'a git (güvenli taraf)
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'HomeSetup' }],
+        });
       }
     };
 
