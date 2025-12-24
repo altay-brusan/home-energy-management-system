@@ -1,30 +1,19 @@
 using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Domain.Entities;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-namespace Hems_Backend.Application.Dashboard.Commands.SetEnergyPrice;
+namespace Hems_Backend.Application.DeviceSettings.Commands.SetEnergyPrice;
 
 /// <summary>
-/// A single price entry with sell and buy prices
+/// Price entry for a specific time range
 /// </summary>
 public record PriceEntry
 {
     public decimal SellPrice { get; init; }
     public decimal BuyPrice { get; init; }
-    public DateTimeOffset? EffectiveFrom { get; init; }
-
-    /// <summary>
-    /// Start hour of the day when this price is valid (0-23).
-    /// Null means the price starts from 00:00.
-    /// </summary>
     public int? BeginHour { get; init; }
-
-    /// <summary>
-    /// End hour of the day when this price is valid (0-23).
-    /// Null means the price is valid until 23:59.
-    /// If both BeginHour and EndHour are null, the price applies all day.
-    /// </summary>
     public int? EndHour { get; init; }
 }
 
@@ -57,7 +46,7 @@ public class SetEnergyPriceCommandHandler : IRequestHandler<SetEnergyPriceComman
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<SetEnergyPriceCommandHandler> _logger;
 
-    private const int MaxPricesPerRequest = 6;
+    private const int MaxPricesPerRequest = 24; // Allow up to 24 hourly prices
 
     public SetEnergyPriceCommandHandler(
         IApplicationDbContext context,
@@ -74,10 +63,11 @@ public class SetEnergyPriceCommandHandler : IRequestHandler<SetEnergyPriceComman
     public async Task<SetEnergyPriceResult> Handle(SetEnergyPriceCommand request, CancellationToken cancellationToken)
     {
         // Validate device exists
-        var deviceExists = await _context.Devices
-            .AnyAsync(d => d.Id == request.DeviceId && !d.IsDeleted, cancellationToken);
+        var device = await _context.Devices
+            .Where(d => d.Id == request.DeviceId && !d.IsDeleted)
+            .FirstOrDefaultAsync(cancellationToken);
 
-        if (!deviceExists)
+        if (device == null)
         {
             return new SetEnergyPriceResult
             {
@@ -86,7 +76,7 @@ public class SetEnergyPriceCommandHandler : IRequestHandler<SetEnergyPriceComman
             };
         }
 
-        // Validate price count
+        // Validate price entries
         if (request.Prices.Count == 0)
         {
             return new SetEnergyPriceResult
@@ -105,28 +95,9 @@ public class SetEnergyPriceCommandHandler : IRequestHandler<SetEnergyPriceComman
             };
         }
 
-        // Validate prices
+        // Validate hour ranges
         foreach (var price in request.Prices)
         {
-            if (price.SellPrice < 0)
-            {
-                return new SetEnergyPriceResult
-                {
-                    Success = false,
-                    ErrorMessage = "Sell price cannot be negative"
-                };
-            }
-
-            if (price.BuyPrice < 0)
-            {
-                return new SetEnergyPriceResult
-                {
-                    Success = false,
-                    ErrorMessage = "Buy price cannot be negative"
-                };
-            }
-
-            // Validate hour range (0-23)
             if (price.BeginHour.HasValue && (price.BeginHour < 0 || price.BeginHour > 23))
             {
                 return new SetEnergyPriceResult
@@ -136,26 +107,15 @@ public class SetEnergyPriceCommandHandler : IRequestHandler<SetEnergyPriceComman
                 };
             }
 
-            if (price.EndHour.HasValue && (price.EndHour < 0 || price.EndHour > 23))
+            if (price.EndHour.HasValue && (price.EndHour < 0 || price.EndHour > 24))
             {
                 return new SetEnergyPriceResult
                 {
                     Success = false,
-                    ErrorMessage = "EndHour must be between 0 and 23"
+                    ErrorMessage = "EndHour must be between 0 and 24"
                 };
             }
 
-            // If BeginHour is set, EndHour should be set and vice versa (or both null)
-            if (price.BeginHour.HasValue != price.EndHour.HasValue)
-            {
-                return new SetEnergyPriceResult
-                {
-                    Success = false,
-                    ErrorMessage = "Both BeginHour and EndHour must be set, or both must be null for all-day pricing"
-                };
-            }
-
-            // Validate BeginHour < EndHour (or handle overnight case)
             if (price.BeginHour.HasValue && price.EndHour.HasValue && price.BeginHour >= price.EndHour)
             {
                 return new SetEnergyPriceResult
@@ -166,59 +126,47 @@ public class SetEnergyPriceCommandHandler : IRequestHandler<SetEnergyPriceComman
             }
         }
 
-        var utcNow = _timeProvider.GetUtcNow();
-        var createdPriceIds = new List<Guid>();
-
-        // Deactivate existing active prices for this device
-        var existingActivePrices = await _context.DevicePrices
-            .Where(dp => dp.DeviceId == request.DeviceId && dp.IsActive)
+        // Deactivate existing prices for this device
+        var existingPrices = await _context.EnergyPriceHistory
+            .Where(p => p.DeviceId == request.DeviceId && p.IsActive)
             .ToListAsync(cancellationToken);
 
-        foreach (var existingPrice in existingActivePrices)
+        foreach (var existingPrice in existingPrices)
         {
             existingPrice.IsActive = false;
-            existingPrice.EffectiveTo = utcNow;
-            existingPrice.LastModified = utcNow;
-            existingPrice.LastModifiedBy = _user.Id;
         }
 
         // Create new price entries
+        var createdIds = new List<Guid>();
         foreach (var priceEntry in request.Prices)
         {
-            var effectiveFrom = priceEntry.EffectiveFrom ?? utcNow;
-
-            var devicePrice = new DevicePrice
+            var energyPrice = new EnergyPriceHistory
             {
                 DeviceId = request.DeviceId,
                 Unit = request.Unit,
                 Currency = request.Currency,
                 SellPrice = priceEntry.SellPrice,
                 BuyPrice = priceEntry.BuyPrice,
-                EffectiveFrom = effectiveFrom,
                 BeginHour = priceEntry.BeginHour,
                 EndHour = priceEntry.EndHour,
-                IsActive = true,
-                Created = utcNow,
-                CreatedBy = _user.Id,
-                LastModified = utcNow,
-                LastModifiedBy = _user.Id
+                IsActive = true
             };
 
-            _context.DevicePrices.Add(devicePrice);
-            createdPriceIds.Add(devicePrice.Id);
+            _context.EnergyPriceHistory.Add(energyPrice);
+            createdIds.Add(energyPrice.Id);
         }
 
         await _context.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation(
-            "Created {Count} energy price entries for device {DeviceId}",
-            createdPriceIds.Count, request.DeviceId);
+            "Set {Count} energy prices for device {DeviceId} by user {UserId}",
+            createdIds.Count, request.DeviceId, _user.Id);
 
         return new SetEnergyPriceResult
         {
             Success = true,
-            PricesCreated = createdPriceIds.Count,
-            PriceIds = createdPriceIds
+            PricesCreated = createdIds.Count,
+            PriceIds = createdIds
         };
     }
 }
