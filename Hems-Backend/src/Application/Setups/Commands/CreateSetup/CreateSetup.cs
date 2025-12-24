@@ -35,10 +35,10 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
 
         // Site yetki kontrolü - Kullanıcı bu site'a sahip mi veya paylaşılan site'da mı?
         var site = await _context.Sites
-            .FirstOrDefaultAsync(s => s.Id == request.SiteId && 
-                                     !s.IsDeleted && 
-                                     (s.UserId == userId || 
-                                      _context.UserSites.Any(us => us.SiteId == s.Id && us.UserId == userId)), 
+            .FirstOrDefaultAsync(s => s.Id == request.SiteId &&
+                                     !s.IsDeleted &&
+                                     (s.UserId == userId ||
+                                      _context.UserSites.Any(us => us.SiteId == s.Id && us.UserId == userId)),
                                  cancellationToken);
 
         if (site == null)
@@ -59,35 +59,29 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
         Device? device = null;
         if (!string.IsNullOrEmpty(request.DeviceQRCode) || !string.IsNullOrEmpty(request.DeviceSerialNumber))
         {
-            // Ask ThingsBoard to find the device
-            var tbDevice = await _tbConnector.FindDeviceAsync(
-                request.DeviceSerialNumber,
-                request.DeviceQRCode,
-                cancellationToken);
-
-            if (tbDevice == null)
+            // QR Code ile device bulma
+            if (!string.IsNullOrEmpty(request.DeviceQRCode))
             {
-                var deviceIdentifier = !string.IsNullOrEmpty(request.DeviceQRCode) 
-                    ? $"QR Code: {request.DeviceQRCode}" 
-                    : $"Serial Number: {request.DeviceSerialNumber}";
-                
-                throw new ArgumentException($"Device not found in ThingsBoard with {deviceIdentifier}");
+                device = await _context.Devices
+                    .FirstOrDefaultAsync(d => d.QRCode == request.DeviceQRCode && !d.IsDeleted, cancellationToken);
             }
-
-            // Check if device exists in local database
-            device = await _context.Devices
-                .FirstOrDefaultAsync(d => d.ThingsBoardDeviceId == tbDevice.Id && !d.IsDeleted, cancellationToken);
+            // Serial Number ile device bulma
+            else if (!string.IsNullOrEmpty(request.DeviceSerialNumber))
+            {
+                device = await _context.Devices
+                    .FirstOrDefaultAsync(d => d.SerialNumber == request.DeviceSerialNumber && !d.IsDeleted, cancellationToken);
+            }
 
             // Device bulunamazsa hata ver
             if (device == null)
             {
-                var deviceIdentifier = !string.IsNullOrEmpty(request.DeviceQRCode) 
-                    ? $"QR Code: {request.DeviceQRCode}" 
+                var deviceIdentifier = !string.IsNullOrEmpty(request.DeviceQRCode)
+                    ? $"QR Code: {request.DeviceQRCode}"
                     : $"Serial Number: {request.DeviceSerialNumber}";
-                
+
                 throw new ArgumentException($"Device not found with {deviceIdentifier}");
             }
-            else if (_context.SetupDevices.Any(f=>f.DeviceId==device.Id))
+            else if (_context.SetupDevices.Any(f => f.DeviceId == device.Id))
             {
                 throw new System.ComponentModel.DataAnnotations.ValidationException("bu cihaz zaten kullanımda.");
 
@@ -112,7 +106,6 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
             {
                 SetupId = setup.Id,
                 DeviceId = device.Id,
-                WorkMode = (int)DeviceMode.SellToGrid // Default mode
             };
 
             _context.SetupDevices.Add(setupDevice);
@@ -129,7 +122,7 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
 
         // Tek seferde kaydet - EF Core otomatik transaction yapar
         await _context.SaveChangesAsync(cancellationToken);
-        
+
         return setup.Id;
     }
 }
