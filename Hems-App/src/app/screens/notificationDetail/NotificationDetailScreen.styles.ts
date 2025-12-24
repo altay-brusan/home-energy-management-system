@@ -7,7 +7,7 @@ export const makeNotificationDetailStyles = (isDark: boolean) => {
   const APP_BG = COLORS?.appBg ?? (isDark ? '#1c222b' : '#F2F4F7');
   const TEXT = COLORS?.text ?? (isDark ? '#E6EAF2' : '#111827');
   const MUTED = COLORS?.textMuted ?? (isDark ? 'rgba(230,234,242,0.64)' : '#6B7280');
-  const ACCENT = COLORS?.accent ?? '#1DD1A1';
+  const SURFACE = COLORS?.surface ?? (isDark ? '#252d3a' : '#FFFFFF');
 
   return StyleSheet.create({
     screen: {
@@ -15,30 +15,29 @@ export const makeNotificationDetailStyles = (isDark: boolean) => {
       backgroundColor: APP_BG,
     },
 
-    // Header
+    // Header (Settings format)
     header: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'flex-start',
+      justifyContent: 'space-between',
       paddingHorizontal: 16,
-      paddingVertical: 4,
-      marginBottom: 16,
+      paddingVertical: 12,
+      marginBottom: 8,
     },
-    headerLeft: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 16,
-    },
-    backButton: {
-      paddingVertical: 8,
-      paddingRight: 8,
-      marginLeft: -4,
+    headerBackButton: {
+      padding: 8,
+      marginLeft: -8,
     },
     headerTitle: {
-      fontSize: 26,
-      fontWeight: '700',
+      fontSize: 18,
+      fontWeight: '600',
       color: TEXT,
-      letterSpacing: -0.5,
+      flex: 1,
+      textAlign: 'left',
+      marginLeft: 8,
+    },
+    headerRight: {
+      width: 40,
     },
 
     // ScrollView
@@ -46,102 +45,104 @@ export const makeNotificationDetailStyles = (isDark: boolean) => {
       flex: 1,
     },
     scrollContent: {
-      padding: 24,
-    },
-
-    // Title Container
-    titleContainer: {
-      marginBottom: 12,
-    },
-    title: {
-      fontSize: 28,
-      fontWeight: '700',
-      color: TEXT,
-      lineHeight: 36,
-      letterSpacing: -0.6,
-      marginBottom: 8,
-    },
-
-    // Critical Badge
-    criticalBadge: {
-      alignSelf: 'flex-start',
-      paddingHorizontal: 10,
-      paddingVertical: 4,
-      borderRadius: 6,
-      marginTop: 4,
-    },
-    criticalBadgeText: {
-      fontSize: 11,
-      fontWeight: '700',
-      letterSpacing: 0.5,
-      textTransform: 'uppercase',
-    },
-
-    // Timestamp - Bottom Center Pill
-    timestamp: {
-      fontSize: 13,
-      fontWeight: '500',
-      color: MUTED,
-      letterSpacing: -0.1,
-      textAlign: 'center',
-      marginTop: 32,
-      alignSelf: 'center',
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-      borderRadius: 999,
-      overflow: 'hidden',
-    },
-
-    // Message
-    message: {
-      fontSize: 17,
-      fontWeight: '400',
-      color: TEXT,
-      lineHeight: 26,
-      letterSpacing: -0.3,
-      marginTop: 24,
-      marginBottom: 24,
-    },
-
-    // Info Card - Modern Accent Design
-    infoCard: {
-      backgroundColor: isDark ? 'rgba(29,209,161,0.12)' : 'rgba(29,209,161,0.08)',
-      borderRadius: 12,
       padding: 20,
-      borderWidth: 1,
-      borderColor: isDark ? 'rgba(29,209,161,0.2)' : 'rgba(29,209,161,0.15)',
+      gap: 16,
     },
-    infoHeader: {
+
+    // Severity Badge
+    severityBadge: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 10,
-      marginBottom: 12,
-      paddingBottom: 12,
-      borderBottomWidth: 1,
-      borderBottomColor: isDark ? 'rgba(29,209,161,0.15)' : 'rgba(29,209,161,0.12)',
+      alignSelf: 'flex-start',
+      gap: 8,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 20,
+      borderWidth: 1,
     },
-    infoIcon: {
-      width: 32,
-      height: 32,
-      borderRadius: 8,
-      backgroundColor: isDark ? 'rgba(29,209,161,0.2)' : 'rgba(29,209,161,0.15)',
-      alignItems: 'center',
-      justifyContent: 'center',
+    severityText: {
+      fontSize: 14,
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
     },
-    infoTitle: {
-      fontSize: 15,
+
+    // Error Code
+    codeContainer: {
+      backgroundColor: SURFACE,
+      borderRadius: 12,
+      padding: 16,
+      ...(isDark ? {} : {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+        elevation: 1,
+      }),
+    },
+    codeLabel: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: MUTED,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      marginBottom: 6,
+    },
+    codeValue: {
+      fontSize: 18,
       fontWeight: '700',
-      color: ACCENT,
-      letterSpacing: -0.3,
-      flex: 1,
+      color: TEXT,
+      fontFamily: 'monospace',
+      letterSpacing: 1,
     },
-    infoText: {
-      fontSize: 15,
-      fontWeight: '500',
-      color: isDark ? TEXT : '#374151',
-      lineHeight: 22,
+
+    // Message Card
+    messageCard: {
+      backgroundColor: SURFACE,
+      borderRadius: 12,
+      padding: 16,
+      ...(isDark ? {} : {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+        elevation: 1,
+      }),
+    },
+    messageText: {
+      fontSize: 16,
+      fontWeight: '400',
+      color: TEXT,
+      lineHeight: 24,
       letterSpacing: -0.2,
+    },
+
+    // Meta Items
+    metaItem: {
+      backgroundColor: SURFACE,
+      borderRadius: 12,
+      padding: 16,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      ...(isDark ? {} : {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+        elevation: 1,
+      }),
+    },
+    metaLabel: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: MUTED,
+    },
+    metaValue: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: TEXT,
+      textTransform: 'capitalize',
     },
   });
 };

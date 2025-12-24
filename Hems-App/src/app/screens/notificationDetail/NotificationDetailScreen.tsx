@@ -1,26 +1,59 @@
-import React, { JSX, useMemo } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import React, { JSX, useMemo, useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import FontAwesome from '@react-native-vector-icons/fontawesome';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, AlertTriangle, AlertCircle, Bell, Info, Trash2 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import MainLayout from '../../layouts/MainLayout';
 import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors } from '../../../theme/constants';
 import { makeNotificationDetailStyles } from './NotificationDetailScreen.styles';
-import { Card } from '../../../components';
-import Button from '../../../components/ui/Button';
 import { useI18n } from '../../../hooks/useI18n';
 
-import { DeviceNotification } from '../../../hooks/useDeviceNotifications';
+import { DeviceNotification, NotificationSeverityLevel, useDeviceNotifications } from '../../../hooks/useDeviceNotifications';
 
 type DetailItem = DeviceNotification;
 
 type ParamList = {
   NotificationDetail: { item: DetailItem };
+};
+
+const getSeverityConfig = (severityLevel: NotificationSeverityLevel) => {
+  switch (severityLevel) {
+    case 'ERROR':
+      return {
+        color: '#EF4444',
+        bgColor: 'rgba(239, 68, 68, 0.1)',
+        borderColor: 'rgba(239, 68, 68, 0.3)',
+        icon: AlertCircle,
+        label: 'Error',
+      };
+    case 'WARNING':
+      return {
+        color: '#F59E0B',
+        bgColor: 'rgba(245, 158, 11, 0.1)',
+        borderColor: 'rgba(245, 158, 11, 0.3)',
+        icon: AlertTriangle,
+        label: 'Warning',
+      };
+    case 'ALARM':
+      return {
+        color: '#3B82F6',
+        bgColor: 'rgba(59, 130, 246, 0.1)',
+        borderColor: 'rgba(59, 130, 246, 0.3)',
+        icon: Bell,
+        label: 'Alarm',
+      };
+    default:
+      return {
+        color: '#1DD1A1',
+        bgColor: 'rgba(29, 209, 161, 0.1)',
+        borderColor: 'rgba(29, 209, 161, 0.3)',
+        icon: Info,
+        label: 'Info',
+      };
+  }
 };
 
 export default function NotificationDetailScreen(): JSX.Element {
@@ -35,24 +68,56 @@ export default function NotificationDetailScreen(): JSX.Element {
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
 
-  const criticalFg = (COLORS as any).critical ?? '#EB5757';
-  const criticalBg =
-    (COLORS as any).criticalBg ??
-    (isDark ? 'rgba(235,87,87,0.18)' : 'rgba(235,87,87,0.12)');
+  const { deleteNotification } = useDeviceNotifications();
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeletePress = () => {
+    Alert.alert(
+      t('notifications.deleteConfirm.title'),
+      t('notifications.deleteConfirm.message'),
+      [
+        {
+          text: t('notifications.deleteConfirm.cancel'),
+          style: 'cancel',
+        },
+        {
+          text: t('notifications.deleteConfirm.confirm'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsDeleting(true);
+              await deleteNotification(item.id);
+              navigation.goBack();
+            } catch (error) {
+              console.error('Failed to delete notification:', error);
+            } finally {
+              setIsDeleting(false);
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const severityConfig = getSeverityConfig(item.severityLevel);
+  const SeverityIcon = severityConfig.icon;
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top + 8 }]}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Pressable
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
-            <ArrowLeft size={26} color={styles.headerTitle.color} strokeWidth={2.5} />
-          </Pressable>
-          <Text style={styles.headerTitle}>{t('notifications.details')}</Text>
-        </View>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBackButton}>
+          <ArrowLeft size={24} color={COLORS.text} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{t('notifications.details')}</Text>
+        <TouchableOpacity
+          onPress={handleDeletePress}
+          style={styles.headerBackButton}
+          disabled={isDeleting}
+        >
+          <Trash2 size={22} color={isDeleting ? COLORS.textSoft : '#EF4444'} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -60,38 +125,52 @@ export default function NotificationDetailScreen(): JSX.Element {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Title and Badge */}
-        <View style={styles.titleContainer}>
-          <Text style={styles.title}>{item.title}</Text>
-          {item.severity === 'critical' && (
-            <View style={[styles.criticalBadge, { backgroundColor: criticalBg }]}>
-              <Text style={[styles.criticalBadgeText, { color: criticalFg }]}>
-                {t('notifications.critical')}
-              </Text>
-            </View>
-          )}
+        {/* Severity Badge */}
+        <View style={[
+          styles.severityBadge,
+          { backgroundColor: severityConfig.bgColor, borderColor: severityConfig.borderColor }
+        ]}>
+          <SeverityIcon size={18} color={severityConfig.color} />
+          <Text style={[styles.severityText, { color: severityConfig.color }]}>
+            {severityConfig.label}
+          </Text>
         </View>
 
-        {/* Message */}
-        <Text style={styles.message}>{item.message}</Text>
-
-        {/* Additional Information */}
-        {item.description && (
-          <View style={styles.infoCard}>
-            <View style={styles.infoHeader}>
-              <View style={styles.infoIcon}>
-                <FontAwesome name="info-circle" size={18} color={COLORS.accent || '#1DD1A1'} />
-              </View>
-              <Text style={styles.infoTitle}>{t('notifications.additionalInfo')}</Text>
-            </View>
-            <Text style={styles.infoText}>{item.description}</Text>
+        {/* Error Code */}
+        {item.resolvedCode && (
+          <View style={styles.codeContainer}>
+            <Text style={styles.codeLabel}>{t('notifications.errorCode') || 'Error Code'}</Text>
+            <Text style={styles.codeValue}>{item.resolvedCode}</Text>
           </View>
         )}
 
-        {/* Timestamp - Bottom Center */}
-        <Text style={styles.timestamp}>
-          {new Date(item.createdAt).toLocaleString()}
-        </Text>
+        {/* Display Message */}
+        {item.displayMessage && (
+          <View style={styles.messageCard}>
+            <Text style={styles.messageText}>{item.displayMessage}</Text>
+          </View>
+        )}
+
+        {/* Fallback to original message if no displayMessage */}
+        {!item.displayMessage && item.message && (
+          <View style={styles.messageCard}>
+            <Text style={styles.messageText}>{item.message}</Text>
+          </View>
+        )}
+
+        {/* Source Device */}
+        {item.sourceDevice && (
+          <View style={styles.metaItem}>
+            <Text style={styles.metaLabel}>{t('notifications.sourceDevice') || 'Source'}</Text>
+            <Text style={styles.metaValue}>{item.sourceDevice}</Text>
+          </View>
+        )}
+
+        {/* Timestamp */}
+        <View style={styles.metaItem}>
+          <Text style={styles.metaLabel}>{t('notifications.timestamp') || 'Time'}</Text>
+          <Text style={styles.metaValue}>{new Date(item.createdAt).toLocaleString()}</Text>
+        </View>
       </ScrollView>
     </View>
   );

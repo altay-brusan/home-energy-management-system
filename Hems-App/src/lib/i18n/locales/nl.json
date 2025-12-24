@@ -913,8 +913,25 @@
         "success": "Melding verwijderd",
         "error": "Kan melding niet verwijderen"
       },
+      "deleteConfirm": {
+        "title": "Melding Verwijderen",
+        "message": "Weet u zeker dat u deze melding wilt verwijderen?",
+        "confirm": "Verwijderen",
+        "cancel": "Annuleren"
+      },
       "markAllReadSuccess": "Alle meldingen gemarkeerd als gelezen",
-      "markAllReadError": "Kan niet alle meldingen als gelezen markeren"
+      "markAllReadError": "Kan niet alle meldingen als gelezen markeren",
+      "markAllReadConfirm": {
+        "title": "Alles als Gelezen Markeren",
+        "message": "Weet u zeker dat u alle meldingen als gelezen wilt markeren?",
+        "confirm": "Ja, Alles Markeren",
+        "cancel": "Annuleren"
+      },
+      "details": "Meldingsdetails",
+      "additionalInfo": "Aanvullende Informatie",
+      "errorCode": "Foutcode",
+      "sourceDevice": "Bron",
+      "timestamp": "Tijd"
     },
     "deviceList": {
       "title": "Apparaat",
@@ -1778,30 +1795,30 @@
     "privacyPolicyTitle": "Privacybeleid",
     "termsOfServiceTitle": "Servicevoorwaarden",
     "lastUpdated": "Laatst Bijgewerkt: December 2024",
-    "companyName": "GREEN POWER ENERGY",
+    "companyName": "GRP Europe BV",
     "privacyPolicy": {
-      "intro": "GREEN POWER ENERGY (\"wij\", \"ons\" of \"het Bedrijf\") zet zich in voor de bescherming van uw privacy. Dit Privacybeleid legt uit hoe wij uw informatie verzamelen, gebruiken, openbaar maken en beschermen wanneer u onze Netzr mobiele applicatie gebruikt.",
+      "intro": "GRP Europe BV (\"wij\", \"ons\" of \"het Bedrijf\"), gevestigd te Swingboei 11, 1231HE Loosdrecht, Nederland (KvK-nummer: 92198678, BTW: 865928897B01), vertegenwoordigd door Wilfred Gerards, zet zich in voor de bescherming van uw privacy. Dit Privacybeleid legt uit hoe wij uw informatie verzamelen, gebruiken, openbaar maken en beschermen wanneer u onze Netzr mobiele applicatie gebruikt.",
       "dataCollectedTitle": "1. Gegevens die Wij Verzamelen",
       "dataCollectedContent": "Wij verzamelen de volgende soorten persoonsgegevens:\n\n• Persoonlijke Informatie: Naam, achternaam, e-mailadres, telefoonnummer\n• Accountgegevens: Inloggegevens, gebruikersvoorkeuren\n• Energiegegevens: Zonne-energieproductie, batterijstatus, netimport/-exportgegevens, energieverbruikspatronen\n• Apparaattelemetrie: Omvormerstatus, apparaatserienummers, firmwareversies, real-time vermogensstatistieken\n• Locatiegegevens: Thuisadres, apparaatinstallatielocatie (voor nauwkeurige energiemonitoring)\n• Gebruiksgegevens: App-gebruikspatronen, functie-interacties, foutlogboeken",
       "purposeTitle": "2. Doel van Gegevensverwerking",
       "purposeContent": "Wij verwerken uw gegevens voor de volgende doeleinden:\n\n• Om de Netzr energiebeheerdienst te leveren en te onderhouden\n• Om uw energieproductie en -verbruik te monitoren en te optimaliseren\n• Om meldingen te sturen over systeemstatus, waarschuwingen en updates\n• Om onze diensten te verbeteren en nieuwe functies te ontwikkelen\n• Om te voldoen aan wettelijke verplichtingen\n• Om met u te communiceren over uw account en ondersteuningsverzoeken",
       "legalBasisTitle": "3. Rechtsgrondslag voor Verwerking",
-      "legalBasisContent": "Wij verwerken uw persoonsgegevens op basis van:\n\n• Uw toestemming wanneer u een account aanmaakt en deze voorwaarden accepteert\n• Uitvoering van een overeenkomst (het leveren van onze diensten aan u)\n• Wettelijke verplichtingen (KVKK - Turkse Gegevensbeschermingswet, AVG)\n• Gerechtvaardigde belangen (verbetering van onze diensten, fraudepreventie)",
+      "legalBasisContent": "Wij verwerken uw persoonsgegevens op basis van:\n\n• Uw toestemming wanneer u een account aanmaakt en deze voorwaarden accepteert\n• Uitvoering van een overeenkomst (het leveren van onze diensten aan u)\n• Wettelijke verplichtingen (AVG - Algemene Verordening Gegevensbescherming)\n• Gerechtvaardigde belangen (verbetering van onze diensten, fraudepreventie)",
       "thirdPartyTitle": "4. Delen met Derden",
       "thirdPartyContent": "Wij kunnen uw gegevens delen met:\n\n• Cloudserviceproviders: Voor veilige gegevensopslag en -verwerking\n• Analyseproviders: Om app-prestaties te verbeteren (geanonimiseerde gegevens)\n• Energienetwerkbeheerders: Wanneer vereist voor netintegratie\n• Overheidsinstanties: Wanneer wettelijk vereist\n\nWij verkopen uw persoonsgegevens nooit aan derden.",
       "dataRetentionTitle": "5. Gegevensbewaring",
       "dataRetentionContent": "Wij bewaren uw persoonsgegevens voor:\n\n• Accountgegevens: Zolang uw account actief is, plus 2 jaar na verwijdering\n• Energiegegevens: 5 jaar voor historische analyse en rapportage\n• Apparaattelemetrie: 2 jaar voor serviceverbetering\n• Gebruikslogboeken: 1 jaar voor probleemoplossing\n\nU kunt eerdere verwijdering aanvragen door contact met ons op te nemen.",
       "userRightsTitle": "6. Uw Rechten",
-      "userRightsContent": "Onder de KVKK en AVG heeft u het recht op:\n\n• Inzage: Een kopie van uw persoonsgegevens opvragen\n• Rectificatie: Onjuiste of onvolledige gegevens corrigeren\n• Wissen: Verwijdering van uw persoonsgegevens verzoeken (\"recht om vergeten te worden\")\n• Overdraagbaarheid: Uw gegevens ontvangen in een gestructureerd, machineleesbaar formaat\n• Bezwaar: Bezwaar maken tegen verwerking op basis van gerechtvaardigde belangen\n• Beperking: Beperking van verwerking verzoeken\n• Intrekking Toestemming: Uw toestemming op elk moment intrekken\n\nOm deze rechten uit te oefenen, neem contact met ons op via privacy@greenpowerenergy.com",
+      "userRightsContent": "Onder de AVG heeft u het recht op:\n\n• Inzage: Een kopie van uw persoonsgegevens opvragen\n• Rectificatie: Onjuiste of onvolledige gegevens corrigeren\n• Wissen: Verwijdering van uw persoonsgegevens verzoeken (\"recht om vergeten te worden\")\n• Overdraagbaarheid: Uw gegevens ontvangen in een gestructureerd, machineleesbaar formaat\n• Bezwaar: Bezwaar maken tegen verwerking op basis van gerechtvaardigde belangen\n• Beperking: Beperking van verwerking verzoeken\n• Intrekking Toestemming: Uw toestemming op elk moment intrekken\n\nOm deze rechten uit te oefenen, neem contact met ons op via privacy@grpeurope.com",
       "securityTitle": "7. Gegevensbeveiliging",
       "securityContent": "Wij implementeren passende technische en organisatorische maatregelen om uw gegevens te beschermen, waaronder:\n\n• Versleuteling tijdens verzending en opslag\n• Veilige authenticatiemechanismen\n• Regelmatige beveiligingsaudits\n• Toegangscontroles en monitoring",
       "contactTitle": "8. Contactgegevens",
-      "contactContent": "Verwerkingsverantwoordelijke: GREEN POWER ENERGY\nE-mail: privacy@greenpowerenergy.com\nAdres: [Bedrijfsadres]\n\nVoor KVKK-vragen in Turkije:\nKVKK-vertegenwoordiger: kvkk@greenpowerenergy.com\n\nVoor AVG-vragen in de EU:\nDPO: dpo@greenpowerenergy.com",
+      "contactContent": "Verwerkingsverantwoordelijke: GRP Europe BV\nVestigingsadres: Swingboei 11, 1231HE Loosdrecht, Nederland\nKantooradres: Krijgsman 19, 1186 DM Amstelveen, Nederland\nGemachtigde Vertegenwoordiger: Wilfred Gerards\nKvK-nummer: 92198678\nBTW-nummer: 865928897B01\nE-mail: privacy@grpeurope.com\n\nVoor AVG-vragen:\nDPO: dpo@grpeurope.com",
       "changesTitle": "9. Wijzigingen in dit Beleid",
       "changesContent": "Wij kunnen dit Privacybeleid van tijd tot tijd bijwerken. Wij zullen u op de hoogte stellen van wijzigingen door het nieuwe beleid in de app te plaatsen en de \"Laatst Bijgewerkt\" datum bij te werken."
     },
     "termsOfService": {
-      "intro": "Welkom bij Netzr van GREEN POWER ENERGY. Door onze mobiele applicatie te gebruiken, gaat u akkoord met deze Servicevoorwaarden. Lees ze zorgvuldig door.",
+      "intro": "Welkom bij Netzr van GRP Europe BV. Door onze mobiele applicatie te gebruiken, gaat u akkoord met deze Servicevoorwaarden. Lees ze zorgvuldig door.",
       "serviceDescriptionTitle": "1. Dienstbeschrijving",
       "serviceDescriptionContent": "Netzr is een energiebeheer-applicatie waarmee u:\n\n• Zonne-energieproductie en -verbruik kunt monitoren\n• Batterijstatus en netinteracties kunt volgen\n• Real-time waarschuwingen en meldingen kunt ontvangen\n• Omvormermodi en instellingen kunt beheren\n• Historische energiegegevens en analyses kunt bekijken\n• Apparaattoegang met andere gebruikers kunt delen",
       "userAccountTitle": "2. Gebruikersaccount",
@@ -1809,7 +1826,7 @@
       "userResponsibilitiesTitle": "3. Gebruikersverantwoordelijkheden",
       "userResponsibilitiesContent": "U gaat ermee akkoord om:\n\n• De dienst alleen voor wettige doeleinden te gebruiken\n• Niet te proberen ongeautoriseerde toegang te krijgen tot systemen\n• De dienst niet te verstoren of te onderbreken\n• De applicatie niet te reverse-engineeren of te kopieren\n• Nauwkeurige accountinformatie te onderhouden\n• Te voldoen aan alle toepasselijke wet- en regelgeving",
       "intellectualPropertyTitle": "4. Intellectueel Eigendom",
-      "intellectualPropertyContent": "Alle inhoud, functies en functionaliteit van de Netzr-app zijn eigendom van GREEN POWER ENERGY en worden beschermd door intellectuele eigendomswetten. Dit omvat:\n\n• Softwarecode en algoritmen\n• Gebruikersinterface-ontwerp\n• Handelsmerken en logo's\n• Documentatie en inhoud\n\nU mag geen enkel deel van de dienst kopieren, wijzigen of distribueren zonder schriftelijke toestemming.",
+      "intellectualPropertyContent": "Alle inhoud, functies en functionaliteit van de Netzr-app zijn eigendom van GRP Europe BV en worden beschermd door intellectuele eigendomswetten. Dit omvat:\n\n• Softwarecode en algoritmen\n• Gebruikersinterface-ontwerp\n• Handelsmerken en logo's\n• Documentatie en inhoud\n\nU mag geen enkel deel van de dienst kopieren, wijzigen of distribueren zonder schriftelijke toestemming.",
       "serviceAvailabilityTitle": "5. Beschikbaarheid van de Dienst",
       "serviceAvailabilityContent": "Wij streven naar continue dienstverlening, maar wij garanderen niet:\n\n• Ononderbroken of foutloze werking\n• Compatibiliteit met alle apparaten\n• Nauwkeurigheid van energieberekeningen\n• Real-time gegevens in alle omstandigheden\n\nWij kunnen de dienst opschorten voor onderhoud of updates met voorafgaande kennisgeving wanneer mogelijk.",
       "liabilityTitle": "6. Beperking van Aansprakelijkheid",
@@ -1817,11 +1834,11 @@
       "terminationTitle": "7. Beeindiging",
       "terminationContent": "Beide partijen kunnen deze overeenkomst beeindigen:\n\n• U kunt uw account op elk moment via de app verwijderen\n• Wij kunnen accounts die deze voorwaarden schenden opschorten of beeindigen\n• Bij beeindiging wordt uw toegang ingetrokken\n• Gegevens worden behandeld volgens ons Privacybeleid en toepasselijke wetgeving",
       "governingLawTitle": "8. Toepasselijk Recht",
-      "governingLawContent": "Deze Voorwaarden vallen onder het recht van de Republiek Turkije. Geschillen worden beslecht door de rechtbanken van Istanbul, Turkije.\n\nVoor EU-gebruikers tast niets in deze voorwaarden uw wettelijke rechten onder EU-consumentenbeschermingswetten aan.",
+      "governingLawContent": "Deze Voorwaarden vallen onder het Nederlands recht. Geschillen worden beslecht door de rechtbanken van Amsterdam, Nederland.\n\nVoor EU-gebruikers tast niets in deze voorwaarden uw wettelijke rechten onder EU-consumentenbeschermingswetten aan.",
       "changesTitle": "9. Wijzigingen in Voorwaarden",
       "changesContent": "Wij kunnen deze voorwaarden op elk moment wijzigen. Voortgezet gebruik van de dienst na wijzigingen betekent acceptatie. Wij zullen u via de app of e-mail op de hoogte stellen van belangrijke wijzigingen.",
       "contactTitle": "10. Contact",
-      "contactContent": "Voor vragen over deze Voorwaarden:\n\nGREEN POWER ENERGY\nE-mail: legal@greenpowerenergy.com\nAdres: [Bedrijfsadres]"
+      "contactContent": "Voor vragen over deze Voorwaarden:\n\nGRP Europe BV\nVestigingsadres: Swingboei 11, 1231HE Loosdrecht, Nederland\nKantooradres: Krijgsman 19, 1186 DM Amstelveen, Nederland\nGemachtigde Vertegenwoordiger: Wilfred Gerards\nKvK-nummer: 92198678\nBTW-nummer: 865928897B01\nE-mail: legal@grpeurope.com"
     }
   }
 }

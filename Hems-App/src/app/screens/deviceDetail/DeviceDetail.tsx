@@ -22,6 +22,7 @@ import { deviceComponentsService } from "../../../api/services/deviceComponentsS
 import { ConnectedDeviceCard } from "../../../components/ui/ConnectedDeviceCard";
 import { DeviceInfoCard } from "../../../components/ui/DeviceInfoCard";
 import { useDeviceLiveData } from "../../../hooks/useDeviceLiveData";
+import { useDeviceNotifications } from "../../../hooks/useDeviceNotifications";
 import { useI18n } from "../../../hooks/useI18n";
 import { useRoles } from "../../../hooks/useRoles";
 import { useSelectedSiteUtils } from "../../../hooks/useSelectedSite";
@@ -53,12 +54,18 @@ export default function DeviceDetail() {
   const isAdminUser = isAdmin || hasRole("Administrator");
   const { selectedSite } = useSelectedSiteUtils();
 
+  // Get notifications for badge (must be before useFocusEffect)
+  const { notifications, refreshNotifications } = useDeviceNotifications({ isProcessed: false });
+  const unreadCount = notifications.filter(n => !n.read).length;
+
   useFocusEffect(
     useCallback(() => {
       if (isAdminUser && !selectedSite) {
         navigation.navigate('Admin');
       }
-    }, [isAdminUser, selectedSite, navigation])
+      // Refresh notifications when screen is focused
+      refreshNotifications();
+    }, [isAdminUser, selectedSite, navigation, refreshNotifications])
   );
 
 
@@ -324,12 +331,36 @@ export default function DeviceDetail() {
           onPress={() => navigation.navigate('Notifications')}
           style={styles.headerBackButton}
         >
-          <Svg width={20} height={24} viewBox="0 0 57.03 72">
-            <Path
-              d="M7.53,62.8h10.2c.8,5.2,5.3,9.2,10.8,9.2s10-4,10.8-9.2h10.2c2.1,0,4.1-.9,5.6-2.5,1.4-1.6,2.1-3.7,1.9-5.8-.2-1.8-1.8-5.9-4.8-12.8-.4-1-.9-2.2-1.2-2.7v-10.8c0-11.7-8.8-21.6-20-22.8v-2.9c0-1.4-1.1-2.5-2.5-2.5s-2.5,1.1-2.5,2.5v2.9c-4.9.5-9.5,2.7-13.1,6.2-4.4,4.3-6.9,10-6.9,16.2v11.2c-.2.5-.7,1.7-1.2,2.7C1.83,48.6.23,52.6.03,54.5c-.2,2.1.5,4.2,1.9,5.8,1.5,1.6,3.5,2.5,5.6,2.5ZM28.53,67c-2.7,0-5-1.8-5.7-4.2h11.5c-.8,2.4-3.1,4.2-5.8,4.2ZM9.43,43.7c1.5-3.5,1.6-3.6,1.6-4.3v-11.6c0-4.8,1.9-9.3,5.3-12.6,3.3-3.2,7.6-4.9,12.1-4.9h.6c9.3.3,16.9,8.4,16.9,18v11.2c0,.7.1.8,1.6,4.3,1.2,2.7,4.3,9.8,4.4,11.3.1.7-.2,1.4-.6,1.9-.5.5-1.1.8-1.9.8H7.53c-.7,0-1.4-.3-1.9-.8s-.7-1.2-.6-1.9c.2-1.5,3.3-8.7,4.4-11.4Z"
-              fill={COLORS.text}
-            />
-          </Svg>
+          <View>
+            <Svg width={20} height={24} viewBox="0 0 57.03 72">
+              <Path
+                d="M7.53,62.8h10.2c.8,5.2,5.3,9.2,10.8,9.2s10-4,10.8-9.2h10.2c2.1,0,4.1-.9,5.6-2.5,1.4-1.6,2.1-3.7,1.9-5.8-.2-1.8-1.8-5.9-4.8-12.8-.4-1-.9-2.2-1.2-2.7v-10.8c0-11.7-8.8-21.6-20-22.8v-2.9c0-1.4-1.1-2.5-2.5-2.5s-2.5,1.1-2.5,2.5v2.9c-4.9.5-9.5,2.7-13.1,6.2-4.4,4.3-6.9,10-6.9,16.2v11.2c-.2.5-.7,1.7-1.2,2.7C1.83,48.6.23,52.6.03,54.5c-.2,2.1.5,4.2,1.9,5.8,1.5,1.6,3.5,2.5,5.6,2.5ZM28.53,67c-2.7,0-5-1.8-5.7-4.2h11.5c-.8,2.4-3.1,4.2-5.8,4.2ZM9.43,43.7c1.5-3.5,1.6-3.6,1.6-4.3v-11.6c0-4.8,1.9-9.3,5.3-12.6,3.3-3.2,7.6-4.9,12.1-4.9h.6c9.3.3,16.9,8.4,16.9,18v11.2c0,.7.1.8,1.6,4.3,1.2,2.7,4.3,9.8,4.4,11.3.1.7-.2,1.4-.6,1.9-.5.5-1.1.8-1.9.8H7.53c-.7,0-1.4-.3-1.9-.8s-.7-1.2-.6-1.9c.2-1.5,3.3-8.7,4.4-11.4Z"
+                fill={COLORS.text}
+              />
+            </Svg>
+            {unreadCount > 0 && (
+              <View style={{
+                position: 'absolute',
+                top: -4,
+                right: -6,
+                backgroundColor: '#EF4444',
+                borderRadius: 10,
+                minWidth: 18,
+                height: 18,
+                justifyContent: 'center',
+                alignItems: 'center',
+                paddingHorizontal: 4,
+              }}>
+                <Text style={{
+                  color: '#FFFFFF',
+                  fontSize: 11,
+                  fontWeight: '700',
+                }}>
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </Text>
+              </View>
+            )}
+          </View>
         </TouchableOpacity>
       </View>
 

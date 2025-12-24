@@ -1,7 +1,7 @@
-import React, { useState, useRef, useImperativeHandle, forwardRef } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import React, { useState, useRef, useImperativeHandle, forwardRef, useMemo } from 'react';
+import { Pressable, Text, View, StyleProp, ViewStyle } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
-import type { DeviceNotification } from '../../../../hooks/useDeviceNotifications';
+import type { DeviceNotification, NotificationSeverityLevel } from '../../../../hooks/useDeviceNotifications';
 import { useI18n } from '../../../../hooks/useI18n';
 import type { makeNotificationScreenStyles } from '../NotificationScreen.styles';
 import StatusPill from './StatusPill';
@@ -23,11 +23,27 @@ export type NotificationItemRef = {
   close: () => void;
 };
 
+const getSeverityStyle = (severityLevel: NotificationSeverityLevel, styles: Styles): StyleProp<ViewStyle> => {
+  switch (severityLevel) {
+    case 'ERROR':
+      return styles.itemRowError;
+    case 'WARNING':
+      return styles.itemRowWarning;
+    case 'ALARM':
+      return styles.itemRowAlarm;
+    case 'INFO':
+    default:
+      return styles.itemRowInfo;
+  }
+};
+
 export const NotificationItem = forwardRef<NotificationItemRef, Props>(({ n, styles, isDark, accent, onOpen, onDelete, onMarkRead, onSwipeableOpen }, ref) => {
   const [showActions, setShowActions] = useState(false);
   const swipeableRef = useRef<Swipeable>(null);
   const { t } = useI18n();
   const metaText = new Date(n.createdAt).toLocaleString();
+
+  const severityStyle = useMemo(() => getSeverityStyle(n.severityLevel, styles), [n.severityLevel, styles]);
 
   useImperativeHandle(ref, () => ({
     close: () => {
@@ -84,7 +100,7 @@ export const NotificationItem = forwardRef<NotificationItemRef, Props>(({ n, sty
       friction={2}
     >
       <Pressable onPress={() => onOpen(n)} style={styles.itemPress}>
-        <View style={styles.itemRow}>
+        <View style={[styles.itemRow, severityStyle]}>
           <View style={styles.itemContent}>
             <View style={styles.itemHeader}>
               <Text

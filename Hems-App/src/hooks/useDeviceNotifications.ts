@@ -7,6 +7,8 @@ import {
   PaginatedListOfDeviceNotificationDto
 } from '../api/types/deviceNotifications.types';
 
+export type NotificationSeverityLevel = 'ERROR' | 'WARNING' | 'ALARM' | 'INFO';
+
 export type DeviceNotification = {
   id: string;
   title: string;
@@ -15,6 +17,7 @@ export type DeviceNotification = {
   createdAt: string;
   read: boolean;
   severity: 'normal' | 'critical';
+  severityLevel: NotificationSeverityLevel;
   deviceId: string;
   siteId: string;
   isDeleted: boolean;
@@ -28,6 +31,9 @@ export type DeviceNotification = {
   };
   deviceManufacturer: string;
   siteName: string;
+  displayMessage?: string;
+  resolvedCode?: string;
+  sourceDevice?: string;
 };
 
 const PAGE_SIZE = 20;
@@ -54,10 +60,37 @@ export function useDeviceNotifications (filters?: DeviceNotificationFilters) {
 
   const mapApiNotificationToNotification = (apiNotification: DeviceNotificationDto): DeviceNotification => {
     let parsedAdditionalData = '';
+    let severityLevel: NotificationSeverityLevel = 'INFO';
+    let displayMessage: string | undefined;
+    let resolvedCode: string | undefined;
+    let sourceDevice: string | undefined;
 
     try {
       if (apiNotification.additionalData) {
         const parsed = JSON.parse(apiNotification.additionalData);
+
+        // Extract severity from additionalData
+        if (parsed.severity) {
+          const sev = parsed.severity.toUpperCase();
+          if (sev === 'ERROR' || sev === 'WARNING' || sev === 'ALARM') {
+            severityLevel = sev as NotificationSeverityLevel;
+          }
+        }
+
+        // Extract displayMessage
+        if (parsed.displayMessage) {
+          displayMessage = parsed.displayMessage;
+        }
+
+        // Extract resolvedCode
+        if (parsed.resolvedCode) {
+          resolvedCode = parsed.resolvedCode;
+        }
+
+        // Extract sourceDevice
+        if (parsed.sourceDevice) {
+          sourceDevice = parsed.sourceDevice;
+        }
 
         const parts: string[] = [];
 
@@ -88,6 +121,7 @@ export function useDeviceNotifications (filters?: DeviceNotificationFilters) {
       createdAt: apiNotification.created,
       read: apiNotification.isProcessed,
       severity: (apiNotification.deviceNotificationType?.category === 'critical' ? 'critical' : 'normal') as 'normal' | 'critical',
+      severityLevel,
       deviceId: apiNotification.deviceId,
       siteId: apiNotification.siteId,
       isDeleted: apiNotification.isDeleted,
@@ -101,6 +135,9 @@ export function useDeviceNotifications (filters?: DeviceNotificationFilters) {
       },
       deviceManufacturer: apiNotification.deviceManufacturer,
       siteName: apiNotification.siteName,
+      displayMessage,
+      resolvedCode,
+      sourceDevice,
     };
 
     return mapped;

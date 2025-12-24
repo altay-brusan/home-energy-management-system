@@ -1,10 +1,11 @@
 import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
-import React, { JSX, useCallback, useState } from 'react';
+import React, { JSX, useCallback, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Platform, RefreshControl, SafeAreaView, ScrollView, Text, View, TouchableOpacity } from 'react-native';
 import Svg, { Path, G } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
+import { useDeviceNotifications } from '../../../hooks/useDeviceNotifications';
 import { apiClient } from '../../../api/client/apiClient';
 import { sitesService } from "../../../api/services/sitesService";
 import { useDashboardRefresh } from '../../../hooks/useDashboardRefresh';
@@ -88,6 +89,10 @@ export default function DashboardScreen (): JSX.Element {
 
   const sidebarRef = React.useRef<any>(null);
 
+  // Get unread notification count
+  const { notifications, refreshNotifications } = useDeviceNotifications({ isProcessed: false });
+  const unreadCount = notifications.filter(n => !n.read).length;
+
   React.useEffect(() => {
     if (selectedSite && selectedSite.hasDevice && !selectedSiteDevice) {loadSelectedSiteDevice().catch(error => {});
     }
@@ -98,7 +103,9 @@ export default function DashboardScreen (): JSX.Element {
       if (isAdminUser && !selectedSite && !siteIdFromParam) {
         navigation.navigate('Admin');
       }
-    }, [isAdminUser, selectedSite, siteIdFromParam, navigation])
+      // Refresh notifications when screen is focused
+      refreshNotifications();
+    }, [isAdminUser, selectedSite, siteIdFromParam, navigation, refreshNotifications])
   );
 
   React.useEffect(() => {
@@ -259,6 +266,7 @@ export default function DashboardScreen (): JSX.Element {
             onPress={() => navigation.navigate('Notifications')}
             style={{
               padding: 8,
+              position: 'relative',
             }}
           >
             <Svg width={20} height={25} viewBox="0 0 57.03 72">
@@ -267,6 +275,32 @@ export default function DashboardScreen (): JSX.Element {
                 fill={COLORS.textSoft}
               />
             </Svg>
+            {unreadCount > 0 && (
+              <View
+                style={{
+                  position: 'absolute',
+                  top: 4,
+                  right: 4,
+                  backgroundColor: '#EF4444',
+                  borderRadius: 10,
+                  minWidth: 18,
+                  height: 18,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  paddingHorizontal: 4,
+                }}
+              >
+                <Text
+                  style={{
+                    color: '#FFFFFF',
+                    fontSize: 10,
+                    fontWeight: '700',
+                  }}
+                >
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
         <WeatherStatus deviceId={device?.id} />

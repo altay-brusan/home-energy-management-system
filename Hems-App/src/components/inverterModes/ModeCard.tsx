@@ -16,12 +16,15 @@ import {
   Scale,
   SlidersHorizontal,
   LucideIcon,
+  Zap,
+  Home,
+  ShieldOff,
 } from 'lucide-react-native';
 import { useThemeStore } from '../../store/themeStore';
 import { getThemeColors } from '../../theme/constants';
 
-// Mode ID'ye göre ikon eşlemesi
-const MODE_ICONS: Record<string, LucideIcon> = {
+// Mode ID'ye göre ikon eşlemesi (legacy/fallback)
+const MODE_ICONS_BY_ID: Record<string, LucideIcon> = {
   mode_1: PiggyBank,        // Maksimum Tasarruf
   mode_2: TrendingUp,       // Şebekeye Satış
   mode_4: ShieldCheck,      // Yedek Güç (UPS)
@@ -30,6 +33,39 @@ const MODE_ICONS: Record<string, LucideIcon> = {
   mode_7: Fuel,             // Jeneratör Destekli
   mode_8: Scale,            // Dengeli Hibrit
   custom: SlidersHorizontal, // Özel Mod
+};
+
+// Mode ismine göre ikon eşlemesi (API'den gelen modlar için)
+const MODE_ICONS_BY_NAME: Record<string, LucideIcon> = {
+  // API Preset Modları
+  'sell to grid': Zap,              // Şebekeye satış - elektrik/güç ikonu
+  'self consumption': Home,         // Kendi tüketimi - ev ikonu
+  'smart zero export': ShieldOff,   // Akıllı sıfır ihracat - koruma/engel ikonu
+  // Türkçe isimler
+  'şebekeye satış': Zap,
+  'kendi tüketim': Home,
+  'akıllı sıfır ihracat': ShieldOff,
+  // Legacy/Lokal modlar
+  'maksimum tasarruf': PiggyBank,
+  'yedek güç (ups)': ShieldCheck,
+  'gece tarifesi avantajı': Moon,
+  'sıfır ihracat': CircleOff,
+  'jeneratör destekli': Fuel,
+  'dengeli hibrit': Scale,
+  'özel mod': SlidersHorizontal,
+};
+
+// İkon seçimi - önce isme, sonra ID'ye göre
+const getIconForMode = (id: string, name?: string): LucideIcon | undefined => {
+  // Önce mod ismine göre eşleştir (küçük harfe çevirerek)
+  if (name) {
+    const normalizedName = name.toLowerCase().trim();
+    if (MODE_ICONS_BY_NAME[normalizedName]) {
+      return MODE_ICONS_BY_NAME[normalizedName];
+    }
+  }
+  // İsim bulunamazsa ID'ye göre eşleştir
+  return MODE_ICONS_BY_ID[id];
 };
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -57,7 +93,7 @@ const ModeCard: React.FC<ModeCardProps> = ({
   const isDark = mode === 'dark';
   const COLORS = getThemeColors(isDark);
 
-  const IconComponent = MODE_ICONS[id];
+  const IconComponent = getIconForMode(id, name);
 
   // Preset mode mavi rengi (TodaySummary ile aynı)
   const PRESET_BLUE = '#5EB2F7';

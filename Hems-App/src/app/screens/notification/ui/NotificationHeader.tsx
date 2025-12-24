@@ -1,7 +1,6 @@
 import React from 'react';
-import { Pressable, Text, View, ActivityIndicator } from 'react-native';
-import FontAwesome from '@react-native-vector-icons/fontawesome';
-import { ArrowLeft } from 'lucide-react-native';
+import { TouchableOpacity, Text, View, ActivityIndicator, Alert } from 'react-native';
+import { ArrowLeft, CheckCheck, Trash2 } from 'lucide-react-native';
 import type { makeNotificationScreenStyles } from '../NotificationScreen.styles';
 import { useI18n } from '../../../../hooks/useI18n';
 
@@ -9,45 +8,72 @@ type Styles = ReturnType<typeof makeNotificationScreenStyles>;
 
 type Props = {
   styles: Styles;
+  textColor: string;
+  accentColor: string;
   onMarkAllRead: () => void;
   onPressTrash: () => void;
   onPressBack: () => void;
   markingAllAsRead?: boolean;
 };
 
-export function NotificationHeader({ styles, onMarkAllRead, onPressTrash, onPressBack, markingAllAsRead }: Props) {
+export function NotificationHeader({
+  styles,
+  textColor,
+  accentColor,
+  onMarkAllRead,
+  onPressTrash,
+  onPressBack,
+  markingAllAsRead
+}: Props) {
   const { t } = useI18n();
 
+  const handleMarkAllReadPress = () => {
+    Alert.alert(
+      t('notifications.markAllReadConfirm.title'),
+      t('notifications.markAllReadConfirm.message'),
+      [
+        {
+          text: t('notifications.markAllReadConfirm.cancel'),
+          style: 'cancel',
+        },
+        {
+          text: t('notifications.markAllReadConfirm.confirm'),
+          onPress: onMarkAllRead,
+          style: 'default',
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
   return (
-    <View style={styles.headerRow}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-        <Pressable
-          onPress={onPressBack}
-          style={{
-            paddingVertical: 8,
-            paddingRight: 8,
-            marginLeft: -4
-          }}
-        >
-          <ArrowLeft size={26} color={styles.title.color} strokeWidth={2.5} />
-        </Pressable>
-        <Text style={styles.title}>{t('notifications.title')}</Text>
-      </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        <Pressable
-          onPress={onMarkAllRead}
-          style={[styles.headerBtn, { opacity: markingAllAsRead ? 0.6 : 1 }]}
+    <View style={styles.header}>
+      <TouchableOpacity onPress={onPressBack} style={styles.headerBackButton}>
+        <ArrowLeft size={24} color={textColor} />
+      </TouchableOpacity>
+
+      <Text style={styles.headerTitle}>{t('notifications.title')}</Text>
+
+      <View style={styles.headerActions}>
+        <TouchableOpacity
+          onPress={handleMarkAllReadPress}
+          style={[styles.headerActionBtn, { opacity: markingAllAsRead ? 0.5 : 1 }]}
           disabled={markingAllAsRead}
+          activeOpacity={0.7}
         >
           {markingAllAsRead ? (
-            <ActivityIndicator size="small" color={styles.headerBtnText.color} />
+            <ActivityIndicator size="small" color={accentColor} />
           ) : (
-            <Text style={styles.headerBtnText}>{t('notifications.markAllRead')}</Text>
+            <CheckCheck size={22} color={accentColor} />
           )}
-        </Pressable>
-        <Pressable onPress={onPressTrash} style={styles.headerBtn}>
-          <FontAwesome name="trash" size={18} color={styles.headerBtnText.color} />
-        </Pressable>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={onPressTrash}
+          style={styles.headerActionBtn}
+          activeOpacity={0.7}
+        >
+          <Trash2 size={22} color={textColor} />
+        </TouchableOpacity>
       </View>
     </View>
   );

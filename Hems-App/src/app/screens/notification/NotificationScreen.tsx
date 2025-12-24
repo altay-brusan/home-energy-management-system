@@ -138,13 +138,15 @@ export default function NotificationScreen(): JSX.Element {
 
   const ListHeader = (
     <>
-   <NotificationHeader
-  styles={styles}
-  onMarkAllRead={handleMarkAllAsRead}
-  onPressTrash={() => navigation.navigate('Trash')}
-  onPressBack={() => navigation.goBack()}
-  markingAllAsRead={markingAllAsRead}
-/>
+      <NotificationHeader
+        styles={styles}
+        textColor={COLORS.text}
+        accentColor={COLORS.accent}
+        onMarkAllRead={handleMarkAllAsRead}
+        onPressTrash={() => navigation.navigate('Trash')}
+        onPressBack={() => navigation.goBack()}
+        markingAllAsRead={markingAllAsRead}
+      />
       <View style={styles.filterSticky}>
         <FilterChips value={filter} onChange={setFilter} styles={styles} />
         {!isConnected && <OfflineBanner styles={styles} />}

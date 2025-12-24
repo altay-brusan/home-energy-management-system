@@ -22,6 +22,37 @@ export const makeNotificationScreenStyles = (isDark: boolean) => {
     screen: { flex: 1, backgroundColor: APP_BG },
     pageScroll: { flexGrow: 1, paddingHorizontal: 0, paddingBottom: 16 },
 
+    // New header styles (Settings format)
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+    },
+    headerBackButton: {
+      padding: 8,
+      marginLeft: -8,
+    },
+    headerTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: TEXT,
+      flex: 1,
+      textAlign: 'left',
+      marginLeft: 8,
+    },
+    headerActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    headerActionBtn: {
+      padding: 8,
+      borderRadius: 8,
+    },
+
+    // Legacy styles (keeping for compatibility)
     headerRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -54,9 +85,11 @@ export const makeNotificationScreenStyles = (isDark: boolean) => {
 
     filterSticky: {
       backgroundColor: APP_BG,
-      paddingTop: 4,
-      paddingBottom: 16,
+      paddingTop: 8,
+      paddingBottom: 12,
       paddingHorizontal: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
     },
     chipsScrollView: {
       marginTop: 0,
@@ -64,30 +97,31 @@ export const makeNotificationScreenStyles = (isDark: boolean) => {
     chipsWrap: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 10,
+      gap: 8,
       paddingHorizontal: 0,
     },
     chip: {
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: 10,
-      paddingHorizontal: 18,
-      borderRadius: 22,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
-      borderWidth: 0,
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      borderRadius: 20,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+      borderWidth: 1,
+      borderColor: 'transparent',
       flexShrink: 0,
     },
     chipActive: {
-      backgroundColor: ACCENT,
-      borderWidth: 0,
+      backgroundColor: `${ACCENT}15`,
+      borderColor: ACCENT,
     },
     chipText: {
-      color: isDark ? '#D1D5DB' : '#6B7280',
-      fontWeight: '600',
-      fontSize: 15,
+      color: isDark ? '#9CA3AF' : '#6B7280',
+      fontWeight: '500',
+      fontSize: 14,
       textAlign: 'center',
       includeFontPadding: false,
-      letterSpacing: -0.2,
+      letterSpacing: -0.1,
       ...(Platform.OS === 'android' && {
         textAlignVertical: 'center',
         paddingTop: 0,
@@ -95,12 +129,12 @@ export const makeNotificationScreenStyles = (isDark: boolean) => {
       }),
     },
     chipTextActive: {
-      color: '#FFFFFF',
-      fontWeight: '700',
-      fontSize: 15,
+      color: ACCENT,
+      fontWeight: '600',
+      fontSize: 14,
       textAlign: 'center',
       includeFontPadding: false,
-      letterSpacing: -0.2,
+      letterSpacing: -0.1,
       ...(Platform.OS === 'android' && {
         textAlignVertical: 'center',
         paddingTop: 0,
@@ -109,27 +143,50 @@ export const makeNotificationScreenStyles = (isDark: boolean) => {
     },
 
     groupHeader: {
-      marginTop: 24,
-      marginBottom: 12,
+      marginTop: 20,
+      marginBottom: 8,
       marginHorizontal: 16,
-      color: TEXT,
-      fontSize: 19,
-      fontWeight: '700',
-      letterSpacing: -0.5,
+      color: MUTED,
+      fontSize: 13,
+      fontWeight: '600',
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
     },
     itemPress: {
       paddingVertical: 0,
-      paddingHorizontal: 0,
+      paddingHorizontal: 16,
     },
     itemRow: {
       flexDirection: 'row',
       alignItems: 'flex-start',
-      paddingVertical: 18,
-      paddingHorizontal: 16,
-      borderLeftWidth: 0,
-      backgroundColor: isDark ? 'rgba(32, 40, 53, 1)' : 'rgba(249,250,251,0.9)',
-      borderRadius: 0,
-      minHeight: 96,
+      paddingVertical: 14,
+      paddingHorizontal: 14,
+      borderLeftWidth: 3,
+      borderLeftColor: 'transparent',
+      backgroundColor: isDark ? C?.surface ?? 'rgba(32, 40, 53, 1)' : '#FFFFFF',
+      borderRadius: 12,
+      marginVertical: 4,
+      minHeight: 80,
+      // Shadow for light mode
+      ...(isDark ? {} : {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+        elevation: 1,
+      }),
+    },
+    itemRowError: {
+      borderLeftColor: '#EF4444',
+    },
+    itemRowWarning: {
+      borderLeftColor: '#F59E0B',
+    },
+    itemRowAlarm: {
+      borderLeftColor: '#3B82F6',
+    },
+    itemRowInfo: {
+      borderLeftColor: ACCENT,
     },
     itemContent: { flex: 1 },
 
@@ -223,37 +280,39 @@ export const makeNotificationScreenStyles = (isDark: boolean) => {
     },
 
     swipeLeft: {
-      width: 80,
+      width: 70,
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: ACCENT,
-      borderRadius: 0,
-      minHeight: 96,
-      marginVertical: 0,
-      marginLeft: 0,
+      borderRadius: 12,
+      minHeight: 80,
+      marginVertical: 4,
+      marginLeft: 16,
+      marginRight: 8,
     },
     swipeLeftText: {
       color: '#fff',
-      fontWeight: '700',
-      fontSize: 13,
-      letterSpacing: -0.2,
+      fontWeight: '600',
+      fontSize: 12,
+      letterSpacing: -0.1,
     },
 
     swipeRight: {
-      width: 80,
+      width: 70,
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: '#E63946',
-      borderRadius: 0,
-      minHeight: 96,
-      marginVertical: 0,
-      marginRight: 0,
+      backgroundColor: '#EF4444',
+      borderRadius: 12,
+      minHeight: 80,
+      marginVertical: 4,
+      marginRight: 16,
+      marginLeft: 8,
     },
     swipeRightText: {
       color: '#fff',
-      fontWeight: '700',
-      fontSize: 13,
-      letterSpacing: -0.2,
+      fontWeight: '600',
+      fontSize: 12,
+      letterSpacing: -0.1,
     },
 
     emptyWrap: {
@@ -290,8 +349,8 @@ export const makeNotificationScreenStyles = (isDark: boolean) => {
     flex1: { flex: 1 },
 
     separator: {
-      height: 1,
-      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+      height: 0,
+      backgroundColor: 'transparent',
       marginVertical: 0,
     },
   });

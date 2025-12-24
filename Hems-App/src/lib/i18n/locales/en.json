@@ -934,10 +934,25 @@
         "success": "Notification deleted",
         "error": "Failed to delete notification"
       },
+      "deleteConfirm": {
+        "title": "Delete Notification",
+        "message": "Are you sure you want to delete this notification?",
+        "confirm": "Delete",
+        "cancel": "Cancel"
+      },
       "markAllReadSuccess": "All notifications marked as read",
       "markAllReadError": "Failed to mark all notifications as read",
+      "markAllReadConfirm": {
+        "title": "Mark All as Read",
+        "message": "Are you sure you want to mark all notifications as read?",
+        "confirm": "Yes, Mark All",
+        "cancel": "Cancel"
+      },
       "details": "Notification Details",
-      "additionalInfo": "Additional Information"
+      "additionalInfo": "Additional Information",
+      "errorCode": "Error Code",
+      "sourceDevice": "Source",
+      "timestamp": "Time"
     },
     "deviceList": {
       "title": "Device",
@@ -1965,30 +1980,30 @@
     "privacyPolicyTitle": "Privacy Policy",
     "termsOfServiceTitle": "Terms of Service",
     "lastUpdated": "Last Updated: December 2024",
-    "companyName": "GREEN POWER ENERGY",
+    "companyName": "GRP Europe BV",
     "privacyPolicy": {
-      "intro": "GREEN POWER ENERGY (\"we\", \"our\", or \"the Company\") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our Netzr mobile application.",
+      "intro": "GRP Europe BV (\"we\", \"our\", or \"the Company\"), registered at Swingboei 11, 1231HE Loosdrecht, The Netherlands (Registration No: 92198678, VAT: 865928897B01), represented by Wilfred Gerards, is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our Netzr mobile application.",
       "dataCollectedTitle": "1. Data We Collect",
       "dataCollectedContent": "We collect the following types of personal data:\n\n• Personal Information: Name, surname, email address, phone number\n• Account Data: Login credentials, user preferences\n• Energy Data: Solar production, battery status, grid import/export data, energy consumption patterns\n• Device Telemetry: Inverter status, device serial numbers, firmware versions, real-time power metrics\n• Location Data: Home address, device installation location (for accurate energy monitoring)\n• Usage Data: App usage patterns, feature interactions, error logs",
       "purposeTitle": "2. Purpose of Data Processing",
       "purposeContent": "We process your data for the following purposes:\n\n• To provide and maintain the Netzr energy management service\n• To monitor and optimize your energy production and consumption\n• To send notifications about system status, alerts, and updates\n• To improve our services and develop new features\n• To comply with legal obligations\n• To communicate with you regarding your account and support requests",
       "legalBasisTitle": "3. Legal Basis for Processing",
-      "legalBasisContent": "We process your personal data based on:\n\n• Your consent when you create an account and accept these terms\n• Performance of a contract (providing our services to you)\n• Legal obligations (KVKK - Turkish Data Protection Law, GDPR)\n• Legitimate interests (improving our services, preventing fraud)",
+      "legalBasisContent": "We process your personal data based on:\n\n• Your consent when you create an account and accept these terms\n• Performance of a contract (providing our services to you)\n• Legal obligations (GDPR - General Data Protection Regulation)\n• Legitimate interests (improving our services, preventing fraud)",
       "thirdPartyTitle": "4. Third-Party Sharing",
       "thirdPartyContent": "We may share your data with:\n\n• Cloud Service Providers: For secure data storage and processing\n• Analytics Providers: To improve app performance (anonymized data)\n• Energy Grid Operators: When required for grid integration\n• Government Authorities: When required by law\n\nWe never sell your personal data to third parties.",
       "dataRetentionTitle": "5. Data Retention",
       "dataRetentionContent": "We retain your personal data for:\n\n• Account data: As long as your account is active, plus 2 years after deletion\n• Energy data: 5 years for historical analysis and reporting\n• Device telemetry: 2 years for service improvement\n• Usage logs: 1 year for troubleshooting\n\nYou may request earlier deletion by contacting us.",
       "userRightsTitle": "6. Your Rights",
-      "userRightsContent": "Under KVKK and GDPR, you have the right to:\n\n• Access: Request a copy of your personal data\n• Rectification: Correct inaccurate or incomplete data\n• Erasure: Request deletion of your personal data (\"right to be forgotten\")\n• Portability: Receive your data in a structured, machine-readable format\n• Objection: Object to processing based on legitimate interests\n• Restriction: Request limitation of processing\n• Withdraw Consent: Withdraw your consent at any time\n\nTo exercise these rights, contact us at privacy@greenpowerenergy.com",
+      "userRightsContent": "Under GDPR, you have the right to:\n\n• Access: Request a copy of your personal data\n• Rectification: Correct inaccurate or incomplete data\n• Erasure: Request deletion of your personal data (\"right to be forgotten\")\n• Portability: Receive your data in a structured, machine-readable format\n• Objection: Object to processing based on legitimate interests\n• Restriction: Request limitation of processing\n• Withdraw Consent: Withdraw your consent at any time\n\nTo exercise these rights, contact us at privacy@grpeurope.com",
       "securityTitle": "7. Data Security",
       "securityContent": "We implement appropriate technical and organizational measures to protect your data, including:\n\n• Encryption in transit and at rest\n• Secure authentication mechanisms\n• Regular security audits\n• Access controls and monitoring",
       "contactTitle": "8. Contact Information",
-      "contactContent": "Data Controller: GREEN POWER ENERGY\nEmail: privacy@greenpowerenergy.com\nAddress: [Company Address]\n\nFor KVKK inquiries in Turkey:\nKVKK Representative: kvkk@greenpowerenergy.com\n\nFor GDPR inquiries in the EU:\nDPO: dpo@greenpowerenergy.com",
+      "contactContent": "Data Controller: GRP Europe BV\nRegistered Address: Swingboei 11, 1231HE Loosdrecht, The Netherlands\nOperating Address: Krijgsman 19, 1186 DM Amstelveen, The Netherlands\nAuthorised Representative: Wilfred Gerards\nRegistration Number: 92198678\nVAT Number: 865928897B01\nEmail: privacy@grpeurope.com\n\nFor GDPR inquiries in the EU:\nDPO: dpo@grpeurope.com",
       "changesTitle": "9. Changes to This Policy",
       "changesContent": "We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new policy in the app and updating the \"Last Updated\" date."
     },
     "termsOfService": {
-      "intro": "Welcome to Netzr by GREEN POWER ENERGY. By using our mobile application, you agree to these Terms of Service. Please read them carefully.",
+      "intro": "Welcome to Netzr by GRP Europe BV. By using our mobile application, you agree to these Terms of Service. Please read them carefully.",
       "serviceDescriptionTitle": "1. Service Description",
       "serviceDescriptionContent": "Netzr is an energy management application that allows you to:\n\n• Monitor solar energy production and consumption\n• Track battery status and grid interactions\n• Receive real-time alerts and notifications\n• Control inverter modes and settings\n• View historical energy data and analytics\n• Share device access with other users",
       "userAccountTitle": "2. User Account",
@@ -1996,7 +2011,7 @@
       "userResponsibilitiesTitle": "3. User Responsibilities",
       "userResponsibilitiesContent": "You agree to:\n\n• Use the service only for lawful purposes\n• Not attempt to gain unauthorized access to any systems\n• Not interfere with or disrupt the service\n• Not reverse engineer or copy the application\n• Maintain accurate account information\n• Comply with all applicable laws and regulations",
       "intellectualPropertyTitle": "4. Intellectual Property",
-      "intellectualPropertyContent": "All content, features, and functionality of the Netzr app are owned by GREEN POWER ENERGY and protected by intellectual property laws. This includes:\n\n• Software code and algorithms\n• User interface design\n• Trademarks and logos\n• Documentation and content\n\nYou may not copy, modify, or distribute any part of the service without written permission.",
+      "intellectualPropertyContent": "All content, features, and functionality of the Netzr app are owned by GRP Europe BV and protected by intellectual property laws. This includes:\n\n• Software code and algorithms\n• User interface design\n• Trademarks and logos\n• Documentation and content\n\nYou may not copy, modify, or distribute any part of the service without written permission.",
       "serviceAvailabilityTitle": "5. Service Availability",
       "serviceAvailabilityContent": "We strive to maintain continuous service, but we do not guarantee:\n\n• Uninterrupted or error-free operation\n• Compatibility with all devices\n• Accuracy of energy calculations\n• Real-time data in all circumstances\n\nWe may suspend service for maintenance or updates with prior notice when possible.",
       "liabilityTitle": "6. Limitation of Liability",
@@ -2004,11 +2019,11 @@
       "terminationTitle": "7. Termination",
       "terminationContent": "Either party may terminate this agreement:\n\n• You may delete your account at any time through the app\n• We may suspend or terminate accounts that violate these terms\n• Upon termination, your access will be revoked\n• Data will be handled according to our Privacy Policy and applicable laws",
       "governingLawTitle": "8. Governing Law",
-      "governingLawContent": "These Terms are governed by the laws of the Republic of Turkey. Any disputes shall be resolved in the courts of Istanbul, Turkey.\n\nFor EU users, nothing in these terms affects your statutory rights under EU consumer protection laws.",
+      "governingLawContent": "These Terms are governed by the laws of The Netherlands. Any disputes shall be resolved in the courts of Amsterdam, The Netherlands.\n\nFor EU users, nothing in these terms affects your statutory rights under EU consumer protection laws.",
       "changesTitle": "9. Changes to Terms",
       "changesContent": "We may modify these terms at any time. Continued use of the service after changes constitutes acceptance. We will notify you of significant changes through the app or email.",
       "contactTitle": "10. Contact",
-      "contactContent": "For questions about these Terms:\n\nGREEN POWER ENERGY\nEmail: legal@greenpowerenergy.com\nAddress: [Company Address]"
+      "contactContent": "For questions about these Terms:\n\nGRP Europe BV\nRegistered Address: Swingboei 11, 1231HE Loosdrecht, The Netherlands\nOperating Address: Krijgsman 19, 1186 DM Amstelveen, The Netherlands\nAuthorised Representative: Wilfred Gerards\nRegistration Number: 92198678\nVAT Number: 865928897B01\nEmail: legal@grpeurope.com"
     }
   }
 }

@@ -202,5 +202,48 @@ export function getPVStyles(COLORS: Record<string, string>) {
       color: COLORS.textSoft,
       fontSize: TYPOGRAPHY.sm,
     },
+
+    // Date Navigation
+    dateNavigation: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: SPACING.sm,
+      paddingHorizontal: SPACING.xs,
+    },
+    dateNavButton: {
+      padding: SPACING.xs,
+      borderRadius: 8,
+    },
+    dateNavButtonDisabled: {
+      opacity: 0.4,
+    },
+    dateSelector: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingVertical: SPACING.xs,
+      paddingHorizontal: SPACING.sm,
+    },
+    dateText: {
+      fontSize: TYPOGRAPHY.md,
+      fontWeight: '600',
+      color: COLORS.text,
+    },
+
+    // Modal
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: SPACING.lg,
+    },
+    calendarContainer: {
+      borderRadius: 12,
+      padding: SPACING.sm,
+      width: '100%',
+      maxWidth: 360,
+    },
   });
 }

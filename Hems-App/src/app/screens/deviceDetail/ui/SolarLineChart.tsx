@@ -218,7 +218,7 @@ export const SolarLineChart: React.FC<SolarLineChartProps> = ({
             <View style={[styles.tooltipDot, { backgroundColor: SOLAR_COLOR }]} />
             <Text style={[styles.tooltipLabel, { color: COLORS.textSoft }]}>Solar</Text>
             <Text style={[styles.tooltipValue, { color: COLORS.text }]}>
-              {selectedDataPoint.y.toFixed(1)} kW
+              {selectedDataPoint.y.toFixed(1)} {range === 'Day' ? 'kW' : 'kWh'}
             </Text>
           </View>
         </View>

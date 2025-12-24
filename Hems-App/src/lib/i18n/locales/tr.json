@@ -935,12 +935,27 @@
       "success": "Bildirim silindi",
       "error": "Bildirim silinemedi"
     },
+    "deleteConfirm": {
+      "title": "Bildirimi Sil",
+      "message": "Bu bildirimi silmek istediğinize emin misiniz?",
+      "confirm": "Sil",
+      "cancel": "İptal"
+    },
     "markAllReadSuccess": "Tüm bildirimler okundu olarak işaretlendi",
     "markAllReadError": "Tüm bildirimler okundu olarak işaretlenemedi",
+    "markAllReadConfirm": {
+      "title": "Tümünü Okundu İşaretle",
+      "message": "Tüm bildirimleri okundu olarak işaretlemek istediğinize emin misiniz?",
+      "confirm": "Evet, Tümünü İşaretle",
+      "cancel": "İptal"
+    },
     "markAsRead": "Okundu olarak işaretlendi",
     "markAsReadFailed": "İşaretleme başarısız",
     "details": "Bildirim Detayı",
-    "additionalInfo": "Ek Bilgiler"
+    "additionalInfo": "Ek Bilgiler",
+    "errorCode": "Hata Kodu",
+    "sourceDevice": "Kaynak",
+    "timestamp": "Zaman"
   },
 "deviceList": {
   "title": "Cihaz",
@@ -1884,30 +1899,30 @@
     "privacyPolicyTitle": "Gizlilik Politikası",
     "termsOfServiceTitle": "Kullanım Koşulları",
     "lastUpdated": "Son Güncelleme: Aralık 2024",
-    "companyName": "GREEN POWER ENERGY",
+    "companyName": "GRP Europe BV",
     "privacyPolicy": {
-      "intro": "GREEN POWER ENERGY (\"biz\", \"bizim\" veya \"Şirket\"), gizliliğinizi korumaya kararlıdır. Bu Gizlilik Politikası, Netzr mobil uygulamamızı kullandığınızda bilgilerinizi nasıl topladığımızı, kullandığımızı, paylaştığımızı ve koruduğumuzu açıklar.",
+      "intro": "GRP Europe BV (\"biz\", \"bizim\" veya \"Şirket\"), Swingboei 11, 1231HE Loosdrecht, Hollanda adresinde kayıtlı (Sicil No: 92198678, KDV No: 865928897B01), Wilfred Gerards tarafından temsil edilen şirket olarak gizliliğinizi korumaya kararlıdır. Bu Gizlilik Politikası, Netzr mobil uygulamamızı kullandığınızda bilgilerinizi nasıl topladığımızı, kullandığımızı, paylaştığımızı ve koruduğumuzu açıklar.",
       "dataCollectedTitle": "1. Topladığımız Veriler",
       "dataCollectedContent": "Aşağıdaki kişisel verileri topluyoruz:\n\n• Kişisel Bilgiler: Ad, soyad, e-posta adresi, telefon numarası\n• Hesap Verileri: Giriş bilgileri, kullanıcı tercihleri\n• Enerji Verileri: Güneş enerjisi üretimi, batarya durumu, şebeke alışveriş verileri, enerji tüketim kalıpları\n• Cihaz Telemetrisi: İnverter durumu, cihaz seri numaraları, yazılım sürümleri, anlık güç metrikleri\n• Konum Verileri: Ev adresi, cihaz kurulum yeri (doğru enerji izleme için)\n• Kullanım Verileri: Uygulama kullanım kalıpları, özellik etkileşimleri, hata kayıtları",
       "purposeTitle": "2. Veri İşleme Amacı",
       "purposeContent": "Verilerinizi aşağıdaki amaçlarla işliyoruz:\n\n• Netzr enerji yönetim hizmetini sağlamak ve sürdürmek\n• Enerji üretiminizi ve tüketiminizi izlemek ve optimize etmek\n• Sistem durumu, uyarılar ve güncellemeler hakkında bildirim göndermek\n• Hizmetlerimizi iyileştirmek ve yeni özellikler geliştirmek\n• Yasal yükümlülüklere uymak\n• Hesabınız ve destek talepleriniz hakkında sizinle iletişim kurmak",
       "legalBasisTitle": "3. İşlemenin Yasal Dayanağı",
-      "legalBasisContent": "Kişisel verilerinizi aşağıdaki temellere dayanarak işliyoruz:\n\n• Hesap oluştururken ve bu koşulları kabul ederken verdiğiniz onay\n• Sözleşmenin ifası (size hizmetlerimizi sunmak)\n• Yasal yükümlülükler (KVKK - Kişisel Verilerin Korunması Kanunu, GDPR)\n• Meşru menfaatler (hizmetlerimizi iyileştirmek, dolandırıcılığı önlemek)",
+      "legalBasisContent": "Kişisel verilerinizi aşağıdaki temellere dayanarak işliyoruz:\n\n• Hesap oluştururken ve bu koşulları kabul ederken verdiğiniz onay\n• Sözleşmenin ifası (size hizmetlerimizi sunmak)\n• Yasal yükümlülükler (GDPR - Genel Veri Koruma Tüzüğü)\n• Meşru menfaatler (hizmetlerimizi iyileştirmek, dolandırıcılığı önlemek)",
       "thirdPartyTitle": "4. Üçüncü Taraf Paylaşımı",
       "thirdPartyContent": "Verilerinizi aşağıdakilerle paylaşabiliriz:\n\n• Bulut Hizmet Sağlayıcıları: Güvenli veri depolama ve işleme için\n• Analiz Sağlayıcıları: Uygulama performansını iyileştirmek için (anonimleştirilmiş veri)\n• Enerji Şebeke Operatörleri: Şebeke entegrasyonu için gerekli olduğunda\n• Devlet Kurumları: Yasalarca gerekli olduğunda\n\nKişisel verilerinizi asla üçüncü taraflara satmayız.",
       "dataRetentionTitle": "5. Veri Saklama",
       "dataRetentionContent": "Kişisel verilerinizi aşağıdaki sürelerde saklıyoruz:\n\n• Hesap verileri: Hesabınız aktif olduğu sürece, artı silme sonrası 2 yıl\n• Enerji verileri: Tarihsel analiz ve raporlama için 5 yıl\n• Cihaz telemetrisi: Hizmet iyileştirmesi için 2 yıl\n• Kullanım kayıtları: Sorun giderme için 1 yıl\n\nBize ulaşarak erken silme talep edebilirsiniz.",
       "userRightsTitle": "6. Haklarınız",
-      "userRightsContent": "KVKK ve GDPR kapsamında aşağıdaki haklara sahipsiniz:\n\n• Erişim: Kişisel verilerinizin bir kopyasını talep etme\n• Düzeltme: Yanlış veya eksik verileri düzeltme\n• Silme: Kişisel verilerinizin silinmesini talep etme (\"unutulma hakkı\")\n• Taşınabilirlik: Verilerinizi yapılandırılmış, makine tarafından okunabilir formatta alma\n• İtiraz: Meşru menfaatlere dayalı işlemeye itiraz etme\n• Kısıtlama: İşlemenin sınırlandırılmasını talep etme\n• Onayı Geri Çekme: Onayınızı istediğiniz zaman geri çekme\n\nBu hakları kullanmak için privacy@greenpowerenergy.com adresinden bize ulaşın.",
+      "userRightsContent": "GDPR kapsamında aşağıdaki haklara sahipsiniz:\n\n• Erişim: Kişisel verilerinizin bir kopyasını talep etme\n• Düzeltme: Yanlış veya eksik verileri düzeltme\n• Silme: Kişisel verilerinizin silinmesini talep etme (\"unutulma hakkı\")\n• Taşınabilirlik: Verilerinizi yapılandırılmış, makine tarafından okunabilir formatta alma\n• İtiraz: Meşru menfaatlere dayalı işlemeye itiraz etme\n• Kısıtlama: İşlemenin sınırlandırılmasını talep etme\n• Onayı Geri Çekme: Onayınızı istediğiniz zaman geri çekme\n\nBu hakları kullanmak için privacy@grpeurope.com adresinden bize ulaşın.",
       "securityTitle": "7. Veri Güvenliği",
       "securityContent": "Verilerinizi korumak için uygun teknik ve organizasyonel önlemler uyguluyoruz:\n\n• Aktarım ve depolama sırasında şifreleme\n• Güvenli kimlik doğrulama mekanizmaları\n• Düzenli güvenlik denetimleri\n• Erişim kontrolleri ve izleme",
       "contactTitle": "8. İletişim Bilgileri",
-      "contactContent": "Veri Sorumlusu: GREEN POWER ENERGY\nE-posta: privacy@greenpowerenergy.com\nAdres: [Şirket Adresi]\n\nTürkiye'deki KVKK soruları için:\nKVKK Temsilcisi: kvkk@greenpowerenergy.com\n\nAB'deki GDPR soruları için:\nDPO: dpo@greenpowerenergy.com",
+      "contactContent": "Veri Sorumlusu: GRP Europe BV\nKayıtlı Adres: Swingboei 11, 1231HE Loosdrecht, Hollanda\nİşletme Adresi: Krijgsman 19, 1186 DM Amstelveen, Hollanda\nYetkili Temsilci: Wilfred Gerards\nSicil Numarası: 92198678\nKDV Numarası: 865928897B01\nE-posta: privacy@grpeurope.com\n\nGDPR soruları için:\nDPO: dpo@grpeurope.com",
       "changesTitle": "9. Bu Politikadaki Değişiklikler",
       "changesContent": "Bu Gizlilik Politikasını zaman zaman güncelleyebiliriz. Değişiklikleri uygulamada yeni politikayı yayınlayarak ve \"Son Güncelleme\" tarihini güncelleyerek size bildiririz."
     },
     "termsOfService": {
-      "intro": "GREEN POWER ENERGY'nin Netzr uygulamasına hoş geldiniz. Mobil uygulamamızı kullanarak bu Kullanım Koşullarını kabul etmiş olursunuz. Lütfen dikkatlice okuyun.",
+      "intro": "GRP Europe BV'nin Netzr uygulamasına hoş geldiniz. Mobil uygulamamızı kullanarak bu Kullanım Koşullarını kabul etmiş olursunuz. Lütfen dikkatlice okuyun.",
       "serviceDescriptionTitle": "1. Hizmet Tanımı",
       "serviceDescriptionContent": "Netzr, aşağıdakileri yapmanızı sağlayan bir enerji yönetim uygulamasıdır:\n\n• Güneş enerjisi üretimini ve tüketimini izleme\n• Batarya durumunu ve şebeke etkileşimlerini takip etme\n• Anlık uyarılar ve bildirimler alma\n• İnverter modlarını ve ayarlarını kontrol etme\n• Geçmiş enerji verilerini ve analizleri görüntüleme\n• Cihaz erişimini diğer kullanıcılarla paylaşma",
       "userAccountTitle": "2. Kullanıcı Hesabı",
@@ -1915,7 +1930,7 @@
       "userResponsibilitiesTitle": "3. Kullanıcı Sorumlulukları",
       "userResponsibilitiesContent": "Aşağıdakileri kabul ediyorsunuz:\n\n• Hizmeti yalnızca yasal amaçlarla kullanma\n• Herhangi bir sisteme yetkisiz erişim sağlamaya çalışmama\n• Hizmeti engellememe veya bozmama\n• Uygulamayı tersine mühendislik yapmama veya kopyalamama\n• Doğru hesap bilgilerini koruma\n• Tüm yürürlükteki yasa ve yönetmeliklere uyma",
       "intellectualPropertyTitle": "4. Fikri Mülkiyet",
-      "intellectualPropertyContent": "Netzr uygulamasının tüm içeriği, özellikleri ve işlevleri GREEN POWER ENERGY'ye aittir ve fikri mülkiyet yasalarıyla korunmaktadır. Buna aşağıdakiler dahildir:\n\n• Yazılım kodu ve algoritmalar\n• Kullanıcı arayüzü tasarımı\n• Ticari markalar ve logolar\n• Dokümantasyon ve içerik\n\nYazılı izin almadan hizmetin herhangi bir parçasını kopyalayamaz, değiştiremez veya dağıtamazsınız.",
+      "intellectualPropertyContent": "Netzr uygulamasının tüm içeriği, özellikleri ve işlevleri GRP Europe BV'ye aittir ve fikri mülkiyet yasalarıyla korunmaktadır. Buna aşağıdakiler dahildir:\n\n• Yazılım kodu ve algoritmalar\n• Kullanıcı arayüzü tasarımı\n• Ticari markalar ve logolar\n• Dokümantasyon ve içerik\n\nYazılı izin almadan hizmetin herhangi bir parçasını kopyalayamaz, değiştiremez veya dağıtamazsınız.",
       "serviceAvailabilityTitle": "5. Hizmet Erişilebilirliği",
       "serviceAvailabilityContent": "Sürekli hizmet sağlamaya çalışıyoruz, ancak aşağıdakileri garanti etmiyoruz:\n\n• Kesintisiz veya hatasız çalışma\n• Tüm cihazlarla uyumluluk\n• Enerji hesaplamalarının doğruluğu\n• Her durumda anlık veri\n\nMümkün olduğunda önceden bildirimle bakım veya güncellemeler için hizmeti askıya alabiliriz.",
       "liabilityTitle": "6. Sorumluluk Sınırlaması",
@@ -1923,11 +1938,11 @@
       "terminationTitle": "7. Fesih",
       "terminationContent": "Her iki taraf da bu sözleşmeyi feshedebilir:\n\n• Hesabınızı istediğiniz zaman uygulama üzerinden silebilirsiniz\n• Bu koşulları ihlal eden hesapları askıya alabilir veya feshedebiliriz\n• Fesih üzerine, erişiminiz iptal edilecektir\n• Veriler Gizlilik Politikamıza ve yürürlükteki yasalara göre işlenir",
       "governingLawTitle": "8. Uygulanacak Hukuk",
-      "governingLawContent": "Bu Koşullar Türkiye Cumhuriyeti yasalarına tabidir. Herhangi bir uyuşmazlık İstanbul, Türkiye mahkemelerinde çözülecektir.\n\nAB kullanıcıları için, bu koşullardaki hiçbir şey AB tüketici koruma yasaları kapsamındaki yasal haklarınızı etkilemez.",
+      "governingLawContent": "Bu Koşullar Hollanda yasalarına tabidir. Herhangi bir uyuşmazlık Amsterdam, Hollanda mahkemelerinde çözülecektir.\n\nAB kullanıcıları için, bu koşullardaki hiçbir şey AB tüketici koruma yasaları kapsamındaki yasal haklarınızı etkilemez.",
       "changesTitle": "9. Koşullardaki Değişiklikler",
       "changesContent": "Bu koşulları istediğimiz zaman değiştirebiliriz. Değişikliklerden sonra hizmeti kullanmaya devam etmeniz kabul anlamına gelir. Önemli değişiklikleri uygulama veya e-posta yoluyla size bildiririz.",
       "contactTitle": "10. İletişim",
-      "contactContent": "Bu Koşullar hakkında sorularınız için:\n\nGREEN POWER ENERGY\nE-posta: legal@greenpowerenergy.com\nAdres: [Şirket Adresi]"
+      "contactContent": "Bu Koşullar hakkında sorularınız için:\n\nGRP Europe BV\nKayıtlı Adres: Swingboei 11, 1231HE Loosdrecht, Hollanda\nİşletme Adresi: Krijgsman 19, 1186 DM Amstelveen, Hollanda\nYetkili Temsilci: Wilfred Gerards\nSicil Numarası: 92198678\nKDV Numarası: 865928897B01\nE-posta: legal@grpeurope.com"
     }
   }
 }
