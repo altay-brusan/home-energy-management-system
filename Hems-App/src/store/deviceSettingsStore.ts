@@ -18,6 +18,7 @@ import {
   ParameterTreeDto,
   UpdateParameterItem,
 } from '../api/types/deviceSettings.types';
+import { UpdateParametersResponse } from '../api/types/deviceSettingsHub.types';
 import { deviceSettingsService } from '../api/services/deviceSettingsService';
 import {
   findMappingByApiName,
@@ -61,7 +62,8 @@ interface DeviceSettingsState {
 
   // Actions
   fetchSettings: (deviceId: string) => Promise<void>;
-  saveSettings: () => Promise<{ success: boolean; error?: string }>;
+  saveSettings: () => Promise<{ success: boolean; correlationId?: string; totalParameters?: number; error?: string }>;
+  finalizeSave: (success: boolean, failedParameterIds?: string[]) => void;
   resetToOriginal: () => void;
   resetToDefaults: () => void;
 
@@ -106,11 +108,27 @@ const transformApiTreeToSettings = (
 
   const processParameter = (param: ParameterTreeDto, groupId?: string) => {
     const mapping = findMappingByApiName(param.name);
-    if (!mapping) return;
+    if (!mapping) {
+      if (__DEV__ && param.name.includes('day') || param.name.includes('Monday') || param.name.includes('Tuesday')) {
+        console.warn('[DeviceSettings] No mapping found for parameter:', param.name);
+      }
+      return;
+    }
 
-    const apiValue = param.deviceParameterValue?.value ?? param.defaultValue;
+    const apiValue = param.setupDeviceParameterValue?.value ?? param.defaultValue;
     const transformer = transformerRegistry.toApp[mapping.transformerType as keyof typeof transformerRegistry.toApp];
     const appValue = transformer ? transformer(apiValue) : apiValue;
+
+    // Debug log for ActiveDays
+    if (__DEV__ && mapping.storePath.includes('activeDays')) {
+      console.log('[DeviceSettings] Processing ActiveDay:', {
+        apiName: param.name,
+        storePath: mapping.storePath,
+        apiValue,
+        appValue,
+        parameterId: param.id,
+      });
+    }
 
     // Set value in settings
     const newSettings = setNestedValue(settings, mapping.storePath, appValue);
@@ -119,11 +137,11 @@ const transformApiTreeToSettings = (
     // Store metadata
     metadata[mapping.storePath] = {
       parameterId: param.id,
-      valueId: param.deviceParameterValue?.id,
+      valueId: param.setupDeviceParameterValue?.id,
       apiName: param.name,
       originalValue: apiValue,
       currentValue: apiValue,
-      modelNumber: param.deviceParameterValue?.modelNumber,
+      modelNumber: param.setupDeviceParameterValue?.modelNumber,
       parameterGroupId: groupId,
     };
   };
@@ -158,11 +176,32 @@ const getChangedParameters = (
     const meta = metadata[storePath];
     const mapping = ALL_MAPPINGS.find((m) => m.storePath === storePath);
 
+    // Debug logging
+    if (__DEV__) {
+      console.log('[DeviceSettings] Processing dirty field:', {
+        storePath,
+        hasMeta: !!meta,
+        hasMapping: !!mapping,
+        metaParameterId: meta?.parameterId,
+        mappingApiName: mapping?.apiName,
+      });
+    }
+
     if (meta && mapping) {
       const appValue = getNestedValue(settings, storePath);
       const transformerKey = mapping.transformerType as keyof typeof transformerRegistry.toAPI;
       const transformer = transformerRegistry.toAPI[transformerKey] as ((v: any) => string) | undefined;
       const apiValue = transformer ? transformer(appValue) : String(appValue);
+
+      if (__DEV__) {
+        console.log('[DeviceSettings] Value comparison:', {
+          storePath,
+          appValue,
+          apiValue,
+          originalValue: meta.originalValue,
+          changed: apiValue !== meta.originalValue,
+        });
+      }
 
       if (apiValue !== meta.originalValue) {
         changes.push({
@@ -171,6 +210,8 @@ const getChangedParameters = (
           newValue: apiValue,
         });
       }
+    } else if (__DEV__) {
+      console.warn('[DeviceSettings] ⚠️ Missing meta or mapping for:', storePath);
     }
   });
 
@@ -229,6 +270,7 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
       },
 
       // Save changed settings to API (bulk update)
+      // Returns correlationId for SignalR progress tracking
       saveSettings: async () => {
         const { settings, parameterMetadata, dirtyFields, deviceId } = get();
 
@@ -241,39 +283,77 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
         try {
           const changes = getChangedParameters(settings, parameterMetadata, dirtyFields);
 
+          if (changes.length === 0) {
+            set({ isSaving: false });
+            return { success: true };
+          }
+
           // Build bulk update payload
           const parameters: UpdateParameterItem[] = changes.map((change) => ({
             parameterId: change.meta.parameterId,
             value: change.newValue,
           }));
 
-          // Send bulk update
-          await deviceSettingsService.updateParameters(deviceId, { parameters });
+          // Send bulk update - now returns correlationId for SignalR tracking
+          const response = await deviceSettingsService.updateParameters(deviceId, { parameters });
 
-          // Update metadata with new original values
-          const updatedMeta = { ...parameterMetadata };
-          changes.forEach((change) => {
-            updatedMeta[change.mapping.storePath] = {
-              ...change.meta,
-              originalValue: change.newValue,
-              currentValue: change.newValue,
+          if (response.success && response.correlationId) {
+            // Don't update metadata yet - wait for SignalR completion
+            // Keep isSaving true until finalizeSave is called
+            return {
+              success: true,
+              correlationId: response.correlationId,
+              totalParameters: response.totalParameters,
             };
-          });
-
-          set({
-            parameterMetadata: updatedMeta,
-            isSaving: false,
-            isDirty: false,
-            dirtyFields: new Set<string>(),
-          });
-
-          return { success: true };
+          } else {
+            set({ isSaving: false, error: response.errorMessage || response.message });
+            return { success: false, error: response.errorMessage || response.message };
+          }
         } catch (err: any) {
           set({
             isSaving: false,
             error: err.message || 'Failed to save settings',
           });
           return { success: false, error: err.message };
+        }
+      },
+
+      // Finalize save after SignalR completion
+      // Called when ParameterUpdateCompleted event is received
+      finalizeSave: (success: boolean, failedParameterIds?: string[]) => {
+        const { settings, parameterMetadata, dirtyFields } = get();
+
+        if (success) {
+          const changes = getChangedParameters(settings, parameterMetadata, dirtyFields);
+
+          // Update metadata with new original values (excluding failed)
+          const updatedMeta = { ...parameterMetadata };
+          const remainingDirty = new Set(dirtyFields);
+
+          changes.forEach((change) => {
+            const isFailed = failedParameterIds?.includes(change.meta.parameterId);
+            if (!isFailed) {
+              // Update metadata for successful parameters
+              updatedMeta[change.mapping.storePath] = {
+                ...change.meta,
+                originalValue: change.newValue,
+                currentValue: change.newValue,
+              };
+              // Remove from dirty fields
+              remainingDirty.delete(change.mapping.storePath);
+            }
+          });
+
+          set({
+            parameterMetadata: updatedMeta,
+            isSaving: false,
+            isDirty: remainingDirty.size > 0,
+            dirtyFields: remainingDirty,
+            error: null,
+          });
+        } else {
+          // Just stop saving state on failure
+          set({ isSaving: false });
         }
       },
 
@@ -311,6 +391,16 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
       // Update single setting
       updateSetting: <T>(path: string, value: T) => {
         const { settings, dirtyFields } = get();
+
+        // Debug logging for activeDays
+        if (__DEV__ && path.includes('activeDays')) {
+          console.log('[DeviceSettings] updateSetting called:', {
+            path,
+            value,
+            currentValue: getNestedValue(settings, path),
+          });
+        }
+
         const newSettings = setNestedValue(settings, path, value);
         const newDirtyFields = new Set(dirtyFields);
         newDirtyFields.add(path);

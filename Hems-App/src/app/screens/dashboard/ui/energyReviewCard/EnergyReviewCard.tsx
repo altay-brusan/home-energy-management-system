@@ -1,10 +1,12 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { View, Text, LayoutChangeEvent, ActivityIndicator, PanResponder, TouchableOpacity } from 'react-native';
+import { View, Text, LayoutChangeEvent, ActivityIndicator, PanResponder, TouchableOpacity, StyleSheet } from 'react-native';
 import Svg, { Line, Path, Text as SvgText, Rect, G, Circle } from 'react-native-svg';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
+import { BlurView } from '@react-native-community/blur';
 import { useI18n } from '../../../../../hooks/useI18n';
 import { useThemeStore } from '../../../../../store/themeStore';
+import { useSettingsStore } from '../../../../../store/settingsStore';
 import { getThemeColors } from '../../../../../theme/constants';
 import { createStyles } from './EnergyReviewCard.styles';
 import { EnergyTransaction, EnergyReviewData } from './EnergyReviewCard.types';
@@ -24,6 +26,19 @@ const HistoryIcon: React.FC<{ color: string }> = ({ color }) => (
     />
   </Svg>
 );
+
+// Currency symbols mapping
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  EUR: '€',
+  USD: '$',
+  GBP: '£',
+  TRY: '₺',
+};
+
+// Helper function to get currency symbol
+const getCurrencySymbol = (currency: string): string => {
+  return CURRENCY_SYMBOLS[currency?.toUpperCase()] || currency || '€';
+};
 
 // Helper function to convert API response to component data
 const transformApiDataToEnergyReviewData = (
@@ -50,6 +65,7 @@ const transformApiDataToEnergyReviewData = (
   const revenue = apiData.total.netPrice;
   const buyPricePerKWh = apiData.buyPricePerKWh;
   const sellPricePerKWh = apiData.sellPricePerKWh;
+  const currency = apiData.currency || 'EUR';
 
   return {
     transactions,
@@ -63,6 +79,7 @@ const transformApiDataToEnergyReviewData = (
     revenue,
     buyPricePerKWh,
     sellPricePerKWh,
+    currency,
   };
 };
 
@@ -75,6 +92,7 @@ export default function EnergyReviewCard() {
   const styles = createStyles(COLORS);
   const { device } = useSelectedSiteDevice();
   const { registerRefreshCallback } = useDashboardRefresh();
+  const hasPricingData = useSettingsStore(s => s.hasPricingData);
 
   // Get locale for date formatting based on current language
   const locale = language === 'tr' ? 'tr-TR' : 'en-US';
@@ -353,27 +371,29 @@ export default function EnergyReviewCard() {
             {t('dashboardEnergyReview.subtitle', 'Monthly grid energy trading costs and revenue')}
           </Text>
         </View>
-        <TouchableOpacity onPress={handleHistoryPress} style={{ padding: 4 }}>
-          <HistoryIcon color={COLORS.accent} />
+        <TouchableOpacity onPress={handleHistoryPress} style={{ padding: 4 }} disabled={!hasPricingData}>
+          <HistoryIcon color={hasPricingData ? COLORS.accent : COLORS.textSoft} />
         </TouchableOpacity>
       </View>
 
-      {/* Price Cards */}
-      <View style={styles.priceCardsContainer}>
-        <View style={styles.priceCard}>
-          <View style={[styles.priceCardDot, { backgroundColor: '#ef4444' }]} />
-          <Text style={styles.priceCardLabel}>{t('dashboardEnergyReview.buyPrice', 'Buy')}</Text>
-          <Text style={[styles.priceCardValue, styles.buyColor]}>{data.buyPricePerKWh.toFixed(2)} €/kWh</Text>
+      {/* Content wrapper for blur overlay */}
+      <View style={{ position: 'relative' }}>
+        {/* Price Cards */}
+        <View style={styles.priceCardsContainer}>
+          <View style={styles.priceCard}>
+            <View style={[styles.priceCardDot, { backgroundColor: '#ef4444' }]} />
+            <Text style={styles.priceCardLabel}>{t('dashboardEnergyReview.buyPrice', 'Buy')}</Text>
+            <Text style={[styles.priceCardValue, styles.buyColor]}>{data.buyPricePerKWh.toFixed(2)} {getCurrencySymbol(data.currency)}/kWh</Text>
+          </View>
+          <View style={styles.priceCard}>
+            <View style={[styles.priceCardDot, { backgroundColor: '#10b981' }]} />
+            <Text style={styles.priceCardLabel}>{t('dashboardEnergyReview.sellPrice', 'Sell')}</Text>
+            <Text style={[styles.priceCardValue, styles.sellColor]}>{data.sellPricePerKWh.toFixed(2)} {getCurrencySymbol(data.currency)}/kWh</Text>
+          </View>
         </View>
-        <View style={styles.priceCard}>
-          <View style={[styles.priceCardDot, { backgroundColor: '#10b981' }]} />
-          <Text style={styles.priceCardLabel}>{t('dashboardEnergyReview.sellPrice', 'Sell')}</Text>
-          <Text style={[styles.priceCardValue, styles.sellColor]}>{data.sellPricePerKWh.toFixed(2)} €/kWh</Text>
-        </View>
-      </View>
 
-      {/* Chart Wrapper - for absolute positioning of info box */}
-      <View style={styles.chartWrapper}>
+        {/* Chart Wrapper - for absolute positioning of info box */}
+        <View style={styles.chartWrapper}>
         {/* Floating Info Box - Shows when touching the chart */}
         {touchX !== null && selectedData && (
           <View style={{
@@ -441,7 +461,7 @@ export default function EnergyReviewCard() {
                 {t('dashboardEnergyReview.price', 'Tutar')}
               </Text>
               <Text style={{ color: selectedData.price >= 0 ? '#10b981' : '#ef4444', fontSize: 12, fontWeight: '700' }}>
-                {selectedData.price >= 0 ? '+' : ''}€{selectedData.price.toFixed(2)}
+                {selectedData.price >= 0 ? '+' : ''}{getCurrencySymbol(data.currency)}{selectedData.price.toFixed(2)}
               </Text>
             </View>
           </View>
@@ -583,43 +603,95 @@ export default function EnergyReviewCard() {
           </Svg>
         )}
         </View>
-      </View>
-
-      {/* Summary Cards */}
-      <View style={styles.summaryCardsContainer}>
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryCardLabel}>{t('dashboardEnergyReview.totalBuy', 'Total Buy')}</Text>
-          <Text style={[styles.summaryCardValue, styles.buyColor]}>
-            {data.totalBuyPrice.toFixed(2)} €
-          </Text>
         </View>
 
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryCardLabel}>{t('dashboardEnergyReview.totalSell', 'Total Sell')}</Text>
-          <Text style={[styles.summaryCardValue, styles.sellColor]}>
-            {data.totalSellPrice.toFixed(2)} €
-          </Text>
+        {/* Summary Cards */}
+        <View style={styles.summaryCardsContainer}>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryCardLabel}>{t('dashboardEnergyReview.totalBuy', 'Total Buy')}</Text>
+            <Text style={[styles.summaryCardValue, styles.buyColor]}>
+              {data.totalBuyPrice.toFixed(2)} {getCurrencySymbol(data.currency)}
+            </Text>
+          </View>
+
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryCardLabel}>{t('dashboardEnergyReview.totalSell', 'Total Sell')}</Text>
+            <Text style={[styles.summaryCardValue, styles.sellColor]}>
+              {data.totalSellPrice.toFixed(2)} {getCurrencySymbol(data.currency)}
+            </Text>
+          </View>
+
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryCardLabel}>{t('dashboardEnergyReview.net', 'Net')}</Text>
+            <Text style={[styles.summaryCardValue, data.revenue >= 0 ? styles.sellColor : styles.buyColor]}>
+              {data.revenue >= 0 ? '+' : ''}{data.revenue.toFixed(2)} {getCurrencySymbol(data.currency)}
+            </Text>
+          </View>
         </View>
 
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryCardLabel}>{t('dashboardEnergyReview.net', 'Net')}</Text>
-          <Text style={[styles.summaryCardValue, data.revenue >= 0 ? styles.sellColor : styles.buyColor]}>
-            {data.revenue >= 0 ? '+' : ''}{data.revenue.toFixed(2)} €
-          </Text>
+        {/* Legend */}
+        <View style={styles.legend}>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: '#ef4444' }]} />
+            <Text style={styles.legendLabel}>{t('dashboardEnergyReview.gridBuy', 'Grid\'den Alış')}</Text>
+          </View>
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: '#10b981' }]} />
+            <Text style={styles.legendLabel}>{t('dashboardEnergyReview.gridSell', 'Grid\'e Satış')}</Text>
+          </View>
         </View>
-      </View>
 
-      {/* Legend */}
-      <View style={styles.legend}>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: '#ef4444' }]} />
-          <Text style={styles.legendLabel}>{t('dashboardEnergyReview.gridBuy', 'Grid\'den Alış')}</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: '#10b981' }]} />
-          <Text style={styles.legendLabel}>{t('dashboardEnergyReview.gridSell', 'Grid\'e Satış')}</Text>
-        </View>
+        {/* Blur overlay when no pricing data is set - only covers content, not header */}
+        {!hasPricingData && (
+          <View style={blurOverlayStyles.overlay}>
+            <BlurView
+              style={StyleSheet.absoluteFill}
+              blurType={isDark ? 'dark' : 'light'}
+              blurAmount={8}
+              reducedTransparencyFallbackColor={isDark ? '#1a1a1a' : '#ffffff'}
+            />
+            <TouchableOpacity
+              style={blurOverlayStyles.promptContainer}
+              onPress={() => navigation.navigate('PricingSettings')}
+              activeOpacity={0.8}
+            >
+              <Text style={[blurOverlayStyles.promptText, { color: COLORS.accent }]}>
+                {t('dashboard.setPricingPrompt', 'Please enter energy prices')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </Animated.View>
   );
 }
+
+const blurOverlayStyles = StyleSheet.create({
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 16,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  promptContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  promptText: {
+    fontSize: 15,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+});

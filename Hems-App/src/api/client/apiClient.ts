@@ -59,14 +59,16 @@ class ApiClient {
         }
 
         // Debug logging
-        const fullUrl = `${config.baseURL || ''}${config.url || ''}`;
-        const params = config.params;
-        console.log('🌐 [API Request]', {
-          method: config.method?.toUpperCase(),
-          url: fullUrl,
-          params: params,
-          hasToken: !!token,
-        });
+        if (__DEV__) {
+          const fullUrl = `${config.baseURL || ''}${config.url || ''}`;
+          console.log('🌐 [API Request]', {
+            method: config.method?.toUpperCase(),
+            url: fullUrl,
+            params: config.params,
+            body: config.data,
+            hasToken: !!token,
+          });
+        }
 
         return config;
       },
@@ -81,6 +83,16 @@ class ApiClient {
         const signal = response.config?.signal;
         if (signal && signal instanceof AbortSignal) {
           this.abortControllers = this.abortControllers.filter(ac => ac.signal !== signal);
+        }
+
+        // Debug logging for successful responses
+        if (__DEV__) {
+          const fullUrl = `${response.config?.baseURL || ''}${response.config?.url || ''}`;
+          console.log('✅ [API Response]', {
+            status: response.status,
+            url: fullUrl,
+            data: response.data,
+          });
         }
 
         this.showSuccessToast(response);

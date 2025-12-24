@@ -169,6 +169,8 @@ export const ENDPOINTS = {
     UPDATE_PARAMETERS: '/DeviceSettings/device/:deviceId/parameters',
     GET_MODES: '/DeviceSettings/modes',
     UPDATE_DEVICE_MODE: '/DeviceSettings/device/:deviceId/mode',
+    GET_DEVICE_PRICE: '/DeviceSettings/device/:deviceId/price',
+    UPDATE_DEVICE_PRICE: '/DeviceSettings/device/:deviceId/price',
   },
 } as const;
 

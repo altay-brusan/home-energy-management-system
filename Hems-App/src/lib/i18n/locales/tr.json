@@ -252,7 +252,8 @@
     "logout": "Çıkış Yap",
     "home": "Ana Sayfa",
     "notifications": "Bildirimler",
-    "messages": "Mesajlar"
+    "messages": "Mesajlar",
+    "setPricingPrompt": "Lütfen enerji fiyatlarını giriniz"
   },
   "tabs": {
     "dashboard": "Home",
@@ -511,7 +512,17 @@
     "startTime": "Başlangıç Saati",
     "endTime": "Bitiş Saati",
     "hours": "Saat",
-    "minutes": "Dakika"
+    "minutes": "Dakika",
+    "save": "Kaydet",
+    "saving": "Kaydediliyor...",
+    "saved": "Fiyatlandırma ayarları başarıyla kaydedildi",
+    "maxPeriodsReached": "Maksimum 6 zaman dilimi eklenebilir",
+    "periodsNotComplete": "Zaman dilimleri 24 saati tamamlamalıdır",
+    "totalHours": "Toplam: {{hours}}s / 24s",
+    "periodsInfo": "{{count}}/6 dönem",
+    "saveError": "Fiyat verileri kaydedilemedi",
+    "loadError": "Fiyat verileri yüklenemedi",
+    "noDevice": "Cihaz seçilmedi"
   },
   "alerts": {
     "confirmLogout": "Çıkış yapmak istediğinizden emin misiniz?",
@@ -1943,6 +1954,22 @@
       "changesContent": "Bu koşulları istediğimiz zaman değiştirebiliriz. Değişikliklerden sonra hizmeti kullanmaya devam etmeniz kabul anlamına gelir. Önemli değişiklikleri uygulama veya e-posta yoluyla size bildiririz.",
       "contactTitle": "10. İletişim",
       "contactContent": "Bu Koşullar hakkında sorularınız için:\n\nGRP Europe BV\nKayıtlı Adres: Swingboei 11, 1231HE Loosdrecht, Hollanda\nİşletme Adresi: Krijgsman 19, 1186 DM Amstelveen, Hollanda\nYetkili Temsilci: Wilfred Gerards\nSicil Numarası: 92198678\nKDV Numarası: 865928897B01\nE-posta: legal@grpeurope.com"
+    }
+  },
+  "deviceSettings": {
+    "update": {
+      "title": "Ayarlar Güncelleniyor",
+      "preparing": "Hazırlanıyor...",
+      "connecting": "Bağlanıyor...",
+      "inProgress": "Parametreler güncelleniyor...",
+      "completed": "Güncelleme tamamlandı!",
+      "completedWithErrors": "Hatalarla tamamlandı",
+      "successCount": "{{count}} parametre güncellendi",
+      "failedCount": "{{count}} parametre başarısız",
+      "failedParameters": "Başarısız Parametreler:",
+      "continueInBackground": "Arka Planda Devam Et",
+      "inProgressTitle": "Güncelleme Devam Ediyor",
+      "navigateWarning": "Ayarlar güncelleniyor. Arka planda devam etsin mi?"
     }
   }
 }

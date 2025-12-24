@@ -17,6 +17,7 @@ export interface EnergyReviewData {
   revenue: number; // Net revenue/cost (totalSellPrice - totalBuyPrice)
   buyPricePerKWh: number; // Price per kWh for buying from grid
   sellPricePerKWh: number; // Price per kWh for selling to grid
+  currency: string; // Currency code (EUR, USD, GBP, TRY)
 }
 
 export interface ChartDimensions {

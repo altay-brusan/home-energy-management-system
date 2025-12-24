@@ -221,7 +221,8 @@
       "logout": "Uitloggen",
       "home": "Home",
       "notifications": "Meldingen",
-      "messages": "Berichten"
+      "messages": "Berichten",
+      "setPricingPrompt": "Voer energieprijzen in"
     },
     "tabs": {
       "dashboard": "Home",
@@ -480,7 +481,17 @@
       "startTime": "Starttijd",
       "endTime": "Eindtijd",
       "hours": "Uren",
-      "minutes": "Minuten"
+      "minutes": "Minuten",
+      "save": "Opslaan",
+      "saving": "Opslaan...",
+      "saved": "Prijsinstellingen succesvol opgeslagen",
+      "maxPeriodsReached": "Maximaal 6 tijdsperiodes toegestaan",
+      "periodsNotComplete": "Tijdsperiodes moeten 24 uur compleet maken",
+      "totalHours": "Totaal: {{hours}} / 24u",
+      "periodsInfo": "{{count}}/6 periodes",
+      "saveError": "Kan prijsgegevens niet opslaan",
+      "loadError": "Kan prijsgegevens niet laden",
+      "noDevice": "Geen apparaat geselecteerd"
     },
     "alerts": {
       "confirmLogout": "Weet u zeker dat u wilt uitloggen?",
@@ -1839,6 +1850,22 @@
       "changesContent": "Wij kunnen deze voorwaarden op elk moment wijzigen. Voortgezet gebruik van de dienst na wijzigingen betekent acceptatie. Wij zullen u via de app of e-mail op de hoogte stellen van belangrijke wijzigingen.",
       "contactTitle": "10. Contact",
       "contactContent": "Voor vragen over deze Voorwaarden:\n\nGRP Europe BV\nVestigingsadres: Swingboei 11, 1231HE Loosdrecht, Nederland\nKantooradres: Krijgsman 19, 1186 DM Amstelveen, Nederland\nGemachtigde Vertegenwoordiger: Wilfred Gerards\nKvK-nummer: 92198678\nBTW-nummer: 865928897B01\nE-mail: legal@grpeurope.com"
+    }
+  },
+  "deviceSettings": {
+    "update": {
+      "title": "Instellingen Bijwerken",
+      "preparing": "Voorbereiden...",
+      "connecting": "Verbinden...",
+      "inProgress": "Parameters bijwerken...",
+      "completed": "Update voltooid!",
+      "completedWithErrors": "Voltooid met fouten",
+      "successCount": "{{count}} parameters bijgewerkt",
+      "failedCount": "{{count}} parameters mislukt",
+      "failedParameters": "Mislukte Parameters:",
+      "continueInBackground": "Doorgaan op Achtergrond",
+      "inProgressTitle": "Update Bezig",
+      "navigateWarning": "Instellingen worden bijgewerkt. Doorgaan op de achtergrond?"
     }
   }
 }

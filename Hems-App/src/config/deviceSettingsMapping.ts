@@ -7,6 +7,7 @@ export type TransformerType =
   | 'exportStrategy'
   | 'energyPriority'
   | 'boolean'
+  | 'nativeBoolean'
   | 'number'
   | 'time'
   | 'string';
@@ -213,47 +214,47 @@ export const TIME_OF_USE_MAPPING: ParameterMapping[] = [
     transformerType: 'boolean',
     roleType: 'User',
   },
-  // Active Days
+  // Active Days - uses nativeBoolean because ActiveDays type is JavaScript boolean
   {
     apiName: 'Monday',
     storePath: 'timeOfUse.activeDays.monday',
-    transformerType: 'boolean',
+    transformerType: 'nativeBoolean',
     roleType: 'User',
   },
   {
     apiName: 'Tuesday',
     storePath: 'timeOfUse.activeDays.tuesday',
-    transformerType: 'boolean',
+    transformerType: 'nativeBoolean',
     roleType: 'User',
   },
   {
     apiName: 'Wednesday',
     storePath: 'timeOfUse.activeDays.wednesday',
-    transformerType: 'boolean',
+    transformerType: 'nativeBoolean',
     roleType: 'User',
   },
   {
     apiName: 'Thursday',
     storePath: 'timeOfUse.activeDays.thursday',
-    transformerType: 'boolean',
+    transformerType: 'nativeBoolean',
     roleType: 'User',
   },
   {
     apiName: 'Friday',
     storePath: 'timeOfUse.activeDays.friday',
-    transformerType: 'boolean',
+    transformerType: 'nativeBoolean',
     roleType: 'User',
   },
   {
     apiName: 'Saturday',
     storePath: 'timeOfUse.activeDays.saturday',
-    transformerType: 'boolean',
+    transformerType: 'nativeBoolean',
     roleType: 'User',
   },
   {
     apiName: 'Sunday',
     storePath: 'timeOfUse.activeDays.sunday',
-    transformerType: 'boolean',
+    transformerType: 'nativeBoolean',
     roleType: 'User',
   },
 ];

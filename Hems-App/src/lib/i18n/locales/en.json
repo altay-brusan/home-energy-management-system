@@ -236,7 +236,8 @@
       "logout": "Logout",
       "home": "Home",
       "notifications": "Notifications",
-      "messages": "Messages"
+      "messages": "Messages",
+      "setPricingPrompt": "Please enter energy prices"
     },
     "tabs": {
       "dashboard": "Home",
@@ -495,7 +496,17 @@
       "startTime": "Start Time",
       "endTime": "End Time",
       "hours": "Hours",
-      "minutes": "Minutes"
+      "minutes": "Minutes",
+      "save": "Save",
+      "saving": "Saving...",
+      "saved": "Pricing settings saved successfully",
+      "maxPeriodsReached": "Maximum 6 time periods allowed",
+      "periodsNotComplete": "Time periods must complete 24 hours",
+      "totalHours": "Total: {{hours}}h / 24h",
+      "periodsInfo": "{{count}}/6 periods",
+      "saveError": "Failed to save pricing data",
+      "loadError": "Failed to load pricing data",
+      "noDevice": "No device selected"
     },
     "alerts": {
       "confirmLogout": "Are you sure you want to logout?",
@@ -2024,6 +2035,22 @@
       "changesContent": "We may modify these terms at any time. Continued use of the service after changes constitutes acceptance. We will notify you of significant changes through the app or email.",
       "contactTitle": "10. Contact",
       "contactContent": "For questions about these Terms:\n\nGRP Europe BV\nRegistered Address: Swingboei 11, 1231HE Loosdrecht, The Netherlands\nOperating Address: Krijgsman 19, 1186 DM Amstelveen, The Netherlands\nAuthorised Representative: Wilfred Gerards\nRegistration Number: 92198678\nVAT Number: 865928897B01\nEmail: legal@grpeurope.com"
+    }
+  },
+  "deviceSettings": {
+    "update": {
+      "title": "Updating Settings",
+      "preparing": "Preparing...",
+      "connecting": "Connecting...",
+      "inProgress": "Updating parameters...",
+      "completed": "Update completed!",
+      "completedWithErrors": "Completed with errors",
+      "successCount": "{{count}} parameters updated",
+      "failedCount": "{{count}} parameters failed",
+      "failedParameters": "Failed Parameters:",
+      "continueInBackground": "Continue in Background",
+      "inProgressTitle": "Update In Progress",
+      "navigateWarning": "Settings are being updated. Continue in background?"
     }
   }
 }

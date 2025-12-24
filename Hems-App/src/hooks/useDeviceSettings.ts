@@ -2,13 +2,16 @@
  * useDeviceSettings Hook
  * CustomModeScreen ve ayar ekranları için yüksek seviyeli hook
  * Yeni DeviceSettings API kullanır (deviceId bazlı)
+ * SignalR ile gerçek zamanlı progress tracking içerir
  */
 
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { useDeviceSettingsStore } from '../store/deviceSettingsStore';
 import { useSelectedSiteDevice } from './useSelectedSiteDevice';
 import { useRoles } from './useRoles';
 import { useToastStore } from '../store/toastStore';
+import { useDeviceSettingsUpdateStore } from '../store/deviceSettingsUpdateStore';
+import { useDeviceSettingsHub } from './useDeviceSettingsHub';
 import {
   DeviceSettingsConfig,
   TimeSlot,
@@ -18,6 +21,7 @@ import {
   GeneratorSmartLoadConfig,
   MaintenanceSettingsConfig,
 } from '../api/types/inverterModes.types';
+import { ParameterUpdateCompletedDto } from '../api/types/deviceSettingsHub.types';
 
 export interface UseDeviceSettingsReturn {
   // Data
@@ -74,12 +78,54 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
   // Get actions directly from store (stable references)
   const storeFetchSettings = useDeviceSettingsStore((state) => state.fetchSettings);
   const storeSaveSettings = useDeviceSettingsStore((state) => state.saveSettings);
+  const storeFinalizeSave = useDeviceSettingsStore((state) => state.finalizeSave);
   const resetToOriginal = useDeviceSettingsStore((state) => state.resetToOriginal);
   const resetToDefaults = useDeviceSettingsStore((state) => state.resetToDefaults);
   const updateSetting = useDeviceSettingsStore((state) => state.updateSetting);
   const updateBatchSettings = useDeviceSettingsStore((state) => state.updateBatchSettings);
   const updateTimeSlot = useDeviceSettingsStore((state) => state.updateTimeSlot);
   const clearError = useDeviceSettingsStore((state) => state.clearError);
+
+  // Update progress store actions
+  const { startUpdate, isProgressModalVisible } = useDeviceSettingsUpdateStore();
+
+  // Ref to track if we should show toast (when modal is hidden)
+  const showToastOnCompleteRef = useRef(false);
+
+  // Handle SignalR completion callback
+  const handleSignalRComplete = useCallback(
+    (result: ParameterUpdateCompletedDto) => {
+      // Get failed parameter IDs for partial update
+      const failedParameterIds = result.failedCount > 0
+        ? useDeviceSettingsUpdateStore.getState().batchState?.failedParameters.map((p) => p.parameterId) ?? []
+        : [];
+
+      // Finalize the save in the store
+      storeFinalizeSave(result.failedCount === 0, failedParameterIds);
+
+      // Show toast if modal is hidden (background mode)
+      if (showToastOnCompleteRef.current || !useDeviceSettingsUpdateStore.getState().isProgressModalVisible) {
+        if (result.failedCount === 0) {
+          showToast({
+            type: 'success',
+            message: 'Settings saved successfully',
+          });
+        } else {
+          showToast({
+            type: 'warning',
+            message: `${result.successCount} settings saved, ${result.failedCount} failed`,
+          });
+        }
+      }
+      showToastOnCompleteRef.current = false;
+    },
+    [storeFinalizeSave, showToast]
+  );
+
+  // SignalR hook for progress tracking
+  const { startBatchTracking, stopBatchTracking } = useDeviceSettingsHub({
+    onCompleted: handleSignalRComplete,
+  });
 
   // Get deviceId from the device object
   const deviceId = device?.id;
@@ -94,22 +140,39 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
     }
   }, [deviceId, storeFetchSettings]);
 
-  // Save settings with toast feedback
+  // Save settings with SignalR progress tracking
   const saveSettings = useCallback(async (): Promise<boolean> => {
     const result = await storeSaveSettings();
-    if (result.success) {
-      showToast({
-        type: 'success',
-        message: 'Settings saved successfully',
-      });
-    } else {
+
+    if (result.success && result.correlationId) {
+      // Start progress tracking via SignalR
+      try {
+        startUpdate(result.correlationId, result.totalParameters);
+        await startBatchTracking(result.correlationId);
+        // Don't show success toast here - wait for SignalR completion
+        return true;
+      } catch (signalRError) {
+        console.log('[useDeviceSettings] SignalR tracking failed:', signalRError);
+        // If SignalR fails, still consider save successful (API call succeeded)
+        // Just show immediate toast
+        showToast({
+          type: 'success',
+          message: 'Settings saved successfully',
+        });
+        storeFinalizeSave(true);
+        return true;
+      }
+    } else if (!result.success) {
       showToast({
         type: 'error',
         message: result.error || 'Failed to save settings',
       });
+      return false;
     }
-    return result.success;
-  }, [storeSaveSettings, showToast]);
+
+    // No changes to save
+    return true;
+  }, [storeSaveSettings, startUpdate, startBatchTracking, showToast, storeFinalizeSave]);
 
   // Category-specific update helpers
   const updateBatterySettings = useCallback(

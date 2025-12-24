@@ -36,6 +36,7 @@ type SettingsState = {
   fixedBuyPrice: number;  // per kWh
   fixedSellPrice: number; // per kWh
   dynamicPrices: TimePeriodPrice[];
+  hasPricingData: boolean; // Whether user has set pricing data via API
   // General settings actions
   setTemperatureUnit: (unit: TemperatureUnit) => void;
   setMeasurementSystem: (system: MeasurementSystem) => void;
@@ -50,6 +51,7 @@ type SettingsState = {
   addDynamicPeriod: (period: TimePeriodPrice) => void;
   updateDynamicPeriod: (id: string, period: Partial<TimePeriodPrice>) => void;
   removeDynamicPeriod: (id: string) => void;
+  setHasPricingData: (value: boolean) => void;
 };
 
 const DEFAULT_DYNAMIC_PRICES: TimePeriodPrice[] = [
@@ -72,6 +74,7 @@ export const useSettingsStore = create<SettingsState>()(
       fixedBuyPrice: 0.25,
       fixedSellPrice: 0.10,
       dynamicPrices: DEFAULT_DYNAMIC_PRICES,
+      hasPricingData: false,
       // General settings actions
       setTemperatureUnit: (temperatureUnit) => set({ temperatureUnit }),
       setMeasurementSystem: (measurementSystem) => set({ measurementSystem }),
@@ -92,6 +95,7 @@ export const useSettingsStore = create<SettingsState>()(
       removeDynamicPeriod: (id) => set({
         dynamicPrices: get().dynamicPrices.filter((p) => p.id !== id),
       }),
+      setHasPricingData: (hasPricingData) => set({ hasPricingData }),
     }),
     {
       name: 'settings-storage',
@@ -106,6 +110,7 @@ export const useSettingsStore = create<SettingsState>()(
         fixedBuyPrice: state.fixedBuyPrice,
         fixedSellPrice: state.fixedSellPrice,
         dynamicPrices: state.dynamicPrices,
+        hasPricingData: state.hasPricingData,
       }),
     }
   )

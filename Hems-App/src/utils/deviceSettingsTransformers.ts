@@ -46,7 +46,7 @@ export const energyPriorityToAPI = (appValue: AppEnergyPatternType): APIEnergyPa
 };
 
 /**
- * Boolean / OnOff Transformers
+ * Boolean / OnOff Transformers (for OnOffStatus type fields)
  */
 export const booleanToOnOff = (apiValue: string): OnOffStatus => {
   return apiValue === 'true' ? 'on' : 'off';
@@ -54,6 +54,18 @@ export const booleanToOnOff = (apiValue: string): OnOffStatus => {
 
 export const onOffToBoolean = (appValue: OnOffStatus): string => {
   return appValue === 'on' ? 'true' : 'false';
+};
+
+/**
+ * Native Boolean Transformers (for JavaScript boolean type fields)
+ * Used for ActiveDays where the app type is boolean, not OnOffStatus
+ */
+export const stringToNativeBoolean = (apiValue: string): boolean => {
+  return apiValue === 'true';
+};
+
+export const nativeBooleanToString = (appValue: boolean): string => {
+  return appValue ? 'true' : 'false';
 };
 
 /**
@@ -90,6 +102,7 @@ export const transformerRegistry = {
     exportStrategy: exportStrategyToApp,
     energyPriority: energyPriorityToApp,
     boolean: booleanToOnOff,
+    nativeBoolean: stringToNativeBoolean,
     number: stringToNumber,
     time: timeStringToApp,
     string: (v: string) => v,
@@ -99,6 +112,7 @@ export const transformerRegistry = {
     exportStrategy: exportStrategyToAPI,
     energyPriority: energyPriorityToAPI,
     boolean: onOffToBoolean,
+    nativeBoolean: nativeBooleanToString,
     number: numberToString,
     time: timeStringToAPI,
     string: (v: string) => v,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,9 +7,10 @@ import {
   TextInput,
   Modal,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, Plus, Trash2, Clock } from 'lucide-react-native';
+import { ArrowLeft, Plus, Trash2, Clock, CheckCircle, AlertCircle } from 'lucide-react-native';
 import { useThemeStore } from '../../../store/themeStore';
 import {
   useSettingsStore,
@@ -21,6 +22,12 @@ import {
 import { getThemeColors } from '../../../theme/constants';
 import { useI18n } from '../../../hooks/useI18n';
 import { makePricingSettingsScreenStyles } from './PricingSettingsScreen.styles';
+import { useToastStore } from '../../../store/toastStore';
+import { useSelectedSiteDevice } from '../../../hooks/useSelectedSiteDevice';
+import { usePricing } from '../../../hooks/usePricing';
+import { useDashboardRefresh } from '../../../hooks/useDashboardRefresh';
+
+const MAX_PERIODS = 6;
 
 interface SegmentedButtonProps {
   options: { label: string; value: string }[];
@@ -158,6 +165,16 @@ export default function PricingSettingsScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { t } = useI18n();
 
+  const { device } = useSelectedSiteDevice();
+  const { refreshAll } = useDashboardRefresh();
+  const {
+    isLoading: isPricingLoading,
+    isSaving: isPricingSaving,
+    error: pricingError,
+    loadPricing,
+    savePricing,
+  } = usePricing();
+
   const {
     pricingType,
     currency,
@@ -174,6 +191,14 @@ export default function PricingSettingsScreen({ navigation }: any) {
   } = useSettingsStore();
 
   const currencySymbol = CURRENCY_SYMBOLS[currency];
+  const showToast = useToastStore((s) => s.show);
+
+  // Load pricing data when screen mounts
+  useEffect(() => {
+    if (device?.id) {
+      loadPricing(device.id);
+    }
+  }, [device?.id, loadPricing]);
 
   const currencyOptions: { label: string; value: Currency }[] = [
     { label: `€ EUR`, value: 'EUR' },
@@ -187,7 +212,61 @@ export default function PricingSettingsScreen({ navigation }: any) {
   const [editingField, setEditingField] = useState<'startTime' | 'endTime' | null>(null);
   const [tempTime, setTempTime] = useState({ hours: '00', minutes: '00' });
 
+  // Calculate total hours from dynamic periods
+  const { totalMinutes, isValid24Hours } = useMemo(() => {
+    let total = 0;
+    dynamicPrices.forEach((period) => {
+      const [startH, startM] = period.startTime.split(':').map(Number);
+      const [endH, endM] = period.endTime.split(':').map(Number);
+      const startMinutes = startH * 60 + startM;
+      let endMinutes = endH * 60 + endM;
+      // Handle midnight crossing (e.g., 22:00 - 00:00)
+      if (endMinutes <= startMinutes) {
+        endMinutes += 24 * 60;
+      }
+      total += endMinutes - startMinutes;
+    });
+    return {
+      totalMinutes: total,
+      isValid24Hours: total === 24 * 60,
+    };
+  }, [dynamicPrices]);
+
+  const totalHours = Math.floor(totalMinutes / 60);
+  const remainingMinutes = totalMinutes % 60;
+  const totalHoursDisplay = remainingMinutes > 0
+    ? `${totalHours}h ${remainingMinutes}m`
+    : `${totalHours}h`;
+
+  const canAddMorePeriods = dynamicPrices.length < MAX_PERIODS;
+  const canSave = pricingType === 'fixed' || (pricingType === 'dynamic' && isValid24Hours);
+
+  const handleSave = async () => {
+    if (!device?.id) {
+      showToast({ message: t('pricing.noDevice'), type: 'warning' });
+      return;
+    }
+
+    if (pricingType === 'dynamic' && !isValid24Hours) {
+      showToast({ message: t('pricing.periodsNotComplete'), type: 'warning' });
+      return;
+    }
+
+    const success = await savePricing(device.id);
+    if (success) {
+      showToast({ message: t('pricing.saved'), type: 'success' });
+      // Refresh dashboard data so Energy Revenue card updates
+      refreshAll();
+    } else {
+      showToast({ message: t('pricing.saveError'), type: 'error' });
+    }
+  };
+
   const handleAddPeriod = () => {
+    if (!canAddMorePeriods) {
+      showToast({ message: t('pricing.maxPeriodsReached'), type: 'warning' });
+      return;
+    }
     const newId = Date.now().toString();
     addDynamicPeriod({
       id: newId,
@@ -232,6 +311,24 @@ export default function PricingSettingsScreen({ navigation }: any) {
     setEditingField(null);
   };
 
+  // Show loading indicator when fetching pricing data
+  if (isPricingLoading) {
+    return (
+      <View style={[styles.container, { backgroundColor: isDark ? COLORS.dark : COLORS.gray100 }]}>
+        <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <ArrowLeft size={24} color={COLORS.text} />
+          </TouchableOpacity>
+          <Text style={[styles.title, { color: COLORS.text }]}>{t('pricing.title')}</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={COLORS.accent} />
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: isDark ? COLORS.dark : COLORS.gray100 }]}>
       {/* Header */}
@@ -244,7 +341,7 @@ export default function PricingSettingsScreen({ navigation }: any) {
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 24 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Currency Selection */}
@@ -336,12 +433,23 @@ export default function PricingSettingsScreen({ navigation }: any) {
           <>
             <View style={[styles.card, { backgroundColor: isDark ? COLORS.surface : COLORS.white }]}>
               <View style={styles.cardHeader}>
-                <Text style={[styles.cardTitle, { color: COLORS.text }]}>
-                  {t('pricing.dynamicPricing')}
-                </Text>
-                <TouchableOpacity onPress={handleAddPeriod} style={styles.addButton}>
-                  <Plus size={20} color={COLORS.accent} />
-                  <Text style={[styles.addButtonText, { color: COLORS.accent }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={[styles.cardTitle, { color: COLORS.text, marginBottom: 0 }]}>
+                    {t('pricing.dynamicPricing')}
+                  </Text>
+                  <View style={styles.periodCountBadge}>
+                    <Text style={styles.periodCountText}>
+                      {t('pricing.periodsInfo', { count: dynamicPrices.length })}
+                    </Text>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  onPress={handleAddPeriod}
+                  style={[styles.addButton, !canAddMorePeriods && { opacity: 0.4 }]}
+                  disabled={!canAddMorePeriods}
+                >
+                  <Plus size={20} color={canAddMorePeriods ? COLORS.accent : COLORS.textSoft} />
+                  <Text style={[styles.addButtonText, { color: canAddMorePeriods ? COLORS.accent : COLORS.textSoft }]}>
                     {t('pricing.addPeriod')}
                   </Text>
                 </TouchableOpacity>
@@ -349,6 +457,37 @@ export default function PricingSettingsScreen({ navigation }: any) {
               <Text style={[styles.cardDesc, { color: COLORS.textSoft }]}>
                 {t('pricing.dynamicPricingDesc')}
               </Text>
+
+              {/* Validation bar */}
+              <View
+                style={[
+                  styles.validationBar,
+                  isValid24Hours ? styles.validationBarValid : styles.validationBarInvalid,
+                ]}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  {isValid24Hours ? (
+                    <CheckCircle size={16} color="#22C55E" />
+                  ) : (
+                    <AlertCircle size={16} color="#EF4444" />
+                  )}
+                  <Text
+                    style={[
+                      styles.validationText,
+                      isValid24Hours ? styles.validationTextValid : styles.validationTextInvalid,
+                    ]}
+                  >
+                    {t('pricing.totalHours', { hours: totalHoursDisplay })}
+                  </Text>
+                </View>
+                {!isValid24Hours && (
+                  <Text style={[styles.validationText, styles.validationTextInvalid]}>
+                    {24 * 60 - totalMinutes > 0
+                      ? `${Math.floor((24 * 60 - totalMinutes) / 60)}h ${(24 * 60 - totalMinutes) % 60}m left`
+                      : 'Exceeds 24h'}
+                  </Text>
+                )}
+              </View>
             </View>
 
             {dynamicPrices.map((period, index) => (
@@ -540,6 +679,31 @@ export default function PricingSettingsScreen({ navigation }: any) {
           </View>
         </View>
       </Modal>
+
+      {/* Fixed Save Button */}
+      <View style={[styles.saveButtonContainer, { paddingBottom: insets.bottom + 12 }]}>
+        <TouchableOpacity
+          style={[
+            styles.saveButton,
+            (!canSave || isPricingSaving) && styles.saveButtonDisabled,
+          ]}
+          onPress={handleSave}
+          disabled={!canSave || isPricingSaving}
+        >
+          {isPricingSaving ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text
+              style={[
+                styles.saveButtonText,
+                !canSave && styles.saveButtonTextDisabled,
+              ]}
+            >
+              {t('pricing.save')}
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }

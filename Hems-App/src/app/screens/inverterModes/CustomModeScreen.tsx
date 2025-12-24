@@ -2,6 +2,7 @@
  * CustomModeScreen
  * API yapısına uyumlu cihaz ayarları ekranı
  * Toplu kaydetme (Save butonu) ile çalışır
+ * SignalR ile gerçek zamanlı progress tracking içerir
  */
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
@@ -24,6 +25,8 @@ import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors } from '../../../theme/constants';
 import { useDeviceSettings } from '../../../hooks/useDeviceSettings';
 import { useSelectedSiteDevice } from '../../../hooks/useSelectedSiteDevice';
+import { useDeviceSettingsUpdateStore } from '../../../store/deviceSettingsUpdateStore';
+import { UpdateProgressModal } from '../../../components/deviceSettings';
 
 // Section Components
 import {
@@ -54,6 +57,15 @@ const CustomModeScreen: React.FC = () => {
     fetchSettings,
     clearError,
   } = useDeviceSettings();
+
+  // Update progress store
+  const {
+    isProgressModalVisible,
+    isUpdateActive,
+    hideProgressModal,
+    confirmNavigation,
+    reset: resetUpdateStore,
+  } = useDeviceSettingsUpdateStore();
 
   const [scrollEnabled, setScrollEnabled] = useState(true);
   const shownErrorRef = useRef<string | null>(null);
@@ -141,6 +153,26 @@ const CustomModeScreen: React.FC = () => {
   };
 
   const handleBack = () => {
+    // Check if update is in progress
+    if (isUpdateActive) {
+      Alert.alert(
+        t('deviceSettings.update.inProgressTitle', 'Update In Progress'),
+        t('deviceSettings.update.navigateWarning', 'Settings are being updated. Continue in background?'),
+        [
+          { text: t('common.cancel', 'Cancel'), style: 'cancel' },
+          {
+            text: t('deviceSettings.update.continueInBackground', 'Continue in Background'),
+            onPress: () => {
+              confirmNavigation();
+              navigation.goBack();
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    // Check for unsaved changes
     if (isDirty) {
       Alert.alert(
         t('inverterModes.unsavedChanges', 'Unsaved Changes'),
@@ -156,7 +188,7 @@ const CustomModeScreen: React.FC = () => {
             onPress: async () => {
               const success = await saveSettings();
               if (success) {
-                navigation.goBack();
+                // Don't navigate - wait for modal to complete
               }
             },
           },
@@ -165,6 +197,19 @@ const CustomModeScreen: React.FC = () => {
       );
     } else {
       navigation.goBack();
+    }
+  };
+
+  // Handle continue in background from modal
+  const handleContinueInBackground = () => {
+    confirmNavigation();
+  };
+
+  // Handle modal close
+  const handleModalClose = () => {
+    if (!isUpdateActive) {
+      hideProgressModal();
+      resetUpdateStore();
     }
   };
 
@@ -369,6 +414,13 @@ const CustomModeScreen: React.FC = () => {
             </Text>
           </TouchableOpacity>
         </View>
+
+        {/* Update Progress Modal */}
+        <UpdateProgressModal
+          visible={isProgressModalVisible}
+          onClose={handleModalClose}
+          onContinueInBackground={handleContinueInBackground}
+        />
       </View>
     </GestureHandlerRootView>
   );

@@ -15,7 +15,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { deviceComponentsService } from "../../../api/services/deviceComponentsService";
 import { useI18n } from "../../../hooks/useI18n";
 import { useThemeStore } from "../../../store/themeStore";
+import { useSettingsStore } from "../../../store/settingsStore";
 import { getThemeColors, SPACING, TYPOGRAPHY } from "../../../theme/constants";
+import { formatTemperature } from "../../../utils/temperatureUtils";
 import type { DeviceDetailsResponseDto } from "../../../api/types/deviceComponents.types";
 
 const formatDateTime = (isoString: string | null | undefined, locale: string = 'tr-TR'): string => {
@@ -43,6 +45,7 @@ export default function InverterDetailScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const isDark = useThemeStore((s) => s.mode) === "dark";
+  const temperatureUnit = useSettingsStore((s) => s.temperatureUnit);
   const COLORS = getThemeColors(isDark);
   const insets = useSafeAreaInsets();
   const { t, language } = useI18n();
@@ -562,7 +565,7 @@ export default function InverterDetailScreen() {
                     },
                   ]}
                 >
-                  {inverterHeatsinkTemp.toFixed(1)} °C
+                  {formatTemperature(inverterHeatsinkTemp, temperatureUnit)}
                 </Text>
               </View>
             )}
@@ -587,7 +590,7 @@ export default function InverterDetailScreen() {
                     },
                   ]}
                 >
-                  {internalAmbientTemp.toFixed(1)} °C
+                  {formatTemperature(internalAmbientTemp, temperatureUnit)}
                 </Text>
               </View>
             )}

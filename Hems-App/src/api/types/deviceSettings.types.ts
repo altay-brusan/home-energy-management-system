@@ -22,7 +22,7 @@ export interface ExportStrategyStateDto {
 
 // New DeviceSettings API Types
 export interface DeviceSettingsTreeVm {
-  deviceId: string;
+  setupDeviceId: string;
   parameterGroups: ParameterGroupTreeDto[];
 }
 
@@ -46,7 +46,8 @@ export interface ParameterTreeDto {
   unit: string;
   defaultValue: string;
   sortOrder: number;
-  deviceParameterValue?: DeviceParameterValueDto;
+  visible?: boolean;
+  setupDeviceParameterValue?: DeviceParameterValueDto;
 }
 
 export interface DeviceParameterValueDto {

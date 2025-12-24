@@ -10,6 +10,7 @@ import {
   GetModesResponse,
   UpdateDeviceModeCommand,
 } from '../types/inverterModes.types';
+import { UpdateParametersResponse } from '../types/deviceSettingsHub.types';
 
 export const deviceSettingsService = {
   /**
@@ -25,13 +26,15 @@ export const deviceSettingsService = {
   /**
    * Update device parameters (bulk)
    * PUT /DeviceSettings/device/{deviceId}/parameters
+   * Returns correlationId for SignalR progress tracking
    */
   async updateParameters(
     deviceId: string,
     command: UpdateDeviceParametersCommand
-  ): Promise<void> {
+  ): Promise<UpdateParametersResponse> {
     const url = ENDPOINTS.DEVICE_SETTINGS.UPDATE_PARAMETERS.replace(':deviceId', deviceId);
-    await apiClient.put(url, command);
+    const response = await apiClient.put<UpdateParametersResponse>(url, command);
+    return response.data;
   },
 
   /**
