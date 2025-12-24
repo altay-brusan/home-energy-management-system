@@ -103,7 +103,7 @@ public class InvitationEmailService : IInvitationEmailService
                                 </tr>
                             </table>
                             <p style=""margin: 20px 0; color: #666666; font-size: 13px; line-height: 1.5;"">
-                                This code is valid for 10 minutes and is uniquely generated for each invitation.
+                                This code is valid for 24 hours and is uniquely generated for each invitation.
                             </p>
                             <!-- CTA Button -->
                             <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" style=""width: 100%; margin: 25px 0;"">

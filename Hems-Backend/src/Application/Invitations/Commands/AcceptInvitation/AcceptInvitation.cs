@@ -39,16 +39,25 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
         var currentUserEmail = await _identityService.GetUserEmailAsync(currentUserId)
             ?? throw new UnauthorizedAccessException("Kullanıcı email adresi bulunamadı");
 
+        var utcNow = _timeProvider.GetUtcNow();
+        var twentyFourHoursAgo = utcNow.AddHours(-24);
+
         // Token ile davetiyeyi bul
         var invitation = await _context.Invitations
-            .FirstOrDefaultAsync(i => 
-                i.Token == request.Token && 
+            .FirstOrDefaultAsync(i =>
+                i.Token == request.Token &&
                 i.Status == InvitationStatus.Pending &&
                 (i.Email == currentUserEmail || i.InvitedUserId == currentUserId),
                 cancellationToken)
             ?? throw new Common.Exceptions.NotFoundException(nameof(Invitation), request.Token);
 
-        var utcNow = _timeProvider.GetUtcNow();
+        // Check if invitation has expired (24 hours)
+        if (invitation.Created < twentyFourHoursAgo)
+        {
+            invitation.Status = InvitationStatus.Expired;
+            await _context.SaveChangesAsync(cancellationToken);
+            throw new InvalidOperationException("This invitation has expired. Please request a new invitation.");
+        }
 
         // Invitation'ı güncelle
         invitation.Status = InvitationStatus.Accepted;
