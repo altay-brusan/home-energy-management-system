@@ -1,7 +1,4 @@
 using Hems_Backend.Application.Common.Interfaces;
-using Hems_Backend.Application.Common.Mappings;
-using Hems_Backend.Application.Common.Exceptions;
-using Hems_Backend.Application.DeviceSettings.Models;
 using Hems_Backend.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -20,22 +17,16 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
 {
     private readonly IApplicationDbContext _context;
     private readonly IUser _user;
-    private readonly TimeProvider _timeProvider;
-    private readonly IThingsBoardConnectorService _tbConnector;
-    private readonly IDeviceHeartbeatCache _heartbeatCache;
+    private readonly IDeviceSettingsInitializerService _deviceSettingsInitializer;
 
     public CreateSetupCommandHandler(
-        IApplicationDbContext context, 
-        IUser user, 
-        TimeProvider timeProvider,
-        IThingsBoardConnectorService tbConnector,
-        IDeviceHeartbeatCache heartbeatCache)
+        IApplicationDbContext context,
+        IUser user,
+        IDeviceSettingsInitializerService deviceSettingsInitializer)
     {
         _context = context;
         _user = user;
-        _timeProvider = timeProvider;
-        _tbConnector = tbConnector;
-        _heartbeatCache = heartbeatCache;
+        _deviceSettingsInitializer = deviceSettingsInitializer;
     }
 
     public async Task<Guid> Handle(CreateSetupCommand request, CancellationToken cancellationToken)
@@ -126,23 +117,13 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
 
             _context.SetupDevices.Add(setupDevice);
 
-            // Add device to heartbeat tracking immediately
-            await _heartbeatCache.AddDeviceToCacheAsync(device.ThingsBoardDeviceId, cancellationToken);
-
-            var devicesettingSchemeValues = await _context.ParameterValueSettingSchemes.Where(f => f.ModelNumber == device.ModelNumber).ToListAsync();
-
-            foreach (var item in devicesettingSchemeValues)
+            // Initialize device settings from parameter value setting schemes
+            if (!string.IsNullOrWhiteSpace(device.ModelNumber))
             {
-                var newSetupSettingsValue = new SetupDeviceParameterValue
-                {
-                    ParameterId = item.ParameterId,
-                    ParameterGroupId = item.ParameterGroupId,
-                    Value = item.Value,
-                    SortOrder = item.SortOrder,
-                    ModelNumber = item.ModelNumber,
-                    SetupDeviceId = setupDevice.Id,
-                };
-                _context.SetupDeviceParameterValues.Add(newSetupSettingsValue);
+                await _deviceSettingsInitializer.InitializeSettingsAsync(
+                    setupDevice.Id,
+                    device.ModelNumber,
+                    cancellationToken);
             }
         }
 
