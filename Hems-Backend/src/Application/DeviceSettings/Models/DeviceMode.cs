@@ -28,7 +28,7 @@ public enum DeviceMode
 
 
     /// <summary>
-    /// Define a custom mode not covered by standard options
+    /// Define customized mode settings based on user preferences
     /// </summary>
     Custom = 99
 
@@ -82,6 +82,12 @@ public static class DeviceModeConfigurations
                 Name = "Smart Zero Export",
                 Description = "Zero export with precise smart meter control",
                 Icon = "smart"
+            },
+            [DeviceMode.Custom] = new DeviceModeInfo
+            {
+                Name = "Custom Mode",
+                Description = "Define customized mode settings based on user preferences",
+                Icon = "custom"
             }
         };
     }
