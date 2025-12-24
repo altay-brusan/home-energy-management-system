@@ -9,8 +9,8 @@ public record CreateSetupCommand : IRequest<Guid>
 {
     public Guid SiteId { get; init; }
     public string Name { get; init; } = "Default Setup";
-    public string? DeviceQRCode { get; init; } // QR code ile device bulma
-    public string? DeviceSerialNumber { get; init; } // Serial number ile device bulma
+    public string? DeviceQRCode { get; init; }
+    public string? DeviceSerialNumber { get; init; }
 }
 
 public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Guid>
@@ -18,22 +18,31 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
     private readonly IApplicationDbContext _context;
     private readonly IUser _user;
     private readonly IDeviceSettingsInitializerService _deviceSettingsInitializer;
+    private readonly IThingsBoardConnectorService _tbConnector;
 
     public CreateSetupCommandHandler(
         IApplicationDbContext context,
         IUser user,
-        IDeviceSettingsInitializerService deviceSettingsInitializer)
+        IDeviceSettingsInitializerService deviceSettingsInitializer,
+        IThingsBoardConnectorService tbConnector)
     {
         _context = context;
         _user = user;
         _deviceSettingsInitializer = deviceSettingsInitializer;
+        _tbConnector = tbConnector;
     }
 
     public async Task<Guid> Handle(CreateSetupCommand request, CancellationToken cancellationToken)
     {
         var userId = _user.Id ?? throw new UnauthorizedAccessException("User not authenticated");
 
-        // Site yetki kontrolü - Kullanıcı bu site'a sahip mi veya paylaşılan site'da mı?
+        // At least one of QRCode or SerialNumber must be provided
+        if (string.IsNullOrEmpty(request.DeviceQRCode) && string.IsNullOrEmpty(request.DeviceSerialNumber))
+        {
+            throw new ArgumentException("Either DeviceQRCode or DeviceSerialNumber must be provided");
+        }
+
+        // Site authorization check
         var site = await _context.Sites
             .FirstOrDefaultAsync(s => s.Id == request.SiteId &&
                                      !s.IsDeleted &&
@@ -46,51 +55,50 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
             throw new Hems_Backend.Application.Common.Exceptions.NotFoundException(nameof(Site), request.SiteId);
         }
 
-        // Site'ın zaten bir Setup'ı var mı kontrol et
+        // Check if site already has a setup
         var existingSetup = await _context.Setups
             .FirstOrDefaultAsync(s => s.SiteId == request.SiteId, cancellationToken);
 
         if (existingSetup != null)
         {
-            throw new System.ComponentModel.DataAnnotations.ValidationException("Bu site'ın zaten bir setup'ı var. Bir site'ın sadece bir setup'ı olabilir.");
+            throw new System.ComponentModel.DataAnnotations.ValidationException("This site already has a setup. A site can only have one setup.");
         }
 
-        // Device bulma (eğer belirtilmişse)
-        Device? device = null;
-        if (!string.IsNullOrEmpty(request.DeviceQRCode) || !string.IsNullOrEmpty(request.DeviceSerialNumber))
+        // Find device in ThingsBoard first
+        var tbDevice = await _tbConnector.FindDeviceAsync(
+            request.DeviceSerialNumber,
+            request.DeviceQRCode,
+            cancellationToken);
+
+        if (tbDevice == null)
         {
-            // QR Code ile device bulma
-            if (!string.IsNullOrEmpty(request.DeviceQRCode))
-            {
-                device = await _context.Devices
-                    .FirstOrDefaultAsync(d => d.QRCode == request.DeviceQRCode && !d.IsDeleted, cancellationToken);
-            }
-            // Serial Number ile device bulma
-            else if (!string.IsNullOrEmpty(request.DeviceSerialNumber))
-            {
-                device = await _context.Devices
-                    .FirstOrDefaultAsync(d => d.SerialNumber == request.DeviceSerialNumber && !d.IsDeleted, cancellationToken);
-            }
+            var deviceIdentifier = !string.IsNullOrEmpty(request.DeviceQRCode)
+                ? $"QR Code: {request.DeviceQRCode}"
+                : $"Serial Number: {request.DeviceSerialNumber}";
 
-            // Device bulunamazsa hata ver
-            if (device == null)
-            {
-                var deviceIdentifier = !string.IsNullOrEmpty(request.DeviceQRCode)
-                    ? $"QR Code: {request.DeviceQRCode}"
-                    : $"Serial Number: {request.DeviceSerialNumber}";
-
-                throw new ArgumentException($"Device not found with {deviceIdentifier}");
-            }
-            else if (_context.SetupDevices.Any(f => f.DeviceId == device.Id))
-            {
-                throw new System.ComponentModel.DataAnnotations.ValidationException("bu cihaz zaten kullanımda.");
-
-            }
-
-
+            throw new ArgumentException($"Device not found in ThingsBoard with {deviceIdentifier}");
         }
 
-        // Setup oluştur
+        // Find device in local database by ThingsBoard ID
+        var device = await _context.Devices
+            .FirstOrDefaultAsync(d => d.ThingsBoardDeviceId == tbDevice.Id && !d.IsDeleted, cancellationToken);
+
+        if (device == null)
+        {
+            var deviceIdentifier = !string.IsNullOrEmpty(request.DeviceQRCode)
+                ? $"QR Code: {request.DeviceQRCode}"
+                : $"Serial Number: {request.DeviceSerialNumber}";
+
+            throw new ArgumentException($"Device not found in local database with {deviceIdentifier}");
+        }
+
+        // Check if device is already in use
+        if (await _context.SetupDevices.AnyAsync(f => f.DeviceId == device.Id, cancellationToken))
+        {
+            throw new System.ComponentModel.DataAnnotations.ValidationException("This device is already in use.");
+        }
+
+        // Create setup
         var setup = new Setup
         {
             SiteId = request.SiteId,
@@ -99,34 +107,26 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
 
         _context.Setups.Add(setup);
 
-        // Device varsa SetupDevice oluştur
-        if (device != null)
+        // Create SetupDevice
+        var setupDevice = new SetupDevice
         {
-            var setupDevice = new SetupDevice
-            {
-                SetupId = setup.Id,
-                DeviceId = device.Id,
-            };
+            SetupId = setup.Id,
+            DeviceId = device.Id,
+        };
 
-            _context.SetupDevices.Add(setupDevice);
+        _context.SetupDevices.Add(setupDevice);
 
-            // Initialize device settings from parameter value setting schemes
-            if (!string.IsNullOrWhiteSpace(device.ModelNumber))
-            {
-                await _deviceSettingsInitializer.InitializeSettingsAsync(
-                    setupDevice.Id,
-                    device.ModelNumber,
-                    cancellationToken);
-            }
+        // Initialize device settings from parameter value setting schemes
+        if (!string.IsNullOrWhiteSpace(device.ModelNumber))
+        {
+            await _deviceSettingsInitializer.InitializeSettingsAsync(
+                setupDevice.Id,
+                device.ModelNumber,
+                cancellationToken);
         }
 
-        // Tek seferde kaydet - EF Core otomatik transaction yapar
         await _context.SaveChangesAsync(cancellationToken);
 
         return setup.Id;
     }
 }
-
-
-
-
