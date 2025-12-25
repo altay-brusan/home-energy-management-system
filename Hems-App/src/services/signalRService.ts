@@ -38,7 +38,7 @@ class SignalRService {
     private currentSiteId: string | null = null;
     private connectionListeners: Set<(state: SignalRConnectionState) => void> = new Set();
     
-    private readonly HUB_URL = "https://hems-api-dev.oklidis.com.tr/deviceNotificationHub";
+    private readonly HUB_URL = "https://hems-api-stg.oklidis.com.tr/deviceNotificationHub";
     
     async connect(siteId?: string): Promise<void> {
         if (this.connection?.state === HubConnectionState.Connected) {

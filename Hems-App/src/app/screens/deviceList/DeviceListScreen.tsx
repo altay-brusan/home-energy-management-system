@@ -26,6 +26,7 @@ export default function DeviceListScreen() {
   const { selectedSiteDevice, loadSelectedSiteDevice, selectedSite } = useSitesStore();
 
   const [components, setComponents] = useState<ComponentSummaryDto[]>([]);
+  const [rawResponse, setRawResponse] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +47,7 @@ export default function DeviceListScreen() {
 
     try {
       const response = await deviceComponentsService.getDeviceSummary(deviceId);
+      setRawResponse(response);
       setComponents(response.components || []);
     } catch (err: any) {
       if (err?.response?.status === 404) {
@@ -193,9 +195,34 @@ export default function DeviceListScreen() {
   if (isLoading && components.length === 0) {
     return (
       <SafeAreaView style={styles.screen}>
-        <View style={[styles.container, { flex: 1, justifyContent: 'center', alignItems: 'center' }]}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-        </View>
+        <ScrollView contentContainerStyle={styles.container}>
+          <Text style={styles.title}>{t('deviceList.title')}</Text>
+          {/* Debug: Raw API Response */}
+          <View style={{
+            padding: 12,
+            marginBottom: 16,
+            backgroundColor: COLORS.surface,
+            borderRadius: 8,
+            borderWidth: 2,
+            borderColor: '#ff6600',
+          }}>
+            <Text style={{ color: '#ff6600', fontWeight: 'bold', marginBottom: 8, fontSize: 14 }}>
+              DEBUG - Device Summary Response
+            </Text>
+            <Text style={{ color: COLORS.text, fontSize: 12, marginBottom: 4 }}>
+              DeviceId: {deviceId || 'null'}
+            </Text>
+            <Text style={{ color: COLORS.text, fontSize: 12, marginBottom: 4 }}>
+              Loading: true
+            </Text>
+            <Text style={{ color: COLORS.text, fontSize: 12, marginBottom: 8 }}>
+              Response: waiting...
+            </Text>
+          </View>
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 }}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+          </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -214,6 +241,36 @@ export default function DeviceListScreen() {
         }
       >
         <Text style={styles.title}>{t('deviceList.title')}</Text>
+
+        {/* Debug: Raw API Response */}
+        <View style={{
+          padding: 12,
+          marginBottom: 16,
+          backgroundColor: COLORS.surface,
+          borderRadius: 8,
+          borderWidth: 2,
+          borderColor: '#ff6600',
+        }}>
+          <Text style={{ color: '#ff6600', fontWeight: 'bold', marginBottom: 8, fontSize: 14 }}>
+            DEBUG - Device Summary Response
+          </Text>
+          <Text style={{ color: COLORS.text, fontSize: 12, marginBottom: 4 }}>
+            DeviceId: {deviceId || 'null'}
+          </Text>
+          <Text style={{ color: COLORS.text, fontSize: 12, marginBottom: 4 }}>
+            Loading: {isLoading ? 'true' : 'false'}
+          </Text>
+          <Text style={{ color: COLORS.text, fontSize: 12, marginBottom: 8 }}>
+            Response: {rawResponse ? 'received' : 'null'}
+          </Text>
+          {rawResponse && (
+            <View style={{ maxHeight: 250, backgroundColor: '#1a1a2e', padding: 8, borderRadius: 4 }}>
+              <Text style={{ color: '#00ff00', fontSize: 10, fontFamily: 'Courier' }}>
+                {JSON.stringify(rawResponse, null, 2)}
+              </Text>
+            </View>
+          )}
+        </View>
 
         {error && (
           <View style={{ padding: 16, marginBottom: 12, backgroundColor: COLORS.errorBg, borderRadius: 8 }}>

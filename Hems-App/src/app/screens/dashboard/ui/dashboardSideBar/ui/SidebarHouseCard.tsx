@@ -1,8 +1,10 @@
 import React from "react";
-import { TouchableOpacity, View, Text, Image } from "react-native";
+import { TouchableOpacity, View, Text, Image, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useTranslation } from "react-i18next";
+
+const houseImage = require("../../../../../../assets/images/energy_home.png");
 
 type RootStackParamList = {
   DeviceAdd: { siteId: string };
@@ -11,13 +13,13 @@ type RootStackParamList = {
 
 type Props = {
   house: { id: string; name: string; address: string; isEmpty?: boolean };
-  isDark: boolean;
+  isDark?: boolean;
   selected: boolean;
   onSelect: () => void;
   styles: any;
 };
 
-export function SidebarHouseCard({ house, isDark, selected, onSelect, styles }: Props) {
+export function SidebarHouseCard({ house, selected, onSelect, styles }: Props) {
   const { t } = useTranslation();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -49,8 +51,22 @@ export function SidebarHouseCard({ house, isDark, selected, onSelect, styles }: 
               <Text style={styles.noDeviceBadgeText}>{t("dashboardSidebar.noDevice")}</Text>
             </View>
           )}
+          <Image
+            source={houseImage}
+            style={localStyles.houseImage}
+            resizeMode="contain"
+          />
         </View>
       </View>
     </TouchableOpacity>
   );
 }
+
+const localStyles = StyleSheet.create({
+  houseImage: {
+    width: 40,
+    height: 40,
+    marginLeft: 8,
+    opacity: 0.85,
+  },
+});

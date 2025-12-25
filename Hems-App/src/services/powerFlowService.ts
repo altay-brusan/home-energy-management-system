@@ -45,7 +45,7 @@ class PowerFlowService {
     private connectionListeners: Set<(state: SignalRConnectionState) => void> = new Set();
     private isConnecting = false;
 
-    private readonly HUB_URL = "https://hems-api-dev.oklidis.com.tr/powerFlowHub";
+    private readonly HUB_URL = "https://hems-api-stg.oklidis.com.tr/powerFlowHub";
 
     /**
      * Lazy connection - Only connects when first stream is requested
@@ -156,13 +156,13 @@ class PowerFlowService {
 
             const subscription = stream.subscribe({
                 next: (data: PowerFlowDto) => {
-                    /* console.log('✅ [PowerFlowService] Data received:', {
+                    console.log('✅ [PowerFlowService] Data received:', {
                         deviceId: data.deviceId,
                         solar: data.solarPowerKw,
                         battery: data.batteryPowerKw,
                         grid: data.gridPowerKw,
                         load: data.loadPowerKw,
-                    }); */
+                    });
                     try {
                         onData(data);
                     } catch (error) {

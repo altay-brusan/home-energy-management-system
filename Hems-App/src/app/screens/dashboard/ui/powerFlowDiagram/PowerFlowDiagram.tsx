@@ -1,10 +1,11 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator, ScrollView } from 'react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useI18n } from '../../../../../hooks/useI18n';
 import { useDashboardRefresh } from '../../../../../hooks/useDashboardRefresh';
 import { useSelectedSiteDevice } from '../../../../../hooks/useSelectedSiteDevice';
+import { useRoles } from '../../../../../hooks/useRoles';
 import { useThemeStore } from '../../../../../store/themeStore';
 import { usePowerFlowStore } from '../../../../../store/powerFlowStore';
 import { getThemeColors } from '../../../../../theme/constants';
@@ -136,9 +137,12 @@ export const PowerFlowDiagram: React.FC = () => {
   const { device, hasDevice } = useSelectedSiteDevice();
   const { registerRefreshCallback } = useDashboardRefresh();
   const { setBatteryPowerKw } = usePowerFlowStore();
+  const { isAdmin, hasRole } = useRoles();
+  const isAdminUser = isAdmin || hasRole("Administrator");
 
   const [batterySoc, setBatterySoc] = useState<number | undefined>(undefined);
   const [dataToRender, setDataToRender] = useState<any>(null);
+  const [debugLogs, setDebugLogs] = useState<Array<{ time: string; data: any }>>([]);
 
   // Get device ID from selected site's device
   const deviceIdToUse = device?.id;
@@ -176,6 +180,11 @@ export const PowerFlowDiagram: React.FC = () => {
       setDataToRender({ ...powerFlow });
       // Update battery power in store for BatteryStateCard
       setBatteryPowerKw(powerFlow.batteryPowerKw || 0);
+
+      // Add to debug logs
+      const now = new Date();
+      const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+      setDebugLogs(prev => [...prev.slice(-9), { time: timeStr, data: powerFlow }]);
     }
   }, [powerFlow, setBatteryPowerKw]);
 
@@ -207,37 +216,116 @@ export const PowerFlowDiagram: React.FC = () => {
     return () => unregister();
   }, [registerRefreshCallback, loadBatterySoc]);
 
+  // Debug Panel Component - SignalR verileri
+  const DebugPanel = () => (
+    <View style={{
+      backgroundColor: isDark ? '#1e293b' : '#f1f5f9',
+      borderRadius: 12,
+      padding: 12,
+      marginHorizontal: 16,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: isDark ? '#334155' : '#cbd5e1',
+    }}>
+      <Text style={{ fontSize: 14, fontWeight: '700', color: COLORS.accent, marginBottom: 8 }}>
+        🔌 SignalR Debug
+      </Text>
+
+      {/* Connection Info */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+        <Text style={{ fontSize: 11, color: COLORS.text }}>
+          Device: <Text style={{ fontWeight: '600', color: COLORS.accent }}>{deviceIdToUse || 'Yok'}</Text>
+        </Text>
+        <Text style={{ fontSize: 11, color: COLORS.text }}>
+          State: <Text style={{ fontWeight: '600', color: streamState === 'streaming' ? '#22c55e' : '#f59e0b' }}>{streamState}</Text>
+        </Text>
+        <Text style={{ fontSize: 11, color: COLORS.text }}>
+          Streaming: <Text style={{ fontWeight: '600', color: isStreaming ? '#22c55e' : '#ef4444' }}>{isStreaming ? 'Evet' : 'Hayır'}</Text>
+        </Text>
+      </View>
+
+      {streamError && (
+        <Text style={{ fontSize: 11, color: '#ef4444', marginBottom: 8 }}>Hata: {streamError.message}</Text>
+      )}
+
+      {/* PowerFlow Status */}
+      <View style={{ backgroundColor: isDark ? '#0f172a' : '#e2e8f0', padding: 8, borderRadius: 8, marginBottom: 8 }}>
+        <Text style={{ fontSize: 10, fontWeight: '600', color: COLORS.textSoft, marginBottom: 4 }}>
+          PowerFlow: <Text style={{ color: powerFlow ? '#22c55e' : '#ef4444' }}>{powerFlow ? 'Veri var' : 'null/undefined'}</Text>
+        </Text>
+        {powerFlow ? (
+          <>
+            <Text style={{ fontSize: 11, color: '#eab308' }}>Solar: {powerFlow.solarPowerKw?.toFixed(3)} kW</Text>
+            <Text style={{ fontSize: 11, color: '#22c55e' }}>Battery: {powerFlow.batteryPowerKw?.toFixed(3)} kW</Text>
+            <Text style={{ fontSize: 11, color: '#3b82f6' }}>Grid: {powerFlow.gridPowerKw?.toFixed(3)} kW</Text>
+            <Text style={{ fontSize: 11, color: '#a855f7' }}>Load: {powerFlow.loadPowerKw?.toFixed(3)} kW</Text>
+          </>
+        ) : (
+          <Text style={{ fontSize: 11, color: '#f59e0b' }}>Veri bekleniyor...</Text>
+        )}
+        <Text style={{ fontSize: 9, color: COLORS.textSoft, marginTop: 4 }}>
+          Raw: {JSON.stringify(powerFlow)?.slice(0, 100)}...
+        </Text>
+      </View>
+
+      {/* Log History */}
+      {debugLogs.length > 0 && (
+        <View>
+          <Text style={{ fontSize: 10, fontWeight: '600', color: COLORS.textSoft, marginBottom: 4 }}>
+            Son {debugLogs.length} veri:
+          </Text>
+          <ScrollView style={{ maxHeight: 100 }} nestedScrollEnabled>
+            {debugLogs.slice().reverse().map((log, idx) => (
+              <Text key={idx} style={{ fontSize: 9, color: COLORS.textSoft, marginBottom: 2 }}>
+                [{log.time}] S:{log.data.solarPowerKw?.toFixed(2)} B:{log.data.batteryPowerKw?.toFixed(2)} G:{log.data.gridPowerKw?.toFixed(2)} L:{log.data.loadPowerKw?.toFixed(2)}
+              </Text>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+    </View>
+  );
+
   // Render states - show empty state if no device
   if (!hasDevice || !deviceIdToUse) {
     return (
-      <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>{t('energyFlowRadial.noDevice')}</Text>
-        </View>
-      </Animated.View>
+      <View>
+        {isAdminUser && <DebugPanel />}
+        <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>{t('energyFlowRadial.noDevice')}</Text>
+          </View>
+        </Animated.View>
+      </View>
     );
   }
 
   // Show error state if stream failed
   if (streamError) {
     return (
-      <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>{t('energyFlowRadial.connectionError')}</Text>
-        </View>
-      </Animated.View>
+      <View>
+        {isAdminUser && <DebugPanel />}
+        <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>{t('energyFlowRadial.connectionError')}</Text>
+          </View>
+        </Animated.View>
+      </View>
     );
   }
 
   // Show connecting/loading state if no data received yet
   if (!dataToRender) {
     return (
-      <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
-        <View style={styles.emptyContainer}>
-          <ActivityIndicator size="large" color={COLORS.accent} />
-          <Text style={[styles.emptyText, { marginTop: 12 }]}>{t('energyFlowRadial.connecting')}</Text>
-        </View>
-      </Animated.View>
+      <View>
+        {isAdminUser && <DebugPanel />}
+        <Animated.View entering={FadeInDown.delay(100)} style={styles.card}>
+          <View style={styles.emptyContainer}>
+            <ActivityIndicator size="large" color={COLORS.accent} />
+            <Text style={[styles.emptyText, { marginTop: 12 }]}>{t('energyFlowRadial.connecting')}</Text>
+          </View>
+        </Animated.View>
+      </View>
     );
   }
 
@@ -265,8 +353,10 @@ export const PowerFlowDiagram: React.FC = () => {
   }); */
 
   return (
-    <View style={styles.card}>
-      <View style={[styles.diagramContainer, { width: CONTAINER_WIDTH, height: CONTAINER_HEIGHT }]}>
+    <View>
+      {isAdminUser && <DebugPanel />}
+      <View style={styles.card}>
+        <View style={[styles.diagramContainer, { width: CONTAINER_WIDTH, height: CONTAINER_HEIGHT }]}>
         {/* SVG Layer for flow lines */}
         <Svg
           width={CONTAINER_WIDTH}
@@ -454,6 +544,7 @@ export const PowerFlowDiagram: React.FC = () => {
           <Text style={{ position: 'absolute', bottom: -24, left: 0, right: 0, fontSize: 14, fontWeight: '500', textAlign: 'center', color: COLORS.textSoft }}>
             {t('energyFlowRadial.labels.home')}
           </Text>
+        </View>
         </View>
       </View>
     </View>

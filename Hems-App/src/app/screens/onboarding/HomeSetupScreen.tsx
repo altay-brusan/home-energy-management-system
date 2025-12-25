@@ -79,31 +79,15 @@ export default function HomeSetupScreen () {
   });
 
 
-  // Helper function to get timezone based on country
-  const getTimezoneForCountry = (country: string): string => {
-    const timezoneMap: Record<string, string> = {
-      'Turkey': 'Europe/Istanbul',
-      'United States': 'America/New_York',
-      'United Kingdom': 'Europe/London',
-      'Germany': 'Europe/Berlin',
-      'France': 'Europe/Paris',
-      'Italy': 'Europe/Rome',
-      'Spain': 'Europe/Madrid',
-      'Netherlands': 'Europe/Amsterdam',
-      'Canada': 'America/Toronto',
-      'Australia': 'Australia/Sydney',
-      'Japan': 'Asia/Tokyo',
-      'China': 'Asia/Shanghai',
-      'India': 'Asia/Kolkata',
-      'Brazil': 'America/Sao_Paulo',
-      'Mexico': 'America/Mexico_City',
-      'Russia': 'Europe/Moscow',
-      'South Korea': 'Asia/Seoul',
-      'Singapore': 'Asia/Singapore',
-      'United Arab Emirates': 'Asia/Dubai',
-    };
-
-    return timezoneMap[country] || 'UTC';
+  // Get device timezone
+  const getDeviceTimezone = (): string => {
+    try {
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      return timezone || 'UTC';
+    } catch (error) {
+      console.warn('Could not get device timezone, using UTC');
+      return 'UTC';
+    }
   };
 
   // Request location permissions
@@ -265,7 +249,7 @@ export default function HomeSetupScreen () {
           addressLine,
           city,
           country,
-          timezone: getTimezoneForCountry(country),
+          timezone: getDeviceTimezone(),
           latitude: coordinates?.latitude || null,
           longitude: coordinates?.longitude || null,
         };
@@ -301,7 +285,7 @@ export default function HomeSetupScreen () {
         });
       }
     },
-    [navigation, setHome, createSite, selectedCity, selectedCountry, getCoordinatesFromAddress, getCurrentLocation, getTimezoneForCountry, requestLocationPermission, t],
+    [navigation, setHome, createSite, selectedCity, selectedCountry, getCoordinatesFromAddress, getCurrentLocation, requestLocationPermission, t],
   );
 
   useEffect(() => {

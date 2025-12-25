@@ -296,9 +296,10 @@ export default function DeviceDetail() {
     [components]
   );
 
-  const batteryCount = batteryComps.length;
-  const batterySubtitle = batteryCount > 0
-    ? t("deviceDetail.battery.packCount", { count: batteryCount })
+  // Use battery packs from summaryComponents if available, fallback to components
+  const batteryPackCount = batterySummary?.packs?.length ?? batteryComps.length;
+  const batterySubtitle = batteryPackCount > 0
+    ? t("deviceDetail.battery.packCount", { count: batteryPackCount })
     : t("deviceDetail.battery.noBatteries");
 
   // Get realtime data from DeviceSummary API (memoized)
@@ -413,41 +414,39 @@ export default function DeviceDetail() {
 
           {/* Right: Info Cards Stack */}
           <View style={styles.infoCardsStack}>
-            {/* Inverter Card */}
-            {inverterComp && (
+            {/* Inverter Card - from Device Summary */}
+            {inverterSummary && (
               <DeviceInfoCard
                 title={t("deviceDetail.inverter.title")}
-                subtitle={
-                  inverterActivePower !== null && inverterActivePower !== undefined
-                    ? `${inverterActivePower.toFixed(1)} kW`
-                    : inverterComp.description || t("deviceDetail.inverter.subtitle")
-                }
+                subtitle={t("deviceDetail.inverter.subtitle")}
                 icon={<Zap size={24} color={COLORS.accent} />}
-                status="online"
-                onPress={navigateToInverterDetail}
+                status={inverterSummary.activePowerKw !== null ? "online" : "offline"}
+                onPress={() => navigation.navigate("InverterDetail", { componentId: inverterSummary.id })}
                 style={{ flex: 1 }}
               />
             )}
 
-            {/* Battery Card */}
-            <DeviceInfoCard
-              title={t("deviceDetail.battery.title")}
-              subtitle={
-                batteryStateOfCharge !== null && batteryStateOfCharge !== undefined
-                  ? `${batterySubtitle}\n${batteryStateOfCharge.toFixed(0)}% SOC`
-                  : batterySubtitle
-              }
-              icon={
-                <BatteryIcon
-                  percentage={batteryStateOfCharge ?? 0}
-                  size={28}
-                  borderColor={COLORS.textSoft}
-                />
-              }
-              status={batteryCount > 0 ? "online" : "offline"}
-              onPress={navigateToBatteryList}
-              style={{ flex: 1 }}
-            />
+            {/* Battery Card - from Device Summary */}
+            {batterySummary && (
+              <DeviceInfoCard
+                title={t("deviceDetail.battery.title")}
+                subtitle={
+                  batteryStateOfCharge !== null && batteryStateOfCharge !== undefined
+                    ? `${batterySubtitle}\n${batteryStateOfCharge.toFixed(0)}% SOC`
+                    : batterySubtitle
+                }
+                icon={
+                  <BatteryIcon
+                    percentage={batteryStateOfCharge ?? 0}
+                    size={28}
+                    borderColor={COLORS.textSoft}
+                  />
+                }
+                status={batteryStateOfCharge !== null ? "online" : "offline"}
+                onPress={navigateToBatteryList}
+                style={{ flex: 1 }}
+              />
+            )}
           </View>
         </View>
 
