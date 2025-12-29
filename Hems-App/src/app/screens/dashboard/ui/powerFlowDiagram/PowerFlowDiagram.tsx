@@ -222,7 +222,6 @@ export const PowerFlowDiagram: React.FC = () => {
       backgroundColor: isDark ? '#1e293b' : '#f1f5f9',
       borderRadius: 12,
       padding: 12,
-      marginHorizontal: 16,
       marginBottom: 12,
       borderWidth: 1,
       borderColor: isDark ? '#334155' : '#cbd5e1',
