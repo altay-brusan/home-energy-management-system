@@ -1,6 +1,6 @@
 [
     {
-        "id": "9b44cc2e801fb10e",
+        "id": "b17ba5d9ed6bde5a",
         "type": "tab",
         "label": "InverterDeviceState",
         "disabled": false,
@@ -9,7 +9,7 @@
     {
         "id": "da43a34a4b72623f",
         "type": "link in",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "RPC getInverterDeviceState",
         "links": [
             "rpc_ids_link_out"
@@ -34,7 +34,7 @@
     {
         "id": "618eccb0d657e17f",
         "type": "inject",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "Manual Trigger",
         "props": [
             {
@@ -68,7 +68,7 @@
     {
         "id": "0b58d68446442906",
         "type": "function",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "Prepare read (RunState 600)",
         "func": "// Store RPC response topic if present\nif (msg.rpcResponseTopic) {\n    flow.set(\"inv_rpc_response_topic\", msg.rpcResponseTopic);\n}\n\n// Inverter run state\n// 600: run state\n// 0=standby, 1=selfcheck, 2=normal, 3=alarm, 4=fault\n\nmsg.baseAddr = 600;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 600,\n    quantity: 1\n};\nreturn msg;",
         "outputs": 1,
@@ -88,7 +88,7 @@
     {
         "id": "73c61f4561910289",
         "type": "function",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "Prepare read (Temps 640-641)",
         "func": "// Temperatures\n// 640: DC transformer temp (0.1°C, offset 1000)\n// 641: Heat sink temp (0.1°C)\n\nmsg.baseAddr = 640;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 640,\n    quantity: 2\n};\nreturn msg;",
         "outputs": 1,
@@ -108,7 +108,7 @@
     {
         "id": "8b5fd699eaaaf933",
         "type": "function",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "Prepare read (GridPower Low 722-725)",
         "func": "// Grid side phase powers - LOW words\n// 722: Grid A-phase power LOW (1W, S32)\n// 723: Grid B-phase power LOW (1W, S32)\n// 724: Grid C-phase power LOW (1W, S32)\n// 725: Grid total power LOW (1W, S32)\n\nmsg.baseAddr = 722;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 722,\n    quantity: 4\n};\nreturn msg;",
         "outputs": 1,
@@ -128,7 +128,7 @@
     {
         "id": "348c482e0825823c",
         "type": "function",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "Prepare read (GridPower High 787-790)",
         "func": "// Grid side phase powers - HIGH words\n// 787: Grid A-phase power HIGH (1W, S32)\n// 788: Grid B-phase power HIGH (1W, S32)\n// 789: Grid C-phase power HIGH (1W, S32)\n// 790: Grid total power HIGH (1W, S32)\n\nmsg.baseAddr = 787;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 787,\n    quantity: 4\n};\nreturn msg;",
         "outputs": 1,
@@ -148,7 +148,7 @@
     {
         "id": "ea492d369cefb095",
         "type": "function",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "Prepare read (Voltage 727-729)",
         "func": "// Output phase voltages\n// 727: Phase A voltage (0.1V)\n// 728: Phase B voltage (0.1V)\n// 729: Phase C voltage (0.1V)\n\nmsg.baseAddr = 727;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 727,\n    quantity: 3\n};\nreturn msg;",
         "outputs": 1,
@@ -168,7 +168,7 @@
     {
         "id": "3bf6ba697aa7a198",
         "type": "function",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "Prepare read (Current 730-732)",
         "func": "// Output phase currents\n// 730: Phase A current (0.01A, S16)\n// 731: Phase B current (0.01A, S16)\n// 732: Phase C current (0.01A, S16)\n\nmsg.baseAddr = 730;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 730,\n    quantity: 3\n};\nreturn msg;",
         "outputs": 1,
@@ -188,7 +188,7 @@
     {
         "id": "c111d32fd35b3a6e",
         "type": "function",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "Prepare read (Power Low 733-737)",
         "func": "// Output phase powers - LOW words\n// 733: Phase A power LOW (1W, S32)\n// 734: Phase B power LOW (1W, S32)\n// 735: Phase C power LOW (1W, S32)\n// 736: Total active power LOW (1W, S32)\n// 737: Total apparent power LOW (1W, S32)\n\nmsg.baseAddr = 733;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 733,\n    quantity: 5\n};\nreturn msg;",
         "outputs": 1,
@@ -208,7 +208,7 @@
     {
         "id": "136dc5827db7f539",
         "type": "function",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "Prepare read (Power High 791-795)",
         "func": "// Output phase powers - HIGH words\n// 791: Phase A power HIGH (1W, S32)\n// 792: Phase B power HIGH (1W, S32)\n// 793: Phase C power HIGH (1W, S32)\n// 794: Total active power HIGH (1W, S32)\n// 795: Total apparent power HIGH (1W, S32)\n\nmsg.baseAddr = 791;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 791,\n    quantity: 5\n};\nreturn msg;",
         "outputs": 1,
@@ -228,7 +228,7 @@
     {
         "id": "91903d82cad7fd96",
         "type": "function",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "Prepare read (Freq 738)",
         "func": "// Inverter output frequency\n// 738: Inverter frequency (0.01Hz)\n\nmsg.baseAddr = 738;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 738,\n    quantity: 1\n};\nreturn msg;",
         "outputs": 1,
@@ -248,7 +248,7 @@
     {
         "id": "0d64c099c69a0f99",
         "type": "function",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "Prepare read (ACInput 240)",
         "func": "// AC Input Status\n// 240: Gen_Grid_Signal (R/W register)\n// bit0 = grid signal present\n// bit1 = generator signal present\n\nmsg.baseAddr = 240;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 240,\n    quantity: 1\n};\nreturn msg;",
         "outputs": 1,
@@ -268,7 +268,7 @@
     {
         "id": "69991cde06753dc9",
         "type": "modbus-flex-getter",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "Read RunState (600)",
         "showStatusActivities": true,
         "showErrors": true,
@@ -296,7 +296,7 @@
     {
         "id": "83d254d5076111e9",
         "type": "modbus-flex-getter",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "Read Temps (640-641)",
         "showStatusActivities": true,
         "showErrors": true,
@@ -324,7 +324,7 @@
     {
         "id": "2b2c88194bf3c8d9",
         "type": "modbus-flex-getter",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "Read GridPower Low (722-725)",
         "showStatusActivities": true,
         "showErrors": true,
@@ -337,6 +337,7 @@
         "emptyMsgOnFail": true,
         "keepMsgProperties": true,
         "delayOnStart": false,
+        "enableDeformedMessages": false,
         "startDelayTime": "",
         "x": 890,
         "y": 180,
@@ -352,7 +353,7 @@
     {
         "id": "077ce82ab85691b7",
         "type": "modbus-flex-getter",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "Read GridPower High (787-790)",
         "showStatusActivities": true,
         "showErrors": true,
@@ -380,7 +381,7 @@
     {
         "id": "b911116f9d483840",
         "type": "modbus-flex-getter",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "Read Voltage (727-729)",
         "showStatusActivities": true,
         "showErrors": true,
@@ -408,7 +409,7 @@
     {
         "id": "2b4c91c139319a19",
         "type": "modbus-flex-getter",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "Read Current (730-732)",
         "showStatusActivities": true,
         "showErrors": true,
@@ -436,7 +437,7 @@
     {
         "id": "ba7121968a2ac259",
         "type": "modbus-flex-getter",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "Read Power Low (733-737)",
         "showStatusActivities": true,
         "showErrors": true,
@@ -464,7 +465,7 @@
     {
         "id": "47b3f6d9bdba5615",
         "type": "modbus-flex-getter",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "Read Power High (791-795)",
         "showStatusActivities": true,
         "showErrors": true,
@@ -492,7 +493,7 @@
     {
         "id": "cc08b8a534e5bdc5",
         "type": "modbus-flex-getter",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "Read Freq (738)",
         "showStatusActivities": true,
         "showErrors": true,
@@ -520,7 +521,7 @@
     {
         "id": "d52158f00475da8f",
         "type": "modbus-flex-getter",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "Read ACInput (240)",
         "showStatusActivities": true,
         "showErrors": true,
@@ -548,9 +549,9 @@
     {
         "id": "364efa2efdfe5aac",
         "type": "function",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "Build InverterDeviceState JSON",
-        "func": "let raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nlet baseAddr = msg.baseAddr;\nif (typeof baseAddr !== \"number\") {\n    baseAddr = (msg.modbusRequest && msg.modbusRequest.address);\n}\nif (typeof baseAddr !== \"number\") {\n    return null;\n}\n\nfunction s16(v) {\n    if (!Number.isFinite(v)) return null;\n    return (v & 0x8000) ? v - 0x10000 : v;\n}\n\nfunction s32(low, high) {\n    const u = ((high & 0xFFFF) << 16) | (low & 0xFFFF);\n    return (u & 0x80000000) ? u - 0x100000000 : u;\n}\n\nfunction mapRunState(code) {\n    const states = { 0: \"standby\", 1: \"selfcheck\", 2: \"normal\", 3: \"alarm\", 4: \"fault\" };\n    return states[code] || \"unknown\";\n}\n\n// RunState 600\nif (baseAddr === 600) {\n    flow.set(\"inv_part_runstate\", { runState: mapRunState(data[0] || 0) });\n}\n\n// Temps 640-641\nelse if (baseAddr === 640) {\n    const dcTransformerRaw = data[0] || 0;  // offset 1000\n    const heatsinkRaw = data[1] || 0;\n    flow.set(\"inv_part_temps\", {\n        dcTransformerTempC: Math.round((dcTransformerRaw - 1000) * 0.1 * 10) / 10,\n        heatsinkTempC: Math.round(heatsinkRaw * 0.1 * 10) / 10\n    });\n}\n\n// Grid Power Low 722-725\nelse if (baseAddr === 722) {\n    flow.set(\"inv_part_grid_power_low\", {\n        phaseA: data[0] || 0,\n        phaseB: data[1] || 0,\n        phaseC: data[2] || 0,\n        total: data[3] || 0\n    });\n}\n\n// Grid Power High 787-790\nelse if (baseAddr === 787) {\n    const low = flow.get(\"inv_part_grid_power_low\");\n    if (low) {\n        flow.set(\"inv_part_grid_power\", {\n            phaseAPowerW: s32(low.phaseA, data[0]),\n            phaseBPowerW: s32(low.phaseB, data[1]),\n            phaseCPowerW: s32(low.phaseC, data[2]),\n            totalActivePowerW: s32(low.total, data[3])\n        });\n    }\n}\n\n// Output Voltage 727-729\nelse if (baseAddr === 727) {\n    flow.set(\"inv_part_voltage\", {\n        phaseAVoltageV: Math.round(data[0] * 0.1 * 10) / 10,\n        phaseBVoltageV: Math.round(data[1] * 0.1 * 10) / 10,\n        phaseCVoltageV: Math.round(data[2] * 0.1 * 10) / 10\n    });\n}\n\n// Output Current 730-732\nelse if (baseAddr === 730) {\n    flow.set(\"inv_part_current\", {\n        phaseACurrentA: Math.round(s16(data[0]) * 0.01 * 100) / 100,\n        phaseBCurrentA: Math.round(s16(data[1]) * 0.01 * 100) / 100,\n        phaseCCurrentA: Math.round(s16(data[2]) * 0.01 * 100) / 100\n    });\n}\n\n// Output Power Low 733-737\nelse if (baseAddr === 733) {\n    flow.set(\"inv_part_output_power_low\", {\n        phaseA: data[0] || 0,\n        phaseB: data[1] || 0,\n        phaseC: data[2] || 0,\n        totalActive: data[3] || 0,\n        totalApparent: data[4] || 0\n    });\n}\n\n// Output Power High 791-795\nelse if (baseAddr === 791) {\n    const low = flow.get(\"inv_part_output_power_low\");\n    if (low) {\n        flow.set(\"inv_part_output_power\", {\n            phaseAPowerW: s32(low.phaseA, data[0]),\n            phaseBPowerW: s32(low.phaseB, data[1]),\n            phaseCPowerW: s32(low.phaseC, data[2]),\n            totalActivePowerW: s32(low.totalActive, data[3]),\n            totalApparentPowerVA: s32(low.totalApparent, data[4])\n        });\n    }\n}\n\n// Freq 738\nelse if (baseAddr === 738) {\n    flow.set(\"inv_part_freq\", {\n        frequencyHz: Math.round((data[0] || 0) * 0.01 * 100) / 100\n    });\n}\n\n// AC Input 240\nelse if (baseAddr === 240) {\n    const signal = data[0] || 0;\n    flow.set(\"inv_part_ac_input\", {\n        genGridSignalRaw: signal,\n        gridSignalPresent: (signal & 0x01) !== 0,\n        generatorSignalPresent: (signal & 0x02) !== 0\n    });\n}\nelse {\n    return null;\n}\n\n// Assemble\nconst runstatePart = flow.get(\"inv_part_runstate\");\nconst tempsPart = flow.get(\"inv_part_temps\");\nconst gridPowerPart = flow.get(\"inv_part_grid_power\");\nconst voltagePart = flow.get(\"inv_part_voltage\");\nconst currentPart = flow.get(\"inv_part_current\");\nconst outputPowerPart = flow.get(\"inv_part_output_power\");\nconst freqPart = flow.get(\"inv_part_freq\");\nconst acInputPart = flow.get(\"inv_part_ac_input\");\n\nif (!runstatePart || !tempsPart || !gridPowerPart || !voltagePart || \n    !currentPart || !outputPowerPart || !freqPart || !acInputPart) {\n    return null;\n}\n\nconst deviceId = msg.deviceId || global.get(\"DEVICE_ID\") || env.get(\"DEVICE_ID\") || \"EC100\";\n\nconst state = {\n    kind: \"InverterDeviceState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    DeviceId: deviceId,\n    \n    runState: runstatePart.runState,\n    \n    output: {\n        totalActivePowerW: outputPowerPart.totalActivePowerW,\n        totalApparentPowerVA: outputPowerPart.totalApparentPowerVA,\n        frequencyHz: freqPart.frequencyHz,\n        \n        phaseA: {\n            voltageV: voltagePart.phaseAVoltageV,\n            currentA: currentPart.phaseACurrentA,\n            activePowerW: outputPowerPart.phaseAPowerW\n        },\n        phaseB: {\n            voltageV: voltagePart.phaseBVoltageV,\n            currentA: currentPart.phaseBCurrentA,\n            activePowerW: outputPowerPart.phaseBPowerW\n        },\n        phaseC: {\n            voltageV: voltagePart.phaseCVoltageV,\n            currentA: currentPart.phaseCCurrentA,\n            activePowerW: outputPowerPart.phaseCPowerW\n        }\n    },\n    \n    gridSide: {\n        totalActivePowerW: gridPowerPart.totalActivePowerW,\n        phaseAPowerW: gridPowerPart.phaseAPowerW,\n        phaseBPowerW: gridPowerPart.phaseBPowerW,\n        phaseCPowerW: gridPowerPart.phaseCPowerW\n    },\n    \n    temperatures: {\n        dcTransformerTempC: tempsPart.dcTransformerTempC,\n        heatsinkTempC: tempsPart.heatsinkTempC\n    },\n    \n    acInputStatus: {\n        genGridSignalRaw: acInputPart.genGridSignalRaw,\n        gridSignalPresent: acInputPart.gridSignalPresent,\n        generatorSignalPresent: acInputPart.generatorSignalPresent\n    }\n};\n\n// Clear partials\nflow.set(\"inv_part_runstate\", null);\nflow.set(\"inv_part_temps\", null);\nflow.set(\"inv_part_grid_power_low\", null);\nflow.set(\"inv_part_grid_power\", null);\nflow.set(\"inv_part_voltage\", null);\nflow.set(\"inv_part_current\", null);\nflow.set(\"inv_part_output_power_low\", null);\nflow.set(\"inv_part_output_power\", null);\nflow.set(\"inv_part_freq\", null);\nflow.set(\"inv_part_ac_input\", null);\n\nflow.set(\"inverterDeviceStateSnapshot\", state);\n\nmsg.payload = state;\nmsg.state = state;\nreturn msg;",
+        "func": "let raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nlet baseAddr = msg.baseAddr;\nif (typeof baseAddr !== \"number\") {\n    baseAddr = (msg.modbusRequest && msg.modbusRequest.address);\n}\nif (typeof baseAddr !== \"number\") {\n    return null;\n}\n\nfunction s16(v) {\n    if (!Number.isFinite(v)) return null;\n    return (v & 0x8000) ? v - 0x10000 : v;\n}\n\nfunction s32(low, high) {\n    const u = ((high & 0xFFFF) << 16) | (low & 0xFFFF);\n    return (u & 0x80000000) ? u - 0x100000000 : u;\n}\n\n// ✅ EKLENDİ\nfunction u32(low, high) {\n    return ((high & 0xFFFF) << 16) | (low & 0xFFFF);\n}\n\nfunction mapRunState(code) {\n    const states = { 0: \"standby\", 1: \"selfcheck\", 2: \"normal\", 3: \"alarm\", 4: \"fault\" };\n    return states[code] || \"unknown\";\n}\n\n// RunState 600\nif (baseAddr === 600) {\n    flow.set(\"inv_part_runstate\", { runState: mapRunState(data[0] || 0) });\n}\n\n// Temps 640-641\nelse if (baseAddr === 640) {\n    const dcTransformerRaw = data[0] || 0;\n    const heatsinkRaw = data[1] || 0;\n    flow.set(\"inv_part_temps\", {\n        dcTransformerTempC: Math.round((dcTransformerRaw - 1000) * 0.1 * 10) / 10,\n        heatsinkTempC: Math.round(heatsinkRaw * 0.1 * 10) / 10\n    });\n}\n\n// Grid Power Low 722-725\nelse if (baseAddr === 722) {\n    flow.set(\"inv_part_grid_power_low\", {\n        phaseA: data[0] || 0,\n        phaseB: data[1] || 0,\n        phaseC: data[2] || 0,\n        total: data[3] || 0\n    });\n}\n\n// Grid Power High 787-790  ✅ UINT32\nelse if (baseAddr === 787) {\n    const low = flow.get(\"inv_part_grid_power_low\");\n    if (low) {\n        flow.set(\"inv_part_grid_power\", {\n            phaseAPowerW: u32(low.phaseA, data[0]),\n            phaseBPowerW: u32(low.phaseB, data[1]),\n            phaseCPowerW: u32(low.phaseC, data[2]),\n            totalActivePowerW: u32(low.total, data[3])\n        });\n    }\n}\n\n// Output Voltage 727-729\nelse if (baseAddr === 727) {\n    flow.set(\"inv_part_voltage\", {\n        phaseAVoltageV: Math.round(data[0] * 0.1 * 10) / 10,\n        phaseBVoltageV: Math.round(data[1] * 0.1 * 10) / 10,\n        phaseCVoltageV: Math.round(data[2] * 0.1 * 10) / 10\n    });\n}\n\n// Output Current 730-732\nelse if (baseAddr === 730) {\n    flow.set(\"inv_part_current\", {\n        phaseACurrentA: Math.round(s16(data[0]) * 0.01 * 100) / 100,\n        phaseBCurrentA: Math.round(s16(data[1]) * 0.01 * 100) / 100,\n        phaseCCurrentA: Math.round(s16(data[2]) * 0.01 * 100) / 100\n    });\n}\n\n// Output Power Low 733-737\nelse if (baseAddr === 733) {\n    flow.set(\"inv_part_output_power_low\", {\n        phaseA: data[0] || 0,\n        phaseB: data[1] || 0,\n        phaseC: data[2] || 0,\n        totalActive: data[3] || 0,\n        totalApparent: data[4] || 0\n    });\n}\n\n// Output Power High 791-795  ✅ UINT32\nelse if (baseAddr === 791) {\n    const low = flow.get(\"inv_part_output_power_low\");\n    if (low) {\n        flow.set(\"inv_part_output_power\", {\n            phaseAPowerW: u32(low.phaseA, data[0]),\n            phaseBPowerW: u32(low.phaseB, data[1]),\n            phaseCPowerW: u32(low.phaseC, data[2]),\n            totalActivePowerW: u32(low.totalActive, data[3]),\n            totalApparentPowerVA: u32(low.totalApparent, data[4])\n        });\n    }\n}\n\n// Freq 738\nelse if (baseAddr === 738) {\n    flow.set(\"inv_part_freq\", {\n        frequencyHz: Math.round((data[0] || 0) * 0.01 * 100) / 100\n    });\n}\n\n// AC Input 240\nelse if (baseAddr === 240) {\n    const signal = data[0] || 0;\n    flow.set(\"inv_part_ac_input\", {\n        genGridSignalRaw: signal,\n        gridSignalPresent: (signal & 0x01) !== 0,\n        generatorSignalPresent: (signal & 0x02) !== 0\n    });\n}\nelse {\n    return null;\n}\n\n// Assemble\nconst runstatePart = flow.get(\"inv_part_runstate\");\nconst tempsPart = flow.get(\"inv_part_temps\");\nconst gridPowerPart = flow.get(\"inv_part_grid_power\");\nconst voltagePart = flow.get(\"inv_part_voltage\");\nconst currentPart = flow.get(\"inv_part_current\");\nconst outputPowerPart = flow.get(\"inv_part_output_power\");\nconst freqPart = flow.get(\"inv_part_freq\");\nconst acInputPart = flow.get(\"inv_part_ac_input\");\n\nif (!runstatePart || !tempsPart || !gridPowerPart || !voltagePart ||\n    !currentPart || !outputPowerPart || !freqPart || !acInputPart) {\n    return null;\n}\n\nconst deviceId = msg.deviceId || global.get(\"DEVICE_ID\") || env.get(\"DEVICE_ID\") || \"EC100\";\n\nconst state = {\n    kind: \"InverterDeviceState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    DeviceId: deviceId,\n\n    runState: runstatePart.runState,\n\n    output: {\n        totalActivePowerW: outputPowerPart.totalActivePowerW,\n        totalApparentPowerVA: outputPowerPart.totalApparentPowerVA,\n        frequencyHz: freqPart.frequencyHz,\n\n        phaseA: {\n            voltageV: voltagePart.phaseAVoltageV,\n            currentA: currentPart.phaseACurrentA,\n            activePowerW: outputPowerPart.phaseAPowerW\n        },\n        phaseB: {\n            voltageV: voltagePart.phaseBVoltageV,\n            currentA: currentPart.phaseBCurrentA,\n            activePowerW: outputPowerPart.phaseBPowerW\n        },\n        phaseC: {\n            voltageV: voltagePart.phaseCVoltageV,\n            currentA: currentPart.phaseCCurrentA,\n            activePowerW: outputPowerPart.phaseCPowerW\n        }\n    },\n\n    gridSide: {\n        totalActivePowerW: gridPowerPart.totalActivePowerW,\n        phaseAPowerW: gridPowerPart.phaseAPowerW,\n        phaseBPowerW: gridPowerPart.phaseBPowerW,\n        phaseCPowerW: gridPowerPart.phaseCPowerW\n    },\n\n    temperatures: {\n        dcTransformerTempC: tempsPart.dcTransformerTempC,\n        heatsinkTempC: tempsPart.heatsinkTempC\n    },\n\n    acInputStatus: {\n        genGridSignalRaw: acInputPart.genGridSignalRaw,\n        gridSignalPresent: acInputPart.gridSignalPresent,\n        generatorSignalPresent: acInputPart.generatorSignalPresent\n    }\n};\n\n// Clear partials\nflow.set(\"inv_part_runstate\", null);\nflow.set(\"inv_part_temps\", null);\nflow.set(\"inv_part_grid_power_low\", null);\nflow.set(\"inv_part_grid_power\", null);\nflow.set(\"inv_part_voltage\", null);\nflow.set(\"inv_part_current\", null);\nflow.set(\"inv_part_output_power_low\", null);\nflow.set(\"inv_part_output_power\", null);\nflow.set(\"inv_part_freq\", null);\nflow.set(\"inv_part_ac_input\", null);\n\nflow.set(\"inverterDeviceStateSnapshot\", state);\n\nmsg.payload = state;\nmsg.state = state;\nreturn msg;\n",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -569,7 +570,7 @@
     {
         "id": "4f42bad0eaed7624",
         "type": "function",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "Prepare RPC Response",
         "func": "const rpcTopic = flow.get(\"inv_rpc_response_topic\");\nif (!rpcTopic) {\n    return null;\n}\n\nconst state = msg.state || msg.payload;\nmsg.payload = { success: true, data: state };\nmsg.topic = rpcTopic;\n\nflow.set(\"inv_rpc_response_topic\", null);\nreturn msg;",
         "outputs": 1,
@@ -589,7 +590,7 @@
     {
         "id": "53e6fb83a8a794dd",
         "type": "mqtt out",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "RPC Response",
         "topic": "",
         "qos": "1",
@@ -607,9 +608,9 @@
     {
         "id": "8faf691aacd47178",
         "type": "debug",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "InverterDeviceState JSON",
-        "active": false,
+        "active": true,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
@@ -624,7 +625,7 @@
     {
         "id": "95cf83db134863fc",
         "type": "debug",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "InverterDeviceState Error",
         "active": false,
         "tosidebar": true,
@@ -641,7 +642,7 @@
     {
         "id": "66384fdd92dd9382",
         "type": "comment",
-        "z": "9b44cc2e801fb10e",
+        "z": "b17ba5d9ed6bde5a",
         "name": "THREE-PHASE: RPC only - Phase A/B/C voltages, currents, and powers with S32 format",
         "info": "",
         "x": 390,
@@ -683,7 +684,7 @@
         "type": "mqtt-broker",
         "name": "ThingsBoard Development Env.",
         "broker": "REDACTED_HOST",
-        "port": "31883",
+        "port": "31884",
         "tls": "",
         "clientid": "",
         "autoConnect": true,
