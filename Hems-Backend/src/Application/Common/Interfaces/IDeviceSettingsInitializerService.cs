@@ -1,3 +1,5 @@
+using Hems_Backend.Application.DeviceSettings.Models;
+
 namespace Hems_Backend.Application.Common.Interfaces;
 
 /// <summary>
@@ -16,6 +18,19 @@ public interface IDeviceSettingsInitializerService
     Task<DeviceSettingsInitializationResult> InitializeSettingsAsync(
         Guid setupDeviceId,
         string deviceModelNumber,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Initializes the device mode with the default value (SelfConsumption).
+    /// TODO: The mode update logic will be reviewed in future.
+    /// </summary>
+    /// <param name="deviceId">The Device ID</param>
+    /// <param name="defaultMode">The default mode to set (defaults to SelfConsumption)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Result containing success status</returns>
+    Task<DeviceModeInitializationResult> InitializeModeAsync(
+        Guid deviceId,
+        DeviceMode defaultMode = DeviceMode.SelfConsumption,
         CancellationToken cancellationToken = default);
 }
 
@@ -49,5 +64,35 @@ public class DeviceSettingsInitializationResult
         SettingsCount = count,
         Message = $"Successfully initialized {count} settings",
         MatchedSchemeModelNumber = matchedModel
+    };
+}
+
+/// <summary>
+/// Result of device mode initialization
+/// </summary>
+public class DeviceModeInitializationResult
+{
+    public bool Success { get; init; }
+    public string? Message { get; init; }
+    public DeviceMode? Mode { get; init; }
+
+    public static DeviceModeInitializationResult DeviceNotFound(Guid deviceId) => new()
+    {
+        Success = false,
+        Message = $"Device not found: {deviceId}"
+    };
+
+    public static DeviceModeInitializationResult ModeAlreadyExists(Guid deviceId, DeviceMode existingMode) => new()
+    {
+        Success = false,
+        Message = $"Mode already exists for device: {deviceId}",
+        Mode = existingMode
+    };
+
+    public static DeviceModeInitializationResult Initialized(DeviceMode mode) => new()
+    {
+        Success = true,
+        Message = $"Successfully initialized device mode to {mode}",
+        Mode = mode
     };
 }

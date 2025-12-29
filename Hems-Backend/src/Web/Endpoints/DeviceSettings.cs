@@ -10,6 +10,7 @@ using Hems_Backend.Application.DeviceSettings.Commands.DeleteSetupDeviceParamete
 using Hems_Backend.Application.DeviceSettings.Commands.UpdateSetupDeviceParameterValue;
 using Hems_Backend.Application.DeviceSettings.Commands.UpdateDeviceParameterValue;
 using Hems_Backend.Application.DeviceSettings.Commands.InitializeDeviceSettings;
+using Hems_Backend.Application.DeviceSettings.Queries.GetCurrentDeviceMode;
 using Hems_Backend.Application.DeviceSettings.Queries.GetDeviceModes;
 using Hems_Backend.Application.DeviceSettings.Queries.GetDeviceParameters;
 using Hems_Backend.Application.DeviceSettings.Queries.GetEnergyPrices;
@@ -40,6 +41,7 @@ public class DeviceSettings : EndpointGroupBase
             .MapPut(UpdateDeviceParameter, "device/{deviceId:guid}/parameters/{parameterId:guid}")
             .MapPut(UpdateDeviceParameters, "device/{deviceId:guid}/parameters")
             .MapGet(GetAvailableModes, "modes")
+            .MapGet(GetCurrentDeviceMode, "device/{deviceId:guid}/mode")
             .MapPost(SetDeviceMode, "device/{deviceId:guid}/mode")
 
             // ==== PRICE SETTINGS ====
@@ -158,6 +160,30 @@ public class DeviceSettings : EndpointGroupBase
         var query = new GetDeviceModesQuery();
         var result = await sender.Send(query);
         return Results.Ok(result);
+    }
+
+    /// <summary>
+    /// Get the current operating mode for a device
+    /// Returns the latest active mode from the device mode history
+    /// </summary>
+    [Authorize]
+    public async Task<IResult> GetCurrentDeviceMode(
+        ISender sender,
+        Guid deviceId)
+    {
+        var query = new GetCurrentDeviceModeQuery { DeviceId = deviceId };
+        var result = await sender.Send(query);
+
+        if (result.Success)
+        {
+            return Results.Ok(result);
+        }
+
+        return Results.BadRequest(new
+        {
+            success = false,
+            message = result.ErrorMessage ?? "Failed to get device mode"
+        });
     }
 
     /// <summary>

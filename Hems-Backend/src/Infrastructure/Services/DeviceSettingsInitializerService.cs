@@ -1,4 +1,5 @@
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.DeviceSettings.Models;
 using Hems_Backend.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -91,5 +92,60 @@ public class DeviceSettingsInitializerService : IDeviceSettingsInitializerServic
             parameterValues.Count, setupDeviceId, matchedModelNumber);
 
         return DeviceSettingsInitializationResult.Initialized(parameterValues.Count, matchedModelNumber);
+    }
+
+    /// <summary>
+    /// Initializes the device mode with the default value.
+    /// TODO: The mode update logic will be reviewed in future.
+    /// </summary>
+    public async Task<DeviceModeInitializationResult> InitializeModeAsync(
+        Guid deviceId,
+        DeviceMode defaultMode = DeviceMode.SelfConsumption,
+        CancellationToken cancellationToken = default)
+    {
+        // Check if device exists
+        var deviceExists = await _context.Devices
+            .AnyAsync(d => d.Id == deviceId && !d.IsDeleted, cancellationToken);
+
+        if (!deviceExists)
+        {
+            _logger.LogWarning("Cannot initialize mode: device not found {DeviceId}", deviceId);
+            return DeviceModeInitializationResult.DeviceNotFound(deviceId);
+        }
+
+        // Check if mode already exists for this device
+        var existingMode = await _context.DeviceModeHistory
+            .Where(m => m.DeviceId == deviceId && m.IsActive)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (existingMode != null)
+        {
+            _logger.LogInformation(
+                "Mode already exists for device {DeviceId}: {Mode}",
+                deviceId, (DeviceMode)existingMode.Mode);
+            return DeviceModeInitializationResult.ModeAlreadyExists(deviceId, (DeviceMode)existingMode.Mode);
+        }
+
+        // Get mode description
+        var modeInfo = DeviceModeConfigurations.GetAllModesWithDescriptions()
+            .GetValueOrDefault(defaultMode);
+
+        // Create new mode history record
+        var modeHistory = new DeviceModeHistory
+        {
+            DeviceId = deviceId,
+            Mode = (int)defaultMode,
+            Description = modeInfo?.Name ?? defaultMode.ToString(),
+            IsActive = true
+        };
+
+        _context.DeviceModeHistory.Add(modeHistory);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation(
+            "Initialized device {DeviceId} mode to {Mode}",
+            deviceId, defaultMode);
+
+        return DeviceModeInitializationResult.Initialized(defaultMode);
     }
 }

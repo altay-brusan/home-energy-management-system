@@ -125,6 +125,12 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
                 cancellationToken);
         }
 
+        // Initialize device mode with default value (SelfConsumption)
+        // TODO: The mode update logic will be reviewed in future
+        await _deviceSettingsInitializer.InitializeModeAsync(
+            device.Id,
+            cancellationToken: cancellationToken);
+
         await _context.SaveChangesAsync(cancellationToken);
 
         return setup.Id;

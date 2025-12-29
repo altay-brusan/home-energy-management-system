@@ -55,5 +55,7 @@ public interface IApplicationDbContext
 
     DbSet<EnergyPriceHistory> EnergyPriceHistory { get; }
 
+    DbSet<DeviceModeHistory> DeviceModeHistory { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

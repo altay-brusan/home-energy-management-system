@@ -1,5 +1,6 @@
 using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Application.DeviceSettings.Models;
+using Hems_Backend.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -118,10 +119,35 @@ public class SetDeviceModeCommandHandler : IRequestHandler<SetDeviceModeCommand,
         // Update WorkMode in SetupDevice
         setupDevice.WorkMode = (int)request.Mode;
 
+        // Deactivate all existing active modes for this device
+        var existingActiveModes = await _context.DeviceModeHistory
+            .Where(m => m.DeviceId == device.Id && m.IsActive)
+            .ToListAsync(cancellationToken);
+
+        foreach (var existingMode in existingActiveModes)
+        {
+            existingMode.IsActive = false;
+        }
+
+        // Get mode description
+        var modeInfo = DeviceModeConfigurations.GetAllModesWithDescriptions()
+            .GetValueOrDefault(request.Mode);
+
+        // Create new mode history record
+        var modeHistory = new DeviceModeHistory
+        {
+            DeviceId = device.Id,
+            Mode = (int)request.Mode,
+            Description = modeInfo?.Name ?? request.Mode.ToString(),
+            IsActive = true
+        };
+
+        _context.DeviceModeHistory.Add(modeHistory);
+
         await _context.SaveChangesAsync(cancellationToken);
 
         _logger.LogInformation(
-            "Successfully set device {DeviceId} to mode {Mode}",
+            "Successfully set device {DeviceId} to mode {Mode} and recorded in history",
             device.Id, request.Mode);
 
         return new SetDeviceModeResult

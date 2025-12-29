@@ -61,6 +61,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
 
     public DbSet<EnergyPriceHistory> EnergyPriceHistory => Set<EnergyPriceHistory>();
 
+    public DbSet<DeviceModeHistory> DeviceModeHistory => Set<DeviceModeHistory>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
