@@ -1944,6 +1944,34 @@
       }
     },
     "/api/DeviceSettings/device/{deviceId}/mode": {
+      "get": {
+        "tags": [
+          "DeviceSettings"
+        ],
+        "operationId": "GetCurrentDeviceMode",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      },
       "post": {
         "tags": [
           "DeviceSettings"
