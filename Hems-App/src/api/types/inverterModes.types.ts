@@ -43,6 +43,18 @@ export interface UpdateDeviceModeCommand {
 }
 
 /**
+ * API response for GET /api/DeviceSettings/device/{deviceId}/mode
+ */
+export interface GetDeviceModeResponse {
+  success: boolean;
+  errorMessage: string | null;
+  message: string | null;
+  mode: number;
+  modeDescription: string;
+  lastModified: string;
+}
+
+/**
  * Transformed mode for UI consumption
  */
 export interface InverterMode {

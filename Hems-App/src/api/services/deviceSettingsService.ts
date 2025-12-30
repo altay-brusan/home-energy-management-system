@@ -8,6 +8,7 @@ import {
 } from '../types/deviceSettings.types';
 import {
   GetModesResponse,
+  GetDeviceModeResponse,
   UpdateDeviceModeCommand,
 } from '../types/inverterModes.types';
 import { UpdateParametersResponse } from '../types/deviceSettingsHub.types';
@@ -58,6 +59,16 @@ export const deviceSettingsService = {
     const response = await apiClient.get<GetModesResponse>(
       ENDPOINTS.DEVICE_SETTINGS.GET_MODES
     );
+    return response.data;
+  },
+
+  /**
+   * Get current active mode for a device
+   * GET /DeviceSettings/device/{deviceId}/mode
+   */
+  async getDeviceMode(deviceId: string): Promise<GetDeviceModeResponse> {
+    const url = ENDPOINTS.DEVICE_SETTINGS.GET_DEVICE_MODE.replace(':deviceId', deviceId);
+    const response = await apiClient.get<GetDeviceModeResponse>(url);
     return response.data;
   },
 

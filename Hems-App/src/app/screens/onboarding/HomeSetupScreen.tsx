@@ -23,6 +23,8 @@ import Geolocation from 'react-native-geolocation-service';
 import { Card, ThemeToggle, LanguageSelector } from '../../../components';
 import Input from '../../../components/forms/Input';
 import Button from '../../../components/ui/Button';
+import CountrySelector, { Country } from '../../../components/ui/CountrySelector/CountrySelector';
+import CitySelector, { City } from '../../../components/ui/CitySelector/CitySelector';
 import { usePlatform } from '../../../hooks/usePlatform';
 import useAuth from '../../../hooks/useAuth';
 import { useOnboardingStore } from '../../../store/onboardingStore';
@@ -68,15 +70,21 @@ export default function HomeSetupScreen () {
     hasPermission: null,
   });
 
+  const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
+  const [selectedCity, setSelectedCity] = useState<City | null>(null);
+
   const {
     control,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<HomeSetupForm>({
     resolver: zodResolver(getHomeSetupSchema(t)),
     defaultValues: {
       homeName: '',
       addressLine: '',
+      countryId: '',
+      cityId: '',
     },
   });
 
@@ -180,6 +188,20 @@ export default function HomeSetupScreen () {
     }
   }, []);
 
+  // Country selection handler
+  const handleCountrySelect = useCallback((country: Country) => {
+    setSelectedCountry(country);
+    setSelectedCity(null);
+    setValue('countryId', country.id);
+    setValue('cityId', '');
+  }, [setValue]);
+
+  // City selection handler
+  const handleCitySelect = useCallback((city: City) => {
+    setSelectedCity(city);
+    setValue('cityId', city.id);
+  }, [setValue]);
+
   const onSubmit = useCallback(
     async (values: HomeSetupForm) => {
       try {
@@ -202,8 +224,8 @@ export default function HomeSetupScreen () {
         const siteData = {
           name: values.homeName,
           addressLine: values.addressLine || null,
-          city: locationData.geocoding?.city || null,
-          country: locationData.geocoding?.country || null,
+          city: selectedCity?.name || locationData.geocoding?.city || null,
+          country: selectedCountry?.name || locationData.geocoding?.country || null,
           district: locationData.geocoding?.district || null,
           timezone: getDeviceTimezone(),
           latitude: locationData.coordinates.latitude,
@@ -226,9 +248,9 @@ export default function HomeSetupScreen () {
           address: {
             line1: values.addressLine || '',
             line2: '',
-            city: locationData.geocoding?.city || '',
+            city: selectedCity?.name || locationData.geocoding?.city || '',
             state: '',
-            country: locationData.geocoding?.country || '',
+            country: selectedCountry?.name || locationData.geocoding?.country || '',
           },
         });
 
@@ -242,7 +264,7 @@ export default function HomeSetupScreen () {
         });
       }
     },
-    [navigation, setHome, createSite, locationData, getCurrentLocation, showToast, t],
+    [navigation, setHome, createSite, locationData, getCurrentLocation, showToast, t, selectedCountry, selectedCity],
   );
 
   useEffect(() => {
@@ -428,6 +450,23 @@ export default function HomeSetupScreen () {
                             error={errors.addressLine?.message}
                           />
                         )}
+                      />
+
+                      {/* Country Selector */}
+                      <CountrySelector
+                        selectedCountry={selectedCountry}
+                        onCountrySelect={handleCountrySelect}
+                        label={t('homeSetup.country')}
+                        placeholder={t('homeSetup.countryPlaceholder')}
+                      />
+
+                      {/* City Selector */}
+                      <CitySelector
+                        selectedCity={selectedCity}
+                        onCitySelect={handleCitySelect}
+                        selectedCountryId={selectedCountry?.id}
+                        label={t('homeSetup.city')}
+                        placeholder={t('homeSetup.cityPlaceholder')}
                       />
 
                       <Button

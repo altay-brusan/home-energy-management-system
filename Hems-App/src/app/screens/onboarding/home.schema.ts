@@ -11,6 +11,8 @@ export const getHomeSetupSchema = (t: (key: string) => string) => {
       .max(200, t('homeSetup.validation.addressLine.max'))
       .optional()
       .or(z.literal('')),
+    countryId: z.string().optional(),
+    cityId: z.string().optional(),
   });
 };
 

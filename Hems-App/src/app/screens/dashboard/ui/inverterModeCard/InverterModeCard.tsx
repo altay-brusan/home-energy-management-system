@@ -12,6 +12,7 @@ import Reanimated, { FadeInDown } from 'react-native-reanimated';
 import { useThemeStore } from '../../../../../store/themeStore';
 import { getThemeColors } from '../../../../../theme/constants';
 import { useInverterModeStore } from '../../../../../store/inverterModeStore';
+import { useSitesStore } from '../../../../../store/sitesStore';
 
 interface InverterModeCardProps {
   COLORS: Record<string, string>;
@@ -23,7 +24,9 @@ const InverterModeCard: React.FC<InverterModeCardProps> = ({ COLORS }) => {
   const themeMode = useThemeStore((s) => s.mode);
   const isDark = themeMode === 'dark';
 
-  const { activeModeId, activeModeNumber, modes, fetchModes } = useInverterModeStore();
+  const { activeModeId, activeModeNumber, modes, fetchModes, fetchActiveMode } = useInverterModeStore();
+  const { selectedSiteDevice } = useSitesStore();
+  const deviceId = selectedSiteDevice?.device?.id;
 
   // Fetch modes on mount if not already loaded
   useEffect(() => {
@@ -31,6 +34,13 @@ const InverterModeCard: React.FC<InverterModeCardProps> = ({ COLORS }) => {
       fetchModes();
     }
   }, [modes.length, fetchModes]);
+
+  // Fetch active mode from API on mount
+  useEffect(() => {
+    if (deviceId) {
+      fetchActiveMode(deviceId);
+    }
+  }, [deviceId, fetchActiveMode]);
 
   const handlePress = () => {
     navigation.navigate('InverterModes');

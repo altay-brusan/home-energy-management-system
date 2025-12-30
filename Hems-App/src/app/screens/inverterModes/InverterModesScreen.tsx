@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors } from '../../../theme/constants';
 import { useInverterModeStore } from '../../../store/inverterModeStore';
+import { useSitesStore } from '../../../store/sitesStore';
 import { ModeCard } from '../../../components/inverterModes';
 
 const InverterModesScreen: React.FC = () => {
@@ -37,12 +38,19 @@ const InverterModesScreen: React.FC = () => {
     isLoadingModes,
     modesError,
     fetchModes,
+    fetchActiveMode,
   } = useInverterModeStore();
 
-  // Fetch modes on mount
+  const { selectedSiteDevice } = useSitesStore();
+  const deviceId = selectedSiteDevice?.device?.id;
+
+  // Fetch modes and active mode on mount
   useEffect(() => {
     fetchModes();
-  }, [fetchModes]);
+    if (deviceId) {
+      fetchActiveMode(deviceId);
+    }
+  }, [fetchModes, fetchActiveMode, deviceId]);
 
   const handleModePress = (modeId: string) => {
     const mode = modes.find((m) => m.id === modeId);

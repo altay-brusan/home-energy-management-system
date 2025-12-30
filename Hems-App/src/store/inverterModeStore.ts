@@ -33,6 +33,9 @@ interface InverterModeState {
   // Active Mode
   activeModeId: string | null;
   activeModeNumber: number | null;
+  activeModeDescription: string | null;
+  activeModeLastModified: string | null;
+  isLoadingActiveMode: boolean;
 
   // Custom Config (for custom mode - legacy support)
   customConfig: InverterConfig;
@@ -43,6 +46,9 @@ interface InverterModeState {
 
   // Actions - Fetch Modes
   fetchModes: () => Promise<void>;
+
+  // Actions - Fetch Active Mode from API
+  fetchActiveMode: (deviceId: string) => Promise<void>;
 
   // Actions - Mode Selection & Application
   selectAndApplyMode: (
@@ -147,6 +153,9 @@ export const useInverterModeStore = create<InverterModeState>()(
       modesError: null,
       activeModeId: null,
       activeModeNumber: null,
+      activeModeDescription: null,
+      activeModeLastModified: null,
+      isLoadingActiveMode: false,
       customConfig: getDefaultCustomConfig(),
       isApplyingMode: false,
       applyError: null,
@@ -163,6 +172,30 @@ export const useInverterModeStore = create<InverterModeState>()(
             modesError: error.message || 'Failed to fetch modes',
             isLoadingModes: false,
           });
+        }
+      },
+
+      // Fetch active mode from API for a device
+      fetchActiveMode: async (deviceId: string) => {
+        set({ isLoadingActiveMode: true });
+        try {
+          const response = await deviceSettingsService.getDeviceMode(deviceId);
+          if (response.success) {
+            const modeNumber = response.mode;
+            const modeId = modeNumber === CUSTOM_MODE_NUMBER ? 'custom' : `mode_${modeNumber}`;
+            set({
+              activeModeId: modeId,
+              activeModeNumber: modeNumber,
+              activeModeDescription: response.modeDescription,
+              activeModeLastModified: response.lastModified,
+              isLoadingActiveMode: false,
+            });
+          } else {
+            set({ isLoadingActiveMode: false });
+          }
+        } catch (error: any) {
+          // Silently fail - keep existing stored value
+          set({ isLoadingActiveMode: false });
         }
       },
 
@@ -324,7 +357,9 @@ export const useInverterModeStore = create<InverterModeState>()(
 export const useModes = () => useInverterModeStore((state) => state.modes);
 export const useActiveModeId = () => useInverterModeStore((state) => state.activeModeId);
 export const useActiveModeNumber = () => useInverterModeStore((state) => state.activeModeNumber);
+export const useActiveModeDescription = () => useInverterModeStore((state) => state.activeModeDescription);
 export const useIsLoadingModes = () => useInverterModeStore((state) => state.isLoadingModes);
+export const useIsLoadingActiveMode = () => useInverterModeStore((state) => state.isLoadingActiveMode);
 export const useModesError = () => useInverterModeStore((state) => state.modesError);
 export const useCustomConfig = () => useInverterModeStore((state) => state.customConfig);
 export const useIsApplyingMode = () => useInverterModeStore((state) => state.isApplyingMode);
