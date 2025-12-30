@@ -1,13 +1,14 @@
-﻿using System.Reflection;
+using System.Reflection;
 using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Domain.Entities;
 using Hems_Backend.Infrastructure.Identity;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace Hems_Backend.Infrastructure.Data;
 
-public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplicationDbContext
+public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplicationDbContext, IDataProtectionKeyContext
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
@@ -62,6 +63,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<EnergyPriceHistory> EnergyPriceHistory => Set<EnergyPriceHistory>();
 
     public DbSet<DeviceModeHistory> DeviceModeHistory => Set<DeviceModeHistory>();
+
+    // Data Protection Keys for multi-pod environments
+    public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
