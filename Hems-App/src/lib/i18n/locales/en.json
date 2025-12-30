@@ -1163,9 +1163,11 @@
     },
     "homeSetup": {
       "title": "Create your home",
-      "subtitle": "Tell us how we should refer to this location and where it's situated so we can link your devices correctly.",
+      "subtitle": "Give your home a name. We'll detect your location automatically.",
       "homeName": "Home name",
       "homeNamePlaceholder": "e.g. Istanbul Apartment",
+      "addressLine": "Address details (optional)",
+      "addressLinePlaceholder": "Street, building, apartment...",
       "streetAddress": "Street address",
       "streetAddressPlaceholder": "Street and number",
       "apartment": "Apartment, suite (optional)",
@@ -1181,6 +1183,14 @@
       "saving": "Saving…",
       "save": "Save",
       "goBack": "Go Back",
+      "location": {
+        "detecting": "Detecting your location...",
+        "detected": "Location detected",
+        "permissionDenied": "Location permission denied",
+        "waiting": "Waiting for location...",
+        "openSettings": "Open Settings",
+        "retry": "Try again"
+      },
       "locationPermission": {
         "title": "Location Permission",
         "message": "This app needs access to your location to provide accurate site coordinates and improve energy monitoring services.",
@@ -1208,10 +1218,11 @@
         "message": "{{homeName}} has been created successfully!"
       },
       "locationRequired": {
-        "title": "Location Permission Required",
-        "message": "Location permission is required to create a site. Please enable location services in your device settings to continue.",
+        "title": "Location Required",
+        "message": "We need your location to create a site. Please enable location services.",
         "cancel": "Cancel",
-        "settings": "Open Settings"
+        "settings": "Open Settings",
+        "retry": "Try Again"
       },
       "locationSettings": {
         "title": "Enable Location Services",
@@ -1226,6 +1237,9 @@
         "homeName": {
           "min": "Please enter a name for your home.",
           "max": "Home name is too long (maximum 64 characters)."
+        },
+        "addressLine": {
+          "max": "Address is too long (maximum 200 characters)."
         },
         "addressLine1": {
           "min": "Please enter street and number.",
@@ -2014,7 +2028,7 @@
     "privacyPolicy": {
       "intro": "GRP Europe BV (\"we\", \"our\", or \"the Company\"), registered at Swingboei 11, 1231HE Loosdrecht, The Netherlands (Registration No: 92198678, VAT: 865928897B01), represented by Wilfred Gerards, is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our Netzr mobile application.",
       "dataCollectedTitle": "1. Data We Collect",
-      "dataCollectedContent": "We collect the following types of personal data:\n\n• Personal Information: Name, surname, email address, phone number\n• Account Data: Login credentials, user preferences\n• Energy Data: Solar production, battery status, grid import/export data, energy consumption patterns\n• Device Telemetry: Inverter status, device serial numbers, firmware versions, real-time power metrics\n• Location Data: Home address, device installation location (for accurate energy monitoring)\n• Usage Data: App usage patterns, feature interactions, error logs",
+      "dataCollectedContent": "We collect the following types of personal data:\n\n• Personal Information: Name, surname, email address, phone number\n• Account Data: Login credentials, user preferences\n• Energy Data: Solar production, battery status, grid import/export data, energy consumption patterns\n• Device Telemetry: Inverter status, device serial numbers, firmware versions, real-time power metrics\n• Location Data: Home address, device installation location (for accurate energy monitoring)\n• Camera Data: We access your device camera solely to scan QR codes for device registration. No images or video are captured, stored, or transmitted.\n• Usage Data: App usage patterns, feature interactions, error logs",
       "purposeTitle": "2. Purpose of Data Processing",
       "purposeContent": "We process your data for the following purposes:\n\n• To provide and maintain the Netzr energy management service\n• To monitor and optimize your energy production and consumption\n• To send notifications about system status, alerts, and updates\n• To improve our services and develop new features\n• To comply with legal obligations\n• To communicate with you regarding your account and support requests",
       "legalBasisTitle": "3. Legal Basis for Processing",
@@ -2030,7 +2044,9 @@
       "contactTitle": "8. Contact Information",
       "contactContent": "Data Controller: GRP Europe BV\nRegistered Address: Swingboei 11, 1231HE Loosdrecht, The Netherlands\nOperating Address: Krijgsman 19, 1186 DM Amstelveen, The Netherlands\nAuthorised Representative: Wilfred Gerards\nRegistration Number: 92198678\nVAT Number: 865928897B01\nEmail: privacy@grpeurope.com\n\nFor GDPR inquiries in the EU:\nDPO: dpo@grpeurope.com",
       "changesTitle": "9. Changes to This Policy",
-      "changesContent": "We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new policy in the app and updating the \"Last Updated\" date."
+      "changesContent": "We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new policy in the app and updating the \"Last Updated\" date.",
+      "devicePermissionsTitle": "10. Device Permissions",
+      "devicePermissionsContent": "Our app requires certain device permissions to function properly:\n\n• Camera: Used exclusively to scan QR codes for registering energy devices (inverters, batteries). We do not capture, store, or transmit any photos or videos. Camera access is only active during the QR scanning process.\n\n• Location: Used to determine your home location for accurate energy monitoring, time zone settings, and regional energy data.\n\n• Notifications: Used to send alerts about energy production, battery status, system warnings, and important updates.\n\nYou can manage these permissions at any time through your device settings."
     },
     "termsOfService": {
       "intro": "Welcome to Netzr by GRP Europe BV. By using our mobile application, you agree to these Terms of Service. Please read them carefully.",

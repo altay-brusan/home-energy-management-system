@@ -1166,9 +1166,11 @@
   },
   "homeSetup": {
     "title": "Evinizi oluşturun",
-    "subtitle": "Bu konumu nasıl adlandırmak istediğinizi ve nerede bulunduğunu belirtin, böylece cihazlarınızı doğru şekilde ilişkilendirebiliriz.",
+    "subtitle": "Evinize bir isim verin. Konumunuzu otomatik olarak tespit edeceğiz.",
     "homeName": "Ev adı",
     "homeNamePlaceholder": "ör. İstanbul Dairesi",
+    "addressLine": "Adres detayları (isteğe bağlı)",
+    "addressLinePlaceholder": "Sokak, bina, daire...",
     "streetAddress": "Sokak adresi",
     "streetAddressPlaceholder": "Sokak ve numara",
     "apartment": "Daire, kat (isteğe bağlı)",
@@ -1184,6 +1186,14 @@
     "saving": "Kaydediliyor…",
     "save": "Kaydet",
     "goBack": "Geri dön",
+    "location": {
+      "detecting": "Konumunuz tespit ediliyor...",
+      "detected": "Konum tespit edildi",
+      "permissionDenied": "Konum izni reddedildi",
+      "waiting": "Konum bekleniyor...",
+      "openSettings": "Ayarları Aç",
+      "retry": "Tekrar dene"
+    },
     "locationPermission": {
       "title": "Konum İzni",
       "message": "Bu uygulama, doğru site koordinatları sağlamak ve enerji izleme hizmetlerini iyileştirmek için konumunuza erişim gerektirir.",
@@ -1211,10 +1221,11 @@
       "message": "{{homeName}} başarıyla oluşturuldu!"
     },
     "locationRequired": {
-      "title": "Konum İzni Gerekli",
-      "message": "Site oluşturmak için konum izni gereklidir. Devam etmek için lütfen cihaz ayarlarınızdan konum hizmetlerini etkinleştirin.",
+      "title": "Konum Gerekli",
+      "message": "Site oluşturmak için konumunuza ihtiyacımız var. Lütfen konum hizmetlerini etkinleştirin.",
       "cancel": "İptal",
-      "settings": "Ayarları Aç"
+      "settings": "Ayarları Aç",
+      "retry": "Tekrar Dene"
     },
     "locationSettings": {
       "title": "Konum Hizmetlerini Etkinleştir",
@@ -1229,6 +1240,9 @@
     "homeName": {
       "min": "Lütfen eviniz için bir isim girin.",
       "max": "Ev adı çok uzun (maksimum 64 karakter)."
+    },
+    "addressLine": {
+      "max": "Adres çok uzun (maksimum 200 karakter)."
     },
     "addressLine1": {
       "min": "Lütfen sokak ve numarayı girin.",
@@ -1991,7 +2005,7 @@
     "privacyPolicy": {
       "intro": "GRP Europe BV (\"biz\", \"bizim\" veya \"Şirket\"), Swingboei 11, 1231HE Loosdrecht, Hollanda adresinde kayıtlı (Sicil No: 92198678, KDV No: 865928897B01), Wilfred Gerards tarafından temsil edilen şirket olarak gizliliğinizi korumaya kararlıdır. Bu Gizlilik Politikası, Netzr mobil uygulamamızı kullandığınızda bilgilerinizi nasıl topladığımızı, kullandığımızı, paylaştığımızı ve koruduğumuzu açıklar.",
       "dataCollectedTitle": "1. Topladığımız Veriler",
-      "dataCollectedContent": "Aşağıdaki kişisel verileri topluyoruz:\n\n• Kişisel Bilgiler: Ad, soyad, e-posta adresi, telefon numarası\n• Hesap Verileri: Giriş bilgileri, kullanıcı tercihleri\n• Enerji Verileri: Güneş enerjisi üretimi, batarya durumu, şebeke alışveriş verileri, enerji tüketim kalıpları\n• Cihaz Telemetrisi: İnverter durumu, cihaz seri numaraları, yazılım sürümleri, anlık güç metrikleri\n• Konum Verileri: Ev adresi, cihaz kurulum yeri (doğru enerji izleme için)\n• Kullanım Verileri: Uygulama kullanım kalıpları, özellik etkileşimleri, hata kayıtları",
+      "dataCollectedContent": "Aşağıdaki kişisel verileri topluyoruz:\n\n• Kişisel Bilgiler: Ad, soyad, e-posta adresi, telefon numarası\n• Hesap Verileri: Giriş bilgileri, kullanıcı tercihleri\n• Enerji Verileri: Güneş enerjisi üretimi, batarya durumu, şebeke alışveriş verileri, enerji tüketim kalıpları\n• Cihaz Telemetrisi: İnverter durumu, cihaz seri numaraları, yazılım sürümleri, anlık güç metrikleri\n• Konum Verileri: Ev adresi, cihaz kurulum yeri (doğru enerji izleme için)\n• Kamera Verileri: Cihaz kameranızı yalnızca cihaz kaydı için QR kodlarını taramak amacıyla kullanıyoruz. Hiçbir fotoğraf veya video çekilmez, saklanmaz veya iletilmez.\n• Kullanım Verileri: Uygulama kullanım kalıpları, özellik etkileşimleri, hata kayıtları",
       "purposeTitle": "2. Veri İşleme Amacı",
       "purposeContent": "Verilerinizi aşağıdaki amaçlarla işliyoruz:\n\n• Netzr enerji yönetim hizmetini sağlamak ve sürdürmek\n• Enerji üretiminizi ve tüketiminizi izlemek ve optimize etmek\n• Sistem durumu, uyarılar ve güncellemeler hakkında bildirim göndermek\n• Hizmetlerimizi iyileştirmek ve yeni özellikler geliştirmek\n• Yasal yükümlülüklere uymak\n• Hesabınız ve destek talepleriniz hakkında sizinle iletişim kurmak",
       "legalBasisTitle": "3. İşlemenin Yasal Dayanağı",
@@ -2007,7 +2021,9 @@
       "contactTitle": "8. İletişim Bilgileri",
       "contactContent": "Veri Sorumlusu: GRP Europe BV\nKayıtlı Adres: Swingboei 11, 1231HE Loosdrecht, Hollanda\nİşletme Adresi: Krijgsman 19, 1186 DM Amstelveen, Hollanda\nYetkili Temsilci: Wilfred Gerards\nSicil Numarası: 92198678\nKDV Numarası: 865928897B01\nE-posta: privacy@grpeurope.com\n\nGDPR soruları için:\nDPO: dpo@grpeurope.com",
       "changesTitle": "9. Bu Politikadaki Değişiklikler",
-      "changesContent": "Bu Gizlilik Politikasını zaman zaman güncelleyebiliriz. Değişiklikleri uygulamada yeni politikayı yayınlayarak ve \"Son Güncelleme\" tarihini güncelleyerek size bildiririz."
+      "changesContent": "Bu Gizlilik Politikasını zaman zaman güncelleyebiliriz. Değişiklikleri uygulamada yeni politikayı yayınlayarak ve \"Son Güncelleme\" tarihini güncelleyerek size bildiririz.",
+      "devicePermissionsTitle": "10. Cihaz İzinleri",
+      "devicePermissionsContent": "Uygulamamız düzgün çalışabilmek için bazı cihaz izinleri gerektirir:\n\n• Kamera: Yalnızca enerji cihazlarını (inverterler, bataryalar) kaydetmek için QR kodlarını taramak amacıyla kullanılır. Hiçbir fotoğraf veya video çekmiyoruz, saklamıyoruz veya iletmiyoruz. Kamera erişimi yalnızca QR tarama işlemi sırasında aktiftir.\n\n• Konum: Doğru enerji izleme, saat dilimi ayarları ve bölgesel enerji verileri için ev konumunuzu belirlemek amacıyla kullanılır.\n\n• Bildirimler: Enerji üretimi, batarya durumu, sistem uyarıları ve önemli güncellemeler hakkında uyarı göndermek için kullanılır.\n\nBu izinleri istediğiniz zaman cihaz ayarlarınızdan yönetebilirsiniz."
     },
     "termsOfService": {
       "intro": "GRP Europe BV'nin Netzr uygulamasına hoş geldiniz. Mobil uygulamamızı kullanarak bu Kullanım Koşullarını kabul etmiş olursunuz. Lütfen dikkatlice okuyun.",

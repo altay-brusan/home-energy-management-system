@@ -8,21 +8,21 @@ import {
   Alert,
   Keyboard,
   KeyboardAvoidingView,
-  PermissionsAndroid, Platform,
+  Linking,
+  PermissionsAndroid,
+  Platform,
   ScrollView,
   Text,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
 } from 'react-native';
-import { LogOut } from 'lucide-react-native';
+import { LogOut, MapPin, CheckCircle, AlertCircle } from 'lucide-react-native';
 import Geolocation from 'react-native-geolocation-service';
 
-import { Card, CitySelector, CountrySelector, ThemeToggle, LanguageSelector } from '../../../components';
+import { Card, ThemeToggle, LanguageSelector } from '../../../components';
 import Input from '../../../components/forms/Input';
 import Button from '../../../components/ui/Button';
-import type { City } from '../../../components/ui/CitySelector/CitySelector';
-import type { Country } from '../../../components/ui/CountrySelector/CountrySelector';
 import { usePlatform } from '../../../hooks/usePlatform';
 import useAuth from '../../../hooks/useAuth';
 import { useOnboardingStore } from '../../../store/onboardingStore';
@@ -30,6 +30,7 @@ import { useSitesStore } from '../../../store/sitesStore';
 import { useThemeStore } from '../../../store/themeStore';
 import { useToastStore } from '../../../store/toastStore';
 import { getThemeColors } from '../../../theme/constants';
+import { reverseGeocode, GeocodingResult } from '../../../utils/geocoding';
 import MainLayout from '../../layouts/MainLayout';
 import { getOnboardingStyles } from './Onboarding.styles';
 import { getHomeSetupSchema, type HomeSetupForm } from './home.schema';
@@ -56,25 +57,26 @@ export default function HomeSetupScreen () {
   const COLORS = getThemeColors(isDark);
   const styles = useMemo(() => getOnboardingStyles(COLORS, isDark), [COLORS, isDark]);
 
-  const [selectedCity, setSelectedCity] = useState<City | null>(null);
-  const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
-  const [coordinates, setCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [locationData, setLocationData] = useState<{
+    coordinates: { latitude: number; longitude: number } | null;
+    geocoding: GeocodingResult | null;
+    hasPermission: boolean | null;
+  }>({
+    coordinates: null,
+    geocoding: null,
+    hasPermission: null,
+  });
 
   const {
     control,
     handleSubmit,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm<HomeSetupForm>({
-   resolver: zodResolver(getHomeSetupSchema(t)),
+    resolver: zodResolver(getHomeSetupSchema(t)),
     defaultValues: {
       homeName: '',
-      addressLine1: '',
-      addressLine2: '',
-      city: '',
-      state: '',
-      country: '',
+      addressLine: '',
     },
   });
 
@@ -117,21 +119,19 @@ export default function HomeSetupScreen () {
     return false;
   }, [t]);
 
-  // Get current location coordinates
+  // Get current location coordinates and reverse geocode
   const getCurrentLocation = useCallback(async () => {
     setIsGettingLocation(true);
     try {
-      // Request location permissions
       const hasPermission = await requestLocationPermission();
+
       if (!hasPermission) {
-        Alert.alert(
-          t('homeSetup.locationPermission.title'),
-          t('homeSetup.locationPermission.message')
-        );
+        setLocationData(prev => ({ ...prev, hasPermission: false }));
         return null;
       }
 
-      // Get current position using react-native-geolocation-service
+      setLocationData(prev => ({ ...prev, hasPermission: true }));
+
       const position = await new Promise<Geolocation.GeoPosition>((resolve, reject) => {
         Geolocation.getCurrentPosition(
           resolve,
@@ -139,145 +139,102 @@ export default function HomeSetupScreen () {
           {
             enableHighAccuracy: true,
             timeout: 30000,
-            maximumAge: 0,  // Her zaman taze konum al, cache kullanma
-            forceRequestLocation: true,  // Android'de zorla konum iste
-            showLocationDialog: true,  // Android'de konum servisi kapalıysa dialog göster
+            maximumAge: 0,
+            forceRequestLocation: true,
+            showLocationDialog: true,
           }
         );
       });
 
       const { latitude, longitude } = position.coords;
 
-      console.log('📍 [Location] Raw position from GPS:', {
-        latitude,
-        longitude,
-        accuracy: position.coords.accuracy,
-        timestamp: position.timestamp,
+      console.log('[Location] GPS position:', { latitude, longitude });
+
+      // Reverse geocode to get address
+      const geocodingResult = await reverseGeocode(latitude, longitude);
+
+      console.log('[Location] Geocoding result:', geocodingResult);
+
+      setLocationData({
+        coordinates: { latitude, longitude },
+        geocoding: geocodingResult,
+        hasPermission: true,
       });
 
-      setCoordinates({ latitude, longitude });
-
-      return { latitude, longitude };
-    } catch (error) {Alert.alert(
-        t('homeSetup.locationError.title'),
-        t('homeSetup.locationError.message')
-      );
+      return { latitude, longitude, geocoding: geocodingResult };
+    } catch (error) {
+      console.warn('[Location] Error getting location:', error);
+      setLocationData(prev => ({ ...prev, hasPermission: true }));
       return null;
     } finally {
       setIsGettingLocation(false);
     }
-  }, [t, setValue, requestLocationPermission]);
+  }, [requestLocationPermission]);
 
-  // Get coordinates from address using geocoding
-  const getCoordinatesFromAddress = useCallback(async (
-    addressLine: string,
-    city: string,
-    country: string
-  ) => {
-    try {
-      // For now, we'll return null and let the app use current location as fallback
-      // In a real app, you would use a geocoding service like Google Maps API
-      // or OpenStreetMap Nominatim API
-      const fullAddress = `${addressLine}, ${city}, ${country}`;// TODO: Implement geocoding service
-      // const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}`);
-      // const results = await response.json();
-      // if (results.length > 0) {
-      //   return { latitude: parseFloat(results[0].lat), longitude: parseFloat(results[0].lon) };
-      // }
-
-      return null;
-    } catch (error) {return null;
+  // Open device settings
+  const openSettings = useCallback(() => {
+    if (Platform.OS === 'ios') {
+      Linking.openURL('app-settings:');
+    } else {
+      Linking.openSettings();
     }
   }, []);
 
   const onSubmit = useCallback(
     async (values: HomeSetupForm) => {
       try {
-        const hasLocationPermission = await requestLocationPermission();
-        if (!hasLocationPermission) {
+        // Check if we have location data
+        if (!locationData.coordinates) {
           Alert.alert(
             t('homeSetup.locationRequired.title'),
             t('homeSetup.locationRequired.message'),
             [
+              { text: t('common.cancel'), style: 'cancel' },
               {
-                text: t('homeSetup.locationRequired.cancel'),
-                style: 'cancel',
-              },
-              {
-                text: t('homeSetup.locationRequired.settings'),
-                onPress: () => {
-                  Alert.alert(
-                    t('homeSetup.locationSettings.title'),
-                    t('homeSetup.locationSettings.message')
-                  );
-                },
+                text: t('homeSetup.locationRequired.retry'),
+                onPress: getCurrentLocation,
               },
             ]
           );
           return;
         }
 
-        if (!selectedCity) {
-          Alert.alert(
-            t('homeSetup.validationError.title'),
-            t('homeSetup.validationError.cityRequired')
-          );
-          return;
-        }
-
-        if (!selectedCountry) {
-          Alert.alert(
-            t('homeSetup.validationError.title'),
-            t('homeSetup.validationError.countryRequired')
-          );
-          return;
-        }
-
-        const addressLine = values.addressLine1 + (values.addressLine2 ? `, ${values.addressLine2}` : '');
-        const city = selectedCity?.name || values.city || '';
-        const country = selectedCountry?.name || values.country || 'Turkey';
-
-        let coordinates: { latitude: number; longitude: number } | null = await getCoordinatesFromAddress(addressLine, city, country);
-        
-        if (!coordinates) {
-          const currentLocation = await getCurrentLocation();
-          coordinates = currentLocation;
-        }
-
         const siteData = {
           name: values.homeName,
-          addressLine,
-          city,
-          country,
+          addressLine: values.addressLine || null,
+          city: locationData.geocoding?.city || null,
+          country: locationData.geocoding?.country || null,
+          district: locationData.geocoding?.district || null,
           timezone: getDeviceTimezone(),
-          latitude: coordinates?.latitude || null,
-          longitude: coordinates?.longitude || null,
+          latitude: locationData.coordinates.latitude,
+          longitude: locationData.coordinates.longitude,
         };
 
-        console.log('📤 [HomeSetup] Sending site data to backend:', JSON.stringify(siteData, null, 2));
+        console.log('[HomeSetup] Creating site:', JSON.stringify(siteData, null, 2));
 
         await createSite(siteData);
-        
+
         showToast({
           type: 'success',
           title: t('homeSetup.success.title'),
           message: t('homeSetup.success.message', { homeName: values.homeName }),
           duration: 3000,
         });
-        
+
         setHome({
           name: values.homeName,
           address: {
-            line1: values.addressLine1,
-            line2: values.addressLine2 || '',
-            city,
-            state: values.state || '',
-            country,
+            line1: values.addressLine || '',
+            line2: '',
+            city: locationData.geocoding?.city || '',
+            state: '',
+            country: locationData.geocoding?.country || '',
           },
         });
 
         navigation.navigate('Home');
-      } catch (error) {showToast({
+      } catch (error) {
+        showToast({
           type: 'error',
           title: t('homeSetup.createError.title'),
           message: t('homeSetup.createError.message'),
@@ -285,7 +242,7 @@ export default function HomeSetupScreen () {
         });
       }
     },
-    [navigation, setHome, createSite, selectedCity, selectedCountry, getCoordinatesFromAddress, getCurrentLocation, requestLocationPermission, t],
+    [navigation, setHome, createSite, locationData, getCurrentLocation, showToast, t],
   );
 
   useEffect(() => {
@@ -347,6 +304,99 @@ export default function HomeSetupScreen () {
                     <Text style={styles.subtitle}>{t('homeSetup.subtitle')}</Text>
 
                     <View style={styles.formWrapper}>
+                      {/* Location Status Card */}
+                      <View style={{
+                        backgroundColor: locationData.coordinates
+                          ? (isDark ? 'rgba(34, 197, 94, 0.1)' : 'rgba(34, 197, 94, 0.08)')
+                          : locationData.hasPermission === false
+                            ? (isDark ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.08)')
+                            : (isDark ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.08)'),
+                        borderRadius: 12,
+                        padding: 16,
+                        marginBottom: 20,
+                        borderWidth: 1,
+                        borderColor: locationData.coordinates
+                          ? (isDark ? 'rgba(34, 197, 94, 0.3)' : 'rgba(34, 197, 94, 0.2)')
+                          : locationData.hasPermission === false
+                            ? (isDark ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.2)')
+                            : (isDark ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.2)'),
+                      }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                          {isGettingLocation ? (
+                            <MapPin size={20} color={COLORS.primary} />
+                          ) : locationData.coordinates ? (
+                            <CheckCircle size={20} color="#22c55e" />
+                          ) : locationData.hasPermission === false ? (
+                            <AlertCircle size={20} color="#ef4444" />
+                          ) : (
+                            <MapPin size={20} color={COLORS.primary} />
+                          )}
+                          <Text style={{
+                            marginLeft: 8,
+                            fontSize: 14,
+                            fontWeight: '600',
+                            color: locationData.coordinates
+                              ? '#22c55e'
+                              : locationData.hasPermission === false
+                                ? '#ef4444'
+                                : COLORS.primary,
+                          }}>
+                            {isGettingLocation
+                              ? t('homeSetup.location.detecting')
+                              : locationData.coordinates
+                                ? t('homeSetup.location.detected')
+                                : locationData.hasPermission === false
+                                  ? t('homeSetup.location.permissionDenied')
+                                  : t('homeSetup.location.waiting')}
+                          </Text>
+                        </View>
+
+                        {locationData.coordinates && locationData.geocoding && (
+                          <Text style={{
+                            fontSize: 13,
+                            color: COLORS.textSoft,
+                            marginTop: 4,
+                          }}>
+                            {[
+                              locationData.geocoding.district,
+                              locationData.geocoding.city,
+                              locationData.geocoding.country,
+                            ].filter(Boolean).join(', ')}
+                          </Text>
+                        )}
+
+                        {locationData.hasPermission === false && (
+                          <TouchableOpacity
+                            onPress={openSettings}
+                            style={{ marginTop: 8 }}
+                          >
+                            <Text style={{
+                              fontSize: 13,
+                              color: COLORS.primary,
+                              textDecorationLine: 'underline',
+                            }}>
+                              {t('homeSetup.location.openSettings')}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+
+                        {!locationData.coordinates && locationData.hasPermission !== false && !isGettingLocation && (
+                          <TouchableOpacity
+                            onPress={getCurrentLocation}
+                            style={{ marginTop: 8 }}
+                          >
+                            <Text style={{
+                              fontSize: 13,
+                              color: COLORS.primary,
+                              textDecorationLine: 'underline',
+                            }}>
+                              {t('homeSetup.location.retry')}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+
+                      {/* Home Name Input */}
                       <Controller
                         control={control}
                         name="homeName"
@@ -362,78 +412,20 @@ export default function HomeSetupScreen () {
                           />
                         )}
                       />
+
+                      {/* Optional Address Line */}
                       <Controller
                         control={control}
-                        name="addressLine1"
+                        name="addressLine"
                         render={({ field }) => (
                           <Input
-                            label={t('homeSetup.streetAddress')}
-                            placeholder={t('homeSetup.streetAddressPlaceholder')}
-                            autoCapitalize="words"
-                            value={field.value}
-                            onChangeText={field.onChange}
-                            onBlur={field.onBlur}
-                            error={errors.addressLine1?.message}
-                          />
-                        )}
-                      />
-                      <Controller
-                        control={control}
-                        name="addressLine2"
-                        render={({ field }) => (
-                          <Input
-                            label={t('homeSetup.apartment')}
-                            placeholder={t('homeSetup.apartmentPlaceholder')}
+                            label={t('homeSetup.addressLine')}
+                            placeholder={t('homeSetup.addressLinePlaceholder')}
                             autoCapitalize="words"
                             value={field.value ?? ''}
                             onChangeText={field.onChange}
                             onBlur={field.onBlur}
-                            error={errors.addressLine2?.message}
-                          />
-                        )}
-                      />
-
-                      <View style={styles.dualRow}>
-                        <View style={styles.grow}>
-                          <CountrySelector
-                            selectedCountry={selectedCountry}
-                            onCountrySelect={(country) => {
-                              setSelectedCountry(country);
-                              setSelectedCity(null); 
-                              setValue('country', country.name);
-                            }}
-                            error={errors.country?.message}
-                            placeholder={t('homeSetup.countryPlaceholder')}
-                            label={t('homeSetup.country')}
-                          />
-                        </View>
-                        <View style={styles.grow}>
-                          <CitySelector
-                            selectedCity={selectedCity}
-                            onCitySelect={(city) => {
-                              setSelectedCity(city);
-                              setValue('city', city.name);
-                            }}
-                            selectedCountryId={selectedCountry?.id}
-                            error={errors.city?.message}
-                            placeholder={t('homeSetup.cityPlaceholder')}
-                            label={t('homeSetup.city')}
-                          />
-                        </View>
-                      </View>
-
-                      <Controller
-                        control={control}
-                        name="state"
-                        render={({ field }) => (
-                          <Input
-                            label={t('homeSetup.state')}
-                            placeholder={t('homeSetup.statePlaceholder')}
-                            autoCapitalize="words"
-                            value={field.value ?? ''}
-                            onChangeText={field.onChange}
-                            onBlur={field.onBlur}
-                            error={errors.state?.message}
+                            error={errors.addressLine?.message}
                           />
                         )}
                       />
@@ -445,11 +437,12 @@ export default function HomeSetupScreen () {
                             : t('homeSetup.save')
                         }
                         onPress={handleSubmit(onSubmit)}
-                        disabled={isSubmitting || isGettingLocation}
+                        disabled={isSubmitting || isGettingLocation || !locationData.coordinates}
                         style={styles.primaryButton}
                         textStyle={styles.primaryButtonText}
                       />
-                      {/* Only show back button if user already has sites (adding another site) */}
+
+                      {/* Only show back button if user already has sites */}
                       {hasSites && (
                         <Button
                           title={t('homeSetup.goBack')}

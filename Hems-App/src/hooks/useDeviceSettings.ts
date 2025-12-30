@@ -12,6 +12,7 @@ import { useRoles } from './useRoles';
 import { useToastStore } from '../store/toastStore';
 import { useDeviceSettingsUpdateStore } from '../store/deviceSettingsUpdateStore';
 import { useDeviceSettingsHub } from './useDeviceSettingsHub';
+import { useInverterModeStore } from '../store/inverterModeStore';
 import {
   DeviceSettingsConfig,
   TimeSlot,
@@ -98,6 +99,9 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
   // Update progress store actions
   const { startUpdate, isProgressModalVisible } = useDeviceSettingsUpdateStore();
 
+  // Inverter mode store action
+  const setCustomModeActive = useInverterModeStore((state) => state.setCustomModeActive);
+
   // Ref to track if we should show toast (when modal is hidden)
   const showToastOnCompleteRef = useRef(false);
 
@@ -111,6 +115,11 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
 
       // Finalize the save in the store
       storeFinalizeSave(result.failedCount === 0, failedParameterIds);
+
+      // Set custom mode as active after successful save
+      if (result.failedCount === 0) {
+        setCustomModeActive();
+      }
 
       // Show toast if modal is hidden (background mode)
       if (showToastOnCompleteRef.current || !useDeviceSettingsUpdateStore.getState().isProgressModalVisible) {
@@ -128,7 +137,7 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
       }
       showToastOnCompleteRef.current = false;
     },
-    [storeFinalizeSave, showToast]
+    [storeFinalizeSave, showToast, setCustomModeActive]
   );
 
   // SignalR hook for progress tracking
@@ -163,6 +172,8 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
       } catch (signalRError) {
         console.log('[useDeviceSettings] SignalR tracking failed:', signalRError);
         // If SignalR fails, still consider save successful (API call succeeded)
+        // Set custom mode as active
+        setCustomModeActive();
         // Just show immediate toast
         showToast({
           type: 'success',

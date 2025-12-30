@@ -57,6 +57,7 @@ const CustomModeScreen: React.FC = () => {
     fetchSettings,
     clearError,
     canSave,
+    timeOfUseValidationError,
   } = useDeviceSettings();
 
   // Update progress store
@@ -337,10 +338,14 @@ const CustomModeScreen: React.FC = () => {
             onPress={navigateToTimeOfUse}
             style={[
               styles.navigationButton,
-              { backgroundColor: isDark ? COLORS.surface : COLORS.white },
+              {
+                backgroundColor: isDark ? COLORS.surface : COLORS.white,
+                borderColor: timeOfUseValidationError ? '#F44336' : 'transparent',
+                borderWidth: timeOfUseValidationError ? 1 : 0,
+              },
             ]}
           >
-            <Clock size={20} color={COLORS.accent} />
+            <Clock size={20} color={timeOfUseValidationError ? '#F44336' : COLORS.accent} />
             <View style={styles.navigationButtonContent}>
               <Text style={[styles.navigationButtonText, { color: COLORS.text }]}>
                 {t('inverterModes.timeOfUse', 'Time of Use')}
@@ -355,6 +360,21 @@ const CustomModeScreen: React.FC = () => {
               {t('inverterModes.periodCount', '{{count}} periods', { count: 6 })}
             </Text>
           </TouchableOpacity>
+
+          {/* Time of Use Validation Error */}
+          {timeOfUseValidationError && (
+            <View
+              style={[
+                styles.validationError,
+                { backgroundColor: isDark ? '#FF57571A' : '#FFEBEE' },
+              ]}
+            >
+              <AlertCircle size={16} color="#F44336" />
+              <Text style={styles.validationErrorText}>
+                {t(`timeOfUse.validation.${timeOfUseValidationError}`)}
+              </Text>
+            </View>
+          )}
 
           {/* sortOrder: 4 - Generator & Smart Load */}
           <GeneratorSmartLoadSection />
@@ -555,6 +575,22 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 8,
     fontFamily: 'monospace',
+  },
+  validationError: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginBottom: 12,
+    marginTop: -4,
+  },
+  validationErrorText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#F44336',
+    fontWeight: '500',
   },
 });
 

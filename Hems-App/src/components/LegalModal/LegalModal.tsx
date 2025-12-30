@@ -63,6 +63,9 @@ export function LegalModal({ visible, type, onClose }: LegalModalProps) {
 
       <Text style={styles.sectionTitle}>{t('legal.privacyPolicy.changesTitle')}</Text>
       <Text style={styles.sectionContent}>{t('legal.privacyPolicy.changesContent')}</Text>
+
+      <Text style={styles.sectionTitle}>{t('legal.privacyPolicy.devicePermissionsTitle')}</Text>
+      <Text style={styles.sectionContent}>{t('legal.privacyPolicy.devicePermissionsContent')}</Text>
     </>
   );
 

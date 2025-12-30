@@ -125,7 +125,7 @@ export default function LoginScreen (): JSX.Element {
     formState: { errors, isSubmitting },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: "cemrecyhn@gmail.com", password: "***REMOVED***" },
+    defaultValues: { email: "", password: "" },
   });
 
   React.useEffect(() => {

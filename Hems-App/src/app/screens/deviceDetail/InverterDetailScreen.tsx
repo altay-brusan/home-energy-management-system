@@ -136,9 +136,7 @@ export default function InverterDetailScreen() {
   const gridSidePhaseBPower = getDetailValue('gridSidePhaseBPower');
   const inverterHeatsinkTemp = getDetailValue('inverterHeatsinkTemp');
   const internalAmbientTemp = getDetailValue('internalAmbientTemp');
-  const gridSignalPresent = getDetailValue('gridSignalPresent');
   const generatorSignalPresent = getDetailValue('generatorSignalPresent');
-  const name = getDetailValue('name');
   const manufacturer = getDetailValue('manufacturer');
   const model = getDetailValue('model');
   const serialNumber = getDetailValue('serialNumber');
@@ -471,31 +469,6 @@ export default function InverterDetailScreen() {
               </View>
             )}
 
-            {gridSignalPresent != null && (
-              <View style={styles.row}>
-                <Text
-                  style={[
-                    styles.label,
-                    {
-                      color: COLORS.textSoft,
-                    },
-                  ]}
-                >
-                  {t("inverterDetail.gridStatus")}
-                </Text>
-                <Text
-                  style={[
-                    styles.value,
-                    {
-                      color: gridSignalPresent ? COLORS.success : COLORS.error,
-                    },
-                  ]}
-                >
-                  {gridSignalPresent ? t("inverterDetail.connected") : t("inverterDetail.disconnected")}
-                </Text>
-              </View>
-            )}
-
             {generatorSignalPresent != null && (
               <View style={styles.row}>
                 <Text
@@ -725,31 +698,6 @@ export default function InverterDetailScreen() {
           >
             {t("inverterDetail.deviceInfo")}
           </Text>
-
-          {name && (
-            <View style={styles.row}>
-              <Text
-                style={[
-                  styles.label,
-                  {
-                    color: COLORS.textSoft,
-                  },
-                ]}
-              >
-                {t("inverterDetail.name")}
-              </Text>
-              <Text
-                style={[
-                  styles.value,
-                  {
-                    color: COLORS.text,
-                  },
-                ]}
-              >
-                {name}
-              </Text>
-            </View>
-          )}
 
           {manufacturer && (
             <View style={styles.row}>

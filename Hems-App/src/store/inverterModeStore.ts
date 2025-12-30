@@ -61,6 +61,9 @@ interface InverterModeState {
   updateTimeOfUseSettings: (settings: Partial<TimeOfUseSettings>) => void;
   updateTimeOfUsePeriod: (periodId: TimeOfUsePeriodId, updates: Partial<TimeOfUsePeriod>) => void;
 
+  // Actions - Custom Mode
+  setCustomModeActive: () => void;
+
   // Actions - Error handling
   clearModesError: () => void;
   clearApplyError: () => void;
@@ -276,6 +279,14 @@ export const useInverterModeStore = create<InverterModeState>()(
             ...customConfig,
             timeOfUse: { ...customConfig.timeOfUse, periods },
           },
+        });
+      },
+
+      // Set custom mode as active (called after CustomModeScreen save)
+      setCustomModeActive: () => {
+        set({
+          activeModeId: 'custom',
+          activeModeNumber: CUSTOM_MODE_NUMBER,
         });
       },
 

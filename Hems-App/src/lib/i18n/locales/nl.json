@@ -1132,9 +1132,11 @@
     },
     "homeSetup": {
       "title": "Maak uw woning aan",
-      "subtitle": "Vertel ons hoe we naar deze locatie moeten verwijzen en waar deze zich bevindt, zodat we uw apparaten correct kunnen koppelen.",
+      "subtitle": "Geef uw woning een naam. We detecteren uw locatie automatisch.",
       "homeName": "Woningnaam",
       "homeNamePlaceholder": "bijv. Amsterdam Appartement",
+      "addressLine": "Adresgegevens (optioneel)",
+      "addressLinePlaceholder": "Straat, gebouw, appartement...",
       "streetAddress": "Straat adres",
       "streetAddressPlaceholder": "Straat en nummer",
       "apartment": "Appartement, suite (optioneel)",
@@ -1150,6 +1152,14 @@
       "saving": "Opslaan…",
       "save": "Opslaan",
       "goBack": "Ga Terug",
+      "location": {
+        "detecting": "Uw locatie detecteren...",
+        "detected": "Locatie gedetecteerd",
+        "permissionDenied": "Locatietoestemming geweigerd",
+        "waiting": "Wachten op locatie...",
+        "openSettings": "Instellingen Openen",
+        "retry": "Opnieuw proberen"
+      },
       "locationPermission": {
         "title": "Locatietoestemming",
         "message": "Deze app heeft toegang nodig tot uw locatie om nauwkeurige locatiecoördinaten te bieden en energiemonitoringdiensten te verbeteren.",
@@ -1177,10 +1187,11 @@
         "message": "{{homeName}} is succesvol aangemaakt!"
       },
       "locationRequired": {
-        "title": "Locatietoestemming Vereist",
-        "message": "Locatietoestemming is vereist om een locatie aan te maken. Schakel locatieservices in uw apparaatinstellingen in om door te gaan.",
+        "title": "Locatie Vereist",
+        "message": "We hebben uw locatie nodig om een locatie aan te maken. Schakel locatieservices in.",
         "cancel": "Annuleren",
-        "settings": "Instellingen Openen"
+        "settings": "Instellingen Openen",
+        "retry": "Opnieuw Proberen"
       },
       "locationSettings": {
         "title": "Schakel Locatieservices In",
@@ -1195,6 +1206,9 @@
         "homeName": {
           "min": "Voer een naam in voor uw woning.",
           "max": "Woningnaam is te lang (maximaal 64 tekens)."
+        },
+        "addressLine": {
+          "max": "Adres is te lang (maximaal 200 tekens)."
         },
         "addressLine1": {
           "min": "Voer straat en nummer in.",
@@ -1915,7 +1929,7 @@
     "privacyPolicy": {
       "intro": "GRP Europe BV (\"wij\", \"ons\" of \"het Bedrijf\"), gevestigd te Swingboei 11, 1231HE Loosdrecht, Nederland (KvK-nummer: 92198678, BTW: 865928897B01), vertegenwoordigd door Wilfred Gerards, zet zich in voor de bescherming van uw privacy. Dit Privacybeleid legt uit hoe wij uw informatie verzamelen, gebruiken, openbaar maken en beschermen wanneer u onze Netzr mobiele applicatie gebruikt.",
       "dataCollectedTitle": "1. Gegevens die Wij Verzamelen",
-      "dataCollectedContent": "Wij verzamelen de volgende soorten persoonsgegevens:\n\n• Persoonlijke Informatie: Naam, achternaam, e-mailadres, telefoonnummer\n• Accountgegevens: Inloggegevens, gebruikersvoorkeuren\n• Energiegegevens: Zonne-energieproductie, batterijstatus, netimport/-exportgegevens, energieverbruikspatronen\n• Apparaattelemetrie: Omvormerstatus, apparaatserienummers, firmwareversies, real-time vermogensstatistieken\n• Locatiegegevens: Thuisadres, apparaatinstallatielocatie (voor nauwkeurige energiemonitoring)\n• Gebruiksgegevens: App-gebruikspatronen, functie-interacties, foutlogboeken",
+      "dataCollectedContent": "Wij verzamelen de volgende soorten persoonsgegevens:\n\n• Persoonlijke Informatie: Naam, achternaam, e-mailadres, telefoonnummer\n• Accountgegevens: Inloggegevens, gebruikersvoorkeuren\n• Energiegegevens: Zonne-energieproductie, batterijstatus, netimport/-exportgegevens, energieverbruikspatronen\n• Apparaattelemetrie: Omvormerstatus, apparaatserienummers, firmwareversies, real-time vermogensstatistieken\n• Locatiegegevens: Thuisadres, apparaatinstallatielocatie (voor nauwkeurige energiemonitoring)\n• Cameragegevens: Wij gebruiken uw apparaatcamera uitsluitend om QR-codes te scannen voor apparaatregistratie. Er worden geen foto's of video's vastgelegd, opgeslagen of verzonden.\n• Gebruiksgegevens: App-gebruikspatronen, functie-interacties, foutlogboeken",
       "purposeTitle": "2. Doel van Gegevensverwerking",
       "purposeContent": "Wij verwerken uw gegevens voor de volgende doeleinden:\n\n• Om de Netzr energiebeheerdienst te leveren en te onderhouden\n• Om uw energieproductie en -verbruik te monitoren en te optimaliseren\n• Om meldingen te sturen over systeemstatus, waarschuwingen en updates\n• Om onze diensten te verbeteren en nieuwe functies te ontwikkelen\n• Om te voldoen aan wettelijke verplichtingen\n• Om met u te communiceren over uw account en ondersteuningsverzoeken",
       "legalBasisTitle": "3. Rechtsgrondslag voor Verwerking",
@@ -1931,7 +1945,9 @@
       "contactTitle": "8. Contactgegevens",
       "contactContent": "Verwerkingsverantwoordelijke: GRP Europe BV\nVestigingsadres: Swingboei 11, 1231HE Loosdrecht, Nederland\nKantooradres: Krijgsman 19, 1186 DM Amstelveen, Nederland\nGemachtigde Vertegenwoordiger: Wilfred Gerards\nKvK-nummer: 92198678\nBTW-nummer: 865928897B01\nE-mail: privacy@grpeurope.com\n\nVoor AVG-vragen:\nDPO: dpo@grpeurope.com",
       "changesTitle": "9. Wijzigingen in dit Beleid",
-      "changesContent": "Wij kunnen dit Privacybeleid van tijd tot tijd bijwerken. Wij zullen u op de hoogte stellen van wijzigingen door het nieuwe beleid in de app te plaatsen en de \"Laatst Bijgewerkt\" datum bij te werken."
+      "changesContent": "Wij kunnen dit Privacybeleid van tijd tot tijd bijwerken. Wij zullen u op de hoogte stellen van wijzigingen door het nieuwe beleid in de app te plaatsen en de \"Laatst Bijgewerkt\" datum bij te werken.",
+      "devicePermissionsTitle": "10. Apparaatmachtigingen",
+      "devicePermissionsContent": "Onze app vereist bepaalde apparaatmachtigingen om correct te functioneren:\n\n• Camera: Wordt uitsluitend gebruikt om QR-codes te scannen voor het registreren van energieapparaten (omvormers, batterijen). Wij leggen geen foto's of video's vast, slaan deze niet op en verzenden deze niet. Cameratoegang is alleen actief tijdens het QR-scanproces.\n\n• Locatie: Wordt gebruikt om uw thuislocatie te bepalen voor nauwkeurige energiemonitoring, tijdzone-instellingen en regionale energiegegevens.\n\n• Meldingen: Wordt gebruikt om waarschuwingen te sturen over energieproductie, batterijstatus, systeemwaarschuwingen en belangrijke updates.\n\nU kunt deze machtigingen op elk moment beheren via uw apparaatinstellingen."
     },
     "termsOfService": {
       "intro": "Welkom bij Netzr van GRP Europe BV. Door onze mobiele applicatie te gebruiken, gaat u akkoord met deze Servicevoorwaarden. Lees ze zorgvuldig door.",

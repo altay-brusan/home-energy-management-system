@@ -3,7 +3,7 @@
  * Dashboard'da gösterilen inverter mod kartı
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -12,7 +12,6 @@ import Reanimated, { FadeInDown } from 'react-native-reanimated';
 import { useThemeStore } from '../../../../../store/themeStore';
 import { getThemeColors } from '../../../../../theme/constants';
 import { useInverterModeStore } from '../../../../../store/inverterModeStore';
-import { getModeById, getModeNumber } from '../../../../../data/presetModes';
 
 interface InverterModeCardProps {
   COLORS: Record<string, string>;
@@ -24,23 +23,25 @@ const InverterModeCard: React.FC<InverterModeCardProps> = ({ COLORS }) => {
   const themeMode = useThemeStore((s) => s.mode);
   const isDark = themeMode === 'dark';
 
-  const { activeModeId, activeMode } = useInverterModeStore();
+  const { activeModeId, activeModeNumber, modes, fetchModes } = useInverterModeStore();
+
+  // Fetch modes on mount if not already loaded
+  useEffect(() => {
+    if (modes.length === 0) {
+      fetchModes();
+    }
+  }, [modes.length, fetchModes]);
 
   const handlePress = () => {
     navigation.navigate('InverterModes');
   };
 
-  // Get display info
-  const mode = activeModeId ? getModeById(activeModeId) : null;
-  const modeKey = mode?.id?.replace('mode_', 'mode') || 'custom';
-  const modeName = mode
-    ? t(`inverterModes.modes.${modeKey}.name`, { defaultValue: mode.name })
-    : t('inverterModes.noModeSelected');
-  const modeDescription = mode
-    ? t(`inverterModes.modes.${modeKey}.description`, { defaultValue: mode.description })
-    : t('inverterModes.configureMode');
-  const modeNumber = activeModeId ? getModeNumber(activeModeId) : null;
+  // Get active mode from API modes (store)
+  const mode = activeModeId ? modes.find((m) => m.id === activeModeId) : null;
   const isCustom = mode?.isCustom || false;
+  const modeName = mode?.name || t('inverterModes.noModeSelected');
+  const modeDescription = mode?.description || t('inverterModes.configureMode');
+  const modeNumber = activeModeNumber ? String(activeModeNumber) : null;
 
   return (
     <Reanimated.View entering={FadeInDown.delay(150).duration(600)}>
@@ -108,34 +109,6 @@ const InverterModeCard: React.FC<InverterModeCardProps> = ({ COLORS }) => {
         >
           {modeDescription}
         </Text>
-
-        {/* Features Summary */}
-        {mode && !isCustom && (
-          <View style={styles.featuresRow}>
-            {mode.features.gridSelling && (
-              <View style={[styles.featureChip, { backgroundColor: `${COLORS.accent}15` }]}>
-                <Text style={[styles.featureText, { color: COLORS.accent }]}>
-                  {t('inverterModes.features.gridSelling')}
-                </Text>
-              </View>
-            )}
-            {mode.features.gridCharging && (
-              <View style={[styles.featureChip, { backgroundColor: '#4CAF5015' }]}>
-                <Text style={[styles.featureText, { color: '#4CAF50' }]}>
-                  {t('inverterModes.features.gridCharging')}
-                </Text>
-              </View>
-            )}
-            {mode.features.generatorSupport && (
-              <View style={[styles.featureChip, { backgroundColor: '#FF980015' }]}>
-                <Text style={[styles.featureText, { color: '#FF9800' }]}>
-                  {t('inverterModes.features.generatorSupport')}
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
-
       </TouchableOpacity>
     </Reanimated.View>
   );
@@ -189,21 +162,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     marginBottom: 8,
-  },
-  featuresRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginTop: 4,
-  },
-  featureChip: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  featureText: {
-    fontSize: 11,
-    fontWeight: '600',
   },
 });
 

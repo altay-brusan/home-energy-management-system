@@ -82,8 +82,8 @@ android {
         applicationId "com.n2nenergymobile"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "1.0.1-rc.2"
         
         ndk {
             abiFilters "arm64-v8a", "armeabi-v7a", "x86", "x86_64"

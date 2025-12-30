@@ -282,7 +282,13 @@ const getChangedParameters = (
 };
 
 // Helper: Validate TimeOfUse 24-hour coverage
-const validateTimeOfUseCoverage = (timeSlots: TimeSlot[]): string | null => {
+// Only validates when TimeOfUse is enabled
+const validateTimeOfUseCoverage = (timeSlots: TimeSlot[], enabled: 'on' | 'off'): string | null => {
+  // Skip validation if TimeOfUse is disabled
+  if (enabled === 'off') {
+    return null;
+  }
+
   // 1. First period must start at 00:00
   if (timeSlots[0].startTime !== '00:00') {
     return 'firstPeriodStart';
@@ -337,8 +343,8 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
           const tree = await deviceSettingsService.getTree(deviceId);
           const { settings, metadata, visibility } = transformApiTreeToSettings(tree);
 
-          // Validate initial state
-          const validationError = validateTimeOfUseCoverage(settings.timeOfUse.timeSlots);
+          // Validate initial state (only if TimeOfUse is enabled)
+          const validationError = validateTimeOfUseCoverage(settings.timeOfUse.timeSlots, settings.timeOfUse.enabled);
 
           set({
             apiTree: tree,
@@ -464,8 +470,8 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
           }
         });
 
-        // Validate reset state
-        const validationError = validateTimeOfUseCoverage(settings.timeOfUse.timeSlots);
+        // Validate reset state (only if TimeOfUse is enabled)
+        const validationError = validateTimeOfUseCoverage(settings.timeOfUse.timeSlots, settings.timeOfUse.enabled);
 
         set({
           settings,
@@ -478,7 +484,7 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
       // Reset to default values
       resetToDefaults: () => {
         const defaultSettings = JSON.parse(JSON.stringify(DEFAULT_DEVICE_SETTINGS));
-        const validationError = validateTimeOfUseCoverage(defaultSettings.timeOfUse.timeSlots);
+        const validationError = validateTimeOfUseCoverage(defaultSettings.timeOfUse.timeSlots, defaultSettings.timeOfUse.enabled);
 
         set({
           settings: defaultSettings,
@@ -505,10 +511,20 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
         const newDirtyFields = new Set(dirtyFields);
         newDirtyFields.add(path);
 
+        // Re-validate TimeOfUse when enabled status changes
+        let validationError = get().timeOfUseValidationError;
+        if (path === 'timeOfUse.enabled') {
+          validationError = validateTimeOfUseCoverage(
+            newSettings.timeOfUse.timeSlots,
+            value as 'on' | 'off'
+          );
+        }
+
         set({
           settings: newSettings,
           isDirty: true,
           dirtyFields: newDirtyFields,
+          timeOfUseValidationError: validationError,
         });
       },
 
@@ -550,8 +566,8 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
           newDirtyFields.add(`timeOfUse.timeSlots.${slotIndex + 1}.startTime`);
         }
 
-        // Run validation
-        const validationError = validateTimeOfUseCoverage(newTimeSlots);
+        // Run validation (only if TimeOfUse is enabled)
+        const validationError = validateTimeOfUseCoverage(newTimeSlots, settings.timeOfUse.enabled);
 
         set({
           settings: {

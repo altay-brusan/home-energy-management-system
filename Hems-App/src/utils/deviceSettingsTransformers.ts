@@ -82,10 +82,13 @@ export const numberToString = (appValue: number): string => {
 
 /**
  * Time String Transformer (HH:MM format)
+ * Handles 24:00 -> 00:00 conversion (midnight representation)
  */
 export const timeStringToApp = (apiValue: string): string => {
-  // API zaten HH:MM formatında geliyor
-  return apiValue || '00:00';
+  if (!apiValue) return '00:00';
+  // API'den 24:00 gelebilir, bunu 00:00'a çeviriyoruz
+  if (apiValue === '24:00') return '00:00';
+  return apiValue;
 };
 
 export const timeStringToAPI = (appValue: string): string => {
