@@ -90,7 +90,7 @@ const confirmLogout = async () => {
               color={COLORS.accent}
               style={{ marginRight: 12 }}
             />
-            <Text 
+            <Text
               style={styles.sectionTitle}
               numberOfLines={1}
               ellipsizeMode="tail"

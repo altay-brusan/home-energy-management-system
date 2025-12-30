@@ -279,7 +279,8 @@
     "deviceSharing": "Cihaz Paylaşımı ve Yetkilendirme",
     "companyInfo": "Şirket / Bölge Bilgisi",
     "troubleshooting": "Sorun Giderme",
-    "logout": "Çıkış Yap"
+    "logout": "Çıkış Yap",
+    "myHomes": "Evlerim"
   },
   "changePassword": {
     "title": "Şifre Değiştir",

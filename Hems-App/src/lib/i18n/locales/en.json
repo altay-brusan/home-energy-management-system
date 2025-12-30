@@ -263,7 +263,8 @@
       "deviceSharing": "Device Sharing & Authorization",
       "companyInfo": "Company / Region Info",
       "troubleshooting": "Troubleshooting",
-      "logout": "Logout"
+      "logout": "Logout",
+      "myHomes": "My Homes"
     },
     "changePassword": {
       "title": "Change Password",

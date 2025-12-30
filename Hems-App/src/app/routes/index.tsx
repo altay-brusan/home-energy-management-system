@@ -146,10 +146,21 @@ function TabNavigator () {
   // For regular users, they need to complete site+device setup
   const canShowDashboard = isAdminUser ? !!selectedSite : hasValidSiteWithDevice;
 
+  // Show MyHomes tab if user has sites but no device yet
+  const hasSiteWithoutDevice = !isAdminUserCheck && sites.length > 0 && !hasValidSiteWithDevice;
+
+  // Determine initial route
+  const getInitialRoute = () => {
+    if (isAdminUser) return 'Admin';
+    if (canShowDashboard) return 'Dashboard';
+    if (hasSiteWithoutDevice) return 'MyHomes';
+    return 'Profile';
+  };
+
   return (
     <Tab.Navigator
       key={navigatorKey}
-      initialRouteName={isAdminUser ? 'Admin' : (canShowDashboard ? 'Dashboard' : 'Profile')}
+      initialRouteName={getInitialRoute()}
       tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
@@ -157,6 +168,20 @@ function TabNavigator () {
         tabBarInactiveTintColor: COLORS.slate400,
       }}
     >
+      {/* Show MyHomes tab if user has sites but no device */}
+      {hasSiteWithoutDevice && (
+        <Tab.Screen
+          name="MyHomes"
+          component={HomeScreen}
+          options={{
+            tabBarLabel: t('profile.myHomes'),
+            tabBarIcon: ({ color, size }) => (
+              <Home color={color} size={size} strokeWidth={2} />
+            ),
+          }}
+        />
+      )}
+
       {/* Show Dashboard/Device only if user has valid site with device */}
       {canShowDashboard && (
         <>
