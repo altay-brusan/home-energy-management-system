@@ -51,7 +51,7 @@ app.Use(async (context, next) =>
     // Skip HTTPS redirection for DeviceData endpoints (ThingsBoard integration)
     if (!context.Request.Path.StartsWithSegments("/api/DeviceData"))
     {
-        if (!context.Request.IsHttps && !app.Environment.IsDevelopment())
+        if (!context.Request.IsHttps && !app.Environment.IsDevelopment() && !app.Environment.IsStaging())
         {
             var httpsUrl = $"https://{context.Request.Host}{context.Request.Path}{context.Request.QueryString}";
             context.Response.Redirect(httpsUrl, permanent: true);
