@@ -50,7 +50,10 @@ public class SetDeviceModeCommandHandler : IRequestHandler<SetDeviceModeCommand,
         var device = setupDevice.Device;
         string? exportStrategyValue = null;
 
-        // For non-Custom modes: Update device via RPC
+        // Check if this is a demo device - skip RPC calls for demo devices
+        var isDemoDevice = device.IsDemoDevice;
+
+        // For non-Custom modes: Update device via RPC (unless it's a demo device)
         if (request.Mode != DeviceMode.Custom)
         {
             // Get export strategy value for this mode
@@ -73,7 +76,8 @@ public class SetDeviceModeCommandHandler : IRequestHandler<SetDeviceModeCommand,
                             sdpv.Parameter.Name == ExportStrategyParameterName,
                     cancellationToken);
 
-            if (exportStrategyParam?.Parameter == null)
+            // For demo devices, we don't require the parameter to exist - just skip RPC
+            if (!isDemoDevice && exportStrategyParam?.Parameter == null)
             {
                 return new SetDeviceModeResult
                 {
@@ -82,33 +86,45 @@ public class SetDeviceModeCommandHandler : IRequestHandler<SetDeviceModeCommand,
                 };
             }
 
-            // Update device via RPC
-            _logger.LogInformation(
-                "Setting device {DeviceId} to mode {Mode} (ExportStrategy: {ExportStrategy})",
-                device.Id, request.Mode, exportStrategyValue);
-
-            var rpcResult = await _rpcExecutor.ExecuteParameterUpdateAsync(
-                device.ThingsBoardDeviceId,
-                ExportStrategyParameterName,
-                exportStrategyValue,
-                cancellationToken);
-
-            if (!rpcResult.Success)
+            // Update device via RPC (skip for demo devices)
+            if (isDemoDevice)
             {
-                _logger.LogWarning(
-                    "Failed to set mode {Mode} on device {DeviceId}: {Error}",
-                    request.Mode, device.Id, rpcResult.ErrorMessage);
+                _logger.LogInformation(
+                    "Setting demo device {DeviceId} to mode {Mode} (simulated, no RPC)",
+                    device.Id, request.Mode);
+            }
+            else
+            {
+                _logger.LogInformation(
+                    "Setting device {DeviceId} to mode {Mode} (ExportStrategy: {ExportStrategy})",
+                    device.Id, request.Mode, exportStrategyValue);
 
-                return new SetDeviceModeResult
+                var rpcResult = await _rpcExecutor.ExecuteParameterUpdateAsync(
+                    device.ThingsBoardDeviceId,
+                    ExportStrategyParameterName,
+                    exportStrategyValue,
+                    cancellationToken);
+
+                if (!rpcResult.Success)
                 {
-                    Success = false,
-                    ErrorMessage = rpcResult.ErrorMessage ?? "Failed to update device",
-                    Mode = request.Mode
-                };
+                    _logger.LogWarning(
+                        "Failed to set mode {Mode} on device {DeviceId}: {Error}",
+                        request.Mode, device.Id, rpcResult.ErrorMessage);
+
+                    return new SetDeviceModeResult
+                    {
+                        Success = false,
+                        ErrorMessage = rpcResult.ErrorMessage ?? "Failed to update device",
+                        Mode = request.Mode
+                    };
+                }
             }
 
-            // Update database value for export strategy parameter
-            exportStrategyParam.Value = exportStrategyValue;
+            // Update database value for export strategy parameter (if it exists)
+            if (exportStrategyParam != null)
+            {
+                exportStrategyParam.Value = exportStrategyValue;
+            }
         }
         else
         {
