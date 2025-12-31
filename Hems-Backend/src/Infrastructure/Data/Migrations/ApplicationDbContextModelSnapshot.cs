@@ -1253,9 +1253,6 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.Property<Guid>("SetupId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("WorkMode")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
 
                     b.HasIndex("DeviceId")
