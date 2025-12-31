@@ -22,6 +22,12 @@ public class Device : BaseGuidAuditableEntity
     public WarrantyUnit? WarrantyUnit { get; set; }
     public DateTime? WarrantyStartDate { get; set; }
 
+    /// <summary>
+    /// Indicates if this is a demo device for app store assessments.
+    /// Demo devices skip ThingsBoard integration and use simulated data.
+    /// </summary>
+    public bool IsDemoDevice { get; set; } = false;
+
     // Navigation properties
     public ICollection<DeviceComponent> DeviceComponents { get; set; } = new List<DeviceComponent>();
     public SetupDevice? SetupDevice { get; set; } // Bir Device sadece bir Setup'a ait olabilir
