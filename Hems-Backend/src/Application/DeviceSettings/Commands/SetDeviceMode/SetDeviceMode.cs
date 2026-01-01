@@ -118,9 +118,6 @@ public class SetDeviceModeCommandHandler : IRequestHandler<SetDeviceModeCommand,
                 device.Id);
         }
 
-        // Update WorkMode in SetupDevice (for all modes)
-        setupDevice.WorkMode = (int)request.Mode;
-
         // Deactivate all existing active modes for this device
         var existingActiveModes = await _context.DeviceModeHistory
             .Where(m => m.DeviceId == device.Id && m.IsActive)

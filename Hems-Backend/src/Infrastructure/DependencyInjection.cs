@@ -1,4 +1,4 @@
-﻿using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Application.Common.Security;
 using Hems_Backend.Domain.Constants;
 using Hems_Backend.Infrastructure.Data;
@@ -6,6 +6,7 @@ using Hems_Backend.Infrastructure.Data.Interceptors;
 using Hems_Backend.Infrastructure.Identity;
 using Hems_Backend.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
@@ -35,6 +36,13 @@ public static class DependencyInjection
         builder.Services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 
         builder.Services.AddScoped<ApplicationDbContextInitialiser>();
+
+        // Configure Data Protection to store keys in PostgreSQL database
+        // This is CRITICAL for multi-pod environments (Kubernetes) to share encryption keys
+        // Without this, each pod generates its own keys and cannot decrypt tokens from other pods
+        builder.Services.AddDataProtection()
+            .SetApplicationName("HEMS-Backend")
+            .PersistKeysToDbContext<ApplicationDbContext>();
 
         builder.Services.AddAuthentication()
             .AddBearerToken(IdentityConstants.BearerScheme);
