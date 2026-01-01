@@ -413,6 +413,7 @@
     "lastName": "Soyad",
     "email": "E-posta",
     "phone": "Telefon",
+    "phonePlaceholder": "Telefon numaranızı girin",
     "save": "Kaydet",
     "cancel": "İptal",
     "fillAllFields": "Lütfen tüm gerekli alanları doldurun.",

@@ -2,12 +2,10 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { JSX } from 'react';
 import {
-  Keyboard,
   KeyboardAvoidingView,
   Pressable,
   ScrollView,
   Text,
-  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -204,25 +202,26 @@ export default function LoginScreen (): JSX.Element {
         />
       )}
 
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <KeyboardAvoidingView
-          style={styles.root}
-          behavior={isIOS ? 'padding' : undefined}
-        >
-          {/* Top Bar */}
-          <View style={styles.topBar}>
-            <ThemeToggle style={styles.themeToggle} />
-            <View style={styles.regionWrap}>
-              <LanguageSelector />
-            </View>
+      <KeyboardAvoidingView
+        style={styles.root}
+        behavior={isIOS ? 'padding' : undefined}
+      >
+        {/* Top Bar */}
+        <View style={styles.topBar}>
+          <ThemeToggle style={styles.themeToggle} />
+          <View style={styles.regionWrap}>
+            <LanguageSelector />
           </View>
+        </View>
 
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-            showsVerticalScrollIndicator={false}
-          >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+          bounces={true}
+          alwaysBounceVertical={true}
+        >
             {/* Logo */}
             <View style={styles.logoContainer}>
               <GRPLogo width={200} height={50} isDark={isDark} />
@@ -316,9 +315,8 @@ export default function LoginScreen (): JSX.Element {
                 </Pressable>
               </View>
             </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </TouchableWithoutFeedback>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       <LegalModal
         visible={legalModalVisible}

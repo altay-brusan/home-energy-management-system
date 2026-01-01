@@ -381,6 +381,7 @@
       "lastName": "Achternaam",
       "email": "E-mail",
       "phone": "Telefoon",
+      "phonePlaceholder": "Voer telefoonnummer in",
       "save": "Opslaan",
       "cancel": "Annuleren",
       "fillAllFields": "Vul alle verplichte velden in.",

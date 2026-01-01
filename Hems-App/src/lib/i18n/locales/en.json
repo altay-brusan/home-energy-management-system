@@ -397,6 +397,7 @@
       "lastName": "Last Name",
       "email": "Email",
       "phone": "Phone",
+      "phonePlaceholder": "Enter phone number",
       "save": "Save",
       "cancel": "Cancel",
       "fillAllFields": "Please fill in all required fields.",

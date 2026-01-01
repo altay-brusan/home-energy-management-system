@@ -4,12 +4,10 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { JSX } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
-  Keyboard,
   KeyboardAvoidingView,
   ScrollView,
   Text,
-  TouchableWithoutFeedback,
-  View
+  View,
 } from 'react-native';
 
 import { useTranslation } from 'react-i18next';
@@ -73,25 +71,26 @@ export default function ForgotPasswordScreen (): JSX.Element {
 
   return (
     <MainLayout>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <KeyboardAvoidingView
-          style={styles.root}
-          behavior={isIOS ? 'padding' : undefined}
-        >
-          <View style={styles.topBar}>
-            <ThemeToggle style={styles.themeToggle} />
-            <View style={styles.regionWrap}>
-              <LanguageSelector />
-            </View>
+      <KeyboardAvoidingView
+        style={styles.root}
+        behavior={isIOS ? 'padding' : undefined}
+      >
+        <View style={styles.topBar}>
+          <ThemeToggle style={styles.themeToggle} />
+          <View style={styles.regionWrap}>
+            <LanguageSelector />
           </View>
-          <View style={styles.centerWrap}>
-            <Card variant="elevated" padding={24} style={styles.card}>
-              <ScrollView
-                contentContainerStyle={styles.scrollContent}
-                keyboardShouldPersistTaps="handled"
-                keyboardDismissMode="on-drag"
-                showsVerticalScrollIndicator={false}
-              >
+        </View>
+        <View style={styles.centerWrap}>
+          <Card variant="elevated" padding={24} style={styles.card}>
+            <ScrollView
+              contentContainerStyle={styles.scrollContent}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+              showsVerticalScrollIndicator={false}
+              bounces={true}
+              alwaysBounceVertical={true}
+            >
                 <View style={styles.cardInner}>
                   <Text style={styles.brand}>{t('auth.forgotPasswordTitle')}</Text>
                   <Text style={styles.subtitle}>{t('auth.forgotPasswordSubtitle')}</Text>
@@ -145,10 +144,9 @@ export default function ForgotPasswordScreen (): JSX.Element {
               </ScrollView>
             </Card>
           </View>
-          <View style={styles.bgTopShade} pointerEvents="none" />
-          <View style={styles.bgBottomShade} pointerEvents="none" />
-        </KeyboardAvoidingView>
-      </TouchableWithoutFeedback>
+        <View style={styles.bgTopShade} pointerEvents="none" />
+        <View style={styles.bgBottomShade} pointerEvents="none" />
+      </KeyboardAvoidingView>
     </MainLayout>
   );
 }

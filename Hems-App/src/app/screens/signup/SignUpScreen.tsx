@@ -4,11 +4,9 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import React, { useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import {
-  Keyboard,
   KeyboardAvoidingView,
   ScrollView,
   Text,
-  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 
@@ -81,52 +79,51 @@ export default function SignUpScreen () {
 
   return (
     <MainLayout>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <View style={styles.root}>
-          <View style={styles.topBar}>
-            <ThemeToggle style={styles.themeToggle} />
-            <View style={styles.regionWrap}>
-              <LanguageSelector />
-            </View>
-          </View>
-
-          <View style={styles.content}>
-            <View style={styles.bgTopShade} pointerEvents="none" />
-            <View style={styles.bgBottomShade} pointerEvents="none" />
-            <KeyboardAvoidingView
-              style={styles.keyboardAvoider}
-              behavior={isIOS ? 'padding' : 'height'}
-              keyboardVerticalOffset={isIOS ? 0 : 0}
-            >
-              <ScrollView
-                contentContainerStyle={styles.scrollContent}
-                keyboardShouldPersistTaps="handled"
-                keyboardDismissMode="on-drag"
-                showsVerticalScrollIndicator={false}
-                bounces={false}
-                scrollEventThrottle={16}
-                automaticallyAdjustKeyboardInsets={isIOS}
-              >
-                <Card variant="elevated" padding={24} style={styles.card}>
-                  <View style={styles.cardInner}>
-                    <Text style={styles.brand}>{t('auth.signUp')}</Text>
-                    <SignUpFormFields
-                      control={control}
-                      errors={errors}
-                      isSubmitting={isSubmitting}
-                      registerLoading={registerLoading}
-                      registerError={registerError}
-                      onSubmit={handleSubmit(onSubmit)}
-                      onGoBack={handleNavigateBack}
-                      styles={styles}
-                    />
-                  </View>
-                </Card>
-              </ScrollView>
-            </KeyboardAvoidingView>
+      <View style={styles.root}>
+        <View style={styles.topBar}>
+          <ThemeToggle style={styles.themeToggle} />
+          <View style={styles.regionWrap}>
+            <LanguageSelector />
           </View>
         </View>
-      </TouchableWithoutFeedback>
+
+        <View style={styles.content}>
+          <View style={styles.bgTopShade} pointerEvents="none" />
+          <View style={styles.bgBottomShade} pointerEvents="none" />
+          <KeyboardAvoidingView
+            style={styles.keyboardAvoider}
+            behavior={isIOS ? 'padding' : 'height'}
+            keyboardVerticalOffset={isIOS ? 0 : 0}
+          >
+            <ScrollView
+              contentContainerStyle={styles.scrollContent}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+              showsVerticalScrollIndicator={false}
+              bounces={true}
+              alwaysBounceVertical={true}
+              scrollEventThrottle={16}
+              automaticallyAdjustKeyboardInsets={isIOS}
+            >
+              <Card variant="elevated" padding={24} style={styles.card}>
+                <View style={styles.cardInner}>
+                  <Text style={styles.brand}>{t('auth.signUp')}</Text>
+                  <SignUpFormFields
+                    control={control}
+                    errors={errors}
+                    isSubmitting={isSubmitting}
+                    registerLoading={registerLoading}
+                    registerError={registerError}
+                    onSubmit={handleSubmit(onSubmit)}
+                    onGoBack={handleNavigateBack}
+                    styles={styles}
+                  />
+                </View>
+              </Card>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </View>
+      </View>
     </MainLayout>
   );
 }
