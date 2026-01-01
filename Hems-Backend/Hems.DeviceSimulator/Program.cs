@@ -68,6 +68,10 @@ builder.Services.AddScoped<IEnergyDataGeneratorService, EnergyDataGeneratorServi
 builder.Services.AddScoped<IEnergyDataJobService, EnergyDataJobService>();
 builder.Services.AddScoped<IDeviceNotificationJobService, DeviceNotificationJobService>();
 
+// Add new simulator services for demo mode
+builder.Services.AddScoped<IPowerFlowJobService, PowerFlowJobService>();
+builder.Services.AddScoped<IWeatherDataJobService, WeatherDataJobService>();
+
 var app = builder.Build();
 
 // Configure Hangfire Dashboard
