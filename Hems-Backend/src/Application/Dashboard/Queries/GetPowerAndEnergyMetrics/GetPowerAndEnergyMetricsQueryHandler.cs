@@ -15,17 +15,20 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
     private readonly ISender _sender;
     private readonly IDeviceMappingService _deviceMapping;
     private readonly ITimezoneService _timezoneService;
+    private readonly IDemoDataService _demoDataService;
 
     public GetPowerAndEnergyMetricsQueryHandler(
         IApplicationDbContext context,
         ISender sender,
         IDeviceMappingService deviceMapping,
-        ITimezoneService timezoneService)
+        ITimezoneService timezoneService,
+        IDemoDataService demoDataService)
     {
         _context = context;
         _sender = sender;
         _deviceMapping = deviceMapping;
         _timezoneService = timezoneService;
+        _demoDataService = demoDataService;
     }
 
     public async Task<PowerAndEnergyMetricsResponseDto> Handle(GetPowerAndEnergyMetricsQuery request, CancellationToken cancellationToken)
@@ -35,6 +38,20 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
         if (!hasAccess)
         {
             throw new UnauthorizedAccessException("Device access denied");
+        }
+
+        // Check if this is a demo device - return simulated data
+        var isDemoDevice = await _demoDataService.IsDemoDeviceAsync(request.DeviceId, cancellationToken);
+        if (isDemoDevice)
+        {
+            return request.Period.ToLower() switch
+            {
+                "day" => GetSimulatedDailyMetrics(request.Date!.Value),
+                "week" => GetSimulatedWeeklyMetrics(request.Year!.Value, request.Week!.Value),
+                "month" => GetSimulatedMonthlyMetrics(request.Year!.Value, request.Month!.Value),
+                "year" => GetSimulatedYearlyMetrics(request.Year!.Value),
+                _ => throw new ArgumentException($"Invalid period: {request.Period}. Must be one of: day, week, month, year")
+            };
         }
 
         // Map local DeviceId to ThingsBoardDeviceId
@@ -496,6 +513,304 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
             Range = range,
             Data = dataPoints           
         };
+    }
+
+    #endregion
+
+    #region Demo Simulation Methods
+
+    private static readonly Random _random = new();
+
+    /// <summary>
+    /// Generate simulated daily power metrics (5-minute intervals)
+    /// </summary>
+    private PowerAndEnergyMetricsResponseDto GetSimulatedDailyMetrics(DateOnly date)
+    {
+        var dataPoints = new List<PowerAndEnergyMetricsDataPoint>();
+        var now = DateTime.UtcNow;
+        var isToday = date == DateOnly.FromDateTime(now);
+
+        // Generate 5-minute samples for the day
+        for (int hour = 0; hour < 24; hour++)
+        {
+            for (int minute = 0; minute < 60; minute += 5)
+            {
+                // If today, only generate up to current time
+                if (isToday && (hour > now.Hour || (hour == now.Hour && minute > now.Minute)))
+                    break;
+
+                var timeOfDay = hour + (minute / 60.0);
+                var (pvPower, loadPower, gridPower, batteryPower) = CalculateSimulatedPower(timeOfDay, date);
+
+                dataPoints.Add(new PowerAndEnergyMetricsDataPoint
+                {
+                    Timestamp = $"{hour:D2}:{minute:D2}",
+                    SolarPower = Math.Round(pvPower, 2),
+                    GridPower = Math.Round(gridPower, 2),
+                    BatteryPower = Math.Round(batteryPower, 2),
+                    LoadPower = Math.Round(loadPower, 2),
+                    GeneratorPower = 0,
+                    Unit = "W"
+                });
+            }
+        }
+
+        return CreateResponse("Day", dataPoints);
+    }
+
+    /// <summary>
+    /// Generate simulated weekly energy metrics (daily totals)
+    /// </summary>
+    private PowerAndEnergyMetricsResponseDto GetSimulatedWeeklyMetrics(int year, int week)
+    {
+        var weekStart = ISOWeek.ToDateTime(year, week, DayOfWeek.Monday);
+        var dataPoints = new List<PowerAndEnergyMetricsDataPoint>();
+
+        for (int i = 0; i < 7; i++)
+        {
+            var day = weekStart.AddDays(i);
+            if (day > DateTime.UtcNow) break;
+
+            var energy = GetSimulatedDailyEnergy(day);
+
+            dataPoints.Add(new PowerAndEnergyMetricsDataPoint
+            {
+                Timestamp = day.ToString("yyyy-MM-dd"),
+                SolarPower = Math.Round(energy.PvEnergyKWh, 3),
+                LoadPower = Math.Round(energy.LoadEnergyKWh, 3),
+                GeneratorPower = 0,
+                GridPower = Math.Round(energy.GridImportEnergyKWh - energy.GridExportEnergyKWh, 3),
+                BatteryPower = Math.Round(energy.BatteryDischargeEnergyKWh - energy.BatteryChargeEnergyKWh, 3),
+                GridImportEnergyKWh = Math.Round(energy.GridImportEnergyKWh, 3),
+                GridExportEnergyKWh = Math.Round(energy.GridExportEnergyKWh, 3),
+                BatteryChargeEnergyKWh = Math.Round(energy.BatteryChargeEnergyKWh, 3),
+                BatteryDischargeEnergyKWh = Math.Round(energy.BatteryDischargeEnergyKWh, 3),
+                LoadEnergyKWh = Math.Round(energy.LoadEnergyKWh, 3),
+                GeneratorEnergyKWh = 0,
+                Unit = "kWh"
+            });
+        }
+
+        return CreateResponse("Week", dataPoints);
+    }
+
+    /// <summary>
+    /// Generate simulated monthly energy metrics (daily totals)
+    /// </summary>
+    private PowerAndEnergyMetricsResponseDto GetSimulatedMonthlyMetrics(int year, int month)
+    {
+        var daysInMonth = DateTime.DaysInMonth(year, month);
+        var dataPoints = new List<PowerAndEnergyMetricsDataPoint>();
+
+        for (int day = 1; day <= daysInMonth; day++)
+        {
+            var date = new DateTime(year, month, day);
+            if (date > DateTime.UtcNow) break;
+
+            var energy = GetSimulatedDailyEnergy(date);
+
+            dataPoints.Add(new PowerAndEnergyMetricsDataPoint
+            {
+                Timestamp = date.ToString("yyyy-MM-dd"),
+                SolarPower = Math.Round(energy.PvEnergyKWh, 3),
+                LoadPower = Math.Round(energy.LoadEnergyKWh, 3),
+                GeneratorPower = 0,
+                GridPower = Math.Round(energy.GridImportEnergyKWh - energy.GridExportEnergyKWh, 3),
+                BatteryPower = Math.Round(energy.BatteryDischargeEnergyKWh - energy.BatteryChargeEnergyKWh, 3),
+                GridImportEnergyKWh = Math.Round(energy.GridImportEnergyKWh, 3),
+                GridExportEnergyKWh = Math.Round(energy.GridExportEnergyKWh, 3),
+                BatteryChargeEnergyKWh = Math.Round(energy.BatteryChargeEnergyKWh, 3),
+                BatteryDischargeEnergyKWh = Math.Round(energy.BatteryDischargeEnergyKWh, 3),
+                LoadEnergyKWh = Math.Round(energy.LoadEnergyKWh, 3),
+                GeneratorEnergyKWh = 0,
+                Unit = "kWh"
+            });
+        }
+
+        return CreateResponse("Month", dataPoints);
+    }
+
+    /// <summary>
+    /// Generate simulated yearly energy metrics (monthly totals)
+    /// </summary>
+    private PowerAndEnergyMetricsResponseDto GetSimulatedYearlyMetrics(int year)
+    {
+        var dataPoints = new List<PowerAndEnergyMetricsDataPoint>();
+        var now = DateTime.UtcNow;
+
+        for (int month = 1; month <= 12; month++)
+        {
+            if (year > now.Year || (year == now.Year && month > now.Month)) break;
+
+            var daysInMonth = DateTime.DaysInMonth(year, month);
+            var lastDay = (year == now.Year && month == now.Month) ? now.Day : daysInMonth;
+
+            double totalPv = 0, totalLoad = 0, totalGridImport = 0, totalGridExport = 0;
+            double totalBatteryCharge = 0, totalBatteryDischarge = 0;
+
+            for (int day = 1; day <= lastDay; day++)
+            {
+                var date = new DateTime(year, month, day);
+                var energy = GetSimulatedDailyEnergy(date);
+                totalPv += energy.PvEnergyKWh;
+                totalLoad += energy.LoadEnergyKWh;
+                totalGridImport += energy.GridImportEnergyKWh;
+                totalGridExport += energy.GridExportEnergyKWh;
+                totalBatteryCharge += energy.BatteryChargeEnergyKWh;
+                totalBatteryDischarge += energy.BatteryDischargeEnergyKWh;
+            }
+
+            dataPoints.Add(new PowerAndEnergyMetricsDataPoint
+            {
+                Timestamp = $"{year}-{month:D2}",
+                SolarPower = Math.Round(totalPv, 3),
+                LoadPower = Math.Round(totalLoad, 3),
+                GeneratorPower = 0,
+                GridPower = Math.Round(totalGridImport - totalGridExport, 3),
+                BatteryPower = Math.Round(totalBatteryDischarge - totalBatteryCharge, 3),
+                GridImportEnergyKWh = Math.Round(totalGridImport, 3),
+                GridExportEnergyKWh = Math.Round(totalGridExport, 3),
+                BatteryChargeEnergyKWh = Math.Round(totalBatteryCharge, 3),
+                BatteryDischargeEnergyKWh = Math.Round(totalBatteryDischarge, 3),
+                LoadEnergyKWh = Math.Round(totalLoad, 3),
+                GeneratorEnergyKWh = 0,
+                Unit = "kWh"
+            });
+        }
+
+        return CreateResponse("Year", dataPoints);
+    }
+
+    /// <summary>
+    /// Calculate simulated power values for a specific time of day
+    /// </summary>
+    private static (double pvPower, double loadPower, double gridPower, double batteryPower) CalculateSimulatedPower(double timeOfDay, DateOnly date)
+    {
+        // Use date as seed for consistent day-to-day variation
+        var daySeed = date.Year * 1000 + date.DayOfYear;
+        var dayRandom = new Random(daySeed + (int)(timeOfDay * 100));
+
+        // PV power: bell curve centered at solar noon (13:00)
+        double pvPower = 0;
+        if (timeOfDay >= 6 && timeOfDay <= 20)
+        {
+            var solarNoon = 13.0;
+            var hourFromNoon = Math.Abs(timeOfDay - solarNoon);
+            var maxPower = 5000.0; // 5kW system
+            var sigma = 4.0;
+            pvPower = maxPower * Math.Exp(-(hourFromNoon * hourFromNoon) / (2 * sigma * sigma));
+
+            // Seasonal multiplier
+            var seasonalMult = GetSeasonalPvMultiplier(date.Month);
+            pvPower *= seasonalMult;
+
+            // Add slight variation
+            pvPower *= (0.9 + dayRandom.NextDouble() * 0.2);
+        }
+
+        // Load power varies by time of day
+        double loadPower = timeOfDay switch
+        {
+            >= 0 and < 5 => 300 + dayRandom.NextDouble() * 200,
+            >= 5 and < 7 => 500 + dayRandom.NextDouble() * 500,
+            >= 7 and < 9 => 1000 + dayRandom.NextDouble() * 800,
+            >= 9 and < 12 => 600 + dayRandom.NextDouble() * 400,
+            >= 12 and < 14 => 800 + dayRandom.NextDouble() * 500,
+            >= 14 and < 17 => 500 + dayRandom.NextDouble() * 400,
+            >= 17 and < 20 => 1500 + dayRandom.NextDouble() * 1200,
+            >= 20 and < 22 => 1000 + dayRandom.NextDouble() * 800,
+            _ => 400 + dayRandom.NextDouble() * 300
+        };
+
+        // Energy balance: calculate grid and battery
+        var netPower = pvPower - loadPower;
+        double gridPower, batteryPower;
+
+        if (netPower >= 0)
+        {
+            // Excess PV: charge battery, export to grid
+            var batteryCharge = Math.Min(netPower * 0.7, 3000);
+            batteryPower = -batteryCharge;
+            gridPower = -(netPower - batteryCharge);
+        }
+        else
+        {
+            // Deficit: discharge battery, import from grid
+            var deficit = Math.Abs(netPower);
+            var batteryDischarge = Math.Min(deficit * 0.6, 2500);
+            batteryPower = batteryDischarge;
+            gridPower = deficit - batteryDischarge;
+        }
+
+        return (pvPower, loadPower, gridPower, batteryPower);
+    }
+
+    /// <summary>
+    /// Get simulated daily energy totals for a specific date
+    /// </summary>
+    private static SimulatedDailyEnergy GetSimulatedDailyEnergy(DateTime date)
+    {
+        var daySeed = date.Year * 1000 + date.DayOfYear;
+        var dayRandom = new Random(daySeed);
+
+        // Get seasonal and day type multipliers
+        var pvMult = GetSeasonalPvMultiplier(date.Month);
+        var loadMult = GetSeasonalLoadMultiplier(date.Month);
+
+        // Day type (sunny, cloudy, etc.) based on random seed
+        var dayTypeRand = dayRandom.NextDouble();
+        var (pvTypeMult, importMult, exportMult) = dayTypeRand switch
+        {
+            < 0.30 => (1.0, 0.3, 1.0),    // sunny
+            < 0.65 => (0.7, 0.6, 0.6),    // partly cloudy
+            < 0.90 => (0.35, 1.0, 0.2),   // cloudy
+            _ => (0.15, 1.5, 0.05)         // rainy
+        };
+
+        // Base values for a 5kW system on a sunny day
+        var basePv = 32.5;
+        var baseLoad = 18.0;
+        var baseGridImport = 2.5;
+        var baseGridExport = 12.0;
+        var baseBatteryCharge = 8.0;
+        var baseBatteryDischarge = 6.0;
+
+        // Calculate final values with variation
+        var variation = 0.9 + dayRandom.NextDouble() * 0.2;
+
+        return new SimulatedDailyEnergy
+        {
+            PvEnergyKWh = basePv * pvMult * pvTypeMult * variation,
+            LoadEnergyKWh = baseLoad * loadMult * variation,
+            GridImportEnergyKWh = baseGridImport * importMult * (0.8 + dayRandom.NextDouble() * 0.4),
+            GridExportEnergyKWh = baseGridExport * exportMult * (0.8 + dayRandom.NextDouble() * 0.4),
+            BatteryChargeEnergyKWh = baseBatteryCharge * pvTypeMult * (0.8 + dayRandom.NextDouble() * 0.4),
+            BatteryDischargeEnergyKWh = baseBatteryDischarge * (0.8 + dayRandom.NextDouble() * 0.4)
+        };
+    }
+
+    private static double GetSeasonalPvMultiplier(int month) => month switch
+    {
+        1 => 0.25, 2 => 0.35, 3 => 0.55, 4 => 0.80, 5 => 1.00, 6 => 1.15,
+        7 => 1.10, 8 => 1.00, 9 => 0.75, 10 => 0.50, 11 => 0.30, 12 => 0.20,
+        _ => 1.0
+    };
+
+    private static double GetSeasonalLoadMultiplier(int month) => month switch
+    {
+        1 => 1.30, 2 => 1.25, 3 => 1.10, 4 => 0.95, 5 => 0.85, 6 => 0.80,
+        7 => 0.82, 8 => 0.85, 9 => 0.95, 10 => 1.10, 11 => 1.25, 12 => 1.35,
+        _ => 1.0
+    };
+
+    private record SimulatedDailyEnergy
+    {
+        public double PvEnergyKWh { get; init; }
+        public double LoadEnergyKWh { get; init; }
+        public double GridImportEnergyKWh { get; init; }
+        public double GridExportEnergyKWh { get; init; }
+        public double BatteryChargeEnergyKWh { get; init; }
+        public double BatteryDischargeEnergyKWh { get; init; }
     }
 
     #endregion
