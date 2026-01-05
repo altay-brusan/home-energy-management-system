@@ -106,6 +106,9 @@ public static class DependencyInjection
         // Demo Data Service (for app store assessment demo users)
         builder.Services.AddScoped<IDemoDataService, DemoDataService>();
 
+        // Demo Simulation Data Service (provides simulated data for demo users)
+        builder.Services.AddSingleton<IDemoSimulationDataService, DemoSimulationDataService>();
+
         builder.Services.AddAuthorization(options =>
         {
             // Device Only Policy - Sadece device token'ları
