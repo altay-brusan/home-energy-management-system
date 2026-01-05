@@ -12,17 +12,32 @@ public class GetDeviceHeartbeatStatusQueryHandler : IRequestHandler<GetDeviceHea
 {
     private readonly IDeviceHeartbeatCache _heartbeatCache;
     private readonly IDeviceMappingService _deviceMapping;
+    private readonly IDemoDataService _demoDataService;
 
     public GetDeviceHeartbeatStatusQueryHandler(
         IDeviceHeartbeatCache heartbeatCache,
-        IDeviceMappingService deviceMapping)
+        IDeviceMappingService deviceMapping,
+        IDemoDataService demoDataService)
     {
         _heartbeatCache = heartbeatCache;
         _deviceMapping = deviceMapping;
+        _demoDataService = demoDataService;
     }
 
     public async Task<DeviceHeartbeatStatusDto> Handle(GetDeviceHeartbeatStatusQuery request, CancellationToken cancellationToken)
     {
+        // Check if demo device - always return ONLINE status
+        var isDemoDevice = await _demoDataService.IsDemoDeviceAsync(request.DeviceId, cancellationToken);
+        if (isDemoDevice)
+        {
+            return new DeviceHeartbeatStatusDto
+            {
+                DeviceId = request.DeviceId,
+                Status = "ONLINE",
+                Timestamp = DateTime.UtcNow
+            };
+        }
+
         // Map local device ID to ThingsBoard device ID
         var thingsBoardDeviceId = await _deviceMapping.GetThingsBoardDeviceIdAsync(request.DeviceId, cancellationToken);
 
