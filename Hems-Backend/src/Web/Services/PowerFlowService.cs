@@ -3,6 +3,7 @@ using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Application.PowerFlow.Common.Models;
 using Hems_Backend.Infrastructure.Hubs;
+using Hems_Backend.Infrastructure.Services;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 
@@ -12,6 +13,7 @@ public interface IPowerFlowService
 {
     /// <summary>
     /// Calls ThingsBoard (via RPC) and returns the latest PowerFlow data for a device.
+    /// For demo devices, returns simulated data instead.
     /// </summary>
     Task<PowerFlowDto?> GetPowerFlowAsync(Guid deviceId, CancellationToken cancellationToken = default);
 }
@@ -22,6 +24,8 @@ public class PowerFlowService : IPowerFlowService
     private readonly IDeviceMappingService _deviceMapping;
     private readonly IDeviceHeartbeatCache _heartbeatCache;
     private readonly IHubContext<DeviceStatusHub> _hubContext;
+    private readonly IDemoDataService _demoDataService;
+    private readonly IDemoSimulationDataService _demoSimulationService;
     private readonly ILogger<PowerFlowService> _logger;
 
     public PowerFlowService(
@@ -29,20 +33,32 @@ public class PowerFlowService : IPowerFlowService
         IDeviceMappingService deviceMapping,
         IDeviceHeartbeatCache heartbeatCache,
         IHubContext<DeviceStatusHub> hubContext,
+        IDemoDataService demoDataService,
+        IDemoSimulationDataService demoSimulationService,
         ILogger<PowerFlowService> logger)
     {
         _tbConnector = tbConnector;
         _deviceMapping = deviceMapping;
         _heartbeatCache = heartbeatCache;
         _hubContext = hubContext;
+        _demoDataService = demoDataService;
+        _demoSimulationService = demoSimulationService;
         _logger = logger;
     }
 
     public async Task<PowerFlowDto?> GetPowerFlowAsync(Guid deviceId, CancellationToken cancellationToken = default)
     {
+        // Check if this is a demo device - return simulated data
+        var isDemoDevice = await _demoDataService.IsDemoDeviceAsync(deviceId, cancellationToken);
+        if (isDemoDevice)
+        {
+            _logger.LogDebug("Returning simulated PowerFlow for demo device {DeviceId}", deviceId);
+            return _demoSimulationService.GetCurrentPowerFlow(deviceId);
+        }
+
         // Map local deviceId to ThingsBoardDeviceId (with caching)
         var thingsBoardDeviceId = await _deviceMapping.GetThingsBoardDeviceIdAsync(deviceId, cancellationToken);
-        
+
         if (thingsBoardDeviceId == null)
         {
             _logger.LogWarning("Device mapping not found for deviceId: {DeviceId}", deviceId);
@@ -59,7 +75,7 @@ public class PowerFlowService : IPowerFlowService
 
         if (rpcResponse?.Success != true || rpcResponse.Response == null)
         {
-            _logger.LogWarning("Failed to get PowerFlow from device {DeviceId}. Error: {Error}", 
+            _logger.LogWarning("Failed to get PowerFlow from device {DeviceId}. Error: {Error}",
                 deviceId, rpcResponse?.Error);
             return null;
         }
@@ -75,7 +91,7 @@ public class PowerFlowService : IPowerFlowService
 
         // Record PowerFlow received - resets missed heartbeat count
         var statusChange = await _heartbeatCache.RecordPowerFlowAsync(thingsBoardDeviceId.Value, DateTime.UtcNow, cancellationToken);
-        
+
         // If status changed (e.g., recovery from DISCONNECTED), send immediate SignalR notification
         if (statusChange != null)
         {
@@ -87,7 +103,7 @@ public class PowerFlowService : IPowerFlowService
                     missedHeartbeats = statusChange.MissedHeartbeats,
                     timestamp = statusChange.Timestamp
                 }, cancellationToken);
-            
+
             _logger.LogInformation("Immediate SignalR notification sent for device {DeviceId} recovery via PowerFlow: {Status}",
                 deviceId, statusChange.NewStatus);
         }
