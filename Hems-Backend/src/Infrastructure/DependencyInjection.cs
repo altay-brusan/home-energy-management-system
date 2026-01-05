@@ -103,6 +103,9 @@ public static class DependencyInjection
         builder.Services.AddTransient<IEmailSender<ApplicationUser>, EmailSender>();
         builder.Services.AddTransient<IInvitationEmailService, InvitationEmailService>();
 
+        // Demo Data Service (for app store assessment demo users)
+        builder.Services.AddScoped<IDemoDataService, DemoDataService>();
+
         builder.Services.AddAuthorization(options =>
         {
             // Device Only Policy - Sadece device token'ları
