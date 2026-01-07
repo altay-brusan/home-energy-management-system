@@ -51,6 +51,7 @@ spec:
         // Docker Registry Configuration
         DOCKER_REGISTRY = 'registry.oklidis.com.tr:5000'
         DOCKER_IMAGE_NAME = 'hems-backend'
+        SIMULATOR_IMAGE_NAME = 'hems-simulator'
 
         // Build Info
         GIT_COMMIT_SHORT = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
@@ -195,6 +196,66 @@ spec:
             }
         }
 
+        stage('Build Simulator Docker Image - Development') {
+            when {
+                branch 'dev'
+            }
+            steps {
+                echo "🎮 Building Simulator Docker image for DEVELOPMENT environment..."
+                container('docker') {
+                    sh """
+                        docker build -t ${DOCKER_REGISTRY}/${SIMULATOR_IMAGE_NAME}:dev-${BUILD_TAG} -f Hems.DeviceSimulator/Dockerfile .
+                        docker tag ${DOCKER_REGISTRY}/${SIMULATOR_IMAGE_NAME}:dev-${BUILD_TAG} ${DOCKER_REGISTRY}/${SIMULATOR_IMAGE_NAME}:dev-latest
+                    """
+                }
+            }
+        }
+
+        stage('Build Simulator Docker Image - Stage') {
+            when {
+                branch 'stage'
+            }
+            steps {
+                echo "🎮 Building Simulator Docker image for STAGE environment..."
+                container('docker') {
+                    sh """
+                        docker build -t ${DOCKER_REGISTRY}/${SIMULATOR_IMAGE_NAME}:stage-${BUILD_TAG} -f Hems.DeviceSimulator/Dockerfile .
+                        docker tag ${DOCKER_REGISTRY}/${SIMULATOR_IMAGE_NAME}:stage-${BUILD_TAG} ${DOCKER_REGISTRY}/${SIMULATOR_IMAGE_NAME}:stage-latest
+                    """
+                }
+            }
+        }
+
+        stage('Push Simulator Docker Image - Development') {
+            when {
+                branch 'dev'
+            }
+            steps {
+                echo "📦 Pushing Simulator Docker image to registry (DEVELOPMENT)..."
+                container('docker') {
+                    sh """
+                        docker push ${DOCKER_REGISTRY}/${SIMULATOR_IMAGE_NAME}:dev-${BUILD_TAG}
+                        docker push ${DOCKER_REGISTRY}/${SIMULATOR_IMAGE_NAME}:dev-latest
+                    """
+                }
+            }
+        }
+
+        stage('Push Simulator Docker Image - Stage') {
+            when {
+                branch 'stage'
+            }
+            steps {
+                echo "📦 Pushing Simulator Docker image to registry (STAGE)..."
+                container('docker') {
+                    sh """
+                        docker push ${DOCKER_REGISTRY}/${SIMULATOR_IMAGE_NAME}:stage-${BUILD_TAG}
+                        docker push ${DOCKER_REGISTRY}/${SIMULATOR_IMAGE_NAME}:stage-latest
+                    """
+                }
+            }
+        }
+
         stage('Deploy to K3s - Development') {
             when {
                 branch 'dev'
@@ -224,6 +285,35 @@ spec:
             }
         }
 
+        stage('Deploy Simulator to K3s - Development') {
+            when {
+                branch 'dev'
+            }
+            steps {
+                echo "🎮 Deploying Simulator to K3s DEVELOPMENT namespace..."
+                container('kubectl') {
+                    sh """
+                        kubectl set image deployment/hems-simulator-dev \
+                            hems-simulator=${DOCKER_REGISTRY}/${SIMULATOR_IMAGE_NAME}:dev-${BUILD_TAG} \
+                            -n hems-dev
+
+                        kubectl rollout status deployment/hems-simulator-dev \
+                            -n hems-dev \
+                            --timeout=5m
+                    """
+                }
+            }
+            post {
+                success {
+                    echo "✅ Successfully deployed Simulator to DEVELOPMENT environment!"
+                    echo "🎮 Simulator URL: http://simulator-dev.oklidis.com.tr"
+                }
+                failure {
+                    echo "❌ Simulator deployment to DEVELOPMENT failed!"
+                }
+            }
+        }
+
         stage('Deploy to K3s - Stage') {
             when {
                 branch 'stage'
@@ -249,6 +339,35 @@ spec:
                 }
                 failure {
                     echo "❌ Deployment to STAGE failed!"
+                }
+            }
+        }
+
+        stage('Deploy Simulator to K3s - Stage') {
+            when {
+                branch 'stage'
+            }
+            steps {
+                echo "🎮 Deploying Simulator to K3s STAGE namespace..."
+                container('kubectl') {
+                    sh """
+                        kubectl set image deployment/hems-simulator-stage \
+                            hems-simulator=${DOCKER_REGISTRY}/${SIMULATOR_IMAGE_NAME}:stage-${BUILD_TAG} \
+                            -n hems-stage
+
+                        kubectl rollout status deployment/hems-simulator-stage \
+                            -n hems-stage \
+                            --timeout=5m
+                    """
+                }
+            }
+            post {
+                success {
+                    echo "✅ Successfully deployed Simulator to STAGE environment!"
+                    echo "🎮 Simulator URL: http://simulator-stg.oklidis.com.tr"
+                }
+                failure {
+                    echo "❌ Simulator deployment to STAGE failed!"
                 }
             }
         }
