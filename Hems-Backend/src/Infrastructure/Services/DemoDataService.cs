@@ -25,7 +25,7 @@ public class DemoDataService : IDemoDataService
     // Well-known ThingsBoard device ID for demo device
     // This is used to identify demo device data in telemetry tables
     public static readonly Guid DemoThingsBoardDeviceId =
-        new Guid("00000000-DEMO-0000-0000-000000000001");
+        new Guid("00000000-de00-0000-0000-000000000001");
 
     public DemoDataService(
         IApplicationDbContext context,
