@@ -41,10 +41,14 @@ public record GetEnergyPricesQuery : IRequest<GetEnergyPricesResult>
 public class GetEnergyPricesQueryHandler : IRequestHandler<GetEnergyPricesQuery, GetEnergyPricesResult>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IDemoDataService _demoDataService;
 
-    public GetEnergyPricesQueryHandler(IApplicationDbContext context)
+    public GetEnergyPricesQueryHandler(
+        IApplicationDbContext context,
+        IDemoDataService demoDataService)
     {
         _context = context;
+        _demoDataService = demoDataService;
     }
 
     public async Task<GetEnergyPricesResult> Handle(GetEnergyPricesQuery request, CancellationToken cancellationToken)
@@ -62,6 +66,13 @@ public class GetEnergyPricesQueryHandler : IRequestHandler<GetEnergyPricesQuery,
                 ErrorMessage = "Device not found",
                 DeviceId = request.DeviceId
             };
+        }
+
+        // Check if demo device - return simulated Netherlands market prices
+        var isDemoDevice = await _demoDataService.IsDemoDeviceAsync(request.DeviceId, cancellationToken);
+        if (isDemoDevice)
+        {
+            return GetSimulatedNetherlandsPrices(request.DeviceId);
         }
 
         // Get active prices for this device
@@ -90,6 +101,71 @@ public class GetEnergyPricesQueryHandler : IRequestHandler<GetEnergyPricesQuery,
             DeviceId = request.DeviceId,
             Unit = firstPrice?.Unit ?? "kWh",
             Currency = firstPrice?.Currency ?? "EUR",
+            Prices = prices
+        };
+    }
+
+    /// <summary>
+    /// Returns simulated Netherlands electricity market prices (Time-of-Use pricing)
+    /// Based on typical Dutch energy market rates (2024)
+    /// </summary>
+    private static GetEnergyPricesResult GetSimulatedNetherlandsPrices(Guid deviceId)
+    {
+        var prices = new List<EnergyPriceDto>
+        {
+            new EnergyPriceDto
+            {
+                Id = Guid.NewGuid(),
+                SellPrice = 0.07m,  // Off-peak export
+                BuyPrice = 0.22m,   // Off-peak import
+                BeginHour = 0,
+                EndHour = 6,
+                Created = DateTimeOffset.UtcNow.AddDays(-30)
+            },
+            new EnergyPriceDto
+            {
+                Id = Guid.NewGuid(),
+                SellPrice = 0.11m,  // Morning peak export
+                BuyPrice = 0.35m,   // Morning peak import
+                BeginHour = 6,
+                EndHour = 9,
+                Created = DateTimeOffset.UtcNow.AddDays(-30)
+            },
+            new EnergyPriceDto
+            {
+                Id = Guid.NewGuid(),
+                SellPrice = 0.09m,  // Day standard export
+                BuyPrice = 0.28m,   // Day standard import
+                BeginHour = 9,
+                EndHour = 17,
+                Created = DateTimeOffset.UtcNow.AddDays(-30)
+            },
+            new EnergyPriceDto
+            {
+                Id = Guid.NewGuid(),
+                SellPrice = 0.13m,  // Evening peak export
+                BuyPrice = 0.42m,   // Evening peak import (highest)
+                BeginHour = 17,
+                EndHour = 21,
+                Created = DateTimeOffset.UtcNow.AddDays(-30)
+            },
+            new EnergyPriceDto
+            {
+                Id = Guid.NewGuid(),
+                SellPrice = 0.08m,  // Late evening export
+                BuyPrice = 0.25m,   // Late evening import
+                BeginHour = 21,
+                EndHour = 24,
+                Created = DateTimeOffset.UtcNow.AddDays(-30)
+            }
+        };
+
+        return new GetEnergyPricesResult
+        {
+            Success = true,
+            DeviceId = deviceId,
+            Unit = "kWh",
+            Currency = "EUR",
             Prices = prices
         };
     }
