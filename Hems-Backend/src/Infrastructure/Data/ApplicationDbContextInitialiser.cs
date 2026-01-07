@@ -108,7 +108,7 @@ public class ApplicationDbContextInitialiser
 
         if (_userManager.Users.All(u => u.UserName != demoUser.UserName))
         {
-            var result = await _userManager.CreateAsync(demoUser, "demo@oklidis");
+            var result = await _userManager.CreateAsync(demoUser, "Demo@123");
             if (result.Succeeded)
             {
                 if (!string.IsNullOrWhiteSpace(mobilUserRole.Name))
