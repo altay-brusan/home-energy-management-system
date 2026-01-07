@@ -12,15 +12,18 @@ public class DeviceStatusHub : Hub
 {
     private readonly IDeviceHeartbeatCache _heartbeatCache;
     private readonly IDeviceMappingService _deviceMapping;
+    private readonly IDemoDataService _demoDataService;
     private readonly ILogger<DeviceStatusHub> _logger;
 
     public DeviceStatusHub(
         IDeviceHeartbeatCache heartbeatCache,
         IDeviceMappingService deviceMapping,
+        IDemoDataService demoDataService,
         ILogger<DeviceStatusHub> logger)
     {
         _heartbeatCache = heartbeatCache;
         _deviceMapping = deviceMapping;
+        _demoDataService = demoDataService;
         _logger = logger;
     }
 
@@ -32,16 +35,31 @@ public class DeviceStatusHub : Hub
             return;
         }
 
+        await Groups.AddToGroupAsync(Context.ConnectionId, $"device_{localDeviceId}");
+
+        // Check if demo device - always return ONLINE status
+        var isDemoDevice = await _demoDataService.IsDemoDeviceAsync(localDeviceId);
+        if (isDemoDevice)
+        {
+            await Clients.Caller.SendAsync("DeviceStatusChanged", new
+            {
+                deviceId = localDeviceId,
+                status = "ONLINE",
+                missedHeartbeats = 0,
+                timestamp = DateTime.UtcNow,
+                isInitialStatus = true
+            });
+            return;
+        }
+
         // ID ADAPTER: Frontend sends local deviceId, translate to ThingsBoard ID
         var thingsBoardDeviceId = await _deviceMapping.GetThingsBoardDeviceIdAsync(localDeviceId);
-        
+
         if (thingsBoardDeviceId == null)
         {
             _logger.LogWarning("Device mapping not found for deviceId: {DeviceId}", localDeviceId);
             return;
         }
-
-        await Groups.AddToGroupAsync(Context.ConnectionId, $"device_{localDeviceId}");
 
         // Get full state using ThingsBoard ID (internal) - includes missedHeartbeats
         var deviceState = _heartbeatCache.GetDeviceState(thingsBoardDeviceId.Value);
