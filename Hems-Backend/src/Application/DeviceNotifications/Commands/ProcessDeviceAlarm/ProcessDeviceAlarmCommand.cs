@@ -499,19 +499,30 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
                 var notificationType = await _context.DeviceNotificationTypes
                     .FirstOrDefaultAsync(nt => nt.Code == notificationTypeCode && nt.IsActive, cancellationToken);
 
+                // Fallback 1: Try lookup by Register (alarm.Code) + Value (alarm.VendorCode)
+                // This supports old seed format with descriptive codes like INV-WARN-FEED-IN-POWER-LIMIT
+                if (notificationType == null && alarm.Code > 0)
+                {
+                    notificationType = await _context.DeviceNotificationTypes
+                        .FirstOrDefaultAsync(nt => nt.Register == alarm.Code &&
+                                                   nt.Value == alarm.VendorCode &&
+                                                   nt.IsActive, cancellationToken);
+                }
+
+                // Fallback 2: Try generic fallback code (INV-WAR-GENERIC, INV-ALM-GENERIC, etc.)
                 if (notificationType == null)
                 {
-                    // Try generic fallback
                     var genericCode = ResolveGenericNotificationTypeCode(alarm);
                     notificationType = await _context.DeviceNotificationTypes
                         .FirstOrDefaultAsync(nt => nt.Code == genericCode && nt.IsActive, cancellationToken);
 
                     if (notificationType == null)
                     {
-                        // Log detailed info for debugging - neither specific nor generic found
-                        errors.Add($"Notification type '{notificationTypeCode}' and generic '{genericCode}' not found for alarm " +
-                                  $"(code: {alarm.Code}, vendorCode: {alarm.VendorCode}, severity: {alarm.Severity}, " +
-                                  $"sourceDevice: {alarm.SourceDevice}, messageKey: {alarm.MessageKey}). Skipping.");
+                        // Log detailed info for debugging - none of the lookup methods found a match
+                        errors.Add($"Notification type not found for alarm. Tried: code='{notificationTypeCode}', " +
+                                  $"register/value=({alarm.Code}/{alarm.VendorCode}), generic='{genericCode}'. " +
+                                  $"Alarm details: severity={alarm.Severity}, sourceDevice={alarm.SourceDevice}, " +
+                                  $"messageKey={alarm.MessageKey}. Skipping.");
                         continue;
                     }
 
