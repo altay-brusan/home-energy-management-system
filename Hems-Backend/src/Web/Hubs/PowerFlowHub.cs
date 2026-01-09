@@ -1,11 +1,11 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Application.PowerFlow.Common.Models;
 using Hems_Backend.Infrastructure.Data;
-using Hems_Backend.Web.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Hems_Backend.Web.Hubs;
 
@@ -15,35 +15,85 @@ public class PowerFlowHub : Hub
     private readonly IApplicationDbContext _context;
     private readonly IUser _user;
     private readonly IPowerFlowService _powerFlowService;
+    private readonly ISharedDeviceStreamManager _streamManager;
+    private readonly ILogger<PowerFlowHub> _logger;
 
     public PowerFlowHub(
         IApplicationDbContext context,
         IUser user,
-        IPowerFlowService powerFlowService)
+        IPowerFlowService powerFlowService,
+        ISharedDeviceStreamManager streamManager,
+        ILogger<PowerFlowHub> logger)
     {
         _context = context;
         _user = user;
         _powerFlowService = powerFlowService;
+        _streamManager = streamManager;
+        _logger = logger;
     }
 
     /// <summary>
     /// React Native will call this as a streaming method:
     /// connection.stream("StreamPowerFlow", deviceId)
     ///
-    /// While the connection is alive, backend will periodically fetch PowerFlow from TB
-    /// and push it to the client. When the client disconnects, the CancellationToken
-    /// is canceled and the loop stops.
+    /// Uses shared stream manager to ensure only one polling loop per device.
+    /// Multiple subscribers share the same data stream.
+    /// When the client disconnects, the CancellationToken is canceled and the subscription is removed.
     /// </summary>
     public async IAsyncEnumerable<PowerFlowDto> StreamPowerFlow(
         Guid deviceId,
         int intervalSeconds,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        Console.WriteLine($"PowerFlowHub - StreamPowerFlow started for device {deviceId}, interval: {intervalSeconds}s");
-        
-        // ✅ Security: check that current user has access to this device,
-        // same logic as DeviceNotificationHub.ValidateDeviceAccessAsync
-        //await ValidateDeviceAccessAsync(deviceId);
+        _logger.LogInformation(
+            "PowerFlowHub - StreamPowerFlow started for device {DeviceId}, interval: {Interval}s, connection: {ConnectionId}",
+            deviceId, intervalSeconds, Context.ConnectionId);
+
+        // Subscribe to shared stream (creates new stream if first subscriber, reuses if exists)
+        IDeviceStreamSubscription? subscription = null;
+        try
+        {
+            subscription = await _streamManager.SubscribeAsync(deviceId, intervalSeconds, cancellationToken);
+
+            _logger.LogInformation(
+                "PowerFlowHub - Subscribed to device {DeviceId}, subscriptionId: {SubscriptionId}, total subscribers: {Count}",
+                deviceId, subscription.SubscriptionId, _streamManager.GetSubscriberCount(deviceId));
+
+            // Read from the shared channel
+            await foreach (var data in subscription.DataChannel.ReadAllAsync(cancellationToken))
+            {
+                if (data is PowerFlowDto powerFlowDto)
+                {
+                    yield return powerFlowDto;
+                }
+            }
+        }
+        finally
+        {
+            // Ensure we unsubscribe when done
+            if (subscription != null)
+            {
+                await subscription.DisposeAsync();
+                _logger.LogInformation(
+                    "PowerFlowHub - Unsubscribed from device {DeviceId}, subscriptionId: {SubscriptionId}, remaining subscribers: {Count}",
+                    deviceId, subscription.SubscriptionId, _streamManager.GetSubscriberCount(deviceId));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Legacy method for backwards compatibility.
+    /// Directly polls the device without using shared stream.
+    /// Use StreamPowerFlow instead for better performance with multiple clients.
+    /// </summary>
+    public async IAsyncEnumerable<PowerFlowDto> StreamPowerFlowDirect(
+        Guid deviceId,
+        int intervalSeconds,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        _logger.LogInformation(
+            "PowerFlowHub - StreamPowerFlowDirect (legacy) started for device {DeviceId}, interval: {Interval}s",
+            deviceId, intervalSeconds);
 
         // Clamp interval to a sane range
         if (intervalSeconds <= 0) intervalSeconds = 5;
@@ -58,19 +108,15 @@ public class PowerFlowHub : Hub
             try
             {
                 dto = await _powerFlowService.GetPowerFlowAsync(deviceId, cancellationToken);
-                Console.WriteLine($"PowerFlowHub - Got powerflow data for device {deviceId}: {dto != null}");
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                // normal shutdown
-                Console.WriteLine($"PowerFlowHub - Cancelled for device {deviceId}");
+                _logger.LogInformation("PowerFlowHub - Cancelled for device {DeviceId}", deviceId);
                 yield break;
             }
             catch (Exception ex)
             {
-                // Optional: log, send error dto, etc.
-                // For now, just break the loop if TB is completely failing.
-                Console.WriteLine($"PowerFlowHub - error getting PowerFlow for device {deviceId}: {ex}");
+                _logger.LogError(ex, "PowerFlowHub - error getting PowerFlow for device {DeviceId}", deviceId);
                 yield break;
             }
 
@@ -88,6 +134,14 @@ public class PowerFlowHub : Hub
                 yield break;
             }
         }
+    }
+
+    /// <summary>
+    /// Get current stream statistics for monitoring/debugging
+    /// </summary>
+    public SharedStreamStatistics GetStreamStatistics()
+    {
+        return _streamManager.GetStatistics();
     }
 
     #region Authorization helpers (copied from DeviceNotificationHub)
