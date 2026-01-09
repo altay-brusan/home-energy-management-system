@@ -113,7 +113,7 @@ public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDevice
             existingRecord.LoadEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.LoadEnergyKWhToday : request.LoadEnergyKWhTotal;
             
             existingRecord.LastModified = DateTime.UtcNow;
-            existingRecord.LastModifiedBy = "DeviceSimulator";
+            existingRecord.LastModifiedBy = "System";
         }
         else
         {
