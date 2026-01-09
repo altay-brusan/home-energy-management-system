@@ -139,7 +139,7 @@ public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDevice
                 LoadEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.LoadEnergyKWhToday : request.LoadEnergyKWhTotal,
                 
                 Created = DateTime.UtcNow,
-                CreatedBy = "DeviceSimulator"
+                CreatedBy = "System"
             };
 
             _context.DeviceEnergyData.Add(energyData);
