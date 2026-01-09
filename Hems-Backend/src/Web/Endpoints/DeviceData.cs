@@ -49,47 +49,25 @@ public class DeviceData : EndpointGroupBase
     /// </summary>
     public async Task<IResult> ReceiveHeartbeat(
         HeartbeatDto request,
-        IDeviceHeartbeatCache heartbeatCache,
-        IHubContext<DeviceStatusHub> hubContext,
-        IDeviceMappingService deviceMapping,
+        IDeviceActivityService activityService,
         ILogger<DeviceData> logger)
     {
         try
         {
-            // Parse deviceId from request
-            if (!Guid.TryParse(request.DeviceId, out var deviceId))
+            // Use centralized activity service to record heartbeat
+            var result = await activityService.RecordActivityAsync(
+                request.DeviceId,
+                TelemetrySource.Heartbeat,
+                request.Timestamp);
+
+            if (!result.Success)
             {
-                logger.LogWarning("Invalid deviceId in heartbeat: {DeviceId}", request.DeviceId);
-                return Results.BadRequest("Invalid deviceId format");
+                logger.LogWarning("Failed to record heartbeat: {Error}", result.ErrorMessage);
+                return Results.BadRequest(result.ErrorMessage);
             }
 
-            // Record heartbeat with timestamp (handles NTP sync validation)
-            var statusChange = await heartbeatCache.RecordHeartbeatAsync(deviceId, request.Timestamp);
-            
-            // If status changed (e.g., recovery from DISCONNECTED), send immediate SignalR notification
-            if (statusChange != null)
-            {
-                // Convert TB deviceId to local deviceId for frontend
-                var localDeviceId = await deviceMapping.GetDeviceIdAsync(statusChange.ThingsBoardDeviceId);
-                
-                if (localDeviceId != null)
-                {
-                    await hubContext.Clients.Group($"device_{localDeviceId}")
-                        .SendAsync("DeviceStatusChanged", new
-                        {
-                            deviceId = localDeviceId, // Local ID for frontend
-                            status = statusChange.NewStatus.ToString(),
-                            missedHeartbeats = statusChange.MissedHeartbeats,
-                            timestamp = statusChange.Timestamp
-                        });
-                    
-                    logger.LogInformation("Immediate SignalR notification sent for device {DeviceId} recovery via Heartbeat: {Status}",
-                        localDeviceId, statusChange.NewStatus);
-                }
-            }
-
-            logger.LogDebug("Heartbeat received from device {DeviceId} at {Timestamp}", 
-                deviceId, request.Timestamp);
+            logger.LogDebug("Heartbeat received from device {DeviceId} at {Timestamp}",
+                result.ThingsBoardDeviceId, request.Timestamp);
 
             return Results.Ok();
         }
@@ -168,36 +146,40 @@ public async Task<IResult> ReceiveBatterySocTelemetry(
     [FromBody] JsonElement body,
     ILogger<DeviceData> logger,
     ISender sender,
-    ITelemetryDeduplicationService deduplicationService)
+    ITelemetryDeduplicationService deduplicationService,
+    IDeviceActivityService activityService)
 {
-    return await ProcessTelemetry(body, "BatterySoc", logger, sender, deduplicationService);
+    return await ProcessTelemetry(body, "BatterySoc", logger, sender, deduplicationService, activityService, TelemetrySource.BatterySoc);
 }
 
 public async Task<IResult> ReceivePowerFlowTelemetry(
     [FromBody] JsonElement body,
     ILogger<DeviceData> logger,
     ISender sender,
-    ITelemetryDeduplicationService deduplicationService)
+    ITelemetryDeduplicationService deduplicationService,
+    IDeviceActivityService activityService)
 {
-    return await ProcessPowerFlowTelemetry(body, DataTypes.PowerFlow, logger, sender, deduplicationService);
+    return await ProcessPowerFlowTelemetry(body, DataTypes.PowerFlow, logger, sender, deduplicationService, activityService);
 }
 
 public async Task<IResult> ReceiveDailyEnergyFlowTelemetry(
     [FromBody] JsonElement body,
     ILogger<DeviceData> logger,
     ISender sender,
-    ITelemetryDeduplicationService deduplicationService)
+    ITelemetryDeduplicationService deduplicationService,
+    IDeviceActivityService activityService)
 {
-    return await ProcessEnergyFlowTelemetry(body, DataTypes.DailyCumulativeEnergy, logger, sender, deduplicationService);
+    return await ProcessEnergyFlowTelemetry(body, DataTypes.DailyCumulativeEnergy, logger, sender, deduplicationService, activityService, TelemetrySource.DailyEnergyFlow);
 }
 
 public async Task<IResult> ReceiveTotalEnergyFlowTelemetry(
     [FromBody] JsonElement body,
     ILogger<DeviceData> logger,
     ISender sender,
-    ITelemetryDeduplicationService deduplicationService)
+    ITelemetryDeduplicationService deduplicationService,
+    IDeviceActivityService activityService)
 {
-    return await ProcessEnergyFlowTelemetry(body, DataTypes.LifetimeEnergy, logger, sender, deduplicationService);
+    return await ProcessEnergyFlowTelemetry(body, DataTypes.LifetimeEnergy, logger, sender, deduplicationService, activityService, TelemetrySource.TotalEnergyFlow);
 }
 
 private async Task<IResult> ProcessEnergyFlowTelemetry(
@@ -205,12 +187,14 @@ private async Task<IResult> ProcessEnergyFlowTelemetry(
     string dataType,
     ILogger<DeviceData> logger,
     ISender sender,
-    ITelemetryDeduplicationService deduplicationService)
+    ITelemetryDeduplicationService deduplicationService,
+    IDeviceActivityService activityService,
+    TelemetrySource telemetrySource)
 {
     try
     {
         logger.LogInformation(
-            "?? {DataType} energy flow telemetry received at {UtcNow}",
+            "{DataType} energy flow telemetry received at {UtcNow}",
             dataType,
             DateTime.UtcNow);
 
@@ -255,6 +239,9 @@ private async Task<IResult> ProcessEnergyFlowTelemetry(
             logger.LogWarning("Missing deviceId in root level");
             return Results.Problem("Missing 'deviceId' in request", statusCode: 400);
         }
+
+        // Record device activity (updates heartbeat cache, sends SignalR if status changed)
+        await activityService.RecordActivityAsync(deviceId, telemetrySource, dataDateTime);
 
         // 4) Check for duplicate telemetry
         var shouldProcess = await deduplicationService.ShouldProcessTelemetryAsync(deviceId, dataType, dataDateTime);
@@ -432,12 +419,14 @@ private async Task<IResult> ProcessTelemetry(
     string dataType,
     ILogger<DeviceData> logger,
     ISender sender,
-    ITelemetryDeduplicationService deduplicationService)
+    ITelemetryDeduplicationService deduplicationService,
+    IDeviceActivityService activityService,
+    TelemetrySource telemetrySource)
 {
     try
     {
         logger.LogInformation(
-            "?? {DataType} telemetry received at {UtcNow}",
+            "{DataType} telemetry received at {UtcNow}",
             dataType,
             DateTime.UtcNow);
 
@@ -466,7 +455,7 @@ private async Task<IResult> ProcessTelemetry(
             }
         }
 
-        // 3) ThingsBoardDeviceId comes from root level "deviceId" field (string ? Guid)
+        // 3) ThingsBoardDeviceId comes from root level "deviceId" field (string -> Guid)
         Guid deviceId = Guid.Empty;
         if (body.TryGetProperty("deviceId", out var deviceIdElement))
         {
@@ -486,6 +475,9 @@ private async Task<IResult> ProcessTelemetry(
             logger.LogWarning("Missing deviceId in root level");
             return Results.Problem("Missing 'deviceId' in request", statusCode: 400);
         }
+
+        // Record device activity (updates heartbeat cache, sends SignalR if status changed)
+        await activityService.RecordActivityAsync(deviceId, telemetrySource, requestDate);
 
         // 4) Check for duplicate telemetry
         var shouldProcess = await deduplicationService.ShouldProcessTelemetryAsync(deviceId, dataType, requestDate);
@@ -533,12 +525,13 @@ private async Task<IResult> ProcessPowerFlowTelemetry(
     string dataType,
     ILogger<DeviceData> logger,
     ISender sender,
-    ITelemetryDeduplicationService deduplicationService)
+    ITelemetryDeduplicationService deduplicationService,
+    IDeviceActivityService activityService)
 {
     try
     {
         logger.LogInformation(
-            "?? {DataType} power flow telemetry received at {UtcNow}",
+            "{DataType} power flow telemetry received at {UtcNow}",
             dataType,
             DateTime.UtcNow);
 
@@ -584,12 +577,15 @@ private async Task<IResult> ProcessPowerFlowTelemetry(
             return Results.Problem("Missing 'deviceId' in request", statusCode: 400);
         }
 
+        // Record device activity (updates heartbeat cache, sends SignalR if status changed)
+        await activityService.RecordActivityAsync(deviceId, TelemetrySource.PowerFlow, dataDateTime);
+
         // 4) Check for duplicate telemetry
         var shouldProcess = await deduplicationService.ShouldProcessTelemetryAsync(deviceId, dataType, dataDateTime);
         if (!shouldProcess)
         {
             logger.LogInformation(
-                "?? Skipping duplicate {DataType} telemetry for device {DeviceId} at {Timestamp}",
+                "Skipping duplicate {DataType} telemetry for device {DeviceId} at {Timestamp}",
                 dataType, deviceId, dataDateTime);
             return Results.Ok(new
             {
@@ -724,7 +720,8 @@ public async Task<IResult> ReceiveAlarmTelemetry(
     ISender sender,
     IDeviceMappingService deviceMapping,
     IDeviceNotificationService notificationService,
-    IApplicationDbContext context)
+    IApplicationDbContext context,
+    IDeviceActivityService activityService)
 {
     try
     {
@@ -750,6 +747,9 @@ public async Task<IResult> ReceiveAlarmTelemetry(
             logger.LogWarning("Missing deviceId in root level");
             return Results.Problem("Missing 'deviceId' in request", statusCode: 400);
         }
+
+        // Record device activity (updates heartbeat cache, sends SignalR if status changed)
+        await activityService.RecordActivityAsync(thingsBoardDeviceId, TelemetrySource.Alarm);
 
         // 2) Convert ThingsBoard ID to internal device ID
         var internalDeviceId = await deviceMapping.GetDeviceIdAsync(thingsBoardDeviceId);
