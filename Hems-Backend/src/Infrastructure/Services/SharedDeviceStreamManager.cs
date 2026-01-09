@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Threading.Channels;
 using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Application.PowerFlow.Common.Models;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -11,10 +12,11 @@ namespace Hems_Backend.Infrastructure.Services;
 /// Manages shared device data streams with reference counting.
 /// Ensures only one polling loop per device regardless of subscriber count.
 /// Thread-safe implementation using ConcurrentDictionary and Channels.
+/// Uses IServiceScopeFactory to resolve scoped services (like IPowerFlowService) from a singleton.
 /// </summary>
 public class SharedDeviceStreamManager : ISharedDeviceStreamManager, IDisposable
 {
-    private readonly IPowerFlowService _powerFlowService;
+    private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<SharedDeviceStreamManager> _logger;
     private readonly SharedStreamOptions _options;
 
@@ -27,11 +29,11 @@ public class SharedDeviceStreamManager : ISharedDeviceStreamManager, IDisposable
     private bool _disposed;
 
     public SharedDeviceStreamManager(
-        IPowerFlowService powerFlowService,
+        IServiceScopeFactory scopeFactory,
         ILogger<SharedDeviceStreamManager> logger,
         IOptions<SharedStreamOptions>? options = null)
     {
-        _powerFlowService = powerFlowService;
+        _scopeFactory = scopeFactory;
         _logger = logger;
         _options = options?.Value ?? new SharedStreamOptions();
     }
@@ -69,8 +71,8 @@ public class SharedDeviceStreamManager : ISharedDeviceStreamManager, IDisposable
         // Track subscription for lookup
         _subscriptions[subscriptionId] = (deviceId, subscription);
 
-        // Ensure polling is running
-        stream.EnsurePollingStarted(_powerFlowService, _logger, cancellationToken);
+        // Ensure polling is running (pass scope factory for creating scopes in polling loop)
+        stream.EnsurePollingStarted(_scopeFactory, _logger, cancellationToken);
 
         // If we have recent cached data, send it immediately
         if (stream.LastData != null && !stream.IsDataStale(_options.StaleDataThresholdSeconds))
@@ -239,7 +241,7 @@ internal class SharedDeviceStream : IDisposable
     }
 
     public void EnsurePollingStarted(
-        IPowerFlowService powerFlowService,
+        IServiceScopeFactory scopeFactory,
         ILogger logger,
         CancellationToken externalCancellation)
     {
@@ -251,12 +253,12 @@ internal class SharedDeviceStream : IDisposable
             }
 
             _pollingCts = CancellationTokenSource.CreateLinkedTokenSource(externalCancellation);
-            _pollingTask = RunPollingLoopAsync(powerFlowService, logger, _pollingCts.Token);
+            _pollingTask = RunPollingLoopAsync(scopeFactory, logger, _pollingCts.Token);
         }
     }
 
     private async Task RunPollingLoopAsync(
-        IPowerFlowService powerFlowService,
+        IServiceScopeFactory scopeFactory,
         ILogger logger,
         CancellationToken cancellationToken)
     {
@@ -279,6 +281,10 @@ internal class SharedDeviceStream : IDisposable
 
             try
             {
+                // Create a scope to resolve scoped services
+                using var scope = scopeFactory.CreateScope();
+                var powerFlowService = scope.ServiceProvider.GetRequiredService<IPowerFlowService>();
+
                 // Fetch data from device
                 var data = await powerFlowService.GetPowerFlowAsync(DeviceId, cancellationToken);
 
