@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Application.PowerFlow.Common.Models;
@@ -9,6 +10,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Hems_Backend.Web.Hubs;
 
+/// <summary>
+/// SignalR hub for streaming PowerFlow data to frontend.
+/// Uses shared stream manager to optimize multiple connections to same device.
+/// Includes authorization, access validation, and connection tracking.
+/// </summary>
 [Authorize]
 public class PowerFlowHub : Hub
 {
@@ -17,6 +23,9 @@ public class PowerFlowHub : Hub
     private readonly IPowerFlowService _powerFlowService;
     private readonly ISharedDeviceStreamManager _streamManager;
     private readonly ILogger<PowerFlowHub> _logger;
+
+    // Track active streams per connection for cleanup
+    private static readonly ConcurrentDictionary<string, HashSet<string>> _connectionStreams = new();
 
     public PowerFlowHub(
         IApplicationDbContext context,
@@ -30,6 +39,33 @@ public class PowerFlowHub : Hub
         _powerFlowService = powerFlowService;
         _streamManager = streamManager;
         _logger = logger;
+    }
+
+    public override async Task OnConnectedAsync()
+    {
+        _connectionStreams[Context.ConnectionId] = new HashSet<string>();
+        _logger.LogInformation(
+            "PowerFlowHub - Client connected: {ConnectionId}, User: {UserId}",
+            Context.ConnectionId, GetUserIdFromContext());
+        await base.OnConnectedAsync();
+    }
+
+    public override async Task OnDisconnectedAsync(Exception? exception)
+    {
+        if (_connectionStreams.TryRemove(Context.ConnectionId, out var streamIds))
+        {
+            _logger.LogInformation(
+                "PowerFlowHub - Client disconnected: {ConnectionId}, had {Count} active streams. Exception: {Exception}",
+                Context.ConnectionId, streamIds.Count, exception?.Message ?? "None");
+        }
+        else
+        {
+            _logger.LogInformation(
+                "PowerFlowHub - Client disconnected: {ConnectionId}. Exception: {Exception}",
+                Context.ConnectionId, exception?.Message ?? "None");
+        }
+
+        await base.OnDisconnectedAsync(exception);
     }
 
     /// <summary>
@@ -49,11 +85,41 @@ public class PowerFlowHub : Hub
             "PowerFlowHub - StreamPowerFlow started for device {DeviceId}, interval: {Interval}s, connection: {ConnectionId}",
             deviceId, intervalSeconds, Context.ConnectionId);
 
+        // Validate access to the device
+        try
+        {
+            await ValidateDeviceAccessAsync(deviceId);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(
+                "PowerFlowHub - Access denied for device {DeviceId}: {Message}",
+                deviceId, ex.Message);
+            // Send error and exit
+            await Clients.Caller.SendAsync("PowerFlowError", new
+            {
+                errorCode = "AccessDenied",
+                message = ex.Message,
+                deviceId = deviceId,
+                timestamp = DateTime.UtcNow
+            }, cancellationToken);
+            yield break;
+        }
+
         // Subscribe to shared stream (creates new stream if first subscriber, reuses if exists)
         IDeviceStreamSubscription? subscription = null;
         try
         {
             subscription = await _streamManager.SubscribeAsync(deviceId, intervalSeconds, cancellationToken);
+
+            // Track this stream for the connection
+            if (_connectionStreams.TryGetValue(Context.ConnectionId, out var streams))
+            {
+                lock (streams)
+                {
+                    streams.Add(subscription.SubscriptionId);
+                }
+            }
 
             _logger.LogInformation(
                 "PowerFlowHub - Subscribed to device {DeviceId}, subscriptionId: {SubscriptionId}, total subscribers: {Count}",
@@ -73,6 +139,15 @@ public class PowerFlowHub : Hub
             // Ensure we unsubscribe when done
             if (subscription != null)
             {
+                // Remove from tracking
+                if (_connectionStreams.TryGetValue(Context.ConnectionId, out var streams))
+                {
+                    lock (streams)
+                    {
+                        streams.Remove(subscription.SubscriptionId);
+                    }
+                }
+
                 await subscription.DisposeAsync();
                 _logger.LogInformation(
                     "PowerFlowHub - Unsubscribed from device {DeviceId}, subscriptionId: {SubscriptionId}, remaining subscribers: {Count}",
@@ -94,6 +169,26 @@ public class PowerFlowHub : Hub
         _logger.LogInformation(
             "PowerFlowHub - StreamPowerFlowDirect (legacy) started for device {DeviceId}, interval: {Interval}s",
             deviceId, intervalSeconds);
+
+        // Validate access to the device
+        try
+        {
+            await ValidateDeviceAccessAsync(deviceId);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(
+                "PowerFlowHub - Access denied for device {DeviceId}: {Message}",
+                deviceId, ex.Message);
+            await Clients.Caller.SendAsync("PowerFlowError", new
+            {
+                errorCode = "AccessDenied",
+                message = ex.Message,
+                deviceId = deviceId,
+                timestamp = DateTime.UtcNow
+            }, cancellationToken);
+            yield break;
+        }
 
         // Clamp interval to a sane range
         if (intervalSeconds <= 0) intervalSeconds = 5;
@@ -117,6 +212,13 @@ public class PowerFlowHub : Hub
             catch (Exception ex)
             {
                 _logger.LogError(ex, "PowerFlowHub - error getting PowerFlow for device {DeviceId}", deviceId);
+                await Clients.Caller.SendAsync("PowerFlowError", new
+                {
+                    errorCode = "FetchError",
+                    message = "Failed to fetch PowerFlow data from device",
+                    deviceId = deviceId,
+                    timestamp = DateTime.UtcNow
+                }, cancellationToken);
                 yield break;
             }
 
@@ -144,13 +246,28 @@ public class PowerFlowHub : Hub
         return _streamManager.GetStatistics();
     }
 
-    #region Authorization helpers (copied from DeviceNotificationHub)
+    /// <summary>
+    /// Get the number of active streams for this connection
+    /// </summary>
+    public int GetActiveStreamCount()
+    {
+        if (_connectionStreams.TryGetValue(Context.ConnectionId, out var streams))
+        {
+            lock (streams)
+            {
+                return streams.Count;
+            }
+        }
+        return 0;
+    }
+
+    #region Authorization helpers
 
     private async Task ValidateDeviceAccessAsync(Guid deviceId)
     {
         var userId = GetUserIdFromContext();
 
-        // Device'ın hangi site'a ait olduğunu bul
+        // Find which site the device belongs to
         var deviceSite = await _context.SetupDevices
             .Where(sd => sd.DeviceId == deviceId)
             .Select(sd => new { sd.Setup.SiteId, sd.Setup.Site.UserId })
@@ -158,13 +275,13 @@ public class PowerFlowHub : Hub
 
         if (deviceSite == null)
         {
-            throw new UnauthorizedAccessException($"Device {deviceId} not found");
+            throw new UnauthorizedAccessException($"Device {deviceId} not found or not assigned to any site");
         }
 
-        // Site sahibi mi kontrol et
+        // Check if user is site owner
         if (deviceSite.UserId == userId) return;
 
-        // UserSite tablosunda erişim var mı kontrol et
+        // Check if user has shared access via UserSites table
         var hasUserSiteAccess = await _context.UserSites
             .AnyAsync(us => us.SiteId == deviceSite.SiteId && us.UserId == userId);
 
@@ -182,13 +299,13 @@ public class PowerFlowHub : Hub
         if (Context.User?.Identity?.IsAuthenticated == true)
         {
             userId = Context.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-                     ?? Context.User?.FindFirst("sub")?.Value // JWT sub claim
-                     ?? Context.User?.FindFirst("unique_name")?.Value // JWT unique_name
-                     ?? Context.User?.FindFirst("email")?.Value // JWT email
-                     ?? Context.User?.Identity?.Name; // Generic identity name
+                     ?? Context.User?.FindFirst("sub")?.Value
+                     ?? Context.User?.FindFirst("unique_name")?.Value
+                     ?? Context.User?.FindFirst("email")?.Value
+                     ?? Context.User?.Identity?.Name;
         }
 
-        // If Context.User failed, try _user service (IUser) 
+        // If Context.User failed, try _user service (IUser)
         if (string.IsNullOrEmpty(userId))
         {
             userId = _user.Id;
@@ -196,7 +313,7 @@ public class PowerFlowHub : Hub
 
         if (string.IsNullOrEmpty(userId))
         {
-            throw new UnauthorizedAccessException("User not authenticated. Context.User is null and _user.Id is also null.");
+            throw new UnauthorizedAccessException("User not authenticated");
         }
 
         return userId;
