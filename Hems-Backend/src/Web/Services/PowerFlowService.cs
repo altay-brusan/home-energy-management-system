@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Application.PowerFlow.Common.Models;
@@ -8,15 +8,6 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 
 namespace Hems_Backend.Web.Services;
-
-public interface IPowerFlowService
-{
-    /// <summary>
-    /// Calls ThingsBoard (via RPC) and returns the latest PowerFlow data for a device.
-    /// For demo devices, returns simulated data instead.
-    /// </summary>
-    Task<PowerFlowDto?> GetPowerFlowAsync(Guid deviceId, CancellationToken cancellationToken = default);
-}
 
 public class PowerFlowService : IPowerFlowService
 {

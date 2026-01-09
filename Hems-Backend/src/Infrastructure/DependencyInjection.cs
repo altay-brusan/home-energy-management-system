@@ -112,6 +112,10 @@ public static class DependencyInjection
         // Demo Simulation Data Service (provides simulated data for demo users)
         builder.Services.AddSingleton<IDemoSimulationDataService, DemoSimulationDataService>();
 
+        // Shared Device Stream Manager (singleton for reference-counted shared streams)
+        builder.Services.Configure<SharedStreamOptions>(builder.Configuration.GetSection("SharedStream"));
+        builder.Services.AddSingleton<ISharedDeviceStreamManager, SharedDeviceStreamManager>();
+
         builder.Services.AddAuthorization(options =>
         {
             // Device Only Policy - Sadece device token'ları
