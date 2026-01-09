@@ -80,6 +80,9 @@ public static class DependencyInjection
         builder.Services.AddSingleton<IDeviceHeartbeatCache, DeviceHeartbeatCache>();
         builder.Services.AddHostedService<DeviceHeartbeatMonitorService>();
 
+        // Device Activity Service (centralized telemetry-based activity tracking)
+        builder.Services.AddScoped<IDeviceActivityService, DeviceActivityService>();
+
         // Parameter Update Background Service (SignalR-based async updates)
         builder.Services.AddSingleton<ParameterUpdateBackgroundService>();
         builder.Services.AddSingleton<IParameterUpdateQueueService>(sp => sp.GetRequiredService<ParameterUpdateBackgroundService>());
