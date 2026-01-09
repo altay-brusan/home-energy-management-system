@@ -97,7 +97,7 @@ public class CreateDevicePowerDataCommandHandler : IRequestHandler<CreateDeviceP
             exactMatch.BatteryPowerW = request.BatteryPowerW;
             exactMatch.GeneratorTotalPowerW = request.GeneratorTotalPowerW;
             exactMatch.LastModified = DateTime.UtcNow;
-            exactMatch.LastModifiedBy = "DeviceSimulator";
+            exactMatch.LastModifiedBy = "System";
 
             await _context.SaveChangesAsync(cancellationToken);
             return exactMatch.Id;
@@ -139,7 +139,7 @@ public class CreateDevicePowerDataCommandHandler : IRequestHandler<CreateDeviceP
             }
 
             recentRecord.LastModified = DateTime.UtcNow;
-            recentRecord.LastModifiedBy = "DeviceSimulator";
+            recentRecord.LastModifiedBy = "System";
 
             await _context.SaveChangesAsync(cancellationToken);
             return recentRecord.Id;
@@ -166,7 +166,7 @@ public class CreateDevicePowerDataCommandHandler : IRequestHandler<CreateDeviceP
             GeneratorTotalPowerW = request.GeneratorTotalPowerW,
 
             Created = DateTime.UtcNow,
-            CreatedBy = "DeviceSimulator"
+            CreatedBy = "System"
         };
 
         _context.DevicePowerData.Add(powerData);
