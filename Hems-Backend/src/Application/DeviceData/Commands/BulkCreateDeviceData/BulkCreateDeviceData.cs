@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Domain.Constants;
 using Hems_Backend.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,11 @@ namespace Hems_Backend.Application.DeviceData.Commands.BulkCreateDeviceData;
 public record BulkCreateDeviceDataCommand : IRequest<BulkCreateDeviceDataResult>
 {
     public List<DeviceDataItem> DeviceDataItems { get; init; } = new();
+
+    /// <summary>
+    /// Source of the data for all items: "Device" (real device), "Simulator", or "System" (default)
+    /// </summary>
+    public string? CreatedBy { get; init; }
 }
 
 public record DeviceDataItem
@@ -18,6 +24,12 @@ public record DeviceDataItem
     public Guid DeviceId { get; init; }
     public DateTime DeviceLocalTime { get; init; }
     public JsonDocument Data { get; init; } = JsonDocument.Parse("{}");
+
+    /// <summary>
+    /// Source of the data: "Device" (real device), "Simulator", or "System" (default)
+    /// Overrides the command-level CreatedBy if specified.
+    /// </summary>
+    public string? CreatedBy { get; init; }
 }
 
 public record BulkCreateDeviceDataResult
@@ -101,7 +113,9 @@ public class BulkCreateDeviceDataCommandHandler : IRequestHandler<BulkCreateDevi
                             DataType = item.DataType,
                             ThingsBoardDeviceId = item.DeviceId,
                             DeviceLocalTime = item.DeviceLocalTime,
-                            Data = item.Data
+                            Data = item.Data,
+                            Created = DateTime.UtcNow,
+                            CreatedBy = item.CreatedBy ?? request.CreatedBy ?? EnergyDataSources.Device
                         };
 
                         entities.Add(entity);

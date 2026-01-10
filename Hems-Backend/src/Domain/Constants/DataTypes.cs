@@ -41,3 +41,18 @@ public static class PhaseTypes
     public const string SinglePhase = "SinglePhase";
     public const string ThreePhase = "ThreePhase";
 }
+
+/// <summary>
+/// Constants for CreatedBy field values in energy data
+/// </summary>
+public static class EnergyDataSources
+{
+    /// <summary>Data received from real device (telemetry or RPC)</summary>
+    public const string Device = "Device";
+
+    /// <summary>Data estimated from power readings when device is unavailable</summary>
+    public const string SystemEstimate = "SystemEstimate";
+
+    /// <summary>Data from device simulator</summary>
+    public const string Simulator = "Simulator";
+}

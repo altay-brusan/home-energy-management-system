@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Domain.Constants;
 using Hems_Backend.Domain.Entities;
 
 namespace Hems_Backend.Application.DeviceData.Commands.CreateDeviceData;
@@ -10,6 +11,11 @@ public record CreateDeviceDataCommand : IRequest<int>
     public Guid DeviceId { get; init; }
     public DateTime DeviceLocalTime { get; init; }
     public JsonDocument Data { get; init; } = JsonDocument.Parse("{}");
+
+    /// <summary>
+    /// Source of the data: "Device" (real device), "Simulator", or "System" (default)
+    /// </summary>
+    public string? CreatedBy { get; init; }
 }
 
 public class CreateDeviceDataCommandHandler : IRequestHandler<CreateDeviceDataCommand, int>
@@ -47,7 +53,9 @@ public class CreateDeviceDataCommandHandler : IRequestHandler<CreateDeviceDataCo
             DataType = request.DataType,
             ThingsBoardDeviceId = request.DeviceId,
             DeviceLocalTime = localDeviceLocalTime, // Store in device local time
-            Data = request.Data
+            Data = request.Data,
+            Created = DateTime.UtcNow,
+            CreatedBy = request.CreatedBy ?? EnergyDataSources.Device
         };
 
         _context.DeviceData.Add(entity);
