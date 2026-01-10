@@ -371,6 +371,13 @@ private async Task<IResult> ProcessEnergyFlowTelemetry(
                 generatorEnergy = genTotalEl.GetDouble();
         }
 
+        // 6) Parse CreatedBy (data source identifier)
+        string? createdBy = null;
+        if (body.TryGetProperty("createdBy", out var createdByEl))
+        {
+            createdBy = createdByEl.GetString();
+        }
+
         // Create command for DeviceEnergyData table
         var command = new CreateDeviceEnergyDataCommand
         {
@@ -394,7 +401,8 @@ private async Task<IResult> ProcessEnergyFlowTelemetry(
             LoadEnergyKWhTotal = loadEnergy ?? 0,
             LoadEnergyKWhToday = loadEnergy ?? 0,
             GeneratorEnergyKWhTotal = generatorEnergy ?? 0,
-            GeneratorEnergyKWhToday = generatorEnergy ?? 0
+            GeneratorEnergyKWhToday = generatorEnergy ?? 0,
+            CreatedBy = createdBy
         };
 
         var createdId = await sender.Send(command);
@@ -497,12 +505,20 @@ private async Task<IResult> ProcessTelemetry(
         // 5) Store the whole inner data object as JsonDocument
         var dataJson = JsonDocument.Parse(dataElement.GetRawText());
 
+        // 6) Parse CreatedBy (data source identifier)
+        string? createdBy = null;
+        if (body.TryGetProperty("createdBy", out var createdByEl))
+        {
+            createdBy = createdByEl.GetString();
+        }
+
         var command = new CreateDeviceDataCommand
         {
             DataType = dataType,
             DeviceId = deviceId,
             DeviceLocalTime = requestDate,
-            Data = dataJson
+            Data = dataJson,
+            CreatedBy = createdBy
         };
 
         var createdId = await sender.Send(command);
@@ -674,6 +690,13 @@ private async Task<IResult> ProcessPowerFlowTelemetry(
             generatorTotalPowerW = generatorPowerEl.GetDouble();
         }
 
+        // 7) Parse CreatedBy (data source identifier)
+        string? createdBy = null;
+        if (body.TryGetProperty("createdBy", out var createdByEl))
+        {
+            createdBy = createdByEl.GetString();
+        }
+
         // Create command for DevicePowerData table
         var command = new CreateDevicePowerDataCommand
         {
@@ -689,7 +712,8 @@ private async Task<IResult> ProcessPowerFlowTelemetry(
             GridTotalPowerW = gridTotalPowerW,
             LoadTotalPowerW = loadTotalPowerW,
             BatteryPowerW = batteryPowerW,
-            GeneratorTotalPowerW = generatorTotalPowerW
+            GeneratorTotalPowerW = generatorTotalPowerW,
+            CreatedBy = createdBy
         };
 
         var createdId = await sender.Send(command);
