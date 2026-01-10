@@ -259,6 +259,7 @@ public class PowerFlowJobService : IPowerFlowJobService
         return new
         {
             deviceId = thingsBoardDeviceId.ToString(),
+            createdBy = "Simulator", // Identify data source as simulator
             data = new
             {
                 timestampUtc = now.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
