@@ -34,6 +34,11 @@ public record CreateDeviceEnergyDataCommand : IRequest<int>
     public double? PvMppt2EnergyKWh { get; init; }
     public double? PvMppt3EnergyKWh { get; init; }
     public double? PvMppt4EnergyKWh { get; init; }
+
+    /// <summary>
+    /// Source of the data: "Device" (RPC), "SystemEstimate" (fallback), "Simulator", or "System" (default)
+    /// </summary>
+    public string? CreatedBy { get; init; }
 }
 
 public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDeviceEnergyDataCommand, int>
@@ -113,7 +118,7 @@ public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDevice
             existingRecord.LoadEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.LoadEnergyKWhToday : request.LoadEnergyKWhTotal;
             
             existingRecord.LastModified = DateTime.UtcNow;
-            existingRecord.LastModifiedBy = "System";
+            existingRecord.LastModifiedBy = request.CreatedBy ?? EnergyDataSources.System;
         }
         else
         {
@@ -139,7 +144,7 @@ public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDevice
                 LoadEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.LoadEnergyKWhToday : request.LoadEnergyKWhTotal,
                 
                 Created = DateTime.UtcNow,
-                CreatedBy = "System"
+                CreatedBy = request.CreatedBy ?? EnergyDataSources.System
             };
 
             _context.DeviceEnergyData.Add(energyData);
