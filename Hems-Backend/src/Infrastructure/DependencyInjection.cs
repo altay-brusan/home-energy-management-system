@@ -94,6 +94,10 @@ public static class DependencyInjection
         // Device RPC Executor Service
         builder.Services.AddScoped<IDeviceRpcExecutorService, DeviceRpcExecutorService>();
 
+        // Energy Data Collection Service (pulls data from devices at 23:45 local time)
+        builder.Services.AddScoped<IEnergyDataCollectionService, EnergyDataCollectionService>();
+        builder.Services.AddHostedService<EnergyDataCollectionBackgroundService>();
+
         // Device Authorization
         builder.Services.AddScoped<IAuthorizationHandler, DeviceOnlyAuthorizationHandler>();
 
