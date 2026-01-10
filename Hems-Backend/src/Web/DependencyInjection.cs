@@ -1,4 +1,6 @@
 ﻿using Azure.Identity;
+using Hangfire;
+using Hangfire.PostgreSql;
 using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Application.Common.Security;
 using Hems_Backend.Domain.Constants;
@@ -37,6 +39,21 @@ public static class DependencyInjection
 
         // Add SignalR
         builder.Services.AddSignalR();
+
+        // Add Hangfire for background job scheduling
+        var connectionString = builder.Configuration.GetConnectionString("Hems_BackendDb");
+        builder.Services.AddHangfire(config => config
+            .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+            .UseSimpleAssemblyNameTypeSerializer()
+            .UseRecommendedSerializerSettings()
+            .UsePostgreSqlStorage(options => options.UseNpgsqlConnection(connectionString)));
+
+        builder.Services.AddHangfireServer(options =>
+        {
+            options.WorkerCount = Environment.ProcessorCount * 2;
+            options.ServerTimeout = TimeSpan.FromMinutes(4);
+            options.SchedulePollingInterval = TimeSpan.FromSeconds(15);
+        });
 
         // PowerFlow service (uses centralized ThingsBoard connector for RPC)
         builder.Services.AddScoped<IPowerFlowService, PowerFlowService>();
