@@ -47,7 +47,7 @@ public static class PhaseTypes
 /// </summary>
 public static class EnergyDataSources
 {
-    /// <summary>Data received from device via RPC</summary>
+    /// <summary>Data received from real device (telemetry or RPC)</summary>
     public const string Device = "Device";
 
     /// <summary>Data estimated from power readings when device is unavailable</summary>
@@ -55,7 +55,4 @@ public static class EnergyDataSources
 
     /// <summary>Data from device simulator</summary>
     public const string Simulator = "Simulator";
-
-    /// <summary>Legacy/default value</summary>
-    public const string System = "System";
 }
