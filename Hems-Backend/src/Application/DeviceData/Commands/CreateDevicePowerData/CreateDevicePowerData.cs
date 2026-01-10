@@ -12,25 +12,30 @@ public record CreateDevicePowerDataCommand : IRequest<int>
     public Guid DeviceId { get; init; }
     public DateTime DeviceLocalTime { get; init; }
     public int? Version { get; init; }
-    
+
     // PV Power (W)
     public double? PvTotalPowerW { get; init; }
     public double? PvMppt1PowerW { get; init; }
     public double? PvMppt2PowerW { get; init; }
     public double? PvMppt3PowerW { get; init; }
     public double? PvMppt4PowerW { get; init; }
-    
+
     // Grid Power (W) - Positive = import, Negative = export
     public double? GridTotalPowerW { get; init; }
-    
+
     // Load Power (W)
     public double? LoadTotalPowerW { get; init; }
-    
+
     // Battery Power (W) - Positive = discharge, Negative = charge
     public double? BatteryPowerW { get; init; }
-    
+
     // Generator Power (W)
     public double? GeneratorTotalPowerW { get; init; }
+
+    /// <summary>
+    /// Source of the data: "Device" (real device), "Simulator", or "System" (default)
+    /// </summary>
+    public string? CreatedBy { get; init; }
 }
 
 public class CreateDevicePowerDataCommandHandler : IRequestHandler<CreateDevicePowerDataCommand, int>
@@ -97,7 +102,7 @@ public class CreateDevicePowerDataCommandHandler : IRequestHandler<CreateDeviceP
             exactMatch.BatteryPowerW = request.BatteryPowerW;
             exactMatch.GeneratorTotalPowerW = request.GeneratorTotalPowerW;
             exactMatch.LastModified = DateTime.UtcNow;
-            exactMatch.LastModifiedBy = "System";
+            exactMatch.LastModifiedBy = request.CreatedBy ?? EnergyDataSources.Device;
 
             await _context.SaveChangesAsync(cancellationToken);
             return exactMatch.Id;
@@ -139,7 +144,7 @@ public class CreateDevicePowerDataCommandHandler : IRequestHandler<CreateDeviceP
             }
 
             recentRecord.LastModified = DateTime.UtcNow;
-            recentRecord.LastModifiedBy = "System";
+            recentRecord.LastModifiedBy = request.CreatedBy ?? EnergyDataSources.Device;
 
             await _context.SaveChangesAsync(cancellationToken);
             return recentRecord.Id;
@@ -166,7 +171,7 @@ public class CreateDevicePowerDataCommandHandler : IRequestHandler<CreateDeviceP
             GeneratorTotalPowerW = request.GeneratorTotalPowerW,
 
             Created = DateTime.UtcNow,
-            CreatedBy = "System"
+            CreatedBy = request.CreatedBy ?? EnergyDataSources.Device
         };
 
         _context.DevicePowerData.Add(powerData);
