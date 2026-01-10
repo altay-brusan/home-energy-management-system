@@ -118,7 +118,7 @@ public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDevice
             existingRecord.LoadEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.LoadEnergyKWhToday : request.LoadEnergyKWhTotal;
             
             existingRecord.LastModified = DateTime.UtcNow;
-            existingRecord.LastModifiedBy = request.CreatedBy ?? EnergyDataSources.System;
+            existingRecord.LastModifiedBy = request.CreatedBy ?? EnergyDataSources.Device;
         }
         else
         {
@@ -144,7 +144,7 @@ public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDevice
                 LoadEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.LoadEnergyKWhToday : request.LoadEnergyKWhTotal,
                 
                 Created = DateTime.UtcNow,
-                CreatedBy = request.CreatedBy ?? EnergyDataSources.System
+                CreatedBy = request.CreatedBy ?? EnergyDataSources.Device
             };
 
             _context.DeviceEnergyData.Add(energyData);
