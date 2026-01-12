@@ -7,6 +7,7 @@ using Hems_Backend.Application.DeviceData.Commands.CreateDeviceData;
 using Hems_Backend.Application.DeviceData.Commands.CreateDeviceEnergyData;
 using Hems_Backend.Application.DeviceData.Commands.CreateDevicePowerData;
 using Hems_Backend.Application.DeviceData.Queries.GetDeviceData;
+using Hems_Backend.Application.DeviceData.Queries.GetDeviceEnergyData;
 using Hems_Backend.Application.Devices.Queries.GetDeviceHeartbeatStatus;
 using Hems_Backend.Application.DeviceNotifications.Commands.ProcessDeviceAlarm;
 using Hems_Backend.Application.DeviceNotifications.Common.Models;
@@ -40,7 +41,9 @@ public class DeviceData : EndpointGroupBase
             //.RequireAuthorization()
             .MapGet(GetDeviceData)
             .MapGet(GetLivePowerFlow, "PowerFlow/live/{deviceId:guid}")
-            .MapGet(GetDeviceHeartbeatStatus, "Status/{deviceId:guid}");
+            .MapGet(GetDeviceHeartbeatStatus, "Status/{deviceId:guid}")
+            .MapGet(GetDailyEnergyFlow, "DailyEnergyFlow/{deviceId:guid}")
+            .MapGet(GetTotalEnergyFlow, "TotalEnergyFlow/{deviceId:guid}");
     }
 
     /// <summary>
@@ -114,6 +117,70 @@ public class DeviceData : EndpointGroupBase
         ISender sender,
         [AsParameters] GetDeviceDataQuery query)
     {
+        return await sender.Send(query);
+    }
+
+    /// <summary>
+    /// Gets daily energy data for a device
+    /// </summary>
+    /// <param name="deviceId">ThingsBoard Device ID</param>
+    /// <param name="date">Optional: Filter by specific date (yyyy-MM-dd)</param>
+    /// <param name="startDate">Optional: Start date for range filter</param>
+    /// <param name="endDate">Optional: End date for range filter</param>
+    /// <param name="pageNumber">Page number (default: 1)</param>
+    /// <param name="pageSize">Page size (default: 10)</param>
+    public async Task<PaginatedList<DeviceEnergyDataDto>> GetDailyEnergyFlow(
+        ISender sender,
+        Guid deviceId,
+        DateTime? date = null,
+        DateTime? startDate = null,
+        DateTime? endDate = null,
+        int pageNumber = 1,
+        int pageSize = 10)
+    {
+        var query = new GetDeviceEnergyDataQuery
+        {
+            DeviceId = deviceId,
+            DataType = DataTypes.DailyCumulativeEnergy,
+            Date = date,
+            StartDate = startDate,
+            EndDate = endDate,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+
+        return await sender.Send(query);
+    }
+
+    /// <summary>
+    /// Gets total (lifetime) energy data for a device
+    /// </summary>
+    /// <param name="deviceId">ThingsBoard Device ID</param>
+    /// <param name="date">Optional: Filter by specific date (yyyy-MM-dd)</param>
+    /// <param name="startDate">Optional: Start date for range filter</param>
+    /// <param name="endDate">Optional: End date for range filter</param>
+    /// <param name="pageNumber">Page number (default: 1)</param>
+    /// <param name="pageSize">Page size (default: 10)</param>
+    public async Task<PaginatedList<DeviceEnergyDataDto>> GetTotalEnergyFlow(
+        ISender sender,
+        Guid deviceId,
+        DateTime? date = null,
+        DateTime? startDate = null,
+        DateTime? endDate = null,
+        int pageNumber = 1,
+        int pageSize = 10)
+    {
+        var query = new GetDeviceEnergyDataQuery
+        {
+            DeviceId = deviceId,
+            DataType = DataTypes.LifetimeEnergy,
+            Date = date,
+            StartDate = startDate,
+            EndDate = endDate,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+
         return await sender.Send(query);
     }
 
