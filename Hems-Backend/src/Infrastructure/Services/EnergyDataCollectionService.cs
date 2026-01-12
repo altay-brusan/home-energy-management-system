@@ -463,14 +463,22 @@ public class EnergyDataCollectionService : IEnergyDataCollectionService
     }
 
     /// <summary>
-    /// Parses getDailyEnergyFlowState response with nested JSON structure:
-    /// { loadEnergyKWh, grid: { importEnergyKWh, exportEnergyKWh }, pv: { totalEnergyKWh, mppt: [...] },
-    ///   battery: { chargeEnergyKWh, dischargeEnergyKWh }, generator: { energyKWh } }
+    /// Parses getDailyEnergyFlowState response.
+    /// Response format: { "success": true, "data": { "loadEnergyKWh": ..., "grid": {...}, "pv": {...}, ... } }
     /// </summary>
-    private static DailyEnergyRpcResult ParseDailyEnergyResponse(Dictionary<string, object> response)
+    private static DailyEnergyRpcResult? ParseDailyEnergyResponse(Dictionary<string, object> response)
     {
+        // Check success flag
+        if (!GetBoolValue(response, "success"))
+            return null;
+
+        // Extract "data" section
+        var data = GetNestedObject(response, "data");
+        if (data == null)
+            return null;
+
         // Local variables for building the result
-        double? loadEnergy = GetDoubleValue(response, "loadEnergyKWh");
+        double? loadEnergy = GetDoubleValue(data, "loadEnergyKWh");
         double? gridImport = null, gridExport = null;
         double? pvTotal = null;
         double? mppt1 = null, mppt2 = null, mppt3 = null, mppt4 = null;
@@ -478,7 +486,7 @@ public class EnergyDataCollectionService : IEnergyDataCollectionService
         double? generatorEnergy = null;
 
         // Grid (nested)
-        var grid = GetNestedObject(response, "grid");
+        var grid = GetNestedObject(data, "grid");
         if (grid != null)
         {
             gridImport = GetDoubleValue(grid, "importEnergyKWh");
@@ -486,7 +494,7 @@ public class EnergyDataCollectionService : IEnergyDataCollectionService
         }
 
         // PV (nested)
-        var pv = GetNestedObject(response, "pv");
+        var pv = GetNestedObject(data, "pv");
         if (pv != null)
         {
             pvTotal = GetDoubleValue(pv, "totalEnergyKWh");
@@ -514,7 +522,7 @@ public class EnergyDataCollectionService : IEnergyDataCollectionService
         }
 
         // Battery (nested)
-        var battery = GetNestedObject(response, "battery");
+        var battery = GetNestedObject(data, "battery");
         if (battery != null)
         {
             batteryCharge = GetDoubleValue(battery, "chargeEnergyKWh");
@@ -522,7 +530,7 @@ public class EnergyDataCollectionService : IEnergyDataCollectionService
         }
 
         // Generator (nested)
-        var generator = GetNestedObject(response, "generator");
+        var generator = GetNestedObject(data, "generator");
         if (generator != null)
         {
             generatorEnergy = GetDoubleValue(generator, "energyKWh");
@@ -545,13 +553,20 @@ public class EnergyDataCollectionService : IEnergyDataCollectionService
     }
 
     /// <summary>
-    /// Parses getTotalEnergyFlowState response with nested JSON structure:
-    /// { grid: { importTotalEnergyKWh, exportTotalEnergyKWh }, pv: { totalEnergyKWh, mppt: [...] },
-    ///   load: { totalEnergyKWh }, battery: { totalChargeEnergyKWh, totalDischargeEnergyKWh },
-    ///   generator: { totalEnergyKWh } }
+    /// Parses getTotalEnergyFlowState response.
+    /// Response format: { "success": true, "data": { "grid": {...}, "pv": {...}, "load": {...}, ... } }
     /// </summary>
-    private static LifetimeEnergyRpcResult ParseLifetimeEnergyResponse(Dictionary<string, object> response)
+    private static LifetimeEnergyRpcResult? ParseLifetimeEnergyResponse(Dictionary<string, object> response)
     {
+        // Check success flag
+        if (!GetBoolValue(response, "success"))
+            return null;
+
+        // Extract "data" section
+        var data = GetNestedObject(response, "data");
+        if (data == null)
+            return null;
+
         // Local variables for building the result
         double? gridImport = null, gridExport = null;
         double? pvTotal = null;
@@ -561,7 +576,7 @@ public class EnergyDataCollectionService : IEnergyDataCollectionService
         double? generatorEnergy = null;
 
         // Grid (nested)
-        var grid = GetNestedObject(response, "grid");
+        var grid = GetNestedObject(data, "grid");
         if (grid != null)
         {
             gridImport = GetDoubleValue(grid, "importTotalEnergyKWh");
@@ -569,7 +584,7 @@ public class EnergyDataCollectionService : IEnergyDataCollectionService
         }
 
         // PV (nested)
-        var pv = GetNestedObject(response, "pv");
+        var pv = GetNestedObject(data, "pv");
         if (pv != null)
         {
             pvTotal = GetDoubleValue(pv, "totalEnergyKWh");
@@ -597,14 +612,14 @@ public class EnergyDataCollectionService : IEnergyDataCollectionService
         }
 
         // Load (nested - different from daily which has it at root)
-        var load = GetNestedObject(response, "load");
+        var load = GetNestedObject(data, "load");
         if (load != null)
         {
             loadEnergy = GetDoubleValue(load, "totalEnergyKWh");
         }
 
         // Battery (nested)
-        var battery = GetNestedObject(response, "battery");
+        var battery = GetNestedObject(data, "battery");
         if (battery != null)
         {
             batteryCharge = GetDoubleValue(battery, "totalChargeEnergyKWh");
@@ -612,7 +627,7 @@ public class EnergyDataCollectionService : IEnergyDataCollectionService
         }
 
         // Generator (nested)
-        var generator = GetNestedObject(response, "generator");
+        var generator = GetNestedObject(data, "generator");
         if (generator != null)
         {
             generatorEnergy = GetDoubleValue(generator, "totalEnergyKWh");
@@ -660,6 +675,28 @@ public class EnergyDataCollectionService : IEnergyDataCollectionService
         return null;
     }
 
+    private static bool GetBoolValue(Dictionary<string, object> dict, string key)
+    {
+        if (dict.TryGetValue(key, out var value) && value != null)
+        {
+            if (value is JsonElement element)
+            {
+                if (element.ValueKind == JsonValueKind.True)
+                    return true;
+                if (element.ValueKind == JsonValueKind.False)
+                    return false;
+                if (element.ValueKind == JsonValueKind.String && bool.TryParse(element.GetString(), out var b))
+                    return b;
+                return false;
+            }
+            if (value is bool b1)
+                return b1;
+            if (bool.TryParse(value.ToString(), out var parsed))
+                return parsed;
+        }
+        return false;
+    }
+
     private static int? GetIntValue(Dictionary<string, object> dict, string key)
     {
         if (dict.TryGetValue(key, out var value) && value != null)
@@ -692,20 +729,19 @@ public class EnergyDataCollectionService : IEnergyDataCollectionService
 
         if (value is JsonElement element)
         {
-            if (element.ValueKind == JsonValueKind.Object)
+            if (element.ValueKind != JsonValueKind.Object)
+                return null;
+
+            var result = new Dictionary<string, object>();
+            foreach (var prop in element.EnumerateObject())
             {
-                var result = new Dictionary<string, object>();
-                foreach (var prop in element.EnumerateObject())
-                {
-                    result[prop.Name] = prop.Value;
-                }
-                return result;
+                result[prop.Name] = prop.Value;
             }
-            return null;
+            return result;
         }
 
-        if (value is Dictionary<string, object> dictValue)
-            return dictValue;
+        if (value is Dictionary<string, object> nested)
+            return nested;
 
         return null;
     }
@@ -720,28 +756,24 @@ public class EnergyDataCollectionService : IEnergyDataCollectionService
 
         if (value is JsonElement element)
         {
-            if (element.ValueKind == JsonValueKind.Array)
-            {
-                var result = new List<Dictionary<string, object>>();
-                foreach (var item in element.EnumerateArray())
-                {
-                    if (item.ValueKind == JsonValueKind.Object)
-                    {
-                        var itemDict = new Dictionary<string, object>();
-                        foreach (var prop in item.EnumerateObject())
-                        {
-                            itemDict[prop.Name] = prop.Value;
-                        }
-                        result.Add(itemDict);
-                    }
-                }
-                return result;
-            }
-            return null;
-        }
+            if (element.ValueKind != JsonValueKind.Array)
+                return null;
 
-        if (value is List<Dictionary<string, object>> listValue)
-            return listValue;
+            var result = new List<Dictionary<string, object>>();
+            foreach (var item in element.EnumerateArray())
+            {
+                if (item.ValueKind == JsonValueKind.Object)
+                {
+                    var itemDict = new Dictionary<string, object>();
+                    foreach (var prop in item.EnumerateObject())
+                    {
+                        itemDict[prop.Name] = prop.Value;
+                    }
+                    result.Add(itemDict);
+                }
+            }
+            return result;
+        }
 
         return null;
     }

@@ -42,8 +42,8 @@ public class DeviceData : EndpointGroupBase
             .MapGet(GetDeviceData)
             .MapGet(GetLivePowerFlow, "PowerFlow/live/{deviceId:guid}")
             .MapGet(GetDeviceHeartbeatStatus, "Status/{deviceId:guid}")
-            .MapGet(GetDailyEnergyFlow, "DailyEnergyFlow/{deviceId:guid}")
-            .MapGet(GetTotalEnergyFlow, "TotalEnergyFlow/{deviceId:guid}");
+            .MapGet(GetLiveDailyEnergyFlow, "DailyEnergyFlow/live/{deviceId:guid}")
+            .MapGet(GetLiveTotalEnergyFlow, "TotalEnergyFlow/live/{deviceId:guid}");
     }
 
     /// <summary>
@@ -153,35 +153,77 @@ public class DeviceData : EndpointGroupBase
     }
 
     /// <summary>
-    /// Gets total (lifetime) energy data for a device
+    /// Gets live daily energy data from device via RPC.
+    /// FOR TEST ONLY - DO NOT USE IN PRODUCTION
     /// </summary>
-    /// <param name="deviceId">ThingsBoard Device ID</param>
-    /// <param name="date">Optional: Filter by specific date (yyyy-MM-dd)</param>
-    /// <param name="startDate">Optional: Start date for range filter</param>
-    /// <param name="endDate">Optional: End date for range filter</param>
-    /// <param name="pageNumber">Page number (default: 1)</param>
-    /// <param name="pageSize">Page size (default: 10)</param>
-    public async Task<PaginatedList<DeviceEnergyDataDto>> GetTotalEnergyFlow(
-        ISender sender,
+    public async Task<IResult> GetLiveDailyEnergyFlow(
         Guid deviceId,
-        DateTime? date = null,
-        DateTime? startDate = null,
-        DateTime? endDate = null,
-        int pageNumber = 1,
-        int pageSize = 10)
+        IEnergyDataCollectionService energyService,
+        IDeviceMappingService deviceMapping,
+        ILogger<DeviceData> logger,
+        CancellationToken ct)
     {
-        var query = new GetDeviceEnergyDataQuery
-        {
-            DeviceId = deviceId,
-            DataType = DataTypes.LifetimeEnergy,
-            Date = date,
-            StartDate = startDate,
-            EndDate = endDate,
-            PageNumber = pageNumber,
-            PageSize = pageSize
-        };
+        logger.LogInformation("Live DailyEnergyFlow requested for DeviceId {DeviceId}", deviceId);
 
-        return await sender.Send(query);
+        // Map internal deviceId to ThingsBoardDeviceId
+        var thingsBoardDeviceId = await deviceMapping.GetThingsBoardDeviceIdAsync(deviceId, ct);
+        if (thingsBoardDeviceId == null)
+        {
+            logger.LogWarning("Device mapping not found for DeviceId {DeviceId}", deviceId);
+            return Results.Problem(
+                detail: $"Device not found: {deviceId}",
+                statusCode: StatusCodes.Status404NotFound);
+        }
+
+        var result = await energyService.FetchDailyEnergyViaRpcAsync(thingsBoardDeviceId.Value, ct);
+
+        if (result == null)
+        {
+            logger.LogWarning("DailyEnergyFlow could not be retrieved for DeviceId {DeviceId} (TB: {ThingsBoardDeviceId})",
+                deviceId, thingsBoardDeviceId);
+            return Results.Problem(
+                detail: "DailyEnergyFlow could not be retrieved (RPC failed or device offline).",
+                statusCode: StatusCodes.Status502BadGateway);
+        }
+
+        return Results.Ok(result);
+    }
+
+    /// <summary>
+    /// Gets live total (lifetime) energy data from device via RPC.
+    /// FOR TEST ONLY - DO NOT USE IN PRODUCTION
+    /// </summary>
+    public async Task<IResult> GetLiveTotalEnergyFlow(
+        Guid deviceId,
+        IEnergyDataCollectionService energyService,
+        IDeviceMappingService deviceMapping,
+        ILogger<DeviceData> logger,
+        CancellationToken ct)
+    {
+        logger.LogInformation("Live TotalEnergyFlow requested for DeviceId {DeviceId}", deviceId);
+
+        // Map internal deviceId to ThingsBoardDeviceId
+        var thingsBoardDeviceId = await deviceMapping.GetThingsBoardDeviceIdAsync(deviceId, ct);
+        if (thingsBoardDeviceId == null)
+        {
+            logger.LogWarning("Device mapping not found for DeviceId {DeviceId}", deviceId);
+            return Results.Problem(
+                detail: $"Device not found: {deviceId}",
+                statusCode: StatusCodes.Status404NotFound);
+        }
+
+        var result = await energyService.FetchLifetimeEnergyViaRpcAsync(thingsBoardDeviceId.Value, ct);
+
+        if (result == null)
+        {
+            logger.LogWarning("TotalEnergyFlow could not be retrieved for DeviceId {DeviceId} (TB: {ThingsBoardDeviceId})",
+                deviceId, thingsBoardDeviceId);
+            return Results.Problem(
+                detail: "TotalEnergyFlow could not be retrieved (RPC failed or device offline).",
+                statusCode: StatusCodes.Status502BadGateway);
+        }
+
+        return Results.Ok(result);
     }
 
     [Authorize(Policies.DeviceOnly)]
