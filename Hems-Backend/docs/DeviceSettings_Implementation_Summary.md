@@ -23,7 +23,30 @@ I've implemented a comprehensive device settings management system that allows y
 - Already implemented for device modes
 - Can be used for automation, scheduling, diagnostics, etc.
 
-### 4. **Predefined Device Modes**
+### 4. **Device-Level Concurrency Control** (NEW)
+- Each device has its own lock (SemaphoreSlim) to prevent concurrent updates
+- Multiple users updating the same device will be queued and processed sequentially
+- Prevents race conditions and conflicting commands being sent to the device
+- Lock timeout of 2 minutes prevents deadlocks
+
+### 5. **Retry with Exponential Backoff** (NEW)
+- Similar to CSMA/CD collision resolution algorithm used in Ethernet
+- Automatic retry for transient failures (timeout, device busy, network errors)
+- Configurable retry options:
+  - `RpcRetryOptions.Default`: 3 retries, 500ms initial delay, 2x backoff
+  - `RpcRetryOptions.Aggressive`: 5 retries, 1000ms initial delay (used for rollback)
+  - `RpcRetryOptions.NoRetry`: Immediate failure, no retries
+- Jitter added to prevent thundering herd problem
+- Error categorization: Timeout, DeviceBusy, DeviceOffline, NetworkError, ValidationError, etc.
+
+### 6. **Atomic Batch Updates with Rollback** (NEW)
+- If any parameter in a batch fails, all previously successful updates are automatically rolled back
+- Ensures all-or-nothing semantics for batch operations
+- Rollback uses aggressive retry to maximize success
+- Original values captured before update for compensation
+- Detailed logging for rollback operations
+
+### 7. **Predefined Device Modes**
 Seven preset operating modes that configure multiple parameters at once:
 1. **Energy Save** - Minimize consumption, preserve battery
 2. **Max Performance** - Maximum power output
@@ -262,12 +285,67 @@ The system provides detailed error information:
 ## Next Steps / Future Enhancements
 
 1. **Parameter Validation**: Add range validation based on element type
-2. **Rollback Support**: Auto-rollback if database fails after device update
+2. ~~**Rollback Support**: Auto-rollback if database fails after device update~~ IMPLEMENTED
 3. **Audit Logging**: Track all parameter changes
 4. **Custom Modes**: Let users save their own modes
 5. **Parameter History**: Track value changes over time
 6. **Bulk Device Updates**: Update same parameter across multiple devices
 7. **Real-time Sync**: Automatically sync parameters from device events
+
+## Concurrency & Reliability Improvements (January 2025)
+
+The following improvements were added to enhance reliability when multiple users or processes update device settings:
+
+### Device-Level Locking
+- **Problem Solved**: Multiple users updating the same device simultaneously could cause race conditions
+- **Solution**: `ConcurrentDictionary<Guid, SemaphoreSlim>` provides per-device locks
+- **Behavior**: Updates to the same device are queued; different devices can update in parallel
+
+### Exponential Backoff Retry
+- **Problem Solved**: Transient failures (device busy, network hiccup) caused immediate failure
+- **Solution**: CSMA/CD-style retry with exponential backoff and jitter
+- **Configuration**:
+  ```csharp
+  // Default: 3 retries, 500ms->1000ms->2000ms delays
+  RpcRetryOptions.Default
+
+  // Aggressive: 5 retries, longer delays (for critical operations like rollback)
+  RpcRetryOptions.Aggressive
+
+  // Custom configuration
+  new RpcRetryOptions
+  {
+      MaxRetries = 4,
+      InitialDelayMs = 1000,
+      MaxDelayMs = 10000,
+      BackoffMultiplier = 2.0,
+      UseJitter = true
+  }
+  ```
+
+### Error Categorization
+- **Problem Solved**: Generic "Device did not confirm update" messages were unhelpful
+- **Solution**: Errors are now categorized:
+  - `Timeout` - Device didn't respond in time
+  - `DeviceBusy` - Device is processing another request
+  - `DeviceOffline` - Device is unreachable
+  - `NetworkError` - Network connectivity issue
+  - `ValidationError` - Invalid parameter value
+  - `DeviceRejected` - Device rejected the command
+  - `MappingNotFound` - No RPC mapping for parameter
+
+### Atomic Batch Updates with Rollback
+- **Problem Solved**: Partial updates left device and database in inconsistent state
+- **Solution**: If any parameter fails, all successful updates are rolled back
+- **Flow**:
+  ```
+  1. Capture original values
+  2. Update parameters one by one
+  3. On failure:
+     a. Stop processing
+     b. Rollback successful updates in reverse order
+     c. Report all parameters as failed
+  ```
 
 ## Testing the Implementation
 
