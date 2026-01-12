@@ -45,8 +45,7 @@ public class DeviceData : EndpointGroupBase
             .MapGet(GetDeviceHeartbeatStatus, "Status/{deviceId:guid}")
             .MapGet(GetLiveDailyEnergyFlow, "DailyEnergyFlow/live/{deviceId:guid}")
             .MapGet(GetLiveTotalEnergyFlow, "TotalEnergyFlow/live/{deviceId:guid}")
-            .MapGet(GetDemoDeviceDiagnostics, "Demo/Diagnostics")
-            .MapPost(FixDemoDevice, "Demo/Fix");
+            .MapGet(GetDemoDeviceDiagnostics, "Demo/Diagnostics");
     }
 
     /// <summary>
@@ -217,8 +216,8 @@ public class DeviceData : EndpointGroupBase
                     ? new
                     {
                         endpoint = $"/api/DeviceData/Status/{demoDevice.Id}",
-                        expectedStatus = isDemoDeviceResult == true ? "ONLINE" : "Check IsDemoDeviceAsync",
-                        note = "Call this endpoint to verify status returns ONLINE for demo device"
+                        expectedStatus = isDemoDeviceResult == true ? "OK" : "Check IsDemoDeviceAsync",
+                        note = "Call this endpoint to verify status returns OK for demo device"
                     }
                     : (object)new { status = "N/A" }
             };
@@ -233,88 +232,6 @@ public class DeviceData : EndpointGroupBase
         catch (Exception ex)
         {
             logger.LogError(ex, "Error getting demo diagnostics");
-            return Results.Problem(
-                detail: ex.Message,
-                statusCode: StatusCodes.Status500InternalServerError);
-        }
-    }
-
-    /// <summary>
-    /// Fixes the demo device by setting IsDemoDevice flag to true.
-    /// FOR TEST ONLY - DO NOT USE IN PRODUCTION
-    /// Call this if demo device was created before the IsDemoDevice column was added.
-    /// </summary>
-    public async Task<IResult> FixDemoDevice(
-        IApplicationDbContext context,
-        IDemoDataService demoDataService,
-        ILogger<DeviceData> logger,
-        CancellationToken ct)
-    {
-        try
-        {
-            var demoSerial = demoDataService.GetDemoDeviceSerialNumber();
-
-            // Find demo device by serial number
-            var demoDevice = await context.Devices
-                .FirstOrDefaultAsync(d => d.SerialNumber == demoSerial, ct);
-
-            if (demoDevice == null)
-            {
-                return Results.NotFound(new { message = $"Demo device with serial {demoSerial} not found" });
-            }
-
-            var wasFixed = false;
-            var changes = new List<string>();
-
-            // Fix IsDemoDevice flag if needed
-            if (!demoDevice.IsDemoDevice)
-            {
-                demoDevice.IsDemoDevice = true;
-                changes.Add("IsDemoDevice: false -> true");
-                wasFixed = true;
-            }
-
-            // Fix ThingsBoardDeviceId if needed
-            if (demoDevice.ThingsBoardDeviceId != DemoDataService.DemoThingsBoardDeviceId)
-            {
-                var oldId = demoDevice.ThingsBoardDeviceId;
-                demoDevice.ThingsBoardDeviceId = DemoDataService.DemoThingsBoardDeviceId;
-                changes.Add($"ThingsBoardDeviceId: {oldId} -> {DemoDataService.DemoThingsBoardDeviceId}");
-                wasFixed = true;
-            }
-
-            if (wasFixed)
-            {
-                await context.SaveChangesAsync(ct);
-                logger.LogWarning("Demo device {DeviceId} fixed: {Changes}", demoDevice.Id, string.Join(", ", changes));
-
-                return Results.Ok(new
-                {
-                    message = "Demo device fixed successfully",
-                    deviceId = demoDevice.Id,
-                    changes = changes,
-                    currentState = new
-                    {
-                        isDemoDevice = demoDevice.IsDemoDevice,
-                        thingsBoardDeviceId = demoDevice.ThingsBoardDeviceId
-                    }
-                });
-            }
-
-            return Results.Ok(new
-            {
-                message = "Demo device is already correctly configured",
-                deviceId = demoDevice.Id,
-                currentState = new
-                {
-                    isDemoDevice = demoDevice.IsDemoDevice,
-                    thingsBoardDeviceId = demoDevice.ThingsBoardDeviceId
-                }
-            });
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error fixing demo device");
             return Results.Problem(
                 detail: ex.Message,
                 statusCode: StatusCodes.Status500InternalServerError);
