@@ -519,28 +519,42 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
 
     #region Demo Simulation Methods
 
-    private static readonly Random _random = new();
+    // Demo device timezone (Istanbul/Turkey - UTC+3)
+    private static readonly TimeZoneInfo _demoTimezone = TimeZoneInfo.FindSystemTimeZoneById("Turkey Standard Time");
 
     /// <summary>
     /// Generate simulated daily power metrics (5-minute intervals)
+    /// Uses device local timezone for "today" check, not UTC
     /// </summary>
     private PowerAndEnergyMetricsResponseDto GetSimulatedDailyMetrics(DateOnly date)
     {
         var dataPoints = new List<PowerAndEnergyMetricsDataPoint>();
-        var now = DateTime.UtcNow;
-        var isToday = date == DateOnly.FromDateTime(now);
+
+        // Use device local time for "today" check (demo device is in Istanbul timezone)
+        var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _demoTimezone);
+        var isToday = date == DateOnly.FromDateTime(nowLocal);
+
+        // For smooth data, we need to track previous values
+        double prevPvPower = 0, prevLoadPower = 0, prevGridPower = 0, prevBatteryPower = 0;
 
         // Generate 5-minute samples for the day
         for (int hour = 0; hour < 24; hour++)
         {
             for (int minute = 0; minute < 60; minute += 5)
             {
-                // If today, only generate up to current time
-                if (isToday && (hour > now.Hour || (hour == now.Hour && minute > now.Minute)))
+                // If today, only generate up to current LOCAL time
+                if (isToday && (hour > nowLocal.Hour || (hour == nowLocal.Hour && minute > nowLocal.Minute)))
                     break;
 
                 var timeOfDay = hour + (minute / 60.0);
-                var (pvPower, loadPower, gridPower, batteryPower) = CalculateSimulatedPower(timeOfDay, date);
+                var (pvPower, loadPower, gridPower, batteryPower) = CalculateSimulatedPowerSmooth(
+                    timeOfDay, date, prevPvPower, prevLoadPower, prevGridPower, prevBatteryPower);
+
+                // Update previous values for smoothing
+                prevPvPower = pvPower;
+                prevLoadPower = loadPower;
+                prevGridPower = gridPower;
+                prevBatteryPower = batteryPower;
 
                 dataPoints.Add(new PowerAndEnergyMetricsDataPoint
                 {
@@ -560,16 +574,20 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
 
     /// <summary>
     /// Generate simulated weekly energy metrics (daily totals)
+    /// Uses device local timezone for "today" check
     /// </summary>
     private PowerAndEnergyMetricsResponseDto GetSimulatedWeeklyMetrics(int year, int week)
     {
         var weekStart = ISOWeek.ToDateTime(year, week, DayOfWeek.Monday);
         var dataPoints = new List<PowerAndEnergyMetricsDataPoint>();
 
+        // Use device local time for comparison
+        var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _demoTimezone);
+
         for (int i = 0; i < 7; i++)
         {
             var day = weekStart.AddDays(i);
-            if (day > DateTime.UtcNow) break;
+            if (day.Date > nowLocal.Date) break; // Use local date comparison
 
             var energy = GetSimulatedDailyEnergy(day);
 
@@ -596,16 +614,20 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
 
     /// <summary>
     /// Generate simulated monthly energy metrics (daily totals)
+    /// Uses device local timezone for "today" check
     /// </summary>
     private PowerAndEnergyMetricsResponseDto GetSimulatedMonthlyMetrics(int year, int month)
     {
         var daysInMonth = DateTime.DaysInMonth(year, month);
         var dataPoints = new List<PowerAndEnergyMetricsDataPoint>();
 
+        // Use device local time for comparison
+        var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _demoTimezone);
+
         for (int day = 1; day <= daysInMonth; day++)
         {
             var date = new DateTime(year, month, day);
-            if (date > DateTime.UtcNow) break;
+            if (date.Date > nowLocal.Date) break; // Use local date comparison
 
             var energy = GetSimulatedDailyEnergy(date);
 
@@ -632,18 +654,21 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
 
     /// <summary>
     /// Generate simulated yearly energy metrics (monthly totals)
+    /// Uses device local timezone for "today" check
     /// </summary>
     private PowerAndEnergyMetricsResponseDto GetSimulatedYearlyMetrics(int year)
     {
         var dataPoints = new List<PowerAndEnergyMetricsDataPoint>();
-        var now = DateTime.UtcNow;
+
+        // Use device local time for comparison
+        var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _demoTimezone);
 
         for (int month = 1; month <= 12; month++)
         {
-            if (year > now.Year || (year == now.Year && month > now.Month)) break;
+            if (year > nowLocal.Year || (year == nowLocal.Year && month > nowLocal.Month)) break;
 
             var daysInMonth = DateTime.DaysInMonth(year, month);
-            var lastDay = (year == now.Year && month == now.Month) ? now.Day : daysInMonth;
+            var lastDay = (year == nowLocal.Year && month == nowLocal.Month) ? nowLocal.Day : daysInMonth;
 
             double totalPv = 0, totalLoad = 0, totalGridImport = 0, totalGridExport = 0;
             double totalBatteryCharge = 0, totalBatteryDischarge = 0;
@@ -682,67 +707,119 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
     }
 
     /// <summary>
-    /// Calculate simulated power values for a specific time of day
+    /// Calculate simulated power values with smooth transitions between samples.
+    /// Uses sine waves and gradual changes for realistic-looking graphs.
     /// </summary>
-    private static (double pvPower, double loadPower, double gridPower, double batteryPower) CalculateSimulatedPower(double timeOfDay, DateOnly date)
+    private static (double pvPower, double loadPower, double gridPower, double batteryPower) CalculateSimulatedPowerSmooth(
+        double timeOfDay, DateOnly date, double prevPvPower, double prevLoadPower, double prevGridPower, double prevBatteryPower)
     {
         // Use date as seed for consistent day-to-day variation
         var daySeed = date.Year * 1000 + date.DayOfYear;
-        var dayRandom = new Random(daySeed + (int)(timeOfDay * 100));
 
-        // PV power: bell curve centered at solar noon (13:00)
+        // === PV Power: Smooth bell curve with subtle cloud variations ===
         double pvPower = 0;
-        if (timeOfDay >= 6 && timeOfDay <= 20)
+        if (timeOfDay >= 5.5 && timeOfDay <= 20.5)
         {
-            var solarNoon = 13.0;
-            var hourFromNoon = Math.Abs(timeOfDay - solarNoon);
-            var maxPower = 5000.0; // 5kW system
-            var sigma = 4.0;
+            var solarNoon = 12.5; // Solar noon
+            var hourFromNoon = timeOfDay - solarNoon;
+            var maxPower = 4800.0; // 4.8kW peak
+            var sigma = 3.8; // Spread of the curve
+
+            // Smooth Gaussian curve for PV
             pvPower = maxPower * Math.Exp(-(hourFromNoon * hourFromNoon) / (2 * sigma * sigma));
 
             // Seasonal multiplier
             var seasonalMult = GetSeasonalPvMultiplier(date.Month);
             pvPower *= seasonalMult;
 
-            // Add slight variation
-            pvPower *= (0.9 + dayRandom.NextDouble() * 0.2);
+            // Add smooth cloud variation using sine waves (not random jumps)
+            // Use multiple sine waves at different frequencies for natural-looking variation
+            var cloudWave1 = Math.Sin(timeOfDay * 0.5 + daySeed * 0.1) * 0.03;
+            var cloudWave2 = Math.Sin(timeOfDay * 1.2 + daySeed * 0.2) * 0.02;
+            var cloudWave3 = Math.Sin(timeOfDay * 2.5 + daySeed * 0.3) * 0.01;
+            var cloudVariation = 1.0 + cloudWave1 + cloudWave2 + cloudWave3;
+            pvPower *= cloudVariation;
+
+            // Ensure smooth sunrise/sunset transitions
+            if (timeOfDay < 6.5)
+            {
+                var sunriseFactor = (timeOfDay - 5.5) / 1.0; // 0 to 1 over 1 hour
+                pvPower *= Math.Sin(sunriseFactor * Math.PI / 2); // Smooth ease-in
+            }
+            else if (timeOfDay > 19.5)
+            {
+                var sunsetFactor = (20.5 - timeOfDay) / 1.0; // 1 to 0 over 1 hour
+                pvPower *= Math.Sin(sunsetFactor * Math.PI / 2); // Smooth ease-out
+            }
         }
 
-        // Load power varies by time of day
-        double loadPower = timeOfDay switch
-        {
-            >= 0 and < 5 => 300 + dayRandom.NextDouble() * 200,
-            >= 5 and < 7 => 500 + dayRandom.NextDouble() * 500,
-            >= 7 and < 9 => 1000 + dayRandom.NextDouble() * 800,
-            >= 9 and < 12 => 600 + dayRandom.NextDouble() * 400,
-            >= 12 and < 14 => 800 + dayRandom.NextDouble() * 500,
-            >= 14 and < 17 => 500 + dayRandom.NextDouble() * 400,
-            >= 17 and < 20 => 1500 + dayRandom.NextDouble() * 1200,
-            >= 20 and < 22 => 1000 + dayRandom.NextDouble() * 800,
-            _ => 400 + dayRandom.NextDouble() * 300
-        };
+        // === Load Power: Smooth transitions with sine-based patterns ===
+        // Base load pattern using smooth sine waves
+        var baseLoad = 500.0; // Minimum base load
 
-        // Energy balance: calculate grid and battery
+        // Morning peak (7-9): smooth rise and fall
+        var morningPeak = 800 * Math.Exp(-Math.Pow(timeOfDay - 8.0, 2) / 2.0);
+
+        // Lunch bump (12-14): smaller peak
+        var lunchBump = 400 * Math.Exp(-Math.Pow(timeOfDay - 13.0, 2) / 1.5);
+
+        // Evening peak (18-21): largest peak
+        var eveningPeak = 1800 * Math.Exp(-Math.Pow(timeOfDay - 19.5, 2) / 3.0);
+
+        // Night reduction (0-5): lower base
+        var nightReduction = (timeOfDay < 5 || timeOfDay > 23) ? -200 : 0;
+
+        // Combine all components
+        var targetLoad = baseLoad + morningPeak + lunchBump + eveningPeak + nightReduction;
+
+        // Add subtle variation using sine waves (not random)
+        var loadWave1 = Math.Sin(timeOfDay * 0.8 + daySeed * 0.15) * 50;
+        var loadWave2 = Math.Sin(timeOfDay * 2.0 + daySeed * 0.25) * 30;
+        targetLoad += loadWave1 + loadWave2;
+
+        // Smooth transition from previous value (exponential moving average)
+        double loadPower;
+        if (prevLoadPower > 0)
+        {
+            var smoothingFactor = 0.3; // 0 = no change, 1 = instant change
+            loadPower = prevLoadPower + (targetLoad - prevLoadPower) * smoothingFactor;
+        }
+        else
+        {
+            loadPower = targetLoad;
+        }
+        loadPower = Math.Max(200, loadPower); // Minimum load
+
+        // === Energy Balance: Grid and Battery ===
         var netPower = pvPower - loadPower;
         double gridPower, batteryPower;
 
         if (netPower >= 0)
         {
-            // Excess PV: charge battery, export to grid
-            var batteryCharge = Math.Min(netPower * 0.7, 3000);
+            // Excess PV: charge battery first, then export to grid
+            var batteryCharge = Math.Min(netPower * 0.65, 2800); // Max 2.8kW charge rate
             batteryPower = -batteryCharge;
-            gridPower = -(netPower - batteryCharge);
+            gridPower = -(netPower - batteryCharge); // Negative = export
         }
         else
         {
-            // Deficit: discharge battery, import from grid
+            // Deficit: discharge battery first, then import from grid
             var deficit = Math.Abs(netPower);
-            var batteryDischarge = Math.Min(deficit * 0.6, 2500);
+            var batteryDischarge = Math.Min(deficit * 0.55, 2400); // Max 2.4kW discharge rate
             batteryPower = batteryDischarge;
-            gridPower = deficit - batteryDischarge;
+            gridPower = deficit - batteryDischarge; // Positive = import
         }
 
-        return (pvPower, loadPower, gridPower, batteryPower);
+        // Smooth grid and battery transitions
+        if (prevGridPower != 0 || prevBatteryPower != 0)
+        {
+            var gridSmoothing = 0.4;
+            var batterySmoothing = 0.35;
+            gridPower = prevGridPower + (gridPower - prevGridPower) * gridSmoothing;
+            batteryPower = prevBatteryPower + (batteryPower - prevBatteryPower) * batterySmoothing;
+        }
+
+        return (Math.Max(0, pvPower), loadPower, gridPower, batteryPower);
     }
 
     /// <summary>
