@@ -181,13 +181,15 @@ public class DeviceStatusHub : Hub
         if (isDemoDevice)
         {
             _logger.LogInformation(
-                "DeviceStatusHub - Returning ONLINE status for demo device {DeviceId}",
+                "DeviceStatusHub - Returning OK status for demo device {DeviceId}",
                 localDeviceId);
 
+            // IMPORTANT: Send "OK" not "ONLINE" - mobile app expects DeviceStatusType enum values
+            // DeviceStatusType = 'OK' | 'PENDING' | 'WAITING' | 'DISCONNECTED' | 'NOT_TRACKED'
             await Clients.Caller.SendAsync("DeviceStatusChanged", new
             {
                 deviceId = localDeviceId,
-                status = "ONLINE",
+                status = "OK",
                 missedHeartbeats = 0,
                 timestamp = DateTime.UtcNow,
                 isInitialStatus = true
