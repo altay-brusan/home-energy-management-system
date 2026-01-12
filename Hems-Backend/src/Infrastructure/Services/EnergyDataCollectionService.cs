@@ -273,11 +273,11 @@ public class EnergyDataCollectionService : IEnergyDataCollectionService
     {
         try
         {
-            _logger.LogDebug("Calling getDailyEnergyData RPC for device {DeviceId}", thingsBoardDeviceId);
+            _logger.LogDebug("Calling getDailyEnergyFlowState RPC for device {DeviceId}", thingsBoardDeviceId);
 
             var response = await _thingsBoardConnector.SendTwoWayRpcAsync(
                 thingsBoardDeviceId,
-                "getDailyEnergyData",
+                "getDailyEnergyFlowState",
                 new Dictionary<string, object>(),
                 RpcTimeoutMs,
                 10,
@@ -286,7 +286,7 @@ public class EnergyDataCollectionService : IEnergyDataCollectionService
             if (response?.Success != true || response.Response == null)
             {
                 _logger.LogWarning(
-                    "getDailyEnergyData RPC failed for device {DeviceId}: {Error}",
+                    "getDailyEnergyFlowState RPC failed for device {DeviceId}: {Error}",
                     thingsBoardDeviceId, response?.Error ?? "No response");
                 return null;
             }
@@ -306,11 +306,11 @@ public class EnergyDataCollectionService : IEnergyDataCollectionService
     {
         try
         {
-            _logger.LogDebug("Calling getLifetimeEnergyData RPC for device {DeviceId}", thingsBoardDeviceId);
+            _logger.LogDebug("Calling getTotalEnergyFlowState RPC for device {DeviceId}", thingsBoardDeviceId);
 
             var response = await _thingsBoardConnector.SendTwoWayRpcAsync(
                 thingsBoardDeviceId,
-                "getLifetimeEnergyData",
+                "getTotalEnergyFlowState",
                 new Dictionary<string, object>(),
                 RpcTimeoutMs,
                 10,
@@ -319,7 +319,7 @@ public class EnergyDataCollectionService : IEnergyDataCollectionService
             if (response?.Success != true || response.Response == null)
             {
                 _logger.LogWarning(
-                    "getLifetimeEnergyData RPC failed for device {DeviceId}: {Error}",
+                    "getTotalEnergyFlowState RPC failed for device {DeviceId}: {Error}",
                     thingsBoardDeviceId, response?.Error ?? "No response");
                 return null;
             }
@@ -462,39 +462,190 @@ public class EnergyDataCollectionService : IEnergyDataCollectionService
         return Math.Max(0, avgPower * intervalHours / 1000); // Convert W to kWh
     }
 
-    private static DailyEnergyRpcResult ParseDailyEnergyResponse(Dictionary<string, object> response)
+    /// <summary>
+    /// Parses getDailyEnergyFlowState response.
+    /// Response format: { "success": true, "data": { "loadEnergyKWh": ..., "grid": {...}, "pv": {...}, ... } }
+    /// </summary>
+    private static DailyEnergyRpcResult? ParseDailyEnergyResponse(Dictionary<string, object> response)
     {
+        // Check success flag
+        if (!GetBoolValue(response, "success"))
+            return null;
+
+        // Extract "data" section
+        var data = GetNestedObject(response, "data");
+        if (data == null)
+            return null;
+
+        // Local variables for building the result
+        double? loadEnergy = GetDoubleValue(data, "loadEnergyKWh");
+        double? gridImport = null, gridExport = null;
+        double? pvTotal = null;
+        double? mppt1 = null, mppt2 = null, mppt3 = null, mppt4 = null;
+        double? batteryCharge = null, batteryDischarge = null;
+        double? generatorEnergy = null;
+
+        // Grid (nested)
+        var grid = GetNestedObject(data, "grid");
+        if (grid != null)
+        {
+            gridImport = GetDoubleValue(grid, "importEnergyKWh");
+            gridExport = GetDoubleValue(grid, "exportEnergyKWh");
+        }
+
+        // PV (nested)
+        var pv = GetNestedObject(data, "pv");
+        if (pv != null)
+        {
+            pvTotal = GetDoubleValue(pv, "totalEnergyKWh");
+
+            // Parse MPPT array
+            var mpptArray = GetNestedArray(pv, "mppt");
+            if (mpptArray != null)
+            {
+                foreach (var mppt in mpptArray)
+                {
+                    var id = GetIntValue(mppt, "id");
+                    var energy = GetDoubleValue(mppt, "energyKWh");
+                    if (id.HasValue && energy.HasValue)
+                    {
+                        switch (id.Value)
+                        {
+                            case 1: mppt1 = energy; break;
+                            case 2: mppt2 = energy; break;
+                            case 3: mppt3 = energy; break;
+                            case 4: mppt4 = energy; break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Battery (nested)
+        var battery = GetNestedObject(data, "battery");
+        if (battery != null)
+        {
+            batteryCharge = GetDoubleValue(battery, "chargeEnergyKWh");
+            batteryDischarge = GetDoubleValue(battery, "dischargeEnergyKWh");
+        }
+
+        // Generator (nested)
+        var generator = GetNestedObject(data, "generator");
+        if (generator != null)
+        {
+            generatorEnergy = GetDoubleValue(generator, "energyKWh");
+        }
+
         return new DailyEnergyRpcResult
         {
-            PvTotalEnergyKWh = GetDoubleValue(response, "pvTotalEnergyKWh"),
-            GridImportEnergyKWh = GetDoubleValue(response, "gridImportEnergyKWh"),
-            GridExportEnergyKWh = GetDoubleValue(response, "gridExportEnergyKWh"),
-            BatteryChargeEnergyKWh = GetDoubleValue(response, "batteryChargeEnergyKWh"),
-            BatteryDischargeEnergyKWh = GetDoubleValue(response, "batteryDischargeEnergyKWh"),
-            LoadEnergyKWh = GetDoubleValue(response, "loadEnergyKWh"),
-            GeneratorEnergyKWh = GetDoubleValue(response, "generatorEnergyKWh"),
-            PvMppt1EnergyKWh = GetDoubleValue(response, "pvMppt1EnergyKWh"),
-            PvMppt2EnergyKWh = GetDoubleValue(response, "pvMppt2EnergyKWh"),
-            PvMppt3EnergyKWh = GetDoubleValue(response, "pvMppt3EnergyKWh"),
-            PvMppt4EnergyKWh = GetDoubleValue(response, "pvMppt4EnergyKWh")
+            LoadEnergyKWh = loadEnergy,
+            GridImportEnergyKWh = gridImport,
+            GridExportEnergyKWh = gridExport,
+            PvTotalEnergyKWh = pvTotal,
+            PvMppt1EnergyKWh = mppt1,
+            PvMppt2EnergyKWh = mppt2,
+            PvMppt3EnergyKWh = mppt3,
+            PvMppt4EnergyKWh = mppt4,
+            BatteryChargeEnergyKWh = batteryCharge,
+            BatteryDischargeEnergyKWh = batteryDischarge,
+            GeneratorEnergyKWh = generatorEnergy
         };
     }
 
-    private static LifetimeEnergyRpcResult ParseLifetimeEnergyResponse(Dictionary<string, object> response)
+    /// <summary>
+    /// Parses getTotalEnergyFlowState response.
+    /// Response format: { "success": true, "data": { "grid": {...}, "pv": {...}, "load": {...}, ... } }
+    /// </summary>
+    private static LifetimeEnergyRpcResult? ParseLifetimeEnergyResponse(Dictionary<string, object> response)
     {
+        // Check success flag
+        if (!GetBoolValue(response, "success"))
+            return null;
+
+        // Extract "data" section
+        var data = GetNestedObject(response, "data");
+        if (data == null)
+            return null;
+
+        // Local variables for building the result
+        double? gridImport = null, gridExport = null;
+        double? pvTotal = null;
+        double? mppt1 = null, mppt2 = null, mppt3 = null, mppt4 = null;
+        double? loadEnergy = null;
+        double? batteryCharge = null, batteryDischarge = null;
+        double? generatorEnergy = null;
+
+        // Grid (nested)
+        var grid = GetNestedObject(data, "grid");
+        if (grid != null)
+        {
+            gridImport = GetDoubleValue(grid, "importTotalEnergyKWh");
+            gridExport = GetDoubleValue(grid, "exportTotalEnergyKWh");
+        }
+
+        // PV (nested)
+        var pv = GetNestedObject(data, "pv");
+        if (pv != null)
+        {
+            pvTotal = GetDoubleValue(pv, "totalEnergyKWh");
+
+            // Parse MPPT array
+            var mpptArray = GetNestedArray(pv, "mppt");
+            if (mpptArray != null)
+            {
+                foreach (var mppt in mpptArray)
+                {
+                    var id = GetIntValue(mppt, "id");
+                    var energy = GetDoubleValue(mppt, "totalEnergyKWh");
+                    if (id.HasValue && energy.HasValue)
+                    {
+                        switch (id.Value)
+                        {
+                            case 1: mppt1 = energy; break;
+                            case 2: mppt2 = energy; break;
+                            case 3: mppt3 = energy; break;
+                            case 4: mppt4 = energy; break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Load (nested - different from daily which has it at root)
+        var load = GetNestedObject(data, "load");
+        if (load != null)
+        {
+            loadEnergy = GetDoubleValue(load, "totalEnergyKWh");
+        }
+
+        // Battery (nested)
+        var battery = GetNestedObject(data, "battery");
+        if (battery != null)
+        {
+            batteryCharge = GetDoubleValue(battery, "totalChargeEnergyKWh");
+            batteryDischarge = GetDoubleValue(battery, "totalDischargeEnergyKWh");
+        }
+
+        // Generator (nested)
+        var generator = GetNestedObject(data, "generator");
+        if (generator != null)
+        {
+            generatorEnergy = GetDoubleValue(generator, "totalEnergyKWh");
+        }
+
         return new LifetimeEnergyRpcResult
         {
-            PvTotalEnergyKWh = GetDoubleValue(response, "pvTotalEnergyKWh"),
-            GridImportEnergyKWh = GetDoubleValue(response, "gridImportEnergyKWh"),
-            GridExportEnergyKWh = GetDoubleValue(response, "gridExportEnergyKWh"),
-            BatteryChargeEnergyKWh = GetDoubleValue(response, "batteryChargeEnergyKWh"),
-            BatteryDischargeEnergyKWh = GetDoubleValue(response, "batteryDischargeEnergyKWh"),
-            LoadEnergyKWh = GetDoubleValue(response, "loadEnergyKWh"),
-            GeneratorEnergyKWh = GetDoubleValue(response, "generatorEnergyKWh"),
-            PvMppt1EnergyKWh = GetDoubleValue(response, "pvMppt1EnergyKWh"),
-            PvMppt2EnergyKWh = GetDoubleValue(response, "pvMppt2EnergyKWh"),
-            PvMppt3EnergyKWh = GetDoubleValue(response, "pvMppt3EnergyKWh"),
-            PvMppt4EnergyKWh = GetDoubleValue(response, "pvMppt4EnergyKWh")
+            GridImportEnergyKWh = gridImport,
+            GridExportEnergyKWh = gridExport,
+            PvTotalEnergyKWh = pvTotal,
+            PvMppt1EnergyKWh = mppt1,
+            PvMppt2EnergyKWh = mppt2,
+            PvMppt3EnergyKWh = mppt3,
+            PvMppt4EnergyKWh = mppt4,
+            LoadEnergyKWh = loadEnergy,
+            BatteryChargeEnergyKWh = batteryCharge,
+            BatteryDischargeEnergyKWh = batteryDischarge,
+            GeneratorEnergyKWh = generatorEnergy
         };
     }
 
@@ -521,6 +672,109 @@ public class EnergyDataCollectionService : IEnergyDataCollectionService
             if (double.TryParse(value.ToString(), out var parsed))
                 return parsed;
         }
+        return null;
+    }
+
+    private static bool GetBoolValue(Dictionary<string, object> dict, string key)
+    {
+        if (dict.TryGetValue(key, out var value) && value != null)
+        {
+            if (value is JsonElement element)
+            {
+                if (element.ValueKind == JsonValueKind.True)
+                    return true;
+                if (element.ValueKind == JsonValueKind.False)
+                    return false;
+                if (element.ValueKind == JsonValueKind.String && bool.TryParse(element.GetString(), out var b))
+                    return b;
+                return false;
+            }
+            if (value is bool b1)
+                return b1;
+            if (bool.TryParse(value.ToString(), out var parsed))
+                return parsed;
+        }
+        return false;
+    }
+
+    private static int? GetIntValue(Dictionary<string, object> dict, string key)
+    {
+        if (dict.TryGetValue(key, out var value) && value != null)
+        {
+            if (value is JsonElement element)
+            {
+                if (element.ValueKind == JsonValueKind.Number)
+                    return element.GetInt32();
+                if (element.ValueKind == JsonValueKind.String && int.TryParse(element.GetString(), out var i))
+                    return i;
+                return null;
+            }
+            if (value is int i1)
+                return i1;
+            if (value is long l)
+                return (int)l;
+            if (int.TryParse(value.ToString(), out var parsed))
+                return parsed;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Gets a nested object from a dictionary, handling JsonElement conversion
+    /// </summary>
+    private static Dictionary<string, object>? GetNestedObject(Dictionary<string, object> dict, string key)
+    {
+        if (!dict.TryGetValue(key, out var value) || value == null)
+            return null;
+
+        if (value is JsonElement element)
+        {
+            if (element.ValueKind != JsonValueKind.Object)
+                return null;
+
+            var result = new Dictionary<string, object>();
+            foreach (var prop in element.EnumerateObject())
+            {
+                result[prop.Name] = prop.Value;
+            }
+            return result;
+        }
+
+        if (value is Dictionary<string, object> nested)
+            return nested;
+
+        return null;
+    }
+
+    /// <summary>
+    /// Gets a nested array from a dictionary, handling JsonElement conversion
+    /// </summary>
+    private static List<Dictionary<string, object>>? GetNestedArray(Dictionary<string, object> dict, string key)
+    {
+        if (!dict.TryGetValue(key, out var value) || value == null)
+            return null;
+
+        if (value is JsonElement element)
+        {
+            if (element.ValueKind != JsonValueKind.Array)
+                return null;
+
+            var result = new List<Dictionary<string, object>>();
+            foreach (var item in element.EnumerateArray())
+            {
+                if (item.ValueKind == JsonValueKind.Object)
+                {
+                    var itemDict = new Dictionary<string, object>();
+                    foreach (var prop in item.EnumerateObject())
+                    {
+                        itemDict[prop.Name] = prop.Value;
+                    }
+                    result.Add(itemDict);
+                }
+            }
+            return result;
+        }
+
         return null;
     }
 
