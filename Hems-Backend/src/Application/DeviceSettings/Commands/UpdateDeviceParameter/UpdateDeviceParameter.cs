@@ -94,11 +94,12 @@ public class UpdateDeviceParameterCommandHandler : IRequestHandler<UpdateDeviceP
         var device = setupDevice.Device;
         var parameterName = parameterValue.Parameter.Name;
 
-        // Step 1: Update device via RPC first
+        // Step 1: Update device via RPC first (with retry support)
         var rpcResult = await _rpcExecutor.ExecuteParameterUpdateAsync(
             device.ThingsBoardDeviceId,
             parameterName,
             request.Value,
+            RpcRetryOptions.Default,
             cancellationToken);
 
         if (!rpcResult.Success)
