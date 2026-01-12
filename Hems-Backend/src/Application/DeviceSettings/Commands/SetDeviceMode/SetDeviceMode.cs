@@ -103,6 +103,7 @@ public class SetDeviceModeCommandHandler : IRequestHandler<SetDeviceModeCommand,
                     device.ThingsBoardDeviceId,
                     ExportStrategyParameterName,
                     exportStrategyValue,
+                    RpcRetryOptions.Default,
                     cancellationToken);
 
                 if (!rpcResult.Success)
