@@ -1,1 +1,2 @@
+# Python >= 3.10 gereklidir
 requests>=2.28.0

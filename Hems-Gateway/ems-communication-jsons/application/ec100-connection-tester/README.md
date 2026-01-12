@@ -12,6 +12,11 @@ Bu uygulama, EC100 gateway cihazinin inverter ile duzgun iletisim kurdugunu test
 3. Inverter'dan veri okunabiliyorsa **BASARILI** (yesil)
 4. Okuma basarisizsa **BASARISIZ** (kirmizi)
 
+## Gereksinimler
+
+- Windows isletim sistemi
+- Python 3.10 veya ustu ([python.org](https://www.python.org/downloads/) adresinden indirilebilir)
+
 ## Kurulum
 
 Sadece ilk seferde gerekli:
@@ -39,7 +44,7 @@ Sadece ilk seferde gerekli:
 | Ozellik | Deger |
 |---------|-------|
 | Platform | Windows |
-| Dil | Python 3 |
+| Python | 3.10 veya ustu |
 | UI | Tkinter |
 | API | ThingsBoard REST API |
 | RPC Metodu | `getInverterInfo` |
