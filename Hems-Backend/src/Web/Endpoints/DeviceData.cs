@@ -40,7 +40,9 @@ public class DeviceData : EndpointGroupBase
             //.RequireAuthorization()
             .MapGet(GetDeviceData)
             .MapGet(GetLivePowerFlow, "PowerFlow/live/{deviceId:guid}")
-            .MapGet(GetDeviceHeartbeatStatus, "Status/{deviceId:guid}");
+            .MapGet(GetDeviceHeartbeatStatus, "Status/{deviceId:guid}")
+            .MapGet(GetLiveDailyEnergyFlow, "DailyEnergyFlow/live/{deviceId:guid}")
+            .MapGet(GetLiveTotalEnergyFlow, "TotalEnergyFlow/live/{deviceId:guid}");
     }
 
     /// <summary>
@@ -115,6 +117,54 @@ public class DeviceData : EndpointGroupBase
         [AsParameters] GetDeviceDataQuery query)
     {
         return await sender.Send(query);
+    }
+
+    /// <summary>
+    /// Gets live daily energy data from device via RPC
+    /// </summary>
+    public async Task<IResult> GetLiveDailyEnergyFlow(
+        Guid deviceId,
+        IEnergyDataCollectionService energyService,
+        ILogger<DeviceData> logger,
+        CancellationToken ct)
+    {
+        logger.LogInformation("Live DailyEnergyFlow requested for ThingsBoardDeviceId {ThingsBoardDeviceId}", deviceId);
+
+        var result = await energyService.FetchDailyEnergyViaRpcAsync(deviceId, ct);
+
+        if (result == null)
+        {
+            logger.LogWarning("DailyEnergyFlow could not be retrieved for ThingsBoardDeviceId {ThingsBoardDeviceId}", deviceId);
+            return Results.Problem(
+                detail: "DailyEnergyFlow could not be retrieved (RPC failed or device offline).",
+                statusCode: StatusCodes.Status502BadGateway);
+        }
+
+        return Results.Ok(result);
+    }
+
+    /// <summary>
+    /// Gets live total (lifetime) energy data from device via RPC
+    /// </summary>
+    public async Task<IResult> GetLiveTotalEnergyFlow(
+        Guid deviceId,
+        IEnergyDataCollectionService energyService,
+        ILogger<DeviceData> logger,
+        CancellationToken ct)
+    {
+        logger.LogInformation("Live TotalEnergyFlow requested for ThingsBoardDeviceId {ThingsBoardDeviceId}", deviceId);
+
+        var result = await energyService.FetchLifetimeEnergyViaRpcAsync(deviceId, ct);
+
+        if (result == null)
+        {
+            logger.LogWarning("TotalEnergyFlow could not be retrieved for ThingsBoardDeviceId {ThingsBoardDeviceId}", deviceId);
+            return Results.Problem(
+                detail: "TotalEnergyFlow could not be retrieved (RPC failed or device offline).",
+                statusCode: StatusCodes.Status502BadGateway);
+        }
+
+        return Results.Ok(result);
     }
 
     [Authorize(Policies.DeviceOnly)]
