@@ -227,19 +227,39 @@ public class DemoDataService : IDemoDataService
                 var existingSetup = await _context.Setups
                     .FirstOrDefaultAsync(s => s.SiteId == existingSite.Id, cancellationToken);
 
-                var existingDevice = existingSetup != null
-                    ? await _context.SetupDevices
-                        .Where(sd => sd.SetupId == existingSetup.Id)
-                        .Select(sd => sd.DeviceId)
-                        .FirstOrDefaultAsync(cancellationToken)
-                    : Guid.Empty;
+                Device? existingDevice = null;
+                if (existingSetup != null)
+                {
+                    var existingSetupDevice = await _context.SetupDevices
+                        .Include(sd => sd.Device)
+                        .FirstOrDefaultAsync(sd => sd.SetupId == existingSetup.Id, cancellationToken);
+
+                    existingDevice = existingSetupDevice?.Device;
+
+                    // IMPORTANT: Ensure existing demo devices have IsDemoDevice flag set
+                    // This handles devices created before the IsDemoDevice column was added
+                    if (existingDevice != null && !existingDevice.IsDemoDevice)
+                    {
+                        _logger.LogWarning(
+                            "Existing demo device {DeviceId} has IsDemoDevice=false, updating to true",
+                            existingDevice.Id);
+
+                        existingDevice.IsDemoDevice = true;
+                        existingDevice.ThingsBoardDeviceId = DemoThingsBoardDeviceId;
+                        await _context.SaveChangesAsync(cancellationToken);
+
+                        _logger.LogInformation(
+                            "Updated demo device {DeviceId} with IsDemoDevice=true",
+                            existingDevice.Id);
+                    }
+                }
 
                 return new DemoDataSeedResult
                 {
                     Success = true,
                     SiteId = existingSite.Id,
                     SetupId = existingSetup?.Id,
-                    DeviceId = existingDevice != Guid.Empty ? existingDevice : null
+                    DeviceId = existingDevice?.Id
                 };
             }
 
