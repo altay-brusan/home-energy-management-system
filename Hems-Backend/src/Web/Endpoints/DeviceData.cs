@@ -129,7 +129,8 @@ public class DeviceData : EndpointGroupBase
     public async Task<IResult> GetDemoDeviceDiagnostics(
         IApplicationDbContext context,
         IDemoDataService demoDataService,
-        ILogger<DeviceData> logger)
+        ILogger<DeviceData> logger,
+        CancellationToken ct)
     {
         try
         {
@@ -150,7 +151,7 @@ public class DeviceData : EndpointGroupBase
                     d.IsDemoDevice,
                     d.IsDeleted
                 })
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(ct);
 
             // Check setup-device relationship
             var setupDevice = demoDevice != null
@@ -164,8 +165,15 @@ public class DeviceData : EndpointGroupBase
                         SiteName = sd.Setup.Site!.Name,
                         SiteUserId = sd.Setup.Site.UserId
                     })
-                    .FirstOrDefaultAsync()
+                    .FirstOrDefaultAsync(ct)
                 : null;
+
+            // Test IsDemoDeviceAsync method directly
+            bool? isDemoDeviceResult = null;
+            if (demoDevice != null)
+            {
+                isDemoDeviceResult = await demoDataService.IsDemoDeviceAsync(demoDevice.Id, ct);
+            }
 
             var diagnostics = new
             {
@@ -182,9 +190,12 @@ public class DeviceData : EndpointGroupBase
                         name = demoDevice.Name,
                         serialNumber = demoDevice.SerialNumber,
                         thingsBoardDeviceId = demoDevice.ThingsBoardDeviceId,
-                        isDemoDevice = demoDevice.IsDemoDevice,
+                        isDemoDeviceFlag = demoDevice.IsDemoDevice,
                         isDeleted = demoDevice.IsDeleted,
-                        status = demoDevice.IsDemoDevice && !demoDevice.IsDeleted ? "OK" : "WARNING: Check IsDemoDevice and IsDeleted flags"
+                        isDemoDeviceAsyncResult = isDemoDeviceResult,
+                        status = demoDevice.IsDemoDevice && !demoDevice.IsDeleted && isDemoDeviceResult == true
+                            ? "OK"
+                            : "WARNING: IsDemoDevice flag or IsDemoDeviceAsync check failed"
                     }
                     : (object)new { status = "NOT_FOUND - Demo device does not exist" },
                 setupRelationship = setupDevice != null
@@ -200,12 +211,21 @@ public class DeviceData : EndpointGroupBase
                     : (object)new { status = "NOT_FOUND - Device not linked to any setup/site" },
                 frontendShouldUse = demoDevice != null
                     ? $"Device ID (internal): {demoDevice.Id}"
-                    : "N/A - Demo device not found"
+                    : "N/A - Demo device not found",
+                statusEndpointTest = demoDevice != null
+                    ? new
+                    {
+                        endpoint = $"/api/DeviceData/Status/{demoDevice.Id}",
+                        expectedStatus = isDemoDeviceResult == true ? "ONLINE" : "Check IsDemoDeviceAsync",
+                        note = "Call this endpoint to verify status returns ONLINE for demo device"
+                    }
+                    : (object)new { status = "N/A" }
             };
 
-            logger.LogInformation("Demo diagnostics: Device={DeviceStatus}, Setup={SetupStatus}",
+            logger.LogInformation("Demo diagnostics: Device={DeviceStatus}, Setup={SetupStatus}, IsDemoDeviceAsync={IsDemoResult}",
                 demoDevice != null ? "Found" : "Missing",
-                setupDevice != null ? "Found" : "Missing");
+                setupDevice != null ? "Found" : "Missing",
+                isDemoDeviceResult);
 
             return Results.Ok(diagnostics);
         }

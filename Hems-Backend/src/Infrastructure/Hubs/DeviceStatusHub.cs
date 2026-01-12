@@ -173,8 +173,17 @@ public class DeviceStatusHub : Hub
     {
         // Check if demo device - always return ONLINE status
         var isDemoDevice = await _demoDataService.IsDemoDeviceAsync(localDeviceId);
+
+        _logger.LogInformation(
+            "DeviceStatusHub - SendCurrentStatusAsync: DeviceId={DeviceId}, IsDemoDevice={IsDemoDevice}",
+            localDeviceId, isDemoDevice);
+
         if (isDemoDevice)
         {
+            _logger.LogInformation(
+                "DeviceStatusHub - Returning ONLINE status for demo device {DeviceId}",
+                localDeviceId);
+
             await Clients.Caller.SendAsync("DeviceStatusChanged", new
             {
                 deviceId = localDeviceId,

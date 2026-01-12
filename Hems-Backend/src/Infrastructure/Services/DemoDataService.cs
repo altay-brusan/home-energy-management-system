@@ -56,7 +56,14 @@ public class DemoDataService : IDemoDataService
     {
         var device = await _context.Devices
             .FirstOrDefaultAsync(d => d.Id == deviceId, cancellationToken);
-        return device?.IsDemoDevice ?? false;
+
+        var isDemoDevice = device?.IsDemoDevice ?? false;
+
+        _logger.LogDebug(
+            "IsDemoDeviceAsync: DeviceId={DeviceId}, DeviceFound={DeviceFound}, IsDemoDevice={IsDemoDevice}",
+            deviceId, device != null, isDemoDevice);
+
+        return isDemoDevice;
     }
 
     public async Task<DemoDataResetResult> ResetDemoDataAsync(string userId, CancellationToken cancellationToken = default)
