@@ -106,23 +106,42 @@ public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDevice
                 x.DataType == request.DataType, 
                 cancellationToken);
 
+        // Determine which values to use based on DataType
+        // For DailyCumulativeEnergy: use Today fields
+        // For LifetimeEnergy: use Total fields
+        var isDailyData = request.DataType == DataTypes.DailyCumulativeEnergy;
+
+        var pvEnergy = isDailyData ? request.PvEnergyKWhToday : request.PvEnergyKWhTotal;
+        var gridImportEnergy = isDailyData ? request.GridImportEnergyKWhToday : request.GridImportEnergyKWhTotal;
+        var gridExportEnergy = isDailyData ? request.GridExportEnergyKWhToday : request.GridExportEnergyKWhTotal;
+        var generatorEnergy = isDailyData ? request.GeneratorEnergyKWhToday : request.GeneratorEnergyKWhTotal;
+        var batteryDischargeEnergy = isDailyData ? request.BatteryDischargeEnergyKWhToday : request.BatteryDischargeEnergyKWhTotal;
+        var batteryChargeEnergy = isDailyData ? request.BatteryChargeEnergyKWhToday : request.BatteryChargeEnergyKWhTotal;
+        var loadEnergy = isDailyData ? request.LoadEnergyKWhToday : request.LoadEnergyKWhTotal;
+
         if (existingRecord != null)
         {
-            // Mevcut kaydı güncelle - DataType'a göre Today veya Total değerini kullan
-            existingRecord.PvTotalEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.PvEnergyKWhToday : request.PvEnergyKWhTotal;
-            existingRecord.GridImportEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.GridImportEnergyKWhToday : request.GridImportEnergyKWhTotal;
-            existingRecord.GridExportEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.GridExportEnergyKWhToday : request.GridExportEnergyKWhTotal;
-            existingRecord.GeneratorEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.GeneratorEnergyKWhToday : request.GeneratorEnergyKWhTotal;
-            existingRecord.BatteryDischargeEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.BatteryDischargeEnergyKWhToday : request.BatteryDischargeEnergyKWhTotal;
-            existingRecord.BatteryChargeEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.BatteryChargeEnergyKWhToday : request.BatteryChargeEnergyKWhTotal;
-            existingRecord.LoadEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.LoadEnergyKWhToday : request.LoadEnergyKWhTotal;
-            
+            // Update existing record
+            existingRecord.PvTotalEnergyKWh = pvEnergy;
+            existingRecord.GridImportEnergyKWh = gridImportEnergy;
+            existingRecord.GridExportEnergyKWh = gridExportEnergy;
+            existingRecord.GeneratorEnergyKWh = generatorEnergy;
+            existingRecord.BatteryDischargeEnergyKWh = batteryDischargeEnergy;
+            existingRecord.BatteryChargeEnergyKWh = batteryChargeEnergy;
+            existingRecord.LoadEnergyKWh = loadEnergy;
+
+            // Update MPPT values if provided
+            if (request.PvMppt1EnergyKWh.HasValue) existingRecord.PvMppt1EnergyKWh = request.PvMppt1EnergyKWh;
+            if (request.PvMppt2EnergyKWh.HasValue) existingRecord.PvMppt2EnergyKWh = request.PvMppt2EnergyKWh;
+            if (request.PvMppt3EnergyKWh.HasValue) existingRecord.PvMppt3EnergyKWh = request.PvMppt3EnergyKWh;
+            if (request.PvMppt4EnergyKWh.HasValue) existingRecord.PvMppt4EnergyKWh = request.PvMppt4EnergyKWh;
+
             existingRecord.LastModified = DateTime.UtcNow;
             existingRecord.LastModifiedBy = request.CreatedBy ?? EnergyDataSources.Device;
         }
         else
         {
-            // Yeni kayıt oluştur - DataType'a göre Today veya Total değerini kullan
+            // Create new record
             var energyData = new DeviceEnergyData
             {
                 ThingsBoardDeviceId = request.DeviceId,
@@ -130,19 +149,19 @@ public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDevice
                 DataType = request.DataType,
                 MessageType = MessageTypes.Telemetry,
                 PhaseType = PhaseTypes.SinglePhase,
-                
-                PvTotalEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.PvEnergyKWhToday : request.PvEnergyKWhTotal,
+
+                PvTotalEnergyKWh = pvEnergy,
                 PvMppt1EnergyKWh = request.PvMppt1EnergyKWh,
                 PvMppt2EnergyKWh = request.PvMppt2EnergyKWh,
                 PvMppt3EnergyKWh = request.PvMppt3EnergyKWh,
                 PvMppt4EnergyKWh = request.PvMppt4EnergyKWh,
-                GridImportEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.GridImportEnergyKWhToday : request.GridImportEnergyKWhTotal,
-                GridExportEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.GridExportEnergyKWhToday : request.GridExportEnergyKWhTotal,
-                GeneratorEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.GeneratorEnergyKWhToday : request.GeneratorEnergyKWhTotal,
-                BatteryDischargeEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.BatteryDischargeEnergyKWhToday : request.BatteryDischargeEnergyKWhTotal,
-                BatteryChargeEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.BatteryChargeEnergyKWhToday : request.BatteryChargeEnergyKWhTotal,
-                LoadEnergyKWh = request.DataType == DataTypes.DailyCumulativeEnergy ? request.LoadEnergyKWhToday : request.LoadEnergyKWhTotal,
-                
+                GridImportEnergyKWh = gridImportEnergy,
+                GridExportEnergyKWh = gridExportEnergy,
+                GeneratorEnergyKWh = generatorEnergy,
+                BatteryDischargeEnergyKWh = batteryDischargeEnergy,
+                BatteryChargeEnergyKWh = batteryChargeEnergy,
+                LoadEnergyKWh = loadEnergy,
+
                 Created = DateTime.UtcNow,
                 CreatedBy = request.CreatedBy ?? EnergyDataSources.Device
             };
