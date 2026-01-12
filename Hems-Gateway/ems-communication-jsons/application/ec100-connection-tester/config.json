@@ -1,0 +1,7 @@
+{
+    "thingsboard_url": "https://thingsboard-stg.oklidis.com.tr",
+    "username": "tenant@thingsboard.org",
+    "password": "***REMOVED***",
+    "rpc_method": "getInverterInfo",
+    "rpc_timeout": 30
+}
