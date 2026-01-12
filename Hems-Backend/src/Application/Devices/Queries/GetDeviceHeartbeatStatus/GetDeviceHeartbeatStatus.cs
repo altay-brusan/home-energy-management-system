@@ -40,13 +40,15 @@ public class GetDeviceHeartbeatStatusQueryHandler : IRequestHandler<GetDeviceHea
         if (isDemoDevice)
         {
             _logger.LogInformation(
-                "GetDeviceHeartbeatStatus: Returning ONLINE for demo device {DeviceId}",
+                "GetDeviceHeartbeatStatus: Returning OK for demo device {DeviceId}",
                 request.DeviceId);
 
+            // IMPORTANT: Send "OK" not "ONLINE" - mobile app expects DeviceStatusType enum values
+            // DeviceStatusType = 'OK' | 'PENDING' | 'WAITING' | 'DISCONNECTED' | 'NOT_TRACKED'
             return new DeviceHeartbeatStatusDto
             {
                 DeviceId = request.DeviceId,
-                Status = "ONLINE",
+                Status = "OK",
                 Timestamp = DateTime.UtcNow
             };
         }
