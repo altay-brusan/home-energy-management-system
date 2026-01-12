@@ -1217,6 +1217,170 @@
         }
       }
     },
+    "/api/DeviceData/DailyEnergyFlow/{deviceId}": {
+      "get": {
+        "tags": [
+          "DeviceData"
+        ],
+        "operationId": "GetDailyEnergyFlow",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 2
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 3
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 4
+          },
+          {
+            "name": "pageNumber",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            },
+            "x-position": 5
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 10
+            },
+            "x-position": 6
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedListOfDeviceEnergyDataDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/DeviceData/TotalEnergyFlow/{deviceId}": {
+      "get": {
+        "tags": [
+          "DeviceData"
+        ],
+        "operationId": "GetTotalEnergyFlow",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 2
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 3
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 4
+          },
+          {
+            "name": "pageNumber",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            },
+            "x-position": 5
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 10
+            },
+            "x-position": 6
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedListOfDeviceEnergyDataDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/DeviceNotifications": {
       "post": {
         "tags": [
@@ -5927,6 +6091,129 @@
           "timestamp": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "PaginatedListOfDeviceEnergyDataDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeviceEnergyDataDto"
+            }
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasPreviousPage": {
+            "type": "boolean"
+          },
+          "hasNextPage": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DeviceEnergyDataDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "deviceId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "deviceLocalTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dataType": {
+            "type": "string"
+          },
+          "loadEnergyKWh": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "gridImportEnergyKWh": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "gridExportEnergyKWh": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "pvTotalEnergyKWh": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "pvMppt1EnergyKWh": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "pvMppt2EnergyKWh": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "pvMppt3EnergyKWh": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "pvMppt4EnergyKWh": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "batteryChargeEnergyKWh": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "batteryDischargeEnergyKWh": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "generatorEnergyKWh": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastModified": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastModifiedBy": {
+            "type": "string",
+            "nullable": true
           }
         }
       },
