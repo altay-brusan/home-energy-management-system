@@ -240,11 +240,21 @@ internal class SharedDeviceStream : IDisposable
         return (DateTime.UtcNow - LastUpdated.Value).TotalSeconds > thresholdSeconds;
     }
 
+    /// <summary>
+    /// Ensures the polling loop is started.
+    /// IMPORTANT: The polling loop uses its OWN cancellation token, NOT linked to any subscriber's token.
+    /// This prevents the polling from stopping when a single subscriber disconnects.
+    /// The polling loop stops only when there are no more subscribers or when disposed.
+    /// </summary>
     public void EnsurePollingStarted(
         IServiceScopeFactory scopeFactory,
         ILogger logger,
         CancellationToken externalCancellation)
     {
+        // Note: externalCancellation is intentionally NOT used to avoid coupling
+        // the polling loop lifetime to a single subscriber's connection.
+        // The polling loop manages its own lifecycle based on subscriber count.
+
         lock (_pollingLock)
         {
             if (_pollingTask != null && !_pollingTask.IsCompleted)
@@ -252,7 +262,9 @@ internal class SharedDeviceStream : IDisposable
                 return; // Already running
             }
 
-            _pollingCts = CancellationTokenSource.CreateLinkedTokenSource(externalCancellation);
+            // Create a NEW cancellation token source that's NOT linked to any subscriber
+            // This ensures the polling continues even when individual subscribers disconnect
+            _pollingCts = new CancellationTokenSource();
             _pollingTask = RunPollingLoopAsync(scopeFactory, logger, _pollingCts.Token);
         }
     }
@@ -267,6 +279,8 @@ internal class SharedDeviceStream : IDisposable
             DeviceId, IntervalSeconds);
 
         var interval = TimeSpan.FromSeconds(IntervalSeconds);
+        var consecutiveErrors = 0;
+        const int maxConsecutiveErrors = 10;
 
         while (!cancellationToken.IsCancellationRequested && !_disposed)
         {
@@ -292,6 +306,7 @@ internal class SharedDeviceStream : IDisposable
                 {
                     LastData = data;
                     LastUpdated = DateTime.UtcNow;
+                    consecutiveErrors = 0; // Reset error count on success
 
                     // Broadcast to all subscribers
                     await BroadcastToSubscribersAsync(data, logger);
@@ -304,7 +319,26 @@ internal class SharedDeviceStream : IDisposable
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error fetching PowerFlow for device {DeviceId}", DeviceId);
+                consecutiveErrors++;
+                logger.LogError(ex, "Error fetching PowerFlow for device {DeviceId} (consecutive errors: {ErrorCount})",
+                    DeviceId, consecutiveErrors);
+
+                // If too many consecutive errors, add a longer delay to prevent hammering
+                if (consecutiveErrors >= maxConsecutiveErrors)
+                {
+                    logger.LogWarning(
+                        "Device {DeviceId} has {ErrorCount} consecutive errors, adding extended delay",
+                        DeviceId, consecutiveErrors);
+
+                    try
+                    {
+                        await Task.Delay(TimeSpan.FromSeconds(30), cancellationToken);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+                }
                 // Continue polling despite errors
             }
 
