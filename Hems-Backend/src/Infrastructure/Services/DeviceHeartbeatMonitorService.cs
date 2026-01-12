@@ -68,6 +68,7 @@ public class DeviceHeartbeatMonitorService : BackgroundService
         var context = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
         var hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<DeviceStatusHub>>();
         var deviceMapping = scope.ServiceProvider.GetRequiredService<IDeviceMappingService>();
+        var demoDataService = scope.ServiceProvider.GetRequiredService<IDemoDataService>();
 
         _cycleCount++;
 
@@ -104,7 +105,7 @@ public class DeviceHeartbeatMonitorService : BackgroundService
             if (cancellationToken.IsCancellationRequested)
                 break;
 
-            await ProcessStatusChangeAsync(change, cache, context, hubContext, deviceMapping, cancellationToken);
+            await ProcessStatusChangeAsync(change, cache, context, hubContext, deviceMapping, demoDataService, cancellationToken);
         }
 
         // Save all changes to database
@@ -117,6 +118,7 @@ public class DeviceHeartbeatMonitorService : BackgroundService
         IApplicationDbContext context,
         IHubContext<DeviceStatusHub> hubContext,
         IDeviceMappingService deviceMapping,
+        IDemoDataService demoDataService,
         CancellationToken cancellationToken)
     {
         var thingsBoardDeviceId = change.ThingsBoardDeviceId;
@@ -124,11 +126,19 @@ public class DeviceHeartbeatMonitorService : BackgroundService
 
         // ID ADAPTER: Translate ThingsBoard ID to local deviceId for frontend
         var localDeviceId = await deviceMapping.GetDeviceIdAsync(thingsBoardDeviceId, cancellationToken);
-        
+
         if (localDeviceId == null)
         {
             _logger.LogWarning("Could not find local deviceId for ThingsBoard device {TBDeviceId}", thingsBoardDeviceId);
             return; // Skip notification if mapping not found
+        }
+
+        // DEMO DEVICE CHECK: Demo devices are always ONLINE, skip status change notifications
+        var isDemoDevice = await demoDataService.IsDemoDeviceAsync(localDeviceId.Value, cancellationToken);
+        if (isDemoDevice)
+        {
+            _logger.LogDebug("Skipping status change for demo device {DeviceId} - demo devices are always ONLINE", localDeviceId);
+            return; // Demo devices don't have real heartbeats, always considered ONLINE
         }
 
         // Send SignalR notification with local deviceId (frontend doesn't know about TB ID)
@@ -141,7 +151,7 @@ public class DeviceHeartbeatMonitorService : BackgroundService
                 timestamp = change.Timestamp
             }, cancellationToken);
 
-        _logger.LogInformation("SignalR notification sent for device {LocalDeviceId} (TB: {TBDeviceId}): {Status}", 
+        _logger.LogInformation("SignalR notification sent for device {LocalDeviceId} (TB: {TBDeviceId}): {Status}",
             localDeviceId, thingsBoardDeviceId, newStatus);
 
         // Handle DISCONNECTED status - create DB log entry
