@@ -379,29 +379,39 @@ private async Task<IResult> ProcessEnergyFlowTelemetry(
         }
 
         // Create command for DeviceEnergyData table
+        // Set Today fields ONLY for DailyCumulativeEnergy, Total fields ONLY for LifetimeEnergy
+        var isDailyData = dataType == DataTypes.DailyCumulativeEnergy;
+
         var command = new CreateDeviceEnergyDataCommand
         {
             DeviceId = deviceId,
             DeviceLocalTime = dataDateTime,
             DataType = dataType,
-            PvEnergyKWhTotal = pvTotalEnergy ?? 0,
-            PvEnergyKWhToday = pvTotalEnergy ?? 0,
+
+            // Today fields - only populated for Daily data
+            PvEnergyKWhToday = isDailyData ? pvTotalEnergy : null,
+            GridImportEnergyKWhToday = isDailyData ? gridImportEnergy : null,
+            GridExportEnergyKWhToday = isDailyData ? gridExportEnergy : null,
+            BatteryChargeEnergyKWhToday = isDailyData ? batteryChargeEnergy : null,
+            BatteryDischargeEnergyKWhToday = isDailyData ? batteryDischargeEnergy : null,
+            LoadEnergyKWhToday = isDailyData ? loadEnergy : null,
+            GeneratorEnergyKWhToday = isDailyData ? generatorEnergy : null,
+
+            // Total fields - only populated for Lifetime data
+            PvEnergyKWhTotal = !isDailyData ? pvTotalEnergy : null,
+            GridImportEnergyKWhTotal = !isDailyData ? gridImportEnergy : null,
+            GridExportEnergyKWhTotal = !isDailyData ? gridExportEnergy : null,
+            BatteryChargeEnergyKWhTotal = !isDailyData ? batteryChargeEnergy : null,
+            BatteryDischargeEnergyKWhTotal = !isDailyData ? batteryDischargeEnergy : null,
+            LoadEnergyKWhTotal = !isDailyData ? loadEnergy : null,
+            GeneratorEnergyKWhTotal = !isDailyData ? generatorEnergy : null,
+
+            // MPPT values (same for both - they're always the same granularity as the data type)
             PvMppt1EnergyKWh = pvMppt1Energy,
             PvMppt2EnergyKWh = pvMppt2Energy,
             PvMppt3EnergyKWh = pvMppt3Energy,
             PvMppt4EnergyKWh = pvMppt4Energy,
-            GridImportEnergyKWhTotal = gridImportEnergy ?? 0,
-            GridImportEnergyKWhToday = gridImportEnergy ?? 0,
-            GridExportEnergyKWhTotal = gridExportEnergy ?? 0,
-            GridExportEnergyKWhToday = gridExportEnergy ?? 0,
-            BatteryChargeEnergyKWhTotal = batteryChargeEnergy ?? 0,
-            BatteryChargeEnergyKWhToday = batteryChargeEnergy ?? 0,
-            BatteryDischargeEnergyKWhTotal = batteryDischargeEnergy ?? 0,
-            BatteryDischargeEnergyKWhToday = batteryDischargeEnergy ?? 0,
-            LoadEnergyKWhTotal = loadEnergy ?? 0,
-            LoadEnergyKWhToday = loadEnergy ?? 0,
-            GeneratorEnergyKWhTotal = generatorEnergy ?? 0,
-            GeneratorEnergyKWhToday = generatorEnergy ?? 0,
+
             CreatedBy = createdBy
         };
 
