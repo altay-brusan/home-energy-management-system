@@ -13,6 +13,7 @@ using Hems_Backend.Application.DeviceNotifications.Commands.ProcessDeviceAlarm;
 using Hems_Backend.Application.DeviceNotifications.Common.Models;
 using Hems_Backend.Domain.Constants;
 using Hems_Backend.Infrastructure.Hubs;
+using Hems_Backend.Infrastructure.Services;
 using Hems_Backend.Web.Infrastructure;
 using Hems_Backend.Web.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -43,7 +44,8 @@ public class DeviceData : EndpointGroupBase
             .MapGet(GetLivePowerFlow, "PowerFlow/live/{deviceId:guid}")
             .MapGet(GetDeviceHeartbeatStatus, "Status/{deviceId:guid}")
             .MapGet(GetLiveDailyEnergyFlow, "DailyEnergyFlow/live/{deviceId:guid}")
-            .MapGet(GetLiveTotalEnergyFlow, "TotalEnergyFlow/live/{deviceId:guid}");
+            .MapGet(GetLiveTotalEnergyFlow, "TotalEnergyFlow/live/{deviceId:guid}")
+            .MapGet(GetDemoDeviceDiagnostics, "Demo/Diagnostics");
     }
 
     /// <summary>
@@ -118,6 +120,102 @@ public class DeviceData : EndpointGroupBase
         [AsParameters] GetDeviceDataQuery query)
     {
         return await sender.Send(query);
+    }
+
+    /// <summary>
+    /// Diagnostics endpoint to check demo device configuration.
+    /// FOR TEST ONLY - DO NOT USE IN PRODUCTION
+    /// </summary>
+    public async Task<IResult> GetDemoDeviceDiagnostics(
+        IApplicationDbContext context,
+        IDemoDataService demoDataService,
+        ILogger<DeviceData> logger)
+    {
+        try
+        {
+            // Get well-known demo constants
+            var demoEmail = demoDataService.GetDemoUserEmail();
+            var demoSerial = demoDataService.GetDemoDeviceSerialNumber();
+            var demoThingsBoardId = DemoDataService.DemoThingsBoardDeviceId;
+
+            // Check demo device by serial number
+            var demoDevice = await context.Devices
+                .Where(d => d.SerialNumber == demoSerial)
+                .Select(d => new
+                {
+                    d.Id,
+                    d.Name,
+                    d.SerialNumber,
+                    d.ThingsBoardDeviceId,
+                    d.IsDemoDevice,
+                    d.IsDeleted
+                })
+                .FirstOrDefaultAsync();
+
+            // Check setup-device relationship
+            var setupDevice = demoDevice != null
+                ? await context.SetupDevices
+                    .Where(sd => sd.DeviceId == demoDevice.Id)
+                    .Select(sd => new
+                    {
+                        sd.SetupId,
+                        SetupName = sd.Setup!.Name,
+                        SiteId = sd.Setup.SiteId,
+                        SiteName = sd.Setup.Site!.Name,
+                        SiteUserId = sd.Setup.Site.UserId
+                    })
+                    .FirstOrDefaultAsync()
+                : null;
+
+            var diagnostics = new
+            {
+                wellKnownConstants = new
+                {
+                    demoEmail,
+                    demoSerial,
+                    demoThingsBoardId
+                },
+                demoDevice = demoDevice != null
+                    ? new
+                    {
+                        deviceId = demoDevice.Id,
+                        name = demoDevice.Name,
+                        serialNumber = demoDevice.SerialNumber,
+                        thingsBoardDeviceId = demoDevice.ThingsBoardDeviceId,
+                        isDemoDevice = demoDevice.IsDemoDevice,
+                        isDeleted = demoDevice.IsDeleted,
+                        status = demoDevice.IsDemoDevice && !demoDevice.IsDeleted ? "OK" : "WARNING: Check IsDemoDevice and IsDeleted flags"
+                    }
+                    : (object)new { status = "NOT_FOUND - Demo device does not exist" },
+                setupRelationship = setupDevice != null
+                    ? new
+                    {
+                        setupId = setupDevice.SetupId,
+                        setupName = setupDevice.SetupName,
+                        siteId = setupDevice.SiteId,
+                        siteName = setupDevice.SiteName,
+                        siteUserId = setupDevice.SiteUserId,
+                        status = "OK"
+                    }
+                    : (object)new { status = "NOT_FOUND - Device not linked to any setup/site" },
+                frontendShouldUse = demoDevice != null
+                    ? $"Device ID (internal): {demoDevice.Id}"
+                    : "N/A - Demo device not found"
+            };
+
+            logger.LogInformation("Demo diagnostics: Device={DeviceStatus}, Setup={SetupStatus}",
+                demoDevice != null ? "Found" : "Missing",
+                setupDevice != null ? "Found" : "Missing");
+
+            return Results.Ok(diagnostics);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error getting demo diagnostics");
+            return Results.Problem(
+                detail: ex.Message,
+                statusCode: StatusCodes.Status500InternalServerError);
+        }
     }
 
     /// <summary>
