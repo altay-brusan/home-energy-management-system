@@ -287,3 +287,84 @@ public class DailyGeneratorEnergyDto
     [JsonPropertyName("energyKWh")]
     public double? EnergyKWh { get; set; }
 }
+
+/// <summary>
+/// RPC response for getTotalEnergyFlowState (Lifetime/Total energy)
+/// </summary>
+public class TotalEnergyFlowStateDto
+{
+    [JsonPropertyName("kind")]
+    public string? Kind { get; set; }
+
+    [JsonPropertyName("timestampUtc")]
+    public string? TimestampUtc { get; set; }
+
+    [JsonPropertyName("version")]
+    public int? Version { get; set; }
+
+    [JsonPropertyName("deviceId")]
+    public string? DeviceId { get; set; }
+
+    [JsonPropertyName("grid")]
+    public TotalGridEnergyDto? Grid { get; set; }
+
+    [JsonPropertyName("pv")]
+    public TotalPvEnergyDto? Pv { get; set; }
+
+    [JsonPropertyName("load")]
+    public TotalLoadEnergyDto? Load { get; set; }
+
+    [JsonPropertyName("battery")]
+    public TotalBatteryEnergyDto? Battery { get; set; }
+
+    [JsonPropertyName("generator")]
+    public TotalGeneratorEnergyDto? Generator { get; set; }
+}
+
+public class TotalGridEnergyDto
+{
+    [JsonPropertyName("importTotalEnergyKWh")]
+    public double? ImportTotalEnergyKWh { get; set; }
+
+    [JsonPropertyName("exportTotalEnergyKWh")]
+    public double? ExportTotalEnergyKWh { get; set; }
+}
+
+public class TotalPvEnergyDto
+{
+    [JsonPropertyName("totalEnergyKWh")]
+    public double? TotalEnergyKWh { get; set; }
+
+    [JsonPropertyName("mppt")]
+    public List<TotalMpptEnergyDto>? Mppt { get; set; }
+}
+
+public class TotalMpptEnergyDto
+{
+    [JsonPropertyName("id")]
+    public int Id { get; set; }
+
+    [JsonPropertyName("totalEnergyKWh")]
+    public double? TotalEnergyKWh { get; set; }
+}
+
+public class TotalLoadEnergyDto
+{
+    [JsonPropertyName("totalEnergyKWh")]
+    public double? TotalEnergyKWh { get; set; }
+}
+
+public class TotalBatteryEnergyDto
+{
+    [JsonPropertyName("totalChargeEnergyKWh")]
+    public double? TotalChargeEnergyKWh { get; set; }
+
+    [JsonPropertyName("totalDischargeEnergyKWh")]
+    public double? TotalDischargeEnergyKWh { get; set; }
+}
+
+public class TotalGeneratorEnergyDto
+{
+    [JsonPropertyName("totalEnergyKWh")]
+    public double? TotalEnergyKWh { get; set; }
+}
