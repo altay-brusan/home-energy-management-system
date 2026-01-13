@@ -74,6 +74,7 @@ public record DemoDataSeedResult
 /// <summary>
 /// Service for generating simulated data for demo users.
 /// Provides realistic power flow, energy, and weather data based on time of day.
+/// Also manages in-memory storage for demo device settings (prices, etc.)
 /// </summary>
 public interface IDemoSimulationDataService
 {
@@ -96,6 +97,60 @@ public interface IDemoSimulationDataService
     /// Gets battery state of charge percentage
     /// </summary>
     double GetBatterySoc(DateTime timestamp);
+
+    /// <summary>
+    /// Sets energy prices for demo device (stored in-memory)
+    /// </summary>
+    void SetDemoPrices(Guid deviceId, List<DemoPriceEntry> prices, string unit = "kWh", string currency = "EUR");
+
+    /// <summary>
+    /// Gets energy prices for demo device.
+    /// Returns user-set prices if available, otherwise returns default Netherlands market prices.
+    /// </summary>
+    DemoPriceSettings GetDemoPrices(Guid deviceId);
+
+    /// <summary>
+    /// Checks if demo device has user-set prices
+    /// </summary>
+    bool HasCustomPrices(Guid deviceId);
+
+    /// <summary>
+    /// Clears custom prices for demo device (reverts to defaults)
+    /// </summary>
+    void ClearDemoPrices(Guid deviceId);
+
+    /// <summary>
+    /// Gets the buy/sell price for a specific hour from demo prices
+    /// </summary>
+    (decimal SellPrice, decimal BuyPrice) GetPriceForHour(Guid deviceId, int hour);
+
+    /// <summary>
+    /// Gets weighted average daily price from demo prices
+    /// </summary>
+    (decimal SellPrice, decimal BuyPrice) GetWeightedDailyAveragePrice(Guid deviceId);
+}
+
+/// <summary>
+/// Price entry for demo device (in-memory storage)
+/// </summary>
+public record DemoPriceEntry
+{
+    public decimal SellPrice { get; init; }
+    public decimal BuyPrice { get; init; }
+    public int? BeginHour { get; init; }
+    public int? EndHour { get; init; }
+}
+
+/// <summary>
+/// Price settings for demo device
+/// </summary>
+public record DemoPriceSettings
+{
+    public string Unit { get; init; } = "kWh";
+    public string Currency { get; init; } = "EUR";
+    public List<DemoPriceEntry> Prices { get; init; } = new();
+    public bool IsCustom { get; init; }
+    public DateTimeOffset Created { get; init; }
 }
 
 /// <summary>
