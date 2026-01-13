@@ -10,7 +10,11 @@ public class DemoSimulationDataService : IDemoSimulationDataService
     private readonly ILogger<DemoSimulationDataService> _logger;
     private readonly Random _random = new();
 
-    // Netherlands electricity prices (EUR/kWh)
+    // In-memory storage for demo device prices (cleared when app restarts)
+    private static readonly Dictionary<Guid, DemoPriceSettings> _demoPrices = new();
+    private static readonly object _pricesLock = new();
+
+    // Default Netherlands electricity prices (EUR/kWh)
     private readonly TimeOfUsePricing[] _pricingSchedule = new[]
     {
         new TimeOfUsePricing(0, 6, 0.22m, 0.07m),    // Off-Peak Night
@@ -24,6 +28,136 @@ public class DemoSimulationDataService : IDemoSimulationDataService
     {
         _logger = logger;
     }
+
+    #region Demo Price Management
+
+    public void SetDemoPrices(Guid deviceId, List<DemoPriceEntry> prices, string unit = "kWh", string currency = "EUR")
+    {
+        lock (_pricesLock)
+        {
+            _demoPrices[deviceId] = new DemoPriceSettings
+            {
+                Unit = unit,
+                Currency = currency,
+                Prices = prices,
+                IsCustom = true,
+                Created = DateTimeOffset.UtcNow
+            };
+        }
+
+        _logger.LogInformation("Set {Count} custom prices for demo device {DeviceId}", prices.Count, deviceId);
+    }
+
+    public DemoPriceSettings GetDemoPrices(Guid deviceId)
+    {
+        lock (_pricesLock)
+        {
+            if (_demoPrices.TryGetValue(deviceId, out var customPrices))
+            {
+                return customPrices;
+            }
+        }
+
+        // Return default Netherlands market prices
+        return GetDefaultNetherlandsPrices();
+    }
+
+    public bool HasCustomPrices(Guid deviceId)
+    {
+        lock (_pricesLock)
+        {
+            return _demoPrices.ContainsKey(deviceId);
+        }
+    }
+
+    public void ClearDemoPrices(Guid deviceId)
+    {
+        lock (_pricesLock)
+        {
+            _demoPrices.Remove(deviceId);
+        }
+
+        _logger.LogInformation("Cleared custom prices for demo device {DeviceId}", deviceId);
+    }
+
+    private DemoPriceSettings GetDefaultNetherlandsPrices()
+    {
+        return new DemoPriceSettings
+        {
+            Unit = "kWh",
+            Currency = "EUR",
+            Prices = _pricingSchedule.Select(p => new DemoPriceEntry
+            {
+                SellPrice = p.SellPrice,
+                BuyPrice = p.BuyPrice,
+                BeginHour = p.BeginHour,
+                EndHour = p.EndHour
+            }).ToList(),
+            IsCustom = false,
+            Created = DateTimeOffset.UtcNow.AddDays(-30)
+        };
+    }
+
+    /// <summary>
+    /// Gets the buy/sell price for a specific hour from demo prices
+    /// </summary>
+    public (decimal SellPrice, decimal BuyPrice) GetPriceForHour(Guid deviceId, int hour)
+    {
+        var priceSettings = GetDemoPrices(deviceId);
+
+        var matchingPrice = priceSettings.Prices
+            .FirstOrDefault(p =>
+                (!p.BeginHour.HasValue && !p.EndHour.HasValue) ||
+                (p.BeginHour.HasValue && p.EndHour.HasValue &&
+                 hour >= p.BeginHour.Value && hour < p.EndHour.Value));
+
+        if (matchingPrice != null)
+        {
+            return (matchingPrice.SellPrice, matchingPrice.BuyPrice);
+        }
+
+        // Fallback to first price or default
+        var fallback = priceSettings.Prices.FirstOrDefault();
+        return fallback != null
+            ? (fallback.SellPrice, fallback.BuyPrice)
+            : (0.09m, 0.28m);
+    }
+
+    /// <summary>
+    /// Gets weighted average daily price from demo prices
+    /// </summary>
+    public (decimal SellPrice, decimal BuyPrice) GetWeightedDailyAveragePrice(Guid deviceId)
+    {
+        var priceSettings = GetDemoPrices(deviceId);
+
+        if (!priceSettings.Prices.Any())
+        {
+            return (0.09m, 0.28m);
+        }
+
+        // Calculate weighted average based on hours covered
+        decimal totalSell = 0;
+        decimal totalBuy = 0;
+        int totalHours = 0;
+
+        foreach (var price in priceSettings.Prices.Where(p => p.BeginHour.HasValue && p.EndHour.HasValue))
+        {
+            var hours = price.EndHour!.Value - price.BeginHour!.Value;
+            totalSell += price.SellPrice * hours;
+            totalBuy += price.BuyPrice * hours;
+            totalHours += hours;
+        }
+
+        if (totalHours == 0)
+        {
+            var first = priceSettings.Prices.First();
+            return (first.SellPrice, first.BuyPrice);
+        }
+
+        return (totalSell / totalHours, totalBuy / totalHours);
+    }
+
+    #endregion
 
     public PowerFlowDto GetCurrentPowerFlow(Guid deviceId)
     {
