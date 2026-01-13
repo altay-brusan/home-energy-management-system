@@ -49,7 +49,7 @@
             <action android:name="android.intent.action.VIEW" />
             <category android:name="android.intent.category.DEFAULT" />
             <category android:name="android.intent.category.BROWSABLE" />
-            <data android:scheme="https" android:host="hems-api-stg.oklidis.com.tr" android:pathPrefix="/" />
+            <data android:scheme="https" android:host="hems-api-dev.oklidis.com.tr" android:pathPrefix="/" />
         </intent-filter>
       </activity>
     </application>

@@ -422,6 +422,7 @@ export const PowerFlowDiagram: React.FC = () => {
         {/* Center Hub (Inverter) */}
         <CenterHub
           size={CENTER_SIZE}
+          isActive={finalData.solarPowerKw > 0.001 || Math.abs(finalData.batteryPowerKw) > 0.001 || Math.abs(finalData.gridPowerKw) > 0.001 || finalData.loadPowerKw > 0.001}
           style={{
             left: centerX - CENTER_SIZE / 2,
             top: centerY - CENTER_SIZE / 2,

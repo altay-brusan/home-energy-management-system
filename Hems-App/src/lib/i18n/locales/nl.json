@@ -974,8 +974,8 @@
         "title": "Batterij",
         "subtitle": "Real-Time Informatie",
         "restart": "Apparaat Herstarten",
-        "packCount": "{{count}} batterijpakket inbegrepen",
-        "packCount_plural": "{{count}} batterijpakketten inbegrepen",
+        "packCount": "Batterijpakket",
+        "packCount_plural": "Batterijpakket",
         "noBatteries": "Geen batterijen beschikbaar"
       },
       "connectedDevices": {
@@ -1926,9 +1926,9 @@
     "privacyPolicyTitle": "Privacybeleid",
     "termsOfServiceTitle": "Servicevoorwaarden",
     "lastUpdated": "Laatst Bijgewerkt: December 2024",
-    "companyName": "GRP Europe BV",
+    "companyName": "Netzr",
     "privacyPolicy": {
-      "intro": "GRP Europe BV (\"wij\", \"ons\" of \"het Bedrijf\"), gevestigd te Swingboei 11, 1231HE Loosdrecht, Nederland (KvK-nummer: 92198678, BTW: 865928897B01), vertegenwoordigd door Wilfred Gerards, zet zich in voor de bescherming van uw privacy. Dit Privacybeleid legt uit hoe wij uw informatie verzamelen, gebruiken, openbaar maken en beschermen wanneer u onze Netzr mobiele applicatie gebruikt.",
+      "intro": "Wij zetten ons in voor de bescherming van uw privacy. Dit Privacybeleid legt uit hoe wij uw informatie verzamelen, gebruiken, openbaar maken en beschermen wanneer u onze Netzr mobiele applicatie gebruikt.",
       "dataCollectedTitle": "1. Gegevens die Wij Verzamelen",
       "dataCollectedContent": "Wij verzamelen de volgende soorten persoonsgegevens:\n\n• Persoonlijke Informatie: Naam, achternaam, e-mailadres, telefoonnummer\n• Accountgegevens: Inloggegevens, gebruikersvoorkeuren\n• Energiegegevens: Zonne-energieproductie, batterijstatus, netimport/-exportgegevens, energieverbruikspatronen\n• Apparaattelemetrie: Omvormerstatus, apparaatserienummers, firmwareversies, real-time vermogensstatistieken\n• Locatiegegevens: Thuisadres, apparaatinstallatielocatie (voor nauwkeurige energiemonitoring)\n• Cameragegevens: Wij gebruiken uw apparaatcamera uitsluitend om QR-codes te scannen voor apparaatregistratie. Er worden geen foto's of video's vastgelegd, opgeslagen of verzonden.\n• Gebruiksgegevens: App-gebruikspatronen, functie-interacties, foutlogboeken",
       "purposeTitle": "2. Doel van Gegevensverwerking",
@@ -1940,18 +1940,18 @@
       "dataRetentionTitle": "5. Gegevensbewaring",
       "dataRetentionContent": "Wij bewaren uw persoonsgegevens voor:\n\n• Accountgegevens: Zolang uw account actief is, plus 2 jaar na verwijdering\n• Energiegegevens: 5 jaar voor historische analyse en rapportage\n• Apparaattelemetrie: 2 jaar voor serviceverbetering\n• Gebruikslogboeken: 1 jaar voor probleemoplossing\n\nU kunt eerdere verwijdering aanvragen door contact met ons op te nemen.",
       "userRightsTitle": "6. Uw Rechten",
-      "userRightsContent": "Onder de AVG heeft u het recht op:\n\n• Inzage: Een kopie van uw persoonsgegevens opvragen\n• Rectificatie: Onjuiste of onvolledige gegevens corrigeren\n• Wissen: Verwijdering van uw persoonsgegevens verzoeken (\"recht om vergeten te worden\")\n• Overdraagbaarheid: Uw gegevens ontvangen in een gestructureerd, machineleesbaar formaat\n• Bezwaar: Bezwaar maken tegen verwerking op basis van gerechtvaardigde belangen\n• Beperking: Beperking van verwerking verzoeken\n• Intrekking Toestemming: Uw toestemming op elk moment intrekken\n\nOm deze rechten uit te oefenen, neem contact met ons op via privacy@grpeurope.com",
+      "userRightsContent": "Onder de AVG heeft u het recht op:\n\n• Inzage: Een kopie van uw persoonsgegevens opvragen\n• Rectificatie: Onjuiste of onvolledige gegevens corrigeren\n• Wissen: Verwijdering van uw persoonsgegevens verzoeken (\"recht om vergeten te worden\")\n• Overdraagbaarheid: Uw gegevens ontvangen in een gestructureerd, machineleesbaar formaat\n• Bezwaar: Bezwaar maken tegen verwerking op basis van gerechtvaardigde belangen\n• Beperking: Beperking van verwerking verzoeken\n• Intrekking Toestemming: Uw toestemming op elk moment intrekken\n\nOm deze rechten uit te oefenen, neem contact met ons op via de app.",
       "securityTitle": "7. Gegevensbeveiliging",
       "securityContent": "Wij implementeren passende technische en organisatorische maatregelen om uw gegevens te beschermen, waaronder:\n\n• Versleuteling tijdens verzending en opslag\n• Veilige authenticatiemechanismen\n• Regelmatige beveiligingsaudits\n• Toegangscontroles en monitoring",
       "contactTitle": "8. Contactgegevens",
-      "contactContent": "Verwerkingsverantwoordelijke: GRP Europe BV\nVestigingsadres: Swingboei 11, 1231HE Loosdrecht, Nederland\nKantooradres: Krijgsman 19, 1186 DM Amstelveen, Nederland\nGemachtigde Vertegenwoordiger: Wilfred Gerards\nKvK-nummer: 92198678\nBTW-nummer: 865928897B01\nE-mail: privacy@grpeurope.com\n\nVoor AVG-vragen:\nDPO: dpo@grpeurope.com",
+      "contactContent": "Voor privacygerelateerde vragen kunt u contact met ons opnemen via de ondersteuningsfunctie of het instellingenmenu van de app.",
       "changesTitle": "9. Wijzigingen in dit Beleid",
       "changesContent": "Wij kunnen dit Privacybeleid van tijd tot tijd bijwerken. Wij zullen u op de hoogte stellen van wijzigingen door het nieuwe beleid in de app te plaatsen en de \"Laatst Bijgewerkt\" datum bij te werken.",
       "devicePermissionsTitle": "10. Apparaatmachtigingen",
       "devicePermissionsContent": "Onze app vereist bepaalde apparaatmachtigingen om correct te functioneren:\n\n• Camera: Wordt uitsluitend gebruikt om QR-codes te scannen voor het registreren van energieapparaten (omvormers, batterijen). Wij leggen geen foto's of video's vast, slaan deze niet op en verzenden deze niet. Cameratoegang is alleen actief tijdens het QR-scanproces.\n\n• Locatie: Wordt gebruikt om uw thuislocatie te bepalen voor nauwkeurige energiemonitoring, tijdzone-instellingen en regionale energiegegevens.\n\n• Meldingen: Wordt gebruikt om waarschuwingen te sturen over energieproductie, batterijstatus, systeemwaarschuwingen en belangrijke updates.\n\nU kunt deze machtigingen op elk moment beheren via uw apparaatinstellingen."
     },
     "termsOfService": {
-      "intro": "Welkom bij Netzr van GRP Europe BV. Door onze mobiele applicatie te gebruiken, gaat u akkoord met deze Servicevoorwaarden. Lees ze zorgvuldig door.",
+      "intro": "Welkom bij Netzr. Door onze mobiele applicatie te gebruiken, gaat u akkoord met deze Servicevoorwaarden. Lees ze zorgvuldig door.",
       "serviceDescriptionTitle": "1. Dienstbeschrijving",
       "serviceDescriptionContent": "Netzr is een energiebeheer-applicatie waarmee u:\n\n• Zonne-energieproductie en -verbruik kunt monitoren\n• Batterijstatus en netinteracties kunt volgen\n• Real-time waarschuwingen en meldingen kunt ontvangen\n• Omvormermodi en instellingen kunt beheren\n• Historische energiegegevens en analyses kunt bekijken\n• Apparaattoegang met andere gebruikers kunt delen",
       "userAccountTitle": "2. Gebruikersaccount",
@@ -1959,7 +1959,7 @@
       "userResponsibilitiesTitle": "3. Gebruikersverantwoordelijkheden",
       "userResponsibilitiesContent": "U gaat ermee akkoord om:\n\n• De dienst alleen voor wettige doeleinden te gebruiken\n• Niet te proberen ongeautoriseerde toegang te krijgen tot systemen\n• De dienst niet te verstoren of te onderbreken\n• De applicatie niet te reverse-engineeren of te kopieren\n• Nauwkeurige accountinformatie te onderhouden\n• Te voldoen aan alle toepasselijke wet- en regelgeving",
       "intellectualPropertyTitle": "4. Intellectueel Eigendom",
-      "intellectualPropertyContent": "Alle inhoud, functies en functionaliteit van de Netzr-app zijn eigendom van GRP Europe BV en worden beschermd door intellectuele eigendomswetten. Dit omvat:\n\n• Softwarecode en algoritmen\n• Gebruikersinterface-ontwerp\n• Handelsmerken en logo's\n• Documentatie en inhoud\n\nU mag geen enkel deel van de dienst kopieren, wijzigen of distribueren zonder schriftelijke toestemming.",
+      "intellectualPropertyContent": "Alle inhoud, functies en functionaliteit van de Netzr-app worden beschermd door intellectuele eigendomswetten. Dit omvat:\n\n• Softwarecode en algoritmen\n• Gebruikersinterface-ontwerp\n• Handelsmerken en logo's\n• Documentatie en inhoud\n\nU mag geen enkel deel van de dienst kopieren, wijzigen of distribueren zonder schriftelijke toestemming.",
       "serviceAvailabilityTitle": "5. Beschikbaarheid van de Dienst",
       "serviceAvailabilityContent": "Wij streven naar continue dienstverlening, maar wij garanderen niet:\n\n• Ononderbroken of foutloze werking\n• Compatibiliteit met alle apparaten\n• Nauwkeurigheid van energieberekeningen\n• Real-time gegevens in alle omstandigheden\n\nWij kunnen de dienst opschorten voor onderhoud of updates met voorafgaande kennisgeving wanneer mogelijk.",
       "liabilityTitle": "6. Beperking van Aansprakelijkheid",
@@ -1971,7 +1971,7 @@
       "changesTitle": "9. Wijzigingen in Voorwaarden",
       "changesContent": "Wij kunnen deze voorwaarden op elk moment wijzigen. Voortgezet gebruik van de dienst na wijzigingen betekent acceptatie. Wij zullen u via de app of e-mail op de hoogte stellen van belangrijke wijzigingen.",
       "contactTitle": "10. Contact",
-      "contactContent": "Voor vragen over deze Voorwaarden:\n\nGRP Europe BV\nVestigingsadres: Swingboei 11, 1231HE Loosdrecht, Nederland\nKantooradres: Krijgsman 19, 1186 DM Amstelveen, Nederland\nGemachtigde Vertegenwoordiger: Wilfred Gerards\nKvK-nummer: 92198678\nBTW-nummer: 865928897B01\nE-mail: legal@grpeurope.com"
+      "contactContent": "Voor vragen over deze Voorwaarden kunt u contact met ons opnemen via de ondersteuningsfunctie of het instellingenmenu van de app."
     }
   },
   "deviceSettings": {

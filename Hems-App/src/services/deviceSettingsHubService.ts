@@ -39,7 +39,7 @@ class DeviceSettingsHubService {
   // Current batch operation state
   private batchState: BatchOperationState | null = null;
 
-  private readonly HUB_URL = 'https://hems-api-stg.oklidis.com.tr/deviceSettingsHub';
+  private readonly HUB_URL = 'https://hems-api-dev.oklidis.com.tr/deviceSettingsHub';
 
   // ============================================================================
   // Connection Management

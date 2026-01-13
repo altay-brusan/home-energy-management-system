@@ -1,5 +1,5 @@
 export const API_CONFIG = {
-  BASE_URL: 'https://hems-api-stg.oklidis.com.tr/api',
+  BASE_URL: 'https://hems-api-dev.oklidis.com.tr/api',
   TIMEOUT: 30000,
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000,

@@ -10,7 +10,7 @@ class DeviceStatusService {
     private connectionListeners: Set<(state: SignalRConnectionState) => void> = new Set();
     private statusListeners: Set<(data: DeviceStatusChangedDto) => void> = new Set();
 
-    private readonly HUB_URL = "https://hems-api-stg.oklidis.com.tr/deviceStatusHub";
+    private readonly HUB_URL = "https://hems-api-dev.oklidis.com.tr/deviceStatusHub";
 
     async connect(): Promise<void> {
         // Zaten bağlıysa tekrar bağlanma

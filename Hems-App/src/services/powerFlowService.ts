@@ -45,7 +45,7 @@ class PowerFlowService {
     private connectionListeners: Set<(state: SignalRConnectionState) => void> = new Set();
     private isConnecting = false;
 
-    private readonly HUB_URL = "https://hems-api-stg.oklidis.com.tr/powerFlowHub";
+    private readonly HUB_URL = "https://hems-api-dev.oklidis.com.tr/powerFlowHub";
 
     /**
      * Lazy connection - Only connects when first stream is requested
