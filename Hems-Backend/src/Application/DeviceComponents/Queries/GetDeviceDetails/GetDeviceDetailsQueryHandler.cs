@@ -281,7 +281,6 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
         var powerFlow = _demoSimulationService.GetCurrentPowerFlow(Guid.Empty);
 
         // Run State
-        var hour = DateTime.UtcNow.Hour;
         var runState = (powerFlow.SolarPowerKw > 0.1) ? "Normal Operation" : "Standby";
         details.Add(new DeviceDetailItemDto
         {
@@ -310,28 +309,70 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
             LabelKey = "realtime.outputApparentPower"
         });
 
-        // Output Voltage (European standard 230V ± 5%)
-        var outputVoltage = 230.0 + (new Random().NextDouble() * 10 - 5);
+        // Three-phase output voltages (European standard 230V ± 5% per phase)
+        // Use seeded random for consistent values per call
+        var voltageRandom = new Random(DateTime.UtcNow.Hour * 60 + DateTime.UtcNow.Minute / 5);
+        var phaseAVoltage = 230.0 + (voltageRandom.NextDouble() * 6 - 3);
+        var phaseBVoltage = 230.0 + (voltageRandom.NextDouble() * 6 - 3);
+        var phaseCVoltage = 230.0 + (voltageRandom.NextDouble() * 6 - 3);
+
         details.Add(new DeviceDetailItemDto
         {
-            Key = "outputVoltage",
-            Value = Math.Round(outputVoltage, 1),
+            Key = "outputPhaseAVoltage",
+            Value = Math.Round(phaseAVoltage, 1),
             Unit = "V",
-            LabelKey = "realtime.outputVoltage"
+            LabelKey = "realtime.outputPhaseAVoltage"
         });
 
-        // Output Current (I = P / V)
-        var outputCurrent = (powerFlow.LoadPowerKw * 1000) / outputVoltage;
         details.Add(new DeviceDetailItemDto
         {
-            Key = "outputCurrent",
-            Value = Math.Round(outputCurrent, 2),
+            Key = "outputPhaseBVoltage",
+            Value = Math.Round(phaseBVoltage, 1),
+            Unit = "V",
+            LabelKey = "realtime.outputPhaseBVoltage"
+        });
+
+        details.Add(new DeviceDetailItemDto
+        {
+            Key = "outputPhaseCVoltage",
+            Value = Math.Round(phaseCVoltage, 1),
+            Unit = "V",
+            LabelKey = "realtime.outputPhaseCVoltage"
+        });
+
+        // Three-phase output currents (I = P / V, distributed across phases)
+        // Assume balanced load distribution across 3 phases
+        var totalCurrent = (powerFlow.LoadPowerKw * 1000) / 230.0;
+        var phaseACurrent = totalCurrent / 3 * (0.95 + voltageRandom.NextDouble() * 0.1);
+        var phaseBCurrent = totalCurrent / 3 * (0.95 + voltageRandom.NextDouble() * 0.1);
+        var phaseCCurrent = totalCurrent / 3 * (0.95 + voltageRandom.NextDouble() * 0.1);
+
+        details.Add(new DeviceDetailItemDto
+        {
+            Key = "outputPhaseACurrent",
+            Value = Math.Round(phaseACurrent, 2),
             Unit = "A",
-            LabelKey = "realtime.outputCurrent"
+            LabelKey = "realtime.outputPhaseACurrent"
+        });
+
+        details.Add(new DeviceDetailItemDto
+        {
+            Key = "outputPhaseBCurrent",
+            Value = Math.Round(phaseBCurrent, 2),
+            Unit = "A",
+            LabelKey = "realtime.outputPhaseBCurrent"
+        });
+
+        details.Add(new DeviceDetailItemDto
+        {
+            Key = "outputPhaseCCurrent",
+            Value = Math.Round(phaseCCurrent, 2),
+            Unit = "A",
+            LabelKey = "realtime.outputPhaseCCurrent"
         });
 
         // Output Frequency (European standard 50Hz)
-        var outputFrequency = 50.0 + (new Random().NextDouble() * 0.2 - 0.1);
+        var outputFrequency = 50.0 + (voltageRandom.NextDouble() * 0.2 - 0.1);
         details.Add(new DeviceDetailItemDto
         {
             Key = "outputFrequency",
@@ -350,7 +391,7 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
         });
 
         // Inverter Heatsink Temperature (realistic 35-55°C during operation)
-        var heatsinkTemp = 40.0 + Math.Abs(powerFlow.LoadPowerKw) * 3 + (new Random().NextDouble() * 5);
+        var heatsinkTemp = 40.0 + Math.Abs(powerFlow.LoadPowerKw) * 3 + (voltageRandom.NextDouble() * 5);
         details.Add(new DeviceDetailItemDto
         {
             Key = "inverterHeatsinkTemp",
@@ -360,7 +401,7 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
         });
 
         // Internal Ambient Temperature
-        var ambientTemp = 28.0 + (new Random().NextDouble() * 4);
+        var ambientTemp = 28.0 + (voltageRandom.NextDouble() * 4);
         details.Add(new DeviceDetailItemDto
         {
             Key = "internalAmbientTemp",
@@ -530,25 +571,71 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
             });
         }
 
-        if (state.OutputVoltageV.HasValue)
+        // Three-phase output voltages
+        if (state.OutputPhaseAVoltageV.HasValue)
         {
             details.Add(new DeviceDetailItemDto
             {
-                Key = "outputVoltage",
-                Value = state.OutputVoltageV.Value,
+                Key = "outputPhaseAVoltage",
+                Value = state.OutputPhaseAVoltageV.Value,
                 Unit = "V",
-                LabelKey = "realtime.outputVoltage"
+                LabelKey = "realtime.outputPhaseAVoltage"
             });
         }
 
-        if (state.OutputCurrentA.HasValue)
+        if (state.OutputPhaseBVoltageV.HasValue)
         {
             details.Add(new DeviceDetailItemDto
             {
-                Key = "outputCurrent",
-                Value = state.OutputCurrentA.Value,
+                Key = "outputPhaseBVoltage",
+                Value = state.OutputPhaseBVoltageV.Value,
+                Unit = "V",
+                LabelKey = "realtime.outputPhaseBVoltage"
+            });
+        }
+
+        if (state.OutputPhaseCVoltageV.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "outputPhaseCVoltage",
+                Value = state.OutputPhaseCVoltageV.Value,
+                Unit = "V",
+                LabelKey = "realtime.outputPhaseCVoltage"
+            });
+        }
+
+        // Three-phase output currents
+        if (state.OutputPhaseACurrentA.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "outputPhaseACurrent",
+                Value = state.OutputPhaseACurrentA.Value,
                 Unit = "A",
-                LabelKey = "realtime.outputCurrent"
+                LabelKey = "realtime.outputPhaseACurrent"
+            });
+        }
+
+        if (state.OutputPhaseBCurrentA.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "outputPhaseBCurrent",
+                Value = state.OutputPhaseBCurrentA.Value,
+                Unit = "A",
+                LabelKey = "realtime.outputPhaseBCurrent"
+            });
+        }
+
+        if (state.OutputPhaseCCurrentA.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "outputPhaseCCurrent",
+                Value = state.OutputPhaseCCurrentA.Value,
+                Unit = "A",
+                LabelKey = "realtime.outputPhaseCCurrent"
             });
         }
 

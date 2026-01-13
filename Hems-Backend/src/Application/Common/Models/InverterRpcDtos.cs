@@ -70,6 +70,21 @@ public class InverterDeviceStateDto
     public int? GridSidePhaseCPowerW => GridSide?.PhaseCPowerW;
     public double? InverterHeatsinkTempC => Temperatures?.HeatsinkTempC;
     public double? InternalAmbientTempC => Temperatures?.DcTransformerTempC;
+
+    // Three-phase output voltage properties
+    public double? OutputPhaseAVoltageV => Output?.PhaseA?.VoltageV;
+    public double? OutputPhaseBVoltageV => Output?.PhaseB?.VoltageV;
+    public double? OutputPhaseCVoltageV => Output?.PhaseC?.VoltageV;
+
+    // Three-phase output current properties
+    public double? OutputPhaseACurrentA => Output?.PhaseA?.CurrentA;
+    public double? OutputPhaseBCurrentA => Output?.PhaseB?.CurrentA;
+    public double? OutputPhaseCCurrentA => Output?.PhaseC?.CurrentA;
+
+    // Three-phase output power properties
+    public int? OutputPhaseAPowerW => Output?.PhaseA?.ActivePowerW;
+    public int? OutputPhaseBPowerW => Output?.PhaseB?.ActivePowerW;
+    public int? OutputPhaseCPowerW => Output?.PhaseC?.ActivePowerW;
 }
 
 public class InverterOutputDto
