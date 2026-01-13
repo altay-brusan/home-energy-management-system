@@ -55,16 +55,9 @@ export const usePowerFlowStream = (options: UsePowerFlowStreamOptions): UsePower
     const appState = useRef(AppState.currentState);
     const isAppActive = useRef(true);
     const isStreamingRef = useRef(false);
+    const prevConnectionStateRef = useRef<SignalRConnectionState>('Disconnected');
 
-    // Listen to connection state changes
-    useEffect(() => {
-        const unsubscribe = powerFlowService.addConnectionStateListener((state) => {
-            setConnectionState(state);
-        });
-        return unsubscribe;
-    }, []);
-
-    // Start stream function
+    // Start stream function - defined first so it can be used in useEffect below
     const startStream = useCallback(async () => {
         if (!deviceId || !enabled || isStreamingRef.current) {
             return;
@@ -118,6 +111,31 @@ export const usePowerFlowStream = (options: UsePowerFlowStreamOptions): UsePower
         setStreamState('idle');
         isStreamingRef.current = false;
     }, [deviceId]);
+
+    // Listen to connection state changes with reconnection detection
+    useEffect(() => {
+        const unsubscribe = powerFlowService.addConnectionStateListener((state) => {
+            const prevState = prevConnectionStateRef.current;
+            setConnectionState(state);
+            prevConnectionStateRef.current = state;
+
+            // Handle reconnection: restart stream if we were reconnecting and now connected
+            if (prevState === 'Reconnecting' && state === 'Connected') {
+                console.log('[usePowerFlowStream] Reconnection detected, restarting stream');
+                isStreamingRef.current = false;
+                if (deviceId && enabled && isAppActive.current) {
+                    startStream();
+                }
+            }
+
+            // Handle disconnection: reset streaming state
+            if (state === 'Disconnected') {
+                isStreamingRef.current = false;
+                setStreamState('idle');
+            }
+        });
+        return unsubscribe;
+    }, [deviceId, enabled, startStream]);
 
     // Handle app state changes (background/foreground)
     useEffect(() => {

@@ -50,17 +50,28 @@ class SignalRService {
 
             const token = await this.getAccessToken();
             
+            // Clean up any existing stale connection before creating a new one
+            if (this.connection) {
+                try {
+                    await this.connection.stop();
+                } catch (e) {
+                    // Ignore cleanup errors
+                }
+                this.connection = null;
+            }
+
             this.connection = new HubConnectionBuilder()
                 .withUrl(this.HUB_URL, {
                     accessTokenFactory: async () => {
                         const freshToken = await this.getAccessToken();
                         return freshToken || '';
                     },
-                    transport: HttpTransportType.LongPolling,
+                    transport: HttpTransportType.WebSockets,
+                    skipNegotiation: true,
                 })
                 .withServerTimeout(120000)
                 .withKeepAliveInterval(15000)
-                .configureLogging(LogLevel.None)
+                .configureLogging(LogLevel.Information)
                 .withAutomaticReconnect({
                     nextRetryDelayInMilliseconds: (retryContext) => {
                         const delay = Math.min(
@@ -75,14 +86,18 @@ class SignalRService {
             this.setupConnectionEvents();
             
             await this.connection.start();
+            console.log('[SignalRService] ✅ Connected to:', this.HUB_URL);
+            console.log('[SignalRService] Connection ID:', this.connection.connectionId);
 
             if (siteId) {
                 await this.joinSiteGroup(siteId);
+                console.log('[SignalRService] ✅ Joined site group:', siteId);
             }
 
             this.notifyConnectionState('Connected');
 
-        } catch (error) {
+        } catch (error: any) {
+            console.log('[SignalRService] ❌ Connection failed:', error?.message || error);
             this.notifyConnectionState('Failed');
             throw error;
         }

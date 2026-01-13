@@ -17,6 +17,7 @@ export const useSignalR = () => {
 
     useEffect(() => {
         const unsubscribe = signalRService.addConnectionStateListener((state) => {
+            console.log('[useSignalR] Connection state changed:', state);
             setConnectionState(state);
             setIsConnected(state === 'Connected');
         });
@@ -43,8 +44,11 @@ export const useSignalR = () => {
     }, [selectedSiteDevice?.siteId]);
 
     useEffect(() => {
+        console.log('[useSignalR] selectedSiteDevice changed:', selectedSiteDevice?.siteId || 'NO SITE ID');
+
         if (selectedSiteDevice?.siteId) {
             if (signalRService.currentSite && signalRService.currentSite !== selectedSiteDevice.siteId) {
+                console.log('[useSignalR] Site changed, reconnecting...');
                 signalRService.disconnect().then(() => {
                     connect(selectedSiteDevice.siteId);
                 }).catch(() => {});
@@ -52,14 +56,18 @@ export const useSignalR = () => {
                 connect(selectedSiteDevice.siteId);
             }
         } else {
+            console.log('[useSignalR] No siteId, disconnecting...');
             disconnect();
         }
     }, [selectedSiteDevice?.siteId]);
 
     const connect = useCallback(async (siteId?: string) => {
         try {
+            console.log('[useSignalR] Connecting with siteId:', siteId);
             await signalRService.connect(siteId);
-        } catch (error) {
+            console.log('[useSignalR] ✅ Connection successful');
+        } catch (error: any) {
+            console.log('[useSignalR] ❌ Connection error:', error?.message || error);
         }
     }, []);
 
@@ -87,47 +95,31 @@ export const useSignalR = () => {
     }, []);
 
     const handleCriticalNotification = useCallback((notification: DeviceNotificationDto) => {
+        console.log('[useSignalR] ✅ Received notification:', notification.id);
 
-        const category = notification.deviceNotificationType.category?.toUpperCase();
-        const title = notification.deviceNotificationType.message;
-        const message = notification.deviceNotificationType.description;
-        const deviceName = notification.deviceManufacturer || notification.siteName;
-        const code = notification.deviceNotificationType.code;
+        const category = notification.deviceNotificationType?.category?.toUpperCase();
+        const notificationMessage = notification.deviceNotificationType?.message || '';
+        const description = notification.deviceNotificationType?.description || '';
+        const code = notification.deviceNotificationType?.code || '';
+        const deviceName = notification.deviceManufacturer || notification.siteName || '';
 
+        // Determine alert level based on category
         let alertLevel: 'info' | 'warning' | 'critical' = 'info';
-        if (category === 'CRITICAL' || category === 'ALARM') {
+        if (category === 'CRITICAL' || category === 'ALARM' || category === 'ERROR') {
             alertLevel = 'critical';
         } else if (category === 'WARNING') {
             alertLevel = 'warning';
         }
 
-        let additionalInfo = '';
-        if (notification.additionalData) {
-            try {
-                const parsed = typeof notification.additionalData === 'string'
-                    ? JSON.parse(notification.additionalData)
-                    : notification.additionalData;
+        // Format title: show code if available
+        const alertTitle = code ? `${code} - ${notificationMessage}` : notificationMessage;
 
-                if (typeof parsed === 'object' && parsed !== null) {
-                    // Map objeyi formatlanmış string'e çevir
-                    additionalInfo = Object.entries(parsed)
-                        .map(([key, value]) => `${key}: ${value}`)
-                        .join('\n');
-                } else {
-                    additionalInfo = String(notification.additionalData);
-                }
-            } catch (e) {
-                additionalInfo = String(notification.additionalData);
-            }
-        }
-
+        console.log('[useSignalR] 🔔 Showing alert:', { title: alertTitle, level: alertLevel });
         showAlert({
-            title: `${code} - ${title}`,
-            message: message,
+            title: alertTitle,
+            message: description,
             level: alertLevel,
             deviceName: deviceName,
-            recommendation: additionalInfo ||
-                'Lütfen cihazı kontrol edin ve gerekli önlemleri alınız. Sorun devam ederse destek ile iletişime geçin.'
         });
 
         if (category === 'CRITICAL' || category === 'ALARM' || category === 'WARNING') {
@@ -148,16 +140,20 @@ export const useSignalR = () => {
 
     useEffect(() => {
         if (!isConnected) {
+            console.log('[useSignalR] Not connected, skipping event registration');
             return;
         }
 
+        console.log('[useSignalR] ✅ Registering notification event listeners...');
 
         const notificationMethod = 'ReceiveDeviceNotification';
         const updateMethod = 'ReceiveDeviceNotificationUpdate';
 
         on(notificationMethod, handleCriticalNotification);
+        console.log('[useSignalR] Registered listener for:', notificationMethod);
 
         on(updateMethod, handleNotificationUpdate);
+        console.log('[useSignalR] Registered listener for:', updateMethod);
 
         return () => {
             off(notificationMethod, handleCriticalNotification);

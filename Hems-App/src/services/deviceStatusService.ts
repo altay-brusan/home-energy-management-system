@@ -32,7 +32,8 @@ class DeviceStatusService {
                         const freshToken = await this.getAccessToken();
                         return freshToken || '';
                     },
-                    transport: HttpTransportType.LongPolling,
+                    transport: HttpTransportType.WebSockets,
+                    skipNegotiation: true,
                 })
                 .withServerTimeout(120000)
                 .withKeepAliveInterval(15000)

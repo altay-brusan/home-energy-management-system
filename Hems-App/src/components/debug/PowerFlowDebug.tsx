@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
 import { usePowerFlowStream } from '../../hooks/usePowerFlowStream';
 
 export const PowerFlowDebug = () => {
@@ -24,7 +24,7 @@ export const PowerFlowDebug = () => {
     if (deviceId.trim()) {
       setIsEnabled(true);
     } else {
-      alert('Please enter a device ID');
+      Alert.alert('Error', 'Please enter a device ID');
     }
   };
 
@@ -102,13 +102,13 @@ export const PowerFlowDebug = () => {
         <View style={styles.dataBox}>
           <Text style={styles.dataTitle}>⚡ Live PowerFlow Data</Text>
           <Text style={styles.dataText}>Device ID: {powerFlow.deviceId}</Text>
-          <Text style={styles.dataText}>Updated: {new Date().toLocaleTimeString()}</Text>
+          <Text style={styles.dataText}>Timestamp: {powerFlow.timestamp}</Text>
           <View style={styles.separator} />
           <Text style={styles.dataText}>☀️ Solar: {powerFlow.solarPowerKw.toFixed(3)} kW</Text>
           <Text style={styles.dataText}>🔌 Grid: {powerFlow.gridPowerKw.toFixed(3)} kW</Text>
           <Text style={styles.dataText}>💡 Load: {powerFlow.loadPowerKw.toFixed(3)} kW</Text>
           <Text style={styles.dataText}>🔋 Battery: {powerFlow.batteryPowerKw.toFixed(3)} kW</Text>
-          <Text style={styles.dataText}>⚙️ Generator: {powerFlow.generatorPowerKw.toFixed(3)} kW</Text>
+          <Text style={styles.dataText}>🔋 Battery SOC: {powerFlow.batterySoc.toFixed(1)}%</Text>
           <View style={styles.separator} />
           <Text style={styles.dataText}>
             Battery: {powerFlow.batteryPowerKw > 0 ? '⬆️ Charging' : powerFlow.batteryPowerKw < 0 ? '⬇️ Discharging' : '⏸️ Idle'}

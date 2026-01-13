@@ -1,4 +1,4 @@
-import { HubConnection, HubConnectionBuilder, HubConnectionState, LogLevel, IStreamResult } from '@microsoft/signalr';
+import { HubConnection, HubConnectionBuilder, HubConnectionState, LogLevel, IStreamResult, HttpTransportType } from '@microsoft/signalr';
 import { apiClient } from '../api/client/apiClient';
 import { PowerFlowDto, SignalRConnectionState } from '../api/types/signalR.types';
 import 'react-native-url-polyfill/auto';
@@ -75,7 +75,15 @@ class PowerFlowService {
             this.isConnecting = true;
             this.notifyConnectionState('Connecting');
 
-            const token = await this.getAccessToken();
+            // Clean up any existing stale connection before creating a new one
+            if (this.connection) {
+                try {
+                    await this.connection.stop();
+                } catch (e) {
+                    // Ignore cleanup errors
+                }
+                this.connection = null;
+            }
 
             this.connection = new HubConnectionBuilder()
                 .withUrl(this.HUB_URL, {
@@ -83,7 +91,8 @@ class PowerFlowService {
                         const freshToken = await this.getAccessToken();
                         return freshToken || '';
                     },
-                    timeout: 300000, // 5 minutes
+                    transport: HttpTransportType.WebSockets,
+                    skipNegotiation: true,
                 })
                 .withServerTimeout(300000) // 5 minutes
                 .withKeepAliveInterval(15000) // 15 seconds
@@ -109,6 +118,8 @@ class PowerFlowService {
 
         } catch (error: any) {
             this.isConnecting = false;
+            // Clean up failed connection to ensure fresh state on retry
+            this.connection = null;
             this.notifyConnectionState('Failed');
             console.error('❌ [PowerFlowService] Connection failed:', {
                 error: error?.message || error,

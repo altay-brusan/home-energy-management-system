@@ -55,10 +55,11 @@ export interface CriticalNotification {
 export interface PowerFlowDto {
   deviceId: string;              // Backend: Guid (serialized as string in JSON)
   solarPowerKw: number;          // Backend: SolarPowerKw (double) - in kilowatts
+  batteryPowerKw: number;        // Backend: BatteryPowerKw (double) - in kilowatts
   gridPowerKw: number;           // Backend: GridPowerKw (double) - in kilowatts
   loadPowerKw: number;           // Backend: LoadPowerKw (double) - in kilowatts
-  batteryPowerKw: number;        // Backend: BatteryPowerKw (double) - in kilowatts
-  generatorPowerKw: number;      // Backend: GeneratorPowerKw (double) - in kilowatts
+  batterySoc: number;            // Backend: BatterySoc (double) - battery state of charge percentage
+  timestamp: string;             // Backend: Timestamp (DateTime) - ISO 8601 format
 }
 
 export interface PowerFlowStreamOptions {
