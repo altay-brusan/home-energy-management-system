@@ -205,28 +205,29 @@ public class DemoSimulationDataService : IDemoSimulationDataService
         var seasonalLoadMultiplier = GetSeasonalLoadMultiplier(date.Month);
 
         // Get day type (using date as seed for consistency)
+        // Biased towards sunny/partly cloudy for demo (to show positive revenue)
         var dayTypeSeed = date.Year * 1000 + date.DayOfYear;
         var dayRandom = new Random(dayTypeSeed);
-        var dayType = GetDayType(dayRandom.NextDouble());
+        var dayType = GetDemoFavorableDayType(dayRandom.NextDouble());
 
         // Base values for a 5kW PV system on a sunny summer day
-        // Realistic for Netherlands/Europe
-        var basePvSunny = 25.0;  // kWh - peak summer sunny day
-        var baseLoad = 12.0;     // kWh - typical household daily consumption
+        // Optimized for demo to show positive revenue
+        var basePvSunny = 28.0;  // kWh - peak summer sunny day (slightly optimistic)
+        var baseLoad = 10.0;     // kWh - efficient household daily consumption
 
-        // Apply day type multipliers for PV
+        // Apply day type multipliers for PV (more favorable for demo)
         var pvMult = dayType switch
         {
             "sunny" => 1.0,
-            "partlyCloudy" => 0.65,
-            "cloudy" => 0.30,
-            "rainy" => 0.15,
-            _ => 0.65
+            "partlyCloudy" => 0.75,  // Better yield on partly cloudy
+            "cloudy" => 0.40,
+            "rainy" => 0.25,
+            _ => 0.75
         };
 
         // Calculate PV and Load with variation
-        var pvEnergy = basePvSunny * seasonalPvMultiplier * pvMult * (0.9 + dayRandom.NextDouble() * 0.2);
-        var loadEnergy = baseLoad * seasonalLoadMultiplier * (0.85 + dayRandom.NextDouble() * 0.3);
+        var pvEnergy = basePvSunny * seasonalPvMultiplier * pvMult * (0.95 + dayRandom.NextDouble() * 0.1);
+        var loadEnergy = baseLoad * seasonalLoadMultiplier * (0.85 + dayRandom.NextDouble() * 0.2);
 
         // Calculate net energy (positive = excess, negative = deficit)
         var netEnergy = pvEnergy - loadEnergy;
@@ -241,30 +242,39 @@ public class DemoSimulationDataService : IDemoSimulationDataService
         {
             // PV produces more than load - export excess
             // Battery absorbs some during day, releases in evening
-            batteryCharge = Math.Min(netEnergy * 0.4, 8.0);  // Max 8 kWh battery capacity
-            batteryDischarge = batteryCharge * 0.85;  // 85% round-trip efficiency
+            batteryCharge = Math.Min(netEnergy * 0.35, 8.0);  // Max 8 kWh battery capacity
+            batteryDischarge = batteryCharge * 0.90;  // 90% round-trip efficiency
 
-            // Grid: small import at night, export excess during day
-            gridImport = loadEnergy * 0.1 * (0.8 + dayRandom.NextDouble() * 0.4);  // ~10% of load from grid at night
-            gridExport = Math.Max(0, netEnergy - batteryCharge + batteryDischarge - gridImport);
+            // Grid: minimal import at night, maximize export during day
+            gridImport = loadEnergy * 0.05 * (0.8 + dayRandom.NextDouble() * 0.4);  // ~5% of load from grid at night
+            gridExport = Math.Max(0, netEnergy - batteryCharge + batteryDischarge + pvEnergy * 0.1);  // Export excess + bonus
         }
         else
         {
             // Load exceeds PV - need to import
+            // But we still try to export during peak PV hours for positive revenue
             var deficit = Math.Abs(netEnergy);
 
-            // Battery helps cover some deficit
-            batteryDischarge = Math.Min(deficit * 0.3, 6.0);  // Battery covers up to 30% of deficit
-            batteryCharge = batteryDischarge * 0.5;  // Charge what little PV produces
+            // Battery helps cover the deficit efficiently
+            batteryDischarge = Math.Min(deficit * 0.5, 6.0);  // Battery covers up to 50% of deficit
+            batteryCharge = Math.Min(pvEnergy * 0.3, 4.0);  // Charge from PV peak
 
-            // Grid covers the rest
-            gridImport = deficit - batteryDischarge + batteryCharge;
-            gridExport = pvEnergy * 0.05 * (0.5 + dayRandom.NextDouble());  // Tiny export during peak PV hours
+            // Grid: minimize import, still export during peak sun hours
+            gridImport = Math.Max(0, deficit - batteryDischarge) * 0.6;  // Only 60% of remaining deficit
+            gridExport = pvEnergy * 0.4 * (0.8 + dayRandom.NextDouble() * 0.4);  // Export 40% of PV during peak
+        }
+
+        // Ensure positive revenue: GridExport * 0.09 > GridImport * 0.28
+        // So GridExport should be > 3.1 * GridImport
+        // Apply adjustment factor to ensure this
+        if (gridExport < gridImport * 3.5)
+        {
+            gridExport = gridImport * 3.5 + dayRandom.NextDouble() * 2;
         }
 
         // Add small random variation
         gridImport *= (0.95 + dayRandom.NextDouble() * 0.1);
-        gridExport *= (0.95 + dayRandom.NextDouble() * 0.1);
+        gridExport *= (0.98 + dayRandom.NextDouble() * 0.1);
 
         return new DailyEnergyData
         {
@@ -490,6 +500,21 @@ public class DemoSimulationDataService : IDemoSimulationDataService
             < 0.65 => "partlyCloudy",
             < 0.90 => "cloudy",
             _ => "rainy"
+        };
+    }
+
+    /// <summary>
+    /// Gets day type biased towards favorable weather for demo purposes.
+    /// More sunny/partly cloudy days to ensure positive revenue.
+    /// </summary>
+    private string GetDemoFavorableDayType(double randomValue)
+    {
+        return randomValue switch
+        {
+            < 0.50 => "sunny",          // 50% sunny (was 30%)
+            < 0.80 => "partlyCloudy",   // 30% partly cloudy (was 35%)
+            < 0.95 => "cloudy",         // 15% cloudy (was 25%)
+            _ => "rainy"                // 5% rainy (was 10%)
         };
     }
 
