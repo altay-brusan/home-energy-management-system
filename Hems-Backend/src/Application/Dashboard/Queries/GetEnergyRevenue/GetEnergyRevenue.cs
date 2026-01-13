@@ -33,6 +33,8 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
     private readonly IDeviceMappingService _deviceMapping;
+    private readonly IDemoDataService _demoDataService;
+    private readonly IDemoSimulationDataService _demoSimulationService;
 
     private Guid _deviceId;
     private string _currency = "EUR";
@@ -40,11 +42,15 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
     public GetEnergyRevenueQueryHandler(
         IApplicationDbContext context,
         ISender sender,
-        IDeviceMappingService deviceMapping)
+        IDeviceMappingService deviceMapping,
+        IDemoDataService demoDataService,
+        IDemoSimulationDataService demoSimulationService)
     {
         _context = context;
         _sender = sender;
         _deviceMapping = deviceMapping;
+        _demoDataService = demoDataService;
+        _demoSimulationService = demoSimulationService;
     }
 
     public async Task<EnergyRevenueDto> Handle(GetEnergyRevenueQuery request, CancellationToken cancellationToken)
@@ -58,6 +64,17 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
             throw new UnauthorizedAccessException("Device access denied");
         }
 
+        var period = request.Period.ToLower();
+
+        // Check if this is a demo device
+        var isDemoDevice = await _demoDataService.IsDemoDeviceAsync(request.DeviceId, cancellationToken);
+
+        if (isDemoDevice)
+        {
+            return HandleDemoDeviceRevenue(request, period);
+        }
+
+        // For real devices: query database
         // Map local DeviceId to ThingsBoardDeviceId
         var thingsBoardDeviceId = await _deviceMapping.GetThingsBoardDeviceIdAsync(request.DeviceId, cancellationToken);
         if (thingsBoardDeviceId == null)
@@ -72,7 +89,6 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
             _currency = currentPrices.First().Currency;
         }
 
-        var period = request.Period.ToLower();
         List<EnergyRevenueDataPoint> dataPoints;
 
         switch (period)
@@ -127,6 +143,253 @@ public class GetEnergyRevenueQueryHandler : IRequestHandler<GetEnergyRevenueQuer
             }
         };
     }
+
+    #region Demo Device Revenue
+
+    /// <summary>
+    /// Handle revenue calculation for demo devices using simulated data
+    /// </summary>
+    private EnergyRevenueDto HandleDemoDeviceRevenue(GetEnergyRevenueQuery request, string period)
+    {
+        var priceSettings = _demoSimulationService.GetDemoPrices(_deviceId);
+        _currency = priceSettings.Currency;
+
+        List<EnergyRevenueDataPoint> dataPoints = period switch
+        {
+            "day" => GetDemoDayData(request.Date ?? DateOnly.FromDateTime(DateTime.UtcNow)),
+            "week" => GetDemoWeekData(request.Year ?? DateTime.UtcNow.Year, request.Week ?? GetIsoWeekNumber(DateTime.UtcNow)),
+            "month" => GetDemoMonthData(request.Year ?? DateTime.UtcNow.Year, request.Month ?? DateTime.UtcNow.Month),
+            "year" => GetDemoYearData(request.Year ?? DateTime.UtcNow.Year),
+            _ => throw new ArgumentException($"Invalid period: {period}")
+        };
+
+        // Calculate totals
+        var totalBuyPrice = dataPoints.Sum(d => d.Buy * d.BuyPriceUsed);
+        var totalSellPrice = dataPoints.Sum(d => d.Sell * d.SellPriceUsed);
+        var totalNetPrice = totalSellPrice - totalBuyPrice;
+
+        var avgBuyPrice = CalculateWeightedAveragePrice(dataPoints, d => d.Buy, d => d.BuyPriceUsed);
+        var avgSellPrice = CalculateWeightedAveragePrice(dataPoints, d => d.Sell, d => d.SellPriceUsed);
+
+        return new EnergyRevenueDto
+        {
+            Period = period,
+            BuyPricePerKWh = avgBuyPrice,
+            SellPricePerKWh = avgSellPrice,
+            Currency = _currency,
+            Data = dataPoints,
+            Total = new EnergyRevenueTotal
+            {
+                BuyPrice = Math.Round(totalBuyPrice, 2),
+                SellPrice = Math.Round(totalSellPrice, 2),
+                NetPrice = Math.Round(totalNetPrice, 2)
+            }
+        };
+    }
+
+    /// <summary>
+    /// Get simulated hourly revenue data for a single day (demo device)
+    /// </summary>
+    private List<EnergyRevenueDataPoint> GetDemoDayData(DateOnly date)
+    {
+        var dayStart = new DateTime(date.Year, date.Month, date.Day, 0, 0, 0, DateTimeKind.Utc);
+        var today = DateTime.UtcNow.Date;
+        var now = DateTime.UtcNow;
+
+        // Don't return future data
+        if (dayStart.Date > today)
+        {
+            return new List<EnergyRevenueDataPoint>();
+        }
+
+        var dailyEnergy = _demoSimulationService.GetDailyEnergy(dayStart);
+        var result = new List<EnergyRevenueDataPoint>();
+
+        int lastHour = dayStart.Date == today ? now.Hour : 23;
+
+        // Generate hourly distribution based on typical solar pattern
+        for (int hour = 0; hour <= lastHour; hour++)
+        {
+            var (sellPrice, buyPrice) = _demoSimulationService.GetPriceForHour(_deviceId, hour);
+
+            // Simulate hourly energy distribution
+            var hourlyFactor = GetHourlyEnergyFactor(hour);
+            var buyEnergy = dailyEnergy.GridImportEnergyKWh * hourlyFactor.ImportFactor / 24.0;
+            var sellEnergy = dailyEnergy.GridExportEnergyKWh * hourlyFactor.ExportFactor / 24.0;
+
+            var net = sellEnergy - buyEnergy;
+            var price = (sellEnergy * (double)sellPrice) - (buyEnergy * (double)buyPrice);
+
+            result.Add(new EnergyRevenueDataPoint
+            {
+                Timestamp = $"{hour:D2}:00",
+                Buy = Math.Round(buyEnergy, 3),
+                Sell = Math.Round(sellEnergy, 3),
+                Net = Math.Round(net, 3),
+                Price = Math.Round(price, 2),
+                BuyPriceUsed = (double)buyPrice,
+                SellPriceUsed = (double)sellPrice
+            });
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Get simulated daily revenue data for a week (demo device)
+    /// </summary>
+    private List<EnergyRevenueDataPoint> GetDemoWeekData(int year, int week)
+    {
+        var weekStart = ISOWeek.ToDateTime(year, week, DayOfWeek.Monday);
+        var weekStartUtc = DateTime.SpecifyKind(weekStart, DateTimeKind.Utc);
+        var today = DateTime.UtcNow.Date;
+
+        var result = new List<EnergyRevenueDataPoint>();
+
+        for (int i = 0; i < 7; i++)
+        {
+            var currentDate = weekStartUtc.AddDays(i);
+            if (currentDate.Date > today) break;
+
+            var dailyEnergy = _demoSimulationService.GetDailyEnergy(currentDate);
+            var (sellPrice, buyPrice) = _demoSimulationService.GetWeightedDailyAveragePrice(_deviceId);
+
+            var buy = dailyEnergy.GridImportEnergyKWh;
+            var sell = dailyEnergy.GridExportEnergyKWh;
+            var net = sell - buy;
+            var price = (sell * (double)sellPrice) - (buy * (double)buyPrice);
+
+            result.Add(new EnergyRevenueDataPoint
+            {
+                Timestamp = currentDate.ToString("yyyy-MM-dd"),
+                Buy = Math.Round(buy, 2),
+                Sell = Math.Round(sell, 2),
+                Net = Math.Round(net, 2),
+                Price = Math.Round(price, 2),
+                BuyPriceUsed = (double)buyPrice,
+                SellPriceUsed = (double)sellPrice
+            });
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Get simulated daily revenue data for a month (demo device)
+    /// </summary>
+    private List<EnergyRevenueDataPoint> GetDemoMonthData(int year, int month)
+    {
+        var monthStart = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var daysInMonth = DateTime.DaysInMonth(year, month);
+        var today = DateTime.UtcNow.Date;
+
+        var result = new List<EnergyRevenueDataPoint>();
+
+        for (int day = 1; day <= daysInMonth; day++)
+        {
+            var currentDate = new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Utc);
+            if (currentDate.Date > today) break;
+
+            var dailyEnergy = _demoSimulationService.GetDailyEnergy(currentDate);
+            var (sellPrice, buyPrice) = _demoSimulationService.GetWeightedDailyAveragePrice(_deviceId);
+
+            var buy = dailyEnergy.GridImportEnergyKWh;
+            var sell = dailyEnergy.GridExportEnergyKWh;
+            var net = sell - buy;
+            var price = (sell * (double)sellPrice) - (buy * (double)buyPrice);
+
+            result.Add(new EnergyRevenueDataPoint
+            {
+                Timestamp = currentDate.ToString("yyyy-MM-dd"),
+                Buy = Math.Round(buy, 2),
+                Sell = Math.Round(sell, 2),
+                Net = Math.Round(net, 2),
+                Price = Math.Round(price, 2),
+                BuyPriceUsed = (double)buyPrice,
+                SellPriceUsed = (double)sellPrice
+            });
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Get simulated monthly revenue data for a year (demo device)
+    /// </summary>
+    private List<EnergyRevenueDataPoint> GetDemoYearData(int year)
+    {
+        var today = DateTime.UtcNow.Date;
+        var currentYear = today.Year;
+        var currentMonth = today.Month;
+
+        if (year > currentYear)
+        {
+            return new List<EnergyRevenueDataPoint>();
+        }
+
+        var result = new List<EnergyRevenueDataPoint>();
+        int lastMonth = year == currentYear ? currentMonth : 12;
+
+        for (int month = 1; month <= lastMonth; month++)
+        {
+            var monthStart = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var daysInMonth = DateTime.DaysInMonth(year, month);
+            var lastDay = year == currentYear && month == currentMonth ? today.Day : daysInMonth;
+
+            double totalBuy = 0;
+            double totalSell = 0;
+
+            for (int day = 1; day <= lastDay; day++)
+            {
+                var currentDate = new DateTime(year, month, day, 0, 0, 0, DateTimeKind.Utc);
+                var dailyEnergy = _demoSimulationService.GetDailyEnergy(currentDate);
+                totalBuy += dailyEnergy.GridImportEnergyKWh;
+                totalSell += dailyEnergy.GridExportEnergyKWh;
+            }
+
+            var (sellPrice, buyPrice) = _demoSimulationService.GetWeightedDailyAveragePrice(_deviceId);
+            var net = totalSell - totalBuy;
+            var price = (totalSell * (double)sellPrice) - (totalBuy * (double)buyPrice);
+
+            result.Add(new EnergyRevenueDataPoint
+            {
+                Timestamp = $"{year}-{month:D2}",
+                Buy = Math.Round(totalBuy, 2),
+                Sell = Math.Round(totalSell, 2),
+                Net = Math.Round(net, 2),
+                Price = Math.Round(price, 2),
+                BuyPriceUsed = (double)buyPrice,
+                SellPriceUsed = (double)sellPrice
+            });
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Get hourly energy distribution factors for realistic simulation
+    /// </summary>
+    private static (double ImportFactor, double ExportFactor) GetHourlyEnergyFactor(int hour)
+    {
+        // Import is higher at night/evening, export is higher during solar hours
+        return hour switch
+        {
+            >= 0 and < 6 => (1.8, 0.0),      // Night: high import, no export
+            >= 6 and < 9 => (1.5, 0.3),      // Morning: moderate import, low export
+            >= 9 and < 12 => (0.5, 2.5),     // Late morning: low import, high export
+            >= 12 and < 15 => (0.3, 3.0),    // Midday: minimal import, peak export
+            >= 15 and < 18 => (0.6, 2.0),    // Afternoon: low import, good export
+            >= 18 and < 21 => (2.0, 0.2),    // Evening: high import, minimal export
+            _ => (1.5, 0.0)                  // Night: moderate import, no export
+        };
+    }
+
+    private static int GetIsoWeekNumber(DateTime date)
+    {
+        return ISOWeek.GetWeekOfYear(date);
+    }
+
+    #endregion
 
     /// <summary>
     /// Calculate weighted average price based on energy consumed/produced
