@@ -1,0 +1,256 @@
+import { StyleSheet } from 'react-native';
+import { TYPOGRAPHY, SPACING } from '../../../../../theme/constants';
+
+export const createStyles = (COLORS: Record<string, string>) => {
+  return StyleSheet.create({
+    container: {
+      backgroundColor: COLORS.surface,
+      borderRadius: 12,
+      padding: SPACING.md,
+      marginBottom: SPACING.sm,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: SPACING.md,
+    },
+    title: {
+      fontSize: TYPOGRAPHY.lg,
+      fontWeight: '700',
+      color: COLORS.textSoft,
+      marginBottom: SPACING.xs,
+    },
+    subtitle: {
+      fontSize: TYPOGRAPHY.sm,
+      color: COLORS.textSoft,
+      opacity: 0.7,
+    },
+    priceCardsContainer: {
+      flexDirection: 'row',
+      gap: SPACING.sm,
+      marginTop: SPACING.sm,
+    },
+    priceCard: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: COLORS.cardBg,
+      borderRadius: 8,
+      paddingVertical: SPACING.xs,
+      paddingHorizontal: SPACING.sm,
+      gap: SPACING.xs,
+    },
+    priceCardDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+    },
+    priceCardLabel: {
+      fontSize: TYPOGRAPHY.xs,
+      color: COLORS.textSoft,
+      opacity: 0.7,
+      fontWeight: '500',
+    },
+    priceCardValue: {
+      fontSize: TYPOGRAPHY.sm,
+      fontWeight: '700',
+      marginLeft: 'auto',
+    },
+    chartContainer: {
+      width: '100%',
+      height: 350,
+      backgroundColor: 'transparent',
+    },
+    chartWrapper: {
+      position: 'relative',
+      marginTop: SPACING.sm,
+    },
+    legend: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: SPACING.lg,
+      marginTop: SPACING.md,
+    },
+    legendItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.xs,
+    },
+    legendDot: {
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+    },
+    legendLabel: {
+      fontSize: TYPOGRAPHY.sm,
+      fontWeight: '600',
+      color: COLORS.textSoft,
+    },
+    infoBox: {
+      position: 'absolute',
+      top: -10,
+      left: 0,
+      right: 0,
+      zIndex: 10,
+      backgroundColor: COLORS.surface,
+      borderRadius: 12,
+      padding: SPACING.md,
+      borderWidth: 1,
+      borderColor: COLORS.border,
+    },
+    infoDate: {
+      fontSize: TYPOGRAPHY.xs,
+      fontWeight: '700',
+      color: COLORS.textSoft,
+      marginBottom: SPACING.sm,
+      textAlign: 'center',
+    },
+    infoGrid: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      gap: SPACING.xs,
+    },
+    infoItem: {
+      flex: 1,
+      alignItems: 'center',
+    },
+    infoLabel: {
+      fontSize: 9,
+      color: COLORS.textSoft,
+      opacity: 0.7,
+      marginBottom: 4,
+      fontWeight: '600',
+    },
+    infoValue: {
+      fontSize: TYPOGRAPHY.xs,
+      fontWeight: '700',
+      color: COLORS.textSoft,
+    },
+    loadingContainer: {
+      height: 350,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    summaryCardsContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: 0,
+      gap: SPACING.sm,
+    },
+    summaryCard: {
+      flex: 1,
+      backgroundColor: COLORS.surface,
+      borderRadius: 12,
+      padding: SPACING.md,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: COLORS.border,
+    },
+    summaryCardLabel: {
+      fontSize: 10,
+      color: COLORS.textSoft,
+      opacity: 0.7,
+      marginBottom: SPACING.xs,
+      textAlign: 'center',
+      fontWeight: '600',
+    },
+    summaryCardValue: {
+      fontSize: TYPOGRAPHY.lg,
+      fontWeight: '700',
+      marginBottom: 2,
+    },
+    summaryCardUnit: {
+      fontSize: 9,
+      color: COLORS.textSoft,
+      opacity: 0.6,
+      fontWeight: '500',
+    },
+    buyColor: {
+      color: '#ef4444', // Red for buying
+    },
+    sellColor: {
+      color: '#10b981', // Green for selling
+    },
+    // Floating info box styles
+    floatingInfoBox: {
+      position: 'absolute',
+      top: 5,
+      width: 180,
+      zIndex: 100,
+      backgroundColor: COLORS.cardBg,
+      borderRadius: 12,
+      padding: SPACING.sm,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 8,
+      borderWidth: 1,
+      borderColor: COLORS.border,
+    },
+    floatingInfoDate: {
+      fontSize: TYPOGRAPHY.sm,
+      fontWeight: '700',
+      color: COLORS.textSoft,
+      marginBottom: SPACING.xs,
+      textAlign: 'center',
+    },
+    floatingInfoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: SPACING.sm,
+      marginTop: 4,
+    },
+    floatingInfoItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    floatingDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+    },
+    floatingInfoLabel: {
+      fontSize: 10,
+      color: COLORS.textSoft,
+      opacity: 0.7,
+      fontWeight: '500',
+    },
+    floatingInfoValue: {
+      fontSize: TYPOGRAPHY.sm,
+      fontWeight: '700',
+    },
+    floatingNetLabel: {
+      fontSize: 10,
+      color: COLORS.textSoft,
+      opacity: 0.7,
+      fontWeight: '500',
+    },
+    floatingNetValue: {
+      fontSize: TYPOGRAPHY.sm,
+      fontWeight: '700',
+    },
+    floatingPriceValue: {
+      fontSize: 10,
+      fontWeight: '600',
+    },
+    floatingArrow: {
+      position: 'absolute',
+      bottom: -8,
+      left: '50%',
+      marginLeft: -8,
+      width: 0,
+      height: 0,
+      borderLeftWidth: 8,
+      borderRightWidth: 8,
+      borderTopWidth: 8,
+      borderLeftColor: 'transparent',
+      borderRightColor: 'transparent',
+      borderTopColor: COLORS.cardBg,
+    },
+  });
+};

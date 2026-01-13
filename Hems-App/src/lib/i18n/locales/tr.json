@@ -1,0 +1,2070 @@
+{
+  "common": {
+    "language": "Dil",
+    "selectLanguage": "Dil Seçin",
+    "chooseLanguage": "Dil tercihinizi seçin",
+    "turkish": "Türkçe",
+    "english": "İngilizce",
+    "dutch": "Hollandaca",
+    "cancel": "İptal",
+    "confirm": "Onayla",
+    "yes": "Evet",
+    "no": "Hayır",
+    "save": "Kaydet",
+    "delete": "Sil",
+    "loading": "Yükleniyor...",
+    "error": "Hata",
+    "success": "Başarılı",
+    "warning": "Uyarı",
+    "info": "Bilgi",
+    "critical": "Kritik",
+    "back": "Geri",
+    "ok": "Tamam",
+    "close": "Kapat",
+    "retry": "Yeniden Dene",
+    "serialLabel": "SN",
+    "noData": "Veri bulunamadı"
+  },
+  "invitation": {
+    "title": "Ev Daveti",
+    "message": "Size bir ev daveti gönderildi. Bu daveti kabul etmek istiyor musunuz?",
+    "accept": "Kabul Et",
+    "decline": "Reddet",
+    "invalidCode": "Geçersiz davet kodu",
+    "notLoggedIn": "Lütfen ilgili mailiniz ile giriş yapın veya kayıt olun",
+    "accepted": "Davet kabul edildi",
+    "acceptFailed": "Davet kabul edilemedi",
+    "homeListUpdated": "Ev listesiniz güncellendi",
+    "codeReceived": "Davet kodu alındı"
+  },
+  "time": {
+    "days": {
+      "monday": "Pazartesi",
+      "tuesday": "Salı",
+      "wednesday": "Çarşamba",
+      "thursday": "Perşembe",
+      "friday": "Cuma",
+      "saturday": "Cumartesi",
+      "sunday": "Pazar",
+      "short": {
+        "monday": "Pzt",
+        "tuesday": "Sal",
+        "wednesday": "Çar",
+        "thursday": "Per",
+        "friday": "Cum",
+        "saturday": "Cmt",
+        "sunday": "Paz"
+      },
+      "veryShort": {
+        "monday": "P",
+        "tuesday": "S",
+        "wednesday": "Ç",
+        "thursday": "P",
+        "friday": "C",
+        "saturday": "C",
+        "sunday": "P"
+      }
+    },
+    "hours": {
+      "midnight": "00:00",
+      "earlyMorning": "04:00",
+      "morning": "08:00",
+      "noon": "12:00",
+      "afternoon": "16:00",
+      "evening": "20:00",
+      "night": "23:00"
+    }
+  },
+  "notifications": {
+    "justNow": "Az önce",
+    "minutesAgo": "{{count}} dakika önce",
+    "minutesAgo_other": "{{count}} dakika önce",
+    "hoursAgo": "{{count}} saat önce",
+    "hoursAgo_other": "{{count}} saat önce",
+    "categories": {
+      "critical": "Kritik Uyarı",
+      "warning": "Uyarı",
+      "info": "Bilgi"
+    },
+    "additionalData": "Ek Bilgiler",
+    "dismiss": "Kapat",
+    "markAsRead": "Okundu İşaretle"
+  },
+  "errors": {
+    "lockedOut": "Hesabınız geçici olarak kilitlendi. Lütfen daha sonra tekrar deneyin.",
+    "failed": "Bir hata oluştu. Lütfen tekrar deneyin.",
+    "notFound": "İstenen kaynak bulunamadı.",
+    "invalidCredentials": "E-posta veya şifre hatalı.",
+    "userNotFound": "Bu e-posta adresi ile kayıtlı kullanıcı bulunamadı.",
+    "emailAlreadyExists": "Bu e-posta adresi zaten kayıtlı.",
+    "passwordTooWeak": "Şifre gereksinimleri karşılanmıyor.",
+    "tokenExpired": "Oturum süreniz dolmuş. Lütfen tekrar giriş yapın.",
+    "networkError": "Bağlantı sorunu oluştu. İnternet bağlantınızı kontrol edin.",
+    "serverError": "Sunucu hatası oluştu. Lütfen daha sonra tekrar deneyin.",
+    "validationError": "Gönderilen veriler geçersiz. Lütfen kontrol edin.",
+    "unauthorized": "Bu işlem için yetkiniz bulunmuyor.",
+    "forbidden": "Bu işlem için yetkiniz bulunmuyor.",
+    "timeout": "İstek zaman aşımına uğradı. Lütfen tekrar deneyin.",
+    "rateLimit": "Çok fazla istek gönderildi. Lütfen bir süre bekleyin.",
+    "unknown": "Bilinmeyen bir hata oluştu.",
+    "loginNotFound": "E-posta veya şifre hatalı. Lütfen bilgilerinizi kontrol edin.",
+    "loginFailed": "Giriş işlemi başarısız oldu. Lütfen tekrar deneyin.",
+    "emailNotConfirmed": "E-posta adresiniz onaylanmamış. Lütfen e-postanızı kontrol edip hesabınızı onaylayın."
+  },
+  "auth": {
+    "login": "Giriş Yap",
+    "email": "E-posta",
+    "password": "Şifre",
+    "forgotPassword": "Şifremi Unuttum?",
+    "signUp": "Kayıt Ol",
+    "welcome": "Hoş Geldiniz",
+    "welcomeBack": "Tekrar Hoş Geldiniz",
+    "loginSubtitle": "Hesabınıza giriş yapın",
+    "emailPlaceholder": "E-posta Adresiniz",
+    "passwordPlaceholder": "Şifreniz",
+    "loginButton": "Giriş Yap",
+    "signingIn": "Giriş yapılıyor…",
+    "dontHaveAccount": "Hesabınız yok mu?",
+    "alreadyHaveAccount": "Zaten hesabınız var mı?",
+    "createAccount": "Hesap Oluştur",
+    "loginError": "Giriş yapılırken bir hata oluştu",
+    "invalidCredentials": "Geçersiz e-posta veya şifre",
+    "networkError": "Ağ bağlantısı hatası",
+    "agreeToTerms": "Kabul ediyorum",
+    "termsOfService": "Kullanım Koşulları",
+    "and": "ve",
+    "privacyPolicy": "Gizlilik Politikası",
+    "byLoggingIn": "Giriş yaparak şunları kabul etmiş olursunuz:",
+    "forgotPasswordTitle": "Şifremi Unuttum",
+    "forgotPasswordSubtitle": "E-posta adresinizi girin, size bir sıfırlama kodu göndereceğiz",
+    "sendResetCode": "Sıfırlama Kodunu Gönder",
+    "sending": "Gönderiliyor…",
+    "backToLogin": "Giriş sayfasına dön",
+    "resetLinkSent": "Şifre sıfırlama bağlantısı gönderildi",
+    "resetCodeSent": "Sıfırlama kodu e-postanıza gönderildi",
+    "loginSuccess": "Giriş başarılı!",
+    "invalidCredentials": "E-posta veya şifre hatalı",
+    "userNotFound": "Böyle bir kullanıcı bulunamadı",
+    "invalidPassword": "Şifre hatalı",
+    "signUpTitle": "Hesap Oluştur",
+    "signUpSubtitle": "Yeni hesap oluşturun",
+    "name": "Ad Soyad",
+    "namePlaceholder": "Adınız ve Soyadınız",
+    "firstName": "Ad",
+    "firstNamePlaceholder": "Adınız",
+    "surname": "Soyad",
+    "surnamePlaceholder": "Soyadınız",
+    "confirmPassword": "Şifre Tekrar",
+    "confirmPasswordPlaceholder": "Şifrenizi tekrar girin",
+    "createAccountButton": "Hesap Oluştur",
+    "creatingAccount": "Hesap oluşturuluyor…",
+    "accountCreated": "Hesap başarıyla oluşturuldu",
+    "passwordsDoNotMatch": "Şifreler eşleşmiyor",
+    "passwordTooShort": "Şifre en az 6 karakter olmalı",
+    "invalidEmail": "Geçersiz e-posta adresi",
+    "emailAlreadyExists": "Bu e-posta adresi zaten kullanımda",
+    "duplicateUserName": "Bu e-posta adresi zaten kullanımda",
+    "registrationError": "Kayıt olurken bir hata oluştu. Lütfen tekrar deneyin.",
+    "resetPasswordTitle": "Şifre Sıfırla",
+    "resetPasswordSubtitle": "{{email}} adresine gönderilen sıfırlama kodunu ve yeni şifrenizi girin",
+    "resetCode": "Sıfırlama Kodu",
+    "resetCodePlaceholder": "Sıfırlama kodunu girin",
+    "newPassword": "Yeni Şifre",
+    "newPasswordPlaceholder": "Yeni şifrenizi girin",
+    "resetPasswordButton": "Şifre Sıfırla",
+    "resetting": "Sıfırlanıyor...",
+    "passwordResetSuccess": "Şifre başarıyla sıfırlandı",
+    "logoutSuccess": "Çıkış yapıldı",
+    "goodbye": "Güle güle",
+    "sessionExpired": "Oturum süresi doldu",
+    "pleaseLogin": "Lütfen tekrar giriş yapın",
+    "loginTitle": "Giriş"
+  },
+  "passwordRules": {
+    "title": "Şifre Kuralları:",
+    "minLength": "En az 8 karakter",
+    "uppercase": "En az 1 büyük harf (A-Z)",
+    "lowercase": "En az 1 küçük harf (a-z)",
+    "specialChar": "En az 1 özel karakter (!@#$%^&*)"
+  },
+  "validation": {
+    "firstNameRequired": "Ad gereklidir",
+    "surnameRequired": "Soyad gereklidir",
+    "emailRequired": "E-posta gereklidir",
+    "emailInvalid": "Geçerli bir e-posta adresi girin",
+    "passwordRequired": "Şifre gereklidir",
+    "oldPasswordRequired": "Mevcut şifre gereklidir",
+    "passwordMinLength": "Şifre en az 8 karakter olmalıdır",
+    "passwordUppercase": "Şifre en az 1 büyük harf içermelidir",
+    "passwordLowercase": "Şifre en az 1 küçük harf içermelidir",
+    "passwordSpecialChar": "Şifre en az 1 özel karakter içermelidir",
+    "confirmPasswordRequired": "Şifre tekrarı gereklidir",
+    "passwordsNotMatch": "Şifreler eşleşmiyor",
+    "resetCodeRequired": "Sıfırlama kodu gereklidir",
+    "termsRequired": "Kullanım Koşullarını ve Gizlilik Politikasını kabul etmelisiniz"
+  },
+  "api": {
+    "success": {
+      "created": "Başarıyla oluşturuldu!",
+      "updated": "Başarıyla güncellendi!",
+      "deleted": "Başarıyla silindi!",
+      "createdTitle": "Başarılı",
+      "updatedTitle": "Güncelleme Başarılı",
+      "deletedTitle": "Silme Başarılı"
+    },
+    "error": {
+      "defaultTitle": "Hata",
+      "defaultMessage": "Bilinmeyen bir hata oluştu",
+      "invalidRequest": "Geçersiz İstek",
+      "invalidRequestMessage": "Gönderilen veriler geçersiz",
+      "notFound": "Bulunamadı",
+      "notFoundMessage": "İstenen kaynak bulunamadı",
+      "conflict": "Çakışma Hatası",
+      "conflictMessage": "Bu işlem zaten mevcut",
+      "validationError": "Doğrulama Hatası",
+      "validationErrorMessage": "Gönderilen veriler doğrulanamadı",
+      "serverError": "Sunucu Hatası",
+      "serverErrorMessage": "Sunucuda bir hata oluştu, lütfen daha sonra tekrar deneyin",
+      "connectionError": "Bağlantı Hatası",
+      "connectionErrorMessage": "İnternet bağlantınızı kontrol edin",
+      "networkError": "Ağ Hatası",
+      "networkErrorMessage": "Sunucuya ulaşılamıyor. Bağlantınızı kontrol edin.",
+      "unknownError": "Bilinmeyen Hata",
+      "unknownErrorMessage": "Beklenmeyen bir hata oluştu"
+    },
+    "maintenance": {
+      "serverError": {
+        "title": "Sunucu Bakımda",
+        "message": "Sunucularımızda şu anda bir sorun var. Lütfen daha sonra tekrar deneyin."
+      },
+      "networkError": {
+        "title": "Bağlantı Hatası",
+        "message": "Bağlantı sorunu yaşanıyor. Lütfen internet bağlantınızı kontrol edin."
+      },
+      "genericError": {
+        "title": "Bir Sorun Oluştu",
+        "message": "Beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin."
+      }
+    }
+  },
+  "dashboard": {
+    "welcome": "Hoş Geldiniz",
+    "dashboard": "Ana Sayfa",
+    "profile": "Profil",
+    "settings": "Ayarlar",
+    "logout": "Çıkış Yap",
+    "home": "Ana Sayfa",
+    "notifications": "Bildirimler",
+    "messages": "Mesajlar",
+    "setPricingPrompt": "Lütfen enerji fiyatlarını giriniz"
+  },
+  "tabs": {
+    "dashboard": "Home",
+    "device": "Cihaz",
+    "notifications": "Bildirimler",
+    "profile": "Profil",
+    "settings": "Ayarlar"
+  },
+  "profile": {
+    "profile": "Profil",
+    "editProfile": "Profili Düzenle",
+    "changePassword": "Şifre Değiştir",
+    "personalInfo": "Kişisel Bilgiler",
+    "personalInformation": "Kişisel Bilgiler",
+    "contactInfo": "İletişim Bilgileri",
+    "preferences": "Tercihler",
+    "language": "Dil",
+    "theme": "Tema",
+    "notifications": "Bildirimler",
+    "deviceSharing": "Cihaz Paylaşımı ve Yetkilendirme",
+    "companyInfo": "Şirket / Bölge Bilgisi",
+    "troubleshooting": "Sorun Giderme",
+    "logout": "Çıkış Yap",
+    "myHomes": "Evlerim"
+  },
+  "changePassword": {
+    "title": "Şifre Değiştir",
+    "securitySettings": "Güvenlik Ayarları",
+    "oldPassword": "Eski Şifre",
+    "newPassword": "Yeni Şifre",
+    "repeatPassword": "Yeni Şifre Tekrar",
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "fillAllFields": "Lütfen tüm alanları doldurun.",
+    "passwordsNoMatch": "Yeni şifreler eşleşmiyor.",
+    "passwordRequirements": "Şifre en az 8 karakter olmalı, büyük harf, küçük harf ve rakam içermelidir.",
+    "oldPasswordIncorrect": "Eski şifre yanlış.",
+    "passwordUpdated": "Şifre başarıyla güncellendi."
+  },
+  "troubleshooting": {
+    "title": "Sorun Giderme",
+    "issueDetails": "Sorun Detayları",
+    "faultType": "Arıza Türü*",
+    "description": "Açıklama*",
+    "contactInformation": "İletişim Bilgileri",
+    "name": "Ad Soyad*",
+    "phone": "Telefon*",
+    "address": "Adres*",
+    "zipCode": "Posta Kodu*",
+    "email": "E-posta*",
+    "confirm": "Onayla",
+    "faultTypes": {
+      "alarm": "Alarm İlişkili",
+      "decoration": "Dekorasyon Kapak Hasarı",
+      "inquiry": "Sorgulama",
+      "other": "Diğer"
+    },
+    "validation": {
+  "faultTypeRequired": "Lütfen bir arıza türü seçiniz.",
+  "descriptionMin": "Açıklama en az 10 karakter olmalıdır.",
+  "descriptionMax": "Açıklama en fazla 500 karakter olabilir.",
+  "nameMin": "Ad en az 2 karakter olmalıdır.",
+  "nameMax": "Ad en fazla 64 karakter olabilir.",
+  "phoneInvalid": "Telefon numarası yalnızca rakamlardan oluşmalı ve 10-15 karakter arasında olmalıdır.",
+  "addressMin": "Adres en az 5 karakter olmalıdır.",
+  "addressMax": "Adres çok uzun (maksimum 120 karakter).",
+  "zipInvalid": "Geçerli bir posta kodu giriniz.",
+  "emailInvalid": "Geçerli bir e-posta adresi giriniz."
+},
+    "faultsScreen": {
+      "title": "Arıza Kayıtları",
+      "warrantyValid": "Garanti geçerlilik: {{date}}",
+      "createFaultRecord": "Arıza Kaydı Oluştur",
+      "all": "Tümü",
+      "myFaultRecords": "Arıza Kayıtlarım",
+      "finishedAt": "Tamamlanma: {{date}}",
+      "createdAt": "Oluşturulma: {{date}}",
+      "status": {
+        "inProgress": "Devam Ediyor",
+        "processing": "İşleniyor",
+        "completed": "Tamamlandı"
+      }
+    },
+    "faultDetail": {
+      "title": "Sorun Detayları",
+      "contactInformation": "İletişim Bilgileri",
+      "location": "Konum",
+      "timeline": "Zaman Çizelgesi",
+      "created": "Oluşturuldu",
+      "completed": "Tamamlandı",
+      "technicianNotes": "Teknisyen Notları",
+      "createRequest": "Talep oluştur...",
+      "name": "Ad Soyad",
+      "email": "E-posta",
+      "phone": "Telefon",
+      "address": "Adres",
+      "zipCode": "Posta Kodu",
+      "mockNotes": {
+  "line1": "Teknisyen kabloları kontrol etti.",
+  "line2": "Arızalı sigorta değiştirildi.",
+  "line3": "Sorun başarıyla çözüldü."
+}
+    }
+  },
+  "deviceSharing": {
+    "title": "Cihaz Paylaşımı",
+    "subtitle": "Cihazınızı aile üyeleriyle paylaşın",
+    "sharedWith": "Paylaşılanlar",
+    "invalidEmail": "Lütfen geçerli bir e-posta adresi girin.",
+    "invitationSent": "Davet başarıyla gönderildi.",
+    "enterEmail": "E-posta girin",
+    "invite": "Davet Et",
+    "cancel": "İptal",
+    "owner": "Sahip",
+    "accessSince": "Erişim tarihi: {{date}}",
+    "status": {
+      "pending": "Beklemede",
+      "accepted": "Kabul Edildi",
+      "rejected": "Reddedildi",
+      "active": "Aktif",
+      "inactive": "Pasif"
+    },
+    "noInvitations": "Davet bulunamadı",
+    "invalidEmailFormat": "Lütfen geçerli bir e-posta adresi girin.",
+    "noEmailEntered": "Lütfen bir e-posta adresi girin.",
+    "noSiteSelected": "Geçerli bir site seçili değil.",
+    "invitationError": "Davet gönderilirken bir hata oluştu.",
+    "invitationListError": "Davet listesi alınamadı.",
+    "invitationRemoved": "Davet başarıyla kaldırıldı.",
+    "removeInvitationError": "Davet kaldırılırken bir hata oluştu.",
+    "removing": "Kaldırılıyor...",
+    "sending": "Gönderiliyor...",
+    "detail": {
+      "title": "Kullanıcı Detayı",
+      "email": "E-posta:",
+      "accessSinceLabel": "Erişim Tarihi:",
+      "active": "Aktif:",
+      "yes": "Evet",
+      "no": "Hayır",
+      "statusLabel": "Durum:",
+      "removeUser": "Kullanıcıyı Kaldır",
+      "activityLog": "Aktivite Geçmişi",
+      "invitationSent": "{{date}} tarihinde davet e-postası gönderildi",
+      "statusChanged": "{{date}} tarihinde durum {{status}} olarak değiştirildi",
+      "accessGranted": "{{date}} tarihinde erişim verildi",
+      "accessRevoked": "{{date}} tarihinde erişim iptal edildi"
+    }
+  },
+  "profileInfo": {
+    "title": "Kişisel Bilgiler",
+    "personalDetails": "Kişisel Bilgiler",
+    "contactDetails": "İletişim Bilgileri",
+    "firstName": "Ad",
+    "lastName": "Soyad",
+    "email": "E-posta",
+    "phone": "Telefon",
+    "phonePlaceholder": "Telefon numaranızı girin",
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "fillAllFields": "Lütfen tüm gerekli alanları doldurun.",
+    "invalidPhone": "Lütfen geçerli bir telefon numarası girin.",
+    "profileUpdated": "Profil başarıyla güncellendi.",
+    "profileUpdateError": "Profil güncellenemedi. Lütfen tekrar deneyin.",
+    "avatar": "Avatar",
+    "avatarNotImplemented": "Avatar yükleme/değiştirme bu demoda uygulanmamıştır."
+  },
+  "companyInfo": {
+    "title": "Şirket Bilgileri",
+    "companyName": "Şirket Adı",
+    "address": "Adres",
+    "email": "E-posta",
+    "phone": "Telefon",
+    "regionTitle": "Bölge Bilgisi",
+    "save": "Kaydet",
+    "cancel": "İptal"
+  },
+  "modals": {
+    "selectDate": "Tarih Seç",
+    "selectRange": "Aralık Seç"
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "settings": "Ayarlar",
+    "settingsScreen": "Ayarlar Ekranı",
+    "setting1": "Ayar 1",
+    "setting2": "Ayar 2",
+    "logout": "Çıkış Yap",
+    "general": "Genel",
+    "privacy": "Gizlilik",
+    "security": "Güvenlik",
+    "about": "Hakkında",
+    "version": "Sürüm",
+    "contact": "İletişim",
+    "help": "Yardım",
+    "feedback": "Geri Bildirim",
+    "generalSettings": "Genel",
+    "generalSettingsDesc": "Sıcaklık, birimler, tarih ve saat",
+    "pricingSettings": "Fiyatlandırma",
+    "comingSoon": "Yakında",
+    "temperatureUnit": "Sıcaklık Birimi",
+    "celsius": "Celsius",
+    "fahrenheit": "Fahrenheit",
+    "metricSystem": "Ölçü Sistemi",
+    "metric": "Metrik",
+    "imperial": "İmparatorluk",
+    "inverterSettings": "İnverter Ayarları",
+    "dateTime": "Tarih ve Saat",
+    "dateFormat": "Tarih Formatı",
+    "timeFormat": "Saat Formatı",
+    "24hour": "24 Saat",
+    "12hour": "12 Saat",
+    "pricingSettingsDesc": "Enerji alış ve satış fiyatları",
+    "deviceSettings": "Cihaz",
+    "deviceSettingsDesc": "Tarih, saat ve cihaz sıfırlama seçenekleri",
+    "setDateTime": "Tarih ve Saat Ayarla",
+    "setDateTimeDesc": "Cihaz tarih ve saatini yapılandır",
+    "day": "Gün",
+    "month": "Ay",
+    "year": "Yıl",
+    "hour": "Saat",
+    "minute": "Dakika",
+    "date": "Tarih",
+    "time": "Saat",
+    "procedures": "Prosedürler",
+    "proceduresDesc": "Batarya kurtarma ve bakım",
+    "batteryRecovery": "Batarya Kurtarma",
+    "batteryRecoveryDesc": "Bataryayı kurtar ve kalibre et",
+    "resetOptions": "Sıfırlama Seçenekleri",
+    "resetOptionsDesc": "Cihazı yeniden başlat veya fabrika ayarlarına sıfırla",
+    "restartDevice": "Cihazı Yeniden Başlat",
+    "restartDeviceDesc": "Cihazı ayarları kaybetmeden yeniden başlat",
+    "factoryReset": "Fabrika Ayarlarına Sıfırla",
+    "factoryResetDesc": "Cihazı fabrika ayarlarına sıfırla. Tüm ayarlar kaybolacak.",
+    "confirmRestart": "Cihazı yeniden başlatmak istediğinizden emin misiniz?",
+    "confirmFactoryReset": "Cihazı fabrika ayarlarına sıfırlamak istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+    "restartSuccess": "Cihaz yeniden başlatılıyor",
+    "factoryResetSuccess": "Fabrika sıfırlaması başlatıldı",
+    "dateTimeSet": "Tarih ve saat başarıyla ayarlandı",
+    "dateTimeSetError": "Tarih ve saat ayarlanamadı"
+  },
+  "pricing": {
+    "title": "Fiyatlandırma Ayarları",
+    "currency": "Para Birimi",
+    "currencyDesc": "Fiyatlandırma için tercih ettiğiniz para birimini seçin",
+    "pricingType": "Fiyatlandırma Tipi",
+    "pricingTypeDesc": "Sabit veya zamana dayalı dinamik fiyatlandırma seçin",
+    "fixed": "Sabit",
+    "dynamic": "Dinamik",
+    "fixedPricing": "Sabit Fiyatlandırma",
+    "dynamicPricing": "Dinamik Fiyatlandırma",
+    "dynamicPricingDesc": "Farklı zaman dilimleri için farklı fiyatlar belirleyin",
+    "buyPrice": "Alış Fiyatı",
+    "sellPrice": "Satış Fiyatı",
+    "buyPriceLabel": "Alış Fiyatı ({{symbol}}/kWh)",
+    "sellPriceLabel": "Satış Fiyatı ({{symbol}}/kWh)",
+    "period": "Dönem",
+    "addPeriod": "Dönem Ekle",
+    "deletePeriod": "Dönemi Sil",
+    "deletePeriodConfirm": "Bu zaman dilimini silmek istediğinizden emin misiniz?",
+    "startTime": "Başlangıç Saati",
+    "endTime": "Bitiş Saati",
+    "hours": "Saat",
+    "minutes": "Dakika",
+    "save": "Kaydet",
+    "saving": "Kaydediliyor...",
+    "saved": "Fiyatlandırma ayarları başarıyla kaydedildi",
+    "maxPeriodsReached": "Maksimum 6 zaman dilimi eklenebilir",
+    "periodsNotComplete": "Zaman dilimleri 24 saati tamamlamalıdır",
+    "totalHours": "Toplam: {{hours}}s / 24s",
+    "periodsInfo": "{{count}}/6 dönem",
+    "saveError": "Fiyat verileri kaydedilemedi",
+    "loadError": "Fiyat verileri yüklenemedi",
+    "noDevice": "Cihaz seçilmedi"
+  },
+  "alerts": {
+    "confirmLogout": "Çıkış yapmak istediğinizden emin misiniz?",
+    "logoutSuccess": "Başarıyla çıkış yapıldı",
+    "saveSuccess": "Başarıyla kaydedildi",
+    "deleteConfirm": "Silmek istediğinizden emin misiniz?",
+    "deleteSuccess": "Başarıyla silindi",
+    "updateSuccess": "Başarıyla güncellendi",
+    "networkError": "Ağ bağlantısı hatası",
+    "serverError": "Sunucu hatası",
+    "unknownError": "Bilinmeyen hata"
+  },
+  "dashboardDevices": {
+    "title": "Cihazlar",
+    "devices": {
+      "inverter": "İnverter",
+      "battery": "Batarya",
+      "evCharger": "EV Şarj Ünitesi"
+    },
+    "status": {
+      "online": "ÇEVRİMİÇİ",
+      "normal": "NORMAL",
+      "offline": "ÇEVRİMDIŞI"
+    },
+    "power": "Güç",
+    "today": "Bugün",
+    "total": "Toplam",
+    "soc": "Doluluk Oranı",
+    "lastSession": "Son Oturum",
+    "sessionEnergy": "Oturum Enerjisi",
+    "noDevice": "Cihaz bağlı değil",
+    "noData": "Cihaz verisi bulunamadı"
+  },
+  "dashboardFlow": {
+    "title": "Enerji Akışı",
+    "dateRange": "Tarih Aralığı",
+    "selectDateRange": "Tarih Aralığı Seç",
+    "selectStartDate": "Başlangıç tarihi seçin",
+    "selectEndDate": "Bitiş tarihi seçin",
+    "loading": "Enerji akış verileri yükleniyor...",
+    "noDevice": "Cihaz bulunamadı. Enerji akış verilerini görüntülemek için lütfen cihaz ekleyin.",
+    "noData": "Seçilen tarih aralığı için enerji akış verisi bulunamadı.",
+    "pv": "Güneş Paneli",
+    "battery": "Batarya",
+    "generator": "Jeneratör",
+    "grid": "Şebeke",
+    "load": "Yük",
+    "system": "Sistem",
+    "in": "Giriş",
+    "out": "Çıkış"
+  },
+  "energyFlowRadial": {
+    "title": "Anlık Enerji Akışı",
+    "loading": "Güç verileri yükleniyor...",
+    "noDevice": "Cihaz bulunamadı. Anlık güç akışını görüntülemek için lütfen cihaz ekleyin.",
+    "noData": "Güç verisi bulunamadı.",
+    "errorLoading": "Güç verileri yüklenirken hata oluştu. Lütfen tekrar deneyin.",
+    "connectionError": "Gerçek zamanlı veri akışına bağlanılamadı. Lütfen bağlantınızı kontrol edin.",
+    "connecting": "Cihaza bağlanılıyor...",
+    "lastUpdate": "Son güncelleme",
+    "labels": {
+      "solar": "Güneş",
+      "battery": "Batarya",
+      "grid": "Şebeke",
+      "home": "Ev"
+    }
+  },
+  "todaySummary": {
+    "title": "Bugün",
+    "gridImport": "Şebekeden Alınan",
+    "gridExport": "Şebekeye Verilen",
+    "consumption": "Tüketim",
+    "production": "Üretim"
+  },
+  "dashboardGraph": {
+    "productionTitle": "Enerji Üretimi",
+    "consumptionTitle": "Enerji Tüketimi",
+    "production": "Üretim",
+    "total": "Toplam",
+    "peak": "Maksimum",
+    "average": "Ortalama",
+    "noDevice": "Cihaz bulunamadı. Üretim verilerini görüntülemek için lütfen cihaz ekleyin.",
+    "noData": "Seçilen dönem için üretim verisi bulunamadı.",
+    "chartType": {
+      "bar": "Bar Grafiği",
+      "area": "Alan Grafiği"
+    },
+    "range": {
+      "day": "Gün",
+      "week": "Hafta",
+      "month": "Ay",
+      "year": "Yıl"
+    }
+  },
+  "energyChart": {
+    "title": "Enerji Genel Bakış",
+    "subtitle": "Üretim ve Tüketim",
+    "production": "Üretim",
+    "consumption": "Tüketim",
+    "total": "Toplam",
+    "sources": {
+      "solar": "Güneş",
+      "batteryDischarge": "Batarya Deşarj",
+      "generator": "Jeneratör",
+      "gridImport": "Şebekeden Çekiş",
+      "load": "Ev Yükü",
+      "batteryCharge": "Batarya Şarj",
+      "gridExport": "Şebekeye Satış"
+    },
+    "period": {
+      "weekly": "Haftalık",
+      "monthly": "Aylık",
+      "yearly": "Yıllık"
+    },
+    "noDevice": "Cihaz bulunamadı. Enerji verilerini görüntülemek için lütfen cihaz ekleyin.",
+    "noData": "Seçilen dönem için enerji verisi bulunamadı.",
+    "loading": "Enerji verileri yükleniyor..."
+  },
+  "dashboardHero": {
+    "title": "Ev Enerji Durumu",
+    "subtitle": "Bugünkü tüketim ve anlık güç",
+    "today": "Bugün: {{value}} kWh",
+    "current": "Anlık: {{value}} W",
+    "lastSync": "Son senkronizasyon: {{value}} önce",
+    "soc": "SOC: {{value}}%",
+    "total": "Toplam: {{value}} kWh"
+  },
+  "dashboardWelcome": {
+    "title": "Evine Hoş Geldin!",
+    "subtitle": "Akıllı enerji kontrol panelin",
+    "status": {
+      "active": "Aktif"
+    },
+    "lastSync": "Son senkronizasyon: {{value}} önce",
+    "metrics": {
+      "today": "Bugün",
+      "power": "Güç",
+      "savings": "Tasarruf"
+    }
+  },
+  "dashboard": {
+    "summary": "Özet",
+    "status": "Durum",
+    "saving": "Tasarruf",
+    "weather": "Hava Durumu",
+    "onGrid": "Şebeke Bağlı",
+    "off": "Kapalı",
+    "hybrid": "Hibrit",
+    "totalPower": "Toplam Güç",
+    "dailiyPower": "Günlük Güç",
+    "noDataAvailable": "Veri mevcut değil",
+    "deviceStatus": {
+      "ok": "Çevrimiçi",
+      "pending": "Beklemede",
+      "waiting": "Bekleniyor",
+      "disconnected": "Çevrimdışı",
+      "notTracked": "İzlenmiyor",
+      "connecting": "Bağlanıyor",
+      "offline": "Çevrimdışı"
+    }
+  },
+  "dashboardMode": {
+    "title": "Şu anki Mod",
+    "modes": {
+      "batteryPriority": "Batarya Öncelikli",
+      "loadPriority": "Yük Öncelikli", 
+      "manual": "Özel"
+    },
+    "descriptions": {
+      "battery": "Maksimum depolama için PV → Batarya → Yük → Şebeke sıralaması.",
+      "load": "Doğrudan öz tüketim için PV → Yük → Batarya → Şebeke sıralaması.",
+      "manual": "Gelişmiş kontrol mantığını manuel olarak yapılandırın."
+    }
+  },
+  "dashboardShare": {
+    "title": "Panoyu Paylaş",
+    "options": {
+      "copy": "Bağlantıyı Kopyala",
+      "whatsapp": "WhatsApp",
+      "twitter": "Twitter",
+      "mail": "E-posta"
+    },
+    "cancel": "İptal"
+  },
+  "dashboardStatus": {
+    "online": "Çevrimiçi",
+    "normal": "Normal",
+    "battery": "Batarya: {{value}}%",
+    "grid": "Şebeke: Bağlı"
+  },
+ "dashboardWeather": {
+    "title": "Hava Durumu",
+    "desc": "Anlık tahmin",
+    "meta": "Gündoğumu: {{sunrise}}  •  Günbatımı: {{sunset}}",
+    "humidity": "Nem",
+    "wind": "Rüzgar",
+    "noData": "Hava durumu bilgisi bulunamadı"
+  },
+  "dashboardBatteryPriceChart": {
+    "title": "Batarya Doluluk Oranı",
+    "switch": {
+      "buy": "Alım",
+      "sell": "Satış",
+      "soc": "SOC"
+    },
+    "legend": {
+      "buy": "Alım Fiyatı (€/kWh)",
+      "sell": "Satış Fiyatı (€/kWh)",
+      "soc": "Batarya Doluluk (%)"
+    },
+    "noData": "SOC verisi bulunamadı"
+  },
+    "dashboardBatterySOHChart": {
+      "title": "Batarya Sağlık Durumu",
+      "switch": {
+        "soh": "SOH"
+      },
+      "legend": {
+        "soh": "Batarya Sağlık Durumu (%)"
+      },
+      "noData": "SOH verisi bulunamadı"
+    },
+    "dashboardBatterySOCChart": {
+      "title": "Batarya SOC"
+    },
+  "dashboardPowerMetricsChart": {
+    "title": "Güç Ölçüm Grafiği (kW)",
+    "labels": {
+      "solar": "Güneş",
+      "battery": "Batarya",
+      "grid": "Şebeke",
+       "load": "Yük"
+    }
+  },
+  "powerMetrics24H": {
+    "title": "Güç Ölçümleri",
+    "sunrise": "Gün Doğumu",
+    "sunset": "Gün Batımı",
+    "now": "ŞİMDİ",
+    "labels": {
+      "solar": "Güneş",
+      "battery": "Batarya",
+      "grid": "Şebeke",
+      "load": "Yük"
+    },
+    "dateFormat": {
+      "week": "Hafta {{weekNumber}}, {{year}}",
+      "month": "{{monthName}} {{year}}",
+      "year": "{{year}}"
+    },
+    "months": {
+      "january": "Ocak",
+      "february": "Şubat",
+      "march": "Mart",
+      "april": "Nisan",
+      "may": "Mayıs",
+      "june": "Haziran",
+      "july": "Temmuz",
+      "august": "Ağustos",
+      "september": "Eylül",
+      "october": "Ekim",
+      "november": "Kasım",
+      "december": "Aralık"
+    },
+    "ranges": {
+      "day": "Gün",
+      "week": "Hafta",
+      "month": "Ay",
+      "year": "Yıl"
+    }
+  },
+  "dashboardBatteryChart": {
+    "title": "Batarya (%)",
+    "stats": {
+      "avg": "Ortalama",
+      "peak": "Maksimum",
+      "current": "Anlık"
+    },
+    "noDevice": "Cihaz bağlı değil",
+    "noData": "Veri bulunamadı"
+  },
+  "batteryStateCard": {
+    "title": "Batarya Doluluk Oranı",
+    "status": {
+      "idle": "Boşta",
+      "charging": "Şarj Oluyor",
+      "discharging": "Deşarj Oluyor"
+    }
+  },
+  "dashboardChargeDischargeChart": {
+    "title": "Şarj ve Deşarj Gücü (kW)",
+    "legend": {
+      "charge": "Şarj",
+      "discharge": "Deşarj"
+    },
+    "stats": {
+      "avg": "Ortalama",
+      "peak": "Maksimum",
+      "current": "Anlık",
+      "chargeAvg": "Şarj Ort.",
+      "chargePeak": "Şarj Maks.",
+      "chargeCurrent": "Şarj Anlık",
+      "dischargeAvg": "Deşarj Ort.",
+      "dischargePeak": "Deşarj Maks.",
+      "dischargeCurrent": "Deşarj Anlık"
+    },
+    "noDevice": "Cihaz bağlı değil",
+    "noData": "Veri bulunamadı"
+  },
+  "dashboardEnergyReview": {
+    "title": "Enerji Gelir/Gider",
+    "subtitle": "Aylık grid enerji alım satım maliyetleri ve gelirleri",
+    "totalBuy": "Toplam Alış",
+    "totalSell": "Toplam Satış",
+    "net": "Net",
+    "buy": "Alış",
+    "sell": "Satış",
+    "buyPrice": "Alış",
+    "sellPrice": "Satış",
+    "price": "Fiyat",
+    "gridBuy": "Grid'den Alış",
+    "gridSell": "Grid'e Satış"
+  },
+  "dashboardGridPerformance": {
+    "title": "Şebeke Performansı",
+    "totalBuy": "Toplam Alış",
+    "totalSell": "Toplam Satış",
+    "netBalance": "Net Denge",
+    "month": "Ay",
+    "year": "Yıl",
+    "lifetime": "Tüm Zamanlar",
+    "buyLabel": "Şebeke Alım",
+    "sellLabel": "Şebeke Satım",
+    "noData": "Şebeke verisi mevcut değil"
+  },
+  "gridPerformanceDetail": {
+    "selectStartDate": "Başlangıç Tarihi",
+    "selectEndDate": "Bitiş Tarihi"
+  },
+  "dashboardSidebar": {
+    "header": "Evlerim",
+    "addButton": "Ev Ekle",
+    "noDevice": "Cihaz Yok",
+    "switching": "Ev değiştiriliyor..."
+  },
+  "deviceAdd": {
+    "title": "Cihaz Ekle",
+    "subtitle": "Enerji cihazınızı bu eve bağlayın",
+    "formTitle": "Cihaz Bilgileri",
+    "deviceStatus": "Cihaz Yok",
+    "setupName": "Kurulum Adı",
+    "setupNamePlaceholder": "Kurulum adını girin",
+    "qrCode": "QR Kod",
+    "qrCodePlaceholder": "QR kodu tarayın veya girin",
+    "scanQr": "QR Kod Tara",
+    "serialNumber": "Seri Numarası",
+    "serialNumberPlaceholder": "Cihaz seri numarasını girin",
+    "qrOrSerial": "QR Kod veya Seri Numarası kullanın",
+    "addDevice": "Cihaz Ekle",
+    "noAddress": "Adres belirtilmemiş",
+    "success": {
+      "title": "Cihaz Eklendi",
+      "message": "Cihaz evinize başarıyla eklendi"
+    },
+    "error": {
+      "title": "Hata",
+      "message": "Cihaz eklenirken hata oluştu. Lütfen tekrar deneyin."
+    },
+    "validation": {
+      "title": "Doğrulama Hatası",
+      "message": "Lütfen QR kod veya seri numarası girin"
+    }
+  },
+  "dashboardScreen": {
+    "title": "Ana Ekran",
+    "welcome": "Hoş Geldiniz"
+  },
+  "environmentalBenefits": {
+    "title": "Çevresel Faydalar",
+    "co2Savings": "CO₂ Tasarrufu",
+    "equivalentTrees": "Eşdeğer Ağaç",
+    "infoTitle": "Nasıl Çalışır",
+    "co2Info": "Ömür boyu toplam enerjinize (şebeke alımı + satışı) göre hesaplanır. Her kWh enerji, yaklaşık 0.25 kg CO₂ emisyonunu önler.",
+    "treesInfo": "Bir ağaç yılda yaklaşık 22 kg CO₂ emer. Bu, aynı miktarda emisyonu dengelemek için kaç ağaca ihtiyaç olduğunu gösterir.",
+    "gotIt": "Anladım"
+  },
+  "dashboardHelpButton": {
+    "title": "Yardım"
+  },
+  "dashboardNotifications": {
+    "title": "Bildirimler",
+    "empty": "Henüz bildirim yok."
+  },
+  "globalAlert": {
+    "critical": "Kritik",
+    "important": "Önemli",
+    "info": "Bilgi",
+    "close": "Kapat",
+    "additionalInfo": "Ek Bilgi",
+    "device": "Cihaz"
+  },
+  "notifications": {
+    "title": "Bildirimler",
+    "markAllRead": "Tümünü okundu işaretle",
+    "critical": "KRİTİK",
+    "today": "Bugün",
+    "earlier": "Daha Önce",
+    "empty": "Bildirim yok",
+    "offline": "Çevrimdışı — önbelleğe alınmış bildirimler gösteriliyor",
+    "filters": {
+      "all": "Tümü",
+      "today": "Bugün",
+      "unread": "Okunmamış",
+      "critical": "Kritik"
+    },
+    "status": {
+      "read": "Okundu",
+      "unread": "Okunmadı"
+    },
+    "deleteToast": {
+      "success": "Bildirim silindi",
+      "error": "Bildirim silinemedi"
+    },
+    "deleteConfirm": {
+      "title": "Bildirimi Sil",
+      "message": "Bu bildirimi silmek istediğinize emin misiniz?",
+      "confirm": "Sil",
+      "cancel": "İptal"
+    },
+    "markAllReadSuccess": "Tüm bildirimler okundu olarak işaretlendi",
+    "markAllReadError": "Tüm bildirimler okundu olarak işaretlenemedi",
+    "markAllReadConfirm": {
+      "title": "Tümünü Okundu İşaretle",
+      "message": "Tüm bildirimleri okundu olarak işaretlemek istediğinize emin misiniz?",
+      "confirm": "Evet, Tümünü İşaretle",
+      "cancel": "İptal"
+    },
+    "markAsRead": "Okundu olarak işaretlendi",
+    "markAsReadFailed": "İşaretleme başarısız",
+    "details": "Bildirim Detayı",
+    "additionalInfo": "Ek Bilgiler",
+    "errorCode": "Hata Kodu",
+    "sourceDevice": "Kaynak",
+    "timestamp": "Zaman"
+  },
+"deviceList": {
+  "title": "Cihaz",
+  "online": "Çevrimiçi",
+  "offline": "Çevrimdışı",
+  "onGrid": "Şebekeye Bağlı",
+  "offGrid": "Şebekesiz",
+  "inverter": "İnvertör",
+  "battery": "Batarya",
+  "deviceNotFound": "Cihaz bulunamadı",
+  "fetchError": "Cihaz verileri yüklenemedi",
+  "noDeviceSelected": "Cihaz seçilmedi. Lütfen cihazı olan bir site seçin.",
+  "noComponents": "Bu cihaz için bileşen bulunamadı"
+},
+"deviceDetail": {
+  "title": "NetZr Cihaz Detayı",
+  "loading": "Veriler Yükleniyor...",
+  "totalComponents": "Toplam {{count}} bileşen bulundu",
+  "informations": "Bilgiler",
+  "dailyProduction": "Günlük Üretim",
+  "batteryCharge": "Batarya Şarjı",
+  "connection": "Bağlantı",
+  "devicesTitle": "Netzr Cihazları",
+  "inverter": {
+    "title": "İnvertör",
+    "subtitle": "Güç dönüştürme sistemi"
+  },
+  "battery": {
+    "title": "Batarya",
+    "subtitle": "Gerçek Zamanlı Bilgi",
+    "restart": "Cihazı Tekrar Başlat",
+    "packCount": "Batarya Paketi",
+    "packCount_plural": "Batarya Paketi",
+    "noBatteries": "Batarya bulunamadı"
+  },
+  "connectedDevices": {
+    "title": "Bağlı Cihazlar"
+  },
+  "pvPanel": {
+    "title": "PV Panel",
+    "subtitle": "Gerçek zamanlı üretim ve tarihsel veriler",
+    "description": "Solar panel güç üretimi",
+    "bar": "Bar",
+    "area": "Alan",
+    "day": "Gün",
+    "week": "Hafta",
+    "month": "Ay",
+    "year": "Yıl",
+    "basicInfo": "Temel Bilgiler",
+    "serialNumber": "Seri Numarası",
+    "connectedDevice": "Bağlı Cihaz"
+  },
+  "addDevice": {
+    "title": "Cihaz Ekle",
+    "description": "Sisteminize yeni bir cihaz bağlayın"
+  },
+"gateway": {
+  "title": "Enerji Geçidi",
+  "subtitle": "Şebeke / Şebekesiz mod kontrolü ve ölçümler",
+  "description": "İletişim ağ geçidi",
+  "goOffGrid": "Şebekesiz Moda Geç",
+  "goOnGrid": "Şebekeli Moda Geç",
+  "inverterSide": "İnverter Tarafı",
+  "gridSide": "Şebeke Tarafı",
+  "voltage": "Voltaj",
+  "frequency": "Frekans",
+  "phase": "Faz",
+  "mode": "Mod",
+  "alarmFault": "Alarm ve Arıza",
+  "noActiveAlarm": "Aktif Alarm Yok",
+  "onGrid": "Şebekeye Bağlı",
+  "offGrid": "Şebekesiz Modda"
+},
+  "smartMeter": {
+    "title": "Akıllı Sayaç",
+    "description": "Enerji tüketimi izleme"
+  },
+  "confirmRestart": "Cihazı şimdi yeniden başlatmak istediğinize emin misiniz?",
+  "confirmStart": "Evet, Başlat",
+  "actionStarted": "İşlem Başlatıldı",
+  "deviceRestarting": "Cihaz yeniden başlatılıyor."
+},
+"deviceNames": {
+  "battery": "Batarya",
+  "battery(1)": "Batarya (1)",
+  "battery(2)": "Batarya (2)",
+  "battery(3)": "Batarya (3)",
+  "bms": "Batarya Kümesi",
+  "inverter": "İnverter"
+},
+  "energyProfile": {
+    "title": "Enerji Profili",
+    "saveSettings": "Ayarları Kaydet",
+    "applyingSettings": "Ayarlar uygulanıyor..."
+  },
+  "energyFlow": {
+    "title": "Enerji Akışı",
+    "subtitle": "Gerçek zamanlı enerji dağılımı görselleştirmesi",
+    "startDate": "Başlangıç Tarihi",
+    "endDate": "Bitiş Tarihi",
+    "loading": "Enerji akış verileri yükleniyor...",
+    "noDevice": "Cihaz bulunamadı. Enerji akış verilerini görüntülemek için lütfen cihaz ekleyin."
+  },
+  "offline": {
+    "title": "İnternet Bağlantısı Yok",
+    "subtitle": "Lütfen ağ ayarlarınızı kontrol edin ve tekrar deneyin",
+    "message": "Lütfen bağlantınızı kontrol edin ve tekrar deneyin.",
+    "retry": "Tekrar Dene",
+    "tryAgain": "Tekrar Dene",
+    "networkSettings": "Ağ Ayarları",
+    "checkingConnection": "Bağlantı kontrol ediliyor...",
+    "tips": {
+      "checkWifi": "WiFi veya mobil veriyi kontrol edin",
+      "moveToSignal": "Daha iyi sinyal alanına gidin"
+    }
+  },
+  "trash": {
+    "title": "Çöp Kutusu",
+    "restoreAll": "Tümünü Geri Yükle",
+    "deleteAll": "Tümünü Sil",
+    "restore": "Geri Yükle",
+    "deleted": "Silindi",
+    "deletedAt": "{{date}} tarihinde silindi",
+    "today": "Bugün Silinen",
+    "earlier": "Daha Önce Silinen",
+    "empty": "Çöp kutusu boş",
+    "filters": {
+      "all": "Tümü",
+      "today": "Bugün",
+      "critical": "Kritik"
+    },
+    "restoreSuccess": "Bildirim geri getirildi",
+    "restoreFailed": "Bildirim geri getirilemedi",
+    "deleteSuccess": "Bildirim tamamen silindi",
+    "deleteFailed": "Bildirim silinemedi"
+  },
+  "homeEmptyState": {
+    "title": "Henüz ev eklenmedi",
+    "subtitle": "Enerji yönetimine başlamak için ilk evini ve cihazını ekle"
+  },
+  "homeCard": {
+    "statusOnline": "Çevrimiçi",
+    "statusNoDevice": "Cihaz Yok",
+    "deviceCount": "1 Cihaz",
+    "noDevice": "Cihaz Yok",
+    "notAvailable": "Mevcut Değil",
+    "goToDashboard": "Yönetim Paneline Git",
+    "addDevice": "Cihaz Ekle",
+    "delete": "Sil"
+  },
+  "homeHeader": {
+      "welcome": "Hoş geldin!",
+      "welcomeWithName": "Hoş geldin, {{name}}!",
+    "subtitle": "Enerji Evini yönet",
+    "addButton": "Ev Ekle"
+  },
+  "homeStats": {
+    "homes": "Evler",
+    "devices": "Cihazlar",
+    "totalPower": "Toplam Güç"
+  },
+  "homeScreen": {
+    "myHomes": "Evlerim",
+    "loading": "Evler yükleniyor...",
+    "retry": "Tekrar denemek için dokunun",
+    "deleteConfirm": {
+      "title": "Siteyi Sil",
+      "message": "{{siteName}} adlı siteyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+      "cancel": "İptal",
+      "delete": "Sil"
+    },
+    "deleteSuccess": {
+      "title": "Site Silindi",
+      "message": "{{siteName}} başarıyla silindi."
+    },
+    "deleteError": {
+      "title": "Silme Başarısız",
+      "message": "Site silinemedi. Lütfen tekrar deneyin."
+    }
+  },
+  "deviceSetup": {
+    "title": "Cihazını ekle",
+    "subtitle": "Veri toplamaya başlamak için bir cihaz bağla. Daha sonra Cihazlar sekmesinden yeni cihazlar ekleyebilirsin.",
+    "deviceName": "Cihaz adı",
+    "deviceNamePlaceholder": "ör. Salon Gateway",
+    "serialNumber": "Seri numarası",
+    "serialNumberPlaceholder": "Seri numarasını elle gir",
+    "scanQr": "QR kodu tara",
+    "saving": "Kaydediliyor…",
+    "finish": "Kurulumu tamamla",
+    "goBack": "Geri dön"
+  },
+  "homeSetup": {
+    "title": "Evinizi oluşturun",
+    "subtitle": "Evinize bir isim verin. Konumunuzu otomatik olarak tespit edeceğiz.",
+    "homeName": "Ev adı",
+    "homeNamePlaceholder": "ör. İstanbul Dairesi",
+    "addressLine": "Adres detayları (isteğe bağlı)",
+    "addressLinePlaceholder": "Sokak, bina, daire...",
+    "streetAddress": "Sokak adresi",
+    "streetAddressPlaceholder": "Sokak ve numara",
+    "apartment": "Daire, kat (isteğe bağlı)",
+    "apartmentPlaceholder": "Kat, daire, vb.",
+    "country": "Ülke",
+    "countryPlaceholder": "Ülke seç",
+    "city": "Şehir",
+    "cityPlaceholder": "Şehir seç",
+    "state": "İl / Eyalet",
+    "statePlaceholder": "İl veya eyalet",
+    "postalCode": "Posta kodu",
+    "postalCodePlaceholder": "Posta / ZIP",
+    "saving": "Kaydediliyor…",
+    "save": "Kaydet",
+    "goBack": "Geri dön",
+    "location": {
+      "detecting": "Konumunuz tespit ediliyor...",
+      "detected": "Konum tespit edildi",
+      "permissionDenied": "Konum izni reddedildi",
+      "waiting": "Konum bekleniyor...",
+      "openSettings": "Ayarları Aç",
+      "retry": "Tekrar dene"
+    },
+    "locationPermission": {
+      "title": "Konum İzni",
+      "message": "Bu uygulama, doğru site koordinatları sağlamak ve enerji izleme hizmetlerini iyileştirmek için konumunuza erişim gerektirir.",
+      "askLater": "Daha Sonra Sor",
+      "cancel": "İptal",
+      "ok": "Tamam"
+    },
+    "locationSuccess": {
+      "title": "Konum Alındı",
+      "message": "Konumunuz başarıyla alındı ve site koordinatları için kullanılacak."
+    },
+    "locationError": {
+      "title": "Konum Hatası",
+      "message": "Konumunuz alınamadı. Lütfen konum ayarlarınızı kontrol edin ve tekrar deneyin."
+    },
+    "createError": {
+      "title": "Site Oluşturma Hatası",
+      "message": "Site oluşturulamadı. Lütfen tekrar deneyin."
+    },
+    "gettingLocation": "Konum Alınıyor...",
+    "useCurrentLocation": "Mevcut Konumu Kullan",
+    "locationObtained": "Konum Alındı",
+    "success": {
+      "title": "Site Başarıyla Oluşturuldu",
+      "message": "{{homeName}} başarıyla oluşturuldu!"
+    },
+    "locationRequired": {
+      "title": "Konum Gerekli",
+      "message": "Site oluşturmak için konumunuza ihtiyacımız var. Lütfen konum hizmetlerini etkinleştirin.",
+      "cancel": "İptal",
+      "settings": "Ayarları Aç",
+      "retry": "Tekrar Dene"
+    },
+    "locationSettings": {
+      "title": "Konum Hizmetlerini Etkinleştir",
+      "message": "Lütfen Ayarlar > Gizlilik ve Güvenlik > Konum Hizmetleri'ne gidin ve bu uygulama için konum erişimini etkinleştirin."
+    },
+    "validationError": {
+      "title": "Doğrulama Hatası",
+      "cityRequired": "Lütfen bir şehir seçin.",
+      "countryRequired": "Lütfen bir ülke seçin."
+    },
+    "validation": {
+    "homeName": {
+      "min": "Lütfen eviniz için bir isim girin.",
+      "max": "Ev adı çok uzun (maksimum 64 karakter)."
+    },
+    "addressLine": {
+      "max": "Adres çok uzun (maksimum 200 karakter)."
+    },
+    "addressLine1": {
+      "min": "Lütfen sokak ve numarayı girin.",
+      "max": "Adres satırı çok uzun (maksimum 120 karakter)."
+    },
+    "addressLine2": {
+      "max": "Adres satırı çok uzun (maksimum 80 karakter)."
+    },
+    "city": {
+      "max": "Şehir adı çok uzun (maksimum 60 karakter).",
+      "required": "Lütfen bir şehir seçin."
+    },
+    "country": {
+      "max": "Ülke adı çok uzun (maksimum 56 karakter).",
+      "required": "Lütfen bir ülke seçin."
+    },
+    "state": {
+      "max": "Eyalet / İl bilgisi çok uzun (maksimum 80 karakter)."
+    }
+  }
+  },
+ "admin": {
+  "title": "Yönetici Paneli",
+  "welcome": "Hoş geldiniz, Yönetici",
+  "accessDenied": "Erişim Reddedildi",
+  "adminOnly": "Bu sayfa sadece yöneticiler tarafından erişilebilir.",
+  "homesTitle": "Evler",
+
+  "pagination": {
+    "previous": "Önceki",
+    "next": "Sonraki",
+    "pageInfo": "{{current}} / {{total}}"
+  },
+
+  "filters": {
+    "selectCountry": "Ülke Seçin",
+    "selectCity": "Şehir Seçin",
+    "selectDistrict": "İlçe Seçin",
+    "clearFilters": "Filtreleri Temizle"
+  },
+
+  "labels": {
+    "country": "Ülke",
+    "city": "Şehir",
+    "district": "İlçe",
+    "homes": "Evler",
+    "devices": "Cihazlar",
+    "activeUsers": "Aktif Kullanıcılar",
+    "totalCount": "Toplam Kayıt"
+  },
+
+  "messages": {
+    "noHomes": "Kayıtlı ev bulunamadı.",
+    "noHomesFound": "Seçilen filtrelerle eşleşen ev bulunamadı.",
+    "loading": "Veriler yükleniyor...",
+    "refreshing": "Yenileniyor...",
+    "errorLoading": "Veriler alınırken bir hata oluştu.",
+    "selectLocationMessage": "Lütfen ülke ve şehir seçimi yapın.",
+    "selectFilters": "Lütfen ülke, şehir veya e-posta seçerek filtreleme yapınız."
+  },
+
+  "buttons": {
+    "previous": "Önceki",
+    "next": "Sonraki",
+    "refresh": "Yenile",
+    "viewDashboard": "Yönetim Paneline Git"
+  },
+
+  "stats": {
+    "totalHomes": "Toplam Ev",
+    "totalDevices": "Toplam Cihaz",
+    "activeUsers": "Aktif Kullanıcılar"
+  },
+  "noDeviceTitle": "Cihaz Bulunamadı",
+  "noDeviceMessage": "Bu sitenin kayıtlı cihazı yok.",
+  "errorTitle": "Hata",
+  "errorFetchingSite": "Navigasyon başarısız oldu."
+},
+"adminHomeCard": {
+  "online": "Çevrimiçi",
+  "offline": "Çevrimdışı"
+},
+"adminLocationSelector": {
+  "select": "Seç",
+  "search": "ara",
+  "noResults": "Sonuç bulunamadı",
+  "close": "Kapat"
+},
+"adminSearchBar": {
+  "placeholder": "Mail adresine göre ara..."
+},
+"adminStats": {
+  "homes": "Evler",
+  "devices": "Cihazlar"
+},
+"batteryLevel": {
+  "title": "Batarya Seviyesi Ayarları",
+  "save": "Kaydet",
+  "info": "Artı/eksi butonları ile SOC eşiklerini ayarlayın.",
+  "applying": "Ayarlar uygulanıyor...",
+  "chargeCutoff": "Şarj Kesme SOC",
+  "backupSOC": "Yedek SOC",
+  "dischargeCutoff": "Deşarj Kesme SOC",
+  "warningSOC": "Uyarı SOC",
+  "currentLevel": "Mevcut Seviye",
+  "legendTitle": "Seviye Göstergeleri"
+},
+"solarPriority": {
+  "title": "Güneş Enerjisi Kaynak Önceliği",
+  "save": "Kaydet",
+  "explanationTitle": "Açıklama",
+  "explanationText": "Bu ayar, üretilen güneş enerjisinin hangi sırayla yönlendirileceğini belirler. Güneş enerjisinin önce, ikinci ve sonraki hedeflerini tanımlar.",
+  "learnMore": "Daha Fazla Bilgi",
+  "instructions": "İki kilitsiz kartın önceliğini değiştirmek için üzerine dokunun.\nBir kartı kilitlemek veya kilidini açmak için kilit simgesine dokunun.",
+  "sources": {
+    "grid": "Şebeke",
+    "smartLoad": "Akıllı Yük",
+    "load": "Yük",
+    "battery": "Batarya"
+  }
+},
+"advancedPower": {
+  "title": "Gelişmiş Güç Kontrolü",
+  "voltageWatt": "Gerilim–Güç Eğrisi",
+  "frequencyWatt": "Frekans–Güç Eğrisi",
+  "enable": "Etkinleştir"
+},
+"batteryManagement": {
+  "title": "Batarya Yönetimi",
+  "chargeDischargeLimits": "Batarya Şarj / Deşarj Limitleri",
+  "charging": "Şarj",
+  "maxChargeCurrent": "Maksimum Şarj Akımı",
+  "maxChargePower": "Maksimum Şarj Gücü",
+  "discharging": "Deşarj",
+  "maxDischargeCurrent": "Maksimum Deşarj Akımı",
+  "maxDischargePower": "Maksimum Deşarj Gücü",
+  "protectionReserve": "Batarya Koruma ve Yedek",
+  "backupReserve": "Yedek Enerji Oranı",
+  "dischargeCutoff": "Deşarj Kesme Noktası",
+  "lowBatteryWarning": "Düşük Batarya Uyarısı",
+  "batterySettings": "Batarya Ayarları"
+},
+"energyPriority": {
+  "title": "Enerji Önceliği ve Mod Seçimi",
+  "operationMode": "Çalışma Modu",
+  "gridInteraction": "Şebeke Etkileşimi"
+},
+"generatorSmart": {
+  "title": "Jeneratör ve Akıllı Yükler",
+  "portMode": "Port Modu",
+  "smartLoadControl": "Akıllı Yük Kontrolü",
+  "turnOn": "Batarya üzerindeyken Aç",
+  "turnOff": "Batarya altındayken Kapat"
+},
+"modeSelection": {
+  "operation": {
+    "batteryPriority": {
+      "title": "Batarya Öncelikli",
+      "desc": "Maksimum depolama için PV → Batarya → Yük → Şebeke sırası."
+    },
+    "loadPriority": {
+      "title": "Yük Öncelikli",
+      "desc": "Doğrudan öz tüketim için PV → Yük → Batarya → Şebeke."
+    },
+    "custom": {
+      "title": "Özel",
+      "desc": "Gelişmiş kontrol mantığını elle yapılandırın."
+    }
+  },
+  "grid": {
+    "ieee": "IEEE-1547 (ABD standardı)",
+    "vde": "VDE-AR-N-4105 (Almanya standardı)",
+    "as": "AS4777 (Avustralya standardı)"
+  },
+  "export": {
+    "noExport": {
+      "title": "İhracat Yok",
+      "desc": "Şebekeye enerji aktarımını tamamen devre dışı bırak."
+    },
+    "limited": {
+      "title": "Sınırlı",
+      "desc": "Sınırlı kapasitede enerji aktarımı."
+    },
+    "moderate": {
+      "title": "Orta Düzey",
+      "desc": "Yük ve şebeke arasında dengeli aktarım."
+    },
+    "maximum": {
+      "title": "Maksimum",
+      "desc": "Mümkün olan en fazla güneş enerjisini aktar."
+    },
+    "custom": {
+      "title": "Özel",
+      "desc": "Aktarım kurallarını manuel olarak yapılandır."
+    }
+  },
+  "generator": {
+    "inputOnly": {
+      "title": "Sadece Jeneratör Girişi",
+      "desc": "Portu yalnızca jeneratör girişi için kullan."
+    },
+    "smartLoad": {
+      "title": "Akıllı Yük Çıkışı",
+      "desc": "Akıllı yük çıkışı olarak etkinleştir."
+    },
+    "microInput": {
+      "title": "Mikroinvertör Girişi",
+      "desc": "Mikroinvertör girişi olarak kullan."
+    }
+  }
+},
+"protectionSafety": {
+  "title": "Koruma ve Güvenlik",
+  "gridProtection": {
+    "title": "Şebeke Koruma Ayarları",
+    "voltageLimits": "Gerilim Limitleri",
+    "overVoltage": "Aşırı Gerilim",
+    "underVoltage": "Düşük Gerilim",
+    "frequencyLimits": "Frekans Limitleri",
+    "overFrequency": "Aşırı Frekans",
+    "underFrequency": "Düşük Frekans",
+    "lvrtHvrt": "LVRT / HVRT’yi Etkinleştir",
+    "warning": "Bu ayar voltaj dalgalanmalarında tehlike oluşturabilir. Sadece uzman kullanıcılar değiştirmelidir."
+  },
+  "systemProtection": {
+    "title": "Sistem Koruması",
+    "afci": "AFCI (Ark Hatası Koruması)’nı Etkinleştir",
+    "afciWarning": "Ark hatası koruması yanlış ayarlanırsa sistem devre kesintisine yol açabilir.",
+    "islanding": "Islanding Korumasını Etkinleştir",
+    "islandingWarning": "Islanding Protection aktifken enerji adası oluşabilir; dikkatli kullanılmalıdır."
+  }
+},
+"sectionCard": {
+  "currentMode": "Geçerli Mod",
+  "changeMode": "Modu Değiştir"
+},
+"solarPower": {
+  "title": "Güneş Enerjisi Yönetimi",
+  "exportControl": "Güneş Enerjisi İhracat Kontrolü",
+  "enableSelling": "Şebekeye Güneş Satışını Etkinleştir",
+  "maxExportPower": "Maksimum Güneş İhracat Gücü",
+  "totalExportLimit": "Toplam İhracat Limiti",
+  "pvArrayConfig": "PV Dizi Yapılandırması",
+  "enableMpptScanning": "MPPT Tarama Özelliğini Etkinleştir",
+  "mpptTrackers": "MPPT İzleyiciler",
+  "maxPvVoltage": "Maksimum PV Gerilimi",
+  "maxPvCurrent": "Maksimum PV Akımı",
+  "prioritySettings": "Güneş Önceliği Ayarları"
+},
+"tou": {
+  "title": "Zaman Kullanımına Göre (TOU) Planlama",
+  "schedule": "Program",
+  "periodSettings": "P{{index}} Ayarları",
+  "periodRange": "{{index}}. Dönem ({{range}})",
+  "batteryDischarge": "Batarya Deşarjı",
+  "targetSoc": "Hedef SOC",
+  "gridCharging": "Şebekeden Şarj",
+  "generatorCharging": "Jeneratörden Şarj",
+  "exportMode": "İhracat Modu",
+  "applying": "Ayarlar uygulanıyor…"
+},
+"themeToggle": {
+  "dark": "Karanlık",
+  "light": "Aydınlık"
+},
+"deviceDetailBottomsheet": {
+  "common": {
+    "title": "Cihaz Detayı",
+    "loading": "Veriler Yükleniyor...",
+    "close": "Kapat",
+    "restart": "Cihazı Yeniden Başlat"
+  },
+  "inverter": {
+    "title": "İnverter Detayı",
+    "activePower": "Aktif Güç",
+    "reactivePower": "Reaktif Güç",
+    "powerFactor": "Güç Faktörü",
+    "insulationResistance": "Yalıtım Direnci",
+    "phaseData": "Faz Verileri",
+    "info": "İnverter Bilgileri",
+    "startupTime": "Başlatılma Zamanı",
+    "shutdownTime": "Kapatılma Zamanı",
+    "deviceSN": "Cihaz Seri Numarası",
+    "firmwareVersion": "Yazılım Sürümü",
+    "phaseLabel": "Faz {{id}}"
+  },
+  "bms": {
+    "title": "BMS Detayı",
+    "soc": "Şarj Durumu (SOC)",
+    "packVoltage": "Paket Voltajı",
+    "packCurrent": "Paket Akımı",
+    "maxClusterVoltage": "Maksimum Küme Voltajı",
+    "minClusterVoltage": "Minimum Küme Voltajı",
+    "totalChargeCapacity": "Toplam Şarj Kapasitesi",
+    "totalDischargeCapacity": "Toplam Deşarj Kapasitesi",
+    "dateTime": "Tarih & Saat",
+    "info": "BMS Bilgileri",
+    "deviceSN": "Cihaz Seri Numarası",
+    "firmwareVersion": "Yazılım Sürümü"
+  },
+  "battery": {
+    "title": "Batarya Detayı",
+    "soc": "Batarya Şarj Durumu",
+    "soh": "Sağlık Durumu (SOH)",
+    "voltage": "Batarya Paket Voltajı",
+    "current": "Batarya Akımı",
+    "avgCellVoltage": "Ortalama Hücre Voltajı",
+    "avgTemp": "Ortalama Hücre Sıcaklığı",
+    "maxCellVoltage": "Maksimum Hücre Voltajı",
+    "minCellVoltage": "Minimum Hücre Voltajı",
+    "maxCellTemp": "Maksimum Hücre Sıcaklığı",
+    "minCellTemp": "Minimum Hücre Sıcaklığı",
+    "parameter": "Parametre",
+    "totalCharge": "Toplam Şarj Miktarı",
+    "totalDischarge": "Toplam Deşarj Miktarı",
+    "deviceModel": "Cihaz Modeli",
+    "deviceSN": "Cihaz Seri Numarası",
+    "firmwareVersion": "Yazılım Sürümü",
+    "dateTime": "Tarih & Saat"
+  }
+},
+"dashboardHeroCard": {
+  "title": "Akıllı Enerji Yönetimi",
+  "subtitle": "Gerçek zamanlı izleme ve kontrol"
+},
+"batteryList": {
+  "title": "Batarya Paketleri",
+  "serialNumber": "Seri Numarası",
+  "empty": "Batarya paketi bulunamadı",
+  "deviceNotFound": "Cihaz bulunamadı",
+  "networkError": "Bağlantı hatası. Lütfen internet bağlantınızı kontrol edin.",
+  "fetchError": "Batarya verileri yüklenemedi. Lütfen tekrar deneyin."
+},
+"batteryDetail": {
+  "title": "Batarya Detayları",
+  "stateOfCharge": "Şarj Durumu",
+  "stats": "Batarya İstatistikleri",
+  "soh": "Sağlık Durumu (SOH)",
+  "voltage": "Voltaj",
+  "current": "Akım",
+  "cellVoltage": "Hücre Voltajı",
+  "maxCellVoltage": "Maksimum Hücre Voltajı",
+  "minCellVoltage": "Minimum Hücre Voltajı",
+  "avgCellVoltage": "Ortalama Hücre Voltajı",
+  "temperature": "Sıcaklık",
+  "maxCellTemp": "Maksimum Hücre Sıcaklığı",
+  "minCellTemp": "Minimum Hücre Sıcaklığı",
+  "avgTemp": "Ortalama Sıcaklık",
+  "deviceInfo": "Cihaz Bilgileri",
+  "name": "İsim",
+  "manufacturer": "Üretici",
+  "model": "Model",
+  "serialNumber": "Seri Numarası",
+  "firmwareVersion": "Firmware Sürümü",
+  "lastUpdate": "Son Güncelleme",
+  "notFound": "Batarya bulunamadı",
+  "networkError": "Bağlantı hatası. Lütfen internet bağlantınızı kontrol edin.",
+  "fetchError": "Batarya detayları yüklenemedi. Lütfen tekrar deneyin."
+},
+"inverterDetail": {
+  "title": "İnvertör Detayları",
+  "activePower": "Aktif Güç",
+  "output": "Çıkış",
+  "outputVoltage": "Çıkış Voltajı",
+  "outputCurrent": "Çıkış Akımı",
+  "outputFrequency": "Çıkış Frekansı",
+  "grid": "Şebeke",
+  "gridPower": "Şebeke Gücü",
+  "phaseAPower": "Faz A Gücü",
+  "phaseBPower": "Faz B Gücü",
+  "gridStatus": "Şebeke Durumu",
+  "connected": "Bağlı",
+  "disconnected": "Bağlı Değil",
+  "generator": "Jeneratör",
+  "active": "Aktif",
+  "inactive": "Pasif",
+  "temperature": "Sıcaklık",
+  "heatsinkTemp": "Soğutucu Sıcaklığı",
+  "ambientTemp": "Ortam Sıcaklığı",
+  "powerMetrics": "Güç Metrikleri",
+  "reactivePower": "Reaktif Güç",
+  "powerFactor": "Güç Faktörü",
+  "insulationResistance": "İzolasyon Direnci",
+  "phaseData": "Faz Verileri",
+  "phaseLabel": "Faz {{id}}",
+  "voltage": "Voltaj",
+  "current": "Akım",
+  "power": "Güç",
+  "deviceInfo": "Cihaz Bilgileri",
+  "name": "İsim",
+  "manufacturer": "Üretici",
+  "model": "Model",
+  "serialNumber": "Seri Numarası",
+  "ratedPower": "Nominal Güç",
+  "firmwareVersion": "Firmware Sürümü",
+  "startupTime": "Son Açılış Zamanı",
+  "shutdownTime": "Son Kapanış Zamanı"
+},
+"smartMeterDetail": {
+  "title": "Akıllı Sayaç",
+  "comingSoon": "Yakında",
+  "description": "Akıllı sayaç entegrasyonu ve enerji izleme özellikleri yakında kullanıma sunulacak.",
+  "features": {
+    "title": "Gelecek Özellikler",
+    "realTimeMonitoring": "Gerçek zamanlı enerji izleme",
+    "energyConsumption": "Detaylı tüketim analizi",
+    "costAnalysis": "Maliyet takibi ve optimizasyonu",
+    "historicalData": "Geçmiş veri ve trendler"
+  }
+},
+"energyRevenue": {
+  "title": "Enerji Geliri"
+},
+"energyRevenueDetail": {
+  "title": "Enerji Gelir Detayları",
+  "dateFormat": {
+    "week": "{{weekNumber}}. Hafta, {{year}}",
+    "month": "{{monthName}} {{year}}",
+    "year": "{{year}}"
+  },
+  "months": {
+    "january": "Ocak",
+    "february": "Şubat",
+    "march": "Mart",
+    "april": "Nisan",
+    "may": "Mayıs",
+    "june": "Haziran",
+    "july": "Temmuz",
+    "august": "Ağustos",
+    "september": "Eylül",
+    "october": "Ekim",
+    "november": "Kasım",
+    "december": "Aralık"
+  },
+  "ranges": {
+    "day": "Gün",
+    "week": "Hafta",
+    "month": "Ay",
+    "year": "Yıl"
+  },
+  "chart": {
+    "gridBuy": "Şebeke Alımı",
+    "gridSell": "Şebeke Satışı",
+    "net": "Net",
+    "price": "Fiyat"
+  }
+},
+"qrScanner": {
+  "title": "QR Kod Tara",
+  "permissionRequired": "Kamera izni gerekli. Lütfen ayarlardan izin verin.",
+  "cameraLoading": "Kamera yükleniyor…",
+  "close": "Kapat"
+},
+"globalError": {
+  "title": "Hata",
+  "code": "Kod",
+  "close": "Kapat"
+},
+"realtime": {
+  "runState": "Çalışma Durumu",
+  "outputActivePower": "Çıkış Aktif Gücü",
+  "outputVoltage": "Çıkış Voltajı",
+  "outputCurrent": "Çıkış Akımı",
+  "outputFrequency": "Çıkış Frekansı",
+  "gridSideActivePower": "Şebeke Tarafı Aktif Gücü",
+  "gridSidePhaseAPower": "Şebeke Faz A Gücü",
+  "gridSidePhaseBPower": "Şebeke Faz B Gücü",
+  "inverterHeatsinkTemp": "İnverter Soğutucu Sıcaklığı",
+  "internalAmbientTemp": "İç Ortam Sıcaklığı",
+  "gridSignalPresent": "Şebeke Sinyali",
+  "generatorSignalPresent": "Jeneratör Sinyali",
+  "soc": "Şarj Durumu"
+},
+"parameter": {
+  "name": "İsim",
+  "manufacturer": "Üretici",
+  "model": "Model",
+  "serialNumber": "Seri Numarası",
+  "ratedPower": "Nominal Güç"
+},
+"exportStrategy": {
+  "title": "Enerji Satış Stratejisi",
+  "confirmTitle": "Mod Değişikliğini Onayla",
+  "confirmMessage": "Enerji satış stratejisini {{mode}} olarak değiştirmek istediğinizden emin misiniz?",
+  "sellFirst": {
+    "title": "Önce Sat",
+    "description": "Fazla enerjiyi şebekeye satmayı önceliklendirir. Güneş enerjisi önce yükü besler, sonra bataryayı şarj eder ve kalan enerji şebekeye aktarılır."
+  },
+  "zeroExportToLoad": {
+    "title": "Yüke Sıfır İhracat",
+    "description": "Yük tüketimine odaklı sıfır ihracat modu. Güneş enerjisi yerel tüketimi önceliklendirir ve fazlası bataryayı şarj eder. Şebeke ihracatını minimize eder."
+  },
+  "zeroExportToCt": {
+    "title": "CT ile Sıfır İhracat",
+    "description": "CT sensör izlemeli sıfır ihracat modu. Yüke göre inverter çıkışını dinamik olarak ayarlayarak şebekeye ihracatı aktif olarak engeller."
+  },
+  "changeSuccess": "Enerji satış stratejisi başarıyla değiştirildi",
+  "changeFailed": "Enerji satış stratejisi değiştirilemedi"
+},
+"inverterModes": {
+  "title": "Cihaz Modları",
+  "subtitle": "Hibrit inverter için en uygun çalışma modunu seçin. Önceden tanımlı modlar otomatik yapılandırma sağlar, özel mod tam kontrol sunar.",
+  "customModeWarning": {
+    "title": "Gelişmiş Ayarlar",
+    "message": "Özel mod ileri düzey kullanıcılar için tasarlanmıştır. Özel mod ayarlarına devam etmek istediğinize emin misiniz?"
+  },
+  "selectMode": "Mod Seç",
+  "applyMode": "Modu Uygula",
+  "activeMode": "Aktif Mod",
+  "noModeSelected": "Mod Seçilmedi",
+  "configureMode": "İnverter modunu yapılandırın",
+  "tapToConfigure": "Yapılandırmak için dokunun",
+  "modeApplied": "Mod başarıyla uygulandı",
+  "modeApplyError": "Mod uygulanırken hata oluştu",
+  "applyFailed": "Mod uygulanamadı. Lütfen tekrar deneyin.",
+  "modeInfoText": "Bu mod sisteminizi seçilen senaryo için optimize eder. Uygulamadan önce aşağıdaki ayarları inceleyin.",
+  "confirmApply": "Bu modu uygulamak istediğinizden emin misiniz?",
+  "custom": "Özel",
+  "editSettings": "Ayarları Düzenle",
+  "modes": {
+    "mode1": {
+      "name": "Maksimum Tasarruf",
+      "description": "Şebeke elektrik maliyetini minimize eder, güneş enerjisini önceliklendirir",
+      "targetUser": "Fatura düşürme odaklı kullanıcılar",
+      "recommendedScenario": "Yüksek elektrik faturası olan evler"
+    },
+    "mode2": {
+      "name": "Şebekeye Satış",
+      "description": "Fazla enerjiyi şebekeye satarak gelir elde eder",
+      "targetUser": "Üretim fazlası olan kullanıcılar",
+      "recommendedScenario": "Net metering/Feed-in tarife olan bölgeler"
+    },
+    "mode4": {
+      "name": "Yedek Güç (UPS)",
+      "description": "Elektrik kesintilerine karşı yüksek batarya rezervi tutar",
+      "targetUser": "Kesinti riski yüksek bölgelerdeki kullanıcılar",
+      "recommendedScenario": "Hastane, iş yeri, kritik yükler"
+    },
+    "mode5": {
+      "name": "Gece Tarifesi Avantajı",
+      "description": "Ucuz gece tarifelerinden faydalanarak bataryayı şarj eder",
+      "targetUser": "Çok zamanlı tarife kullananlar",
+      "recommendedScenario": "Gündüz/gece farklı tarife olan bölgeler"
+    },
+    "mode6": {
+      "name": "Sıfır İhracat",
+      "description": "Şebekeye hiç enerji göndermez, sadece öz tüketim",
+      "targetUser": "Yasal kısıtlama olan bölgelerdeki kullanıcılar",
+      "recommendedScenario": "Satış izni olmayan bölgeler"
+    },
+    "mode7": {
+      "name": "Jeneratör Destekli",
+      "description": "Uzun süreli kesintilerde jeneratör ile çalışır",
+      "targetUser": "Jeneratörü olan kullanıcılar",
+      "recommendedScenario": "Sık kesinti olan, jeneratörü olan yerler"
+    },
+    "mode8": {
+      "name": "Dengeli Hibrit",
+      "description": "Genel kullanım için optimize edilmiş dengeli mod",
+      "targetUser": "Yeni başlayanlar, kararsızlar",
+      "recommendedScenario": "Genel ev kullanımı"
+    },
+    "custom": {
+      "name": "Özel Mod",
+      "description": "Tüm ayarları manuel olarak yapılandırın",
+      "targetUser": "İleri düzey kullanıcılar",
+      "recommendedScenario": "Özel gereksinimler"
+    }
+  },
+  "settings": {
+    "workMode": "Çalışma Modu",
+    "battery": "Batarya Ayarları",
+    "grid": "Şebeke Ayarları",
+    "generator": "Jeneratör Ayarları",
+    "advanced": "Gelişmiş Ayarlar",
+    "timeOfUse": "Zaman Bazlı Kullanım",
+    "batterySettings": "Batarya Ayarları",
+    "systemWorkMode": "Sistem Çalışma Modu",
+    "gridCharging": "Şebeke Şarjı",
+    "generatorCharging": "Jeneratör Şarjı",
+    "protectionThresholds": "Koruma Eşikleri",
+    "workModeStrategy": "Çalışma Modu Stratejisi",
+    "inverterMode": "İnvertör Modu",
+    "gridPeakShaving": "Şebeke Tepe Kesme",
+    "generatorSettings": "Jeneratör Ayarları",
+    "generatorPeakShaving": "Jeneratör Tepe Kesme",
+    "smartLoad": "Akıllı Yük",
+    "generatorSmartLoad": "Jeneratör ve Akıllı Yük"
+  },
+  "labels": {
+    "workMode": "Çalışma Modu",
+    "solarSell": "Güneş Enerjisi Satışı",
+    "energyPattern": "Enerji Modeli",
+    "maxSellPower": "Maksimum Satış Gücü",
+    "zeroExportPower": "Sıfır İhracat Gücü",
+    "gridPeakShaving": "Şebeke Tepe Kesme",
+    "peakShavingPower": "Tepe Kesme Gücü",
+    "batteryType": "Batarya Tipi",
+    "batteryCapacity": "Kapasite",
+    "maxChargeCurrent": "Max Şarj Akımı",
+    "maxDischargeCurrent": "Max Deşarj Akımı",
+    "shutdownSOC": "Kapanma SOC",
+    "lowBattSOC": "Düşük Batarya SOC",
+    "restartSOC": "Yeniden Başlatma SOC",
+    "gridCharge": "Şebeke Şarjı",
+    "gridChargeSOC": "Şebeke Şarj SOC",
+    "gridChargeCurrent": "Şebeke Şarj Akımı",
+    "gridSignal": "Şebeke Sinyali",
+    "genCharge": "Jeneratör Şarjı",
+    "genStartSOC": "Jeneratör Başlangıç SOC",
+    "genChargeCurrent": "Jeneratör Şarj Akımı",
+    "genMaxRunTime": "Maksimum Çalışma Süresi",
+    "genDownTime": "Bekleme Süresi",
+    "genRatedPower": "Nominal Güç",
+    "genSignal": "Jeneratör Sinyali",
+    "genPeakShaving": "Jeneratör Tepe Kesme",
+    "signalIslandMode": "Ada Modu Sinyali",
+    "bmsErrStop": "BMS Hata Durdurma",
+    "backupDelay": "Yedekleme Gecikmesi",
+    "ctRatio": "CT Oranı",
+    "gridChargingEnabled": "Şebeke Şarjını Etkinleştir",
+    "gridChargingStartSOC": "Şarj Başlangıç SOC",
+    "gridChargingCurrent": "Şarj Akımı",
+    "generatorChargingEnabled": "Jeneratör Şarjını Etkinleştir",
+    "generatorStartSOC": "Şarj Başlangıç SOC",
+    "generatorChargingCurrent": "Şarj Akımı",
+    "generatorMaxRunTime": "Maksimum Çalışma Süresi",
+    "generatorCoolingTime": "Soğuma Süresi",
+    "lowBatteryWarning": "Düşük Batarya Uyarısı",
+    "exportStrategy": "İhracat Stratejisi",
+    "energyPriority": "Enerji Önceliği",
+    "zeroExportLimit": "Sıfır İhracat Limiti",
+    "forceOffGrid": "Zorunlu Şebekeden Bağımsız",
+    "gridPeakShavingEnabled": "Tepe Kesmeyi Etkinleştir",
+    "gridPeakShavingLimitPower": "Limit Gücü",
+    "generatorCharge": "Jeneratör Şarjı",
+    "generatorGridCharge": "Jeneratör Şebeke Şarjı",
+    "generatorChargeCurrent": "Şarj Akımı",
+    "generatorPeakShavingEnabled": "Tepe Kesmeyi Etkinleştir",
+    "generatorPeakShavingLimitPower": "Limit Gücü",
+    "smartLoadEnabled": "Akıllı Yükü Etkinleştir",
+    "smartLoadOffSOC": "Kapatma SOC",
+    "smartLoadOnSOC": "Açma SOC",
+    "smartLoadPVThreshold": "PV Güç Eşiği",
+    "smartLoadOpenDelay": "Açılma Gecikmesi",
+    "smartLoadOnGridAlwaysOn": "Şebekede Her Zaman Açık"
+  },
+  "features": {
+    "gridSelling": "Satış",
+    "gridCharging": "Şebeke Şarj",
+    "generatorSupport": "Jeneratör"
+  },
+  "targetUser": "Hedef Kullanıcı",
+  "recommendedScenario": "Önerilen Senaryo",
+  "modeNotFound": "Mod bulunamadı",
+  "applyModeTitle": "Modu Uygula",
+  "applyModeConfirm": "\"{{mode}}\" modunu uygulamak istediğinizden emin misiniz?",
+  "success": "Başarılı",
+  "modeAppliedSuccess": "\"{{mode}}\" modu uygulandı.",
+  "ok": "Tamam",
+  "cancel": "İptal",
+  "apply": "Uygula",
+  "active": "Aktif",
+  "thisModeActive": "Bu Mod Aktif",
+  "applyThisMode": "Aktif Mod Olarak Ayarla",
+  "settingDetails": "Ayar Detayları",
+  "editSettingsButton": "Ayarları Düzenle",
+  "showSettings": "Mod Ayarlarını Göster",
+  "hideSettings": "Mod Ayarlarını Gizle",
+  "mode": "Mod",
+  "hours": "saat",
+  "minutes": "dk",
+  "customModeSettings": "Özel Mod Ayarları",
+  "validationError": "Validasyon Hatası",
+  "socValidation": "SOC değerleri şu şekilde olmalıdır: Shutdown SOC < Low Batt SOC < Restart SOC",
+  "customModeApplied": "Özel mod ayarları kaydedildi ve uygulandı.",
+  "resetSettings": "Ayarları Sıfırla",
+  "resetConfirm": "Tüm özel mod ayarları varsayılan değerlere sıfırlanacak. Devam etmek istiyor musunuz?",
+  "reset": "Sıfırla",
+  "editTimeOfUse": "Time of Use Programını Düzenle",
+  "periodCount": "{{count}} periyot",
+  "saveAndApply": "Kaydet ve Uygula",
+  "enabled": "Aktif",
+  "disabled": "Pasif",
+  "presetModes": "Önceden Tanımlı Modlar",
+  "infoText": "Detayları görüntülemek ve uygulamak için bir moda dokunun. Tüm ayarları manuel yapılandırmak için özel mod seçeneğini kullanın.",
+  "descriptions": {
+    "solarSell": "Fazla güneş enerjisini şebekeye sat",
+    "gridCharge": "Şebekeden batarya şarjı",
+    "genCharge": "Jeneratörden batarya şarjı",
+    "shutdownSOC": "Batarya bu seviyede kapanır",
+    "lowBattSOC": "Düşük batarya uyarı seviyesi",
+    "restartSOC": "Yeniden başlatma seviyesi",
+    "signalIslandMode": "Ada modu sinyali",
+    "bmsErrStop": "BMS hatalarında dur",
+    "forceOffGrid": "Sistemi şebekeden bağımsız modda çalıştırmaya zorla",
+    "gridPeakShaving": "Tepe saatlerde şebekeden çekilen gücü sınırla",
+    "generatorCharge": "Jeneratörün bataryayı şarj etmesine izin ver",
+    "generatorGridCharge": "Şebeke varken jeneratörün şarj etmesine izin ver",
+    "generatorPeakShaving": "Tepe saatlerde jeneratörden çekilen gücü sınırla",
+    "smartLoad": "Batarya ve PV koşullarına göre akıllı yük davranışını yapılandır",
+    "smartLoadOnGridAlwaysOn": "Şebeke varken akıllı yükü her zaman açık tut"
+  },
+  "unsavedChanges": "Kaydedilmemiş Değişiklikler",
+  "unsavedChangesMessage": "Kaydedilmemiş değişiklikleriniz var. Ayrılmadan önce kaydetmek ister misiniz?",
+  "noDeviceSelected": "Cihaz seçilmedi",
+  "loadError": "Ayarlar yüklenemedi",
+  "timeOfUse": "Time of Use",
+  "maintenanceSettings": "Bakım Ayarları",
+  "adminOnly": "Sadece Admin",
+  "adminOnlyMessage": "Bu bölüm yalnızca yöneticiler tarafından erişilebilir.",
+  "maintenanceWarning": "Bu ayarlar ileri düzey kullanıcılar içindir. Yanlış yapılandırma sistem çalışmasını etkileyebilir.",
+  "maintenanceInfo": {
+    "title": "Önemli",
+    "body": "Bu ayarlardaki değişiklikler sistem yeniden başlatmasını gerektirebilir. Bazı parametreler bölgeye özeldir ve yerel düzenlemelere uygun olmalıdır."
+  }
+},
+"timeOfUse": {
+  "title": "Time of Use Programı",
+  "enabled": "Time of Use Aktif",
+  "enableDescription": "Zaman bazlı programlamayı etkinleştir",
+  "activeDays": "Aktif Günler",
+  "periods": "Zaman Dilimleri",
+  "fixedPeriods": "24 saati kaplayan sabit {{count}} periyot",
+  "periodOverlap": "Periyot çakışması tespit edildi",
+  "overlapError": "Periyot {{period1}} ve {{period2}} zaman dilimleri çakışıyor. Lütfen düzeltin.",
+  "saved": "Time of Use ayarları kaydedildi",
+  "24HourView": "24 Saat Görünümü",
+  "period": "Periyot",
+  "startTime": "Başlangıç",
+  "endTime": "Bitiş",
+  "gridCharge": "Şebekeden Şarj",
+  "genCharge": "Jeneratörden Şarj",
+  "targetSOC": "Hedef SOC",
+  "maxDischargePower": "Max Deşarj Gücü",
+  "save": "Kaydet",
+  "hour": "Saat",
+  "minute": "Dakika",
+  "select": "Seç",
+  "startTimeTitle": "Başlangıç Saati",
+  "endTimeTitle": "Bitiş Saati",
+  "tips": {
+    "title": "Kullanım İpuçları",
+    "fixedPeriods": "Sistem sabit {{count}} zaman dilimi kullanır",
+    "fullCoverage": "Periyotlar 24 saati boşluksuz kaplar",
+    "colors": "Yeşil: Şebekeden şarj | Turuncu: Jeneratörden şarj",
+    "targetSOC": "Hedef SOC: O periyotta ulaşılmak istenen batarya seviyesi"
+  },
+  "validation": {
+    "firstPeriodStart": "İlk periyot 00:00'da başlamalı",
+    "lastPeriodEnd": "Son periyot 00:00'da bitmeli",
+    "periodGap": "Periyotlar 24 saati boşluksuz kapsamalı"
+  }
+},
+  "legal": {
+    "privacyPolicyTitle": "Gizlilik Politikası",
+    "termsOfServiceTitle": "Kullanım Koşulları",
+    "lastUpdated": "Son Güncelleme: Aralık 2024",
+    "companyName": "Netzr",
+    "privacyPolicy": {
+      "intro": "Gizliliğinizi korumaya kararlıyız. Bu Gizlilik Politikası, Netzr mobil uygulamamızı kullandığınızda bilgilerinizi nasıl topladığımızı, kullandığımızı, paylaştığımızı ve koruduğumuzu açıklar.",
+      "dataCollectedTitle": "1. Topladığımız Veriler",
+      "dataCollectedContent": "Aşağıdaki kişisel verileri topluyoruz:\n\n• Kişisel Bilgiler: Ad, soyad, e-posta adresi, telefon numarası\n• Hesap Verileri: Giriş bilgileri, kullanıcı tercihleri\n• Enerji Verileri: Güneş enerjisi üretimi, batarya durumu, şebeke alışveriş verileri, enerji tüketim kalıpları\n• Cihaz Telemetrisi: İnverter durumu, cihaz seri numaraları, yazılım sürümleri, anlık güç metrikleri\n• Konum Verileri: Ev adresi, cihaz kurulum yeri (doğru enerji izleme için)\n• Kamera Verileri: Cihaz kameranızı yalnızca cihaz kaydı için QR kodlarını taramak amacıyla kullanıyoruz. Hiçbir fotoğraf veya video çekilmez, saklanmaz veya iletilmez.\n• Kullanım Verileri: Uygulama kullanım kalıpları, özellik etkileşimleri, hata kayıtları",
+      "purposeTitle": "2. Veri İşleme Amacı",
+      "purposeContent": "Verilerinizi aşağıdaki amaçlarla işliyoruz:\n\n• Netzr enerji yönetim hizmetini sağlamak ve sürdürmek\n• Enerji üretiminizi ve tüketiminizi izlemek ve optimize etmek\n• Sistem durumu, uyarılar ve güncellemeler hakkında bildirim göndermek\n• Hizmetlerimizi iyileştirmek ve yeni özellikler geliştirmek\n• Yasal yükümlülüklere uymak\n• Hesabınız ve destek talepleriniz hakkında sizinle iletişim kurmak",
+      "legalBasisTitle": "3. İşlemenin Yasal Dayanağı",
+      "legalBasisContent": "Kişisel verilerinizi aşağıdaki temellere dayanarak işliyoruz:\n\n• Hesap oluştururken ve bu koşulları kabul ederken verdiğiniz onay\n• Sözleşmenin ifası (size hizmetlerimizi sunmak)\n• Yasal yükümlülükler (GDPR - Genel Veri Koruma Tüzüğü)\n• Meşru menfaatler (hizmetlerimizi iyileştirmek, dolandırıcılığı önlemek)",
+      "thirdPartyTitle": "4. Üçüncü Taraf Paylaşımı",
+      "thirdPartyContent": "Verilerinizi aşağıdakilerle paylaşabiliriz:\n\n• Bulut Hizmet Sağlayıcıları: Güvenli veri depolama ve işleme için\n• Analiz Sağlayıcıları: Uygulama performansını iyileştirmek için (anonimleştirilmiş veri)\n• Enerji Şebeke Operatörleri: Şebeke entegrasyonu için gerekli olduğunda\n• Devlet Kurumları: Yasalarca gerekli olduğunda\n\nKişisel verilerinizi asla üçüncü taraflara satmayız.",
+      "dataRetentionTitle": "5. Veri Saklama",
+      "dataRetentionContent": "Kişisel verilerinizi aşağıdaki sürelerde saklıyoruz:\n\n• Hesap verileri: Hesabınız aktif olduğu sürece, artı silme sonrası 2 yıl\n• Enerji verileri: Tarihsel analiz ve raporlama için 5 yıl\n• Cihaz telemetrisi: Hizmet iyileştirmesi için 2 yıl\n• Kullanım kayıtları: Sorun giderme için 1 yıl\n\nBize ulaşarak erken silme talep edebilirsiniz.",
+      "userRightsTitle": "6. Haklarınız",
+      "userRightsContent": "GDPR kapsamında aşağıdaki haklara sahipsiniz:\n\n• Erişim: Kişisel verilerinizin bir kopyasını talep etme\n• Düzeltme: Yanlış veya eksik verileri düzeltme\n• Silme: Kişisel verilerinizin silinmesini talep etme (\"unutulma hakkı\")\n• Taşınabilirlik: Verilerinizi yapılandırılmış, makine tarafından okunabilir formatta alma\n• İtiraz: Meşru menfaatlere dayalı işlemeye itiraz etme\n• Kısıtlama: İşlemenin sınırlandırılmasını talep etme\n• Onayı Geri Çekme: Onayınızı istediğiniz zaman geri çekme\n\nBu hakları kullanmak için lütfen uygulama üzerinden bizimle iletişime geçin.",
+      "securityTitle": "7. Veri Güvenliği",
+      "securityContent": "Verilerinizi korumak için uygun teknik ve organizasyonel önlemler uyguluyoruz:\n\n• Aktarım ve depolama sırasında şifreleme\n• Güvenli kimlik doğrulama mekanizmaları\n• Düzenli güvenlik denetimleri\n• Erişim kontrolleri ve izleme",
+      "contactTitle": "8. İletişim Bilgileri",
+      "contactContent": "Gizlilikle ilgili sorularınız için lütfen uygulamanın destek özelliği veya ayarlar menüsü üzerinden bizimle iletişime geçin.",
+      "changesTitle": "9. Bu Politikadaki Değişiklikler",
+      "changesContent": "Bu Gizlilik Politikasını zaman zaman güncelleyebiliriz. Değişiklikleri uygulamada yeni politikayı yayınlayarak ve \"Son Güncelleme\" tarihini güncelleyerek size bildiririz.",
+      "devicePermissionsTitle": "10. Cihaz İzinleri",
+      "devicePermissionsContent": "Uygulamamız düzgün çalışabilmek için bazı cihaz izinleri gerektirir:\n\n• Kamera: Yalnızca enerji cihazlarını (inverterler, bataryalar) kaydetmek için QR kodlarını taramak amacıyla kullanılır. Hiçbir fotoğraf veya video çekmiyoruz, saklamıyoruz veya iletmiyoruz. Kamera erişimi yalnızca QR tarama işlemi sırasında aktiftir.\n\n• Konum: Doğru enerji izleme, saat dilimi ayarları ve bölgesel enerji verileri için ev konumunuzu belirlemek amacıyla kullanılır.\n\n• Bildirimler: Enerji üretimi, batarya durumu, sistem uyarıları ve önemli güncellemeler hakkında uyarı göndermek için kullanılır.\n\nBu izinleri istediğiniz zaman cihaz ayarlarınızdan yönetebilirsiniz."
+    },
+    "termsOfService": {
+      "intro": "Netzr uygulamasına hoş geldiniz. Mobil uygulamamızı kullanarak bu Kullanım Koşullarını kabul etmiş olursunuz. Lütfen dikkatlice okuyun.",
+      "serviceDescriptionTitle": "1. Hizmet Tanımı",
+      "serviceDescriptionContent": "Netzr, aşağıdakileri yapmanızı sağlayan bir enerji yönetim uygulamasıdır:\n\n• Güneş enerjisi üretimini ve tüketimini izleme\n• Batarya durumunu ve şebeke etkileşimlerini takip etme\n• Anlık uyarılar ve bildirimler alma\n• İnverter modlarını ve ayarlarını kontrol etme\n• Geçmiş enerji verilerini ve analizleri görüntüleme\n• Cihaz erişimini diğer kullanıcılarla paylaşma",
+      "userAccountTitle": "2. Kullanıcı Hesabı",
+      "userAccountContent": "Hizmetlerimizi kullanmak için:\n\n• Doğru bilgilerle bir hesap oluşturmanız gerekir\n• Giriş bilgilerinizi gizli tutmanız gerekir\n• En az 18 yaşında olmanız veya ebeveyn izni almanız gerekir\n• Yetkisiz erişimi derhal bize bildirmeniz gerekir\n\nHesabınız altındaki tüm faaliyetlerden siz sorumlusunuz.",
+      "userResponsibilitiesTitle": "3. Kullanıcı Sorumlulukları",
+      "userResponsibilitiesContent": "Aşağıdakileri kabul ediyorsunuz:\n\n• Hizmeti yalnızca yasal amaçlarla kullanma\n• Herhangi bir sisteme yetkisiz erişim sağlamaya çalışmama\n• Hizmeti engellememe veya bozmama\n• Uygulamayı tersine mühendislik yapmama veya kopyalamama\n• Doğru hesap bilgilerini koruma\n• Tüm yürürlükteki yasa ve yönetmeliklere uyma",
+      "intellectualPropertyTitle": "4. Fikri Mülkiyet",
+      "intellectualPropertyContent": "Netzr uygulamasının tüm içeriği, özellikleri ve işlevleri fikri mülkiyet yasalarıyla korunmaktadır. Buna aşağıdakiler dahildir:\n\n• Yazılım kodu ve algoritmalar\n• Kullanıcı arayüzü tasarımı\n• Ticari markalar ve logolar\n• Dokümantasyon ve içerik\n\nYazılı izin almadan hizmetin herhangi bir parçasını kopyalayamaz, değiştiremez veya dağıtamazsınız.",
+      "serviceAvailabilityTitle": "5. Hizmet Erişilebilirliği",
+      "serviceAvailabilityContent": "Sürekli hizmet sağlamaya çalışıyoruz, ancak aşağıdakileri garanti etmiyoruz:\n\n• Kesintisiz veya hatasız çalışma\n• Tüm cihazlarla uyumluluk\n• Enerji hesaplamalarının doğruluğu\n• Her durumda anlık veri\n\nMümkün olduğunda önceden bildirimle bakım veya güncellemeler için hizmeti askıya alabiliriz.",
+      "liabilityTitle": "6. Sorumluluk Sınırlaması",
+      "liabilityContent": "Yasaların izin verdiği azami ölçüde:\n\n• Hizmet herhangi bir garanti olmaksızın \"olduğu gibi\" sağlanır\n• Dolaylı, arızi veya sonuç olarak ortaya çıkan zararlardan sorumlu değiliz\n• Toplam sorumluluğumuz hizmet için ödenen miktarla sınırlıdır\n• Üçüncü taraf cihaz arızalarından sorumlu değiliz\n• Hizmet kesintilerinden kaynaklanan enerji kaybı veya hasardan sorumlu değiliz",
+      "terminationTitle": "7. Fesih",
+      "terminationContent": "Her iki taraf da bu sözleşmeyi feshedebilir:\n\n• Hesabınızı istediğiniz zaman uygulama üzerinden silebilirsiniz\n• Bu koşulları ihlal eden hesapları askıya alabilir veya feshedebiliriz\n• Fesih üzerine, erişiminiz iptal edilecektir\n• Veriler Gizlilik Politikamıza ve yürürlükteki yasalara göre işlenir",
+      "governingLawTitle": "8. Uygulanacak Hukuk",
+      "governingLawContent": "Bu Koşullar Hollanda yasalarına tabidir. Herhangi bir uyuşmazlık Amsterdam, Hollanda mahkemelerinde çözülecektir.\n\nAB kullanıcıları için, bu koşullardaki hiçbir şey AB tüketici koruma yasaları kapsamındaki yasal haklarınızı etkilemez.",
+      "changesTitle": "9. Koşullardaki Değişiklikler",
+      "changesContent": "Bu koşulları istediğimiz zaman değiştirebiliriz. Değişikliklerden sonra hizmeti kullanmaya devam etmeniz kabul anlamına gelir. Önemli değişiklikleri uygulama veya e-posta yoluyla size bildiririz.",
+      "contactTitle": "10. İletişim",
+      "contactContent": "Bu Koşullar hakkında sorularınız için lütfen uygulamanın destek özelliği veya ayarlar menüsü üzerinden bizimle iletişime geçin."
+    }
+  },
+  "deviceSettings": {
+    "update": {
+      "title": "Ayarlar Güncelleniyor",
+      "preparing": "Hazırlanıyor...",
+      "connecting": "Bağlanıyor...",
+      "inProgress": "Parametreler güncelleniyor...",
+      "completed": "Güncelleme tamamlandı!",
+      "completedWithErrors": "Hatalarla tamamlandı",
+      "successCount": "{{count}} parametre güncellendi",
+      "failedCount": "{{count}} parametre başarısız",
+      "failedParameters": "Başarısız Parametreler:",
+      "continueInBackground": "Arka Planda Devam Et",
+      "inProgressTitle": "Güncelleme Devam Ediyor",
+      "navigateWarning": "Ayarlar güncelleniyor. Arka planda devam etsin mi?"
+    }
+  }
+}
