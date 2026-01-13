@@ -1280,19 +1280,6 @@
         }
       }
     },
-    "/api/DeviceData/Demo/Fix": {
-      "post": {
-        "tags": [
-          "DeviceData"
-        ],
-        "operationId": "FixDemoDevice",
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
     "/api/DeviceNotifications": {
       "post": {
         "tags": [
