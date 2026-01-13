@@ -309,66 +309,58 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
             LabelKey = "realtime.outputApparentPower"
         });
 
-        // Three-phase output voltages (European standard 230V ± 5% per phase)
+        // Three-phase output data (European standard 230V ± 5% per phase)
         // Use seeded random for consistent values per call
         var voltageRandom = new Random(DateTime.UtcNow.Hour * 60 + DateTime.UtcNow.Minute / 5);
+
+        // Calculate phase voltages
         var phaseAVoltage = 230.0 + (voltageRandom.NextDouble() * 6 - 3);
         var phaseBVoltage = 230.0 + (voltageRandom.NextDouble() * 6 - 3);
         var phaseCVoltage = 230.0 + (voltageRandom.NextDouble() * 6 - 3);
 
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "outputPhaseAVoltage",
-            Value = Math.Round(phaseAVoltage, 1),
-            Unit = "V",
-            LabelKey = "realtime.outputPhaseAVoltage"
-        });
-
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "outputPhaseBVoltage",
-            Value = Math.Round(phaseBVoltage, 1),
-            Unit = "V",
-            LabelKey = "realtime.outputPhaseBVoltage"
-        });
-
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "outputPhaseCVoltage",
-            Value = Math.Round(phaseCVoltage, 1),
-            Unit = "V",
-            LabelKey = "realtime.outputPhaseCVoltage"
-        });
-
-        // Three-phase output currents (I = P / V, distributed across phases)
-        // Assume balanced load distribution across 3 phases
+        // Calculate phase currents (balanced load distribution across 3 phases)
         var totalCurrent = (powerFlow.LoadPowerKw * 1000) / 230.0;
         var phaseACurrent = totalCurrent / 3 * (0.95 + voltageRandom.NextDouble() * 0.1);
         var phaseBCurrent = totalCurrent / 3 * (0.95 + voltageRandom.NextDouble() * 0.1);
         var phaseCCurrent = totalCurrent / 3 * (0.95 + voltageRandom.NextDouble() * 0.1);
 
-        details.Add(new DeviceDetailItemDto
+        // Calculate phase power (P = V * I)
+        var phaseAPower = phaseAVoltage * phaseACurrent;
+        var phaseBPower = phaseBVoltage * phaseBCurrent;
+        var phaseCPower = phaseCVoltage * phaseCCurrent;
+
+        // Return phases as an array (format expected by frontend)
+        var phases = new[]
         {
-            Key = "outputPhaseACurrent",
-            Value = Math.Round(phaseACurrent, 2),
-            Unit = "A",
-            LabelKey = "realtime.outputPhaseACurrent"
-        });
+            new Dictionary<string, object>
+            {
+                { "Phase Id", 1 },
+                { "Voltage", Math.Round(phaseAVoltage, 1) },
+                { "Current", Math.Round(phaseACurrent, 2) },
+                { "Power", Math.Round(phaseAPower, 0) }
+            },
+            new Dictionary<string, object>
+            {
+                { "Phase Id", 2 },
+                { "Voltage", Math.Round(phaseBVoltage, 1) },
+                { "Current", Math.Round(phaseBCurrent, 2) },
+                { "Power", Math.Round(phaseBPower, 0) }
+            },
+            new Dictionary<string, object>
+            {
+                { "Phase Id", 3 },
+                { "Voltage", Math.Round(phaseCVoltage, 1) },
+                { "Current", Math.Round(phaseCCurrent, 2) },
+                { "Power", Math.Round(phaseCPower, 0) }
+            }
+        };
 
         details.Add(new DeviceDetailItemDto
         {
-            Key = "outputPhaseBCurrent",
-            Value = Math.Round(phaseBCurrent, 2),
-            Unit = "A",
-            LabelKey = "realtime.outputPhaseBCurrent"
-        });
-
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "outputPhaseCCurrent",
-            Value = Math.Round(phaseCCurrent, 2),
-            Unit = "A",
-            LabelKey = "realtime.outputPhaseCCurrent"
+            Key = "Phases",
+            Value = phases,
+            Unit = null,
+            LabelKey = "realtime.phases"
         });
 
         // Output Frequency (European standard 50Hz)
@@ -571,71 +563,54 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
             });
         }
 
-        // Three-phase output voltages
-        if (state.OutputPhaseAVoltageV.HasValue)
+        // Three-phase output data (Phases array format expected by frontend)
+        var phases = new List<Dictionary<string, object>>();
+
+        // Phase A
+        if (state.OutputPhaseAVoltageV.HasValue || state.OutputPhaseACurrentA.HasValue || state.OutputPhaseAPowerW.HasValue)
         {
-            details.Add(new DeviceDetailItemDto
+            phases.Add(new Dictionary<string, object>
             {
-                Key = "outputPhaseAVoltage",
-                Value = state.OutputPhaseAVoltageV.Value,
-                Unit = "V",
-                LabelKey = "realtime.outputPhaseAVoltage"
+                { "Phase Id", 1 },
+                { "Voltage", state.OutputPhaseAVoltageV ?? 0 },
+                { "Current", state.OutputPhaseACurrentA ?? 0 },
+                { "Power", state.OutputPhaseAPowerW ?? 0 }
             });
         }
 
-        if (state.OutputPhaseBVoltageV.HasValue)
+        // Phase B
+        if (state.OutputPhaseBVoltageV.HasValue || state.OutputPhaseBCurrentA.HasValue || state.OutputPhaseBPowerW.HasValue)
         {
-            details.Add(new DeviceDetailItemDto
+            phases.Add(new Dictionary<string, object>
             {
-                Key = "outputPhaseBVoltage",
-                Value = state.OutputPhaseBVoltageV.Value,
-                Unit = "V",
-                LabelKey = "realtime.outputPhaseBVoltage"
+                { "Phase Id", 2 },
+                { "Voltage", state.OutputPhaseBVoltageV ?? 0 },
+                { "Current", state.OutputPhaseBCurrentA ?? 0 },
+                { "Power", state.OutputPhaseBPowerW ?? 0 }
             });
         }
 
-        if (state.OutputPhaseCVoltageV.HasValue)
+        // Phase C
+        if (state.OutputPhaseCVoltageV.HasValue || state.OutputPhaseCCurrentA.HasValue || state.OutputPhaseCPowerW.HasValue)
         {
-            details.Add(new DeviceDetailItemDto
+            phases.Add(new Dictionary<string, object>
             {
-                Key = "outputPhaseCVoltage",
-                Value = state.OutputPhaseCVoltageV.Value,
-                Unit = "V",
-                LabelKey = "realtime.outputPhaseCVoltage"
+                { "Phase Id", 3 },
+                { "Voltage", state.OutputPhaseCVoltageV ?? 0 },
+                { "Current", state.OutputPhaseCCurrentA ?? 0 },
+                { "Power", state.OutputPhaseCPowerW ?? 0 }
             });
         }
 
-        // Three-phase output currents
-        if (state.OutputPhaseACurrentA.HasValue)
+        // Add phases array if we have any phase data
+        if (phases.Count > 0)
         {
             details.Add(new DeviceDetailItemDto
             {
-                Key = "outputPhaseACurrent",
-                Value = state.OutputPhaseACurrentA.Value,
-                Unit = "A",
-                LabelKey = "realtime.outputPhaseACurrent"
-            });
-        }
-
-        if (state.OutputPhaseBCurrentA.HasValue)
-        {
-            details.Add(new DeviceDetailItemDto
-            {
-                Key = "outputPhaseBCurrent",
-                Value = state.OutputPhaseBCurrentA.Value,
-                Unit = "A",
-                LabelKey = "realtime.outputPhaseBCurrent"
-            });
-        }
-
-        if (state.OutputPhaseCCurrentA.HasValue)
-        {
-            details.Add(new DeviceDetailItemDto
-            {
-                Key = "outputPhaseCCurrent",
-                Value = state.OutputPhaseCCurrentA.Value,
-                Unit = "A",
-                LabelKey = "realtime.outputPhaseCCurrent"
+                Key = "Phases",
+                Value = phases,
+                Unit = null,
+                LabelKey = "realtime.phases"
             });
         }
 
