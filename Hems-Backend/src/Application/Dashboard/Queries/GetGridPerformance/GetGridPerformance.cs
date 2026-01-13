@@ -20,15 +20,21 @@ public class GetGridPerformanceQueryHandler : IRequestHandler<GetGridPerformance
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
     private readonly IDeviceMappingService _deviceMapping;
+    private readonly IDemoDataService _demoDataService;
+    private readonly IDemoSimulationDataService _demoSimulationService;
 
     public GetGridPerformanceQueryHandler(
         IApplicationDbContext context,
         ISender sender,
-        IDeviceMappingService deviceMapping)
+        IDeviceMappingService deviceMapping,
+        IDemoDataService demoDataService,
+        IDemoSimulationDataService demoSimulationService)
     {
         _context = context;
         _sender = sender;
         _deviceMapping = deviceMapping;
+        _demoDataService = demoDataService;
+        _demoSimulationService = demoSimulationService;
     }
 
     public async Task<GridPerformanceResponseDto> Handle(GetGridPerformanceQuery request, CancellationToken cancellationToken)
@@ -38,13 +44,6 @@ public class GetGridPerformanceQueryHandler : IRequestHandler<GetGridPerformance
         if (!hasAccess)
         {
             throw new UnauthorizedAccessException("Device access denied");
-        }
-
-        // Map local DeviceId to ThingsBoardDeviceId
-        var thingsBoardDeviceId = await _deviceMapping.GetThingsBoardDeviceIdAsync(request.DeviceId, cancellationToken);
-        if (thingsBoardDeviceId == null)
-        {
-            throw new ArgumentException($"Device with ID {request.DeviceId} not found or has no ThingsBoard mapping.");
         }
 
         // Validate period
@@ -60,21 +59,38 @@ public class GetGridPerformanceQueryHandler : IRequestHandler<GetGridPerformance
             throw new ArgumentException("StartDate and EndDate are required for custom period");
         }
 
+        // Check if this is a demo device
+        var isDemoDevice = await _demoDataService.IsDemoDeviceAsync(request.DeviceId, cancellationToken);
+
         List<GridPerformanceDataPoint> dataPoints;
 
-        switch (period)
+        if (isDemoDevice)
         {
-            case "monthly":
-                dataPoints = await GetMonthlyDataAsync(thingsBoardDeviceId.Value, cancellationToken);
-                break;
-            case "yearly":
-                dataPoints = await GetYearlyDataAsync(thingsBoardDeviceId.Value, cancellationToken);
-                break;
-            case "custom":
-                dataPoints = await GetCustomRangeDataAsync(thingsBoardDeviceId.Value, request.StartDate!.Value, request.EndDate!.Value, cancellationToken);
-                break;
-            default:
-                throw new ArgumentException($"Invalid period: {period}");
+            // Use simulated data for demo devices
+            dataPoints = period switch
+            {
+                "monthly" => GetDemoMonthlyData(),
+                "yearly" => GetDemoYearlyData(),
+                "custom" => GetDemoCustomRangeData(request.StartDate!.Value, request.EndDate!.Value),
+                _ => throw new ArgumentException($"Invalid period: {period}")
+            };
+        }
+        else
+        {
+            // Map local DeviceId to ThingsBoardDeviceId for real devices
+            var thingsBoardDeviceId = await _deviceMapping.GetThingsBoardDeviceIdAsync(request.DeviceId, cancellationToken);
+            if (thingsBoardDeviceId == null)
+            {
+                throw new ArgumentException($"Device with ID {request.DeviceId} not found or has no ThingsBoard mapping.");
+            }
+
+            dataPoints = period switch
+            {
+                "monthly" => await GetMonthlyDataAsync(thingsBoardDeviceId.Value, cancellationToken),
+                "yearly" => await GetYearlyDataAsync(thingsBoardDeviceId.Value, cancellationToken),
+                "custom" => await GetCustomRangeDataAsync(thingsBoardDeviceId.Value, request.StartDate!.Value, request.EndDate!.Value, cancellationToken),
+                _ => throw new ArgumentException($"Invalid period: {period}")
+            };
         }
 
         // Calculate totals
@@ -92,6 +108,98 @@ public class GetGridPerformanceQueryHandler : IRequestHandler<GetGridPerformance
             }
         };
     }
+
+    #region Demo Data Methods
+
+    /// <summary>
+    /// Generate simulated daily grid data for the current month (demo devices)
+    /// </summary>
+    private List<GridPerformanceDataPoint> GetDemoMonthlyData()
+    {
+        var today = DateTime.UtcNow.Date;
+        var monthStart = new DateTime(today.Year, today.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        var dataPoints = new List<GridPerformanceDataPoint>();
+
+        // Generate data for each day from month start to today
+        for (var date = monthStart; date <= today; date = date.AddDays(1))
+        {
+            var dailyEnergy = _demoSimulationService.GetDailyEnergy(date);
+            dataPoints.Add(new GridPerformanceDataPoint
+            {
+                Timestamp = date.ToString("yyyy-MM-dd"),
+                GridImport = Math.Round(dailyEnergy.GridImportEnergyKWh, 2),
+                GridExport = Math.Round(dailyEnergy.GridExportEnergyKWh, 2)
+            });
+        }
+
+        return dataPoints;
+    }
+
+    /// <summary>
+    /// Generate simulated monthly aggregated grid data for the current year (demo devices)
+    /// </summary>
+    private List<GridPerformanceDataPoint> GetDemoYearlyData()
+    {
+        var today = DateTime.UtcNow.Date;
+        var yearStart = new DateTime(today.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        var monthlyData = new Dictionary<string, (double Import, double Export)>();
+
+        // Generate data for each day from year start to today, then aggregate by month
+        for (var date = yearStart; date <= today; date = date.AddDays(1))
+        {
+            var monthKey = $"{date.Year}-{date.Month:D2}";
+            var dailyEnergy = _demoSimulationService.GetDailyEnergy(date);
+
+            if (!monthlyData.ContainsKey(monthKey))
+            {
+                monthlyData[monthKey] = (0, 0);
+            }
+
+            var current = monthlyData[monthKey];
+            monthlyData[monthKey] = (
+                current.Import + dailyEnergy.GridImportEnergyKWh,
+                current.Export + dailyEnergy.GridExportEnergyKWh
+            );
+        }
+
+        return monthlyData
+            .OrderBy(kvp => kvp.Key)
+            .Select(kvp => new GridPerformanceDataPoint
+            {
+                Timestamp = kvp.Key,
+                GridImport = Math.Round(kvp.Value.Import, 2),
+                GridExport = Math.Round(kvp.Value.Export, 2)
+            })
+            .ToList();
+    }
+
+    /// <summary>
+    /// Generate simulated daily grid data for a custom date range (demo devices)
+    /// </summary>
+    private List<GridPerformanceDataPoint> GetDemoCustomRangeData(DateTime startDate, DateTime endDate)
+    {
+        var rangeStart = startDate.Date;
+        var rangeEnd = endDate.Date;
+
+        var dataPoints = new List<GridPerformanceDataPoint>();
+
+        for (var date = rangeStart; date <= rangeEnd; date = date.AddDays(1))
+        {
+            var dailyEnergy = _demoSimulationService.GetDailyEnergy(date);
+            dataPoints.Add(new GridPerformanceDataPoint
+            {
+                Timestamp = date.ToString("yyyy-MM-dd"),
+                GridImport = Math.Round(dailyEnergy.GridImportEnergyKWh, 2),
+                GridExport = Math.Round(dailyEnergy.GridExportEnergyKWh, 2)
+            });
+        }
+
+        return dataPoints;
+    }
+
+    #endregion
 
     /// <summary>
     /// Get daily grid data for the current month

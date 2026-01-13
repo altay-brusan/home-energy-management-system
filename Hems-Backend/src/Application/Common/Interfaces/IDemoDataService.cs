@@ -1,3 +1,5 @@
+using Hems_Backend.Application.PowerFlow.Common.Models;
+
 namespace Hems_Backend.Application.Common.Interfaces;
 
 /// <summary>
@@ -67,4 +69,46 @@ public record DemoDataSeedResult
     public Guid? SiteId { get; init; }
     public Guid? SetupId { get; init; }
     public Guid? DeviceId { get; init; }
+}
+
+/// <summary>
+/// Service for generating simulated data for demo users.
+/// Provides realistic power flow, energy, and weather data based on time of day.
+/// </summary>
+public interface IDemoSimulationDataService
+{
+    /// <summary>
+    /// Gets simulated PowerFlow data for the current moment
+    /// </summary>
+    PowerFlowDto GetCurrentPowerFlow(Guid deviceId);
+
+    /// <summary>
+    /// Gets simulated PowerFlow data for a specific time
+    /// </summary>
+    PowerFlowDto GetPowerFlowAtTime(Guid deviceId, DateTime timestamp);
+
+    /// <summary>
+    /// Gets simulated daily energy data for a specific date
+    /// </summary>
+    DailyEnergyData GetDailyEnergy(DateTime date);
+
+    /// <summary>
+    /// Gets battery state of charge percentage
+    /// </summary>
+    double GetBatterySoc(DateTime timestamp);
+}
+
+/// <summary>
+/// Simulated daily energy data for demo devices.
+/// </summary>
+public record DailyEnergyData
+{
+    public DateTime Date { get; init; }
+    public double PvEnergyKWh { get; init; }
+    public double LoadEnergyKWh { get; init; }
+    public double GridImportEnergyKWh { get; init; }
+    public double GridExportEnergyKWh { get; init; }
+    public double BatteryChargeEnergyKWh { get; init; }
+    public double BatteryDischargeEnergyKWh { get; init; }
+    public double GeneratorEnergyKWh { get; init; }
 }

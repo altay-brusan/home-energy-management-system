@@ -17,15 +17,21 @@ public class GetGridPerformanceSummaryQueryHandler : IRequestHandler<GetGridPerf
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
     private readonly IDeviceMappingService _deviceMapping;
+    private readonly IDemoDataService _demoDataService;
+    private readonly IDemoSimulationDataService _demoSimulationService;
 
     public GetGridPerformanceSummaryQueryHandler(
         IApplicationDbContext context,
         ISender sender,
-        IDeviceMappingService deviceMapping)
+        IDeviceMappingService deviceMapping,
+        IDemoDataService demoDataService,
+        IDemoSimulationDataService demoSimulationService)
     {
         _context = context;
         _sender = sender;
         _deviceMapping = deviceMapping;
+        _demoDataService = demoDataService;
+        _demoSimulationService = demoSimulationService;
     }
 
     public async Task<GridPerformanceSummaryDto> Handle(GetGridPerformanceSummaryQuery request, CancellationToken cancellationToken)
@@ -37,21 +43,34 @@ public class GetGridPerformanceSummaryQueryHandler : IRequestHandler<GetGridPerf
             throw new UnauthorizedAccessException("Device access denied");
         }
 
-        // Map local DeviceId to ThingsBoardDeviceId
-        var thingsBoardDeviceId = await _deviceMapping.GetThingsBoardDeviceIdAsync(request.DeviceId, cancellationToken);
-        if (thingsBoardDeviceId == null)
+        // Check if this is a demo device
+        var isDemoDevice = await _demoDataService.IsDemoDeviceAsync(request.DeviceId, cancellationToken);
+
+        GridEnergyPeriodDto monthData;
+        GridEnergyPeriodDto yearData;
+        GridEnergyPeriodDto lifetimeData;
+
+        if (isDemoDevice)
         {
-            throw new ArgumentException($"Device with ID {request.DeviceId} not found or has no ThingsBoard mapping.");
+            // Use simulated data for demo devices
+            monthData = GetDemoMonthGridEnergy();
+            yearData = GetDemoYearGridEnergy();
+            lifetimeData = GetDemoLifetimeGridEnergy();
         }
+        else
+        {
+            // Map local DeviceId to ThingsBoardDeviceId for real devices
+            var thingsBoardDeviceId = await _deviceMapping.GetThingsBoardDeviceIdAsync(request.DeviceId, cancellationToken);
+            if (thingsBoardDeviceId == null)
+            {
+                throw new ArgumentException($"Device with ID {request.DeviceId} not found or has no ThingsBoard mapping.");
+            }
 
-        // Get month data
-        var monthData = await GetMonthGridEnergyAsync(thingsBoardDeviceId.Value, cancellationToken);
-
-        // Get year data
-        var yearData = await GetYearGridEnergyAsync(thingsBoardDeviceId.Value, cancellationToken);
-
-        // Get lifetime data
-        var lifetimeData = await GetLifetimeGridEnergyAsync(thingsBoardDeviceId.Value, cancellationToken);
+            // Get data from database for real devices
+            monthData = await GetMonthGridEnergyAsync(thingsBoardDeviceId.Value, cancellationToken);
+            yearData = await GetYearGridEnergyAsync(thingsBoardDeviceId.Value, cancellationToken);
+            lifetimeData = await GetLifetimeGridEnergyAsync(thingsBoardDeviceId.Value, cancellationToken);
+        }
 
         return new GridPerformanceSummaryDto
         {
@@ -60,6 +79,87 @@ public class GetGridPerformanceSummaryQueryHandler : IRequestHandler<GetGridPerf
             Lifetime = lifetimeData
         };
     }
+
+    #region Demo Data Methods
+
+    /// <summary>
+    /// Get simulated grid energy for current month (demo devices)
+    /// </summary>
+    private GridEnergyPeriodDto GetDemoMonthGridEnergy()
+    {
+        var today = DateTime.UtcNow.Date;
+        var monthStart = new DateTime(today.Year, today.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        double totalImport = 0;
+        double totalExport = 0;
+
+        for (var date = monthStart; date <= today; date = date.AddDays(1))
+        {
+            var dailyEnergy = _demoSimulationService.GetDailyEnergy(date);
+            totalImport += dailyEnergy.GridImportEnergyKWh;
+            totalExport += dailyEnergy.GridExportEnergyKWh;
+        }
+
+        return new GridEnergyPeriodDto
+        {
+            GridImport = Math.Round(totalImport, 2),
+            GridExport = Math.Round(totalExport, 2)
+        };
+    }
+
+    /// <summary>
+    /// Get simulated grid energy for current year (demo devices)
+    /// </summary>
+    private GridEnergyPeriodDto GetDemoYearGridEnergy()
+    {
+        var today = DateTime.UtcNow.Date;
+        var yearStart = new DateTime(today.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        double totalImport = 0;
+        double totalExport = 0;
+
+        for (var date = yearStart; date <= today; date = date.AddDays(1))
+        {
+            var dailyEnergy = _demoSimulationService.GetDailyEnergy(date);
+            totalImport += dailyEnergy.GridImportEnergyKWh;
+            totalExport += dailyEnergy.GridExportEnergyKWh;
+        }
+
+        return new GridEnergyPeriodDto
+        {
+            GridImport = Math.Round(totalImport, 2),
+            GridExport = Math.Round(totalExport, 2)
+        };
+    }
+
+    /// <summary>
+    /// Get simulated lifetime grid energy (demo devices)
+    /// Simulates ~2 years of historical data
+    /// </summary>
+    private GridEnergyPeriodDto GetDemoLifetimeGridEnergy()
+    {
+        var today = DateTime.UtcNow.Date;
+        // Simulate 2 years of data (730 days)
+        var lifetimeStart = today.AddDays(-730);
+
+        double totalImport = 0;
+        double totalExport = 0;
+
+        for (var date = lifetimeStart; date <= today; date = date.AddDays(1))
+        {
+            var dailyEnergy = _demoSimulationService.GetDailyEnergy(date);
+            totalImport += dailyEnergy.GridImportEnergyKWh;
+            totalExport += dailyEnergy.GridExportEnergyKWh;
+        }
+
+        return new GridEnergyPeriodDto
+        {
+            GridImport = Math.Round(totalImport, 2),
+            GridExport = Math.Round(totalExport, 2)
+        };
+    }
+
+    #endregion
 
     /// <summary>
     /// Get grid energy for current month from DailyCumulativeEnergy records

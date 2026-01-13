@@ -5,43 +5,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Hems_Backend.Infrastructure.Services;
 
-/// <summary>
-/// Provides simulated data for demo users.
-/// Generates realistic power flow, energy, and weather data based on time of day.
-/// </summary>
-public interface IDemoSimulationDataService
-{
-    /// <summary>
-    /// Gets simulated PowerFlow data for the current moment
-    /// </summary>
-    PowerFlowDto GetCurrentPowerFlow(Guid deviceId);
-
-    /// <summary>
-    /// Gets simulated PowerFlow data for a specific time
-    /// </summary>
-    PowerFlowDto GetPowerFlowAtTime(Guid deviceId, DateTime timestamp);
-
-    /// <summary>
-    /// Gets simulated daily energy data for a specific date
-    /// </summary>
-    DailyEnergyData GetDailyEnergy(DateTime date);
-
-    /// <summary>
-    /// Gets simulated energy prices based on Netherlands market
-    /// </summary>
-    EnergyPriceData GetEnergyPrices(DateTime timestamp);
-
-    /// <summary>
-    /// Gets simulated weather data
-    /// </summary>
-    DemoWeatherData GetWeatherData();
-
-    /// <summary>
-    /// Gets battery state of charge percentage
-    /// </summary>
-    double GetBatterySoc(DateTime timestamp);
-}
-
 public class DemoSimulationDataService : IDemoSimulationDataService
 {
     private readonly ILogger<DemoSimulationDataService> _logger;
@@ -112,41 +75,72 @@ public class DemoSimulationDataService : IDemoSimulationDataService
         var dayRandom = new Random(dayTypeSeed);
         var dayType = GetDayType(dayRandom.NextDouble());
 
-        // Base values for sunny day
-        var basePv = 32.5;
-        var baseLoad = 18.0;
-        var baseGridImport = 2.5;
-        var baseGridExport = 12.0;
-        var baseBatteryCharge = 8.0;
-        var baseBatteryDischarge = 6.0;
+        // Base values for a 5kW PV system on a sunny summer day
+        // Realistic for Netherlands/Europe
+        var basePvSunny = 25.0;  // kWh - peak summer sunny day
+        var baseLoad = 12.0;     // kWh - typical household daily consumption
 
-        // Apply day type multipliers
-        var (pvMult, importMult, exportMult) = GetDayTypeMultipliers(dayType);
-
-        // Calculate final values
-        var pvEnergy = basePv * seasonalPvMultiplier * pvMult * (0.9 + dayRandom.NextDouble() * 0.2);
-        var loadEnergy = baseLoad * seasonalLoadMultiplier * (0.9 + dayRandom.NextDouble() * 0.2);
-        var gridImport = baseGridImport * importMult * (0.8 + dayRandom.NextDouble() * 0.4);
-        var gridExport = baseGridExport * exportMult * (0.8 + dayRandom.NextDouble() * 0.4);
-        var batteryCharge = baseBatteryCharge * pvMult * (0.8 + dayRandom.NextDouble() * 0.4);
-        var batteryDischarge = baseBatteryDischarge * (0.8 + dayRandom.NextDouble() * 0.4);
-
-        // Ensure energy balance makes sense
-        if (pvEnergy < loadEnergy)
+        // Apply day type multipliers for PV
+        var pvMult = dayType switch
         {
-            gridImport = Math.Max(gridImport, (loadEnergy - pvEnergy) * 0.6);
-            gridExport = Math.Min(gridExport, pvEnergy * 0.1);
+            "sunny" => 1.0,
+            "partlyCloudy" => 0.65,
+            "cloudy" => 0.30,
+            "rainy" => 0.15,
+            _ => 0.65
+        };
+
+        // Calculate PV and Load with variation
+        var pvEnergy = basePvSunny * seasonalPvMultiplier * pvMult * (0.9 + dayRandom.NextDouble() * 0.2);
+        var loadEnergy = baseLoad * seasonalLoadMultiplier * (0.85 + dayRandom.NextDouble() * 0.3);
+
+        // Calculate net energy (positive = excess, negative = deficit)
+        var netEnergy = pvEnergy - loadEnergy;
+
+        // Initialize values
+        double gridImport;
+        double gridExport;
+        double batteryCharge;
+        double batteryDischarge;
+
+        if (netEnergy >= 0)
+        {
+            // PV produces more than load - export excess
+            // Battery absorbs some during day, releases in evening
+            batteryCharge = Math.Min(netEnergy * 0.4, 8.0);  // Max 8 kWh battery capacity
+            batteryDischarge = batteryCharge * 0.85;  // 85% round-trip efficiency
+
+            // Grid: small import at night, export excess during day
+            gridImport = loadEnergy * 0.1 * (0.8 + dayRandom.NextDouble() * 0.4);  // ~10% of load from grid at night
+            gridExport = Math.Max(0, netEnergy - batteryCharge + batteryDischarge - gridImport);
         }
+        else
+        {
+            // Load exceeds PV - need to import
+            var deficit = Math.Abs(netEnergy);
+
+            // Battery helps cover some deficit
+            batteryDischarge = Math.Min(deficit * 0.3, 6.0);  // Battery covers up to 30% of deficit
+            batteryCharge = batteryDischarge * 0.5;  // Charge what little PV produces
+
+            // Grid covers the rest
+            gridImport = deficit - batteryDischarge + batteryCharge;
+            gridExport = pvEnergy * 0.05 * (0.5 + dayRandom.NextDouble());  // Tiny export during peak PV hours
+        }
+
+        // Add small random variation
+        gridImport *= (0.95 + dayRandom.NextDouble() * 0.1);
+        gridExport *= (0.95 + dayRandom.NextDouble() * 0.1);
 
         return new DailyEnergyData
         {
             Date = date,
-            PvEnergyKWh = Math.Round(pvEnergy, 3),
-            LoadEnergyKWh = Math.Round(loadEnergy, 3),
-            GridImportEnergyKWh = Math.Round(gridImport, 3),
-            GridExportEnergyKWh = Math.Round(gridExport, 3),
-            BatteryChargeEnergyKWh = Math.Round(batteryCharge, 3),
-            BatteryDischargeEnergyKWh = Math.Round(batteryDischarge, 3),
+            PvEnergyKWh = Math.Round(pvEnergy, 2),
+            LoadEnergyKWh = Math.Round(loadEnergy, 2),
+            GridImportEnergyKWh = Math.Round(Math.Max(0, gridImport), 2),
+            GridExportEnergyKWh = Math.Round(Math.Max(0, gridExport), 2),
+            BatteryChargeEnergyKWh = Math.Round(batteryCharge, 2),
+            BatteryDischargeEnergyKWh = Math.Round(batteryDischarge, 2),
             GeneratorEnergyKWh = 0
         };
     }
@@ -381,18 +375,6 @@ public class DemoSimulationDataService : IDemoSimulationDataService
 }
 
 #region Data Transfer Objects
-
-public record DailyEnergyData
-{
-    public DateTime Date { get; init; }
-    public double PvEnergyKWh { get; init; }
-    public double LoadEnergyKWh { get; init; }
-    public double GridImportEnergyKWh { get; init; }
-    public double GridExportEnergyKWh { get; init; }
-    public double BatteryChargeEnergyKWh { get; init; }
-    public double BatteryDischargeEnergyKWh { get; init; }
-    public double GeneratorEnergyKWh { get; init; }
-}
 
 public record EnergyPriceData
 {
