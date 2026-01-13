@@ -1090,6 +1090,31 @@
         }
       }
     },
+    "/api/DeviceData/energy": {
+      "post": {
+        "tags": [
+          "DeviceData"
+        ],
+        "operationId": "ReceiveSimulatorEnergyData",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulatorEnergyDataDto"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/DeviceData": {
       "get": {
         "tags": [
@@ -5911,6 +5936,97 @@
           "timestamp": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "SimulatorEnergyDataDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "dataType": {
+            "type": "string"
+          },
+          "deviceId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "deviceLocalTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "nullable": true
+          },
+          "pvEnergyKWhToday": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "gridImportEnergyKWhToday": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "gridExportEnergyKWhToday": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "generatorEnergyKWhToday": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "batteryDischargeEnergyKWhToday": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "batteryChargeEnergyKWhToday": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "loadEnergyKWhToday": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "pvEnergyKWhTotal": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "gridImportEnergyKWhTotal": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "gridExportEnergyKWhTotal": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "generatorEnergyKWhTotal": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "batteryDischargeEnergyKWhTotal": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "batteryChargeEnergyKWhTotal": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "loadEnergyKWhTotal": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
           }
         }
       },
