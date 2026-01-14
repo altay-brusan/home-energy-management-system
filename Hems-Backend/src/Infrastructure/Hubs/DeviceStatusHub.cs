@@ -12,6 +12,10 @@ namespace Hems_Backend.Infrastructure.Hubs;
 /// SignalR hub for pushing device heartbeat status changes to frontend.
 /// Frontend uses local deviceId, backend translates to/from ThingsBoardDeviceId.
 /// Includes authorization, access validation, and connection tracking.
+///
+/// NOTE: This hub is in Infrastructure (not Web) because Infrastructure services
+/// (DeviceHeartbeatMonitorService, DeviceActivityService) need to use IHubContext&lt;DeviceStatusHub&gt;
+/// to send SignalR notifications. Moving it to Web would create a circular dependency.
 /// </summary>
 [Authorize]
 public class DeviceStatusHub : Hub
@@ -238,6 +242,13 @@ public class DeviceStatusHub : Hub
     private async Task ValidateDeviceAccessAsync(Guid deviceId)
     {
         var userId = GetUserIdFromContext();
+
+        // Check if user is Admin - Admins can access all devices
+        if (Context.User?.IsInRole("Administrator") == true)
+        {
+            _logger.LogDebug("DeviceStatusHub - Admin user {UserId} granted access to device {DeviceId}", userId, deviceId);
+            return;
+        }
 
         // Find which site the device belongs to
         var deviceSite = await _context.SetupDevices

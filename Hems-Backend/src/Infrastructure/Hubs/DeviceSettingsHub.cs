@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Hems_Backend.Web.Hubs;
+namespace Hems_Backend.Infrastructure.Hubs;
 
 /// <summary>
 /// SignalR hub for real-time device settings update notifications
@@ -86,6 +86,12 @@ public class DeviceSettingsHub : Hub<IDeviceSettingsHubClient>
     private async Task ValidateDeviceAccessAsync(Guid deviceId)
     {
         var userId = GetUserIdFromContext();
+
+        // Check if user is Admin - Admins can access all devices
+        if (Context.User?.IsInRole("Administrator") == true)
+        {
+            return;
+        }
 
         var deviceSite = await _context.SetupDevices
             .Where(sd => sd.DeviceId == deviceId)
