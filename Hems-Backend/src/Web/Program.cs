@@ -3,6 +3,7 @@ using Hangfire.Dashboard;
 using Hems_Backend.Infrastructure.Data;
 using Hems_Backend.Infrastructure.Identity;
 using Hems_Backend.Web.Hubs;
+using Hems_Backend.Web.Infrastructure;
 using Serilog;
 
 // Npgsql DateTime handling - PostgreSQL UTC support için
@@ -78,6 +79,14 @@ app.UseStaticFiles();
 
 // Use custom exception handler instead of developer exception page
 app.UseExceptionHandler(options => { });
+
+// Extract access_token from query string for SignalR WebSocket connections
+// MUST be before UseAuthentication to inject token into Authorization header
+app.UseMiddleware<SignalRQueryStringAuthMiddleware>();
+
+// Authentication and Authorization
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Add rate limiting for device data endpoints
 app.UseMiddleware<DeviceDataRateLimitMiddleware>();
