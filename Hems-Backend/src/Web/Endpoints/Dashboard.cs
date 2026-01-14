@@ -1,5 +1,4 @@
 using Hems_Backend.Application.Common.Models;
-using Hems_Backend.Application.Dashboard.Queries.GetBatteryComponent;
 //using Hems_Backend.Application.Dashboard.Queries.GetChargeDischarge;
 //using Hems_Backend.Application.Dashboard.Queries.GetEnergyConsumption;
 //using Hems_Backend.Application.Dashboard.Queries.GetEnergyData;
@@ -8,7 +7,6 @@ using Hems_Backend.Application.Dashboard.Queries.GetEnergyRevenue;
 using Hems_Backend.Application.Dashboard.Queries.GetGridPerformance;
 using Hems_Backend.Application.Dashboard.Queries.GetGridPerformanceSummary;
 //using Hems_Backend.Application.Dashboard.Queries.GetHero;
-using Hems_Backend.Application.Dashboard.Queries.GetInverterComponent;
 using Hems_Backend.Application.Dashboard.Queries.GetLifetimeEnergy;
 using Hems_Backend.Application.Dashboard.Queries.GetPowerMetrics;
 using Hems_Backend.Application.Dashboard.Queries.GetSoc;
@@ -39,9 +37,6 @@ public class Dashboard : EndpointGroupBase
             .MapGet(PowerAndEnergyMetrics, "PowerAndEnergyMetrics")
             .MapGet(GetDeviceWithData, "device/GetWithData")
             .MapGet(GetComponentLiveData, "device/component/getComponentLiveData");
-            //.MapGet(Battery, "graphs/Battery")
-            //.MapGet(BatteryComponent, "graphs/Components/Battery")
-            //.MapGet(InverterComponent, "graphs/Components/Inverter");
     }
 
     [Authorize]
@@ -137,19 +132,6 @@ public class Dashboard : EndpointGroupBase
     }
 
    
-    [Authorize]
-    public async Task<InverterComponentDto> InverterComponent(
-        ISender sender,
-        [FromQuery] Guid deviceId)
-    {
-        var query = new GetInverterComponentQuery
-        {
-            DeviceId = deviceId
-        };
-
-        return await sender.Send(query);
-    }
-
     [Authorize]
     public async Task<GridPerformanceSummaryDto> GridPerformanceSummary(
         ISender sender,
