@@ -4,7 +4,7 @@
 This document describes the implementation of the demo user feature for Google Play Store and iOS App Store assessment.
 
 **Demo User Credentials:**
-- Email: `demo@oklidis.com.tr`
+- Email: `demo@netzr.com`
 - Password: `demo@oklidis`
 
 **Demo Device:**
@@ -145,7 +145,7 @@ The `[Authorize(Policies.DeviceOnly)]` attribute validates:
 │           │                                                                  │
 │           ├──▶ Create MobilUser role                                         │
 │           │                                                                  │
-│           ├──▶ Create Demo User (demo@oklidis.com.tr)                        │
+│           ├──▶ Create Demo User (demo@netzr.com)                        │
 │           │                                                                  │
 │           ├──▶ SeedDemoDeviceAsync() ◀── NEW: Demo device seeded at startup │
 │           │         │                                                        │
@@ -268,7 +268,7 @@ Demo device is now created during application startup in `ApplicationDbContextIn
 ## Demo User Login Flow
 
 ```
-1. User logs in with demo@oklidis.com.tr / demo@oklidis
+1. User logs in with demo@netzr.com / demo@oklidis
            │
            ▼
 2. Backend detects IsDemo = true
@@ -304,7 +304,7 @@ Demo device is now created during application startup in `ApplicationDbContextIn
 │                          COMPLETE DEMO SYSTEM FLOW                           │
 │                                                                              │
 │  BACKEND STARTUP:                                                            │
-│  ├── Create demo user (demo@oklidis.com.tr)                                 │
+│  ├── Create demo user (demo@netzr.com)                                 │
 │  ├── Create demo device (DEMO-HEMS-001)                                     │
 │  └── Ready for connections                                                   │
 │                                                                              │
@@ -320,7 +320,7 @@ Demo device is now created during application startup in `ApplicationDbContextIn
 │  └── Send telemetry data continuously                                        │
 │                                                                              │
 │  MOBILE APP:                                                                 │
-│  ├── POST /api/login (demo@oklidis.com.tr / demo@oklidis)                   │
+│  ├── POST /api/login (demo@netzr.com / demo@oklidis)                   │
 │  ├── Receive User Token                                                      │
 │  ├── Data reset + seed (if needed)                                          │
 │  ├── GET /api/Sites - See Demo Home                                         │
@@ -345,7 +345,7 @@ Device sharing should work normally for demo devices:
 
 ## Testing Checklist
 
-- [ ] Demo user can login with demo@oklidis.com.tr / demo@oklidis
+- [ ] Demo user can login with demo@netzr.com / demo@oklidis
 - [ ] Demo data is reset on each login
 - [ ] Demo site/setup/device is created automatically
 - [ ] Dashboard shows simulated power flow data
@@ -411,7 +411,7 @@ appsettings.json                  - Added demo mode configuration
    ```
 
 5. **Test demo login:**
-   - Email: `demo@oklidis.com.tr`
+   - Email: `demo@netzr.com`
    - Password: `demo@oklidis`
 
 ---
