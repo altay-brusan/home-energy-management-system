@@ -34,13 +34,13 @@ public class DeviceNotifications : EndpointGroupBase
         app.MapGroup(this)
             .RequireAuthorization()
             .MapGet(GetDeviceNotifications)
-            .MapGet(GetDeviceNotificationTypes, "types")
-            .MapGet(GetDeletedDeviceNotifications, "deleted")
-            .MapPut(MarkDeviceNotificationAsRead, "{id}/mark-read")
-            .MapPut(MarkAllSiteNotificationsAsRead, "mark-all-read/{siteId}")
+            .MapGet(GetDeviceNotificationTypes, "Types")
+            .MapGet(GetDeletedDeviceNotifications, "Deleted")
+            .MapPut(MarkDeviceNotificationAsRead, "{id}/MarkRead")
+            .MapPut(MarkAllSiteNotificationsAsRead, "MarkAllRead/{siteId}")
             .MapDelete(DeleteDeviceNotification, "{id}")
-            .MapPut(RestoreDeviceNotification, "{id}/restore")
-            .MapDelete(PermanentDeleteDeviceNotification, "{id}/permanent");
+            .MapPut(RestoreDeviceNotification, "{id}/Restore")
+            .MapDelete(PermanentDeleteDeviceNotification, "{id}/Permanent");
     }
 
     [Authorize(Policies.DeviceOnly)]

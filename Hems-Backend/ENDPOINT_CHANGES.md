@@ -66,6 +66,42 @@ DEVICE_COMPONENTS: {
 }
 ```
 
+### DeviceNotifications (CamelCase standardization)
+
+The following endpoints have been updated to use CamelCase naming convention:
+
+| Old Path | New Path | Method |
+|----------|----------|--------|
+| `/DeviceNotifications/types` | `/DeviceNotifications/Types` | GET |
+| `/DeviceNotifications/deleted` | `/DeviceNotifications/Deleted` | GET |
+| `/DeviceNotifications/{id}/mark-read` | `/DeviceNotifications/{id}/MarkRead` | PUT |
+| `/DeviceNotifications/mark-all-read/{siteId}` | `/DeviceNotifications/MarkAllRead/{siteId}` | PUT |
+| `/DeviceNotifications/{id}/restore` | `/DeviceNotifications/{id}/Restore` | PUT |
+| `/DeviceNotifications/{id}/permanent` | `/DeviceNotifications/{id}/Permanent` | DELETE |
+
+**Note:** `GET /DeviceNotifications/Types` is not currently used by the frontend but kept for potential admin use.
+
+**Frontend Changes Required:**
+```typescript
+// config.ts
+DEVICE_NOTIFICATIONS: {
+  // OLD
+  GET_DELETED: '/DeviceNotifications/deleted',
+  GET_TYPES: '/DeviceNotifications/types',
+  MARK_READ: '/DeviceNotifications/:id/mark-read',
+  MARK_ALL_READ: '/DeviceNotifications/mark-all-read/:siteId',
+  RESTORE: '/DeviceNotifications/:id/restore',
+  PERMANENT_DELETE: '/DeviceNotifications/:id/permanent',
+  // NEW
+  GET_DELETED: '/DeviceNotifications/Deleted',
+  GET_TYPES: '/DeviceNotifications/Types',
+  MARK_READ: '/DeviceNotifications/:id/MarkRead',
+  MARK_ALL_READ: '/DeviceNotifications/MarkAllRead/:siteId',
+  RESTORE: '/DeviceNotifications/:id/Restore',
+  PERMANENT_DELETE: '/DeviceNotifications/:id/Permanent',
+}
+```
+
 ---
 
 ## 2. Deleted Endpoints
