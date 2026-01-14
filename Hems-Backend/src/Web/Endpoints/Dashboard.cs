@@ -12,7 +12,6 @@ using Hems_Backend.Application.Dashboard.Queries.GetPowerMetrics;
 using Hems_Backend.Application.Dashboard.Queries.GetSoc;
 using Hems_Backend.Application.Dashboard.Queries.GetSoh;
 using Hems_Backend.Application.Dashboard.Queries.GetTodayEnergySummary;
-using Hems_Backend.Application.Devices.Queries.GetComponentLiveData;
 using Hems_Backend.Application.Devices.Queries.GetDeviceComponentsStatus;
 using Hems_Backend.Web.Infrastructure;
 using MediatR;
@@ -35,10 +34,7 @@ public class Dashboard : EndpointGroupBase
             .MapGet(EnergyRevenue, "EnergyRevenue")
             .MapGet(LifetimeEnergy, "LifetimeEnergy")
             .MapGet(PowerAndEnergyMetrics, "PowerAndEnergyMetrics")
-            .MapGet(GetDeviceComponentsStatus, "DeviceComponentsStatus")
-            #pragma warning disable CS0618 // Suppress obsolete warning for endpoint mapping
-            .MapGet(GetComponentLiveData, "GetComponentLiveData");
-            #pragma warning restore CS0618
+            .MapGet(GetDeviceComponentsStatus, "DeviceComponentsStatus");
     }
 
     [Authorize]
@@ -90,22 +86,6 @@ public class Dashboard : EndpointGroupBase
         var query = new GetDeviceComponentsStatusQuery
         {
             DeviceId = deviceId
-        };
-
-        return await sender.Send(query);
-    }
-
-    [Authorize]
-    [Obsolete("This endpoint is not in use and scheduled for deletion. Only returns simulated data via DeviceSimulator.")]
-    public async Task<GetComponentLiveDataResponse> GetComponentLiveData(
-        ISender sender,
-        [FromQuery] Guid deviceId,
-        [FromQuery] Guid componentId)
-    {
-        var query = new GetComponentLiveDataQuery
-        {
-            DeviceId = deviceId,
-            ComponentId = componentId
         };
 
         return await sender.Send(query);
