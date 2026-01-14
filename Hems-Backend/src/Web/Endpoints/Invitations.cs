@@ -15,6 +15,7 @@ public class Invitations : EndpointGroupBase
 {
     public override void Map(WebApplication app)
     {
+        #pragma warning disable CS0618 // Suppress obsolete warnings for endpoint mapping
         app.MapGroup(this)
             .RequireAuthorization()
             // Davetiye gönderme
@@ -25,14 +26,15 @@ public class Invitations : EndpointGroupBase
             .MapPost(AcceptInvitation, "accept")
             // Davetiye reddetme
             .MapPost(DeclineInvitation, "decline")
-            // Kullanıcının evlerini listeleme (sahibi olduğu + paylaşılan)
+            // OBSOLETE: Kullanıcının evlerini listeleme (sahibi olduğu + paylaşılan)
             .MapGet(GetUserHomeSites, "user-home-sites")
-            // Kullanıcının bildirimlerini getirme
+            // OBSOLETE: Kullanıcının bildirimlerini getirme
             .MapGet(GetUserNotifications, "notifications")
-            // Bildirimi okundu olarak işaretleme
+            // OBSOLETE: Bildirimi okundu olarak işaretleme
             .MapPut(MarkNotificationAsRead, "notifications/{notificationId}/mark-read")
             // Paylaşılan siteden kullanıcı kaldırma
             .MapDelete(RemoveUserFromSite, "remove-user/{invitationId}");
+        #pragma warning restore CS0618
     }
 
     /// <summary>
@@ -83,8 +85,10 @@ public class Invitations : EndpointGroupBase
 
     /// <summary>
     /// AŞAMA 4: Kullanıcının Evlerini Listeleme
+    /// OBSOLETE: This endpoint is not in use by any client application.
     /// </summary>
     [Authorize]
+    [Obsolete("This endpoint is not in use and scheduled for deletion. Use Sites/mobile/get-sites instead.")]
     public async Task<UserHomeSitesVm> GetUserHomeSites(
         ISender sender)
     {
@@ -93,8 +97,10 @@ public class Invitations : EndpointGroupBase
 
     /// <summary>
     /// Kullanıcının Bildirimlerini Getirme
+    /// OBSOLETE: This endpoint is not in use by any client application.
     /// </summary>
     [Authorize]
+    [Obsolete("This endpoint is not in use and scheduled for deletion.")]
     public async Task<List<NotificationDto>> GetUserNotifications(
         ISender sender)
     {
@@ -103,8 +109,10 @@ public class Invitations : EndpointGroupBase
 
     /// <summary>
     /// Bildirimi Okundu Olarak İşaretleme
+    /// OBSOLETE: This endpoint is not in use by any client application.
     /// </summary>
     [Authorize]
+    [Obsolete("This endpoint is not in use and scheduled for deletion.")]
     public async Task<IResult> MarkNotificationAsRead(
         ISender sender,
         Guid notificationId)

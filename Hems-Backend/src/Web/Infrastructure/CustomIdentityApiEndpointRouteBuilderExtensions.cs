@@ -356,7 +356,10 @@ public static class IdentityApiEndpointRouteBuilderExtensions
 
         var accountGroup = routeGroup.MapGroup("/manage").RequireAuthorization();
 
-        accountGroup.MapPost("/2fa", async Task<Results<Ok<TwoFactorResponse>, ValidationProblem, NotFound>>
+        // OBSOLETE: This endpoint is not in use by any client application and scheduled for deletion.
+        // Two-factor authentication management endpoint - currently unused
+        #pragma warning disable CS0618 // Type or member is obsolete
+        accountGroup.MapPost("/2fa", [Obsolete("This endpoint is not in use and scheduled for deletion.")] async Task<Results<Ok<TwoFactorResponse>, ValidationProblem, NotFound>>
             (ClaimsPrincipal claimsPrincipal, [FromBody] TwoFactorRequest tfaRequest, [FromServices] IServiceProvider sp) =>
         {
             var signInManager = sp.GetRequiredService<SignInManager<TUser>>();
@@ -431,6 +434,7 @@ public static class IdentityApiEndpointRouteBuilderExtensions
                 IsMachineRemembered = await signInManager.IsTwoFactorClientRememberedAsync(user),
             });
         });
+        #pragma warning restore CS0618 // Type or member is obsolete
 
         accountGroup.MapGet("/info", async Task<Results<Ok<InfoResponse>, ValidationProblem, NotFound>>
             (ClaimsPrincipal claimsPrincipal, [FromServices] IServiceProvider sp) =>
