@@ -49,6 +49,31 @@ async getDeviceComponentsStatus(deviceId: string)
 - Delete `useDeviceLiveData.ts` hook file
 - Remove `GetComponentLiveDataResponse` interface from types
 
+### Auth/user-status (REMOVED)
+
+| Property | Value |
+|----------|-------|
+| **Old Path** | `/Auth/user-status` |
+| **Method** | GET |
+| **Status** | **DELETED** |
+| **Reason** | Function defined but never called in frontend. |
+
+### Auth/mobile/get-user-status (REMOVED)
+
+| Property | Value |
+|----------|-------|
+| **Old Path** | `/Auth/mobile/get-user-status` |
+| **Method** | GET |
+| **Status** | **DELETED** |
+| **Reason** | Function defined but never called in frontend. |
+
+**Frontend Changes Required:**
+- Remove `USER_STATUS` from `config.ts`
+- Remove `USER_STATUS_MOBILE` from `config.ts`
+- Remove `getUserStatus()` function from `authService.ts`
+- Remove `getUserStatusMobile()` function from `authService.ts`
+- Remove `UserStatusDto`, `UserStatusType`, `UserStatusDataDto` interfaces from `auth.types.ts`
+
 ---
 
 ## 3. Obsolete Endpoints (Marked for Future Deletion)
@@ -73,7 +98,7 @@ The following endpoints have been marked with `[Obsolete]` attribute and are sch
 | GET_NOTIFICATIONS | `/Invitations/notifications` | Obsolete |
 | MARK_NOTIFICATION_READ | `/Invitations/notifications/{notificationId}/mark-read` | Obsolete |
 
-### Auth (Partial)
+### Identity (Partial)
 
 | Endpoint | Path | Status |
 |----------|------|--------|
@@ -102,18 +127,29 @@ The following endpoints exist in the backend but are **NOT used** by the fronten
    - Rename `GET_DEVICE_WITH_DATA` to `GET_DEVICE_COMPONENTS_STATUS`
    - Update path to `/Dashboard/DeviceComponentsStatus`
    - Remove `GET_COMPONENT_LIVE_DATA`
+   - Remove `USER_STATUS`
+   - Remove `USER_STATUS_MOBILE`
 
 2. **`src/api/services/mobileDashboardService.ts`**
    - Rename `getDeviceWithData()` to `getDeviceComponentsStatus()`
    - Remove `getComponentLiveData()` function
    - Remove `GetComponentLiveDataResponse` interface
 
-3. **`src/app/screens/deviceDetail/DeviceDetail.tsx`**
+3. **`src/api/services/authService.ts`**
+   - Remove `getUserStatus()` function
+   - Remove `getUserStatusMobile()` function
+
+4. **`src/app/screens/deviceDetail/DeviceDetail.tsx`**
    - Update call from `getDeviceWithData()` to `getDeviceComponentsStatus()`
    - Remove import of `useDeviceLiveData`
 
-4. **`src/api/types/mobileDashboard.types.ts`**
+5. **`src/api/types/mobileDashboard.types.ts`**
    - Remove `GetComponentLiveDataResponse` interface
+
+6. **`src/api/types/auth.types.ts`**
+   - Remove `UserStatusType` enum
+   - Remove `UserStatusDataDto` interface
+   - Remove `UserStatusDto` interface
 
 ### Files to Delete:
 
