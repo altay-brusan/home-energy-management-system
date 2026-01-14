@@ -2608,6 +2608,7 @@
             }
           }
         },
+        "deprecated": true,
         "security": [
           {
             "JWT": []
@@ -2636,6 +2637,7 @@
             }
           }
         },
+        "deprecated": true,
         "security": [
           {
             "JWT": []
@@ -2666,6 +2668,7 @@
             "description": ""
           }
         },
+        "deprecated": true,
         "security": [
           {
             "JWT": []
@@ -3347,6 +3350,7 @@
             }
           }
         },
+        "deprecated": true,
         "security": [
           {
             "JWT": []
@@ -3378,6 +3382,7 @@
             "description": ""
           }
         },
+        "deprecated": true,
         "security": [
           {
             "JWT": []
@@ -3410,6 +3415,7 @@
             "description": ""
           }
         },
+        "deprecated": true,
         "security": [
           {
             "JWT": []
@@ -3443,6 +3449,7 @@
             "description": ""
           }
         },
+        "deprecated": true,
         "security": [
           {
             "JWT": []
@@ -3479,6 +3486,7 @@
             }
           }
         },
+        "deprecated": true,
         "security": [
           {
             "JWT": []
@@ -4731,6 +4739,7 @@
             "description": ""
           }
         },
+        "deprecated": true,
         "security": [
           {
             "JWT": []
