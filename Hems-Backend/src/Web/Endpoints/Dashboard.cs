@@ -41,11 +41,7 @@ public class Dashboard : EndpointGroupBase
             .MapGet(PowerAndEnergyMetrics, "PowerAndEnergyMetrics")
             .MapGet(GetDeviceWithData, "device/GetWithData")
             .MapGet(GetComponentLiveData, "device/component/getComponentLiveData")
-            //.MapGet(EnergyFlow, "graphs/EnergyFlow")
-            //.MapGet(EnergyProduction, "graphs/EnergyProduction")
-            //.MapGet(EnergyConsumption, "graphs/EnergyConsumption")
             .MapGet(Battery, "graphs/Battery")
-            //.MapGet(ChargeDischarge, "graphs/ChargeDischarge")
             .MapGet(BatteryComponent, "graphs/Components/Battery")
             .MapGet(InverterComponent, "graphs/Components/Inverter");
     }
