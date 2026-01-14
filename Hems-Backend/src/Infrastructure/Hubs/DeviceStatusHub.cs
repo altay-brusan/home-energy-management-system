@@ -239,6 +239,13 @@ public class DeviceStatusHub : Hub
     {
         var userId = GetUserIdFromContext();
 
+        // Check if user is Admin - Admins can access all devices
+        if (Context.User?.IsInRole("Administrator") == true)
+        {
+            _logger.LogDebug("DeviceStatusHub - Admin user {UserId} granted access to device {DeviceId}", userId, deviceId);
+            return;
+        }
+
         // Find which site the device belongs to
         var deviceSite = await _context.SetupDevices
             .Where(sd => sd.DeviceId == deviceId)
