@@ -30,6 +30,42 @@ async getDeviceWithData(deviceId: string)
 async getDeviceComponentsStatus(deviceId: string)
 ```
 
+### DeviceComponents Admin Endpoints (moved to Tool/ prefix)
+
+The following admin-only endpoints have been moved under a `Tool/` prefix to clearly indicate they are administrative utilities for managing data without direct database access:
+
+| Old Path | New Path | Method |
+|----------|----------|--------|
+| `/DeviceComponents/Device/{deviceId}` | `/DeviceComponents/Tool/Device/{deviceId}` | GET |
+| `/DeviceComponents/{id}` | `/DeviceComponents/Tool/{id}` | GET |
+| `/DeviceComponents` | `/DeviceComponents/Tool` | POST |
+| `/DeviceComponents/{id}` | `/DeviceComponents/Tool/{id}` | PUT |
+| `/DeviceComponents/{id}` | `/DeviceComponents/Tool/{id}` | DELETE |
+
+**Note:** These endpoints are AdminOnly and not used by the mobile app. They exist for administrative data management.
+
+**Frontend Changes Required:**
+```typescript
+// config.ts - Update paths if admin panel uses these
+DEVICE_COMPONENTS: {
+  // OLD
+  GET_BY_DEVICE: '/DeviceComponents/device/:deviceId',
+  GET_BY_ID: '/DeviceComponents/:id',
+  CREATE: '/DeviceComponents',
+  UPDATE: '/DeviceComponents/:id',
+  DELETE: '/DeviceComponents/:id',
+  // NEW
+  GET_BY_DEVICE: '/DeviceComponents/Tool/Device/:deviceId',
+  GET_BY_ID: '/DeviceComponents/Tool/:id',
+  CREATE: '/DeviceComponents/Tool',
+  UPDATE: '/DeviceComponents/Tool/:id',
+  DELETE: '/DeviceComponents/Tool/:id',
+  // User-facing endpoints (unchanged)
+  GET_DEVICE_SUMMARY: '/DeviceComponents/DeviceSummary',
+  GET_COMPONENT_DETAILS: '/DeviceComponents/Details/:componentId',
+}
+```
+
 ---
 
 ## 2. Deleted Endpoints
