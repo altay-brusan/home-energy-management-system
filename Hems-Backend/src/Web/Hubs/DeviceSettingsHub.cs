@@ -87,6 +87,12 @@ public class DeviceSettingsHub : Hub<IDeviceSettingsHubClient>
     {
         var userId = GetUserIdFromContext();
 
+        // Check if user is Admin - Admins can access all devices
+        if (Context.User?.IsInRole("Administrator") == true)
+        {
+            return;
+        }
+
         var deviceSite = await _context.SetupDevices
             .Where(sd => sd.DeviceId == deviceId)
             .Select(sd => new { sd.Setup.SiteId, sd.Setup.Site.UserId })
