@@ -374,13 +374,48 @@ The API uses a comprehensive mapping system to route parameter updates to the co
 
 ## Error Handling
 
+### Error Categories
+
+The API now provides detailed error categorization for better debugging:
+
+| Category | Description | Retryable |
+|----------|-------------|-----------|
+| `Timeout` | Device didn't respond within the timeout period | Yes |
+| `DeviceBusy` | Device is processing another request | Yes |
+| `DeviceOffline` | Device is unreachable or disconnected | No |
+| `NetworkError` | Network connectivity issue | Yes |
+| `ValidationError` | Invalid parameter value | No |
+| `DeviceRejected` | Device rejected the command | No |
+| `MappingNotFound` | No RPC mapping exists for the parameter | No |
+| `ParameterSkipped` | Parameter is temporarily disabled | N/A |
+
+### Automatic Retry Behavior
+
+The system automatically retries failed requests for transient errors (Timeout, DeviceBusy, NetworkError):
+
+- **Default behavior**: 3 retry attempts with exponential backoff (500ms -> 1000ms -> 2000ms)
+- **Jitter**: Random variation added to delays to prevent thundering herd
+- **Non-retryable errors**: ValidationError, DeviceRejected, DeviceOffline fail immediately
+
+### Atomic Batch Updates with Rollback
+
+For batch updates, if any parameter fails:
+1. All subsequent parameters are skipped
+2. All previously successful updates are automatically rolled back
+3. The entire operation is reported as failed
+
+This ensures all-or-nothing semantics - you won't end up with partial updates.
+
 ### Common Error Responses
 
 #### Device Offline
 ```json
 {
   "success": false,
-  "message": "Failed to update device: RPC call failed"
+  "errorCategory": "DeviceOffline",
+  "message": "Device did not respond to setSystemWorkModeConfig - device may be offline or unreachable",
+  "retryAttempts": 3,
+  "totalDurationMs": 8500
 }
 ```
 
@@ -402,11 +437,25 @@ The API uses a comprehensive mapping system to route parameter updates to the co
 }
 ```
 
-#### Device Timeout
+#### Device Timeout (After Retries)
 ```json
 {
   "success": false,
-  "message": "Failed to communicate with device. Device may be offline or timed out."
+  "errorCategory": "Timeout",
+  "message": "setSystemWorkModeConfig failed: Device timeout",
+  "retryAttempts": 3,
+  "totalDurationMs": 12500
+}
+```
+
+#### Device Busy
+```json
+{
+  "success": false,
+  "errorCategory": "DeviceBusy",
+  "message": "setSystemWorkModeConfig failed: Device is busy processing another request",
+  "retryAttempts": 2,
+  "totalDurationMs": 3200
 }
 ```
 

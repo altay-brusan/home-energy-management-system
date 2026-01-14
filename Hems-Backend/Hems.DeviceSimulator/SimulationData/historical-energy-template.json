@@ -1,0 +1,85 @@
+{
+  "description": "Template for generating historical daily energy data. Values represent typical kWh for each day type.",
+  "version": "1.0",
+  "systemCapacity": {
+    "pvSystemKw": 5.0,
+    "batteryCapacityKwh": 10.0,
+    "inverterKw": 5.0
+  },
+  "dayTypes": {
+    "sunny": {
+      "description": "Clear sunny day - high PV production",
+      "probability": 0.30,
+      "pvEnergyKWh": { "min": 28, "max": 35 },
+      "loadEnergyKWh": { "min": 14, "max": 22 },
+      "gridImportEnergyKWh": { "min": 0, "max": 3 },
+      "gridExportEnergyKWh": { "min": 10, "max": 18 },
+      "batteryChargeEnergyKWh": { "min": 6, "max": 10 },
+      "batteryDischargeEnergyKWh": { "min": 4, "max": 8 }
+    },
+    "partlyCloudy": {
+      "description": "Partly cloudy - moderate PV production",
+      "probability": 0.35,
+      "pvEnergyKWh": { "min": 15, "max": 25 },
+      "loadEnergyKWh": { "min": 14, "max": 22 },
+      "gridImportEnergyKWh": { "min": 2, "max": 8 },
+      "gridExportEnergyKWh": { "min": 3, "max": 12 },
+      "batteryChargeEnergyKWh": { "min": 4, "max": 8 },
+      "batteryDischargeEnergyKWh": { "min": 3, "max": 7 }
+    },
+    "cloudy": {
+      "description": "Overcast/cloudy - low PV production",
+      "probability": 0.25,
+      "pvEnergyKWh": { "min": 5, "max": 12 },
+      "loadEnergyKWh": { "min": 14, "max": 22 },
+      "gridImportEnergyKWh": { "min": 6, "max": 14 },
+      "gridExportEnergyKWh": { "min": 0, "max": 3 },
+      "batteryChargeEnergyKWh": { "min": 2, "max": 5 },
+      "batteryDischargeEnergyKWh": { "min": 4, "max": 8 }
+    },
+    "rainy": {
+      "description": "Rainy day - minimal PV production",
+      "probability": 0.10,
+      "pvEnergyKWh": { "min": 1, "max": 5 },
+      "loadEnergyKWh": { "min": 16, "max": 24 },
+      "gridImportEnergyKWh": { "min": 12, "max": 20 },
+      "gridExportEnergyKWh": { "min": 0, "max": 1 },
+      "batteryChargeEnergyKWh": { "min": 0, "max": 2 },
+      "batteryDischargeEnergyKWh": { "min": 5, "max": 10 }
+    }
+  },
+  "seasonalMultipliers": {
+    "january": { "pv": 0.25, "load": 1.30 },
+    "february": { "pv": 0.35, "load": 1.25 },
+    "march": { "pv": 0.55, "load": 1.10 },
+    "april": { "pv": 0.80, "load": 0.95 },
+    "may": { "pv": 1.00, "load": 0.85 },
+    "june": { "pv": 1.15, "load": 0.80 },
+    "july": { "pv": 1.10, "load": 0.82 },
+    "august": { "pv": 1.00, "load": 0.85 },
+    "september": { "pv": 0.75, "load": 0.95 },
+    "october": { "pv": 0.50, "load": 1.10 },
+    "november": { "pv": 0.30, "load": 1.25 },
+    "december": { "pv": 0.20, "load": 1.35 }
+  },
+  "weekdayMultipliers": {
+    "monday": { "load": 1.0 },
+    "tuesday": { "load": 0.95 },
+    "wednesday": { "load": 0.95 },
+    "thursday": { "load": 1.0 },
+    "friday": { "load": 1.05 },
+    "saturday": { "load": 1.15 },
+    "sunday": { "load": 1.20 }
+  },
+  "lifetimeTotals": {
+    "description": "Simulated lifetime totals for the demo device (installed 18 months ago)",
+    "pvEnergyKWh": 12450.5,
+    "loadEnergyKWh": 9820.3,
+    "gridImportEnergyKWh": 2150.8,
+    "gridExportEnergyKWh": 4780.2,
+    "batteryChargeEnergyKWh": 3250.6,
+    "batteryDischargeEnergyKWh": 2980.4,
+    "totalSavingsEur": 1845.20,
+    "co2OffsetKg": 5820.5
+  }
+}

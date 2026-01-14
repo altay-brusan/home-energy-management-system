@@ -7,11 +7,13 @@ using Hems_Backend.Application.DeviceData.Commands.CreateDeviceData;
 using Hems_Backend.Application.DeviceData.Commands.CreateDeviceEnergyData;
 using Hems_Backend.Application.DeviceData.Commands.CreateDevicePowerData;
 using Hems_Backend.Application.DeviceData.Queries.GetDeviceData;
+using Hems_Backend.Application.DeviceData.Queries.GetDeviceEnergyData;
 using Hems_Backend.Application.Devices.Queries.GetDeviceHeartbeatStatus;
 using Hems_Backend.Application.DeviceNotifications.Commands.ProcessDeviceAlarm;
 using Hems_Backend.Application.DeviceNotifications.Common.Models;
 using Hems_Backend.Domain.Constants;
 using Hems_Backend.Infrastructure.Hubs;
+using Hems_Backend.Infrastructure.Services;
 using Hems_Backend.Web.Infrastructure;
 using Hems_Backend.Web.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -40,7 +42,10 @@ public class DeviceData : EndpointGroupBase
             //.RequireAuthorization()
             .MapGet(GetDeviceData)
             .MapGet(GetLivePowerFlow, "PowerFlow/live/{deviceId:guid}")
-            .MapGet(GetDeviceHeartbeatStatus, "Status/{deviceId:guid}");
+            .MapGet(GetDeviceHeartbeatStatus, "Status/{deviceId:guid}")
+            .MapGet(GetLiveDailyEnergyFlow, "DailyEnergyFlow/live/{deviceId:guid}")
+            .MapGet(GetLiveTotalEnergyFlow, "TotalEnergyFlow/live/{deviceId:guid}")
+            .MapGet(GetDemoDeviceDiagnostics, "Demo/Diagnostics");
     }
 
     /// <summary>
@@ -49,47 +54,25 @@ public class DeviceData : EndpointGroupBase
     /// </summary>
     public async Task<IResult> ReceiveHeartbeat(
         HeartbeatDto request,
-        IDeviceHeartbeatCache heartbeatCache,
-        IHubContext<DeviceStatusHub> hubContext,
-        IDeviceMappingService deviceMapping,
+        IDeviceActivityService activityService,
         ILogger<DeviceData> logger)
     {
         try
         {
-            // Parse deviceId from request
-            if (!Guid.TryParse(request.DeviceId, out var deviceId))
+            // Use centralized activity service to record heartbeat
+            var result = await activityService.RecordActivityAsync(
+                request.DeviceId,
+                TelemetrySource.Heartbeat,
+                request.Timestamp);
+
+            if (!result.Success)
             {
-                logger.LogWarning("Invalid deviceId in heartbeat: {DeviceId}", request.DeviceId);
-                return Results.BadRequest("Invalid deviceId format");
+                logger.LogWarning("Failed to record heartbeat: {Error}", result.ErrorMessage);
+                return Results.BadRequest(result.ErrorMessage);
             }
 
-            // Record heartbeat with timestamp (handles NTP sync validation)
-            var statusChange = await heartbeatCache.RecordHeartbeatAsync(deviceId, request.Timestamp);
-            
-            // If status changed (e.g., recovery from DISCONNECTED), send immediate SignalR notification
-            if (statusChange != null)
-            {
-                // Convert TB deviceId to local deviceId for frontend
-                var localDeviceId = await deviceMapping.GetDeviceIdAsync(statusChange.ThingsBoardDeviceId);
-                
-                if (localDeviceId != null)
-                {
-                    await hubContext.Clients.Group($"device_{localDeviceId}")
-                        .SendAsync("DeviceStatusChanged", new
-                        {
-                            deviceId = localDeviceId, // Local ID for frontend
-                            status = statusChange.NewStatus.ToString(),
-                            missedHeartbeats = statusChange.MissedHeartbeats,
-                            timestamp = statusChange.Timestamp
-                        });
-                    
-                    logger.LogInformation("Immediate SignalR notification sent for device {DeviceId} recovery via Heartbeat: {Status}",
-                        localDeviceId, statusChange.NewStatus);
-                }
-            }
-
-            logger.LogDebug("Heartbeat received from device {DeviceId} at {Timestamp}", 
-                deviceId, request.Timestamp);
+            logger.LogDebug("Heartbeat received from device {DeviceId} at {Timestamp}",
+                result.ThingsBoardDeviceId, request.Timestamp);
 
             return Results.Ok();
         }
@@ -139,6 +122,228 @@ public class DeviceData : EndpointGroupBase
         return await sender.Send(query);
     }
 
+    /// <summary>
+    /// Diagnostics endpoint to check demo device configuration.
+    /// FOR TEST ONLY - DO NOT USE IN PRODUCTION
+    /// </summary>
+    public async Task<IResult> GetDemoDeviceDiagnostics(
+        IApplicationDbContext context,
+        IDemoDataService demoDataService,
+        ILogger<DeviceData> logger,
+        CancellationToken ct)
+    {
+        try
+        {
+            // Get well-known demo constants
+            var demoEmail = demoDataService.GetDemoUserEmail();
+            var demoSerial = demoDataService.GetDemoDeviceSerialNumber();
+            var demoThingsBoardId = DemoDataService.DemoThingsBoardDeviceId;
+
+            // Check demo device by serial number
+            var demoDevice = await context.Devices
+                .Where(d => d.SerialNumber == demoSerial)
+                .Select(d => new
+                {
+                    d.Id,
+                    d.Name,
+                    d.SerialNumber,
+                    d.ThingsBoardDeviceId,
+                    d.IsDemoDevice,
+                    d.IsDeleted
+                })
+                .FirstOrDefaultAsync(ct);
+
+            // Check setup-device relationship
+            var setupDevice = demoDevice != null
+                ? await context.SetupDevices
+                    .Where(sd => sd.DeviceId == demoDevice.Id)
+                    .Select(sd => new
+                    {
+                        sd.SetupId,
+                        SetupName = sd.Setup!.Name,
+                        SiteId = sd.Setup.SiteId,
+                        SiteName = sd.Setup.Site!.Name,
+                        SiteUserId = sd.Setup.Site.UserId
+                    })
+                    .FirstOrDefaultAsync(ct)
+                : null;
+
+            // Test IsDemoDeviceAsync method directly
+            bool? isDemoDeviceResult = null;
+            if (demoDevice != null)
+            {
+                isDemoDeviceResult = await demoDataService.IsDemoDeviceAsync(demoDevice.Id, ct);
+            }
+
+            var diagnostics = new
+            {
+                wellKnownConstants = new
+                {
+                    demoEmail,
+                    demoSerial,
+                    demoThingsBoardId
+                },
+                demoDevice = demoDevice != null
+                    ? new
+                    {
+                        deviceId = demoDevice.Id,
+                        name = demoDevice.Name,
+                        serialNumber = demoDevice.SerialNumber,
+                        thingsBoardDeviceId = demoDevice.ThingsBoardDeviceId,
+                        isDemoDeviceFlag = demoDevice.IsDemoDevice,
+                        isDeleted = demoDevice.IsDeleted,
+                        isDemoDeviceAsyncResult = isDemoDeviceResult,
+                        status = demoDevice.IsDemoDevice && !demoDevice.IsDeleted && isDemoDeviceResult == true
+                            ? "OK"
+                            : "WARNING: IsDemoDevice flag or IsDemoDeviceAsync check failed"
+                    }
+                    : (object)new { status = "NOT_FOUND - Demo device does not exist" },
+                setupRelationship = setupDevice != null
+                    ? new
+                    {
+                        setupId = setupDevice.SetupId,
+                        setupName = setupDevice.SetupName,
+                        siteId = setupDevice.SiteId,
+                        siteName = setupDevice.SiteName,
+                        siteUserId = setupDevice.SiteUserId,
+                        status = "OK"
+                    }
+                    : (object)new { status = "NOT_FOUND - Device not linked to any setup/site" },
+                frontendShouldUse = demoDevice != null
+                    ? $"Device ID (internal): {demoDevice.Id}"
+                    : "N/A - Demo device not found",
+                statusEndpointTest = demoDevice != null
+                    ? new
+                    {
+                        endpoint = $"/api/DeviceData/Status/{demoDevice.Id}",
+                        expectedStatus = isDemoDeviceResult == true ? "OK" : "Check IsDemoDeviceAsync",
+                        note = "Call this endpoint to verify status returns OK for demo device"
+                    }
+                    : (object)new { status = "N/A" }
+            };
+
+            logger.LogInformation("Demo diagnostics: Device={DeviceStatus}, Setup={SetupStatus}, IsDemoDeviceAsync={IsDemoResult}",
+                demoDevice != null ? "Found" : "Missing",
+                setupDevice != null ? "Found" : "Missing",
+                isDemoDeviceResult);
+
+            return Results.Ok(diagnostics);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error getting demo diagnostics");
+            return Results.Problem(
+                detail: ex.Message,
+                statusCode: StatusCodes.Status500InternalServerError);
+        }
+    }
+
+    /// <summary>
+    /// Gets daily energy data for a device
+    /// </summary>
+    /// <param name="deviceId">ThingsBoard Device ID</param>
+    /// <param name="date">Optional: Filter by specific date (yyyy-MM-dd)</param>
+    /// <param name="startDate">Optional: Start date for range filter</param>
+    /// <param name="endDate">Optional: End date for range filter</param>
+    /// <param name="pageNumber">Page number (default: 1)</param>
+    /// <param name="pageSize">Page size (default: 10)</param>
+    public async Task<PaginatedList<DeviceEnergyDataDto>> GetDailyEnergyFlow(
+        ISender sender,
+        Guid deviceId,
+        DateTime? date = null,
+        DateTime? startDate = null,
+        DateTime? endDate = null,
+        int pageNumber = 1,
+        int pageSize = 10)
+    {
+        var query = new GetDeviceEnergyDataQuery
+        {
+            DeviceId = deviceId,
+            DataType = DataTypes.DailyCumulativeEnergy,
+            Date = date,
+            StartDate = startDate,
+            EndDate = endDate,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+
+        return await sender.Send(query);
+    }
+
+    /// <summary>
+    /// Gets live daily energy data from device via RPC.
+    /// FOR TEST ONLY - DO NOT USE IN PRODUCTION
+    /// </summary>
+    public async Task<IResult> GetLiveDailyEnergyFlow(
+        Guid deviceId,
+        IEnergyDataCollectionService energyService,
+        IDeviceMappingService deviceMapping,
+        ILogger<DeviceData> logger,
+        CancellationToken ct)
+    {
+        logger.LogInformation("Live DailyEnergyFlow requested for DeviceId {DeviceId}", deviceId);
+
+        // Map internal deviceId to ThingsBoardDeviceId
+        var thingsBoardDeviceId = await deviceMapping.GetThingsBoardDeviceIdAsync(deviceId, ct);
+        if (thingsBoardDeviceId == null)
+        {
+            logger.LogWarning("Device mapping not found for DeviceId {DeviceId}", deviceId);
+            return Results.Problem(
+                detail: $"Device not found: {deviceId}",
+                statusCode: StatusCodes.Status404NotFound);
+        }
+
+        var result = await energyService.FetchDailyEnergyViaRpcAsync(thingsBoardDeviceId.Value, ct);
+
+        if (result == null)
+        {
+            logger.LogWarning("DailyEnergyFlow could not be retrieved for DeviceId {DeviceId} (TB: {ThingsBoardDeviceId})",
+                deviceId, thingsBoardDeviceId);
+            return Results.Problem(
+                detail: "DailyEnergyFlow could not be retrieved (RPC failed or device offline).",
+                statusCode: StatusCodes.Status502BadGateway);
+        }
+
+        return Results.Ok(result);
+    }
+
+    /// <summary>
+    /// Gets live total (lifetime) energy data from device via RPC.
+    /// FOR TEST ONLY - DO NOT USE IN PRODUCTION
+    /// </summary>
+    public async Task<IResult> GetLiveTotalEnergyFlow(
+        Guid deviceId,
+        IEnergyDataCollectionService energyService,
+        IDeviceMappingService deviceMapping,
+        ILogger<DeviceData> logger,
+        CancellationToken ct)
+    {
+        logger.LogInformation("Live TotalEnergyFlow requested for DeviceId {DeviceId}", deviceId);
+
+        // Map internal deviceId to ThingsBoardDeviceId
+        var thingsBoardDeviceId = await deviceMapping.GetThingsBoardDeviceIdAsync(deviceId, ct);
+        if (thingsBoardDeviceId == null)
+        {
+            logger.LogWarning("Device mapping not found for DeviceId {DeviceId}", deviceId);
+            return Results.Problem(
+                detail: $"Device not found: {deviceId}",
+                statusCode: StatusCodes.Status404NotFound);
+        }
+
+        var result = await energyService.FetchLifetimeEnergyViaRpcAsync(thingsBoardDeviceId.Value, ct);
+
+        if (result == null)
+        {
+            logger.LogWarning("TotalEnergyFlow could not be retrieved for DeviceId {DeviceId} (TB: {ThingsBoardDeviceId})",
+                deviceId, thingsBoardDeviceId);
+            return Results.Problem(
+                detail: "TotalEnergyFlow could not be retrieved (RPC failed or device offline).",
+                statusCode: StatusCodes.Status502BadGateway);
+        }
+
+        return Results.Ok(result);
+    }
+
     [Authorize(Policies.DeviceOnly)]
     public async Task<int> CreateDeviceData(
         ISender sender,
@@ -168,36 +373,40 @@ public async Task<IResult> ReceiveBatterySocTelemetry(
     [FromBody] JsonElement body,
     ILogger<DeviceData> logger,
     ISender sender,
-    ITelemetryDeduplicationService deduplicationService)
+    ITelemetryDeduplicationService deduplicationService,
+    IDeviceActivityService activityService)
 {
-    return await ProcessTelemetry(body, "BatterySoc", logger, sender, deduplicationService);
+    return await ProcessTelemetry(body, "BatterySoc", logger, sender, deduplicationService, activityService, TelemetrySource.BatterySoc);
 }
 
 public async Task<IResult> ReceivePowerFlowTelemetry(
     [FromBody] JsonElement body,
     ILogger<DeviceData> logger,
     ISender sender,
-    ITelemetryDeduplicationService deduplicationService)
+    ITelemetryDeduplicationService deduplicationService,
+    IDeviceActivityService activityService)
 {
-    return await ProcessPowerFlowTelemetry(body, DataTypes.PowerFlow, logger, sender, deduplicationService);
+    return await ProcessPowerFlowTelemetry(body, DataTypes.PowerFlow, logger, sender, deduplicationService, activityService);
 }
 
 public async Task<IResult> ReceiveDailyEnergyFlowTelemetry(
     [FromBody] JsonElement body,
     ILogger<DeviceData> logger,
     ISender sender,
-    ITelemetryDeduplicationService deduplicationService)
+    ITelemetryDeduplicationService deduplicationService,
+    IDeviceActivityService activityService)
 {
-    return await ProcessEnergyFlowTelemetry(body, DataTypes.DailyCumulativeEnergy, logger, sender, deduplicationService);
+    return await ProcessEnergyFlowTelemetry(body, DataTypes.DailyCumulativeEnergy, logger, sender, deduplicationService, activityService, TelemetrySource.DailyEnergyFlow);
 }
 
 public async Task<IResult> ReceiveTotalEnergyFlowTelemetry(
     [FromBody] JsonElement body,
     ILogger<DeviceData> logger,
     ISender sender,
-    ITelemetryDeduplicationService deduplicationService)
+    ITelemetryDeduplicationService deduplicationService,
+    IDeviceActivityService activityService)
 {
-    return await ProcessEnergyFlowTelemetry(body, DataTypes.LifetimeEnergy, logger, sender, deduplicationService);
+    return await ProcessEnergyFlowTelemetry(body, DataTypes.LifetimeEnergy, logger, sender, deduplicationService, activityService, TelemetrySource.TotalEnergyFlow);
 }
 
 private async Task<IResult> ProcessEnergyFlowTelemetry(
@@ -205,12 +414,14 @@ private async Task<IResult> ProcessEnergyFlowTelemetry(
     string dataType,
     ILogger<DeviceData> logger,
     ISender sender,
-    ITelemetryDeduplicationService deduplicationService)
+    ITelemetryDeduplicationService deduplicationService,
+    IDeviceActivityService activityService,
+    TelemetrySource telemetrySource)
 {
     try
     {
         logger.LogInformation(
-            "?? {DataType} energy flow telemetry received at {UtcNow}",
+            "{DataType} energy flow telemetry received at {UtcNow}",
             dataType,
             DateTime.UtcNow);
 
@@ -255,6 +466,9 @@ private async Task<IResult> ProcessEnergyFlowTelemetry(
             logger.LogWarning("Missing deviceId in root level");
             return Results.Problem("Missing 'deviceId' in request", statusCode: 400);
         }
+
+        // Record device activity (updates heartbeat cache, sends SignalR if status changed)
+        await activityService.RecordActivityAsync(deviceId, telemetrySource, dataDateTime);
 
         // 4) Check for duplicate telemetry
         var shouldProcess = await deduplicationService.ShouldProcessTelemetryAsync(deviceId, dataType, dataDateTime);
@@ -384,30 +598,48 @@ private async Task<IResult> ProcessEnergyFlowTelemetry(
                 generatorEnergy = genTotalEl.GetDouble();
         }
 
+        // 6) Parse CreatedBy (data source identifier)
+        string? createdBy = null;
+        if (body.TryGetProperty("createdBy", out var createdByEl))
+        {
+            createdBy = createdByEl.GetString();
+        }
+
         // Create command for DeviceEnergyData table
+        // Set Today fields ONLY for DailyCumulativeEnergy, Total fields ONLY for LifetimeEnergy
+        var isDailyData = dataType == DataTypes.DailyCumulativeEnergy;
+
         var command = new CreateDeviceEnergyDataCommand
         {
             DeviceId = deviceId,
             DeviceLocalTime = dataDateTime,
             DataType = dataType,
-            PvEnergyKWhTotal = pvTotalEnergy ?? 0,
-            PvEnergyKWhToday = pvTotalEnergy ?? 0,
+
+            // Today fields - only populated for Daily data
+            PvEnergyKWhToday = isDailyData ? pvTotalEnergy : null,
+            GridImportEnergyKWhToday = isDailyData ? gridImportEnergy : null,
+            GridExportEnergyKWhToday = isDailyData ? gridExportEnergy : null,
+            BatteryChargeEnergyKWhToday = isDailyData ? batteryChargeEnergy : null,
+            BatteryDischargeEnergyKWhToday = isDailyData ? batteryDischargeEnergy : null,
+            LoadEnergyKWhToday = isDailyData ? loadEnergy : null,
+            GeneratorEnergyKWhToday = isDailyData ? generatorEnergy : null,
+
+            // Total fields - only populated for Lifetime data
+            PvEnergyKWhTotal = !isDailyData ? pvTotalEnergy : null,
+            GridImportEnergyKWhTotal = !isDailyData ? gridImportEnergy : null,
+            GridExportEnergyKWhTotal = !isDailyData ? gridExportEnergy : null,
+            BatteryChargeEnergyKWhTotal = !isDailyData ? batteryChargeEnergy : null,
+            BatteryDischargeEnergyKWhTotal = !isDailyData ? batteryDischargeEnergy : null,
+            LoadEnergyKWhTotal = !isDailyData ? loadEnergy : null,
+            GeneratorEnergyKWhTotal = !isDailyData ? generatorEnergy : null,
+
+            // MPPT values (same for both - they're always the same granularity as the data type)
             PvMppt1EnergyKWh = pvMppt1Energy,
             PvMppt2EnergyKWh = pvMppt2Energy,
             PvMppt3EnergyKWh = pvMppt3Energy,
             PvMppt4EnergyKWh = pvMppt4Energy,
-            GridImportEnergyKWhTotal = gridImportEnergy ?? 0,
-            GridImportEnergyKWhToday = gridImportEnergy ?? 0,
-            GridExportEnergyKWhTotal = gridExportEnergy ?? 0,
-            GridExportEnergyKWhToday = gridExportEnergy ?? 0,
-            BatteryChargeEnergyKWhTotal = batteryChargeEnergy ?? 0,
-            BatteryChargeEnergyKWhToday = batteryChargeEnergy ?? 0,
-            BatteryDischargeEnergyKWhTotal = batteryDischargeEnergy ?? 0,
-            BatteryDischargeEnergyKWhToday = batteryDischargeEnergy ?? 0,
-            LoadEnergyKWhTotal = loadEnergy ?? 0,
-            LoadEnergyKWhToday = loadEnergy ?? 0,
-            GeneratorEnergyKWhTotal = generatorEnergy ?? 0,
-            GeneratorEnergyKWhToday = generatorEnergy ?? 0
+
+            CreatedBy = createdBy
         };
 
         var createdId = await sender.Send(command);
@@ -432,12 +664,14 @@ private async Task<IResult> ProcessTelemetry(
     string dataType,
     ILogger<DeviceData> logger,
     ISender sender,
-    ITelemetryDeduplicationService deduplicationService)
+    ITelemetryDeduplicationService deduplicationService,
+    IDeviceActivityService activityService,
+    TelemetrySource telemetrySource)
 {
     try
     {
         logger.LogInformation(
-            "?? {DataType} telemetry received at {UtcNow}",
+            "{DataType} telemetry received at {UtcNow}",
             dataType,
             DateTime.UtcNow);
 
@@ -466,7 +700,7 @@ private async Task<IResult> ProcessTelemetry(
             }
         }
 
-        // 3) ThingsBoardDeviceId comes from root level "deviceId" field (string ? Guid)
+        // 3) ThingsBoardDeviceId comes from root level "deviceId" field (string -> Guid)
         Guid deviceId = Guid.Empty;
         if (body.TryGetProperty("deviceId", out var deviceIdElement))
         {
@@ -487,6 +721,9 @@ private async Task<IResult> ProcessTelemetry(
             return Results.Problem("Missing 'deviceId' in request", statusCode: 400);
         }
 
+        // Record device activity (updates heartbeat cache, sends SignalR if status changed)
+        await activityService.RecordActivityAsync(deviceId, telemetrySource, requestDate);
+
         // 4) Check for duplicate telemetry
         var shouldProcess = await deduplicationService.ShouldProcessTelemetryAsync(deviceId, dataType, requestDate);
         if (!shouldProcess)
@@ -505,12 +742,20 @@ private async Task<IResult> ProcessTelemetry(
         // 5) Store the whole inner data object as JsonDocument
         var dataJson = JsonDocument.Parse(dataElement.GetRawText());
 
+        // 6) Parse CreatedBy (data source identifier)
+        string? createdBy = null;
+        if (body.TryGetProperty("createdBy", out var createdByEl))
+        {
+            createdBy = createdByEl.GetString();
+        }
+
         var command = new CreateDeviceDataCommand
         {
             DataType = dataType,
             DeviceId = deviceId,
             DeviceLocalTime = requestDate,
-            Data = dataJson
+            Data = dataJson,
+            CreatedBy = createdBy
         };
 
         var createdId = await sender.Send(command);
@@ -533,12 +778,13 @@ private async Task<IResult> ProcessPowerFlowTelemetry(
     string dataType,
     ILogger<DeviceData> logger,
     ISender sender,
-    ITelemetryDeduplicationService deduplicationService)
+    ITelemetryDeduplicationService deduplicationService,
+    IDeviceActivityService activityService)
 {
     try
     {
         logger.LogInformation(
-            "?? {DataType} power flow telemetry received at {UtcNow}",
+            "{DataType} power flow telemetry received at {UtcNow}",
             dataType,
             DateTime.UtcNow);
 
@@ -584,12 +830,15 @@ private async Task<IResult> ProcessPowerFlowTelemetry(
             return Results.Problem("Missing 'deviceId' in request", statusCode: 400);
         }
 
+        // Record device activity (updates heartbeat cache, sends SignalR if status changed)
+        await activityService.RecordActivityAsync(deviceId, TelemetrySource.PowerFlow, dataDateTime);
+
         // 4) Check for duplicate telemetry
         var shouldProcess = await deduplicationService.ShouldProcessTelemetryAsync(deviceId, dataType, dataDateTime);
         if (!shouldProcess)
         {
             logger.LogInformation(
-                "?? Skipping duplicate {DataType} telemetry for device {DeviceId} at {Timestamp}",
+                "Skipping duplicate {DataType} telemetry for device {DeviceId} at {Timestamp}",
                 dataType, deviceId, dataDateTime);
             return Results.Ok(new
             {
@@ -678,6 +927,13 @@ private async Task<IResult> ProcessPowerFlowTelemetry(
             generatorTotalPowerW = generatorPowerEl.GetDouble();
         }
 
+        // 7) Parse CreatedBy (data source identifier)
+        string? createdBy = null;
+        if (body.TryGetProperty("createdBy", out var createdByEl))
+        {
+            createdBy = createdByEl.GetString();
+        }
+
         // Create command for DevicePowerData table
         var command = new CreateDevicePowerDataCommand
         {
@@ -693,7 +949,8 @@ private async Task<IResult> ProcessPowerFlowTelemetry(
             GridTotalPowerW = gridTotalPowerW,
             LoadTotalPowerW = loadTotalPowerW,
             BatteryPowerW = batteryPowerW,
-            GeneratorTotalPowerW = generatorTotalPowerW
+            GeneratorTotalPowerW = generatorTotalPowerW,
+            CreatedBy = createdBy
         };
 
         var createdId = await sender.Send(command);
@@ -724,7 +981,8 @@ public async Task<IResult> ReceiveAlarmTelemetry(
     ISender sender,
     IDeviceMappingService deviceMapping,
     IDeviceNotificationService notificationService,
-    IApplicationDbContext context)
+    IApplicationDbContext context,
+    IDeviceActivityService activityService)
 {
     try
     {
@@ -750,6 +1008,9 @@ public async Task<IResult> ReceiveAlarmTelemetry(
             logger.LogWarning("Missing deviceId in root level");
             return Results.Problem("Missing 'deviceId' in request", statusCode: 400);
         }
+
+        // Record device activity (updates heartbeat cache, sends SignalR if status changed)
+        await activityService.RecordActivityAsync(thingsBoardDeviceId, TelemetrySource.Alarm);
 
         // 2) Convert ThingsBoard ID to internal device ID
         var internalDeviceId = await deviceMapping.GetDeviceIdAsync(thingsBoardDeviceId);

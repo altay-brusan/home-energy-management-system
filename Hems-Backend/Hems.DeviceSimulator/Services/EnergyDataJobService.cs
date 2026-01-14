@@ -307,7 +307,8 @@ public class EnergyDataJobService : IEnergyDataJobService
                 DataType = dataType,
                 DeviceId = deviceId,
                 DeviceLocalTime = DateTime.UtcNow,
-                
+                CreatedBy = "Simulator", // Identify data source as simulator
+
                 // Günlük değerler
                 PvEnergyKWhToday = energyData.PvEnergyKWhToday,
                 GridImportEnergyKWhToday = energyData.GridImportEnergyKWhToday,
@@ -316,7 +317,7 @@ public class EnergyDataJobService : IEnergyDataJobService
                 BatteryDischargeEnergyKWhToday = energyData.BatteryDischargeEnergyKWhToday,
                 BatteryChargeEnergyKWhToday = energyData.BatteryChargeEnergyKWhToday,
                 LoadEnergyKWhToday = energyData.LoadEnergyKWhToday,
-                
+
                 // Ömür boyu değerler
                 PvEnergyKWhTotal = energyData.PvEnergyKWhTotal,
                 GridImportEnergyKWhTotal = energyData.GridImportEnergyKWhTotal,

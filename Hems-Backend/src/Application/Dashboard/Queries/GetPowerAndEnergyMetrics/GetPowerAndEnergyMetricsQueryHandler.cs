@@ -15,17 +15,23 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
     private readonly ISender _sender;
     private readonly IDeviceMappingService _deviceMapping;
     private readonly ITimezoneService _timezoneService;
+    private readonly IDemoDataService _demoDataService;
+    private readonly IDemoSimulationDataService _demoSimulationService;
 
     public GetPowerAndEnergyMetricsQueryHandler(
         IApplicationDbContext context,
         ISender sender,
         IDeviceMappingService deviceMapping,
-        ITimezoneService timezoneService)
+        ITimezoneService timezoneService,
+        IDemoDataService demoDataService,
+        IDemoSimulationDataService demoSimulationService)
     {
         _context = context;
         _sender = sender;
         _deviceMapping = deviceMapping;
         _timezoneService = timezoneService;
+        _demoDataService = demoDataService;
+        _demoSimulationService = demoSimulationService;
     }
 
     public async Task<PowerAndEnergyMetricsResponseDto> Handle(GetPowerAndEnergyMetricsQuery request, CancellationToken cancellationToken)
@@ -35,6 +41,20 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
         if (!hasAccess)
         {
             throw new UnauthorizedAccessException("Device access denied");
+        }
+
+        // Check if this is a demo device - return simulated data
+        var isDemoDevice = await _demoDataService.IsDemoDeviceAsync(request.DeviceId, cancellationToken);
+        if (isDemoDevice)
+        {
+            return request.Period.ToLower() switch
+            {
+                "day" => GetSimulatedDailyMetrics(request.Date!.Value),
+                "week" => GetSimulatedWeeklyMetrics(request.Year!.Value, request.Week!.Value),
+                "month" => GetSimulatedMonthlyMetrics(request.Year!.Value, request.Month!.Value),
+                "year" => GetSimulatedYearlyMetrics(request.Year!.Value),
+                _ => throw new ArgumentException($"Invalid period: {request.Period}. Must be one of: day, week, month, year")
+            };
         }
 
         // Map local DeviceId to ThingsBoardDeviceId
@@ -496,6 +516,203 @@ public class GetPowerAndEnergyMetricsQueryHandler : IRequestHandler<GetPowerAndE
             Range = range,
             Data = dataPoints           
         };
+    }
+
+    #endregion
+
+    #region Demo Simulation Methods
+
+    // Demo device timezone (Istanbul/Turkey - UTC+3)
+    private static readonly TimeZoneInfo _demoTimezone = TimeZoneInfo.FindSystemTimeZoneById("Turkey Standard Time");
+
+    /// <summary>
+    /// Generate simulated daily power metrics (5-minute intervals)
+    /// Uses IDemoSimulationDataService for consistent data with PowerFlow endpoint
+    /// </summary>
+    private PowerAndEnergyMetricsResponseDto GetSimulatedDailyMetrics(DateOnly date)
+    {
+        var dataPoints = new List<PowerAndEnergyMetricsDataPoint>();
+
+        // Use device local time for "today" check (demo device is in Istanbul timezone)
+        var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _demoTimezone);
+        var isToday = date == DateOnly.FromDateTime(nowLocal);
+
+        // Demo device ID - we use a fixed one for simulation since we don't have request context here
+        var demoDeviceId = Guid.Empty;
+
+        // Generate 5-minute samples for the day using the shared simulation service
+        for (int hour = 0; hour < 24; hour++)
+        {
+            for (int minute = 0; minute < 60; minute += 5)
+            {
+                // If today, only generate up to current LOCAL time
+                if (isToday && (hour > nowLocal.Hour || (hour == nowLocal.Hour && minute > nowLocal.Minute)))
+                    break;
+
+                // Create timestamp for this sample
+                var timestamp = new DateTime(date.Year, date.Month, date.Day, hour, minute, 0, DateTimeKind.Utc);
+
+                // Get power flow from the shared simulation service (returns kW)
+                var powerFlow = _demoSimulationService.GetPowerFlowAtTime(demoDeviceId, timestamp);
+
+                // Convert from kW to W for daily metrics display
+                dataPoints.Add(new PowerAndEnergyMetricsDataPoint
+                {
+                    Timestamp = $"{hour:D2}:{minute:D2}",
+                    SolarPower = Math.Round(powerFlow.SolarPowerKw * 1000, 2),     // kW to W
+                    GridPower = Math.Round(powerFlow.GridPowerKw * 1000, 2),       // kW to W
+                    BatteryPower = Math.Round(powerFlow.BatteryPowerKw * 1000, 2), // kW to W
+                    LoadPower = Math.Round(powerFlow.LoadPowerKw * 1000, 2),       // kW to W
+                    GeneratorPower = Math.Round(powerFlow.GeneratorPowerKw * 1000, 2),
+                    Unit = "W"
+                });
+            }
+        }
+
+        return CreateResponse("Day", dataPoints);
+    }
+
+    /// <summary>
+    /// Generate simulated weekly energy metrics (daily totals)
+    /// Uses device local timezone for "today" check
+    /// </summary>
+    private PowerAndEnergyMetricsResponseDto GetSimulatedWeeklyMetrics(int year, int week)
+    {
+        var weekStart = ISOWeek.ToDateTime(year, week, DayOfWeek.Monday);
+        var dataPoints = new List<PowerAndEnergyMetricsDataPoint>();
+
+        // Use device local time for comparison
+        var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _demoTimezone);
+
+        for (int i = 0; i < 7; i++)
+        {
+            var day = weekStart.AddDays(i);
+            if (day.Date > nowLocal.Date) break; // Use local date comparison
+
+            var energy = GetSimulatedDailyEnergy(day);
+
+            dataPoints.Add(new PowerAndEnergyMetricsDataPoint
+            {
+                Timestamp = day.ToString("yyyy-MM-dd"),
+                SolarPower = Math.Round(energy.PvEnergyKWh, 3),
+                LoadPower = Math.Round(energy.LoadEnergyKWh, 3),
+                GeneratorPower = 0,
+                GridPower = Math.Round(energy.GridImportEnergyKWh - energy.GridExportEnergyKWh, 3),
+                BatteryPower = Math.Round(energy.BatteryDischargeEnergyKWh - energy.BatteryChargeEnergyKWh, 3),
+                GridImportEnergyKWh = Math.Round(energy.GridImportEnergyKWh, 3),
+                GridExportEnergyKWh = Math.Round(energy.GridExportEnergyKWh, 3),
+                BatteryChargeEnergyKWh = Math.Round(energy.BatteryChargeEnergyKWh, 3),
+                BatteryDischargeEnergyKWh = Math.Round(energy.BatteryDischargeEnergyKWh, 3),
+                LoadEnergyKWh = Math.Round(energy.LoadEnergyKWh, 3),
+                GeneratorEnergyKWh = 0,
+                Unit = "kWh"
+            });
+        }
+
+        return CreateResponse("Week", dataPoints);
+    }
+
+    /// <summary>
+    /// Generate simulated monthly energy metrics (daily totals)
+    /// Uses device local timezone for "today" check
+    /// </summary>
+    private PowerAndEnergyMetricsResponseDto GetSimulatedMonthlyMetrics(int year, int month)
+    {
+        var daysInMonth = DateTime.DaysInMonth(year, month);
+        var dataPoints = new List<PowerAndEnergyMetricsDataPoint>();
+
+        // Use device local time for comparison
+        var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _demoTimezone);
+
+        for (int day = 1; day <= daysInMonth; day++)
+        {
+            var date = new DateTime(year, month, day);
+            if (date.Date > nowLocal.Date) break; // Use local date comparison
+
+            var energy = GetSimulatedDailyEnergy(date);
+
+            dataPoints.Add(new PowerAndEnergyMetricsDataPoint
+            {
+                Timestamp = date.ToString("yyyy-MM-dd"),
+                SolarPower = Math.Round(energy.PvEnergyKWh, 3),
+                LoadPower = Math.Round(energy.LoadEnergyKWh, 3),
+                GeneratorPower = 0,
+                GridPower = Math.Round(energy.GridImportEnergyKWh - energy.GridExportEnergyKWh, 3),
+                BatteryPower = Math.Round(energy.BatteryDischargeEnergyKWh - energy.BatteryChargeEnergyKWh, 3),
+                GridImportEnergyKWh = Math.Round(energy.GridImportEnergyKWh, 3),
+                GridExportEnergyKWh = Math.Round(energy.GridExportEnergyKWh, 3),
+                BatteryChargeEnergyKWh = Math.Round(energy.BatteryChargeEnergyKWh, 3),
+                BatteryDischargeEnergyKWh = Math.Round(energy.BatteryDischargeEnergyKWh, 3),
+                LoadEnergyKWh = Math.Round(energy.LoadEnergyKWh, 3),
+                GeneratorEnergyKWh = 0,
+                Unit = "kWh"
+            });
+        }
+
+        return CreateResponse("Month", dataPoints);
+    }
+
+    /// <summary>
+    /// Generate simulated yearly energy metrics (monthly totals)
+    /// Uses device local timezone for "today" check
+    /// </summary>
+    private PowerAndEnergyMetricsResponseDto GetSimulatedYearlyMetrics(int year)
+    {
+        var dataPoints = new List<PowerAndEnergyMetricsDataPoint>();
+
+        // Use device local time for comparison
+        var nowLocal = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _demoTimezone);
+
+        for (int month = 1; month <= 12; month++)
+        {
+            if (year > nowLocal.Year || (year == nowLocal.Year && month > nowLocal.Month)) break;
+
+            var daysInMonth = DateTime.DaysInMonth(year, month);
+            var lastDay = (year == nowLocal.Year && month == nowLocal.Month) ? nowLocal.Day : daysInMonth;
+
+            double totalPv = 0, totalLoad = 0, totalGridImport = 0, totalGridExport = 0;
+            double totalBatteryCharge = 0, totalBatteryDischarge = 0;
+
+            for (int day = 1; day <= lastDay; day++)
+            {
+                var date = new DateTime(year, month, day);
+                var energy = GetSimulatedDailyEnergy(date);
+                totalPv += energy.PvEnergyKWh;
+                totalLoad += energy.LoadEnergyKWh;
+                totalGridImport += energy.GridImportEnergyKWh;
+                totalGridExport += energy.GridExportEnergyKWh;
+                totalBatteryCharge += energy.BatteryChargeEnergyKWh;
+                totalBatteryDischarge += energy.BatteryDischargeEnergyKWh;
+            }
+
+            dataPoints.Add(new PowerAndEnergyMetricsDataPoint
+            {
+                Timestamp = $"{year}-{month:D2}",
+                SolarPower = Math.Round(totalPv, 3),
+                LoadPower = Math.Round(totalLoad, 3),
+                GeneratorPower = 0,
+                GridPower = Math.Round(totalGridImport - totalGridExport, 3),
+                BatteryPower = Math.Round(totalBatteryDischarge - totalBatteryCharge, 3),
+                GridImportEnergyKWh = Math.Round(totalGridImport, 3),
+                GridExportEnergyKWh = Math.Round(totalGridExport, 3),
+                BatteryChargeEnergyKWh = Math.Round(totalBatteryCharge, 3),
+                BatteryDischargeEnergyKWh = Math.Round(totalBatteryDischarge, 3),
+                LoadEnergyKWh = Math.Round(totalLoad, 3),
+                GeneratorEnergyKWh = 0,
+                Unit = "kWh"
+            });
+        }
+
+        return CreateResponse("Year", dataPoints);
+    }
+
+    /// <summary>
+    /// Get simulated daily energy totals for a specific date
+    /// Uses IDemoSimulationDataService for consistent data across all endpoints
+    /// </summary>
+    private DailyEnergyData GetSimulatedDailyEnergy(DateTime date)
+    {
+        return _demoSimulationService.GetDailyEnergy(date);
     }
 
     #endregion

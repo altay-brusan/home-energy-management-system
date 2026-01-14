@@ -11,6 +11,8 @@ public class DeviceController : ControllerBase
     private readonly IDeviceSimulationJobService _jobService;
     private readonly IEnergyDataJobService _energyJobService;
     private readonly IDeviceNotificationJobService _notificationJobService;
+    private readonly IPowerFlowJobService _powerFlowJobService;
+    private readonly IWeatherDataJobService _weatherJobService;
     private readonly IDataGeneratorService _dataGeneratorService;
     private readonly ILogger<DeviceController> _logger;
 
@@ -18,12 +20,16 @@ public class DeviceController : ControllerBase
         IDeviceSimulationJobService jobService,
         IEnergyDataJobService energyJobService,
         IDeviceNotificationJobService notificationJobService,
+        IPowerFlowJobService powerFlowJobService,
+        IWeatherDataJobService weatherJobService,
         IDataGeneratorService dataGeneratorService,
         ILogger<DeviceController> logger)
     {
         _jobService = jobService;
         _energyJobService = energyJobService;
         _notificationJobService = notificationJobService;
+        _powerFlowJobService = powerFlowJobService;
+        _weatherJobService = weatherJobService;
         _dataGeneratorService = dataGeneratorService;
         _logger = logger;
     }
@@ -39,19 +45,21 @@ public class DeviceController : ControllerBase
     {
         try
         {
-            // Hem device simulation hem de energy data collection'ı başlat
+            // Start all simulation jobs
             await _jobService.StartSimulationAsync();
             await _energyJobService.StartEnergyDataCollectionAsync();
-            
-            // Notification simulation'ı da başlat
             await _notificationJobService.StartDeviceNotificationSimulationAsync();
-            
-            return Ok(new { 
-                message = "Device simulation, energy data collection and notification simulation started successfully with Hangfire", 
+            await _powerFlowJobService.StartPowerFlowSimulationAsync();
+            await _weatherJobService.StartWeatherSimulationAsync();
+
+            return Ok(new {
+                message = "All simulation jobs started successfully with Hangfire",
                 deviceSimulation = "Started",
                 energyDataCollection = "Started",
                 notificationSimulation = "Started",
-                timestamp = DateTime.UtcNow 
+                powerFlowSimulation = "Started",
+                weatherSimulation = "Started",
+                timestamp = DateTime.UtcNow
             });
         }
         catch (Exception ex)
@@ -72,19 +80,21 @@ public class DeviceController : ControllerBase
     {
         try
         {
-            // Hem device simulation hem de energy data collection'ı durdur
+            // Stop all simulation jobs
             await _jobService.StopSimulationAsync();
             await _energyJobService.StopEnergyDataCollectionAsync();
-            
-            // Notification simulation'ı da durdur
             await _notificationJobService.StopDeviceNotificationSimulationAsync();
-            
-            return Ok(new { 
-                message = "Device simulation, energy data collection and notification simulation stopped successfully", 
+            await _powerFlowJobService.StopPowerFlowSimulationAsync();
+            await _weatherJobService.StopWeatherSimulationAsync();
+
+            return Ok(new {
+                message = "All simulation jobs stopped successfully",
                 deviceSimulation = "Stopped",
                 energyDataCollection = "Stopped",
                 notificationSimulation = "Stopped",
-                timestamp = DateTime.UtcNow 
+                powerFlowSimulation = "Stopped",
+                weatherSimulation = "Stopped",
+                timestamp = DateTime.UtcNow
             });
         }
         catch (Exception ex)

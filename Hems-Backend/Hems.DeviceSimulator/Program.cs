@@ -34,21 +34,22 @@ builder.Services.AddSwaggerGen(c =>
 // Add HTTP Client
 builder.Services.AddHttpClient();
 
-// Add Database Context
+// Add Database Context - use same connection string name as Web API
+var connectionString = builder.Configuration.GetConnectionString("Hems_BackendDb");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(connectionString));
 
 builder.Services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 
 // Add AutoMapper
 builder.Services.AddAutoMapper(typeof(Program));
 
-// Add Hangfire Services
+// Add Hangfire Services - use same connection string
 builder.Services.AddHangfire(configuration => configuration
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
     .UseSimpleAssemblyNameTypeSerializer()
     .UseRecommendedSerializerSettings()
-    .UsePostgreSqlStorage(builder.Configuration.GetConnectionString("DefaultConnection"))
+    .UsePostgreSqlStorage(connectionString)
 );
 
 // Add Hangfire Server
@@ -67,6 +68,10 @@ builder.Services.AddScoped<IDeviceSimulationJobService, DeviceSimulationJobServi
 builder.Services.AddScoped<IEnergyDataGeneratorService, EnergyDataGeneratorService>();
 builder.Services.AddScoped<IEnergyDataJobService, EnergyDataJobService>();
 builder.Services.AddScoped<IDeviceNotificationJobService, DeviceNotificationJobService>();
+
+// Add new simulator services for demo mode
+builder.Services.AddScoped<IPowerFlowJobService, PowerFlowJobService>();
+builder.Services.AddScoped<IWeatherDataJobService, WeatherDataJobService>();
 
 var app = builder.Build();
 
