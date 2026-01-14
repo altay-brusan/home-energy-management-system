@@ -1,5 +1,5 @@
 using Hems_Backend.Application.Common.Interfaces;
-using Hems_Backend.Web.Hubs;
+using Hems_Backend.Infrastructure.Hubs;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Hems_Backend.Web.Services;

@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-namespace Hems_Backend.Web.Hubs;
+namespace Hems_Backend.Infrastructure.Hubs;
 
 /// <summary>
 /// SignalR hub for streaming PowerFlow data to frontend.
@@ -88,7 +88,9 @@ public class PowerFlowHub : Hub
         // Validate access to the device
         try
         {
+            _logger.LogInformation("PowerFlowHub - Validating device access for {DeviceId}...", deviceId);
             await ValidateDeviceAccessAsync(deviceId);
+            _logger.LogInformation("PowerFlowHub - Device access validated successfully for {DeviceId}", deviceId);
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -99,6 +101,18 @@ public class PowerFlowHub : Hub
             await Clients.Caller.SendAsync("PowerFlowError", new
             {
                 errorCode = "AccessDenied",
+                message = ex.Message,
+                deviceId = deviceId,
+                timestamp = DateTime.UtcNow
+            }, cancellationToken);
+            yield break;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "PowerFlowHub - Unexpected error validating device access for {DeviceId}", deviceId);
+            await Clients.Caller.SendAsync("PowerFlowError", new
+            {
+                errorCode = "ValidationError",
                 message = ex.Message,
                 deviceId = deviceId,
                 timestamp = DateTime.UtcNow
@@ -126,13 +140,22 @@ public class PowerFlowHub : Hub
                 deviceId, subscription.SubscriptionId, _streamManager.GetSubscriberCount(deviceId));
 
             // Read from the shared channel
+            _logger.LogInformation("PowerFlowHub - Starting to read from channel for device {DeviceId}...", deviceId);
+            var itemCount = 0;
             await foreach (var data in subscription.DataChannel.ReadAllAsync(cancellationToken))
             {
+                itemCount++;
                 if (data is PowerFlowDto powerFlowDto)
                 {
+                    _logger.LogDebug("PowerFlowHub - Yielding PowerFlow item #{Count} for device {DeviceId}", itemCount, deviceId);
                     yield return powerFlowDto;
                 }
+                else
+                {
+                    _logger.LogWarning("PowerFlowHub - Received non-PowerFlowDto data type: {Type}", data?.GetType().Name ?? "null");
+                }
             }
+            _logger.LogInformation("PowerFlowHub - Channel reading completed for device {DeviceId}, total items: {Count}", deviceId, itemCount);
         }
         finally
         {
@@ -247,6 +270,52 @@ public class PowerFlowHub : Hub
     }
 
     /// <summary>
+    /// Simple test method to verify SignalR streaming works.
+    /// Returns 5 test messages with 1 second delay between each.
+    /// Use this to verify SignalR connection before testing with real devices.
+    /// </summary>
+    public async IAsyncEnumerable<PowerFlowDto> TestStream(
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("PowerFlowHub - TestStream started for connection: {ConnectionId}", Context.ConnectionId);
+
+        for (int i = 1; i <= 5; i++)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                _logger.LogInformation("PowerFlowHub - TestStream cancelled at iteration {Iteration}", i);
+                yield break;
+            }
+
+            var testDto = new PowerFlowDto
+            {
+                DeviceId = Guid.Empty,
+                TimestampUtc = DateTimeOffset.UtcNow,
+                SolarPowerKw = i * 1.0,
+                GridPowerKw = i * 0.5,
+                LoadPowerKw = i * 1.5,
+                BatteryPowerKw = i * 0.25,
+                GeneratorPowerKw = 0
+            };
+
+            _logger.LogInformation("PowerFlowHub - TestStream yielding item {Iteration}", i);
+            yield return testDto;
+
+            try
+            {
+                await Task.Delay(1000, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("PowerFlowHub - TestStream delay cancelled at iteration {Iteration}", i);
+                yield break;
+            }
+        }
+
+        _logger.LogInformation("PowerFlowHub - TestStream completed all 5 iterations");
+    }
+
+    /// <summary>
     /// Get the number of active streams for this connection
     /// </summary>
     public int GetActiveStreamCount()
@@ -266,6 +335,13 @@ public class PowerFlowHub : Hub
     private async Task ValidateDeviceAccessAsync(Guid deviceId)
     {
         var userId = GetUserIdFromContext();
+
+        // Check if user is Admin - Admins can access all devices
+        if (Context.User?.IsInRole("Administrator") == true)
+        {
+            _logger.LogDebug("PowerFlowHub - Admin user {UserId} granted access to device {DeviceId}", userId, deviceId);
+            return;
+        }
 
         // Find which site the device belongs to
         var deviceSite = await _context.SetupDevices
@@ -295,6 +371,10 @@ public class PowerFlowHub : Hub
     {
         string? userId = null;
 
+        _logger.LogDebug("PowerFlowHub - GetUserIdFromContext: IsAuthenticated={IsAuth}, IdentityName={Name}",
+            Context.User?.Identity?.IsAuthenticated,
+            Context.User?.Identity?.Name);
+
         // Try Context.User first (SignalR Hub context)
         if (Context.User?.Identity?.IsAuthenticated == true)
         {
@@ -303,19 +383,24 @@ public class PowerFlowHub : Hub
                      ?? Context.User?.FindFirst("unique_name")?.Value
                      ?? Context.User?.FindFirst("email")?.Value
                      ?? Context.User?.Identity?.Name;
+
+            _logger.LogDebug("PowerFlowHub - GetUserIdFromContext: Found userId from Context.User: {UserId}", userId);
         }
 
         // If Context.User failed, try _user service (IUser)
         if (string.IsNullOrEmpty(userId))
         {
             userId = _user.Id;
+            _logger.LogDebug("PowerFlowHub - GetUserIdFromContext: Found userId from IUser service: {UserId}", userId);
         }
 
         if (string.IsNullOrEmpty(userId))
         {
+            _logger.LogWarning("PowerFlowHub - GetUserIdFromContext: No userId found, user not authenticated");
             throw new UnauthorizedAccessException("User not authenticated");
         }
 
+        _logger.LogInformation("PowerFlowHub - GetUserIdFromContext: Resolved userId: {UserId}", userId);
         return userId;
     }
 
