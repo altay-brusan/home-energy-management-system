@@ -363,25 +363,7 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
             LabelKey = "realtime.phases"
         });
 
-        // Output Voltage (Phase A value for simple display - frontend expects this key)
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "outputVoltage",
-            Value = Math.Round(phaseAVoltage, 1),
-            Unit = "V",
-            LabelKey = "realtime.outputVoltage"
-        });
-
-        // Output Current (Phase A value for simple display - frontend expects this key)
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "outputCurrent",
-            Value = Math.Round(phaseACurrent, 2),
-            Unit = "A",
-            LabelKey = "realtime.outputCurrent"
-        });
-
-        // Output Frequency (European standard 50Hz)
+        // Output Frequency (European standard 50Hz) - single value shared across all phases
         var outputFrequency = 50.0 + (voltageRandom.NextDouble() * 0.2 - 0.1);
         details.Add(new DeviceDetailItemDto
         {
@@ -632,30 +614,7 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
             });
         }
 
-        // Output Voltage (Phase A value for simple display - frontend expects this key)
-        if (state.OutputVoltageV.HasValue)
-        {
-            details.Add(new DeviceDetailItemDto
-            {
-                Key = "outputVoltage",
-                Value = state.OutputVoltageV.Value,
-                Unit = "V",
-                LabelKey = "realtime.outputVoltage"
-            });
-        }
-
-        // Output Current (Phase A value for simple display - frontend expects this key)
-        if (state.OutputCurrentA.HasValue)
-        {
-            details.Add(new DeviceDetailItemDto
-            {
-                Key = "outputCurrent",
-                Value = state.OutputCurrentA.Value,
-                Unit = "A",
-                LabelKey = "realtime.outputCurrent"
-            });
-        }
-
+        // Output Frequency - single value shared across all phases
         if (state.OutputFrequencyHz.HasValue)
         {
             details.Add(new DeviceDetailItemDto
