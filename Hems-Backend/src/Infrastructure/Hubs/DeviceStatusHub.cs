@@ -12,6 +12,10 @@ namespace Hems_Backend.Infrastructure.Hubs;
 /// SignalR hub for pushing device heartbeat status changes to frontend.
 /// Frontend uses local deviceId, backend translates to/from ThingsBoardDeviceId.
 /// Includes authorization, access validation, and connection tracking.
+///
+/// NOTE: This hub is in Infrastructure (not Web) because Infrastructure services
+/// (DeviceHeartbeatMonitorService, DeviceActivityService) need to use IHubContext&lt;DeviceStatusHub&gt;
+/// to send SignalR notifications. Moving it to Web would create a circular dependency.
 /// </summary>
 [Authorize]
 public class DeviceStatusHub : Hub

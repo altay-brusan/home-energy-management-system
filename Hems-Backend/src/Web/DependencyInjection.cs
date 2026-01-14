@@ -6,7 +6,7 @@ using Hems_Backend.Application.Common.Security;
 using Hems_Backend.Domain.Constants;
 using Hems_Backend.Infrastructure.Data;
 using Hems_Backend.Web.Services;
-using Hems_Backend.Web.Hubs;
+using Hems_Backend.Infrastructure.Hubs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;

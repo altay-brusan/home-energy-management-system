@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-namespace Hems_Backend.Web.Hubs;
+namespace Hems_Backend.Infrastructure.Hubs;
 
 /// <summary>
 /// SignalR hub for streaming PowerFlow data to frontend.

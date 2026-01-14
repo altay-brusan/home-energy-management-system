@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Hems_Backend.Web.Hubs;
+namespace Hems_Backend.Infrastructure.Hubs;
 
 /// <summary>
 /// SignalR hub for real-time device settings update notifications

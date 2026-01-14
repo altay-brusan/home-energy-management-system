@@ -2,7 +2,7 @@ using Hangfire;
 using Hangfire.Dashboard;
 using Hems_Backend.Infrastructure.Data;
 using Hems_Backend.Infrastructure.Identity;
-using Hems_Backend.Web.Hubs;
+using Hems_Backend.Infrastructure.Hubs;
 using Hems_Backend.Web.Infrastructure;
 using Serilog;
 
@@ -104,7 +104,7 @@ app.MapEndpoints();
 // Map SignalR Hubs
 app.MapHub<DeviceNotificationHub>("/deviceNotificationHub");
 app.MapHub<PowerFlowHub>("/powerFlowHub");
-app.MapHub<Hems_Backend.Infrastructure.Hubs.DeviceStatusHub>("/deviceStatusHub");
+app.MapHub<DeviceStatusHub>("/deviceStatusHub");
 app.MapHub<DeviceSettingsHub>("/deviceSettingsHub");
 app.Run();
 
