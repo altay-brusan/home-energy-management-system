@@ -19,7 +19,7 @@ public class DemoDataService : IDemoDataService
     private readonly ILogger<DemoDataService> _logger;
 
     // Well-known demo user constants
-    public const string DemoUserEmail = "demo@oklidis.com.tr";
+    public const string DemoUserEmail = "demo@netzr.com";
     public const string DemoDeviceSerial = "DEMO-HEMS-001";
 
     // Well-known ThingsBoard device ID for demo device
