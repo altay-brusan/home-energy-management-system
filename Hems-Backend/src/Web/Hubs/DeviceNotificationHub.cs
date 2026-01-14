@@ -233,6 +233,13 @@ public class DeviceNotificationHub : Hub<IDeviceNotificationHubClient>
     {
         var userId = GetUserIdFromContext();
 
+        // Check if user is Admin - Admins can access all sites
+        if (Context.User?.IsInRole("Administrator") == true)
+        {
+            _logger.LogDebug("DeviceNotificationHub - Admin user {UserId} granted access to site {SiteId}", userId, siteId);
+            return;
+        }
+
         // Check if user is site owner
         var isOwner = await _context.Sites
             .AnyAsync(s => s.Id == siteId && s.UserId == userId);
@@ -280,6 +287,13 @@ public class DeviceNotificationHub : Hub<IDeviceNotificationHubClient>
     private async Task ValidateDeviceAccessAsync(Guid deviceId)
     {
         var userId = GetUserIdFromContext();
+
+        // Check if user is Admin - Admins can access all devices
+        if (Context.User?.IsInRole("Administrator") == true)
+        {
+            _logger.LogDebug("DeviceNotificationHub - Admin user {UserId} granted access to device {DeviceId}", userId, deviceId);
+            return;
+        }
 
         // Find which site the device belongs to
         var deviceSite = await _context.SetupDevices
