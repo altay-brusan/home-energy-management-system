@@ -138,19 +138,6 @@ public class Dashboard : EndpointGroupBase
 
    
     [Authorize]
-    public async Task<BatteryComponentDto> BatteryComponent(
-        ISender sender,
-        [FromQuery] Guid deviceId)
-    {
-        var query = new GetBatteryComponentQuery
-        {
-            DeviceId = deviceId
-        };
-
-        return await sender.Send(query);
-    }
-
-    [Authorize]
     public async Task<InverterComponentDto> InverterComponent(
         ISender sender,
         [FromQuery] Guid deviceId)
