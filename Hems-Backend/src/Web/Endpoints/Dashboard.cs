@@ -119,53 +119,6 @@ public class Dashboard : EndpointGroupBase
         return await sender.Send(query);
     }
 
-    //[Authorize]
-    //public async Task<EnergyFlowResponseDto> EnergyFlow(
-    //    ISender sender,
-    //    [FromQuery] Guid deviceId,
-    //    [FromQuery] DateTime startDate,
-    //    [FromQuery] DateTime endDate)
-    //{
-    //    var query = new GetEnergyDataQuery
-    //    {
-    //        DeviceId = deviceId,
-    //        StartDate = startDate,
-    //        EndDate = endDate
-    //    };
-
-    //    return await sender.Send(query);
-    //}
-
-    //[Authorize]
-    //public async Task<EnergyProductionResponseDto> EnergyProduction(
-    //    ISender sender,
-    //    [FromQuery] Guid deviceId,
-    //    [FromQuery] string period)
-    //{
-    //    var query = new GetEnergyProductionQuery
-    //    {
-    //        DeviceId = deviceId,
-    //        Period = period
-    //    };
-
-    //    return await sender.Send(query);
-    //}
-
-    //[Authorize]
-    //public async Task<EnergyConsumptionResponseDto> EnergyConsumption(
-    //    ISender sender,
-    //    [FromQuery] Guid deviceId,
-    //    [FromQuery] string period)
-    //{
-    //    var query = new GetEnergyConsumptionQuery
-    //    {
-    //        DeviceId = deviceId,
-    //        Period = period
-    //    };
-
-    //    return await sender.Send(query);
-    //}
-
     [Authorize]
     public async Task<PowerAndEnergyMetricsResponseDto> PowerAndEnergyMetrics(
         ISender sender,
