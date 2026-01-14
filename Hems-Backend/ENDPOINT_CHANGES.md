@@ -1,0 +1,124 @@
+# Backend API Endpoint Changes
+
+This document summarizes all endpoint modifications made during the refactoring session. Frontend team should update their code accordingly.
+
+---
+
+## 1. Renamed Endpoints
+
+### Dashboard/DeviceComponentsStatus (formerly device/GetWithData)
+
+| Property | Old Value | New Value |
+|----------|-----------|-----------|
+| **Path** | `/Dashboard/device/GetWithData` | `/Dashboard/DeviceComponentsStatus` |
+| **Method** | GET | GET (unchanged) |
+| **Query Params** | `deviceId` | `deviceId` (unchanged) |
+| **Response** | `DeviceWithDataResponseDto` | `DeviceWithDataResponseDto` (unchanged) |
+
+**Frontend Changes Required:**
+```typescript
+// config.ts
+// OLD
+GET_DEVICE_WITH_DATA: '/Dashboard/device/GetWithData',
+// NEW
+GET_DEVICE_COMPONENTS_STATUS: '/Dashboard/DeviceComponentsStatus',
+
+// mobileDashboardService.ts
+// OLD
+async getDeviceWithData(deviceId: string)
+// NEW
+async getDeviceComponentsStatus(deviceId: string)
+```
+
+---
+
+## 2. Deleted Endpoints
+
+### Dashboard/GetComponentLiveData (REMOVED)
+
+| Property | Value |
+|----------|-------|
+| **Old Path** | `/Dashboard/device/component/getComponentLiveData` |
+| **Method** | GET |
+| **Status** | **DELETED** |
+| **Reason** | Only returned simulated data via DeviceSimulator. Frontend code was commented out and not in use. |
+
+**Frontend Changes Required:**
+- Remove `GET_COMPONENT_LIVE_DATA` from `config.ts`
+- Remove `getComponentLiveData()` function from `mobileDashboardService.ts`
+- Delete `useDeviceLiveData.ts` hook file
+- Remove `GetComponentLiveDataResponse` interface from types
+
+---
+
+## 3. Obsolete Endpoints (Marked for Future Deletion)
+
+The following endpoints have been marked with `[Obsolete]` attribute and are scheduled for removal:
+
+### RoleManagement (All Endpoints)
+
+| Endpoint | Path | Status |
+|----------|------|--------|
+| GET_ALL | `/RoleManagement` | Obsolete |
+| CREATE | `/RoleManagement` | Obsolete |
+| DELETE | `/RoleManagement/{roleName}` | Obsolete |
+| ASSIGN | `/RoleManagement/assign` | Obsolete |
+| GET_USER_ROLES | `/RoleManagement/user/{userId}` | Obsolete |
+
+### Invitations (Partial)
+
+| Endpoint | Path | Status |
+|----------|------|--------|
+| USER_HOME_SITES | `/Invitations/user-home-sites` | Obsolete |
+| GET_NOTIFICATIONS | `/Invitations/notifications` | Obsolete |
+| MARK_NOTIFICATION_READ | `/Invitations/notifications/{notificationId}/mark-read` | Obsolete |
+
+### Auth (Partial)
+
+| Endpoint | Path | Status |
+|----------|------|--------|
+| MANAGE_2FA | `/Users/manage/2fa` | Obsolete |
+
+---
+
+## 4. Unused Endpoints (Not Called by Frontend)
+
+The following endpoints exist in the backend but are **NOT used** by the frontend:
+
+| Endpoint | Path | Notes |
+|----------|------|-------|
+| LifetimeEnergy | `/Dashboard/LifetimeEnergy` | Not defined in frontend config |
+| Battery | `/Dashboard/graphs/Battery` | BatteryChart component is orphaned |
+| BatteryComponent | `/Dashboard/graphs/Components/Battery` | All usages commented out |
+| InverterComponent | `/Dashboard/graphs/Components/Inverter` | getInverterComponent() never called |
+
+---
+
+## Summary of Required Frontend Updates
+
+### Files to Modify:
+
+1. **`src/api/client/config.ts`**
+   - Rename `GET_DEVICE_WITH_DATA` to `GET_DEVICE_COMPONENTS_STATUS`
+   - Update path to `/Dashboard/DeviceComponentsStatus`
+   - Remove `GET_COMPONENT_LIVE_DATA`
+
+2. **`src/api/services/mobileDashboardService.ts`**
+   - Rename `getDeviceWithData()` to `getDeviceComponentsStatus()`
+   - Remove `getComponentLiveData()` function
+   - Remove `GetComponentLiveDataResponse` interface
+
+3. **`src/app/screens/deviceDetail/DeviceDetail.tsx`**
+   - Update call from `getDeviceWithData()` to `getDeviceComponentsStatus()`
+   - Remove import of `useDeviceLiveData`
+
+4. **`src/api/types/mobileDashboard.types.ts`**
+   - Remove `GetComponentLiveDataResponse` interface
+
+### Files to Delete:
+
+1. **`src/hooks/useDeviceLiveData.ts`** - Entire file can be deleted
+
+---
+
+*Document generated: January 2026*
