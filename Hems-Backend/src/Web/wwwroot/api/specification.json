@@ -16,56 +16,6 @@
         }
       }
     },
-    "/api/Auth/user-status": {
-      "get": {
-        "tags": [
-          "Auth"
-        ],
-        "operationId": "GetUserStatus",
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserStatusDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/Auth/mobile/get-user-status": {
-      "get": {
-        "tags": [
-          "Auth"
-        ],
-        "operationId": "GetUserStatusMobile",
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserStatusDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
     "/api/Dashboard/Soc": {
       "get": {
         "tags": [
@@ -489,12 +439,12 @@
         ]
       }
     },
-    "/api/Dashboard/device/GetWithData": {
+    "/api/Dashboard/DeviceComponentsStatus": {
       "get": {
         "tags": [
           "Dashboard"
         ],
-        "operationId": "GetDeviceWithData",
+        "operationId": "GetDeviceComponentsStatus",
         "parameters": [
           {
             "name": "deviceId",
@@ -526,12 +476,12 @@
         ]
       }
     },
-    "/api/Dashboard/device/component/getComponentLiveData": {
+    "/api/DeviceComponents/DeviceSummary": {
       "get": {
         "tags": [
-          "Dashboard"
+          "DeviceComponents"
         ],
-        "operationId": "GetComponentLiveData",
+        "operationId": "GetDeviceSummary",
         "parameters": [
           {
             "name": "deviceId",
@@ -542,16 +492,6 @@
               "format": "guid"
             },
             "x-position": 1
-          },
-          {
-            "name": "componentId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 2
           }
         ],
         "responses": {
@@ -560,7 +500,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GetComponentLiveDataResponse"
+                  "$ref": "#/components/schemas/DeviceSummaryResponseDto"
                 }
               }
             }
@@ -573,7 +513,44 @@
         ]
       }
     },
-    "/api/DeviceComponents/Device/{deviceId}": {
+    "/api/DeviceComponents/Details/{componentId}": {
+      "get": {
+        "tags": [
+          "DeviceComponents"
+        ],
+        "operationId": "GetDeviceDetails",
+        "parameters": [
+          {
+            "name": "componentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceDetailsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/DeviceComponents/Tool/DeviceComponents/{deviceId}": {
       "get": {
         "tags": [
           "DeviceComponents"
@@ -622,7 +599,7 @@
         ]
       }
     },
-    "/api/DeviceComponents/{id}": {
+    "/api/DeviceComponents/Tool/Component/{id}": {
       "get": {
         "tags": [
           "DeviceComponents"
@@ -727,81 +704,7 @@
         ]
       }
     },
-    "/api/DeviceComponents/DeviceSummary": {
-      "get": {
-        "tags": [
-          "DeviceComponents"
-        ],
-        "operationId": "GetDeviceSummary",
-        "parameters": [
-          {
-            "name": "deviceId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DeviceSummaryResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/DeviceComponents/Details/{componentId}": {
-      "get": {
-        "tags": [
-          "DeviceComponents"
-        ],
-        "operationId": "GetDeviceDetails",
-        "parameters": [
-          {
-            "name": "componentId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DeviceDetailsResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/DeviceComponents": {
+    "/api/DeviceComponents/Tool/Component": {
       "post": {
         "tags": [
           "DeviceComponents"
@@ -4805,78 +4708,6 @@
   },
   "components": {
     "schemas": {
-      "UserStatusDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "status": {
-            "$ref": "#/components/schemas/UserStatusType"
-          },
-          "redirectTo": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
-          },
-          "data": {
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/UserStatusDataDto"
-              }
-            ]
-          }
-        }
-      },
-      "UserStatusType": {
-        "type": "integer",
-        "description": "",
-        "x-enumNames": [
-          "Complete",
-          "NeedsSite",
-          "NeedsSetup",
-          "Error"
-        ],
-        "enum": [
-          1,
-          2,
-          3,
-          4
-        ]
-      },
-      "UserStatusDataDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "siteId": {
-            "type": "string",
-            "format": "guid",
-            "nullable": true
-          },
-          "siteName": {
-            "type": "string",
-            "nullable": true
-          },
-          "setupId": {
-            "type": "string",
-            "format": "guid",
-            "nullable": true
-          },
-          "setupName": {
-            "type": "string",
-            "nullable": true
-          },
-          "deviceId": {
-            "type": "string",
-            "format": "guid",
-            "nullable": true
-          },
-          "deviceName": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
       "SocResponseDto": {
         "type": "object",
         "additionalProperties": false,
@@ -5327,137 +5158,6 @@
           }
         }
       },
-      "GetComponentLiveDataResponse": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "success": {
-            "type": "boolean"
-          },
-          "message": {
-            "type": "string",
-            "nullable": true
-          },
-          "data": {
-            "nullable": true
-          }
-        }
-      },
-      "DeviceComponentDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
-          "deviceId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "deviceType": {
-            "$ref": "#/components/schemas/DeviceType"
-          },
-          "name": {
-            "type": "string"
-          },
-          "manufacturer": {
-            "type": "string",
-            "nullable": true
-          },
-          "modelNumber": {
-            "type": "string",
-            "nullable": true
-          },
-          "serialNumber": {
-            "type": "string",
-            "nullable": true
-          },
-          "specifications": {
-            "$ref": "#/components/schemas/JsonDocument"
-          },
-          "warrantyPeriod": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
-          },
-          "warrantyUnit": {
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/WarrantyUnit"
-              }
-            ]
-          },
-          "warrantyStartDate": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "isDeleted": {
-            "type": "boolean"
-          },
-          "created": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "createdBy": {
-            "type": "string",
-            "nullable": true
-          },
-          "lastModified": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "lastModifiedBy": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "DeviceType": {
-        "type": "integer",
-        "description": "",
-        "x-enumNames": [
-          "Invertor",
-          "BMS",
-          "Battery",
-          "MPPS"
-        ],
-        "enum": [
-          1,
-          2,
-          3,
-          4
-        ]
-      },
-      "JsonDocument": {
-        "type": "object",
-        "description": "Provides a mechanism for examining the structural content of a JSON value without automatically instantiating data values.",
-        "additionalProperties": false,
-        "properties": {
-          "isDisposable": {
-            "type": "boolean"
-          },
-          "rootElement": {
-            "description": "Gets the root element of this JSON document."
-          }
-        }
-      },
-      "WarrantyUnit": {
-        "type": "integer",
-        "description": "",
-        "x-enumNames": [
-          "Day",
-          "Month",
-          "Year"
-        ],
-        "enum": [
-          1,
-          2,
-          3
-        ]
-      },
       "DeviceSummaryResponseDto": {
         "type": "object",
         "additionalProperties": false,
@@ -5606,6 +5306,121 @@
             "type": "string"
           }
         }
+      },
+      "DeviceComponentDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "deviceId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "deviceType": {
+            "$ref": "#/components/schemas/DeviceType"
+          },
+          "name": {
+            "type": "string"
+          },
+          "manufacturer": {
+            "type": "string",
+            "nullable": true
+          },
+          "modelNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "serialNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "specifications": {
+            "$ref": "#/components/schemas/JsonDocument"
+          },
+          "warrantyPeriod": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "warrantyUnit": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WarrantyUnit"
+              }
+            ]
+          },
+          "warrantyStartDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "isDeleted": {
+            "type": "boolean"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastModified": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastModifiedBy": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "DeviceType": {
+        "type": "integer",
+        "description": "",
+        "x-enumNames": [
+          "Invertor",
+          "BMS",
+          "Battery",
+          "MPPS"
+        ],
+        "enum": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "JsonDocument": {
+        "type": "object",
+        "description": "Provides a mechanism for examining the structural content of a JSON value without automatically instantiating data values.",
+        "additionalProperties": false,
+        "properties": {
+          "isDisposable": {
+            "type": "boolean"
+          },
+          "rootElement": {
+            "description": "Gets the root element of this JSON document."
+          }
+        }
+      },
+      "WarrantyUnit": {
+        "type": "integer",
+        "description": "",
+        "x-enumNames": [
+          "Day",
+          "Month",
+          "Year"
+        ],
+        "enum": [
+          1,
+          2,
+          3
+        ]
       },
       "CreateDeviceComponentCommand": {
         "type": "object",

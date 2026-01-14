@@ -24,11 +24,11 @@ public class DeviceComponents : EndpointGroupBase
             .MapGet(GetDeviceDetails, "Details/{componentId}")
             // Admin Tool endpoints - for managing data without direct database access
             // These endpoints are not used by the mobile app, they are administrative utilities
-            .MapGet(GetDeviceComponentsByDeviceId, "Tool/Device/{deviceId}")
-            .MapGet(GetDeviceComponent, "Tool/{id}")
-            .MapPost(CreateDeviceComponent, "Tool")
-            .MapPut(UpdateDeviceComponent, "Tool/{id}")
-            .MapDelete(DeleteDeviceComponent, "Tool/{id}");
+            .MapGet(GetDeviceComponentsByDeviceId, "Tool/DeviceComponents/{deviceId}")
+            .MapGet(GetDeviceComponent, "Tool/Component/{id}")
+            .MapPost(CreateDeviceComponent, "Tool/Component")
+            .MapPut(UpdateDeviceComponent, "Tool/Component/{id}")
+            .MapDelete(DeleteDeviceComponent, "Tool/Component/{id}");
     }
 
     /// <summary>

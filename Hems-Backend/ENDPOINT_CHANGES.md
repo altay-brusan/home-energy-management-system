@@ -34,13 +34,13 @@ async getDeviceComponentsStatus(deviceId: string)
 
 The following admin-only endpoints have been moved under a `Tool/` prefix to clearly indicate they are administrative utilities for managing data without direct database access:
 
-| Old Path | New Path | Method |
-|----------|----------|--------|
-| `/DeviceComponents/Device/{deviceId}` | `/DeviceComponents/Tool/Device/{deviceId}` | GET |
-| `/DeviceComponents/{id}` | `/DeviceComponents/Tool/{id}` | GET |
-| `/DeviceComponents` | `/DeviceComponents/Tool` | POST |
-| `/DeviceComponents/{id}` | `/DeviceComponents/Tool/{id}` | PUT |
-| `/DeviceComponents/{id}` | `/DeviceComponents/Tool/{id}` | DELETE |
+| Old Path | New Path | Method | Description |
+|----------|----------|--------|-------------|
+| `/DeviceComponents/Device/{deviceId}` | `/DeviceComponents/Tool/DeviceComponents/{deviceId}` | GET | Get all components for a device (plural - returns list) |
+| `/DeviceComponents/{id}` | `/DeviceComponents/Tool/Component/{id}` | GET | Get single component (singular - returns one) |
+| `/DeviceComponents` | `/DeviceComponents/Tool/Component` | POST | Create a component |
+| `/DeviceComponents/{id}` | `/DeviceComponents/Tool/Component/{id}` | PUT | Update a component |
+| `/DeviceComponents/{id}` | `/DeviceComponents/Tool/Component/{id}` | DELETE | Delete a component |
 
 **Note:** These endpoints are AdminOnly and not used by the mobile app. They exist for administrative data management.
 
@@ -55,11 +55,11 @@ DEVICE_COMPONENTS: {
   UPDATE: '/DeviceComponents/:id',
   DELETE: '/DeviceComponents/:id',
   // NEW
-  GET_BY_DEVICE: '/DeviceComponents/Tool/Device/:deviceId',
-  GET_BY_ID: '/DeviceComponents/Tool/:id',
-  CREATE: '/DeviceComponents/Tool',
-  UPDATE: '/DeviceComponents/Tool/:id',
-  DELETE: '/DeviceComponents/Tool/:id',
+  GET_BY_DEVICE: '/DeviceComponents/Tool/DeviceComponents/:deviceId',
+  GET_BY_ID: '/DeviceComponents/Tool/Component/:id',
+  CREATE: '/DeviceComponents/Tool/Component',
+  UPDATE: '/DeviceComponents/Tool/Component/:id',
+  DELETE: '/DeviceComponents/Tool/Component/:id',
   // User-facing endpoints (unchanged)
   GET_DEVICE_SUMMARY: '/DeviceComponents/DeviceSummary',
   GET_COMPONENT_DETAILS: '/DeviceComponents/Details/:componentId',
