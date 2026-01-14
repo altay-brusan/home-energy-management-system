@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
+using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Infrastructure.Data;
 using Hems_Backend.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authentication.BearerToken;
@@ -128,6 +129,8 @@ public static class IdentityApiEndpointRouteBuilderExtensions
         {
             var signInManager = sp.GetRequiredService<SignInManager<TUser>>();
             var userManager = sp.GetRequiredService<UserManager<TUser>>();
+            var demoDataService = sp.GetRequiredService<IDemoDataService>();
+            var logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger("DemoUserLogin");
 
             // Check if user exists and email is confirmed
             var user = await userManager.FindByEmailAsync(login.Email);
@@ -163,6 +166,43 @@ public static class IdentityApiEndpointRouteBuilderExtensions
             {
                 return TypedResults.Problem(result.ToString(), statusCode: StatusCodes.Status404NotFound);
             }
+
+            // Handle demo user: reset data and seed demo environment
+            if (user is ApplicationUser appUser && appUser.IsDemo)
+            {
+                logger.LogInformation("Demo user login detected. Resetting demo data for user {Email}", login.Email);
+
+                // Reset demo data
+                var resetResult = await demoDataService.ResetDemoDataAsync(appUser.Id);
+                if (!resetResult.Success)
+                {
+                    logger.LogWarning("Failed to reset demo data: {Error}", resetResult.ErrorMessage);
+                }
+                else
+                {
+                    logger.LogInformation(
+                        "Demo data reset: {Telemetry} telemetry, {Notifications} notifications, {Energy} energy records deleted",
+                        resetResult.TelemetryRecordsDeleted,
+                        resetResult.NotificationsDeleted,
+                        resetResult.EnergyDataRecordsDeleted);
+                }
+
+                // Seed demo environment (creates site, setup, device if not exists)
+                var seedResult = await demoDataService.SeedDemoDataAsync(appUser.Id);
+                if (!seedResult.Success)
+                {
+                    logger.LogWarning("Failed to seed demo data: {Error}", seedResult.ErrorMessage);
+                }
+                else
+                {
+                    logger.LogInformation(
+                        "Demo data seeded: Site={SiteId}, Setup={SetupId}, Device={DeviceId}",
+                        seedResult.SiteId,
+                        seedResult.SetupId,
+                        seedResult.DeviceId);
+                }
+            }
+
             return TypedResults.Empty;
         });
 

@@ -1,6 +1,8 @@
+using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Domain.Constants;
 using Hems_Backend.Domain.Entities;
 using Hems_Backend.Infrastructure.Identity;
+using Hems_Backend.Infrastructure.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -85,6 +87,44 @@ public class ApplicationDbContextInitialiser
                 await _userManager.AddToRolesAsync(administrator, new [] { administratorRole.Name });
             }
         }
+
+        // Seed MobilUser role for demo user
+        var mobilUserRole = new IdentityRole(Roles.MobilUser);
+        if (_roleManager.Roles.All(r => r.Name != mobilUserRole.Name))
+        {
+            await _roleManager.CreateAsync(mobilUserRole);
+        }
+
+        // Demo user for app store assessment (Google Play Store / iOS App Store)
+        var demoUser = new ApplicationUser
+        {
+            UserName = DemoDataService.DemoUserEmail,
+            Email = DemoDataService.DemoUserEmail,
+            FirstName = "Demo",
+            Surname = "User",
+            IsDemo = true,
+            EmailConfirmed = true // Demo user doesn't need email confirmation
+        };
+
+        if (_userManager.Users.All(u => u.UserName != demoUser.UserName))
+        {
+            var result = await _userManager.CreateAsync(demoUser, "Demo@123");
+            if (result.Succeeded)
+            {
+                if (!string.IsNullOrWhiteSpace(mobilUserRole.Name))
+                {
+                    await _userManager.AddToRolesAsync(demoUser, new[] { mobilUserRole.Name });
+                }
+                _logger.LogInformation("Demo user created: {Email}", demoUser.Email);
+            }
+            else
+            {
+                _logger.LogWarning("Failed to create demo user: {Errors}", string.Join(", ", result.Errors.Select(e => e.Description)));
+            }
+        }
+
+        // Seed demo device at startup (so simulator can work immediately)
+        await SeedDemoDeviceAsync();
 
         // Default data
         // Seed, if necessary
@@ -1277,6 +1317,159 @@ public class ApplicationDbContextInitialiser
             await _context.SaveChangesAsync();
 
             _logger.LogInformation("Seeded {CountryCount} countries and {CityCount} cities", countries.Count, cities.Count);
+        }
+    }
+
+    /// <summary>
+    /// Seeds demo device at startup so simulator can work immediately.
+    /// This is called during application startup, not on demo user login.
+    /// </summary>
+    private async Task SeedDemoDeviceAsync()
+    {
+        try
+        {
+            // Check if demo device already exists
+            var existingDemoDevice = await _context.Devices
+                .FirstOrDefaultAsync(d => d.SerialNumber == DemoDataService.DemoDeviceSerial);
+
+            if (existingDemoDevice != null)
+            {
+                _logger.LogDebug("Demo device already exists: {SerialNumber}", DemoDataService.DemoDeviceSerial);
+                return;
+            }
+
+            // Get demo user
+            var demoUser = await _userManager.FindByEmailAsync(DemoDataService.DemoUserEmail);
+            if (demoUser == null)
+            {
+                _logger.LogWarning("Demo user not found, skipping demo device seeding");
+                return;
+            }
+
+            _logger.LogInformation("Seeding demo device for simulator...");
+
+            // Create demo site
+            var demoSite = new Site
+            {
+                UserId = demoUser.Id,
+                Name = "Demo Home",
+                Country = "Turkiye",
+                City = "Istanbul",
+                District = "Kadikoy",
+                AddressLine = "Demo Address 123",
+                Latitude = 40.9885m,
+                Longitude = 29.0288m,
+                Timezone = "Europe/Istanbul",
+                CreatedBy = demoUser.Id
+            };
+
+            _context.Sites.Add(demoSite);
+            await _context.SaveChangesAsync();
+
+            // Create demo setup
+            var demoSetup = new Setup
+            {
+                SiteId = demoSite.Id,
+                Name = "Demo Setup",
+                CreatedBy = demoUser.Id
+            };
+
+            _context.Setups.Add(demoSetup);
+            await _context.SaveChangesAsync();
+
+            // Create demo device with well-known ThingsBoardDeviceId
+            var demoDevice = new Device
+            {
+                Name = "Demo HEMS Device",
+                Manufacturer = "Oklidis",
+                ModelNumber = "HEMS-DEMO-001",
+                SerialNumber = DemoDataService.DemoDeviceSerial,
+                TypeNumber = "DEMO-TYPE-001",
+                QRCode = $"DEMO-QR-{Guid.NewGuid():N}",
+                Specifications = System.Text.Json.JsonDocument.Parse("{\"type\":\"demo\",\"capacity\":\"10kW\"}"),
+                InstallationDate = DateTime.UtcNow.AddDays(-30),
+                WarrantyPeriod = 24,
+                WarrantyUnit = Domain.Enums.WarrantyUnit.Month,
+                WarrantyStartDate = DateTime.UtcNow.AddDays(-30),
+                IsDemoDevice = true,
+                ThingsBoardDeviceId = DemoDataService.DemoThingsBoardDeviceId,
+                CreatedBy = demoUser.Id
+            };
+
+            _context.Devices.Add(demoDevice);
+            await _context.SaveChangesAsync();
+
+            // Create setup-device relationship
+            var setupDevice = new SetupDevice
+            {
+                SetupId = demoSetup.Id,
+                DeviceId = demoDevice.Id,
+                CreatedBy = demoUser.Id
+            };
+
+            _context.SetupDevices.Add(setupDevice);
+            await _context.SaveChangesAsync();
+
+            // Create demo device components
+            var components = new List<DeviceComponent>
+            {
+                new DeviceComponent
+                {
+                    DeviceId = demoDevice.Id,
+                    DeviceType = Domain.Enums.DeviceType.Invertor,
+                    Name = "Demo Inverter",
+                    Manufacturer = "Oklidis",
+                    ModelNumber = "INV-DEMO-5000",
+                    SerialNumber = "DEMO-INV-001",
+                    Specifications = System.Text.Json.JsonDocument.Parse("{\"power\":\"5kW\",\"efficiency\":\"98%\"}"),
+                    CreatedBy = demoUser.Id
+                },
+                new DeviceComponent
+                {
+                    DeviceId = demoDevice.Id,
+                    DeviceType = Domain.Enums.DeviceType.Battery,
+                    Name = "Demo Battery",
+                    Manufacturer = "Oklidis",
+                    ModelNumber = "BAT-DEMO-10000",
+                    SerialNumber = "DEMO-BAT-001",
+                    Specifications = System.Text.Json.JsonDocument.Parse("{\"capacity\":\"10kWh\",\"type\":\"LiFePO4\"}"),
+                    CreatedBy = demoUser.Id
+                },
+                new DeviceComponent
+                {
+                    DeviceId = demoDevice.Id,
+                    DeviceType = Domain.Enums.DeviceType.BMS,
+                    Name = "Demo BMS",
+                    Manufacturer = "Oklidis",
+                    ModelNumber = "BMS-DEMO-001",
+                    SerialNumber = "DEMO-BMS-001",
+                    Specifications = System.Text.Json.JsonDocument.Parse("{\"cells\":\"16\",\"voltage\":\"51.2V\"}"),
+                    CreatedBy = demoUser.Id
+                }
+            };
+
+            _context.DeviceComponents.AddRange(components);
+            await _context.SaveChangesAsync();
+
+            // Initialize device mode
+            var defaultMode = new DeviceModeHistory
+            {
+                DeviceId = demoDevice.Id,
+                Mode = (int)Application.DeviceSettings.Models.DeviceMode.SelfConsumption,
+                Description = "Self Consumption",
+                IsActive = true
+            };
+            _context.DeviceModeHistory.Add(defaultMode);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Demo device seeded: Site={SiteId}, Setup={SetupId}, Device={DeviceId}, SerialNumber={SerialNumber}",
+                demoSite.Id, demoSetup.Id, demoDevice.Id, demoDevice.SerialNumber);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error seeding demo device");
+            // Don't throw - this is optional seeding
         }
     }
 }

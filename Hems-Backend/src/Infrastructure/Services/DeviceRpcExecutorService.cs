@@ -1,17 +1,22 @@
+using System.Diagnostics;
 using System.Text.Json;
 using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Application.Common.Models.Rpc;
+using Microsoft.Extensions.Logging;
 
 namespace Hems_Backend.Infrastructure.Services;
 
 /// <summary>
 /// Service for executing RPC commands on devices with parameter mapping
-/// Handles parameter-to-RPC method mapping, batch optimization, and nested field updates
+/// Handles parameter-to-RPC method mapping, batch optimization, nested field updates,
+/// and retry with exponential backoff (similar to CSMA/CD collision resolution)
 /// </summary>
 public class DeviceRpcExecutorService : IDeviceRpcExecutorService
 {
     private readonly IThingsBoardConnectorService _tbService;
+    private readonly ILogger<DeviceRpcExecutorService> _logger;
+    private readonly Random _jitterRandom = new();
 
     // TODO: REFACTOR - These parameters are temporarily disabled due to RPC execution issues.
     // The GeneratorAndSmartLoadConfig RPC needs investigation and proper fix.
@@ -31,24 +36,45 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
         "SmartLoadOpenDelay"
     };
 
-    public DeviceRpcExecutorService(IThingsBoardConnectorService tbService)
+    // Error messages that indicate retryable conditions
+    private static readonly HashSet<string> RetryableErrorPatterns = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "timeout",
+        "busy",
+        "temporarily unavailable",
+        "try again",
+        "connection",
+        "network"
+    };
+
+    public DeviceRpcExecutorService(
+        IThingsBoardConnectorService tbService,
+        ILogger<DeviceRpcExecutorService> logger)
     {
         _tbService = tbService;
+        _logger = logger;
     }
 
     public async Task<RpcExecutionResult> ExecuteParameterUpdateAsync(
         Guid tbDeviceId,
         string parameterName,
         string value,
+        RpcRetryOptions? retryOptions = null,
         CancellationToken cancellationToken = default)
     {
+        var options = retryOptions ?? RpcRetryOptions.Default;
+        var stopwatch = Stopwatch.StartNew();
+
         // TODO: REFACTOR - Skip temporarily disabled parameters
         if (SkippedParameters.Contains(parameterName))
         {
             return new RpcExecutionResult
             {
                 Success = true,
-                ErrorMessage = $"Parameter '{parameterName}' is temporarily skipped (GeneratorAndSmartLoadConfig disabled)"
+                ErrorMessage = $"Parameter '{parameterName}' is temporarily skipped (GeneratorAndSmartLoadConfig disabled)",
+                ErrorCategory = RpcErrorCategory.ParameterSkipped,
+                RetryAttempts = 0,
+                TotalDurationMs = stopwatch.ElapsedMilliseconds
             };
         }
 
@@ -58,61 +84,151 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
             return new RpcExecutionResult
             {
                 Success = false,
-                ErrorMessage = $"No RPC mapping found for parameter: {parameterName}"
+                ErrorMessage = $"No RPC mapping found for parameter: {parameterName}",
+                ErrorCategory = RpcErrorCategory.MappingNotFound,
+                RetryAttempts = 0,
+                TotalDurationMs = stopwatch.ElapsedMilliseconds
             };
         }
 
-        try
+        // Build request outside retry loop (it doesn't change)
+        var mappedValue = config.ValueMapper != null ? config.ValueMapper(value) : value;
+        var request = BuildRequestObject(config.RpcKind, config.FieldPath, mappedValue);
+        var requestDict = SerializeToDict(request);
+
+        int attempt = 0;
+        RpcExecutionResult? lastResult = null;
+
+        while (attempt <= options.MaxRetries)
         {
-            // Build strongly-typed request with ONLY the changed field
-            var mappedValue = config.ValueMapper != null ? config.ValueMapper(value) : value;
-            var request = BuildRequestObject(config.RpcKind, config.FieldPath, mappedValue);
-
-            // Convert request object to dictionary for RPC call
-            var requestDict = SerializeToDict(request);
-
-            // Send request (device will fill in undefined fields from current state)
-            var updateResponse = await _tbService.SendTwoWayRpcAsync(
-                deviceId: tbDeviceId,
-                method: config.RpcMethod,
-                parameters: requestDict,
-                timeoutMs: 60000, // 60 seconds - allows time for Modbus operations + network delays
-                cancellationToken: cancellationToken
-            );
-
-            if (updateResponse == null || !updateResponse.Success)
+            try
             {
-                return new RpcExecutionResult
+                if (attempt > 0)
+                {
+                    // Calculate delay with exponential backoff
+                    var delay = CalculateBackoffDelay(attempt, options);
+                    _logger.LogInformation(
+                        "Retry attempt {Attempt}/{MaxRetries} for parameter {ParameterName} on device {DeviceId} after {Delay}ms delay",
+                        attempt, options.MaxRetries, parameterName, tbDeviceId, delay);
+
+                    await Task.Delay(delay, cancellationToken);
+                }
+
+                // Send request (device will fill in undefined fields from current state)
+                var updateResponse = await _tbService.SendTwoWayRpcAsync(
+                    deviceId: tbDeviceId,
+                    method: config.RpcMethod,
+                    parameters: requestDict,
+                    timeoutMs: 60000, // 60 seconds - allows time for Modbus operations + network delays
+                    cancellationToken: cancellationToken
+                );
+
+                if (updateResponse != null && updateResponse.Success)
+                {
+                    if (attempt > 0)
+                    {
+                        _logger.LogInformation(
+                            "Successfully updated parameter {ParameterName} on device {DeviceId} after {Attempts} retry attempt(s)",
+                            parameterName, tbDeviceId, attempt);
+                    }
+
+                    return new RpcExecutionResult
+                    {
+                        Success = true,
+                        RpcMethod = config.RpcMethod,
+                        Response = updateResponse.Response,
+                        ErrorCategory = RpcErrorCategory.None,
+                        RetryAttempts = attempt,
+                        TotalDurationMs = stopwatch.ElapsedMilliseconds
+                    };
+                }
+
+                // Determine error category and whether to retry
+                var errorCategory = CategorizeError(updateResponse);
+                var errorMessage = GetDetailedErrorMessage(updateResponse, config.RpcMethod);
+
+                lastResult = new RpcExecutionResult
                 {
                     Success = false,
-                    ErrorMessage = "Device did not confirm parameter update",
-                    RpcMethod = config.RpcMethod
+                    ErrorMessage = errorMessage,
+                    RpcMethod = config.RpcMethod,
+                    ErrorCategory = errorCategory,
+                    RetryAttempts = attempt,
+                    TotalDurationMs = stopwatch.ElapsedMilliseconds
                 };
-            }
 
-            return new RpcExecutionResult
+                // Only retry for retryable errors
+                if (!IsRetryableError(errorCategory, errorMessage))
+                {
+                    _logger.LogWarning(
+                        "Non-retryable error for parameter {ParameterName}: {ErrorCategory} - {ErrorMessage}",
+                        parameterName, errorCategory, errorMessage);
+                    break;
+                }
+
+                attempt++;
+            }
+            catch (OperationCanceledException)
             {
-                Success = true,
-                RpcMethod = config.RpcMethod,
-                Response = updateResponse.Response
-            };
+                throw; // Don't retry on cancellation
+            }
+            catch (Exception ex)
+            {
+                var errorCategory = CategorizeException(ex);
+                var errorMessage = $"RPC execution failed: {ex.Message}";
+
+                lastResult = new RpcExecutionResult
+                {
+                    Success = false,
+                    ErrorMessage = errorMessage,
+                    RpcMethod = config.RpcMethod,
+                    ErrorCategory = errorCategory,
+                    RetryAttempts = attempt,
+                    TotalDurationMs = stopwatch.ElapsedMilliseconds
+                };
+
+                if (!IsRetryableError(errorCategory, ex.Message))
+                {
+                    _logger.LogWarning(ex,
+                        "Non-retryable exception for parameter {ParameterName}: {ErrorCategory}",
+                        parameterName, errorCategory);
+                    break;
+                }
+
+                _logger.LogWarning(ex,
+                    "Retryable exception for parameter {ParameterName} (attempt {Attempt}): {ErrorCategory}",
+                    parameterName, attempt, errorCategory);
+
+                attempt++;
+            }
         }
-        catch (Exception ex)
+
+        // All retries exhausted
+        if (lastResult != null && lastResult.RetryAttempts > 0)
         {
-            return new RpcExecutionResult
-            {
-                Success = false,
-                ErrorMessage = $"RPC execution failed: {ex.Message}",
-                RpcMethod = config.RpcMethod
-            };
+            _logger.LogError(
+                "Failed to update parameter {ParameterName} on device {DeviceId} after {Attempts} attempts: {Error}",
+                parameterName, tbDeviceId, lastResult.RetryAttempts, lastResult.ErrorMessage);
         }
+
+        return lastResult ?? new RpcExecutionResult
+        {
+            Success = false,
+            ErrorMessage = "Unknown error",
+            RpcMethod = config.RpcMethod,
+            ErrorCategory = RpcErrorCategory.Unknown,
+            RetryAttempts = attempt,
+            TotalDurationMs = stopwatch.ElapsedMilliseconds
+        };
     }
 
     public async Task<Dictionary<string, RpcExecutionResult>> ExecuteParameterUpdatesAsync(
         Guid tbDeviceId,
         Dictionary<string, string> parameters,
+        RpcRetryOptions? retryOptions = null,
         CancellationToken cancellationToken = default)
     {
+        var options = retryOptions ?? RpcRetryOptions.Default;
         var results = new Dictionary<string, RpcExecutionResult>();
 
         // TODO: REFACTOR - Skip temporarily disabled parameters and add skip results
@@ -121,7 +237,8 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
             results[param.Key] = new RpcExecutionResult
             {
                 Success = true,
-                ErrorMessage = $"Parameter '{param.Key}' is temporarily skipped (GeneratorAndSmartLoadConfig disabled)"
+                ErrorMessage = $"Parameter '{param.Key}' is temporarily skipped (GeneratorAndSmartLoadConfig disabled)",
+                ErrorCategory = RpcErrorCategory.ParameterSkipped
             };
         }
 
@@ -149,58 +266,133 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
                 .Select(g => g.Select(x => x.item).ToList())
                 .ToList();
 
-            // Process each batch
+            // Process each batch with retry support
             foreach (var batch in batches)
             {
-                try
+                var batchStopwatch = Stopwatch.StartNew();
+
+                // Build request outside retry loop
+                var request = CreateEmptyRequest(group.Key.RpcKind);
+                foreach (var param in batch)
                 {
-                    // Create empty request object for this RPC kind
-                    var request = CreateEmptyRequest(group.Key.RpcKind);
+                    var mappedValue = param.Mapping!.ValueMapper != null
+                        ? param.Mapping.ValueMapper(param.Value)
+                        : param.Value;
+                    PopulateRequestField(request, param.Mapping.FieldPath, mappedValue);
+                }
+                var requestDict = SerializeToDict(request);
 
-                    // Populate request with all changed fields in this batch
-                    foreach (var param in batch)
+                int attempt = 0;
+                bool batchSuccess = false;
+                string? lastErrorMessage = null;
+                RpcErrorCategory lastErrorCategory = RpcErrorCategory.Unknown;
+
+                while (attempt <= options.MaxRetries && !batchSuccess)
+                {
+                    try
                     {
-                        var mappedValue = param.Mapping!.ValueMapper != null
-                            ? param.Mapping.ValueMapper(param.Value)
-                            : param.Value;
-
-                        PopulateRequestField(request, param.Mapping.FieldPath, mappedValue);
-                    }
-
-                    // Convert request object to dictionary for RPC call
-                    var requestDict = SerializeToDict(request);
-
-                    // Send request (device will fill in undefined fields)
-                    var updateResponse = await _tbService.SendTwoWayRpcAsync(
-                        deviceId: tbDeviceId,
-                        method: group.Key.RpcMethod,
-                        parameters: requestDict,
-                        timeoutMs: 60000, // 60 seconds - only writes changed registers
-                        cancellationToken: cancellationToken
-                    );
-
-                    // Mark results for all parameters in this batch
-                    foreach (var param in batch)
-                    {
-                        results[param.ParameterName] = new RpcExecutionResult
+                        if (attempt > 0)
                         {
-                            Success = updateResponse?.Success ?? false,
-                            ErrorMessage = updateResponse?.Success == false ? "Device did not confirm update" : null,
-                            RpcMethod = group.Key.RpcMethod,
-                            Response = updateResponse?.Response
-                        };
+                            var delay = CalculateBackoffDelay(attempt, options);
+                            _logger.LogInformation(
+                                "Retry attempt {Attempt}/{MaxRetries} for batch RPC {RpcMethod} on device {DeviceId} after {Delay}ms delay",
+                                attempt, options.MaxRetries, group.Key.RpcMethod, tbDeviceId, delay);
+
+                            await Task.Delay(delay, cancellationToken);
+                        }
+
+                        // Send request (device will fill in undefined fields)
+                        var updateResponse = await _tbService.SendTwoWayRpcAsync(
+                            deviceId: tbDeviceId,
+                            method: group.Key.RpcMethod,
+                            parameters: requestDict,
+                            timeoutMs: 60000, // 60 seconds - only writes changed registers
+                            cancellationToken: cancellationToken
+                        );
+
+                        if (updateResponse?.Success == true)
+                        {
+                            batchSuccess = true;
+
+                            // Mark results for all parameters in this batch
+                            foreach (var param in batch)
+                            {
+                                results[param.ParameterName] = new RpcExecutionResult
+                                {
+                                    Success = true,
+                                    RpcMethod = group.Key.RpcMethod,
+                                    Response = updateResponse.Response,
+                                    ErrorCategory = RpcErrorCategory.None,
+                                    RetryAttempts = attempt,
+                                    TotalDurationMs = batchStopwatch.ElapsedMilliseconds
+                                };
+                            }
+
+                            if (attempt > 0)
+                            {
+                                _logger.LogInformation(
+                                    "Successfully executed batch RPC {RpcMethod} on device {DeviceId} after {Attempts} retry attempt(s)",
+                                    group.Key.RpcMethod, tbDeviceId, attempt);
+                            }
+                        }
+                        else
+                        {
+                            lastErrorCategory = CategorizeError(updateResponse);
+                            lastErrorMessage = GetDetailedErrorMessage(updateResponse, group.Key.RpcMethod);
+
+                            if (!IsRetryableError(lastErrorCategory, lastErrorMessage))
+                            {
+                                _logger.LogWarning(
+                                    "Non-retryable error for batch RPC {RpcMethod}: {ErrorCategory} - {ErrorMessage}",
+                                    group.Key.RpcMethod, lastErrorCategory, lastErrorMessage);
+                                break;
+                            }
+
+                            attempt++;
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        lastErrorCategory = CategorizeException(ex);
+                        lastErrorMessage = $"RPC execution failed: {ex.Message}";
+
+                        if (!IsRetryableError(lastErrorCategory, ex.Message))
+                        {
+                            _logger.LogWarning(ex,
+                                "Non-retryable exception for batch RPC {RpcMethod}: {ErrorCategory}",
+                                group.Key.RpcMethod, lastErrorCategory);
+                            break;
+                        }
+
+                        _logger.LogWarning(ex,
+                            "Retryable exception for batch RPC {RpcMethod} (attempt {Attempt}): {ErrorCategory}",
+                            group.Key.RpcMethod, attempt, lastErrorCategory);
+
+                        attempt++;
                     }
                 }
-                catch (Exception ex)
+
+                // If batch failed after all retries, mark all parameters as failed
+                if (!batchSuccess)
                 {
-                    // Mark all parameters in this batch as failed
+                    _logger.LogError(
+                        "Failed batch RPC {RpcMethod} on device {DeviceId} after {Attempts} attempts: {Error}",
+                        group.Key.RpcMethod, tbDeviceId, attempt, lastErrorMessage);
+
                     foreach (var param in batch)
                     {
                         results[param.ParameterName] = new RpcExecutionResult
                         {
                             Success = false,
-                            ErrorMessage = $"RPC execution failed: {ex.Message}",
-                            RpcMethod = group.Key.RpcMethod
+                            ErrorMessage = lastErrorMessage ?? "Device did not confirm update",
+                            RpcMethod = group.Key.RpcMethod,
+                            ErrorCategory = lastErrorCategory,
+                            RetryAttempts = attempt,
+                            TotalDurationMs = batchStopwatch.ElapsedMilliseconds
                         };
                     }
                 }
@@ -1158,4 +1350,198 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
 
         return current;
     }
+
+    #region Retry Helper Methods
+
+    /// <summary>
+    /// Calculates the backoff delay for a retry attempt using exponential backoff with optional jitter.
+    /// Similar to CSMA/CD collision resolution algorithm used in Ethernet networks.
+    /// </summary>
+    private int CalculateBackoffDelay(int attempt, RpcRetryOptions options)
+    {
+        // Calculate exponential delay: initialDelay * (multiplier ^ (attempt - 1))
+        var exponentialDelay = (int)(options.InitialDelayMs * Math.Pow(options.BackoffMultiplier, attempt - 1));
+
+        // Cap at maximum delay
+        var cappedDelay = Math.Min(exponentialDelay, options.MaxDelayMs);
+
+        // Add jitter to prevent thundering herd (similar to CSMA/CD random backoff)
+        if (options.UseJitter)
+        {
+            // Add random jitter of ±25% of the delay
+            var jitterRange = cappedDelay / 4;
+            var jitter = _jitterRandom.Next(-jitterRange, jitterRange + 1);
+            cappedDelay = Math.Max(options.InitialDelayMs / 2, cappedDelay + jitter);
+        }
+
+        return cappedDelay;
+    }
+
+    /// <summary>
+    /// Categorizes an error based on the RPC response
+    /// </summary>
+    private static RpcErrorCategory CategorizeError(TbRpcResponse? response)
+    {
+        if (response == null)
+        {
+            return RpcErrorCategory.DeviceOffline;
+        }
+
+        if (response.Success)
+        {
+            return RpcErrorCategory.None;
+        }
+
+        var errorMessage = response.Error?.ToLowerInvariant() ?? "";
+
+        // Check for timeout
+        if (errorMessage.Contains("timeout") || errorMessage.Contains("timed out"))
+        {
+            return RpcErrorCategory.Timeout;
+        }
+
+        // Check for busy state
+        if (errorMessage.Contains("busy") || errorMessage.Contains("in progress") ||
+            errorMessage.Contains("processing"))
+        {
+            return RpcErrorCategory.DeviceBusy;
+        }
+
+        // Check for offline/unreachable
+        if (errorMessage.Contains("offline") || errorMessage.Contains("unreachable") ||
+            errorMessage.Contains("not found") || errorMessage.Contains("disconnected"))
+        {
+            return RpcErrorCategory.DeviceOffline;
+        }
+
+        // Check for network errors
+        if (errorMessage.Contains("network") || errorMessage.Contains("connection") ||
+            errorMessage.Contains("socket") || errorMessage.Contains("mqtt"))
+        {
+            return RpcErrorCategory.NetworkError;
+        }
+
+        // Check for validation errors
+        if (errorMessage.Contains("invalid") || errorMessage.Contains("validation") ||
+            errorMessage.Contains("out of range") || errorMessage.Contains("not supported"))
+        {
+            return RpcErrorCategory.ValidationError;
+        }
+
+        // Check for rejection
+        if (errorMessage.Contains("rejected") || errorMessage.Contains("denied") ||
+            errorMessage.Contains("permission") || errorMessage.Contains("not allowed"))
+        {
+            return RpcErrorCategory.DeviceRejected;
+        }
+
+        return RpcErrorCategory.Unknown;
+    }
+
+    /// <summary>
+    /// Categorizes an exception into an error category
+    /// </summary>
+    private static RpcErrorCategory CategorizeException(Exception ex)
+    {
+        var message = ex.Message.ToLowerInvariant();
+
+        if (ex is TimeoutException || message.Contains("timeout"))
+        {
+            return RpcErrorCategory.Timeout;
+        }
+
+        if (ex is OperationCanceledException)
+        {
+            return RpcErrorCategory.Timeout; // Treat cancellation as timeout for retry purposes
+        }
+
+        if (ex is System.Net.Http.HttpRequestException ||
+            ex is System.Net.Sockets.SocketException ||
+            message.Contains("network") || message.Contains("connection"))
+        {
+            return RpcErrorCategory.NetworkError;
+        }
+
+        if (ex is ArgumentException || ex is FormatException ||
+            message.Contains("invalid") || message.Contains("format"))
+        {
+            return RpcErrorCategory.ValidationError;
+        }
+
+        return RpcErrorCategory.Unknown;
+    }
+
+    /// <summary>
+    /// Determines if an error is retryable based on category and message
+    /// </summary>
+    private bool IsRetryableError(RpcErrorCategory category, string? errorMessage)
+    {
+        // These error categories are always retryable
+        switch (category)
+        {
+            case RpcErrorCategory.Timeout:
+            case RpcErrorCategory.DeviceBusy:
+            case RpcErrorCategory.NetworkError:
+                return true;
+
+            case RpcErrorCategory.DeviceOffline:
+            case RpcErrorCategory.ValidationError:
+            case RpcErrorCategory.DeviceRejected:
+            case RpcErrorCategory.MappingNotFound:
+            case RpcErrorCategory.ParameterSkipped:
+                return false;
+
+            case RpcErrorCategory.Unknown:
+            case RpcErrorCategory.None:
+            default:
+                break;
+        }
+
+        // For unknown errors, check message patterns
+        if (!string.IsNullOrEmpty(errorMessage))
+        {
+            var lowerMessage = errorMessage.ToLowerInvariant();
+            return RetryableErrorPatterns.Any(pattern => lowerMessage.Contains(pattern));
+        }
+
+        // Default to retryable for unknown errors (give it a chance)
+        return true;
+    }
+
+    /// <summary>
+    /// Gets a detailed, user-friendly error message based on the response
+    /// </summary>
+    private static string GetDetailedErrorMessage(TbRpcResponse? response, string rpcMethod)
+    {
+        if (response == null)
+        {
+            return $"Device did not respond to {rpcMethod} - device may be offline or unreachable";
+        }
+
+        if (!string.IsNullOrEmpty(response.Error))
+        {
+            return $"{rpcMethod} failed: {response.Error}";
+        }
+
+        // Try to extract error from response object
+        if (response.Response != null)
+        {
+            try
+            {
+                var responseJson = JsonSerializer.Serialize(response.Response);
+                if (responseJson.Length < 500) // Only include if reasonably short
+                {
+                    return $"Device rejected {rpcMethod}: {responseJson}";
+                }
+            }
+            catch
+            {
+                // Ignore serialization errors
+            }
+        }
+
+        return $"Device did not confirm {rpcMethod} update - no specific error provided";
+    }
+
+    #endregion
 }

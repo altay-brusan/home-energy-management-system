@@ -80,6 +80,9 @@ public static class DependencyInjection
         builder.Services.AddSingleton<IDeviceHeartbeatCache, DeviceHeartbeatCache>();
         builder.Services.AddHostedService<DeviceHeartbeatMonitorService>();
 
+        // Device Activity Service (centralized telemetry-based activity tracking)
+        builder.Services.AddScoped<IDeviceActivityService, DeviceActivityService>();
+
         // Parameter Update Background Service (SignalR-based async updates)
         builder.Services.AddSingleton<ParameterUpdateBackgroundService>();
         builder.Services.AddSingleton<IParameterUpdateQueueService>(sp => sp.GetRequiredService<ParameterUpdateBackgroundService>());
@@ -90,6 +93,10 @@ public static class DependencyInjection
 
         // Device RPC Executor Service
         builder.Services.AddScoped<IDeviceRpcExecutorService, DeviceRpcExecutorService>();
+
+        // Energy Data Collection Service (pulls data from devices at 23:45 local time)
+        builder.Services.AddScoped<IEnergyDataCollectionService, EnergyDataCollectionService>();
+        builder.Services.AddHostedService<EnergyDataCollectionBackgroundService>();
 
         // Device Authorization
         builder.Services.AddScoped<IAuthorizationHandler, DeviceOnlyAuthorizationHandler>();
@@ -102,6 +109,16 @@ public static class DependencyInjection
         builder.Services.AddTransient<IEmailSender, SmtpEmailSender>();
         builder.Services.AddTransient<IEmailSender<ApplicationUser>, EmailSender>();
         builder.Services.AddTransient<IInvitationEmailService, InvitationEmailService>();
+
+        // Demo Data Service (for app store assessment demo users)
+        builder.Services.AddScoped<IDemoDataService, DemoDataService>();
+
+        // Demo Simulation Data Service (provides simulated data for demo users)
+        builder.Services.AddSingleton<IDemoSimulationDataService, DemoSimulationDataService>();
+
+        // Shared Device Stream Manager (singleton for reference-counted shared streams)
+        builder.Services.Configure<SharedStreamOptions>(builder.Configuration.GetSection("SharedStream"));
+        builder.Services.AddSingleton<ISharedDeviceStreamManager, SharedDeviceStreamManager>();
 
         builder.Services.AddAuthorization(options =>
         {

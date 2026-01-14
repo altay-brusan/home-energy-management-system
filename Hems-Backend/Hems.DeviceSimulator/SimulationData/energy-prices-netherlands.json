@@ -1,0 +1,66 @@
+{
+  "description": "Netherlands electricity market prices (2024 average rates)",
+  "version": "1.0",
+  "currency": "EUR",
+  "unit": "kWh",
+  "notes": {
+    "buyPrice": "Consumer purchase price from grid (includes taxes, network fees)",
+    "sellPrice": "Feed-in tariff for solar export (varies by energy company)"
+  },
+  "timeOfUsePricing": [
+    {
+      "name": "Off-Peak Night",
+      "beginHour": 0,
+      "endHour": 6,
+      "buyPrice": 0.22,
+      "sellPrice": 0.07
+    },
+    {
+      "name": "Morning Peak",
+      "beginHour": 6,
+      "endHour": 9,
+      "buyPrice": 0.35,
+      "sellPrice": 0.11
+    },
+    {
+      "name": "Day Standard",
+      "beginHour": 9,
+      "endHour": 17,
+      "buyPrice": 0.28,
+      "sellPrice": 0.09
+    },
+    {
+      "name": "Evening Peak",
+      "beginHour": 17,
+      "endHour": 21,
+      "buyPrice": 0.42,
+      "sellPrice": 0.13
+    },
+    {
+      "name": "Late Evening",
+      "beginHour": 21,
+      "endHour": 24,
+      "buyPrice": 0.25,
+      "sellPrice": 0.08
+    }
+  ],
+  "flatRatePricing": {
+    "buyPrice": 0.32,
+    "sellPrice": 0.10,
+    "description": "Average flat rate for simple tariff contracts"
+  },
+  "monthlyVariation": {
+    "january": { "multiplier": 1.15, "reason": "Winter peak demand" },
+    "february": { "multiplier": 1.10, "reason": "Winter demand" },
+    "march": { "multiplier": 1.05, "reason": "Transition month" },
+    "april": { "multiplier": 0.95, "reason": "Spring, lower demand" },
+    "may": { "multiplier": 0.90, "reason": "Mild weather" },
+    "june": { "multiplier": 0.88, "reason": "High solar production" },
+    "july": { "multiplier": 0.90, "reason": "Summer" },
+    "august": { "multiplier": 0.92, "reason": "Summer" },
+    "september": { "multiplier": 0.98, "reason": "Transition month" },
+    "october": { "multiplier": 1.05, "reason": "Autumn" },
+    "november": { "multiplier": 1.12, "reason": "Winter approaching" },
+    "december": { "multiplier": 1.18, "reason": "Winter peak" }
+  }
+}

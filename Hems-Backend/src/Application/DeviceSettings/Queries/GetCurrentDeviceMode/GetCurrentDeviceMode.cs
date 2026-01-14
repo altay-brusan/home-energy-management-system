@@ -13,10 +13,14 @@ public record GetCurrentDeviceModeQuery : IRequest<GetCurrentDeviceModeResult>
 public class GetCurrentDeviceModeQueryHandler : IRequestHandler<GetCurrentDeviceModeQuery, GetCurrentDeviceModeResult>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IDemoDataService _demoDataService;
 
-    public GetCurrentDeviceModeQueryHandler(IApplicationDbContext context)
+    public GetCurrentDeviceModeQueryHandler(
+        IApplicationDbContext context,
+        IDemoDataService demoDataService)
     {
         _context = context;
+        _demoDataService = demoDataService;
     }
 
     public async Task<GetCurrentDeviceModeResult> Handle(GetCurrentDeviceModeQuery request, CancellationToken cancellationToken)
@@ -32,6 +36,13 @@ public class GetCurrentDeviceModeQueryHandler : IRequestHandler<GetCurrentDevice
                 Success = false,
                 ErrorMessage = "Device not found"
             };
+        }
+
+        // Check if demo device - return simulated default mode
+        var isDemoDevice = await _demoDataService.IsDemoDeviceAsync(request.DeviceId, cancellationToken);
+        if (isDemoDevice)
+        {
+            return GetSimulatedDeviceMode();
         }
 
         // Get the latest active mode for this device
@@ -61,6 +72,25 @@ public class GetCurrentDeviceModeQueryHandler : IRequestHandler<GetCurrentDevice
             Mode = mode,
             ModeDescription = currentMode.Description ?? modeInfo?.Name,
             LastModified = currentMode.LastModified
+        };
+    }
+
+    /// <summary>
+    /// Returns simulated device mode for demo devices
+    /// Default mode is SelfConsumption (maximize home energy use)
+    /// </summary>
+    private static GetCurrentDeviceModeResult GetSimulatedDeviceMode()
+    {
+        var mode = DeviceMode.SelfConsumption;
+        var modeInfo = DeviceModeConfigurations.GetAllModesWithDescriptions()
+            .GetValueOrDefault(mode);
+
+        return new GetCurrentDeviceModeResult
+        {
+            Success = true,
+            Mode = mode,
+            ModeDescription = modeInfo?.Name ?? "Self Consumption",
+            LastModified = DateTimeOffset.UtcNow.AddDays(-30) // Simulate mode was set 30 days ago
         };
     }
 }

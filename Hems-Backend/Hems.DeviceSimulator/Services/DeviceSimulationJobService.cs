@@ -220,7 +220,8 @@ public class DeviceSimulationJobService : IDeviceSimulationJobService
                 DataType = data.GetType().Name,
                 DeviceId = device.Device.Id,
                 DeviceLocalTime = DateTime.UtcNow,
-                Data = JsonSerializer.SerializeToDocument(data)
+                Data = JsonSerializer.SerializeToDocument(data),
+                CreatedBy = "Simulator" // Identify data source as simulator
             };
 
             var json = JsonSerializer.Serialize(deviceDataCommand);

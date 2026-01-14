@@ -1217,6 +1217,69 @@
         }
       }
     },
+    "/api/DeviceData/DailyEnergyFlow/live/{deviceId}": {
+      "get": {
+        "tags": [
+          "DeviceData"
+        ],
+        "operationId": "GetLiveDailyEnergyFlow",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/DeviceData/TotalEnergyFlow/live/{deviceId}": {
+      "get": {
+        "tags": [
+          "DeviceData"
+        ],
+        "operationId": "GetLiveTotalEnergyFlow",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/DeviceData/Demo/Diagnostics": {
+      "get": {
+        "tags": [
+          "DeviceData"
+        ],
+        "operationId": "GetDemoDeviceDiagnostics",
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/DeviceNotifications": {
       "post": {
         "tags": [

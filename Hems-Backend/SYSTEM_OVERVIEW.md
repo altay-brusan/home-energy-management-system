@@ -781,12 +781,37 @@ public interface IDeviceNotificationHubClient
 
 ## 🔄 Zamanlanmış İşlemler
 
-### Device Simulator (Hangfire)
+### Backend Hangfire Jobs
 
 **Çalışma Şekli:**
 1. Hangfire background job processing kullanır
 2. PostgreSQL'de job storage
 3. Recurring jobs ile periyodik görevler
+4. Dashboard: `/hangfire` endpoint'inde erişilebilir
+
+**Job Türleri:**
+
+#### 1. Energy Data Collection (Backend)
+- **Frekans**: Her 15 dakikada bir
+- **İşlev**: Cihazlardan proaktif enerji verisi toplama
+- **Detay**: Cihaz çevrimdışı olduğunda veri kaybını önler
+- **Akış**:
+  1. Tüm aktif cihazları kontrol eder
+  2. Cihazın yerel saati 23:45-00:15 arasındaysa işlem başlar
+  3. ThingsBoard RPC ile `getDailyEnergyData` ve `getLifetimeEnergyData` çağrılır
+  4. RPC başarısız olursa güç verisinden tahmin hesaplanır
+- **CreatedBy Değerleri**:
+  - `Device`: RPC ile doğrudan alındı
+  - `SystemEstimate`: Güç verisinden tahmin edildi
+  - `Simulator`: Device Simulator tarafından oluşturuldu
+- **Dokümantasyon**: `docs/EnergyDataCollection.md`
+
+### Device Simulator (Ayrı Servis)
+
+**Çalışma Şekli:**
+1. Ayrı bir servis olarak çalışır (port 5001)
+2. Hangfire kullanır
+3. Dashboard: `/hangfire` endpoint'inde
 
 **Job Türleri:**
 
@@ -794,6 +819,7 @@ public interface IDeviceNotificationHubClient
 - **Frekans**: Her 5 dakikada bir
 - **İşlev**: Her device için simüle edilmiş veri gönderir
 - **Veri Tipi**: `CreateDeviceEnergyData`
+- **CreatedBy**: `Simulator`
 
 #### 2. Energy Data Aggregation
 - **Frekans**: Her saatte bir

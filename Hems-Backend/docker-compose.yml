@@ -1,0 +1,39 @@
+services:
+  hems-web:
+    build:
+      context: .
+      dockerfile: src/Web/Dockerfile
+    container_name: hems-web
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__Hems_BackendDb=Server=REDACTED_HOST;Port=30434;User ID=postgres;Password=***REMOVED***;Database=HEMS;Pooling=true;
+      - DeviceSimulator__BaseUrl=http://hems-simulator:8080
+      - ThingsBoard__BaseUrl=http://thingsboard-dev.oklidis.com.tr
+      - ThingsBoard__Username=tenant@thingsboard.org
+      - ThingsBoard__Password=***REMOVED***
+    depends_on:
+      - hems-simulator
+    networks:
+      - hems-network
+    restart: unless-stopped
+
+  hems-simulator:
+    build:
+      context: .
+      dockerfile: Hems.DeviceSimulator/Dockerfile
+    container_name: hems-simulator
+    ports:
+      - "5001:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__Hems_BackendDb=Server=REDACTED_HOST;Port=30434;User ID=postgres;Password=***REMOVED***;Database=HEMS;Pooling=true;
+      - HemsBackend__BaseUrl=http://hems-web:8080
+    networks:
+      - hems-network
+    restart: unless-stopped
+
+networks:
+  hems-network:
+    driver: bridge

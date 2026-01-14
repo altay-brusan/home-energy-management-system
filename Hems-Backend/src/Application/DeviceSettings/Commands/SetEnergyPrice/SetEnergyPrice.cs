@@ -45,6 +45,8 @@ public class SetEnergyPriceCommandHandler : IRequestHandler<SetEnergyPriceComman
     private readonly IUser _user;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger<SetEnergyPriceCommandHandler> _logger;
+    private readonly IDemoDataService _demoDataService;
+    private readonly IDemoSimulationDataService _demoSimulationService;
 
     private const int MaxPricesPerRequest = 24; // Allow up to 24 hourly prices
 
@@ -52,12 +54,16 @@ public class SetEnergyPriceCommandHandler : IRequestHandler<SetEnergyPriceComman
         IApplicationDbContext context,
         IUser user,
         TimeProvider timeProvider,
-        ILogger<SetEnergyPriceCommandHandler> logger)
+        ILogger<SetEnergyPriceCommandHandler> logger,
+        IDemoDataService demoDataService,
+        IDemoSimulationDataService demoSimulationService)
     {
         _context = context;
         _user = user;
         _timeProvider = timeProvider;
         _logger = logger;
+        _demoDataService = demoDataService;
+        _demoSimulationService = demoSimulationService;
     }
 
     public async Task<SetEnergyPriceResult> Handle(SetEnergyPriceCommand request, CancellationToken cancellationToken)
@@ -126,6 +132,14 @@ public class SetEnergyPriceCommandHandler : IRequestHandler<SetEnergyPriceComman
             }
         }
 
+        // Check if this is a demo device - store in-memory instead of database
+        var isDemoDevice = await _demoDataService.IsDemoDeviceAsync(request.DeviceId, cancellationToken);
+        if (isDemoDevice)
+        {
+            return HandleDemoDevicePrices(request);
+        }
+
+        // For real devices: persist to database
         // Deactivate existing prices for this device
         var existingPrices = await _context.EnergyPriceHistory
             .Where(p => p.DeviceId == request.DeviceId && p.IsActive)
@@ -167,6 +181,36 @@ public class SetEnergyPriceCommandHandler : IRequestHandler<SetEnergyPriceComman
             Success = true,
             PricesCreated = createdIds.Count,
             PriceIds = createdIds
+        };
+    }
+
+    /// <summary>
+    /// Handle price setting for demo devices - store in-memory
+    /// </summary>
+    private SetEnergyPriceResult HandleDemoDevicePrices(SetEnergyPriceCommand request)
+    {
+        var demoPrices = request.Prices.Select(p => new DemoPriceEntry
+        {
+            SellPrice = p.SellPrice,
+            BuyPrice = p.BuyPrice,
+            BeginHour = p.BeginHour,
+            EndHour = p.EndHour
+        }).ToList();
+
+        _demoSimulationService.SetDemoPrices(request.DeviceId, demoPrices, request.Unit, request.Currency);
+
+        // Generate fake IDs for response consistency
+        var fakeIds = request.Prices.Select(_ => Guid.NewGuid()).ToList();
+
+        _logger.LogInformation(
+            "Set {Count} energy prices for DEMO device {DeviceId} (in-memory)",
+            demoPrices.Count, request.DeviceId);
+
+        return new SetEnergyPriceResult
+        {
+            Success = true,
+            PricesCreated = demoPrices.Count,
+            PriceIds = fakeIds
         };
     }
 }
