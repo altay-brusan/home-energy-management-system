@@ -50,19 +50,6 @@ public class Dashboard : EndpointGroupBase
             .MapGet(InverterComponent, "graphs/Components/Inverter");
     }
 
-    //[Authorize]
-    //public async Task<HeroResponseDto> Hero(
-    //    ISender sender,
-    //    [FromQuery] Guid deviceId)
-    //{
-    //    var query = new GetHeroQuery
-    //    {
-    //        DeviceId = deviceId
-    //    };
-
-    //    return await sender.Send(query);
-    //}
-
     [Authorize]
     public async Task<SocResponseDto> SOC(
         ISender sender,
