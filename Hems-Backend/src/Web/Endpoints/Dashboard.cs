@@ -155,19 +155,7 @@ public class Dashboard : EndpointGroupBase
         return await sender.Send(query);
     }
 
-    //[Authorize]
-    //public async Task<ChargeDischargeResponseDto> ChargeDischarge(
-    //    ISender sender,
-    //    [FromQuery] Guid deviceId)
-    //{
-    //    var query = new GetChargeDischargeQuery
-    //    {
-    //        DeviceId = deviceId
-    //    };
-
-    //    return await sender.Send(query);
-    //}
-
+    
     [Authorize]
     public async Task<BatteryComponentDto> BatteryComponent(
         ISender sender,
