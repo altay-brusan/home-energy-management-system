@@ -7,22 +7,22 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
-namespace Hems_Backend.Application.Devices.Queries.GetDeviceWithData;
+namespace Hems_Backend.Application.Devices.Queries.GetDeviceComponentsStatus;
 
-public class GetDeviceWithDataQueryHandler : IRequestHandler<GetDeviceWithDataQuery, DeviceWithDataResponseDto>
+public class GetDeviceComponentsStatusQueryHandler : IRequestHandler<GetDeviceComponentsStatusQuery, DeviceWithDataResponseDto>
 {
     private readonly IApplicationDbContext _context;
     private readonly ISender _sender;
     private readonly IDeviceMappingService _deviceMapping;
 
-    public GetDeviceWithDataQueryHandler(IApplicationDbContext context, ISender sender, IDeviceMappingService deviceMapping)
+    public GetDeviceComponentsStatusQueryHandler(IApplicationDbContext context, ISender sender, IDeviceMappingService deviceMapping)
     {
         _context = context;
         _sender = sender;
         _deviceMapping = deviceMapping;
     }
 
-    public async Task<DeviceWithDataResponseDto> Handle(GetDeviceWithDataQuery request, CancellationToken cancellationToken)
+    public async Task<DeviceWithDataResponseDto> Handle(GetDeviceComponentsStatusQuery request, CancellationToken cancellationToken)
     {
         // Device access kontrolü
         var hasAccess = await _sender.Send(new CheckDeviceAccessQuery { DeviceId = request.DeviceId }, cancellationToken);
