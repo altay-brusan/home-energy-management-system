@@ -30,7 +30,6 @@ public class Dashboard : EndpointGroupBase
     {
         app.MapGroup(this)
             .RequireAuthorization()
-            //.MapGet(Hero, "hero")
             .MapGet(SOC, "Soc")
             .MapGet(SOH, "Soh")
             .MapGet(TodayEnergySummary, "TodayEnergySummary")
