@@ -2498,7 +2498,7 @@
         ]
       }
     },
-    "/api/ParameterSchemas/Groups": {
+    "/api/ParameterSchemas/Admin/Groups": {
       "get": {
         "tags": [
           "ParameterSchemas"
@@ -2559,7 +2559,7 @@
         ]
       }
     },
-    "/api/ParameterSchemas/Groups/{id}": {
+    "/api/ParameterSchemas/Admin/Groups/{id}": {
       "get": {
         "tags": [
           "ParameterSchemas"
@@ -2679,7 +2679,7 @@
         ]
       }
     },
-    "/api/ParameterSchemas/Parameters": {
+    "/api/ParameterSchemas/Admin/Parameters": {
       "get": {
         "tags": [
           "ParameterSchemas"
@@ -2752,7 +2752,7 @@
         ]
       }
     },
-    "/api/ParameterSchemas/Parameters/{id}": {
+    "/api/ParameterSchemas/Admin/Parameters/{id}": {
       "get": {
         "tags": [
           "ParameterSchemas"
@@ -2872,7 +2872,7 @@
         ]
       }
     },
-    "/api/ParameterSchemas/Values": {
+    "/api/ParameterSchemas/Admin/Values": {
       "post": {
         "tags": [
           "ParameterSchemas"
@@ -2908,43 +2908,9 @@
             "JWT": []
           }
         ]
-      },
-      "get": {
-        "tags": [
-          "ParameterSchemas"
-        ],
-        "operationId": "GetParameterValueSettingSchemes",
-        "parameters": [
-          {
-            "name": "modelNumber",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "nullable": true
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ParameterValueSettingSchemesVm"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
       }
     },
-    "/api/ParameterSchemas/Values/{id}": {
+    "/api/ParameterSchemas/Admin/Values/{id}": {
       "put": {
         "tags": [
           "ParameterSchemas"
@@ -3020,6 +2986,42 @@
         ]
       }
     },
+    "/api/ParameterSchemas/Values": {
+      "get": {
+        "tags": [
+          "ParameterSchemas"
+        ],
+        "operationId": "GetParameterValueSettingSchemes",
+        "parameters": [
+          {
+            "name": "modelNumber",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParameterValueSettingSchemesVm"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/ParameterSchemas/Values/Tree": {
       "get": {
         "tags": [
@@ -3056,7 +3058,7 @@
         ]
       }
     },
-    "/api/RoleManagement": {
+    "/api/RoleManagement/Admin/Roles": {
       "get": {
         "tags": [
           "RoleManagement"
@@ -3074,7 +3076,6 @@
             }
           }
         },
-        "deprecated": true,
         "security": [
           {
             "JWT": []
@@ -3106,7 +3107,6 @@
             "description": ""
           }
         },
-        "deprecated": true,
         "security": [
           {
             "JWT": []
@@ -3114,7 +3114,7 @@
         ]
       }
     },
-    "/api/RoleManagement/{roleName}": {
+    "/api/RoleManagement/Admin/Roles/{roleName}": {
       "delete": {
         "tags": [
           "RoleManagement"
@@ -3139,7 +3139,6 @@
             "description": ""
           }
         },
-        "deprecated": true,
         "security": [
           {
             "JWT": []
@@ -3147,7 +3146,7 @@
         ]
       }
     },
-    "/api/RoleManagement/assign": {
+    "/api/RoleManagement/Admin/Assign": {
       "put": {
         "tags": [
           "RoleManagement"
@@ -3173,7 +3172,6 @@
             "description": ""
           }
         },
-        "deprecated": true,
         "security": [
           {
             "JWT": []
@@ -3181,7 +3179,7 @@
         ]
       }
     },
-    "/api/RoleManagement/user/{userId}": {
+    "/api/RoleManagement/Admin/User/{userId}/Roles": {
       "get": {
         "tags": [
           "RoleManagement"
@@ -3210,7 +3208,6 @@
             }
           }
         },
-        "deprecated": true,
         "security": [
           {
             "JWT": []
@@ -3218,7 +3215,7 @@
         ]
       }
     },
-    "/api/Setups": {
+    "/api/Setups/Admin/Setups": {
       "get": {
         "tags": [
           "Setups"
@@ -3275,7 +3272,7 @@
         ]
       }
     },
-    "/api/Setups/{id}": {
+    "/api/Setups/Admin/Setup/{id}": {
       "get": {
         "tags": [
           "Setups"
@@ -3340,7 +3337,7 @@
         ]
       }
     },
-    "/api/Setups/mobile/get-setup-device": {
+    "/api/Setups/SetupDevice": {
       "get": {
         "tags": [
           "Setups"
@@ -3377,7 +3374,7 @@
         ]
       }
     },
-    "/api/Setups/mobile/create-setup": {
+    "/api/Setups/Setup": {
       "post": {
         "tags": [
           "Setups"
@@ -3415,7 +3412,7 @@
         ]
       }
     },
-    "/api/Setups/mobile/update-setup/{id}": {
+    "/api/Setups/Setup/{id}": {
       "put": {
         "tags": [
           "Setups"
@@ -3455,9 +3452,7 @@
             "JWT": []
           }
         ]
-      }
-    },
-    "/api/Setups/mobile/delete-setup/{id}": {
+      },
       "delete": {
         "tags": [
           "Setups"
@@ -3487,7 +3482,7 @@
         ]
       }
     },
-    "/api/Sites": {
+    "/api/Sites/Admin/Sites": {
       "get": {
         "tags": [
           "Sites"
@@ -3606,7 +3601,7 @@
         ]
       }
     },
-    "/api/Sites/{id}": {
+    "/api/Sites/Admin/Site/{id}": {
       "get": {
         "tags": [
           "Sites"
@@ -3671,7 +3666,7 @@
         ]
       }
     },
-    "/api/Sites/mobile/get-sites": {
+    "/api/Sites/UserSites": {
       "get": {
         "tags": [
           "Sites"
@@ -3696,7 +3691,7 @@
         ]
       }
     },
-    "/api/Sites/mobile/create-site": {
+    "/api/Sites/Site": {
       "post": {
         "tags": [
           "Sites"
@@ -3734,7 +3729,7 @@
         ]
       }
     },
-    "/api/Sites/mobile/update-site/{id}": {
+    "/api/Sites/Site/{id}": {
       "put": {
         "tags": [
           "Sites"
@@ -3774,9 +3769,7 @@
             "JWT": []
           }
         ]
-      }
-    },
-    "/api/Sites/mobile/delete-site/{id}": {
+      },
       "delete": {
         "tags": [
           "Sites"
@@ -3804,331 +3797,6 @@
             "JWT": []
           }
         ]
-      }
-    },
-    "/api/TodoItems": {
-      "get": {
-        "tags": [
-          "TodoItems"
-        ],
-        "operationId": "GetTodoItemsWithPagination",
-        "parameters": [
-          {
-            "name": "ListId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "x-position": 1
-          },
-          {
-            "name": "PageNumber",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "x-position": 2
-          },
-          {
-            "name": "PageSize",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "x-position": 3
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaginatedListOfTodoItemBriefDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      },
-      "post": {
-        "tags": [
-          "TodoItems"
-        ],
-        "operationId": "CreateTodoItem",
-        "requestBody": {
-          "x-name": "command",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateTodoItemCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "integer",
-                  "format": "int32"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/TodoItems/{id}": {
-      "put": {
-        "tags": [
-          "TodoItems"
-        ],
-        "operationId": "UpdateTodoItem",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "x-position": 1
-          }
-        ],
-        "requestBody": {
-          "x-name": "command",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateTodoItemCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 2
-        },
-        "responses": {
-          "204": {
-            "description": ""
-          },
-          "400": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      },
-      "delete": {
-        "tags": [
-          "TodoItems"
-        ],
-        "operationId": "DeleteTodoItem",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/TodoItems/UpdateDetail/{id}": {
-      "put": {
-        "tags": [
-          "TodoItems"
-        ],
-        "operationId": "UpdateTodoItemDetail",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "x-position": 1
-          }
-        ],
-        "requestBody": {
-          "x-name": "command",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateTodoItemDetailCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 2
-        },
-        "responses": {
-          "204": {
-            "description": ""
-          },
-          "400": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/TodoLists": {
-      "get": {
-        "tags": [
-          "TodoLists"
-        ],
-        "operationId": "GetTodoLists",
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TodosVm"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "TodoLists"
-        ],
-        "operationId": "CreateTodoList",
-        "requestBody": {
-          "x-name": "command",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateTodoListCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "integer",
-                  "format": "int32"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/TodoLists/{id}": {
-      "put": {
-        "tags": [
-          "TodoLists"
-        ],
-        "operationId": "UpdateTodoList",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "x-position": 1
-          }
-        ],
-        "requestBody": {
-          "x-name": "command",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateTodoListCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 2
-        },
-        "responses": {
-          "204": {
-            "description": ""
-          },
-          "400": {
-            "description": ""
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "TodoLists"
-        ],
-        "operationId": "DeleteTodoList",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        }
       }
     },
     "/api/Users/register": {
@@ -7633,234 +7301,6 @@
           },
           "timezone": {
             "type": "string"
-          }
-        }
-      },
-      "PaginatedListOfTodoItemBriefDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TodoItemBriefDto"
-            }
-          },
-          "pageNumber": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "totalCount": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "hasPreviousPage": {
-            "type": "boolean"
-          },
-          "hasNextPage": {
-            "type": "boolean"
-          }
-        }
-      },
-      "TodoItemBriefDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "listId": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          },
-          "done": {
-            "type": "boolean"
-          }
-        }
-      },
-      "CreateTodoItemCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "listId": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "UpdateTodoItemCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          },
-          "done": {
-            "type": "boolean"
-          }
-        }
-      },
-      "UpdateTodoItemDetailCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "listId": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "priority": {
-            "$ref": "#/components/schemas/PriorityLevel"
-          },
-          "note": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "PriorityLevel": {
-        "type": "integer",
-        "description": "",
-        "x-enumNames": [
-          "None",
-          "Low",
-          "Medium",
-          "High"
-        ],
-        "enum": [
-          0,
-          1,
-          2,
-          3
-        ]
-      },
-      "TodosVm": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "priorityLevels": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/LookupDto"
-            }
-          },
-          "lists": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TodoListDto"
-            }
-          }
-        }
-      },
-      "LookupDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "TodoListDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          },
-          "colour": {
-            "type": "string",
-            "nullable": true
-          },
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TodoItemDto"
-            }
-          }
-        }
-      },
-      "TodoItemDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "listId": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          },
-          "done": {
-            "type": "boolean"
-          },
-          "priority": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "note": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "CreateTodoListCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "title": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "UpdateTodoListCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
           }
         }
       },
