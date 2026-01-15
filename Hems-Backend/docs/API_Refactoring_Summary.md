@@ -409,6 +409,8 @@ All admin-only endpoints that are NOT used by the frontend mobile app follow the
 | RoleManagement | `/api/RoleManagement/Admin/Roles` | GET, POST, DELETE (admin-only) |
 | RoleManagement | `/api/RoleManagement/Admin/Assign` | PUT (admin-only) |
 | RoleManagement | `/api/RoleManagement/Admin/User/{userId}/Roles` | GET (admin-only) |
+| Setups | `/api/Setups/Admin/Setups` | GET (admin-only) |
+| Setups | `/api/Setups/Admin/Setup/{id}` | GET, DELETE (admin-only) |
 
 ---
 
@@ -533,3 +535,41 @@ All admin-only endpoints that are NOT used by the frontend mobile app follow the
 **Authorization**: Admin only (all operations)
 
 **Note**: Obsolete markers have been removed. These endpoints are now active admin tools.
+
+---
+
+### 10. Setups Endpoint (`/api/Setups`)
+
+**Purpose**: Manages device setups and configurations.
+
+**Admin Tool Endpoints (require AdminOnly authorization):**
+```
+/api/Setups/Admin
+├── GET    /Setups                        - Get all setups (paginated)
+├── GET    /Setup/{id}                    - Get setup by ID
+└── DELETE /Setup/{id}                    - Delete setup
+```
+
+**User-facing Endpoints (require authorization):**
+```
+/api/Setups
+├── GET    /SetupDevice                   - Get setup device for current user (by siteId)
+├── POST   /Setup                         - Create a new setup
+├── PUT    /Setup/{id}                    - Update setup
+└── DELETE /Setup/{id}                    - Delete setup
+```
+
+**Path Changes:**
+| Old Path | New Path |
+|----------|----------|
+| `/` (GET list) | `/Admin/Setups` |
+| `/{id}` (GET) | `/Admin/Setup/{id}` |
+| `/{id}` (DELETE admin) | `/Admin/Setup/{id}` |
+| `/mobile/get-setup-device` | `/SetupDevice` |
+| `/mobile/create-setup` | `/Setup` |
+| `/mobile/update-setup/{id}` | `/Setup/{id}` |
+| `/mobile/delete-setup/{id}` | `/Setup/{id}` |
+
+**Authorization**:
+- `/Admin/*`: Admin only
+- Other endpoints: All authenticated users
