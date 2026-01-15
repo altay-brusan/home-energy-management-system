@@ -39,6 +39,7 @@ public class DemoDataService : IDemoDataService
 
     public string GetDemoUserEmail() => DemoUserEmail;
     public string GetDemoDeviceSerialNumber() => DemoDeviceSerial;
+    public Guid GetDemoThingsBoardDeviceId() => DemoThingsBoardDeviceId;
 
     public async Task<bool> IsDemoUserAsync(string userId, CancellationToken cancellationToken = default)
     {

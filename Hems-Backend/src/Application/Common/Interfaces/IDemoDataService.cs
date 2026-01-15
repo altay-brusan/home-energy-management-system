@@ -45,6 +45,11 @@ public interface IDemoDataService
     /// Gets the well-known demo device serial number.
     /// </summary>
     string GetDemoDeviceSerialNumber();
+
+    /// <summary>
+    /// Gets the well-known demo ThingsBoard device ID.
+    /// </summary>
+    Guid GetDemoThingsBoardDeviceId();
 }
 
 /// <summary>

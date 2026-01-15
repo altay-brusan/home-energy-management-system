@@ -1193,7 +1193,7 @@
         ]
       }
     },
-    "/api/DeviceNotifications/types": {
+    "/api/DeviceNotifications/Types": {
       "get": {
         "tags": [
           "DeviceNotifications"
@@ -1221,7 +1221,7 @@
         ]
       }
     },
-    "/api/DeviceNotifications/deleted": {
+    "/api/DeviceNotifications/Deleted": {
       "get": {
         "tags": [
           "DeviceNotifications"
@@ -1296,7 +1296,7 @@
         ]
       }
     },
-    "/api/DeviceNotifications/{id}/mark-read": {
+    "/api/DeviceNotifications/{id}/MarkRead": {
       "put": {
         "tags": [
           "DeviceNotifications"
@@ -1326,7 +1326,7 @@
         ]
       }
     },
-    "/api/DeviceNotifications/mark-all-read/{siteId}": {
+    "/api/DeviceNotifications/MarkAllRead/{siteId}": {
       "put": {
         "tags": [
           "DeviceNotifications"
@@ -1386,7 +1386,7 @@
         ]
       }
     },
-    "/api/DeviceNotifications/{id}/restore": {
+    "/api/DeviceNotifications/{id}/Restore": {
       "put": {
         "tags": [
           "DeviceNotifications"
@@ -1416,7 +1416,7 @@
         ]
       }
     },
-    "/api/DeviceNotifications/{id}/permanent": {
+    "/api/DeviceNotifications/{id}/Permanent": {
       "delete": {
         "tags": [
           "DeviceNotifications"
@@ -5525,7 +5525,8 @@
         "additionalProperties": false,
         "properties": {
           "deviceId": {
-            "type": "string"
+            "type": "string",
+            "format": "guid"
           },
           "timestamp": {
             "type": "string",
