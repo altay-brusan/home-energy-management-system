@@ -1165,13 +1165,22 @@
             "x-position": 6
           },
           {
+            "name": "Severity",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 7
+          },
+          {
             "name": "IncludeDeleted",
             "in": "query",
             "schema": {
               "type": "boolean",
               "nullable": true
             },
-            "x-position": 7
+            "x-position": 8
           }
         ],
         "responses": {
@@ -1275,6 +1284,15 @@
               "nullable": true
             },
             "x-position": 5
+          },
+          {
+            "name": "Severity",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 6
           }
         ],
         "responses": {

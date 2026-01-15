@@ -104,7 +104,86 @@ DEVICE_NOTIFICATIONS: {
 
 ---
 
-## 2. Deleted Endpoints
+## 2. API Parameter Changes (Breaking)
+
+### DeviceNotifications - Category and Severity Filter Update
+
+**IMPORTANT:** The meaning of `Category` filter has changed. Frontend should now use `Severity` for filtering by severity level.
+
+| Parameter | Old Meaning | New Meaning |
+|-----------|-------------|-------------|
+| `Category` | Severity level (WARNING, ERROR, ALARM) | Device category (inverter, battery, etc.) |
+| `Severity` | *(new)* | Severity level (WARNING, ERROR, ALARM) |
+
+**Affected Endpoints:**
+- `GET /DeviceNotifications` - Added `Severity` query parameter
+- `GET /DeviceNotifications/Deleted` - Added `Severity` query parameter
+
+**Response DTO Update:**
+`DeviceNotificationTypeDto` now includes a `severity` field:
+
+```typescript
+// deviceNotifications.types.ts
+export interface DeviceNotificationTypeDto {
+  id: string;
+  code: string;
+  message: string;
+  status: string;
+  description: string;
+  register: number;
+  value: number;
+  category: string;  // Device category (inverter, battery, etc.)
+  severity: string;  // NEW: Severity level (WARNING, ERROR, ALARM)
+  version: string;
+  isActive: boolean;
+}
+```
+
+**Frontend Changes Required:**
+
+```typescript
+// deviceNotifications.types.ts - Add Severity to params
+export interface GetDeviceNotificationsParams {
+  SiteId: string;
+  PageNumber: number;
+  PageSize: number;
+  IsToday?: boolean | null;
+  IsProcessed?: boolean | null;
+  Category?: string | null;  // Device category (inverter, battery, etc.)
+  Severity?: string | null;  // NEW: Severity level (WARNING, ERROR, ALARM)
+  IncludeDeleted?: boolean | null;
+}
+
+// useDeviceNotifications.ts - Update filters interface
+export interface DeviceNotificationFilters {
+  isToday?: boolean | null;
+  isProcessed?: boolean | null;
+  category?: string | null;  // Device category (inverter, battery, etc.)
+  severity?: string | null;  // NEW: Severity level (WARNING, ERROR, ALARM)
+  includeDeleted?: boolean | null;
+}
+
+// deviceNotificationsService.ts - Add Severity to query params
+if (params.Severity) {
+  queryParams.append('Severity', params.Severity);
+}
+```
+
+**Migration Guide:**
+If frontend was filtering notifications by type (WARNING, ERROR, ALARM), change from:
+```typescript
+// OLD - Using Category for severity filtering
+useDeviceNotifications({ category: 'WARNING' })
+```
+To:
+```typescript
+// NEW - Using Severity for severity filtering
+useDeviceNotifications({ severity: 'WARNING' })
+```
+
+---
+
+## 3. Deleted Endpoints
 
 ### Dashboard/GetComponentLiveData (REMOVED)
 
@@ -148,7 +227,7 @@ DEVICE_NOTIFICATIONS: {
 
 ---
 
-## 3. Obsolete Endpoints (Marked for Future Deletion)
+## 4. Obsolete Endpoints (Marked for Future Deletion)
 
 The following endpoints have been marked with `[Obsolete]` attribute and are scheduled for removal:
 
@@ -178,7 +257,7 @@ The following endpoints have been marked with `[Obsolete]` attribute and are sch
 
 ---
 
-## 4. Unused Endpoints (Not Called by Frontend)
+## 5. Unused Endpoints (Not Called by Frontend)
 
 The following endpoints exist in the backend but are **NOT used** by the frontend:
 

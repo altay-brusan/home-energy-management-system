@@ -38,8 +38,8 @@ public class DeviceNotifications : EndpointGroupBase
             .MapGet(GetDeletedDeviceNotifications, "Deleted")
             .MapPut(MarkDeviceNotificationAsRead, "{id}/MarkRead")
             .MapPut(MarkAllSiteNotificationsAsRead, "MarkAllRead/{siteId}")
-            .MapDelete(DeleteDeviceNotification, "{id}")
             .MapPut(RestoreDeviceNotification, "{id}/Restore")
+            .MapDelete(DeleteDeviceNotification, "{id}")
             .MapDelete(PermanentDeleteDeviceNotification, "{id}/Permanent");
     }
 

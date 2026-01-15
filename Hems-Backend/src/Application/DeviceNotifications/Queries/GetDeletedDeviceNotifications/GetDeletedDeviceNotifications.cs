@@ -15,7 +15,8 @@ public record GetDeletedDeviceNotificationsQuery : IRequest<PaginatedList<Device
     
     // Filter parameters
     public bool? IsToday { get; init; } // Sadece bugünkü silinen bildirimleri getirmek için
-    public string? Category { get; init; } // Notification type'a göre filtreleme (INFO, WARNING, ERROR)
+    public string? Category { get; init; } // Device category filtreleme (inverter, battery, etc.)
+    public string? Severity { get; init; } // Severity filtreleme (WARNING, ERROR, ALARM)
 }
 
 public class GetDeletedDeviceNotificationsQueryHandler : IRequestHandler<GetDeletedDeviceNotificationsQuery, PaginatedList<DeviceNotificationDto>>
@@ -51,10 +52,16 @@ public class GetDeletedDeviceNotificationsQueryHandler : IRequestHandler<GetDele
             query = query.Where(dn => dn.Timestamp >= todayUtc && dn.Timestamp < tomorrowUtc);
         }
 
-        // Category filtresi - notification type'a göre filtreleme
+        // Category filtresi - device category'ye göre filtreleme (inverter, battery, etc.)
         if (!string.IsNullOrEmpty(request.Category))
         {
             query = query.Where(dn => dn.DeviceNotificationType.Category == request.Category);
+        }
+
+        // Severity filtresi - severity'ye göre filtreleme (WARNING, ERROR, ALARM)
+        if (!string.IsNullOrEmpty(request.Severity))
+        {
+            query = query.Where(dn => dn.DeviceNotificationType.Severity == request.Severity);
         }
 
         var notifications = await query
