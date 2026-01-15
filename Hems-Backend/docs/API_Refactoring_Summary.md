@@ -411,6 +411,8 @@ All admin-only endpoints that are NOT used by the frontend mobile app follow the
 | RoleManagement | `/api/RoleManagement/Admin/User/{userId}/Roles` | GET (admin-only) |
 | Setups | `/api/Setups/Admin/Setups` | GET (admin-only) |
 | Setups | `/api/Setups/Admin/Setup/{id}` | GET, DELETE (admin-only) |
+| Sites | `/api/Sites/Admin/Sites` | GET (admin-only) |
+| Sites | `/api/Sites/Admin/Site/{id}` | GET, DELETE (admin-only) |
 
 ---
 
@@ -569,6 +571,44 @@ All admin-only endpoints that are NOT used by the frontend mobile app follow the
 | `/mobile/create-setup` | `/Setup` |
 | `/mobile/update-setup/{id}` | `/Setup/{id}` |
 | `/mobile/delete-setup/{id}` | `/Setup/{id}` |
+
+**Authorization**:
+- `/Admin/*`: Admin only
+- Other endpoints: All authenticated users
+
+---
+
+### 11. Sites Endpoint (`/api/Sites`)
+
+**Purpose**: Manages user sites and locations.
+
+**Admin Tool Endpoints (require AdminOnly authorization):**
+```
+/api/Sites/Admin
+├── GET    /Sites                         - Get all sites (paginated)
+├── GET    /Site/{id}                     - Get site by ID
+└── DELETE /Site/{id}                     - Delete site
+```
+
+**User-facing Endpoints (require authorization):**
+```
+/api/Sites
+├── GET    /UserSites                     - Get all sites for current user
+├── POST   /Site                          - Create a new site
+├── PUT    /Site/{id}                     - Update site
+└── DELETE /Site/{id}                     - Delete site
+```
+
+**Path Changes:**
+| Old Path | New Path |
+|----------|----------|
+| `/` (GET list) | `/Admin/Sites` |
+| `/{id}` (GET) | `/Admin/Site/{id}` |
+| `/{id}` (DELETE admin) | `/Admin/Site/{id}` |
+| `/mobile/get-sites` | `/UserSites` |
+| `/mobile/create-site` | `/Site` |
+| `/mobile/update-site/{id}` | `/Site/{id}` |
+| `/mobile/delete-site/{id}` | `/Site/{id}` |
 
 **Authorization**:
 - `/Admin/*`: Admin only
