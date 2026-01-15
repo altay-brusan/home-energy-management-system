@@ -1496,7 +1496,7 @@
         }
       }
     },
-    "/api/Devices/{id}": {
+    "/api/Devices/Tool/Device/{id}": {
       "get": {
         "tags": [
           "Devices"
@@ -1601,7 +1601,7 @@
         ]
       }
     },
-    "/api/Devices": {
+    "/api/Devices/Tool/Device": {
       "post": {
         "tags": [
           "Devices"
@@ -2265,7 +2265,7 @@
         ]
       }
     },
-    "/api/Invitations/create": {
+    "/api/Invitations/Create": {
       "post": {
         "tags": [
           "Invitations"
@@ -2303,7 +2303,7 @@
         ]
       }
     },
-    "/api/Invitations/by-site/{siteId}": {
+    "/api/Invitations/BySite/{siteId}": {
       "get": {
         "tags": [
           "Invitations"
@@ -2340,7 +2340,7 @@
         ]
       }
     },
-    "/api/Invitations/accept": {
+    "/api/Invitations/Accept": {
       "post": {
         "tags": [
           "Invitations"
@@ -2370,7 +2370,7 @@
         ]
       }
     },
-    "/api/Invitations/decline": {
+    "/api/Invitations/Decline": {
       "post": {
         "tags": [
           "Invitations"
@@ -2400,93 +2400,7 @@
         ]
       }
     },
-    "/api/Invitations/user-home-sites": {
-      "get": {
-        "tags": [
-          "Invitations"
-        ],
-        "operationId": "GetUserHomeSites",
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserHomeSitesVm"
-                }
-              }
-            }
-          }
-        },
-        "deprecated": true,
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/Invitations/notifications": {
-      "get": {
-        "tags": [
-          "Invitations"
-        ],
-        "operationId": "GetUserNotifications",
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/NotificationDto"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "deprecated": true,
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/Invitations/notifications/{notificationId}/mark-read": {
-      "put": {
-        "tags": [
-          "Invitations"
-        ],
-        "operationId": "MarkNotificationAsRead",
-        "parameters": [
-          {
-            "name": "notificationId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "deprecated": true,
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/Invitations/remove-user/{invitationId}": {
+    "/api/Invitations/RemoveUser/{invitationId}": {
       "delete": {
         "tags": [
           "Invitations"
@@ -2544,12 +2458,12 @@
         ]
       }
     },
-    "/api/Locations/cities/{countryId}": {
+    "/api/Locations/Cities/{countryId}": {
       "get": {
         "tags": [
           "Locations"
         ],
-        "operationId": "GetCitiesByCountry",
+        "operationId": "GetCountryCities",
         "parameters": [
           {
             "name": "countryId",
@@ -2584,7 +2498,7 @@
         ]
       }
     },
-    "/api/ParameterSchemas/groups": {
+    "/api/ParameterSchemas/Groups": {
       "get": {
         "tags": [
           "ParameterSchemas"
@@ -2645,7 +2559,7 @@
         ]
       }
     },
-    "/api/ParameterSchemas/groups/{id}": {
+    "/api/ParameterSchemas/Groups/{id}": {
       "get": {
         "tags": [
           "ParameterSchemas"
@@ -2765,7 +2679,7 @@
         ]
       }
     },
-    "/api/ParameterSchemas/parameters": {
+    "/api/ParameterSchemas/Parameters": {
       "get": {
         "tags": [
           "ParameterSchemas"
@@ -2838,7 +2752,7 @@
         ]
       }
     },
-    "/api/ParameterSchemas/parameters/{id}": {
+    "/api/ParameterSchemas/Parameters/{id}": {
       "get": {
         "tags": [
           "ParameterSchemas"
@@ -2958,41 +2872,7 @@
         ]
       }
     },
-    "/api/ParameterSchemas/values": {
-      "get": {
-        "tags": [
-          "ParameterSchemas"
-        ],
-        "operationId": "GetParameterValueSettingSchemes",
-        "parameters": [
-          {
-            "name": "modelNumber",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "nullable": true
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ParameterValueSettingSchemesVm"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      },
+    "/api/ParameterSchemas/Values": {
       "post": {
         "tags": [
           "ParameterSchemas"
@@ -3028,14 +2908,12 @@
             "JWT": []
           }
         ]
-      }
-    },
-    "/api/ParameterSchemas/values/tree": {
+      },
       "get": {
         "tags": [
           "ParameterSchemas"
         ],
-        "operationId": "GetParameterValueSettingSchemesTree",
+        "operationId": "GetParameterValueSettingSchemes",
         "parameters": [
           {
             "name": "modelNumber",
@@ -3053,7 +2931,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ParameterValueSettingSchemesTreeVm"
+                  "$ref": "#/components/schemas/ParameterValueSettingSchemesVm"
                 }
               }
             }
@@ -3066,7 +2944,7 @@
         ]
       }
     },
-    "/api/ParameterSchemas/values/{id}": {
+    "/api/ParameterSchemas/Values/{id}": {
       "put": {
         "tags": [
           "ParameterSchemas"
@@ -3133,6 +3011,42 @@
           },
           "400": {
             "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/ParameterSchemas/Values/Tree": {
+      "get": {
+        "tags": [
+          "ParameterSchemas"
+        ],
+        "operationId": "GetParameterValueSettingSchemesTree",
+        "parameters": [
+          {
+            "name": "modelNumber",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParameterValueSettingSchemesTreeVm"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -6701,83 +6615,6 @@
           }
         }
       },
-      "UserHomeSitesVm": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "myHomes": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/UserSiteDto"
-            }
-          },
-          "sharedHomes": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/UserSiteDto"
-            }
-          }
-        }
-      },
-      "UserSiteDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
-          "userId": {
-            "type": "string"
-          },
-          "siteId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "siteName": {
-            "type": "string"
-          },
-          "role": {
-            "$ref": "#/components/schemas/UserSiteRole"
-          }
-        }
-      },
-      "UserSiteRole": {
-        "type": "integer",
-        "description": "",
-        "x-enumNames": [
-          "Owner",
-          "Guest"
-        ],
-        "enum": [
-          1,
-          2
-        ]
-      },
-      "NotificationDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
-          "message": {
-            "type": "string"
-          },
-          "isRead": {
-            "type": "boolean"
-          },
-          "invitationId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "created": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
       "CountryDto": {
         "type": "object",
         "additionalProperties": false,
@@ -7127,6 +6964,51 @@
           }
         }
       },
+      "CreateParameterValueSettingSchemeCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "parameterId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "parameterGroupId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "value": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "modelNumber": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateParameterValueSettingSchemeCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "value": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "modelNumber": {
+            "type": "string"
+          }
+        }
+      },
       "ParameterValueSettingSchemesVm": {
         "type": "object",
         "additionalProperties": false,
@@ -7317,51 +7199,6 @@
           "lastModifiedBy": {
             "type": "string",
             "nullable": true
-          }
-        }
-      },
-      "CreateParameterValueSettingSchemeCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "parameterId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "parameterGroupId": {
-            "type": "string",
-            "format": "guid",
-            "nullable": true
-          },
-          "value": {
-            "type": "string"
-          },
-          "sortOrder": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "modelNumber": {
-            "type": "string"
-          }
-        }
-      },
-      "UpdateParameterValueSettingSchemeCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
-          "value": {
-            "type": "string"
-          },
-          "sortOrder": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "modelNumber": {
-            "type": "string"
           }
         }
       },
