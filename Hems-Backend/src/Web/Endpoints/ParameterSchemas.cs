@@ -23,35 +23,41 @@ namespace Hems_Backend.Web.Endpoints;
 /// <summary>
 /// Parameter Schemas API - Manages parameter definitions, groups, and model-specific default values
 /// This endpoint handles all template/schema operations for defining device parameter structure
-/// Admin-only access for system configuration
+/// - Parameter Groups and Parameters: Admin-only access
+/// - Value Schemes: GET available to all users, write operations Admin-only
 /// </summary>
 public class ParameterSchemas : EndpointGroupBase
 {
     public override void Map(WebApplication app)
     {
+        // ==== ADMIN ONLY - Parameter Groups and Parameters ====
         app.MapGroup(this)
             .RequireAuthorization(Policies.AdminOnly)
 
-            // ==== PARAMETER GROUPS - Category organization ====
-            .MapGet(GetParameterGroups, "groups")
-            .MapGet(GetParameterGroup, "groups/{id}")
-            .MapPost(CreateParameterGroup, "groups")
-            .MapPut(UpdateParameterGroup, "groups/{id}")
-            .MapDelete(DeleteParameterGroup, "groups/{id}")
+            // PARAMETER GROUPS - Category organization
+            .MapGet(GetParameterGroups, "Groups")
+            .MapGet(GetParameterGroup, "Groups/{id}")
+            .MapPost(CreateParameterGroup, "Groups")
+            .MapPut(UpdateParameterGroup, "Groups/{id}")
+            .MapDelete(DeleteParameterGroup, "Groups/{id}")
 
-            // ==== PARAMETERS - Parameter definitions ====
-            .MapGet(GetParameters, "parameters")
-            .MapGet(GetParameter, "parameters/{id}")
-            .MapPost(CreateParameter, "parameters")
-            .MapPut(UpdateParameter, "parameters/{id}")
-            .MapDelete(DeleteParameter, "parameters/{id}")
+            // PARAMETERS - Parameter definitions
+            .MapGet(GetParameters, "Parameters")
+            .MapGet(GetParameter, "Parameters/{id}")
+            .MapPost(CreateParameter, "Parameters")
+            .MapPut(UpdateParameter, "Parameters/{id}")
+            .MapDelete(DeleteParameter, "Parameters/{id}")
 
-            // ==== VALUE SCHEMES - Model-specific default values ====
-            .MapGet(GetParameterValueSettingSchemes, "values")
-            .MapGet(GetParameterValueSettingSchemesTree, "values/tree")
-            .MapPost(CreateParameterValueSettingScheme, "values")
-            .MapPut(UpdateParameterValueSettingScheme, "values/{id}")
-            .MapDelete(DeleteParameterValueSettingScheme, "values/{id}");
+            // VALUE SCHEMES - Write operations (Admin only)
+            .MapPost(CreateParameterValueSettingScheme, "Values")
+            .MapPut(UpdateParameterValueSettingScheme, "Values/{id}")
+            .MapDelete(DeleteParameterValueSettingScheme, "Values/{id}");
+
+        // ==== ALL AUTHENTICATED USERS - Value Schemes Read Operations ====
+        app.MapGroup(this)
+            .RequireAuthorization()
+            .MapGet(GetParameterValueSettingSchemes, "Values")
+            .MapGet(GetParameterValueSettingSchemesTree, "Values/Tree");
     }
 
     // ========================================================================
@@ -89,7 +95,7 @@ public class ParameterSchemas : EndpointGroupBase
         CreateParameterGroupCommand command)
     {
         var id = await sender.Send(command);
-        return TypedResults.Created($"/api/ParameterSchemas/groups/{id}", id);
+        return TypedResults.Created($"/api/ParameterSchemas/Groups/{id}", id);
     }
 
     /// <summary>
@@ -155,7 +161,7 @@ public class ParameterSchemas : EndpointGroupBase
         CreateParameterCommand command)
     {
         var id = await sender.Send(command);
-        return TypedResults.Created($"/api/ParameterSchemas/parameters/{id}", id);
+        return TypedResults.Created($"/api/ParameterSchemas/Parameters/{id}", id);
     }
 
     /// <summary>
@@ -222,7 +228,7 @@ public class ParameterSchemas : EndpointGroupBase
         CreateParameterValueSettingSchemeCommand command)
     {
         var id = await sender.Send(command);
-        return TypedResults.Created($"/api/ParameterSchemas/values/{id}", id);
+        return TypedResults.Created($"/api/ParameterSchemas/Values/{id}", id);
     }
 
     /// <summary>
