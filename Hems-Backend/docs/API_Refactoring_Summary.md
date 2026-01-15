@@ -289,3 +289,96 @@ GET /api/ParameterSchemas/values
 - RPC-synced operations are recommended for all user-facing features
 - Database-only operations should be reserved for admin tools and offline scenarios
 - Demo/testing operations are isolated under `/demo` prefix
+
+---
+
+## Admin Tool Endpoints Convention
+
+All admin-only endpoints that are NOT used by the frontend mobile app follow the `/Tool/` prefix convention. These endpoints are for data management without direct database access.
+
+### 3. Devices Endpoint (`/api/Devices`)
+
+**User-facing Endpoints:**
+```
+/api/Devices
+└── POST   /login                          - Device authentication (no auth required)
+```
+
+**Admin Tool Endpoints (require AdminOnly authorization):**
+```
+/api/Devices/Tool
+├── GET    /Device/{id}                    - Get device by ID
+├── POST   /Device                         - Create new device
+├── PUT    /Device/{id}                    - Update device
+└── DELETE /Device/{id}                    - Delete device
+```
+
+**Note:** These CRUD operations are NOT used by the frontend mobile app. Device management is handled through Setups and DeviceComponents endpoints.
+
+---
+
+### 4. DeviceComponents Endpoint (`/api/DeviceComponents`)
+
+**User-facing Endpoints:**
+```
+/api/DeviceComponents
+├── GET    /DeviceSummary                  - Get device summary for dashboard
+└── GET    /Details/{componentId}          - Get component details
+```
+
+**Admin Tool Endpoints (require AdminOnly authorization):**
+```
+/api/DeviceComponents/Tool
+├── GET    /DeviceComponents/{deviceId}    - Get components by device ID
+├── GET    /Component/{id}                 - Get component by ID
+├── POST   /Component                      - Create new component
+├── PUT    /Component/{id}                 - Update component
+└── DELETE /Component/{id}                 - Delete component
+```
+
+---
+
+### 5. DeviceNotifications Endpoint (`/api/DeviceNotifications`)
+
+**Device Endpoints (require DeviceOnly authorization):**
+```
+/api/DeviceNotifications
+└── POST   /                               - Create notification (device-initiated)
+```
+
+**User-facing Endpoints (require authorization):**
+```
+/api/DeviceNotifications
+├── GET    /                               - Get paginated notifications
+├── GET    /Deleted                        - Get soft-deleted notifications
+├── PUT    /{id}/MarkRead                  - Mark notification as read
+├── PUT    /MarkAllRead/{siteId}           - Mark all site notifications as read
+├── PUT    /{id}/Restore                   - Restore deleted notification
+├── DELETE /{id}                           - Soft delete notification
+└── DELETE /{id}/Purge                     - Permanently delete notification
+```
+
+**Admin Tool Endpoints (require AdminOnly authorization):**
+```
+/api/DeviceNotifications/Tool
+└── GET    /Types                          - Get all notification types
+```
+
+**Telemetry Processing (via DeviceData):**
+```
+/api/DeviceData
+└── POST   /Alarm                          - Process alarm telemetry from gateway
+```
+
+---
+
+## Tool Endpoint Summary
+
+| Endpoint Group | Tool Path | Operations |
+|----------------|-----------|------------|
+| Devices | `/api/Devices/Tool/Device` | GET, POST, PUT, DELETE |
+| DeviceComponents | `/api/DeviceComponents/Tool/Component` | GET, POST, PUT, DELETE |
+| DeviceComponents | `/api/DeviceComponents/Tool/DeviceComponents/{deviceId}` | GET |
+| DeviceNotifications | `/api/DeviceNotifications/Tool/Types` | GET |
+| DeviceSettings | `/api/DeviceSettings/admin` | GET, POST, PUT, DELETE |
+| ParameterSchemas | `/api/ParameterSchemas` | All (admin-only by default) |
