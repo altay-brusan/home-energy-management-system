@@ -403,6 +403,9 @@ All admin-only endpoints that are NOT used by the frontend mobile app follow the
 | ParameterSchemas | `/api/ParameterSchemas/Groups` | All (admin-only) |
 | ParameterSchemas | `/api/ParameterSchemas/Parameters` | All (admin-only) |
 | ParameterSchemas | `/api/ParameterSchemas/Values` | GET (all users), POST/PUT/DELETE (admin-only) |
+| RoleManagement | `/api/RoleManagement/Admin/Roles` | GET, POST, DELETE (admin-only) |
+| RoleManagement | `/api/RoleManagement/Admin/Assign` | PUT (admin-only) |
+| RoleManagement | `/api/RoleManagement/Admin/User/{userId}/Roles` | GET (admin-only) |
 
 ---
 
@@ -498,3 +501,32 @@ All admin-only endpoints that are NOT used by the frontend mobile app follow the
 | Old Name | New Name |
 |----------|----------|
 | `GetCitiesByCountry` | `GetCountryCities` |
+
+---
+
+### 9. RoleManagement Endpoint (`/api/RoleManagement`)
+
+**Purpose**: Admin-only access for managing roles and user role assignments.
+
+**Admin Tool Endpoints (require AdminOnly authorization):**
+```
+/api/RoleManagement/Admin
+├── GET    /Roles                         - Get all roles
+├── POST   /Roles                         - Create a new role
+├── DELETE /Roles/{roleName}              - Delete a role by name
+├── PUT    /Assign                        - Assign a role to a user
+└── GET    /User/{userId}/Roles           - Get all roles for a user
+```
+
+**Path Changes (Root → Admin/ prefix with PascalCase):**
+| Old Path | New Path |
+|----------|----------|
+| `/` (GET) | `/Admin/Roles` |
+| `/` (POST) | `/Admin/Roles` |
+| `/{roleName}` | `/Admin/Roles/{roleName}` |
+| `/assign` | `/Admin/Assign` |
+| `/user/{userId}` | `/Admin/User/{userId}/Roles` |
+
+**Authorization**: Admin only (all operations)
+
+**Note**: Obsolete markers have been removed. These endpoints are now active admin tools.
