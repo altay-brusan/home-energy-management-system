@@ -102,11 +102,9 @@ public class DeviceNotifications : EndpointGroupBase
                         Id = dn.DeviceNotificationType.Id,
                         Code = dn.DeviceNotificationType.Code,
                         Message = dn.DeviceNotificationType.Message,
-                        Status = dn.DeviceNotificationType.Status,
                         Description = dn.DeviceNotificationType.Description,
-                        Register = dn.DeviceNotificationType.Register,
-                        Value = dn.DeviceNotificationType.Value,
                         Category = dn.DeviceNotificationType.Category,
+                        Severity = dn.DeviceNotificationType.Severity,
                         Version = dn.DeviceNotificationType.Version,
                         Manufacturer = dn.DeviceNotificationType.Manufacturer,
                         IsActive = dn.DeviceNotificationType.IsActive

@@ -5771,19 +5771,8 @@
           "message": {
             "type": "string"
           },
-          "status": {
-            "type": "string"
-          },
           "description": {
             "type": "string"
-          },
-          "register": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "value": {
-            "type": "integer",
-            "format": "int32"
           },
           "category": {
             "type": "string"

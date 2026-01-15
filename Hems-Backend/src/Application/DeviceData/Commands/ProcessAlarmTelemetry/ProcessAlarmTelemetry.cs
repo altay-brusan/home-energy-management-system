@@ -123,7 +123,8 @@ public class ProcessAlarmTelemetryCommandHandler : IRequestHandler<ProcessAlarmT
         var command = new ProcessDeviceAlarmCommand
         {
             DeviceId = internalDeviceId.Value,
-            AlarmState = alarmState
+            AlarmState = alarmState,
+            RawJson = dataElement.GetRawText() // Store original JSON for AdditionalData
         };
 
         var result = await _sender.Send(command, cancellationToken);
@@ -157,17 +158,30 @@ public class ProcessAlarmTelemetryCommandHandler : IRequestHandler<ProcessAlarmT
     {
         var alarmState = new InverterAlarmStateDto();
 
+        // Parse Kind to determine device type (InverterAlarmState or BatteryAlarmState)
+        if (dataElement.TryGetProperty("kind", out var kindEl))
+            alarmState.Kind = kindEl.GetString() ?? string.Empty;
+
         if (dataElement.TryGetProperty("timestampUtc", out var tsEl))
             alarmState.TimestampUtc = tsEl.GetString() ?? string.Empty;
+
+        if (dataElement.TryGetProperty("version", out var verEl))
+            alarmState.Version = verEl.GetInt32();
 
         if (dataElement.TryGetProperty("gatewayId", out var gwEl))
             alarmState.GatewayId = gwEl.GetString() ?? string.Empty;
 
+        // Support both inverterSerialNumber and generic serialNumber
         if (dataElement.TryGetProperty("inverterSerialNumber", out var snEl))
-            alarmState.InverterSerialNumber = snEl.GetString() ?? string.Empty;
+            alarmState.SerialNumber = snEl.GetString() ?? string.Empty;
+        else if (dataElement.TryGetProperty("serialNumber", out var sn2El))
+            alarmState.SerialNumber = sn2El.GetString() ?? string.Empty;
 
         if (dataElement.TryGetProperty("runStateRaw", out var rsEl))
             alarmState.RunStateRaw = rsEl.GetInt32();
+
+        if (dataElement.TryGetProperty("commBoardFaultRaw", out var cbfEl))
+            alarmState.CommBoardFaultRaw = cbfEl.GetInt32();
 
         if (dataElement.TryGetProperty("warningWord1Raw", out var ww1El))
             alarmState.WarningWord1Raw = ww1El.GetInt32();
@@ -186,6 +200,9 @@ public class ProcessAlarmTelemetryCommandHandler : IRequestHandler<ProcessAlarmT
 
         if (dataElement.TryGetProperty("faultWord4Raw", out var fw4El))
             alarmState.FaultWord4Raw = fw4El.GetInt32();
+
+        if (dataElement.TryGetProperty("workFlagTripData", out var wftEl))
+            alarmState.WorkFlagTripData = wftEl.GetInt32();
 
         // Parse activeAlarms array
         if (dataElement.TryGetProperty("activeAlarms", out var alarmsEl) &&
