@@ -65,45 +65,47 @@ This refactoring reorganized device parameter management endpoints into two clea
 
 ```
 /api/ParameterSchemas
-├── PARAMETER GROUPS (Category organization) - Admin only
-│   ├── GET    /Groups                - List all groups
-│   ├── GET    /Groups/{id}           - Get specific group
-│   ├── POST   /Groups                - Create group
-│   ├── PUT    /Groups/{id}           - Update group
-│   └── DELETE /Groups/{id}           - Delete group
+├── ADMIN OPERATIONS (Admin only)
+│   ├── PARAMETER GROUPS
+│   │   ├── GET    /Admin/Groups                - List all groups
+│   │   ├── GET    /Admin/Groups/{id}           - Get specific group
+│   │   ├── POST   /Admin/Groups                - Create group
+│   │   ├── PUT    /Admin/Groups/{id}           - Update group
+│   │   └── DELETE /Admin/Groups/{id}           - Delete group
+│   │
+│   ├── PARAMETERS
+│   │   ├── GET    /Admin/Parameters            - List parameters
+│   │   ├── GET    /Admin/Parameters/{id}       - Get specific parameter
+│   │   ├── POST   /Admin/Parameters            - Create parameter
+│   │   ├── PUT    /Admin/Parameters/{id}       - Update parameter
+│   │   └── DELETE /Admin/Parameters/{id}       - Delete parameter
+│   │
+│   └── VALUE SCHEMES (Write operations)
+│       ├── POST   /Admin/Values                - Create scheme
+│       ├── PUT    /Admin/Values/{id}           - Update scheme
+│       └── DELETE /Admin/Values/{id}           - Delete scheme
 │
-├── PARAMETERS (Parameter definitions) - Admin only
-│   ├── GET    /Parameters            - List parameters
-│   ├── GET    /Parameters/{id}       - Get specific parameter
-│   ├── POST   /Parameters            - Create parameter
-│   ├── PUT    /Parameters/{id}       - Update parameter
-│   └── DELETE /Parameters/{id}       - Delete parameter
-│
-└── VALUE SCHEMES (Model-specific default values)
-    ├── GET    /Values                - List schemes (All authenticated users)
-    ├── GET    /Values/Tree           - Get tree structure (All authenticated users)
-    ├── POST   /Values                - Create scheme (Admin only)
-    ├── PUT    /Values/{id}           - Update scheme (Admin only)
-    └── DELETE /Values/{id}           - Delete scheme (Admin only)
+└── USER OPERATIONS (All authenticated users)
+    └── VALUE SCHEMES (Read operations)
+        ├── GET    /Values                      - List schemes
+        └── GET    /Values/Tree                 - Get tree structure
 ```
 
 **Authorization**:
-- Parameter Groups: Admin only (all operations)
-- Parameters: Admin only (all operations)
-- Value Schemes:
-  - GET operations: All authenticated users
-  - POST/PUT/DELETE: Admin only
+- `/Admin/*`: Admin only (all operations)
+- `/Values` (GET): All authenticated users
 
-**Path Changes (kebab-case → PascalCase):**
+**Path Changes:**
 | Old Path | New Path |
 |----------|----------|
-| `/groups` | `/Groups` |
-| `/groups/{id}` | `/Groups/{id}` |
-| `/parameters` | `/Parameters` |
-| `/parameters/{id}` | `/Parameters/{id}` |
-| `/values` | `/Values` |
-| `/values/tree` | `/Values/Tree` |
-| `/values/{id}` | `/Values/{id}` |
+| `/groups` | `/Admin/Groups` |
+| `/groups/{id}` | `/Admin/Groups/{id}` |
+| `/parameters` | `/Admin/Parameters` |
+| `/parameters/{id}` | `/Admin/Parameters/{id}` |
+| `/values` (POST/PUT/DELETE) | `/Admin/Values` |
+| `/values/{id}` (PUT/DELETE) | `/Admin/Values/{id}` |
+| `/values` (GET) | `/Values` |
+| `/values/tree` (GET) | `/Values/Tree` |
 
 **Frontend Migration Note**:
 The old endpoint `/ParameterValueSettingSchemes/tree` is now at `/ParameterSchemas/Values/Tree`
@@ -400,9 +402,10 @@ All admin-only endpoints that are NOT used by the frontend mobile app follow the
 | DeviceComponents | `/api/DeviceComponents/Tool/DeviceComponents/{deviceId}` | GET |
 | DeviceNotifications | `/api/DeviceNotifications/Tool/Types` | GET |
 | DeviceSettings | `/api/DeviceSettings/admin` | GET, POST, PUT, DELETE |
-| ParameterSchemas | `/api/ParameterSchemas/Groups` | All (admin-only) |
-| ParameterSchemas | `/api/ParameterSchemas/Parameters` | All (admin-only) |
-| ParameterSchemas | `/api/ParameterSchemas/Values` | GET (all users), POST/PUT/DELETE (admin-only) |
+| ParameterSchemas | `/api/ParameterSchemas/Admin/Groups` | All (admin-only) |
+| ParameterSchemas | `/api/ParameterSchemas/Admin/Parameters` | All (admin-only) |
+| ParameterSchemas | `/api/ParameterSchemas/Admin/Values` | POST/PUT/DELETE (admin-only) |
+| ParameterSchemas | `/api/ParameterSchemas/Values` | GET (all users) |
 | RoleManagement | `/api/RoleManagement/Admin/Roles` | GET, POST, DELETE (admin-only) |
 | RoleManagement | `/api/RoleManagement/Admin/Assign` | PUT (admin-only) |
 | RoleManagement | `/api/RoleManagement/Admin/User/{userId}/Roles` | GET (admin-only) |

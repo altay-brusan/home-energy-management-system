@@ -30,28 +30,28 @@ public class ParameterSchemas : EndpointGroupBase
 {
     public override void Map(WebApplication app)
     {
-        // ==== ADMIN ONLY - Parameter Groups and Parameters ====
+        // ==== ADMIN ONLY - Parameter Groups, Parameters, and Value Schemes Write ====
         app.MapGroup(this)
             .RequireAuthorization(Policies.AdminOnly)
 
             // PARAMETER GROUPS - Category organization
-            .MapGet(GetParameterGroups, "Groups")
-            .MapGet(GetParameterGroup, "Groups/{id}")
-            .MapPost(CreateParameterGroup, "Groups")
-            .MapPut(UpdateParameterGroup, "Groups/{id}")
-            .MapDelete(DeleteParameterGroup, "Groups/{id}")
+            .MapGet(GetParameterGroups, "Admin/Groups")
+            .MapGet(GetParameterGroup, "Admin/Groups/{id}")
+            .MapPost(CreateParameterGroup, "Admin/Groups")
+            .MapPut(UpdateParameterGroup, "Admin/Groups/{id}")
+            .MapDelete(DeleteParameterGroup, "Admin/Groups/{id}")
 
             // PARAMETERS - Parameter definitions
-            .MapGet(GetParameters, "Parameters")
-            .MapGet(GetParameter, "Parameters/{id}")
-            .MapPost(CreateParameter, "Parameters")
-            .MapPut(UpdateParameter, "Parameters/{id}")
-            .MapDelete(DeleteParameter, "Parameters/{id}")
+            .MapGet(GetParameters, "Admin/Parameters")
+            .MapGet(GetParameter, "Admin/Parameters/{id}")
+            .MapPost(CreateParameter, "Admin/Parameters")
+            .MapPut(UpdateParameter, "Admin/Parameters/{id}")
+            .MapDelete(DeleteParameter, "Admin/Parameters/{id}")
 
             // VALUE SCHEMES - Write operations (Admin only)
-            .MapPost(CreateParameterValueSettingScheme, "Values")
-            .MapPut(UpdateParameterValueSettingScheme, "Values/{id}")
-            .MapDelete(DeleteParameterValueSettingScheme, "Values/{id}");
+            .MapPost(CreateParameterValueSettingScheme, "Admin/Values")
+            .MapPut(UpdateParameterValueSettingScheme, "Admin/Values/{id}")
+            .MapDelete(DeleteParameterValueSettingScheme, "Admin/Values/{id}");
 
         // ==== ALL AUTHENTICATED USERS - Value Schemes Read Operations ====
         app.MapGroup(this)
@@ -95,7 +95,7 @@ public class ParameterSchemas : EndpointGroupBase
         CreateParameterGroupCommand command)
     {
         var id = await sender.Send(command);
-        return TypedResults.Created($"/api/ParameterSchemas/Groups/{id}", id);
+        return TypedResults.Created($"/api/ParameterSchemas/Admin/Groups/{id}", id);
     }
 
     /// <summary>
@@ -161,7 +161,7 @@ public class ParameterSchemas : EndpointGroupBase
         CreateParameterCommand command)
     {
         var id = await sender.Send(command);
-        return TypedResults.Created($"/api/ParameterSchemas/Parameters/{id}", id);
+        return TypedResults.Created($"/api/ParameterSchemas/Admin/Parameters/{id}", id);
     }
 
     /// <summary>
@@ -228,7 +228,7 @@ public class ParameterSchemas : EndpointGroupBase
         CreateParameterValueSettingSchemeCommand command)
     {
         var id = await sender.Send(command);
-        return TypedResults.Created($"/api/ParameterSchemas/Values/{id}", id);
+        return TypedResults.Created($"/api/ParameterSchemas/Admin/Values/{id}", id);
     }
 
     /// <summary>
