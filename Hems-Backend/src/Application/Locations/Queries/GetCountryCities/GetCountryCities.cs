@@ -3,23 +3,23 @@ using Hems_Backend.Application.Locations.Common.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Hems_Backend.Application.Locations.Queries.GetCitiesByCountry;
+namespace Hems_Backend.Application.Locations.Queries.GetCountryCities;
 
-public record GetCitiesByCountryQuery : IRequest<List<CityDto>>
+public record GetCountryCitiesQuery : IRequest<List<CityDto>>
 {
     public Guid CountryId { get; init; }
 }
 
-public class GetCitiesByCountryQueryHandler : IRequestHandler<GetCitiesByCountryQuery, List<CityDto>>
+public class GetCountryCitiesQueryHandler : IRequestHandler<GetCountryCitiesQuery, List<CityDto>>
 {
     private readonly IApplicationDbContext _context;
 
-    public GetCitiesByCountryQueryHandler(IApplicationDbContext context)
+    public GetCountryCitiesQueryHandler(IApplicationDbContext context)
     {
         _context = context;
     }
 
-    public async Task<List<CityDto>> Handle(GetCitiesByCountryQuery request, CancellationToken cancellationToken)
+    public async Task<List<CityDto>> Handle(GetCountryCitiesQuery request, CancellationToken cancellationToken)
     {
         return await _context.Cities
             .Include(c => c.Country)

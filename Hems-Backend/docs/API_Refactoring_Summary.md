@@ -455,4 +455,25 @@ All admin-only endpoints that are NOT used by the frontend mobile app follow the
 | Context | Message |
 |---------|---------|
 | Not Found | "Notification with ID {id} not found." |
-| Access Denied | "You don't have access to site {siteId}"
+| Access Denied | "You don't have access to site {siteId}" |
+
+---
+
+### 8. Locations Endpoint (`/api/Locations`)
+
+**User-facing Endpoints (require authorization):**
+```
+/api/Locations
+├── GET    /                              - Get all countries
+└── GET    /Cities/{countryId}            - Get cities by country
+```
+
+**Path Changes:**
+| Old Path | New Path |
+|----------|----------|
+| `/cities/{countryId}` | `/Cities/{countryId}` |
+
+**Method Renamed:**
+| Old Name | New Name |
+|----------|----------|
+| `GetCitiesByCountry` | `GetCountryCities` |
