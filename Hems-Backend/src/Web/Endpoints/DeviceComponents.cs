@@ -22,17 +22,17 @@ public class DeviceComponents : EndpointGroupBase
             // User-facing endpoints (used by mobile app)
             .MapGet(GetDeviceSummary, "DeviceSummary")
             .MapGet(GetDeviceDetails, "Details/{componentId}")
-            // Admin Tool endpoints - for managing data without direct database access
+            // Admin endpoints - for managing data without direct database access
             // These endpoints are not used by the mobile app, they are administrative utilities
-            .MapGet(GetDeviceComponentsByDeviceId, "Tool/DeviceComponents/{deviceId}")
-            .MapGet(GetDeviceComponent, "Tool/Component/{id}")
-            .MapPost(CreateDeviceComponent, "Tool/Component")
-            .MapPut(UpdateDeviceComponent, "Tool/Component/{id}")
-            .MapDelete(DeleteDeviceComponent, "Tool/Component/{id}");
+            .MapGet(GetDeviceComponentsByDeviceId, "Admin/DeviceComponents/{deviceId}")
+            .MapGet(GetDeviceComponent, "Admin/Component/{id}")
+            .MapPost(CreateDeviceComponent, "Admin/Component")
+            .MapPut(UpdateDeviceComponent, "Admin/Component/{id}")
+            .MapDelete(DeleteDeviceComponent, "Admin/Component/{id}");
     }
 
     /// <summary>
-    /// Admin Tool: Get all device components for a specific device.
+    /// Admin: Get all device components for a specific device.
     /// Used for administrative data management without direct database access.
     /// </summary>
     [Authorize(Policies.AdminOnly)]
@@ -49,7 +49,7 @@ public class DeviceComponents : EndpointGroupBase
     }
 
     /// <summary>
-    /// Admin Tool: Get a device component by its ID.
+    /// Admin: Get a device component by its ID.
     /// Used for administrative data management without direct database access.
     /// </summary>
     [Authorize(Policies.AdminOnly)]
@@ -61,7 +61,7 @@ public class DeviceComponents : EndpointGroupBase
     }
 
     /// <summary>
-    /// Admin Tool: Create a new device component.
+    /// Admin: Create a new device component.
     /// Used for administrative data management without direct database access.
     /// </summary>
     [Authorize(Policies.AdminOnly)]
@@ -73,7 +73,7 @@ public class DeviceComponents : EndpointGroupBase
     }
 
     /// <summary>
-    /// Admin Tool: Update an existing device component.
+    /// Admin: Update an existing device component.
     /// Used for administrative data management without direct database access.
     /// </summary>
     [Authorize(Policies.AdminOnly)]
@@ -88,7 +88,7 @@ public class DeviceComponents : EndpointGroupBase
     }
 
     /// <summary>
-    /// Admin Tool: Delete a device component.
+    /// Admin: Delete a device component.
     /// Used for administrative data management without direct database access.
     /// </summary>
     [Authorize(Policies.AdminOnly)]

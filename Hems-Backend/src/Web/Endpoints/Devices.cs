@@ -19,14 +19,14 @@ public class Devices : EndpointGroupBase
         app.MapGroup(this)
             .MapPost("login", DeviceLogin);
 
-        // Admin Tool endpoints - for managing data without direct database access
+        // Admin endpoints - for managing data without direct database access
         // These are NOT used by the frontend mobile app
         app.MapGroup(this)
             .RequireAuthorization(Policies.AdminOnly)
-            .MapGet(GetDevice, "Tool/Device/{id}")
-            .MapPost(CreateDevice, "Tool/Device")
-            .MapPut(UpdateDevice, "Tool/Device/{id}")
-            .MapDelete(DeleteDevice, "Tool/Device/{id}");
+            .MapGet(GetDevice, "Admin/Device/{id}")
+            .MapPost(CreateDevice, "Admin/Device")
+            .MapPut(UpdateDevice, "Admin/Device/{id}")
+            .MapDelete(DeleteDevice, "Admin/Device/{id}");
     }
 
     public async Task<DeviceLoginResult> DeviceLogin(

@@ -550,7 +550,7 @@
         ]
       }
     },
-    "/api/DeviceComponents/Tool/DeviceComponents/{deviceId}": {
+    "/api/DeviceComponents/Admin/DeviceComponents/{deviceId}": {
       "get": {
         "tags": [
           "DeviceComponents"
@@ -599,7 +599,7 @@
         ]
       }
     },
-    "/api/DeviceComponents/Tool/Component/{id}": {
+    "/api/DeviceComponents/Admin/Component/{id}": {
       "get": {
         "tags": [
           "DeviceComponents"
@@ -704,7 +704,7 @@
         ]
       }
     },
-    "/api/DeviceComponents/Tool/Component": {
+    "/api/DeviceComponents/Admin/Component": {
       "post": {
         "tags": [
           "DeviceComponents"
@@ -1436,7 +1436,7 @@
         ]
       }
     },
-    "/api/DeviceNotifications/Tool/Types": {
+    "/api/DeviceNotifications/Admin/Types": {
       "get": {
         "tags": [
           "DeviceNotifications"
@@ -1496,7 +1496,7 @@
         }
       }
     },
-    "/api/Devices/Tool/Device/{id}": {
+    "/api/Devices/Admin/Device/{id}": {
       "get": {
         "tags": [
           "Devices"
@@ -1601,7 +1601,7 @@
         ]
       }
     },
-    "/api/Devices/Tool/Device": {
+    "/api/Devices/Admin/Device": {
       "post": {
         "tags": [
           "Devices"

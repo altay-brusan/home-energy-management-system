@@ -41,10 +41,10 @@ public class DeviceNotifications : EndpointGroupBase
             .MapDelete(DeleteDeviceNotification, "{id}")
             .MapDelete(PurgeDeviceNotification, "{id}/Purge");
 
-        // Admin Tool endpoints (for data management without direct database access)
+        // Admin endpoints (for data management without direct database access)
         app.MapGroup(this)
             .RequireAuthorization(Policies.AdminOnly)
-            .MapGet(GetDeviceNotificationTypes, "Tool/Types");
+            .MapGet(GetDeviceNotificationTypes, "Admin/Types");
     }
 
     [Authorize(Policies.DeviceOnly)]

@@ -313,9 +313,9 @@ GET /api/ParameterSchemas/values
 
 ---
 
-## Admin Tool Endpoints Convention
+## Admin Endpoints Convention
 
-All admin-only endpoints that are NOT used by the frontend mobile app follow the `/Tool/` prefix convention. These endpoints are for data management without direct database access.
+All admin-only endpoints that are NOT used by the frontend mobile app follow the `/Admin/` prefix convention. These endpoints are for data management without direct database access.
 
 ### 3. Devices Endpoint (`/api/Devices`)
 
@@ -325,9 +325,9 @@ All admin-only endpoints that are NOT used by the frontend mobile app follow the
 └── POST   /login                          - Device authentication (no auth required)
 ```
 
-**Admin Tool Endpoints (require AdminOnly authorization):**
+**Admin Endpoints (require AdminOnly authorization):**
 ```
-/api/Devices/Tool
+/api/Devices/Admin
 ├── GET    /Device/{id}                    - Get device by ID
 ├── POST   /Device                         - Create new device
 ├── PUT    /Device/{id}                    - Update device
@@ -347,9 +347,9 @@ All admin-only endpoints that are NOT used by the frontend mobile app follow the
 └── GET    /Details/{componentId}          - Get component details
 ```
 
-**Admin Tool Endpoints (require AdminOnly authorization):**
+**Admin Endpoints (require AdminOnly authorization):**
 ```
-/api/DeviceComponents/Tool
+/api/DeviceComponents/Admin
 ├── GET    /DeviceComponents/{deviceId}    - Get components by device ID
 ├── GET    /Component/{id}                 - Get component by ID
 ├── POST   /Component                      - Create new component
@@ -379,9 +379,9 @@ All admin-only endpoints that are NOT used by the frontend mobile app follow the
 └── DELETE /{id}/Purge                     - Permanently delete notification
 ```
 
-**Admin Tool Endpoints (require AdminOnly authorization):**
+**Admin Endpoints (require AdminOnly authorization):**
 ```
-/api/DeviceNotifications/Tool
+/api/DeviceNotifications/Admin
 └── GET    /Types                          - Get all notification types
 ```
 
@@ -393,14 +393,14 @@ All admin-only endpoints that are NOT used by the frontend mobile app follow the
 
 ---
 
-## Tool Endpoint Summary
+## Admin Endpoint Summary
 
-| Endpoint Group | Tool Path | Operations |
+| Endpoint Group | Admin Path | Operations |
 |----------------|-----------|------------|
-| Devices | `/api/Devices/Tool/Device` | GET, POST, PUT, DELETE |
-| DeviceComponents | `/api/DeviceComponents/Tool/Component` | GET, POST, PUT, DELETE |
-| DeviceComponents | `/api/DeviceComponents/Tool/DeviceComponents/{deviceId}` | GET |
-| DeviceNotifications | `/api/DeviceNotifications/Tool/Types` | GET |
+| Devices | `/api/Devices/Admin/Device` | GET, POST, PUT, DELETE |
+| DeviceComponents | `/api/DeviceComponents/Admin/Component` | GET, POST, PUT, DELETE |
+| DeviceComponents | `/api/DeviceComponents/Admin/DeviceComponents/{deviceId}` | GET |
+| DeviceNotifications | `/api/DeviceNotifications/Admin/Types` | GET |
 | DeviceSettings | `/api/DeviceSettings/admin` | GET, POST, PUT, DELETE |
 | ParameterSchemas | `/api/ParameterSchemas/Admin/Groups` | All (admin-only) |
 | ParameterSchemas | `/api/ParameterSchemas/Admin/Parameters` | All (admin-only) |
