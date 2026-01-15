@@ -1176,6 +1176,17 @@
           "powerSwitch": 1,
           "remoteLock": "locked"
         }
+      },
+            {
+        "rpcName": "getInverterRunState",
+        "kind": "InverterRunState",
+        "type": "read",
+        "pairedWith": "setInverterRunState",
+        "response": {
+          "kind": "InverterRunState",
+          "version": 1,
+          "runState": "normal"
+        }
       }
             },
   "summary": {
@@ -1191,7 +1202,8 @@
       "getSystemConnectionStructure"
       "getInverterInfo",
       "getBatteryEnergyFlowState",
-      "getBatteryInfoState"
+      "getBatteryInfoState",
+      "getInverterRunState"
 
     ],
     "readWritePairs": [
@@ -1266,9 +1278,9 @@
         "kind": "InverterDisplayConfigState"
       }
     ],
-    "totalMethods": 36,
+    "totalMethods": 37,
     "totalReadOnly": 12,
     "totalReadWritePairs": 14,
-    "uniqueKinds": 26
+    "uniqueKinds": 27
   }
 }
