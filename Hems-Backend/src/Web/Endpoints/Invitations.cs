@@ -2,11 +2,8 @@ using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Application.Invitations.Commands.AcceptInvitation;
 using Hems_Backend.Application.Invitations.Commands.CreateInvitation;
 using Hems_Backend.Application.Invitations.Commands.DeclineInvitation;
-using Hems_Backend.Application.Invitations.Commands.MarkNotificationAsRead;
 using Hems_Backend.Application.Invitations.Commands.RemoveUserFromSite;
 using Hems_Backend.Application.Invitations.Queries.GetInvitationsBySite;
-using Hems_Backend.Application.Invitations.Queries.GetUserHomeSites;
-using Hems_Backend.Application.Invitations.Queries.GetUserNotifications;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Hems_Backend.Web.Endpoints;
@@ -15,30 +12,17 @@ public class Invitations : EndpointGroupBase
 {
     public override void Map(WebApplication app)
     {
-        #pragma warning disable CS0618 // Suppress obsolete warnings for endpoint mapping
         app.MapGroup(this)
             .RequireAuthorization()
-            // Davetiye gönderme
-            .MapPost(CreateInvitation, "create")
-            // Davetiye listeleme (belirli bir site için)
-            .MapGet(GetInvitationsBySite, "by-site/{siteId}")
-            // Davetiye kabul etme
-            .MapPost(AcceptInvitation, "accept")
-            // Davetiye reddetme
-            .MapPost(DeclineInvitation, "decline")
-            // OBSOLETE: Kullanıcının evlerini listeleme (sahibi olduğu + paylaşılan)
-            .MapGet(GetUserHomeSites, "user-home-sites")
-            // OBSOLETE: Kullanıcının bildirimlerini getirme
-            .MapGet(GetUserNotifications, "notifications")
-            // OBSOLETE: Bildirimi okundu olarak işaretleme
-            .MapPut(MarkNotificationAsRead, "notifications/{notificationId}/mark-read")
-            // Paylaşılan siteden kullanıcı kaldırma
-            .MapDelete(RemoveUserFromSite, "remove-user/{invitationId}");
-        #pragma warning restore CS0618
+            .MapPost(CreateInvitation, "Create")
+            .MapGet(GetInvitationsBySite, "BySite/{siteId}")
+            .MapPost(AcceptInvitation, "Accept")
+            .MapPost(DeclineInvitation, "Decline")
+            .MapDelete(RemoveUserFromSite, "RemoveUser/{invitationId}");
     }
 
     /// <summary>
-    /// AŞAMA 1: Davetiye Gönderimi
+    /// Create a new invitation to share a site with another user.
     /// </summary>
     [Authorize]
     public async Task<Guid> CreateInvitation(
@@ -49,7 +33,7 @@ public class Invitations : EndpointGroupBase
     }
 
     /// <summary>
-    /// AŞAMA 2: Davetiye Listeleme
+    /// Get all invitations for a specific site.
     /// </summary>
     [Authorize]
     public async Task<InvitationsVm> GetInvitationsBySite(
@@ -60,7 +44,7 @@ public class Invitations : EndpointGroupBase
     }
 
     /// <summary>
-    /// AŞAMA 3: Davetiye Kabul Etme
+    /// Accept a pending invitation.
     /// </summary>
     [Authorize]
     public async Task<IResult> AcceptInvitation(
@@ -68,11 +52,11 @@ public class Invitations : EndpointGroupBase
         AcceptInvitationCommand command)
     {
         await sender.Send(command);
-        return Results.Ok(new { message = "Davetiye başarıyla kabul edildi." });
+        return Results.Ok(new { message = "Invitation accepted successfully." });
     }
 
     /// <summary>
-    /// AŞAMA 3: Davetiye Reddetme
+    /// Decline a pending invitation.
     /// </summary>
     [Authorize]
     public async Task<IResult> DeclineInvitation(
@@ -80,49 +64,11 @@ public class Invitations : EndpointGroupBase
         DeclineInvitationCommand command)
     {
         await sender.Send(command);
-        return Results.Ok(new { message = "Davetiye reddedildi." });
+        return Results.Ok(new { message = "Invitation declined." });
     }
 
     /// <summary>
-    /// AŞAMA 4: Kullanıcının Evlerini Listeleme
-    /// OBSOLETE: This endpoint is not in use by any client application.
-    /// </summary>
-    [Authorize]
-    [Obsolete("This endpoint is not in use and scheduled for deletion. Use Sites/mobile/get-sites instead.")]
-    public async Task<UserHomeSitesVm> GetUserHomeSites(
-        ISender sender)
-    {
-        return await sender.Send(new GetUserHomeSitesQuery());
-    }
-
-    /// <summary>
-    /// Kullanıcının Bildirimlerini Getirme
-    /// OBSOLETE: This endpoint is not in use by any client application.
-    /// </summary>
-    [Authorize]
-    [Obsolete("This endpoint is not in use and scheduled for deletion.")]
-    public async Task<List<NotificationDto>> GetUserNotifications(
-        ISender sender)
-    {
-        return await sender.Send(new GetUserNotificationsQuery());
-    }
-
-    /// <summary>
-    /// Bildirimi Okundu Olarak İşaretleme
-    /// OBSOLETE: This endpoint is not in use by any client application.
-    /// </summary>
-    [Authorize]
-    [Obsolete("This endpoint is not in use and scheduled for deletion.")]
-    public async Task<IResult> MarkNotificationAsRead(
-        ISender sender,
-        Guid notificationId)
-    {
-        await sender.Send(new MarkNotificationAsReadCommand { NotificationId = notificationId });
-        return Results.NoContent();
-    }
-
-    /// <summary>
-    /// Paylaşılan Siteden Kullanıcı Kaldırma
+    /// Remove a user from a shared site.
     /// </summary>
     [Authorize]
     public async Task<IResult> RemoveUserFromSite(
@@ -130,7 +76,7 @@ public class Invitations : EndpointGroupBase
         Guid invitationId)
     {
         await sender.Send(new RemoveUserFromSiteCommand { InvitationId = invitationId });
-        return Results.Ok(new { message = "Kullanıcı siteden başarıyla kaldırıldı." });
+        return Results.Ok(new { message = "User removed from site successfully." });
     }
 }
 

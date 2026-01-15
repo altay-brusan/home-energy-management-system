@@ -382,3 +382,77 @@ All admin-only endpoints that are NOT used by the frontend mobile app follow the
 | DeviceNotifications | `/api/DeviceNotifications/Tool/Types` | GET |
 | DeviceSettings | `/api/DeviceSettings/admin` | GET, POST, PUT, DELETE |
 | ParameterSchemas | `/api/ParameterSchemas` | All (admin-only by default) |
+
+---
+
+### 6. Invitations Endpoint (`/api/Invitations`)
+
+**User-facing Endpoints (require authorization):**
+```
+/api/Invitations
+├── POST   /Create                         - Create invitation to share site
+├── GET    /BySite/{siteId}                - Get invitations for a site
+├── POST   /Accept                         - Accept invitation
+├── POST   /Decline                        - Decline invitation
+└── DELETE /RemoveUser/{invitationId}      - Remove user from shared site
+```
+
+**Path Changes (kebab-case → PascalCase):**
+| Old Path | New Path |
+|----------|----------|
+| `/create` | `/Create` |
+| `/by-site/{siteId}` | `/BySite/{siteId}` |
+| `/accept` | `/Accept` |
+| `/decline` | `/Decline` |
+| `/remove-user/{invitationId}` | `/RemoveUser/{invitationId}` |
+
+**Removed Obsolete Endpoints:**
+- ~~`GET /user-home-sites`~~ - Use `/api/Sites/mobile/get-sites` instead
+- ~~`GET /notifications`~~ - Not used by any client
+- ~~`PUT /notifications/{id}/mark-read`~~ - Not used by any client
+
+**Localization Changes:**
+- All comments and messages translated to English
+- All validation messages translated to English
+- Response messages translated to English
+
+**Validation Messages:**
+| Field | Message |
+|-------|---------|
+| Email | "Email is required." |
+| Email | "Please enter a valid email address." |
+| SiteId | "Site ID is required." |
+| Token | "Token is required." |
+| Token | "Token must be 6 digits." |
+| Token | "Token must contain only numbers." |
+
+**Error Messages:**
+| Endpoint | Error Message |
+|----------|---------------|
+| All | "User not authenticated" |
+| All | "User email address not found" |
+| Create | "A pending invitation already exists for this user and site." |
+| Accept | "This invitation has expired. Please request a new invitation." |
+| Accept | "This site is already shared with you." |
+
+**Success Response Messages:**
+| Endpoint | Response |
+|----------|----------|
+| POST /Accept | `{ "message": "Invitation accepted successfully." }` |
+| POST /Decline | `{ "message": "Invitation declined." }` |
+| DELETE /RemoveUser/{invitationId} | `{ "message": "User removed from site successfully." }` |
+
+---
+
+### 7. DeviceNotifications Response Messages
+
+**Validation Messages:**
+| Field | Message |
+|-------|---------|
+| NotificationId | "Notification ID is required." |
+
+**Error Messages:**
+| Context | Message |
+|---------|---------|
+| Not Found | "Notification with ID {id} not found." |
+| Access Denied | "You don't have access to site {siteId}"

@@ -28,12 +28,12 @@ public class RemoveUserFromSiteCommandHandler : IRequestHandler<RemoveUserFromSi
     {
         var currentUserId = _user.Id ?? throw new UnauthorizedAccessException("User not authenticated");
 
-        // Invitation'ı al
+        // Get invitation
         var invitation = await _context.Invitations
             .FirstOrDefaultAsync(i => i.Id == request.InvitationId, cancellationToken)
             ?? throw new Common.Exceptions.NotFoundException(nameof(Invitation), request.InvitationId);
 
-        // Site'ın var olduğunu ve kullanıcının site sahibi olduğunu kontrol et
+        // Verify site exists and current user is the owner
         var site = await _context.Sites
             .FirstOrDefaultAsync(s => s.Id == invitation.SiteId && 
                                      !s.IsDeleted && 
@@ -41,7 +41,7 @@ public class RemoveUserFromSiteCommandHandler : IRequestHandler<RemoveUserFromSi
                                  cancellationToken)
             ?? throw new Common.Exceptions.NotFoundException(nameof(Site), invitation.SiteId);
 
-        // InvitedUserId varsa UserSite kaydını kontrol et ve sil
+        // If InvitedUserId exists, check and delete UserSite record
         if (!string.IsNullOrEmpty(invitation.InvitedUserId))
         {
             var userSite = await _context.UserSites
@@ -55,7 +55,7 @@ public class RemoveUserFromSiteCommandHandler : IRequestHandler<RemoveUserFromSi
             }
         }
 
-        // Invitation'ı sil
+        // Delete invitation
         _context.Invitations.Remove(invitation);
 
         await _context.SaveChangesAsync(cancellationToken);
