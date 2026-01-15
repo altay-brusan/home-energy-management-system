@@ -1406,12 +1406,12 @@
         ]
       }
     },
-    "/api/DeviceNotifications/{id}/Permanent": {
+    "/api/DeviceNotifications/{id}/Purge": {
       "delete": {
         "tags": [
           "DeviceNotifications"
         ],
-        "operationId": "PermanentDeleteDeviceNotification",
+        "operationId": "PurgeDeviceNotification",
         "parameters": [
           {
             "name": "id",

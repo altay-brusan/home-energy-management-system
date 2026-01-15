@@ -2,20 +2,20 @@ using Hems_Backend.Application.Common.Interfaces;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Hems_Backend.Application.DeviceNotifications.Commands.PermanentDeleteDeviceNotification;
+namespace Hems_Backend.Application.DeviceNotifications.Commands.PurgeDeviceNotification;
 
-public record PermanentDeleteDeviceNotificationCommand : IRequest
+public record PurgeDeviceNotificationCommand : IRequest
 {
     public Guid NotificationId { get; init; }
 }
 
-public class PermanentDeleteDeviceNotificationCommandHandler : IRequestHandler<PermanentDeleteDeviceNotificationCommand>
+public class PurgeDeviceNotificationCommandHandler : IRequestHandler<PurgeDeviceNotificationCommand>
 {
     private readonly IApplicationDbContext _context;
     private readonly IUser _user;
     private readonly IIdentityService _identityService;
 
-    public PermanentDeleteDeviceNotificationCommandHandler(
+    public PurgeDeviceNotificationCommandHandler(
         IApplicationDbContext context,
         IUser user,
         IIdentityService identityService)
@@ -25,7 +25,7 @@ public class PermanentDeleteDeviceNotificationCommandHandler : IRequestHandler<P
         _identityService = identityService;
     }
 
-    public async Task Handle(PermanentDeleteDeviceNotificationCommand request, CancellationToken cancellationToken)
+    public async Task Handle(PurgeDeviceNotificationCommand request, CancellationToken cancellationToken)
     {
         // Notification'ı bul ve kullanıcının erişim yetkisini kontrol et
         var notification = await _context.DeviceNotifications
@@ -74,4 +74,3 @@ public class PermanentDeleteDeviceNotificationCommandHandler : IRequestHandler<P
         }
     }
 }
-

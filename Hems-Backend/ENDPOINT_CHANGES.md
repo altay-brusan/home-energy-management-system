@@ -85,7 +85,7 @@ The following endpoints have been updated to use CamelCase naming convention:
 | `/DeviceNotifications/{id}/mark-read` | `/DeviceNotifications/{id}/MarkRead` | PUT |
 | `/DeviceNotifications/mark-all-read/{siteId}` | `/DeviceNotifications/MarkAllRead/{siteId}` | PUT |
 | `/DeviceNotifications/{id}/restore` | `/DeviceNotifications/{id}/Restore` | PUT |
-| `/DeviceNotifications/{id}/permanent` | `/DeviceNotifications/{id}/Permanent` | DELETE |
+| `/DeviceNotifications/{id}/permanent` | `/DeviceNotifications/{id}/Purge` | DELETE |
 
 **Note:** `GET /DeviceNotifications/Types` has been moved to `GET /DeviceNotifications/Tool/Types` (AdminOnly) - see below.
 
@@ -99,14 +99,14 @@ DEVICE_NOTIFICATIONS: {
   MARK_READ: '/DeviceNotifications/:id/mark-read',
   MARK_ALL_READ: '/DeviceNotifications/mark-all-read/:siteId',
   RESTORE: '/DeviceNotifications/:id/restore',
-  PERMANENT_DELETE: '/DeviceNotifications/:id/permanent',
+  PURGE: '/DeviceNotifications/:id/permanent',
   // NEW
   GET_DELETED: '/DeviceNotifications/Deleted',
   GET_TYPES: '/DeviceNotifications/Tool/Types', // AdminOnly - moved to Tool/ prefix
   MARK_READ: '/DeviceNotifications/:id/MarkRead',
   MARK_ALL_READ: '/DeviceNotifications/MarkAllRead/:siteId',
   RESTORE: '/DeviceNotifications/:id/Restore',
-  PERMANENT_DELETE: '/DeviceNotifications/:id/Permanent',
+  PERMANENT_DELETE: '/DeviceNotifications/:id/Purge',
 }
 ```
 
