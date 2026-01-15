@@ -23,13 +23,16 @@ public class GetDeletedDeviceNotificationsQueryHandler : IRequestHandler<GetDele
 {
     private readonly IApplicationDbContext _context;
     private readonly IUser _user;
+    private readonly ITimezoneService _timezoneService;
 
     public GetDeletedDeviceNotificationsQueryHandler(
         IApplicationDbContext context,
-        IUser user)
+        IUser user,
+        ITimezoneService timezoneService)
     {
         _context = context;
         _user = user;
+        _timezoneService = timezoneService;
     }
 
     public async Task<PaginatedList<DeviceNotificationDto>> Handle(GetDeletedDeviceNotificationsQuery request, CancellationToken cancellationToken)
@@ -43,13 +46,20 @@ public class GetDeletedDeviceNotificationsQueryHandler : IRequestHandler<GetDele
             .Include(dn => dn.Site)
             .Where(dn => dn.SiteId == request.SiteId && dn.IsDeleted == true); // Sadece silinen bildirimler
 
-        // IsToday filtresi - sadece bugünkü silinen bildirimleri getir
+        // IsToday filtresi - sadece bugünkü silinen bildirimleri getir (site timezone'una göre)
         if (request.IsToday == true)
         {
-            var today = DateTime.UtcNow.Date;
-            var todayUtc = DateTime.SpecifyKind(today, DateTimeKind.Utc);
-            var tomorrowUtc = DateTime.SpecifyKind(today.AddDays(1), DateTimeKind.Utc);
-            query = query.Where(dn => dn.Timestamp >= todayUtc && dn.Timestamp < tomorrowUtc);
+            // Get site timezone to determine "today" in user's local time
+            var siteTimezone = await _timezoneService.GetSiteTimezoneAsync(request.SiteId, cancellationToken);
+            var nowInSiteTimezone = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, siteTimezone);
+            var todayStartLocal = nowInSiteTimezone.Date;
+            var tomorrowStartLocal = todayStartLocal.AddDays(1);
+
+            // Convert local time boundaries to UTC for database comparison
+            var todayStartUtc = TimeZoneInfo.ConvertTimeToUtc(todayStartLocal, siteTimezone);
+            var tomorrowStartUtc = TimeZoneInfo.ConvertTimeToUtc(tomorrowStartLocal, siteTimezone);
+
+            query = query.Where(dn => dn.Timestamp >= todayStartUtc && dn.Timestamp < tomorrowStartUtc);
         }
 
         // Category filtresi - device category'ye göre filtreleme (inverter, battery, etc.)

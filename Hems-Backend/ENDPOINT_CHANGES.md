@@ -44,6 +44,14 @@ The following admin-only endpoints have been moved under a `Tool/` prefix to cle
 
 **Note:** These endpoints are AdminOnly and not used by the mobile app. They exist for administrative data management.
 
+### DeviceNotifications Admin Endpoint (moved to Tool/ prefix)
+
+| Old Path | New Path | Method | Description |
+|----------|----------|--------|-------------|
+| `/DeviceNotifications/Types` | `/DeviceNotifications/Tool/Types` | GET | Get all notification types (AdminOnly) |
+
+**Note:** This endpoint is not used by the frontend. It has been moved to `Tool/` prefix and restricted to AdminOnly for data management purposes.
+
 **Frontend Changes Required:**
 ```typescript
 // config.ts - Update paths if admin panel uses these
@@ -79,7 +87,7 @@ The following endpoints have been updated to use CamelCase naming convention:
 | `/DeviceNotifications/{id}/restore` | `/DeviceNotifications/{id}/Restore` | PUT |
 | `/DeviceNotifications/{id}/permanent` | `/DeviceNotifications/{id}/Permanent` | DELETE |
 
-**Note:** `GET /DeviceNotifications/Types` is not currently used by the frontend but kept for potential admin use.
+**Note:** `GET /DeviceNotifications/Types` has been moved to `GET /DeviceNotifications/Tool/Types` (AdminOnly) - see below.
 
 **Frontend Changes Required:**
 ```typescript
@@ -94,7 +102,7 @@ DEVICE_NOTIFICATIONS: {
   PERMANENT_DELETE: '/DeviceNotifications/:id/permanent',
   // NEW
   GET_DELETED: '/DeviceNotifications/Deleted',
-  GET_TYPES: '/DeviceNotifications/Types',
+  GET_TYPES: '/DeviceNotifications/Tool/Types', // AdminOnly - moved to Tool/ prefix
   MARK_READ: '/DeviceNotifications/:id/MarkRead',
   MARK_ALL_READ: '/DeviceNotifications/MarkAllRead/:siteId',
   RESTORE: '/DeviceNotifications/:id/Restore',

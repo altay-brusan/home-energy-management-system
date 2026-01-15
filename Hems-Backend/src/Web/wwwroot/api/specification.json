@@ -1202,34 +1202,6 @@
         ]
       }
     },
-    "/api/DeviceNotifications/Types": {
-      "get": {
-        "tags": [
-          "DeviceNotifications"
-        ],
-        "operationId": "GetDeviceNotificationTypes",
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/DeviceNotificationTypeDto"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
     "/api/DeviceNotifications/Deleted": {
       "get": {
         "tags": [
@@ -1374,12 +1346,12 @@
         ]
       }
     },
-    "/api/DeviceNotifications/{id}": {
-      "delete": {
+    "/api/DeviceNotifications/{id}/Restore": {
+      "put": {
         "tags": [
           "DeviceNotifications"
         ],
-        "operationId": "DeleteDeviceNotification",
+        "operationId": "RestoreDeviceNotification",
         "parameters": [
           {
             "name": "id",
@@ -1404,12 +1376,12 @@
         ]
       }
     },
-    "/api/DeviceNotifications/{id}/Restore": {
-      "put": {
+    "/api/DeviceNotifications/{id}": {
+      "delete": {
         "tags": [
           "DeviceNotifications"
         ],
-        "operationId": "RestoreDeviceNotification",
+        "operationId": "DeleteDeviceNotification",
         "parameters": [
           {
             "name": "id",
@@ -1455,6 +1427,34 @@
         "responses": {
           "200": {
             "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/DeviceNotifications/Tool/Types": {
+      "get": {
+        "tags": [
+          "DeviceNotifications"
+        ],
+        "operationId": "GetDeviceNotificationTypes",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DeviceNotificationTypeDto"
+                  }
+                }
+              }
+            }
           }
         },
         "security": [

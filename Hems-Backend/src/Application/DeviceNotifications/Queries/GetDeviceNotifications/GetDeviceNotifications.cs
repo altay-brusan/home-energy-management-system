@@ -26,15 +26,18 @@ public class GetDeviceNotificationsQueryHandler : IRequestHandler<GetDeviceNotif
     private readonly IApplicationDbContext _context;
     private readonly IUser _user;
     private readonly IIdentityService _identityService;
+    private readonly ITimezoneService _timezoneService;
 
     public GetDeviceNotificationsQueryHandler(
         IApplicationDbContext context,
         IUser user,
-        IIdentityService identityService)
+        IIdentityService identityService,
+        ITimezoneService timezoneService)
     {
         _context = context;
         _user = user;
         _identityService = identityService;
+        _timezoneService = timezoneService;
     }
 
     public async Task<PaginatedList<DeviceNotificationDto>> Handle(GetDeviceNotificationsQuery request, CancellationToken cancellationToken)
@@ -54,13 +57,20 @@ public class GetDeviceNotificationsQueryHandler : IRequestHandler<GetDeviceNotif
             query = query.Where(dn => !dn.IsDeleted);
         }
 
-        // IsToday filtresi - sadece bugünkü bildirimleri getir
+        // IsToday filtresi - sadece bugünkü bildirimleri getir (site timezone'una göre)
         if (request.IsToday == true)
         {
-            var today = DateTime.UtcNow.Date;
-            var todayUtc = DateTime.SpecifyKind(today, DateTimeKind.Utc);
-            var tomorrowUtc = DateTime.SpecifyKind(today.AddDays(1), DateTimeKind.Utc);
-            query = query.Where(dn => dn.Timestamp >= todayUtc && dn.Timestamp < tomorrowUtc);
+            // Get site timezone to determine "today" in user's local time
+            var siteTimezone = await _timezoneService.GetSiteTimezoneAsync(request.SiteId, cancellationToken);
+            var nowInSiteTimezone = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, siteTimezone);
+            var todayStartLocal = nowInSiteTimezone.Date;
+            var tomorrowStartLocal = todayStartLocal.AddDays(1);
+
+            // Convert local time boundaries to UTC for database comparison
+            var todayStartUtc = TimeZoneInfo.ConvertTimeToUtc(todayStartLocal, siteTimezone);
+            var tomorrowStartUtc = TimeZoneInfo.ConvertTimeToUtc(tomorrowStartLocal, siteTimezone);
+
+            query = query.Where(dn => dn.Timestamp >= todayStartUtc && dn.Timestamp < tomorrowStartUtc);
         }
 
         // IsProcessed filtresi - okundu/okunmadı durumuna göre filtreleme

@@ -34,13 +34,17 @@ public class DeviceNotifications : EndpointGroupBase
         app.MapGroup(this)
             .RequireAuthorization()
             .MapGet(GetDeviceNotifications)
-            .MapGet(GetDeviceNotificationTypes, "Types")
             .MapGet(GetDeletedDeviceNotifications, "Deleted")
             .MapPut(MarkDeviceNotificationAsRead, "{id}/MarkRead")
             .MapPut(MarkAllSiteNotificationsAsRead, "MarkAllRead/{siteId}")
             .MapPut(RestoreDeviceNotification, "{id}/Restore")
             .MapDelete(DeleteDeviceNotification, "{id}")
             .MapDelete(PermanentDeleteDeviceNotification, "{id}/Permanent");
+
+        // Admin Tool endpoints (for data management without direct database access)
+        app.MapGroup(this)
+            .RequireAuthorization(Policies.AdminOnly)
+            .MapGet(GetDeviceNotificationTypes, "Tool/Types");
     }
 
     [Authorize(Policies.DeviceOnly)]
