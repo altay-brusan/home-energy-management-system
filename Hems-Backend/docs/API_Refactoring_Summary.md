@@ -613,3 +613,99 @@ All admin-only endpoints that are NOT used by the frontend mobile app follow the
 **Authorization**:
 - `/Admin/*`: Admin only
 - Other endpoints: All authenticated users
+
+---
+
+## Device Status Display Fix
+
+### Issue
+
+Device status was incorrectly showing "offline" even when the device was actively sending power flow data. This caused confusion for users as the device appeared offline despite receiving real-time data.
+
+### Root Cause
+
+The `DeviceDetail.tsx` screen was determining device status based on **data availability** (`activePowerKw !== null`) from the DeviceSummary API instead of using the **heartbeat-based status** from the DeviceStatusHub SignalR connection.
+
+**Previous incorrect logic:**
+```typescript
+// DeviceDetail.tsx - WRONG approach
+status={inverterSummary.activePowerKw !== null ? "online" : "offline"}
+```
+
+This approach fails when:
+- Device is online but has zero active power (e.g., nighttime for solar systems)
+- RPC call fails temporarily but heartbeat is still active
+- Data is cached/stale but device heartbeat continues
+
+### Correct Status System
+
+The backend uses a heartbeat-based status system with progression:
+
+| Time Since Last Heartbeat | Status |
+|---------------------------|--------|
+| 0-90 seconds | `OK` |
+| 90-150 seconds | `PENDING` |
+| 150-210 seconds | `WAITING` |
+| 210+ seconds | `DISCONNECTED` |
+
+This status is managed by `DeviceHeartbeatMonitorService` which runs every 60 seconds and broadcasts via the `DeviceStatusHub` SignalR connection.
+
+### Frontend Fix Required
+
+**DeviceDetail.tsx** must use the `useDeviceStatus` hook instead of checking data availability:
+
+```typescript
+// Import the hook
+import { useDeviceStatus } from "../../../hooks/useDeviceStatus";
+
+// Inside the component
+const { deviceStatus } = useDeviceStatus(deviceId ?? undefined);
+
+// Convert heartbeat status to component status
+const componentStatus = useMemo(() => {
+  if (!deviceStatus) return 'warning'; // Still waiting for status
+  if (deviceStatus === 'OK') return 'online';
+  if (deviceStatus === 'DISCONNECTED') return 'offline';
+  return 'warning'; // PENDING, WAITING, NOT_TRACKED
+}, [deviceStatus]);
+
+// Use componentStatus for UI display
+<InverterCard status={componentStatus} ... />
+<BatteryCard status={componentStatus} ... />
+```
+
+### Backend Changes
+
+All device data endpoints now update the heartbeat cache when receiving successful RPC responses. This ensures that ANY successful device communication marks the device as online.
+
+**Updated Handlers:**
+
+| Handler | Telemetry Source |
+|---------|-----------------|
+| `GetDailyEnergySummaryHandler` | `DailyEnergyFlow` |
+| `GetDeviceSummaryQueryHandler` (inverter) | `PowerFlow` |
+| `GetDeviceSummaryQueryHandler` (battery SOC) | `BatterySoc` |
+| `GetDeviceDetailsQueryHandler` (inverter) | `PowerFlow` |
+| `GetDeviceDetailsQueryHandler` (battery SOC) | `BatterySoc` |
+| `EnergyDataCollectionService` (daily) | `DailyEnergyFlow` |
+| `EnergyDataCollectionService` (lifetime) | `TotalEnergyFlow` |
+
+Each handler calls `IDeviceActivityService.RecordActivityAsync()` after a successful RPC response:
+
+```csharp
+// Example from GetDeviceSummaryQueryHandler
+await _activityService.RecordActivityAsync(
+    tbDeviceId,
+    TelemetrySource.PowerFlow,
+    cancellationToken: cancellationToken);
+```
+
+### Summary
+
+| Component | Before | After |
+|-----------|--------|-------|
+| Frontend Status Source | Data availability check | `useDeviceStatus` hook (heartbeat) |
+| Backend Heartbeat Update | Only on explicit heartbeat | All successful RPC responses |
+| Status Accuracy | False "offline" when no data | True connectivity status |
+
+**Key Takeaway**: Device status should ALWAYS come from the heartbeat system (DeviceStatusHub), not from data availability checks. The heartbeat cache is updated by all device data endpoints, ensuring any successful device communication keeps the device status as "online"
