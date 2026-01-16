@@ -1364,3 +1364,320 @@ Updated Grid and Load sections to use the same phase card styling as Output sect
 | `src/Web/Endpoints/DeviceData.cs` | New endpoint `GET /Status/{deviceId}` |
 | `src/Application/Common/Models/InverterRpcDtos.cs` | Added `LoadDeviceStateDto`, `LoadPowerDto`, `LoadVoltageDto`, `UpsLoadPowerDto` |
 | `src/Application/DeviceComponents/Queries/GetDeviceDetails/GetDeviceDetailsQueryHandler.cs` | Added `GetLoadDeviceStateFromRpcAsync`, `AddLoadRealtimeDetails`, updated demo data |
+
+---
+
+## Demo Data Centralization
+
+### Overview
+
+All demo data generation has been centralized into a single service (`DemoSimulationDataService`) to ensure consistency and prevent database storage for demo devices.
+
+**Key Principle**: Demo devices should NEVER store data in the database. All data is generated on-the-fly.
+
+### Service Location
+
+`src/Infrastructure/Services/DemoSimulationDataService.cs`
+
+```csharp
+// TODO: This service will be transferred to a separate service Hems.Simulator in the future.
+// Currently, all demo/simulated data generation is centralized here to avoid database storage
+// for demo devices. When migrated to Hems.Simulator, this service will provide data via API
+// rather than in-process generation.
+```
+
+### Centralized Demo Data Methods
+
+| Method | Description | Used By |
+|--------|-------------|---------|
+| `GetDemoPowerFlowData()` | Real-time power flow simulation | PowerFlowHub, SharedDevicePowerFlowStreamManager |
+| `GetDemoWeatherData()` | Weather forecast simulation | GetWeatherForecast |
+| `GetDemoDailyEnergySummary()` | Daily energy summary | GetDailyEnergySummaryHandler |
+| `GetDemoSocResponse()` | Battery SOC data | GetSOCQueryHandler |
+| `GetDemoDeviceMode()` | Current device mode | GetCurrentDeviceModeHandler |
+| `GetDemoLifetimeEnergy()` | Lifetime grid import/export | GetLifetimeEnergyHandler |
+| `GetDemoHeartbeatStatus()` | Device heartbeat status (always OK) | GetDeviceHeartbeatStatusHandler |
+| `GetDemoBatteryParameterDetails()` | Battery component details | GetDeviceDetailsQueryHandler |
+| `GetDemoInverterParameterDetails()` | Inverter component details | GetDeviceDetailsQueryHandler |
+| `GetDemoDeviceSummary()` | Device summary for dashboard | GetDeviceSummaryQueryHandler |
+
+### Demo Device Detection
+
+Two methods are provided for checking if a device is a demo device:
+
+```csharp
+// By local Device ID
+Task<bool> IsDemoDeviceAsync(Guid deviceId, CancellationToken cancellationToken)
+
+// By ThingsBoard Device ID (for telemetry handlers)
+Task<bool> IsDemoDeviceByThingsBoardIdAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken)
+```
+
+### Telemetry Handlers - Skip DB Storage
+
+All telemetry handlers now skip database storage for demo devices:
+
+| Handler | Skips DB Storage |
+|---------|-----------------|
+| `ProcessPowerFlowTelemetry` | ✓ |
+| `ProcessEnergyFlowTelemetry` | ✓ |
+| `ProcessGenericTelemetry` | ✓ |
+| `ProcessAlarmTelemetry` | ✓ |
+
+**Example pattern:**
+```csharp
+// Record activity first (for all devices)
+await _activityService.RecordActivityAsync(deviceId, TelemetrySource.PowerFlow, dataDateTime);
+
+// Check if demo device - skip database storage
+var isDemoDevice = await _demoDataService.IsDemoDeviceByThingsBoardIdAsync(deviceId, cancellationToken);
+if (isDemoDevice)
+{
+    _logger.LogDebug("Skipping PowerFlow database storage for demo device {DeviceId}", deviceId);
+    return new ProcessResult { Success = true, Message = "... (demo device - not stored)" };
+}
+
+// Continue with database storage for real devices...
+```
+
+### Demo User Data Seeding
+
+When a demo user logs in, `SeedDemoDataAsync` is called to ensure all demo data relationships exist:
+
+1. **Site** - Creates "Demo Home" site if missing
+2. **Setup** - Creates demo setup linked to site
+3. **Device** - Creates demo device with `IsDemoDevice = true`
+4. **SetupDevice** - Links setup to device
+5. **DeviceComponents** - Creates Inverter, Battery, BMS components
+6. **DeviceModeHistory** - Initializes with SelfConsumption mode
+
+The seeding also **repairs broken relationships** - if any piece is missing, it's automatically created.
+
+### Files Changed for Demo Centralization
+
+| File | Changes |
+|------|---------|
+| `src/Application/Common/Interfaces/IDemoDataService.cs` | Added new demo data DTOs and methods |
+| `src/Infrastructure/Services/DemoSimulationDataService.cs` | Implemented all centralized demo data generation |
+| `src/Infrastructure/Services/DemoDataService.cs` | Added `IsDemoDeviceByThingsBoardIdAsync` |
+| `src/Application/DeviceData/Commands/ProcessPowerFlowTelemetry` | Skip DB for demo |
+| `src/Application/DeviceData/Commands/ProcessEnergyFlowTelemetry` | Skip DB for demo |
+| `src/Application/DeviceData/Commands/ProcessGenericTelemetry` | Skip DB for demo |
+| `src/Application/DeviceData/Commands/ProcessAlarmTelemetry` | Skip DB for demo |
+| `src/Application/Dashboard/Queries/GetTodayEnergySummary` | Use centralized demo service |
+| `src/Application/Dashboard/Queries/GetSoc` | Use centralized demo service |
+| `src/Application/Dashboard/Queries/GetLifetimeEnergy` | Use centralized demo service |
+| `src/Application/DeviceSettings/Queries/GetCurrentDeviceMode` | Use centralized demo service |
+| `src/Application/Devices/Queries/GetDeviceHeartbeatStatus` | Use centralized demo service |
+
+### Hems.DeviceSimulator - Marked Obsolete
+
+The following services in `Hems.DeviceSimulator` are marked obsolete:
+
+```csharp
+[Obsolete("Use DemoSimulationDataService in Infrastructure for demo devices. This service is only for real device testing.")]
+```
+
+- `DeviceSimulationJobService`
+- `PowerFlowJobService`
+- `WeatherDataJobService`
+- `DeviceController`
+
+---
+
+## Device Status Display Fix - SignalR vs REST Priority
+
+### Issue
+
+Device status showed "offline" even when REST API returned "OK". This happened because SignalR connection state was overriding the actual device heartbeat status.
+
+### Root Cause
+
+In `WeatherStatus.tsx`, the status display logic checked SignalR connection state **before** checking device status:
+
+```typescript
+// BEFORE (incorrect)
+const getStatusText = (status, connectionState, t) => {
+  // SignalR connection state checked FIRST
+  if (connectionState === 'Disconnected' || connectionState === 'Failed') {
+    return t('dashboard.deviceStatus.offline');  // Shows "offline" even if status is "OK"
+  }
+  // Device status checked SECOND
+  if (status === 'OK') return t('dashboard.deviceStatus.ok');
+  // ...
+};
+```
+
+### Solution
+
+Changed priority: device status from REST API is now checked **before** SignalR connection state:
+
+```typescript
+// AFTER (correct)
+const getStatusText = (status, connectionState, t) => {
+  // Device status from REST API checked FIRST
+  if (status) {
+    switch (status) {
+      case 'OK': return t('dashboard.deviceStatus.ok');
+      case 'DISCONNECTED': return t('dashboard.deviceStatus.disconnected');
+      // ...
+    }
+  }
+  // SignalR connection state only used when no device status available
+  if (connectionState === 'Disconnected' || connectionState === 'Failed') {
+    return t('dashboard.deviceStatus.offline');
+  }
+  return t('dashboard.deviceStatus.waiting');
+};
+```
+
+### Files Changed
+
+| File | Changes |
+|------|---------|
+| `src/app/screens/dashboard/ui/weatherStatus/WeatherStatus.tsx` | `getStatusText()` and `getStatusColor()` now prioritize device status over SignalR connection state |
+
+### Behavior Summary
+
+| Scenario | Before | After |
+|----------|--------|-------|
+| REST returns "OK", SignalR disconnected | Shows "offline" ❌ | Shows "OK" ✓ |
+| REST returns "DISCONNECTED", SignalR disconnected | Shows "offline" | Shows "disconnected" |
+| No REST response yet, SignalR connecting | Shows "connecting" | Shows "connecting" |
+| No REST response yet, SignalR disconnected | Shows "offline" | Shows "offline" |
+
+---
+
+## Component Details Cache (5-Second TTL)
+
+### Overview
+
+A new caching layer has been added for component details (Inverter Detail, Battery Detail screens) to reduce RPC calls when multiple users request the same component data.
+
+**Problem**: The frontend polls `GET /api/DeviceComponents/Details/{componentId}` every 5 seconds. If multiple users are viewing the same device, each user triggers a separate RPC call to ThingsBoard.
+
+**Solution**: Cache component details for 5 seconds. All users requesting the same component within the 5-second window get the cached data - only one RPC call is made.
+
+### How It Works
+
+```
+User 1 requests Inverter Details at T=0
+    │
+    ▼
+┌─────────────────────────────────────┐
+│ Cache MISS - Make RPC call          │
+│ Cache response for 5 seconds        │
+└─────────────────────────────────────┘
+    │
+    ▼
+User 2 requests same Inverter at T=2s
+    │
+    ▼
+┌─────────────────────────────────────┐
+│ Cache HIT - Return cached data      │
+│ No RPC call needed                  │
+└─────────────────────────────────────┘
+    │
+    ▼
+User 1 requests again at T=5.5s
+    │
+    ▼
+┌─────────────────────────────────────┐
+│ Cache EXPIRED - Make new RPC call   │
+│ Cache new response for 5 seconds    │
+└─────────────────────────────────────┘
+```
+
+### Service Interface
+
+```csharp
+public interface IComponentDetailsCacheService
+{
+    // Try to get cached details (returns true if found and not expired)
+    bool TryGetCachedDetails(Guid componentId, out DeviceDetailsResponseDto? details);
+
+    // Cache details for 5 seconds
+    void CacheDetails(Guid componentId, DeviceDetailsResponseDto details);
+
+    // Get cache statistics for monitoring
+    ComponentDetailsCacheStats GetCacheStats();
+}
+
+public record ComponentDetailsCacheStats
+{
+    public int CacheHits { get; init; }
+    public int CacheMisses { get; init; }
+    public int CurrentEntries { get; init; }
+    public double HitRatio { get; }  // Percentage of cache hits
+}
+```
+
+### Key Differences from PowerFlow Cache
+
+| Aspect | PowerFlow Cache | Component Details Cache |
+|--------|-----------------|------------------------|
+| **Pattern** | Streaming via SignalR | REST API polling |
+| **TTL** | Until device offline | 5 seconds fixed |
+| **Subscription** | Reference-counted | None needed |
+| **Offline Handling** | Clears cache, sends zeros | Cache simply expires |
+| **Complexity** | High (subscriptions, streams) | Simple (time-based) |
+
+### Files Created
+
+| File | Description |
+|------|-------------|
+| `src/Application/Common/Interfaces/IComponentDetailsCacheService.cs` | Interface and DTOs |
+| `src/Infrastructure/Services/ComponentDetailsCacheService.cs` | Implementation with ConcurrentDictionary |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `src/Infrastructure/DependencyInjection.cs` | Register `IComponentDetailsCacheService` as singleton |
+| `src/Application/DeviceComponents/Queries/GetDeviceDetails/GetDeviceDetailsQueryHandler.cs` | Check cache before RPC, cache response after RPC |
+
+### Cache Flow in Handler
+
+```csharp
+public async Task<DeviceDetailsResponseDto?> Handle(GetDeviceDetailsQuery request, ...)
+{
+    // 1. Get component from DB
+    var component = await _context.DeviceComponents...
+
+    // 2. Demo devices skip cache (data is generated on-the-fly)
+    if (isDemoDevice) return BuildDemoDeviceDetails(component);
+
+    // 3. Check cache for real devices
+    if (_cacheService.TryGetCachedDetails(request.ComponentId, out var cached))
+        return cached;  // Cache HIT - no RPC needed
+
+    // 4. Cache MISS - Make RPC call
+    var response = await BuildInverterDetailsAsync(...);
+
+    // 5. Cache the response for 5 seconds
+    _cacheService.CacheDetails(request.ComponentId, response);
+
+    return response;
+}
+```
+
+### Benefits
+
+| Benefit | Description |
+|---------|-------------|
+| **Reduced RPC Calls** | Multiple users share the same cached data |
+| **Lower Latency** | Cache hits return immediately without RPC roundtrip |
+| **Device Load** | Fewer RPC calls to the physical device |
+| **Scalability** | Supports many concurrent users viewing the same device |
+
+### Monitoring
+
+Cache statistics can be retrieved for monitoring:
+
+```csharp
+var stats = _cacheService.GetCacheStats();
+// stats.CacheHits = 150
+// stats.CacheMisses = 30
+// stats.CurrentEntries = 5
+// stats.HitRatio = 83.33%  (150 / 180 * 100)
+```

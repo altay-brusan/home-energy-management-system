@@ -123,6 +123,9 @@ public static class DependencyInjection
         builder.Services.Configure<SharedStreamOptions>(builder.Configuration.GetSection("SharedStream"));
         builder.Services.AddSingleton<ISharedDevicePowerFlowStreamManager, SharedDevicePowerFlowStreamManager>();
 
+        // Component Details Cache Service (5-second TTL cache for sharing component details across users)
+        builder.Services.AddSingleton<IComponentDetailsCacheService, ComponentDetailsCacheService>();
+
         builder.Services.AddAuthorization(options =>
         {
             // Device Only Policy - Sadece device token'ları
