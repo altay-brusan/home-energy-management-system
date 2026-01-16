@@ -21,7 +21,7 @@ public class PowerFlowHub : Hub
     private readonly IApplicationDbContext _context;
     private readonly IUser _user;
     private readonly IPowerFlowService _powerFlowService;
-    private readonly ISharedDeviceStreamManager _streamManager;
+    private readonly ISharedDevicePowerFlowStreamManager _streamManager;
     private readonly ILogger<PowerFlowHub> _logger;
 
     // Track active streams per connection for cleanup
@@ -31,7 +31,7 @@ public class PowerFlowHub : Hub
         IApplicationDbContext context,
         IUser user,
         IPowerFlowService powerFlowService,
-        ISharedDeviceStreamManager streamManager,
+        ISharedDevicePowerFlowStreamManager streamManager,
         ILogger<PowerFlowHub> logger)
     {
         _context = context;

@@ -383,3 +383,93 @@ public class TotalGeneratorEnergyDto
     [JsonPropertyName("totalEnergyKWh")]
     public double? TotalEnergyKWh { get; set; }
 }
+
+/// <summary>
+/// RPC response for getLoadDeviceState
+/// </summary>
+public class LoadDeviceStateDto
+{
+    [JsonPropertyName("kind")]
+    public string? Kind { get; set; }
+
+    [JsonPropertyName("timestampUtc")]
+    public string? TimestampUtc { get; set; }
+
+    [JsonPropertyName("version")]
+    public int? Version { get; set; }
+
+    [JsonPropertyName("DeviceId")]
+    public string? DeviceId { get; set; }
+
+    [JsonPropertyName("scope")]
+    public string? Scope { get; set; } // "backup_load" | "total_load"
+
+    [JsonPropertyName("loadPower")]
+    public LoadPowerDto? LoadPower { get; set; }
+
+    [JsonPropertyName("loadVoltage")]
+    public LoadVoltageDto? LoadVoltage { get; set; }
+
+    [JsonPropertyName("frequencyHz")]
+    public double? FrequencyHz { get; set; }
+
+    [JsonPropertyName("upsLoadPower")]
+    public UpsLoadPowerDto? UpsLoadPower { get; set; }
+
+    [JsonPropertyName("todayEnergyKWh")]
+    public double? TodayEnergyKWh { get; set; }
+
+    [JsonPropertyName("totalEnergyKWh")]
+    public double? TotalEnergyKWh { get; set; }
+
+    // Convenience properties for backward compatibility
+    public int? LoadTotalActivePowerW => LoadPower?.TotalActivePowerW;
+    public int? LoadPhaseAPowerW => LoadPower?.PhaseAPowerW;
+    public int? LoadPhaseBPowerW => LoadPower?.PhaseBPowerW;
+    public int? LoadPhaseCPowerW => LoadPower?.PhaseCPowerW;
+    public double? LoadPhaseAVoltageV => LoadVoltage?.PhaseAVoltageV;
+    public double? LoadPhaseBVoltageV => LoadVoltage?.PhaseBVoltageV;
+    public double? LoadPhaseCVoltageV => LoadVoltage?.PhaseCVoltageV;
+}
+
+public class LoadPowerDto
+{
+    [JsonPropertyName("totalActivePowerW")]
+    public int? TotalActivePowerW { get; set; }
+
+    [JsonPropertyName("phaseAPowerW")]
+    public int? PhaseAPowerW { get; set; }
+
+    [JsonPropertyName("phaseBPowerW")]
+    public int? PhaseBPowerW { get; set; }
+
+    [JsonPropertyName("phaseCPowerW")]
+    public int? PhaseCPowerW { get; set; }
+}
+
+public class LoadVoltageDto
+{
+    [JsonPropertyName("phaseAVoltageV")]
+    public double? PhaseAVoltageV { get; set; }
+
+    [JsonPropertyName("phaseBVoltageV")]
+    public double? PhaseBVoltageV { get; set; }
+
+    [JsonPropertyName("phaseCVoltageV")]
+    public double? PhaseCVoltageV { get; set; }
+}
+
+public class UpsLoadPowerDto
+{
+    [JsonPropertyName("totalPowerW")]
+    public int? TotalPowerW { get; set; }
+
+    [JsonPropertyName("phaseAPowerW")]
+    public int? PhaseAPowerW { get; set; }
+
+    [JsonPropertyName("phaseBPowerW")]
+    public int? PhaseBPowerW { get; set; }
+
+    [JsonPropertyName("phaseCPowerW")]
+    public int? PhaseCPowerW { get; set; }
+}
