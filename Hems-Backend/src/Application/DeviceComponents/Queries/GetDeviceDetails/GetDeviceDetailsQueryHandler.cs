@@ -385,6 +385,90 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
             LabelKey = "realtime.gridSideActivePower"
         });
 
+        // Load data (similar to Grid, using LoadPowerKw)
+        var loadPowerW = powerFlow.LoadPowerKw * 1000;
+
+        // Load Total Active Power
+        details.Add(new DeviceDetailItemDto
+        {
+            Key = "loadTotalActivePower",
+            Value = Math.Round(loadPowerW, 0),
+            Unit = "W",
+            LabelKey = "realtime.loadTotalActivePower"
+        });
+
+        // Load Phase Powers (distributed across 3 phases)
+        var loadPhaseAPower = loadPowerW / 3 * (0.9 + voltageRandom.NextDouble() * 0.2);
+        var loadPhaseBPower = loadPowerW / 3 * (0.9 + voltageRandom.NextDouble() * 0.2);
+        var loadPhaseCPower = loadPowerW - loadPhaseAPower - loadPhaseBPower;
+
+        details.Add(new DeviceDetailItemDto
+        {
+            Key = "loadPhaseAPower",
+            Value = Math.Round(loadPhaseAPower, 0),
+            Unit = "W",
+            LabelKey = "realtime.loadPhaseAPower"
+        });
+
+        details.Add(new DeviceDetailItemDto
+        {
+            Key = "loadPhaseBPower",
+            Value = Math.Round(loadPhaseBPower, 0),
+            Unit = "W",
+            LabelKey = "realtime.loadPhaseBPower"
+        });
+
+        details.Add(new DeviceDetailItemDto
+        {
+            Key = "loadPhaseCPower",
+            Value = Math.Round(loadPhaseCPower, 0),
+            Unit = "W",
+            LabelKey = "realtime.loadPhaseCPower"
+        });
+
+        // Load Phase Voltages (similar to output voltages)
+        details.Add(new DeviceDetailItemDto
+        {
+            Key = "loadPhaseAVoltage",
+            Value = Math.Round(phaseAVoltage, 1),
+            Unit = "V",
+            LabelKey = "realtime.loadPhaseAVoltage"
+        });
+
+        details.Add(new DeviceDetailItemDto
+        {
+            Key = "loadPhaseBVoltage",
+            Value = Math.Round(phaseBVoltage, 1),
+            Unit = "V",
+            LabelKey = "realtime.loadPhaseBVoltage"
+        });
+
+        details.Add(new DeviceDetailItemDto
+        {
+            Key = "loadPhaseCVoltage",
+            Value = Math.Round(phaseCVoltage, 1),
+            Unit = "V",
+            LabelKey = "realtime.loadPhaseCVoltage"
+        });
+
+        // Load Frequency
+        details.Add(new DeviceDetailItemDto
+        {
+            Key = "loadFrequency",
+            Value = Math.Round(outputFrequency, 2),
+            Unit = "Hz",
+            LabelKey = "realtime.loadFrequency"
+        });
+
+        // Load Scope
+        details.Add(new DeviceDetailItemDto
+        {
+            Key = "loadScope",
+            Value = "backup_load",
+            Unit = null,
+            LabelKey = "realtime.loadScope"
+        });
+
         // Inverter Heatsink Temperature (realistic 35-55°C during operation)
         var heatsinkTemp = 40.0 + Math.Abs(powerFlow.LoadPowerKw) * 3 + (voltageRandom.NextDouble() * 5);
         details.Add(new DeviceDetailItemDto
@@ -524,6 +608,15 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
         {
             // Add realtime data
             AddInverterRealtimeDetails(details, state);
+        }
+
+        // Get load state from RPC
+        var loadState = await GetLoadDeviceStateFromRpcAsync(tbDeviceId, cancellationToken);
+
+        if (loadState != null)
+        {
+            // Add load realtime data
+            AddLoadRealtimeDetails(details, loadState);
         }
 
         // Add parameter data from database
@@ -869,6 +962,183 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
         }
 
         return null;
+    }
+
+    private async Task<LoadDeviceStateDto?> GetLoadDeviceStateFromRpcAsync(
+        Guid tbDeviceId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var rpcResponse = await _tbService.SendTwoWayRpcAsync(
+                tbDeviceId,
+                "getLoadDeviceState",
+                new Dictionary<string, object>(),
+                timeoutMs: 10000,
+                cancellationToken: cancellationToken);
+
+            if (rpcResponse?.Success == true && rpcResponse.Response != null)
+            {
+                // Record device activity - device is online since RPC succeeded
+                await _activityService.RecordActivityAsync(
+                    tbDeviceId,
+                    TelemetrySource.PowerFlow,
+                    cancellationToken: cancellationToken);
+
+                // Response is wrapped: {"success": true, "data": {...}}
+                // Extract the "data" property if present
+                if (rpcResponse.Response.TryGetValue("data", out var dataObj) && dataObj != null)
+                {
+                    var dataJson = JsonSerializer.Serialize(dataObj);
+                    return JsonSerializer.Deserialize<LoadDeviceStateDto>(dataJson);
+                }
+
+                // Fallback: try deserializing the whole response
+                var json = JsonSerializer.Serialize(rpcResponse.Response);
+                return JsonSerializer.Deserialize<LoadDeviceStateDto>(json);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get load device state from RPC for device {DeviceId}", tbDeviceId);
+        }
+
+        return null;
+    }
+
+    private void AddLoadRealtimeDetails(List<DeviceDetailItemDto> details, LoadDeviceStateDto state)
+    {
+        // Load Power - Total
+        if (state.LoadTotalActivePowerW.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "loadTotalActivePower",
+                Value = state.LoadTotalActivePowerW.Value,
+                Unit = "W",
+                LabelKey = "realtime.loadTotalActivePower"
+            });
+        }
+
+        // Load Power - Phase A
+        if (state.LoadPhaseAPowerW.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "loadPhaseAPower",
+                Value = state.LoadPhaseAPowerW.Value,
+                Unit = "W",
+                LabelKey = "realtime.loadPhaseAPower"
+            });
+        }
+
+        // Load Power - Phase B
+        if (state.LoadPhaseBPowerW.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "loadPhaseBPower",
+                Value = state.LoadPhaseBPowerW.Value,
+                Unit = "W",
+                LabelKey = "realtime.loadPhaseBPower"
+            });
+        }
+
+        // Load Power - Phase C
+        if (state.LoadPhaseCPowerW.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "loadPhaseCPower",
+                Value = state.LoadPhaseCPowerW.Value,
+                Unit = "W",
+                LabelKey = "realtime.loadPhaseCPower"
+            });
+        }
+
+        // Load Voltage - Phase A
+        if (state.LoadPhaseAVoltageV.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "loadPhaseAVoltage",
+                Value = state.LoadPhaseAVoltageV.Value,
+                Unit = "V",
+                LabelKey = "realtime.loadPhaseAVoltage"
+            });
+        }
+
+        // Load Voltage - Phase B
+        if (state.LoadPhaseBVoltageV.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "loadPhaseBVoltage",
+                Value = state.LoadPhaseBVoltageV.Value,
+                Unit = "V",
+                LabelKey = "realtime.loadPhaseBVoltage"
+            });
+        }
+
+        // Load Voltage - Phase C
+        if (state.LoadPhaseCVoltageV.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "loadPhaseCVoltage",
+                Value = state.LoadPhaseCVoltageV.Value,
+                Unit = "V",
+                LabelKey = "realtime.loadPhaseCVoltage"
+            });
+        }
+
+        // Load Frequency
+        if (state.FrequencyHz.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "loadFrequency",
+                Value = state.FrequencyHz.Value,
+                Unit = "Hz",
+                LabelKey = "realtime.loadFrequency"
+            });
+        }
+
+        // Load Scope (backup_load or total_load)
+        if (!string.IsNullOrEmpty(state.Scope))
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "loadScope",
+                Value = state.Scope,
+                Unit = null,
+                LabelKey = "realtime.loadScope"
+            });
+        }
+
+        // Today's Energy
+        if (state.TodayEnergyKWh.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "loadTodayEnergy",
+                Value = state.TodayEnergyKWh.Value,
+                Unit = "kWh",
+                LabelKey = "realtime.loadTodayEnergy"
+            });
+        }
+
+        // Total Energy
+        if (state.TotalEnergyKWh.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "loadTotalEnergy",
+                Value = state.TotalEnergyKWh.Value,
+                Unit = "kWh",
+                LabelKey = "realtime.loadTotalEnergy"
+            });
+        }
     }
 
     #endregion
