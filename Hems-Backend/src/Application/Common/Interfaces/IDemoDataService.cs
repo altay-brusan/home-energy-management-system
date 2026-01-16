@@ -139,6 +139,65 @@ public interface IDemoSimulationDataService
     /// Gets weighted average daily price from demo prices
     /// </summary>
     (decimal SellPrice, decimal BuyPrice) GetWeightedDailyAveragePrice(Guid deviceId);
+
+    /// <summary>
+    /// Generates demo battery realtime details (SOC, SOH, voltage, current, temperature, cycle count)
+    /// </summary>
+    List<DemoDetailItem> GetDemoBatteryRealtimeDetails();
+
+    /// <summary>
+    /// Generates demo battery parameter details (name, manufacturer, model, serial, capacity, etc.)
+    /// </summary>
+    List<DemoDetailItem> GetDemoBatteryParameterDetails(string? name, string? manufacturer, string? model, string? serialNumber);
+
+    /// <summary>
+    /// Generates demo inverter realtime details (run state, power, phases, temperatures, grid status)
+    /// </summary>
+    List<DemoDetailItem> GetDemoInverterRealtimeDetails();
+
+    /// <summary>
+    /// Generates demo inverter parameter details (name, manufacturer, model, serial, rated power, etc.)
+    /// </summary>
+    List<DemoDetailItem> GetDemoInverterParameterDetails(string? name, string? manufacturer, string? model, string? serialNumber);
+
+    /// <summary>
+    /// Generates demo daily energy summary (production, consumption, grid import/export)
+    /// Values scale based on time of day and season
+    /// </summary>
+    DemoDailyEnergySummary GetDemoDailyEnergySummary(Guid deviceId);
+
+    /// <summary>
+    /// Generates demo battery SOC response with channel data
+    /// SOC varies by time of day: charges during day, discharges evening
+    /// </summary>
+    DemoSocResponse GetDemoSocResponse(Guid deviceId);
+
+    /// <summary>
+    /// Generates demo device mode (default: SelfConsumption)
+    /// </summary>
+    DemoDeviceModeResult GetDemoDeviceMode();
+
+    /// <summary>
+    /// Generates demo lifetime energy totals
+    /// Simulates a system running for about 2 years
+    /// </summary>
+    DemoLifetimeEnergy GetDemoLifetimeEnergy();
+
+    /// <summary>
+    /// Generates demo device heartbeat status (always OK)
+    /// </summary>
+    DemoHeartbeatStatus GetDemoHeartbeatStatus(Guid deviceId);
+}
+
+/// <summary>
+/// Demo detail item for device details generation
+/// </summary>
+public record DemoDetailItem
+{
+    public string Key { get; init; } = string.Empty;
+    public object? Value { get; init; }
+    public string? Unit { get; init; }
+    public string LabelKey { get; init; } = string.Empty;
 }
 
 /// <summary>
@@ -177,4 +236,69 @@ public record DailyEnergyData
     public double BatteryChargeEnergyKWh { get; init; }
     public double BatteryDischargeEnergyKWh { get; init; }
     public double GeneratorEnergyKWh { get; init; }
+}
+
+/// <summary>
+/// Demo daily energy summary for GetDailyEnergySummary endpoint
+/// </summary>
+public record DemoDailyEnergySummary
+{
+    public DateTime DeviceLocalTime { get; init; }
+    public double Production { get; init; }
+    public double Consumption { get; init; }
+    public double GridImport { get; init; }
+    public double GridExport { get; init; }
+}
+
+/// <summary>
+/// Demo SOC response with channel data for GetSoc endpoint
+/// </summary>
+public record DemoSocResponse
+{
+    public string TimestampUtc { get; init; } = string.Empty;
+    public int Version { get; init; }
+    public List<DemoInverterBatChannelSoc> InverterBatChannelSoc { get; init; } = new();
+    public List<DemoBmsSocDetail> BmsSocDetails { get; init; } = new();
+}
+
+public record DemoInverterBatChannelSoc
+{
+    public int ChannelId { get; init; }
+    public double SocPercent { get; init; }
+}
+
+public record DemoBmsSocDetail
+{
+    public int ChannelId { get; init; }
+    public string DeviceId { get; init; } = string.Empty;
+    public double SocPercent { get; init; }
+}
+
+/// <summary>
+/// Demo device mode result for GetCurrentDeviceMode endpoint
+/// </summary>
+public record DemoDeviceModeResult
+{
+    public string Mode { get; init; } = string.Empty;
+    public string ModeDescription { get; init; } = string.Empty;
+    public DateTimeOffset LastModified { get; init; }
+}
+
+/// <summary>
+/// Demo lifetime energy totals for GetLifetimeEnergy endpoint
+/// </summary>
+public record DemoLifetimeEnergy
+{
+    public DateTime Timestamp { get; init; }
+    public double GridImport { get; init; }
+    public double GridExport { get; init; }
+}
+
+/// <summary>
+/// Demo heartbeat status for GetDeviceHeartbeatStatus endpoint
+/// </summary>
+public record DemoHeartbeatStatus
+{
+    public string Status { get; init; } = string.Empty;
+    public DateTime Timestamp { get; init; }
 }

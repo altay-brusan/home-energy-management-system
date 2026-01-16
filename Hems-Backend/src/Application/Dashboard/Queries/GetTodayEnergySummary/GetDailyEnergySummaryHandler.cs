@@ -20,6 +20,7 @@ public class GetDailyEnergySummaryHandler : IRequestHandler<GetDailyEnergySummar
     private readonly IThingsBoardConnectorService _tbService;
     private readonly IMemoryCache _cache;
     private readonly IDemoDataService _demoDataService;
+    private readonly IDemoSimulationDataService _demoSimulationService;
     private readonly IDeviceActivityService _activityService;
 
     public GetDailyEnergySummaryHandler(
@@ -28,6 +29,7 @@ public class GetDailyEnergySummaryHandler : IRequestHandler<GetDailyEnergySummar
         IThingsBoardConnectorService tbService,
         IMemoryCache cache,
         IDemoDataService demoDataService,
+        IDemoSimulationDataService demoSimulationService,
         IDeviceActivityService activityService)
     {
         _sender = sender;
@@ -35,6 +37,7 @@ public class GetDailyEnergySummaryHandler : IRequestHandler<GetDailyEnergySummar
         _tbService = tbService;
         _cache = cache;
         _demoDataService = demoDataService;
+        _demoSimulationService = demoSimulationService;
         _activityService = activityService;
     }
 
@@ -47,11 +50,20 @@ public class GetDailyEnergySummaryHandler : IRequestHandler<GetDailyEnergySummar
             throw new UnauthorizedAccessException("Device access denied");
         }
 
-        // Check if demo device - return simulated data
+        // Check if demo device - return simulated data from centralized service
         var isDemoDevice = await _demoDataService.IsDemoDeviceAsync(request.DeviceId, cancellationToken);
         if (isDemoDevice)
         {
-            return GetSimulatedDailyEnergySummary(request.DeviceId);
+            var demoData = _demoSimulationService.GetDemoDailyEnergySummary(request.DeviceId);
+            return new DailyEnergySummaryDto
+            {
+                DeviceLocalTime = demoData.DeviceLocalTime,
+                DeviceId = request.DeviceId,
+                Production = demoData.Production,
+                Consumption = demoData.Consumption,
+                GridImport = demoData.GridImport,
+                GridExport = demoData.GridExport
+            };
         }
 
         // Define cache key based on device ID
@@ -176,59 +188,4 @@ public class GetDailyEnergySummaryHandler : IRequestHandler<GetDailyEnergySummar
 
         return result;
     }
-
-    /// <summary>
-    /// Returns simulated daily energy summary for demo devices
-    /// Values scale based on time of day (more energy generated/consumed as day progresses)
-    /// </summary>
-    private static DailyEnergySummaryDto GetSimulatedDailyEnergySummary(Guid deviceId)
-    {
-        var now = DateTime.UtcNow;
-        var hour = now.Hour;
-        var random = new Random(now.DayOfYear); // Consistent for the day
-
-        // Scale factors based on time of day (energy accumulates throughout the day)
-        var dayProgress = hour / 24.0;
-
-        // Base daily values for a 5kW system
-        var dailyProduction = 32.5 * GetSeasonalPvMultiplier(now.Month);
-        var dailyConsumption = 18.0 * GetSeasonalLoadMultiplier(now.Month);
-
-        // Calculate current values based on time of day
-        // Production follows bell curve (peak at midday)
-        var productionProgress = hour < 6 ? 0 :
-            (hour > 20 ? 1.0 : Math.Sin((hour - 6) * Math.PI / 14));
-
-        var currentProduction = dailyProduction * productionProgress * (0.9 + random.NextDouble() * 0.2);
-        var currentConsumption = dailyConsumption * dayProgress * (0.9 + random.NextDouble() * 0.2);
-
-        // Grid import/export based on net energy
-        var netEnergy = currentProduction - currentConsumption;
-        var gridExport = netEnergy > 0 ? netEnergy * 0.6 : 0;
-        var gridImport = netEnergy < 0 ? Math.Abs(netEnergy) * 0.7 : 0;
-
-        return new DailyEnergySummaryDto
-        {
-            DeviceLocalTime = now,
-            DeviceId = deviceId,
-            Production = Math.Round(currentProduction, 2),
-            Consumption = Math.Round(currentConsumption, 2),
-            GridExport = Math.Round(gridExport, 2),
-            GridImport = Math.Round(gridImport, 2)
-        };
-    }
-
-    private static double GetSeasonalPvMultiplier(int month) => month switch
-    {
-        1 => 0.25, 2 => 0.35, 3 => 0.55, 4 => 0.80, 5 => 1.00, 6 => 1.15,
-        7 => 1.10, 8 => 1.00, 9 => 0.75, 10 => 0.50, 11 => 0.30, 12 => 0.20,
-        _ => 1.0
-    };
-
-    private static double GetSeasonalLoadMultiplier(int month) => month switch
-    {
-        1 => 1.30, 2 => 1.25, 3 => 1.10, 4 => 0.95, 5 => 0.85, 6 => 0.80,
-        7 => 0.82, 8 => 0.85, 9 => 0.95, 10 => 1.10, 11 => 1.25, 12 => 1.35,
-        _ => 1.0
-    };
 }

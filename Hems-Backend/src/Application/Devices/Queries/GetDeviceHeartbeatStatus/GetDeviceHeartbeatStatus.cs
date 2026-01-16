@@ -14,17 +14,20 @@ public class GetDeviceHeartbeatStatusQueryHandler : IRequestHandler<GetDeviceHea
     private readonly IDeviceHeartbeatCache _heartbeatCache;
     private readonly IDeviceMappingService _deviceMapping;
     private readonly IDemoDataService _demoDataService;
+    private readonly IDemoSimulationDataService _demoSimulationService;
     private readonly ILogger<GetDeviceHeartbeatStatusQueryHandler> _logger;
 
     public GetDeviceHeartbeatStatusQueryHandler(
         IDeviceHeartbeatCache heartbeatCache,
         IDeviceMappingService deviceMapping,
         IDemoDataService demoDataService,
+        IDemoSimulationDataService demoSimulationService,
         ILogger<GetDeviceHeartbeatStatusQueryHandler> logger)
     {
         _heartbeatCache = heartbeatCache;
         _deviceMapping = deviceMapping;
         _demoDataService = demoDataService;
+        _demoSimulationService = demoSimulationService;
         _logger = logger;
     }
 
@@ -43,13 +46,13 @@ public class GetDeviceHeartbeatStatusQueryHandler : IRequestHandler<GetDeviceHea
                 "GetDeviceHeartbeatStatus: Returning OK for demo device {DeviceId}",
                 request.DeviceId);
 
-            // IMPORTANT: Send "OK" not "ONLINE" - mobile app expects DeviceStatusType enum values
-            // DeviceStatusType = 'OK' | 'PENDING' | 'WAITING' | 'DISCONNECTED' | 'NOT_TRACKED'
+            // Use centralized demo simulation service
+            var demoData = _demoSimulationService.GetDemoHeartbeatStatus(request.DeviceId);
             return new DeviceHeartbeatStatusDto
             {
                 DeviceId = request.DeviceId,
-                Status = "OK",
-                Timestamp = DateTime.UtcNow
+                Status = demoData.Status,
+                Timestamp = demoData.Timestamp
             };
         }
 
