@@ -5,6 +5,12 @@ using Hangfire;
 
 namespace Hems.DeviceSimulator.Services;
 
+// OBSOLETE: This service is deprecated for demo data simulation.
+// Demo data is now generated on-the-fly by DemoSimulationDataService in the Infrastructure layer.
+// No data should be stored in the database for demo devices.
+// See: src/Infrastructure/Services/DemoSimulationDataService.cs
+
+[Obsolete("Use DemoSimulationDataService in Infrastructure for demo devices. This service is only for real device testing.")]
 public interface IPowerFlowJobService
 {
     Task StartPowerFlowSimulationAsync();
@@ -17,6 +23,7 @@ public interface IPowerFlowJobService
 /// Service for simulating real-time PowerFlow data.
 /// Sends power data every 5 minutes to /api/DeviceData/PowerFlow endpoint.
 /// </summary>
+[Obsolete("Use DemoSimulationDataService in Infrastructure for demo devices. This service is only for real device testing.")]
 public class PowerFlowJobService : IPowerFlowJobService
 {
     private readonly IHttpClientFactory _httpClientFactory;

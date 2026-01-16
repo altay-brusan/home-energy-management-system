@@ -5,6 +5,17 @@ using Microsoft.Extensions.Logging;
 
 namespace Hems_Backend.Infrastructure.Services;
 
+// TODO: This service will be transferred to a separate service Hems.Simulator in the future.
+// Currently, all demo/simulated data generation is centralized here to avoid database storage
+// for demo devices. When migrated to Hems.Simulator, this service will provide data via API
+// rather than in-process generation.
+//
+// Key principle: Demo devices should NEVER store data in the database. All data for demo
+// devices should be generated on-the-fly by this service.
+/// <summary>
+/// Centralized service for generating simulated data for demo devices.
+/// All demo data is generated on-demand - no database storage.
+/// </summary>
 public class DemoSimulationDataService : IDemoSimulationDataService
 {
     private readonly ILogger<DemoSimulationDataService> _logger;
