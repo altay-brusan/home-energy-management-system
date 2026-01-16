@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Threading.Channels;
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -12,32 +13,45 @@ namespace Hems_Backend.Infrastructure.Services;
 /// Background service that processes parameter updates asynchronously.
 /// Features:
 /// - Device-level locking to prevent concurrent updates to the same device
-/// - Rollback/compensation mechanism for atomic batch updates
-/// - Exponential backoff retry via RPC executor
+/// - Write-Verify-Retry pattern: write value, read back to verify, retry up to 3 times
+/// - Continue on failure (no rollback) - reports failed parameters at end
+/// - Cancellation support via correlation ID
 /// </summary>
 public class ParameterUpdateBackgroundService : BackgroundService, IParameterUpdateQueueService
 {
     private readonly ILogger<ParameterUpdateBackgroundService> _logger;
     private readonly IServiceScopeFactory _serviceScopeFactory;
+    private readonly IDeviceLockService _deviceLockService;
     private readonly Channel<ParameterUpdateQueueRequest> _channel;
 
     /// <summary>
-    /// Device-level locks to prevent concurrent updates to the same device.
-    /// Each device gets its own SemaphoreSlim to ensure sequential processing.
+    /// Active cancellation tokens by correlation ID for cancellation support.
     /// </summary>
-    private readonly ConcurrentDictionary<Guid, SemaphoreSlim> _deviceLocks = new();
+    private readonly ConcurrentDictionary<string, CancellationTokenSource> _activeCancellations = new();
 
     /// <summary>
     /// Lock timeout in milliseconds - how long to wait for a device lock
     /// </summary>
     private const int DeviceLockTimeoutMs = 120000; // 2 minutes
 
+    /// <summary>
+    /// Maximum retry attempts for each parameter write-verify cycle
+    /// </summary>
+    private const int MaxWriteVerifyRetries = 3;
+
+    /// <summary>
+    /// Delay between write and verify read in milliseconds
+    /// </summary>
+    private const int WriteVerifyDelayMs = 150;
+
     public ParameterUpdateBackgroundService(
         ILogger<ParameterUpdateBackgroundService> logger,
-        IServiceScopeFactory serviceScopeFactory)
+        IServiceScopeFactory serviceScopeFactory,
+        IDeviceLockService deviceLockService)
     {
         _logger = logger;
         _serviceScopeFactory = serviceScopeFactory;
+        _deviceLockService = deviceLockService;
 
         // Bounded channel to prevent memory issues with too many queued requests
         _channel = Channel.CreateBounded<ParameterUpdateQueueRequest>(new BoundedChannelOptions(100)
@@ -59,9 +73,31 @@ public class ParameterUpdateBackgroundService : BackgroundService, IParameterUpd
             request.Parameters.Count);
     }
 
+    /// <summary>
+    /// Cancel an in-progress parameter update operation by correlation ID
+    /// </summary>
+    public bool CancelOperation(string correlationId)
+    {
+        if (_activeCancellations.TryGetValue(correlationId, out var cts))
+        {
+            _logger.LogInformation("Cancelling operation {CorrelationId}", correlationId);
+            cts.Cancel();
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Check if an operation is currently active
+    /// </summary>
+    public bool IsOperationActive(string correlationId)
+    {
+        return _activeCancellations.ContainsKey(correlationId);
+    }
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Parameter Update Background Service started (with device locking and rollback support)");
+        _logger.LogInformation("Parameter Update Background Service started (with write-verify-retry pattern)");
 
         try
         {
@@ -88,26 +124,18 @@ public class ParameterUpdateBackgroundService : BackgroundService, IParameterUpd
     }
 
     /// <summary>
-    /// Gets or creates a semaphore lock for a specific device
-    /// </summary>
-    private SemaphoreSlim GetDeviceLock(Guid deviceId)
-    {
-        return _deviceLocks.GetOrAdd(deviceId, _ => new SemaphoreSlim(1, 1));
-    }
-
-    /// <summary>
     /// Processes a parameter update request with device-level locking
     /// </summary>
-    private async Task ProcessParameterUpdateWithLockAsync(ParameterUpdateQueueRequest request, CancellationToken cancellationToken)
+    private async Task ProcessParameterUpdateWithLockAsync(ParameterUpdateQueueRequest request, CancellationToken stoppingToken)
     {
-        var deviceLock = GetDeviceLock(request.DeviceId);
-
         _logger.LogDebug(
             "Attempting to acquire lock for device {DeviceId} (CorrelationId: {CorrelationId})",
             request.DeviceId, request.CorrelationId);
 
-        // Try to acquire the device lock with timeout
-        if (!await deviceLock.WaitAsync(DeviceLockTimeoutMs, cancellationToken))
+        // Try to acquire the device lock with timeout using shared lock service
+        var lockHandle = await _deviceLockService.AcquireLockAsync(request.DeviceId, DeviceLockTimeoutMs, stoppingToken);
+
+        if (lockHandle == null)
         {
             _logger.LogWarning(
                 "Failed to acquire device lock for {DeviceId} within {Timeout}ms - another update is in progress",
@@ -124,12 +152,25 @@ public class ParameterUpdateBackgroundService : BackgroundService, IParameterUpd
                 TotalParameters = request.Parameters.Count,
                 SuccessCount = 0,
                 FailedCount = request.Parameters.Count,
+                SkippedCount = 0,
                 CompletedAt = DateTime.UtcNow,
-                Duration = TimeSpan.Zero
-            }, cancellationToken);
+                Duration = TimeSpan.Zero,
+                WasCancelled = false,
+                FailedParameters = request.Parameters.Select(p => new FailedParameterInfo
+                {
+                    ParameterId = p.ParameterId,
+                    ParameterName = p.ParameterName,
+                    ErrorMessage = "Device is busy - another update is in progress",
+                    RetryAttempts = 0
+                }).ToList()
+            }, stoppingToken);
 
             return;
         }
+
+        // Create cancellation token for this operation
+        using var operationCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+        _activeCancellations[request.CorrelationId] = operationCts;
 
         try
         {
@@ -137,11 +178,13 @@ public class ParameterUpdateBackgroundService : BackgroundService, IParameterUpd
                 "Acquired lock for device {DeviceId} (CorrelationId: {CorrelationId})",
                 request.DeviceId, request.CorrelationId);
 
-            await ProcessParameterUpdateWithRollbackAsync(request, cancellationToken);
+            await ProcessParameterUpdatesAsync(request, operationCts.Token);
         }
         finally
         {
-            deviceLock.Release();
+            await lockHandle.DisposeAsync();
+            _activeCancellations.TryRemove(request.CorrelationId, out _);
+
             _logger.LogDebug(
                 "Released lock for device {DeviceId} (CorrelationId: {CorrelationId})",
                 request.DeviceId, request.CorrelationId);
@@ -149,10 +192,10 @@ public class ParameterUpdateBackgroundService : BackgroundService, IParameterUpd
     }
 
     /// <summary>
-    /// Processes parameter updates with rollback support.
-    /// If any parameter fails, all previously successful updates are reverted.
+    /// Processes parameter updates with write-verify-retry pattern.
+    /// Continues on failure (no rollback) and reports failed parameters at end.
     /// </summary>
-    private async Task ProcessParameterUpdateWithRollbackAsync(ParameterUpdateQueueRequest request, CancellationToken cancellationToken)
+    private async Task ProcessParameterUpdatesAsync(ParameterUpdateQueueRequest request, CancellationToken cancellationToken)
     {
         var startTime = DateTime.UtcNow;
 
@@ -179,31 +222,45 @@ public class ParameterUpdateBackgroundService : BackgroundService, IParameterUpd
                 parameterIds.Contains(sdpv.ParameterId))
             .ToDictionaryAsync(pv => pv.ParameterId, cancellationToken);
 
-        // Track original values for rollback
-        var originalValues = new Dictionary<Guid, OriginalParameterValue>();
-        var successfulUpdates = new List<SuccessfulUpdate>();
-
         int successCount = 0;
         int failedCount = 0;
+        int skippedCount = 0;
         int currentIndex = 0;
-        bool needsRollback = false;
-        string? rollbackReason = null;
+        bool wasCancelled = false;
+        var failedParameters = new List<FailedParameterInfo>();
 
         // Process each parameter one by one
         foreach (var param in request.Parameters)
         {
             currentIndex++;
 
+            // Check for cancellation
+            if (cancellationToken.IsCancellationRequested)
+            {
+                _logger.LogInformation(
+                    "Operation {CorrelationId} was cancelled at parameter {Index}/{Total}",
+                    request.CorrelationId, currentIndex, request.Parameters.Count);
+
+                wasCancelled = true;
+                skippedCount = request.Parameters.Count - currentIndex + 1;
+                break;
+            }
+
             try
             {
-                if (!parameterValues.TryGetValue(param.ParameterId, out var paramValue))
+                if (!parameterValues.TryGetValue(param.ParameterId, out var paramValue) || paramValue?.Parameter == null)
                 {
                     _logger.LogWarning("Parameter {ParameterId} not found for device {DeviceId}",
                         param.ParameterId, request.DeviceId);
 
                     failedCount++;
-                    needsRollback = true;
-                    rollbackReason = $"Parameter '{param.ParameterName}' not found";
+                    failedParameters.Add(new FailedParameterInfo
+                    {
+                        ParameterId = param.ParameterId,
+                        ParameterName = param.ParameterName,
+                        ErrorMessage = "Parameter not found",
+                        RetryAttempts = 0
+                    });
 
                     await notificationService.NotifyParameterUpdateFailedAsync(new ParameterUpdateFailedMessage
                     {
@@ -217,47 +274,24 @@ public class ParameterUpdateBackgroundService : BackgroundService, IParameterUpd
                         FailedAt = DateTime.UtcNow
                     }, cancellationToken);
 
-                    break; // Stop processing on first failure
+                    continue; // Skip to next parameter
                 }
 
-                // Store original value for rollback
-                originalValues[param.ParameterId] = new OriginalParameterValue
-                {
-                    ParameterId = param.ParameterId,
-                    ParameterName = paramValue.Parameter.Name,
-                    OriginalValue = paramValue.Value
-                };
-
-                // Execute RPC call with retry support
-                var parameterUpdates = new Dictionary<string, string>
-                {
-                    [paramValue.Parameter.Name] = param.Value
-                };
-
-                var rpcResults = await rpcExecutor.ExecuteParameterUpdatesAsync(
+                // Execute write-verify-retry pattern
+                var (success, errorMessage, retryAttempts) = await WriteVerifyRetryAsync(
+                    rpcExecutor,
                     request.ThingsBoardDeviceId,
-                    parameterUpdates,
-                    RpcRetryOptions.Default,
+                    paramValue.Parameter.Name,
+                    param.Value,
                     cancellationToken);
 
-                var rpcResult = rpcResults.FirstOrDefault();
-
-                if (rpcResult.Value?.Success == true)
+                if (success)
                 {
                     // Update database
                     paramValue.Value = param.Value;
                     await context.SaveChangesAsync(cancellationToken);
 
                     successCount++;
-
-                    // Track successful update for potential rollback
-                    successfulUpdates.Add(new SuccessfulUpdate
-                    {
-                        ParameterId = param.ParameterId,
-                        ParameterName = paramValue.Parameter.Name,
-                        NewValue = param.Value,
-                        OriginalValue = originalValues[param.ParameterId].OriginalValue
-                    });
 
                     await notificationService.NotifyParameterUpdatedAsync(new ParameterUpdatedMessage
                     {
@@ -266,23 +300,28 @@ public class ParameterUpdateBackgroundService : BackgroundService, IParameterUpd
                         ParameterId = param.ParameterId,
                         ParameterName = paramValue.Parameter.Name,
                         NewValue = param.Value,
-                        RpcMethod = rpcResult.Value?.RpcMethod,
                         CurrentIndex = currentIndex,
                         TotalParameters = request.Parameters.Count,
                         UpdatedAt = DateTime.UtcNow
                     }, cancellationToken);
 
                     _logger.LogDebug(
-                        "Successfully updated parameter {ParameterName} ({Index}/{Total})",
+                        "Successfully updated parameter {ParameterName} ({Index}/{Total}) after {Retries} retries",
                         paramValue.Parameter.Name,
                         currentIndex,
-                        request.Parameters.Count);
+                        request.Parameters.Count,
+                        retryAttempts);
                 }
                 else
                 {
                     failedCount++;
-                    needsRollback = true;
-                    rollbackReason = rpcResult.Value?.ErrorMessage ?? "RPC call failed";
+                    failedParameters.Add(new FailedParameterInfo
+                    {
+                        ParameterId = param.ParameterId,
+                        ParameterName = paramValue.Parameter.Name,
+                        ErrorMessage = errorMessage ?? "Write-verify failed after retries",
+                        RetryAttempts = retryAttempts
+                    });
 
                     await notificationService.NotifyParameterUpdateFailedAsync(new ParameterUpdateFailedMessage
                     {
@@ -290,27 +329,37 @@ public class ParameterUpdateBackgroundService : BackgroundService, IParameterUpd
                         DeviceId = request.DeviceId,
                         ParameterId = param.ParameterId,
                         ParameterName = paramValue.Parameter.Name,
-                        ErrorMessage = rpcResult.Value?.ErrorMessage ?? "RPC call failed",
-                        RpcMethod = rpcResult.Value?.RpcMethod,
+                        ErrorMessage = errorMessage ?? "Write-verify failed after retries",
                         CurrentIndex = currentIndex,
                         TotalParameters = request.Parameters.Count,
                         FailedAt = DateTime.UtcNow
                     }, cancellationToken);
 
                     _logger.LogWarning(
-                        "Failed to update parameter {ParameterName} (ErrorCategory: {ErrorCategory}): {Error}",
+                        "Failed to update parameter {ParameterName} after {Retries} retries: {Error}",
                         paramValue.Parameter.Name,
-                        rpcResult.Value?.ErrorCategory,
-                        rpcResult.Value?.ErrorMessage);
+                        retryAttempts,
+                        errorMessage);
 
-                    break; // Stop processing on first failure
+                    // Continue to next parameter (no rollback)
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                wasCancelled = true;
+                skippedCount = request.Parameters.Count - currentIndex + 1;
+                break;
             }
             catch (Exception ex)
             {
                 failedCount++;
-                needsRollback = true;
-                rollbackReason = ex.Message;
+                failedParameters.Add(new FailedParameterInfo
+                {
+                    ParameterId = param.ParameterId,
+                    ParameterName = param.ParameterName,
+                    ErrorMessage = ex.Message,
+                    RetryAttempts = 0
+                });
 
                 _logger.LogError(ex, "Exception updating parameter {ParameterId}", param.ParameterId);
 
@@ -326,48 +375,20 @@ public class ParameterUpdateBackgroundService : BackgroundService, IParameterUpd
                     FailedAt = DateTime.UtcNow
                 }, cancellationToken);
 
-                break; // Stop processing on exception
-            }
-        }
-
-        // Perform rollback if needed
-        if (needsRollback && successfulUpdates.Count > 0)
-        {
-            _logger.LogWarning(
-                "Rolling back {Count} successful updates due to failure: {Reason}",
-                successfulUpdates.Count, rollbackReason);
-
-            var rollbackSuccess = await PerformRollbackAsync(
-                request,
-                successfulUpdates,
-                parameterValues,
-                rpcExecutor,
-                context,
-                notificationService,
-                cancellationToken);
-
-            if (rollbackSuccess)
-            {
-                _logger.LogInformation(
-                    "Successfully rolled back {Count} parameter updates for device {DeviceId}",
-                    successfulUpdates.Count, request.DeviceId);
-
-                // Reset success count since everything was rolled back
-                successCount = 0;
-                failedCount = request.Parameters.Count;
-            }
-            else
-            {
-                _logger.LogError(
-                    "CRITICAL: Partial rollback failure for device {DeviceId} - database and device may be inconsistent!",
-                    request.DeviceId);
+                // Continue to next parameter (no rollback)
             }
         }
 
         var completedAt = DateTime.UtcNow;
         var duration = completedAt - startTime;
 
-        // Notify completion
+        // If any parameters were successfully updated, set device mode to Custom
+        if (successCount > 0)
+        {
+            await SetDeviceModeToCustomAsync(context, request.DeviceId, CancellationToken.None);
+        }
+
+        // Notify completion with list of failed parameters
         await notificationService.NotifyParameterUpdateCompletedAsync(new ParameterUpdateCompletedMessage
         {
             CorrelationId = request.CorrelationId,
@@ -375,107 +396,207 @@ public class ParameterUpdateBackgroundService : BackgroundService, IParameterUpd
             TotalParameters = request.Parameters.Count,
             SuccessCount = successCount,
             FailedCount = failedCount,
+            SkippedCount = skippedCount,
             CompletedAt = completedAt,
-            Duration = duration
-        }, cancellationToken);
+            Duration = duration,
+            WasCancelled = wasCancelled,
+            FailedParameters = failedParameters
+        }, CancellationToken.None); // Use None to ensure completion message is sent even if cancelled
 
         _logger.LogInformation(
-            "Completed parameter update {CorrelationId}: {Success}/{Total} succeeded in {Duration}ms (Rollback: {RollbackPerformed})",
+            "Completed parameter update {CorrelationId}: {Success}/{Total} succeeded, {Failed} failed, {Skipped} skipped in {Duration}ms (Cancelled: {Cancelled})",
             request.CorrelationId,
             successCount,
             request.Parameters.Count,
+            failedCount,
+            skippedCount,
             duration.TotalMilliseconds,
-            needsRollback && successfulUpdates.Count > 0);
+            wasCancelled);
     }
 
     /// <summary>
-    /// Performs rollback of successful updates by restoring original values
+    /// Writes a parameter value and verifies it was written correctly.
+    /// Retries up to MaxWriteVerifyRetries times if verification fails.
     /// </summary>
-    private async Task<bool> PerformRollbackAsync(
-        ParameterUpdateQueueRequest request,
-        List<SuccessfulUpdate> successfulUpdates,
-        Dictionary<Guid, Domain.Entities.SetupDeviceParameterValue> parameterValues,
+    private async Task<(bool Success, string? ErrorMessage, int RetryAttempts)> WriteVerifyRetryAsync(
         IDeviceRpcExecutorService rpcExecutor,
-        IApplicationDbContext context,
-        IDeviceSettingsNotificationService notificationService,
+        Guid tbDeviceId,
+        string parameterName,
+        string expectedValue,
         CancellationToken cancellationToken)
     {
-        var allRollbacksSuccessful = true;
+        string? lastError = null;
 
-        // Rollback in reverse order
-        foreach (var update in successfulUpdates.AsEnumerable().Reverse())
+        for (int attempt = 0; attempt <= MaxWriteVerifyRetries; attempt++)
         {
             try
             {
-                _logger.LogDebug(
-                    "Rolling back parameter {ParameterName} from {NewValue} to {OriginalValue}",
-                    update.ParameterName, update.NewValue, update.OriginalValue);
-
-                // Revert device via RPC (with aggressive retry for rollback)
-                var rollbackParams = new Dictionary<string, string>
-                {
-                    [update.ParameterName] = update.OriginalValue
-                };
-
-                var rpcResult = await rpcExecutor.ExecuteParameterUpdatesAsync(
-                    request.ThingsBoardDeviceId,
-                    rollbackParams,
-                    RpcRetryOptions.Aggressive, // Use aggressive retry for rollback
+                // Step 1: Write the value
+                var writeResult = await rpcExecutor.ExecuteParameterUpdateAsync(
+                    tbDeviceId,
+                    parameterName,
+                    expectedValue,
+                    RpcRetryOptions.Default,
                     cancellationToken);
 
-                var result = rpcResult.FirstOrDefault();
-
-                if (result.Value?.Success == true)
+                if (!writeResult.Success)
                 {
-                    // Revert database
-                    if (parameterValues.TryGetValue(update.ParameterId, out var paramValue))
+                    lastError = writeResult.ErrorMessage ?? "Write failed";
+                    _logger.LogDebug(
+                        "Write attempt {Attempt} failed for parameter {ParameterName}: {Error}",
+                        attempt + 1, parameterName, lastError);
+
+                    if (attempt < MaxWriteVerifyRetries)
                     {
-                        paramValue.Value = update.OriginalValue;
-                        await context.SaveChangesAsync(cancellationToken);
+                        await Task.Delay(WriteVerifyDelayMs * (attempt + 1), cancellationToken);
                     }
+                    continue;
+                }
 
-                    _logger.LogInformation(
-                        "Successfully rolled back parameter {ParameterName}",
-                        update.ParameterName);
-                }
-                else
+                // Step 2: Wait briefly for device to process
+                await Task.Delay(WriteVerifyDelayMs, cancellationToken);
+
+                // Step 3: Read back to verify
+                var readValue = await rpcExecutor.GetParameterValueAsync(
+                    tbDeviceId,
+                    parameterName,
+                    cancellationToken);
+
+                if (readValue == null)
                 {
-                    allRollbacksSuccessful = false;
-                    _logger.LogError(
-                        "Failed to rollback parameter {ParameterName}: {Error}",
-                        update.ParameterName, result.Value?.ErrorMessage);
+                    lastError = "Failed to read back parameter value for verification";
+                    _logger.LogDebug(
+                        "Verify attempt {Attempt} failed for parameter {ParameterName}: could not read back",
+                        attempt + 1, parameterName);
+
+                    if (attempt < MaxWriteVerifyRetries)
+                    {
+                        await Task.Delay(WriteVerifyDelayMs * (attempt + 1), cancellationToken);
+                    }
+                    continue;
                 }
+
+                // Step 4: Compare values (normalize for comparison)
+                if (ValuesMatch(expectedValue, readValue))
+                {
+                    _logger.LogDebug(
+                        "Parameter {ParameterName} verified successfully on attempt {Attempt}",
+                        parameterName, attempt + 1);
+                    return (true, null, attempt);
+                }
+
+                lastError = $"Verification failed: expected '{expectedValue}', got '{readValue}'";
+                _logger.LogDebug(
+                    "Verify mismatch for parameter {ParameterName} on attempt {Attempt}: expected '{Expected}', got '{Actual}'",
+                    parameterName, attempt + 1, expectedValue, readValue);
+
+                if (attempt < MaxWriteVerifyRetries)
+                {
+                    await Task.Delay(WriteVerifyDelayMs * (attempt + 1), cancellationToken);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                throw; // Re-throw cancellation
             }
             catch (Exception ex)
             {
-                allRollbacksSuccessful = false;
-                _logger.LogError(ex,
-                    "Exception during rollback of parameter {ParameterName}",
-                    update.ParameterName);
+                lastError = ex.Message;
+                _logger.LogDebug(ex,
+                    "Exception on attempt {Attempt} for parameter {ParameterName}",
+                    attempt + 1, parameterName);
+
+                if (attempt < MaxWriteVerifyRetries)
+                {
+                    await Task.Delay(WriteVerifyDelayMs * (attempt + 1), cancellationToken);
+                }
             }
         }
 
-        return allRollbacksSuccessful;
+        return (false, lastError, MaxWriteVerifyRetries);
     }
 
     /// <summary>
-    /// Stores original parameter value for rollback
+    /// Compares two values for equality, handling numeric and string comparisons
     /// </summary>
-    private record OriginalParameterValue
+    private static bool ValuesMatch(string expected, string actual)
     {
-        public Guid ParameterId { get; init; }
-        public string ParameterName { get; init; } = string.Empty;
-        public string OriginalValue { get; init; } = string.Empty;
+        // Exact string match
+        if (string.Equals(expected, actual, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        // Try numeric comparison (handles "1" vs "1.0" vs "1.00")
+        if (double.TryParse(expected, out var expectedNum) && double.TryParse(actual, out var actualNum))
+        {
+            return Math.Abs(expectedNum - actualNum) < 0.0001;
+        }
+
+        // Try boolean comparison (handles "true" vs "1" vs "True")
+        if (bool.TryParse(expected, out var expectedBool))
+        {
+            if (bool.TryParse(actual, out var actualBool))
+                return expectedBool == actualBool;
+
+            // Handle "1"/"0" as boolean
+            if (actual == "1" || actual == "0")
+                return expectedBool == (actual == "1");
+        }
+
+        return false;
     }
 
     /// <summary>
-    /// Tracks a successful update for potential rollback
+    /// Sets device mode to Custom when parameters are manually updated.
+    /// This ensures DeviceModeHistory correctly reflects that the device is now in custom mode.
     /// </summary>
-    private record SuccessfulUpdate
+    private async Task SetDeviceModeToCustomAsync(IApplicationDbContext context, Guid deviceId, CancellationToken cancellationToken)
     {
-        public Guid ParameterId { get; init; }
-        public string ParameterName { get; init; } = string.Empty;
-        public string NewValue { get; init; } = string.Empty;
-        public string OriginalValue { get; init; } = string.Empty;
+        const int CustomModeValue = 99; // DeviceMode.Custom = 99
+
+        try
+        {
+            // Check if there's already an active Custom mode entry
+            var existingCustomMode = await context.DeviceModeHistory
+                .FirstOrDefaultAsync(m => m.DeviceId == deviceId && m.Mode == CustomModeValue && m.IsActive, cancellationToken);
+
+            if (existingCustomMode != null)
+            {
+                _logger.LogDebug("Device {DeviceId} is already in Custom mode, skipping mode update", deviceId);
+                return;
+            }
+
+            // Deactivate all existing active modes for this device
+            var existingActiveModes = await context.DeviceModeHistory
+                .Where(m => m.DeviceId == deviceId && m.IsActive)
+                .ToListAsync(cancellationToken);
+
+            foreach (var existingMode in existingActiveModes)
+            {
+                existingMode.IsActive = false;
+            }
+
+            // Create new Custom mode history record
+            var modeHistory = new DeviceModeHistory
+            {
+                DeviceId = deviceId,
+                Mode = CustomModeValue,
+                Description = "Custom Mode",
+                IsActive = true
+            };
+
+            context.DeviceModeHistory.Add(modeHistory);
+            await context.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation(
+                "Device {DeviceId} mode changed to Custom due to parameter updates",
+                deviceId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex,
+                "Failed to update device mode to Custom for device {DeviceId}. Parameter updates were still successful.",
+                deviceId);
+            // Don't throw - parameter updates were successful, mode update is a side effect
+        }
     }
 }

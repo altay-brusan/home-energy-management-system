@@ -10,6 +10,16 @@ public interface IParameterUpdateQueueService
     /// Returns immediately - use SignalR to track progress
     /// </summary>
     ValueTask QueueParameterUpdateAsync(ParameterUpdateQueueRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Cancel an in-progress parameter update operation by correlation ID
+    /// </summary>
+    bool CancelOperation(string correlationId);
+
+    /// <summary>
+    /// Check if an operation is currently active
+    /// </summary>
+    bool IsOperationActive(string correlationId);
 }
 
 /// <summary>

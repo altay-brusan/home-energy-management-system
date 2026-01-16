@@ -1,5 +1,6 @@
 using Hangfire;
 using Hangfire.Dashboard;
+using Hangfire.Dashboard.BasicAuthorization;
 using Hems_Backend.Infrastructure.Data;
 using Hems_Backend.Infrastructure.Identity;
 using Hems_Backend.Infrastructure.Hubs;
@@ -48,15 +49,33 @@ else
 
 app.UseHealthChecks("/health");
 
-// Configure Hangfire Dashboard
+// Configure Hangfire Dashboard with Basic Authentication
+var hangfireUsername = builder.Configuration["Hangfire:Dashboard:Username"] ?? "admin";
+var hangfirePassword = builder.Configuration["Hangfire:Dashboard:Password"] ?? "admin";
+
 app.UseHangfireDashboard("/hangfire", new DashboardOptions
 {
     DashboardTitle = "HEMS Energy Collection Jobs",
     DisplayStorageConnectionString = false,
-    // In production, add proper authorization
     Authorization = app.Environment.IsDevelopment()
         ? Array.Empty<IDashboardAuthorizationFilter>()
-        : new[] { new HangfireAuthorizationFilter() }
+        : new IDashboardAuthorizationFilter[]
+        {
+            new BasicAuthAuthorizationFilter(new BasicAuthAuthorizationFilterOptions
+            {
+                RequireSsl = false, // Set to true in production with HTTPS
+                SslRedirect = false,
+                LoginCaseSensitive = true,
+                Users = new[]
+                {
+                    new BasicAuthAuthorizationUser
+                    {
+                        Login = hangfireUsername,
+                        PasswordClear = hangfirePassword
+                    }
+                }
+            })
+        }
 });
 
 // Allow HTTP for ThingsBoard telemetry endpoints, require HTTPS for all other endpoints
@@ -109,17 +128,3 @@ app.MapHub<DeviceSettingsHub>("/deviceSettingsHub");
 app.Run();
 
 public partial class Program { }
-
-/// <summary>
-/// Hangfire Dashboard authorization filter for production environments.
-/// </summary>
-public class HangfireAuthorizationFilter : IDashboardAuthorizationFilter
-{
-    public bool Authorize(DashboardContext context)
-    {
-        // In production, implement proper authorization
-        // For now, allow authenticated users only
-        var httpContext = context.GetHttpContext();
-        return httpContext.User.Identity?.IsAuthenticated == true;
-    }
-}
