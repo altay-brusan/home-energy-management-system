@@ -14,6 +14,7 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
     private readonly IThingsBoardConnectorService _tbService;
     private readonly IDeviceMappingService _deviceMapping;
     private readonly IDeviceActivityService _activityService;
+    private readonly IComponentDetailsCacheService _cacheService;
     private readonly ILogger<GetDeviceDetailsQueryHandler> _logger;
     private readonly IDemoDataService _demoDataService;
     private readonly IDemoSimulationDataService _demoSimulationService;
@@ -23,6 +24,7 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
         IThingsBoardConnectorService tbService,
         IDeviceMappingService deviceMapping,
         IDeviceActivityService activityService,
+        IComponentDetailsCacheService cacheService,
         ILogger<GetDeviceDetailsQueryHandler> logger,
         IDemoDataService demoDataService,
         IDemoSimulationDataService demoSimulationService)
@@ -31,6 +33,7 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
         _tbService = tbService;
         _deviceMapping = deviceMapping;
         _activityService = activityService;
+        _cacheService = cacheService;
         _logger = logger;
         _demoDataService = demoDataService;
         _demoSimulationService = demoSimulationService;
@@ -49,14 +52,24 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
             return null;
         }
 
-        // Step 2: Check if this is a demo device - return simulated data
+        // Step 2: Check if this is a demo device - return simulated data (no caching needed)
         var isDemoDevice = await _demoDataService.IsDemoDeviceAsync(component.DeviceId, cancellationToken);
         if (isDemoDevice)
         {
             return BuildDemoDeviceDetails(component);
         }
 
-        // Step 3: Get ThingsBoard Device ID for real devices
+        // Step 3: Check cache for real devices (5-second TTL)
+        // This allows multiple users to get the same data without duplicate RPC calls
+        if (_cacheService.TryGetCachedDetails(request.ComponentId, out var cachedDetails))
+        {
+            _logger.LogDebug(
+                "Returning cached component details for {ComponentId}",
+                request.ComponentId);
+            return cachedDetails;
+        }
+
+        // Step 4: Get ThingsBoard Device ID for real devices
         var tbDeviceId = await _deviceMapping.GetThingsBoardDeviceIdAsync(component.DeviceId, cancellationToken);
         if (tbDeviceId == null)
         {
@@ -64,7 +77,7 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
             return null;
         }
 
-        // Step 4: Call appropriate RPC based on device type
+        // Step 5: Call appropriate RPC based on device type
         var response = new DeviceDetailsResponseDto();
 
         switch (component.DeviceType)
@@ -83,6 +96,9 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
                     component.DeviceType, component.Id);
                 return null;
         }
+
+        // Step 6: Cache the response for 5 seconds
+        _cacheService.CacheDetails(request.ComponentId, response);
 
         return response;
     }
