@@ -20,19 +20,22 @@ public class GetDailyEnergySummaryHandler : IRequestHandler<GetDailyEnergySummar
     private readonly IThingsBoardConnectorService _tbService;
     private readonly IMemoryCache _cache;
     private readonly IDemoDataService _demoDataService;
+    private readonly IDeviceActivityService _activityService;
 
     public GetDailyEnergySummaryHandler(
         ISender sender,
         IDeviceMappingService deviceMapping,
         IThingsBoardConnectorService tbService,
         IMemoryCache cache,
-        IDemoDataService demoDataService)
+        IDemoDataService demoDataService,
+        IDeviceActivityService activityService)
     {
         _sender = sender;
         _deviceMapping = deviceMapping;
         _tbService = tbService;
         _cache = cache;
         _demoDataService = demoDataService;
+        _activityService = activityService;
     }
 
     public async Task<DailyEnergySummaryDto> Handle(GetDailyEnergySummaryQuery request, CancellationToken cancellationToken)
@@ -136,6 +139,12 @@ public class GetDailyEnergySummaryHandler : IRequestHandler<GetDailyEnergySummar
                 Production = 0.0
             };
         }
+
+        // Record device activity - device is online since RPC succeeded
+        await _activityService.RecordActivityAsync(
+            thingsBoardDeviceId.Value,
+            TelemetrySource.DailyEnergyFlow,
+            cancellationToken: cancellationToken);
 
         // Parse timestamp from device data
         DateTime dataDateTime = DateTime.UtcNow;

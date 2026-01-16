@@ -13,6 +13,7 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
     private readonly IApplicationDbContext _context;
     private readonly IThingsBoardConnectorService _tbService;
     private readonly IDeviceMappingService _deviceMapping;
+    private readonly IDeviceActivityService _activityService;
     private readonly ILogger<GetDeviceDetailsQueryHandler> _logger;
     private readonly IDemoDataService _demoDataService;
     private readonly IDemoSimulationDataService _demoSimulationService;
@@ -21,6 +22,7 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
         IApplicationDbContext context,
         IThingsBoardConnectorService tbService,
         IDeviceMappingService deviceMapping,
+        IDeviceActivityService activityService,
         ILogger<GetDeviceDetailsQueryHandler> logger,
         IDemoDataService demoDataService,
         IDemoSimulationDataService demoSimulationService)
@@ -28,6 +30,7 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
         _context = context;
         _tbService = tbService;
         _deviceMapping = deviceMapping;
+        _activityService = activityService;
         _logger = logger;
         _demoDataService = demoDataService;
         _demoSimulationService = demoSimulationService;
@@ -841,6 +844,12 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
 
             if (rpcResponse?.Success == true && rpcResponse.Response != null)
             {
+                // Record device activity - device is online since RPC succeeded
+                await _activityService.RecordActivityAsync(
+                    tbDeviceId,
+                    TelemetrySource.PowerFlow,
+                    cancellationToken: cancellationToken);
+
                 // Response is wrapped: {"success": true, "data": {...}}
                 // Extract the "data" property if present
                 if (rpcResponse.Response.TryGetValue("data", out var dataObj) && dataObj != null)
@@ -1047,6 +1056,12 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
 
             if (rpcResponse?.Success == true && rpcResponse.Response != null)
             {
+                // Record device activity - device is online since RPC succeeded
+                await _activityService.RecordActivityAsync(
+                    tbDeviceId,
+                    TelemetrySource.BatterySoc,
+                    cancellationToken: cancellationToken);
+
                 var json = JsonSerializer.Serialize(rpcResponse.Response);
                 return JsonSerializer.Deserialize<BatterySocStateDto>(json);
             }
