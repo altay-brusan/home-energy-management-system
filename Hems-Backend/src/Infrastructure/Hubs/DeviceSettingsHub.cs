@@ -2,6 +2,7 @@ using Hems_Backend.Application.Common.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Hems_Backend.Infrastructure.Hubs;
 
@@ -14,11 +15,19 @@ public class DeviceSettingsHub : Hub<IDeviceSettingsHubClient>
 {
     private readonly IApplicationDbContext _context;
     private readonly IUser _user;
+    private readonly IParameterUpdateQueueService _parameterUpdateQueueService;
+    private readonly ILogger<DeviceSettingsHub> _logger;
 
-    public DeviceSettingsHub(IApplicationDbContext context, IUser user)
+    public DeviceSettingsHub(
+        IApplicationDbContext context,
+        IUser user,
+        IParameterUpdateQueueService parameterUpdateQueueService,
+        ILogger<DeviceSettingsHub> logger)
     {
         _context = context;
         _user = user;
+        _parameterUpdateQueueService = parameterUpdateQueueService;
+        _logger = logger;
     }
 
     /// <summary>
@@ -39,11 +48,62 @@ public class DeviceSettingsHub : Hub<IDeviceSettingsHubClient>
     }
 
     /// <summary>
-    /// Subscribe to a specific batch operation by correlation ID
+    /// Subscribe to a specific batch operation by correlation ID.
+    /// If the operation is already in progress or completed, sends the current state immediately.
     /// </summary>
     public async Task SubscribeToBatchOperation(string correlationId)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, GetBatchGroupName(correlationId));
+
+        // Check if there's cached state for this operation (for late-subscribing clients)
+        var cachedState = _parameterUpdateQueueService.GetOperationState(correlationId);
+        if (cachedState != null)
+        {
+            _logger.LogDebug(
+                "Sending cached state to late subscriber for operation {CorrelationId}: Status={Status}, Progress={Current}/{Total}",
+                correlationId, cachedState.Status, cachedState.CurrentIndex, cachedState.TotalParameters);
+
+            // Send current state based on operation status
+            if (cachedState.Status == "completed" || cachedState.Status == "failed" || cachedState.Status == "cancelled")
+            {
+                // Operation already completed - send completion message
+                await Clients.Caller.ParameterUpdateCompleted(new ParameterUpdateCompletedMessage
+                {
+                    CorrelationId = cachedState.CorrelationId,
+                    DeviceId = cachedState.DeviceId,
+                    TotalParameters = cachedState.TotalParameters,
+                    SuccessCount = cachedState.SuccessCount,
+                    FailedCount = cachedState.FailedCount,
+                    SkippedCount = cachedState.SkippedCount,
+                    CompletedAt = cachedState.CompletedAt ?? DateTime.UtcNow,
+                    Duration = cachedState.Duration ?? TimeSpan.Zero,
+                    WasCancelled = cachedState.WasCancelled,
+                    FailedParameters = cachedState.FailedParameters.Select(fp => new FailedParameterInfo
+                    {
+                        ParameterId = fp.ParameterId,
+                        ParameterName = fp.ParameterName,
+                        ErrorMessage = fp.ErrorMessage,
+                        RetryAttempts = fp.RetryAttempts
+                    }).ToList()
+                });
+            }
+            else if (cachedState.Status == "in_progress")
+            {
+                // Operation in progress - send a synthetic ParameterUpdated to show current progress
+                // This uses the last successful update info from the cached state
+                await Clients.Caller.ParameterUpdated(new ParameterUpdatedMessage
+                {
+                    CorrelationId = cachedState.CorrelationId,
+                    DeviceId = cachedState.DeviceId,
+                    ParameterId = Guid.Empty, // Synthetic update for progress sync
+                    ParameterName = "[Progress Sync]",
+                    NewValue = string.Empty,
+                    CurrentIndex = cachedState.CurrentIndex,
+                    TotalParameters = cachedState.TotalParameters,
+                    UpdatedAt = DateTime.UtcNow
+                });
+            }
+        }
     }
 
     /// <summary>

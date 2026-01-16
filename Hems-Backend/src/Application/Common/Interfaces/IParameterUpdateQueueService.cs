@@ -20,6 +20,43 @@ public interface IParameterUpdateQueueService
     /// Check if an operation is currently active
     /// </summary>
     bool IsOperationActive(string correlationId);
+
+    /// <summary>
+    /// Get the current state of a batch operation (for late-subscribing clients)
+    /// Returns null if operation not found or expired
+    /// </summary>
+    BatchOperationStateSnapshot? GetOperationState(string correlationId);
+}
+
+/// <summary>
+/// Snapshot of batch operation state for late-subscribing clients
+/// </summary>
+public record BatchOperationStateSnapshot
+{
+    public string CorrelationId { get; init; } = string.Empty;
+    public Guid DeviceId { get; init; }
+    public string Status { get; init; } = "pending"; // pending, in_progress, completed, failed
+    public int TotalParameters { get; init; }
+    public int CurrentIndex { get; init; }
+    public int SuccessCount { get; init; }
+    public int FailedCount { get; init; }
+    public int SkippedCount { get; init; }
+    public bool WasCancelled { get; init; }
+    public DateTime? StartedAt { get; init; }
+    public DateTime? CompletedAt { get; init; }
+    public TimeSpan? Duration { get; init; }
+    public List<FailedParameterSnapshot> FailedParameters { get; init; } = new();
+}
+
+/// <summary>
+/// Failed parameter info for state snapshot
+/// </summary>
+public record FailedParameterSnapshot
+{
+    public Guid ParameterId { get; init; }
+    public string ParameterName { get; init; } = string.Empty;
+    public string ErrorMessage { get; init; } = string.Empty;
+    public int RetryAttempts { get; init; }
 }
 
 /// <summary>
