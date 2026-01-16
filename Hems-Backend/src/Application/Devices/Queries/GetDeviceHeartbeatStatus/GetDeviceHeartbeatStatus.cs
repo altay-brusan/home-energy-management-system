@@ -61,14 +61,18 @@ public class GetDeviceHeartbeatStatusQueryHandler : IRequestHandler<GetDeviceHea
             throw new Hems_Backend.Application.Common.Exceptions.NotFoundException("Device", request.DeviceId);
         }
 
-        // Get current status from cache
-        var status = _heartbeatCache.GetDeviceStatus(thingsBoardDeviceId.Value);
+        // Get full state from cache (includes last heartbeat time)
+        var state = _heartbeatCache.GetDeviceState(thingsBoardDeviceId.Value);
+        var status = state?.Status ?? DeviceStatus.NOT_TRACKED;
 
         return new DeviceHeartbeatStatusDto
         {
             DeviceId = request.DeviceId,
             Status = status.ToString(),
-            Timestamp = DateTime.UtcNow
+            Timestamp = DateTime.UtcNow,
+            LastHeartbeat = state?.LastHeartbeat,
+            LastPowerFlow = state?.LastPowerFlow,
+            MissedHeartbeats = state?.MissedHeartbeats ?? 0
         };
     }
 }
@@ -78,4 +82,7 @@ public class DeviceHeartbeatStatusDto
     public Guid DeviceId { get; init; }
     public string Status { get; init; } = string.Empty;
     public DateTime Timestamp { get; init; }
+    public DateTime? LastHeartbeat { get; init; }
+    public DateTime? LastPowerFlow { get; init; }
+    public int MissedHeartbeats { get; init; }
 }
