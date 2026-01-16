@@ -5210,6 +5210,20 @@
           "timestamp": {
             "type": "string",
             "format": "date-time"
+          },
+          "lastHeartbeat": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastPowerFlow": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "missedHeartbeats": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },

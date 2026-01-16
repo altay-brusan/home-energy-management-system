@@ -49,17 +49,20 @@ public class ProcessEnergyFlowTelemetryCommandHandler : IRequestHandler<ProcessE
     private readonly ISender _sender;
     private readonly ITelemetryDeduplicationService _deduplicationService;
     private readonly IDeviceActivityService _activityService;
+    private readonly IDemoDataService _demoDataService;
     private readonly ILogger<ProcessEnergyFlowTelemetryCommandHandler> _logger;
 
     public ProcessEnergyFlowTelemetryCommandHandler(
         ISender sender,
         ITelemetryDeduplicationService deduplicationService,
         IDeviceActivityService activityService,
+        IDemoDataService demoDataService,
         ILogger<ProcessEnergyFlowTelemetryCommandHandler> logger)
     {
         _sender = sender;
         _deduplicationService = deduplicationService;
         _activityService = activityService;
+        _demoDataService = demoDataService;
         _logger = logger;
     }
 
@@ -127,7 +130,24 @@ public class ProcessEnergyFlowTelemetryCommandHandler : IRequestHandler<ProcessE
         // Record device activity (updates heartbeat cache, sends SignalR if status changed)
         await _activityService.RecordActivityAsync(deviceId, request.TelemetrySource, dataDateTime);
 
-        // 4) Check for duplicate telemetry
+        // 4) Check if this is a demo device - skip database storage for demo devices
+        var isDemoDevice = await _demoDataService.IsDemoDeviceByThingsBoardIdAsync(deviceId, cancellationToken);
+        if (isDemoDevice)
+        {
+            _logger.LogDebug(
+                "Skipping {DataType} database storage for demo device {DeviceId} at {Timestamp}",
+                dataType, deviceId, dataDateTime);
+            return new ProcessEnergyFlowTelemetryResult
+            {
+                Success = true,
+                Message = $"{dataType} telemetry received (demo device - not stored)",
+                DeviceId = deviceId,
+                DataDateTime = dataDateTime,
+                IsDuplicate = false
+            };
+        }
+
+        // 5) Check for duplicate telemetry
         var shouldProcess = await _deduplicationService.ShouldProcessTelemetryAsync(deviceId, dataType, dataDateTime);
         if (!shouldProcess)
         {

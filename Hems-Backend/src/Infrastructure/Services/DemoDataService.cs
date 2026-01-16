@@ -67,6 +67,20 @@ public class DemoDataService : IDemoDataService
         return isDemoDevice;
     }
 
+    public async Task<bool> IsDemoDeviceByThingsBoardIdAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken = default)
+    {
+        var device = await _context.Devices
+            .FirstOrDefaultAsync(d => d.ThingsBoardDeviceId == thingsBoardDeviceId && !d.IsDeleted, cancellationToken);
+
+        var isDemoDevice = device?.IsDemoDevice ?? false;
+
+        _logger.LogDebug(
+            "IsDemoDeviceByThingsBoardIdAsync: ThingsBoardDeviceId={ThingsBoardDeviceId}, DeviceFound={DeviceFound}, IsDemoDevice={IsDemoDevice}",
+            thingsBoardDeviceId, device != null, isDemoDevice);
+
+        return isDemoDevice;
+    }
+
     public async Task<DemoDataResetResult> ResetDemoDataAsync(string userId, CancellationToken cancellationToken = default)
     {
         try

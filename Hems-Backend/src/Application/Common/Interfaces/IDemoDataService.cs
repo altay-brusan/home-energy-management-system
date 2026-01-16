@@ -19,9 +19,15 @@ public interface IDemoDataService
     Task<bool> IsDemoUserByEmailAsync(string email, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Checks if a device is a demo device.
+    /// Checks if a device is a demo device by local device ID.
     /// </summary>
     Task<bool> IsDemoDeviceAsync(Guid deviceId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Checks if a device is a demo device by ThingsBoard device ID.
+    /// Used by telemetry handlers that receive ThingsBoardDeviceId.
+    /// </summary>
+    Task<bool> IsDemoDeviceByThingsBoardIdAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Resets all demo data for a demo user.

@@ -6,6 +6,12 @@ using Hangfire;
 
 namespace Hems.DeviceSimulator.Services;
 
+// OBSOLETE: This service is deprecated for demo data simulation.
+// Demo data is now generated on-the-fly by DemoSimulationDataService in the Infrastructure layer.
+// No data should be stored in the database for demo devices.
+// See: src/Infrastructure/Services/DemoSimulationDataService.cs
+
+[Obsolete("Use DemoSimulationDataService in Infrastructure for demo devices. This service is only for real device testing.")]
 public interface IDeviceSimulationJobService
 {
     Task StartSimulationAsync();
@@ -16,6 +22,7 @@ public interface IDeviceSimulationJobService
     Task SendDeviceDataAsync(DeviceWithComponents device, object data);
 }
 
+[Obsolete("Use DemoSimulationDataService in Infrastructure for demo devices. This service is only for real device testing.")]
 public class DeviceSimulationJobService : IDeviceSimulationJobService
 {
     private readonly IHttpClientFactory _httpClientFactory;

@@ -1150,9 +1150,217 @@ Added the missing translation key to all three language files:
 | `src/lib/i18n/locales/tr.json` | Added missing `phaseCPower` translation |
 | `src/lib/i18n/locales/nl.json` | Added missing `phaseCPower` translation |
 
+---
+
+## Inverter Detail - Load Data Feature
+
+### Issue
+
+The Inverter Detail screen showed Grid data but was missing Load data. Load data is obtained via the `getLoadDeviceState` RPC call and includes power and voltage per phase.
+
+### RPC Response Structure
+
+**RPC Name**: `getLoadDeviceState`
+
+```json
+{
+  "kind": "LoadDeviceState",
+  "timestampUtc": "2025-12-18T06:52:15.841Z",
+  "version": 1,
+  "DeviceId": "EC100",
+  "scope": "backup_load",
+  "loadPower": {
+    "totalActivePowerW": 55,
+    "phaseAPowerW": 0,
+    "phaseBPowerW": 0,
+    "phaseCPowerW": 42
+  },
+  "loadVoltage": {
+    "phaseAVoltageV": 219,
+    "phaseBVoltageV": 220.9,
+    "phaseCVoltageV": 218.7
+  },
+  "frequencyHz": 50,
+  "upsLoadPower": {
+    "totalPowerW": 55,
+    "phaseAPowerW": 0,
+    "phaseBPowerW": 0,
+    "phaseCPowerW": 42
+  },
+  "todayEnergyKWh": 0,
+  "totalEnergyKWh": 0
+}
+```
+
+### Backend Changes
+
+**1. New DTOs** (`InverterRpcDtos.cs`):
+
+```csharp
+public class LoadDeviceStateDto
+{
+    public string? Kind { get; set; }
+    public string? TimestampUtc { get; set; }
+    public string? DeviceId { get; set; }
+    public string? Scope { get; set; }  // "backup_load" | "total_load"
+    public LoadPowerDto? LoadPower { get; set; }
+    public LoadVoltageDto? LoadVoltage { get; set; }
+    public double? FrequencyHz { get; set; }
+    public UpsLoadPowerDto? UpsLoadPower { get; set; }
+    public double? TodayEnergyKWh { get; set; }
+    public double? TotalEnergyKWh { get; set; }
+
+    // Convenience properties
+    public int? LoadTotalActivePowerW => LoadPower?.TotalActivePowerW;
+    public int? LoadPhaseAPowerW => LoadPower?.PhaseAPowerW;
+    // ... etc
+}
+
+public class LoadPowerDto { ... }
+public class LoadVoltageDto { ... }
+public class UpsLoadPowerDto { ... }
+```
+
+**2. New RPC Method** (`GetDeviceDetailsQueryHandler.cs`):
+
+```csharp
+private async Task<LoadDeviceStateDto?> GetLoadDeviceStateFromRpcAsync(
+    Guid tbDeviceId,
+    CancellationToken cancellationToken)
+{
+    var rpcResponse = await _tbService.SendTwoWayRpcAsync(
+        tbDeviceId,
+        "getLoadDeviceState",
+        new Dictionary<string, object>(),
+        timeoutMs: 10000,
+        cancellationToken: cancellationToken);
+    // ... deserialize response
+}
+
+private void AddLoadRealtimeDetails(List<DeviceDetailItemDto> details, LoadDeviceStateDto state)
+{
+    // Maps Load data to detail items:
+    // loadTotalActivePower, loadPhaseAPower, loadPhaseBPower, loadPhaseCPower,
+    // loadPhaseAVoltage, loadPhaseBVoltage, loadPhaseCVoltage, loadFrequency
+}
+```
+
+**3. Updated BuildInverterDetailsAsync**:
+
+```csharp
+private async Task<List<DeviceDetailItemDto>> BuildInverterDetailsAsync(...)
+{
+    // Get inverter state from RPC
+    var state = await GetInverterDeviceStateFromRpcAsync(tbDeviceId, cancellationToken);
+    if (state != null) AddInverterRealtimeDetails(details, state);
+
+    // NEW: Get load state from RPC
+    var loadState = await GetLoadDeviceStateFromRpcAsync(tbDeviceId, cancellationToken);
+    if (loadState != null) AddLoadRealtimeDetails(details, loadState);
+
+    AddInverterParameterDetails(details, component);
+    return details;
+}
+```
+
+### Frontend Changes
+
+**1. Data Extraction** (`InverterDetailScreen.tsx`):
+
+```tsx
+// Load data
+const loadTotalActivePower = getDetailValue('loadTotalActivePower');
+const loadPhaseAPower = getDetailValue('loadPhaseAPower');
+const loadPhaseBPower = getDetailValue('loadPhaseBPower');
+const loadPhaseCPower = getDetailValue('loadPhaseCPower');
+const loadPhaseAVoltage = getDetailValue('loadPhaseAVoltage');
+const loadPhaseBVoltage = getDetailValue('loadPhaseBVoltage');
+const loadPhaseCVoltage = getDetailValue('loadPhaseCVoltage');
+const loadFrequency = getDetailValue('loadFrequency');
+```
+
+**2. Load Section UI**: Added after Grid section, displays:
+- Total Load Power
+- Frequency
+- Phase A/B/C cards (each with Voltage and Power)
+
+**3. Translations Added**:
+
+| Key | English | Turkish | Dutch |
+|-----|---------|---------|-------|
+| `load` | Load | Yük | Belasting |
+| `loadPower` | Load Power | Yük Gücü | Belasting Vermogen |
+| `loadPhaseAPower` | Phase A Power | Faz A Gücü | Fase A Vermogen |
+| `loadPhaseBPower` | Phase B Power | Faz B Gücü | Fase B Vermogen |
+| `loadPhaseCPower` | Phase C Power | Faz C Gücü | Fase C Vermogen |
+| `loadPhaseAVoltage` | Phase A Voltage | Faz A Voltajı | Fase A Spanning |
+| `loadPhaseBVoltage` | Phase B Voltage | Faz B Voltajı | Fase B Spanning |
+| `loadPhaseCVoltage` | Phase C Voltage | Faz C Voltajı | Fase C Spanning |
+| `loadFrequency` | Frequency | Frekans | Frequentie |
+
+---
+
+## Inverter Detail - UI Styling Update (Phase Cards)
+
+### Issue
+
+The Grid and Load sections displayed phase data as a flat list, while the Output section used styled phase cards. This inconsistency made the UI less readable.
+
+### Solution
+
+Updated Grid and Load sections to use the same phase card styling as Output section.
+
+### Phase Card Styling Pattern
+
+```tsx
+{/* Phase Card */}
+{phaseData != null && (
+  <View style={[styles.phaseCard, {
+    backgroundColor: `${COLORS.accent}08`,  // Translucent accent color
+    marginTop: 12,  // First card: 12, subsequent: 8
+    borderRadius: 8,
+    padding: 12
+  }]}>
+    <Text style={[styles.phaseTitle, { color: COLORS.accent, marginBottom: 8 }]}>
+      {t("inverterDetail.phaseLabel", { id: "A" })}
+    </Text>
+    <View style={styles.row}>
+      <Text style={[styles.label, { color: COLORS.textSoft }]}>
+        {t("inverterDetail.voltage")}
+      </Text>
+      <Text style={[styles.value, { color: COLORS.text }]}>
+        {voltage.toFixed(1)} V
+      </Text>
+    </View>
+    <View style={styles.row}>
+      <Text style={[styles.label, { color: COLORS.textSoft }]}>
+        {t("inverterDetail.power")}
+      </Text>
+      <Text style={[styles.value, { color: COLORS.text }]}>
+        {power.toFixed(1)} W
+      </Text>
+    </View>
+  </View>
+)}
+```
+
+### Sections Updated
+
+| Section | Before | After |
+|---------|--------|-------|
+| Output | Phase cards ✓ | Phase cards ✓ |
+| Grid | Flat list | Phase cards (Power only) |
+| Load | Flat list | Phase cards (Voltage + Power) |
+| Temperature | Flat list | Flat list (no phases) |
+| Device Info | Flat list | Flat list (no phases) |
+
+---
+
 ## Backend Files Changed Summary
 
 | File | Change Description |
 |------|-------------------|
 | `src/Infrastructure/Services/SharedDevicePowerFlowStreamManager.cs` | PowerFlow cache fixes for offline detection |
 | `src/Web/Endpoints/DeviceData.cs` | New endpoint `GET /Status/{deviceId}` |
+| `src/Application/Common/Models/InverterRpcDtos.cs` | Added `LoadDeviceStateDto`, `LoadPowerDto`, `LoadVoltageDto`, `UpsLoadPowerDto` |
+| `src/Application/DeviceComponents/Queries/GetDeviceDetails/GetDeviceDetailsQueryHandler.cs` | Added `GetLoadDeviceStateFromRpcAsync`, `AddLoadRealtimeDetails`, updated demo data |

@@ -37,6 +37,7 @@ public class ProcessAlarmTelemetryCommandHandler : IRequestHandler<ProcessAlarmT
     private readonly ISender _sender;
     private readonly IDeviceMappingService _deviceMapping;
     private readonly IDeviceActivityService _activityService;
+    private readonly IDemoDataService _demoDataService;
     private readonly IAlarmNotificationSender _notificationSender;
     private readonly ILogger<ProcessAlarmTelemetryCommandHandler> _logger;
 
@@ -44,12 +45,14 @@ public class ProcessAlarmTelemetryCommandHandler : IRequestHandler<ProcessAlarmT
         ISender sender,
         IDeviceMappingService deviceMapping,
         IDeviceActivityService activityService,
+        IDemoDataService demoDataService,
         IAlarmNotificationSender notificationSender,
         ILogger<ProcessAlarmTelemetryCommandHandler> logger)
     {
         _sender = sender;
         _deviceMapping = deviceMapping;
         _activityService = activityService;
+        _demoDataService = demoDataService;
         _notificationSender = notificationSender;
         _logger = logger;
     }
@@ -91,6 +94,23 @@ public class ProcessAlarmTelemetryCommandHandler : IRequestHandler<ProcessAlarmT
 
         // Record device activity
         await _activityService.RecordActivityAsync(thingsBoardDeviceId, TelemetrySource.Alarm);
+
+        // Check if this is a demo device - skip database storage for demo devices
+        var isDemoDevice = await _demoDataService.IsDemoDeviceByThingsBoardIdAsync(thingsBoardDeviceId, cancellationToken);
+        if (isDemoDevice)
+        {
+            _logger.LogDebug(
+                "Skipping Alarm database storage for demo device {DeviceId}",
+                thingsBoardDeviceId);
+            return new ProcessAlarmTelemetryResult
+            {
+                Success = true,
+                ProcessedCount = 0,
+                CreatedCount = 0,
+                Notifications = new List<ProcessedNotificationInfo>(),
+                Errors = new List<string>()
+            };
+        }
 
         // 2) Convert ThingsBoard ID to internal device ID
         var internalDeviceId = await _deviceMapping.GetDeviceIdAsync(thingsBoardDeviceId, cancellationToken);
