@@ -30,6 +30,16 @@ public class ParameterUpdateBackgroundService : BackgroundService, IParameterUpd
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _activeCancellations = new();
 
     /// <summary>
+    /// Operation state cache for late-subscribing clients (keeps last 5 minutes of completed operations)
+    /// </summary>
+    private readonly ConcurrentDictionary<string, BatchOperationStateSnapshot> _operationStates = new();
+
+    /// <summary>
+    /// How long to keep completed operation states for late-subscribing clients
+    /// </summary>
+    private static readonly TimeSpan StateRetentionDuration = TimeSpan.FromMinutes(5);
+
+    /// <summary>
     /// Lock timeout in milliseconds - how long to wait for a device lock
     /// </summary>
     private const int DeviceLockTimeoutMs = 120000; // 2 minutes
@@ -93,6 +103,47 @@ public class ParameterUpdateBackgroundService : BackgroundService, IParameterUpd
     public bool IsOperationActive(string correlationId)
     {
         return _activeCancellations.ContainsKey(correlationId);
+    }
+
+    /// <summary>
+    /// Get the current state of a batch operation (for late-subscribing clients)
+    /// </summary>
+    public BatchOperationStateSnapshot? GetOperationState(string correlationId)
+    {
+        if (_operationStates.TryGetValue(correlationId, out var state))
+        {
+            _logger.LogDebug("Retrieved operation state for {CorrelationId}: Status={Status}", correlationId, state.Status);
+            return state;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Update and store the current operation state
+    /// </summary>
+    private void UpdateOperationState(BatchOperationStateSnapshot state)
+    {
+        _operationStates[state.CorrelationId] = state;
+        _logger.LogDebug("Updated operation state for {CorrelationId}: Status={Status}, Progress={Current}/{Total}",
+            state.CorrelationId, state.Status, state.CurrentIndex, state.TotalParameters);
+    }
+
+    /// <summary>
+    /// Cleanup old completed operation states
+    /// </summary>
+    private void CleanupOldStates()
+    {
+        var cutoff = DateTime.UtcNow - StateRetentionDuration;
+        var keysToRemove = _operationStates
+            .Where(kvp => kvp.Value.CompletedAt.HasValue && kvp.Value.CompletedAt.Value < cutoff)
+            .Select(kvp => kvp.Key)
+            .ToList();
+
+        foreach (var key in keysToRemove)
+        {
+            _operationStates.TryRemove(key, out _);
+            _logger.LogDebug("Removed expired operation state: {CorrelationId}", key);
+        }
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -213,6 +264,24 @@ public class ParameterUpdateBackgroundService : BackgroundService, IParameterUpd
             StartedAt = startTime
         }, cancellationToken);
 
+        // Cache initial operation state for late-subscribing clients
+        UpdateOperationState(new BatchOperationStateSnapshot
+        {
+            CorrelationId = request.CorrelationId,
+            DeviceId = request.DeviceId,
+            Status = "in_progress",
+            TotalParameters = request.Parameters.Count,
+            CurrentIndex = 0,
+            SuccessCount = 0,
+            FailedCount = 0,
+            SkippedCount = 0,
+            WasCancelled = false,
+            StartedAt = startTime,
+            CompletedAt = null,
+            Duration = null,
+            FailedParameters = new List<FailedParameterSnapshot>()
+        });
+
         // Get all parameter values for this device
         var parameterIds = request.Parameters.Select(p => p.ParameterId).ToList();
         var parameterValues = await context.SetupDeviceParameterValues
@@ -305,6 +374,30 @@ public class ParameterUpdateBackgroundService : BackgroundService, IParameterUpd
                         UpdatedAt = DateTime.UtcNow
                     }, cancellationToken);
 
+                    // Update cached state for late-subscribing clients
+                    UpdateOperationState(new BatchOperationStateSnapshot
+                    {
+                        CorrelationId = request.CorrelationId,
+                        DeviceId = request.DeviceId,
+                        Status = "in_progress",
+                        TotalParameters = request.Parameters.Count,
+                        CurrentIndex = currentIndex,
+                        SuccessCount = successCount,
+                        FailedCount = failedCount,
+                        SkippedCount = skippedCount,
+                        WasCancelled = false,
+                        StartedAt = startTime,
+                        CompletedAt = null,
+                        Duration = null,
+                        FailedParameters = failedParameters.Select(fp => new FailedParameterSnapshot
+                        {
+                            ParameterId = fp.ParameterId,
+                            ParameterName = fp.ParameterName,
+                            ErrorMessage = fp.ErrorMessage,
+                            RetryAttempts = fp.RetryAttempts
+                        }).ToList()
+                    });
+
                     _logger.LogDebug(
                         "Successfully updated parameter {ParameterName} ({Index}/{Total}) after {Retries} retries",
                         paramValue.Parameter.Name,
@@ -334,6 +427,30 @@ public class ParameterUpdateBackgroundService : BackgroundService, IParameterUpd
                         TotalParameters = request.Parameters.Count,
                         FailedAt = DateTime.UtcNow
                     }, cancellationToken);
+
+                    // Update cached state for late-subscribing clients
+                    UpdateOperationState(new BatchOperationStateSnapshot
+                    {
+                        CorrelationId = request.CorrelationId,
+                        DeviceId = request.DeviceId,
+                        Status = "in_progress",
+                        TotalParameters = request.Parameters.Count,
+                        CurrentIndex = currentIndex,
+                        SuccessCount = successCount,
+                        FailedCount = failedCount,
+                        SkippedCount = skippedCount,
+                        WasCancelled = false,
+                        StartedAt = startTime,
+                        CompletedAt = null,
+                        Duration = null,
+                        FailedParameters = failedParameters.Select(fp => new FailedParameterSnapshot
+                        {
+                            ParameterId = fp.ParameterId,
+                            ParameterName = fp.ParameterName,
+                            ErrorMessage = fp.ErrorMessage,
+                            RetryAttempts = fp.RetryAttempts
+                        }).ToList()
+                    });
 
                     _logger.LogWarning(
                         "Failed to update parameter {ParameterName} after {Retries} retries: {Error}",
@@ -402,6 +519,34 @@ public class ParameterUpdateBackgroundService : BackgroundService, IParameterUpd
             WasCancelled = wasCancelled,
             FailedParameters = failedParameters
         }, CancellationToken.None); // Use None to ensure completion message is sent even if cancelled
+
+        // Cache final state for late-subscribing clients
+        var finalStatus = wasCancelled ? "cancelled" : (failedCount > 0 ? "failed" : "completed");
+        UpdateOperationState(new BatchOperationStateSnapshot
+        {
+            CorrelationId = request.CorrelationId,
+            DeviceId = request.DeviceId,
+            Status = finalStatus,
+            TotalParameters = request.Parameters.Count,
+            CurrentIndex = request.Parameters.Count - skippedCount,
+            SuccessCount = successCount,
+            FailedCount = failedCount,
+            SkippedCount = skippedCount,
+            WasCancelled = wasCancelled,
+            StartedAt = startTime,
+            CompletedAt = completedAt,
+            Duration = duration,
+            FailedParameters = failedParameters.Select(fp => new FailedParameterSnapshot
+            {
+                ParameterId = fp.ParameterId,
+                ParameterName = fp.ParameterName,
+                ErrorMessage = fp.ErrorMessage,
+                RetryAttempts = fp.RetryAttempts
+            }).ToList()
+        });
+
+        // Cleanup old completed operations periodically
+        CleanupOldStates();
 
         _logger.LogInformation(
             "Completed parameter update {CorrelationId}: {Success}/{Total} succeeded, {Failed} failed, {Skipped} skipped in {Duration}ms (Cancelled: {Cancelled})",
