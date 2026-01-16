@@ -15,6 +15,7 @@ public class TimezoneService : ITimezoneService
     private readonly IMemoryCache _cache;
     private readonly ILogger<TimezoneService> _logger;
     private const string CacheKeyPrefix = "DeviceTimezone_";
+    private const string SiteCacheKeyPrefix = "SiteTimezone_";
     private static readonly TimeSpan CacheExpiration = TimeSpan.FromHours(24);
 
     public TimezoneService(
@@ -62,6 +63,56 @@ public class TimezoneService : ITimezoneService
         catch (TimeZoneNotFoundException)
         {
             _logger.LogError("Timezone {TimezoneId} not found for device {DeviceId}, falling back to UTC", timezoneId, deviceId);
+            timezone = TimeZoneInfo.Utc;
+        }
+
+        // Cache the result
+        var cacheOptions = new MemoryCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = CacheExpiration,
+            SlidingExpiration = TimeSpan.FromHours(6)
+        };
+
+        _cache.Set(cacheKey, timezone, cacheOptions);
+
+        return timezone;
+    }
+
+    public async Task<TimeZoneInfo> GetSiteTimezoneAsync(Guid siteId, CancellationToken cancellationToken = default)
+    {
+        var cacheKey = $"{SiteCacheKeyPrefix}{siteId}";
+
+        // Try to get from cache
+        if (_cache.TryGetValue<TimeZoneInfo>(cacheKey, out var cachedTimezone) && cachedTimezone != null)
+        {
+            _logger.LogDebug("Timezone cache hit for site {SiteId}", siteId);
+            return cachedTimezone;
+        }
+
+        _logger.LogDebug("Timezone cache miss for site {SiteId}, querying database", siteId);
+
+        // Query from database: Site -> Timezone
+        var timezoneId = await _context.Sites
+            .Where(s => s.Id == siteId && !s.IsDeleted)
+            .Select(s => s.Timezone)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (string.IsNullOrEmpty(timezoneId))
+        {
+            _logger.LogWarning("No timezone found for site {SiteId}, using UTC", siteId);
+            return TimeZoneInfo.Utc;
+        }
+
+        TimeZoneInfo timezone;
+        try
+        {
+            // .NET 6+ supports IANA timezone IDs on all platforms
+            timezone = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
+            _logger.LogInformation("Found timezone {TimezoneId} for site {SiteId}", timezoneId, siteId);
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            _logger.LogError("Timezone {TimezoneId} not found for site {SiteId}, falling back to UTC", timezoneId, siteId);
             timezone = TimeZoneInfo.Utc;
         }
 

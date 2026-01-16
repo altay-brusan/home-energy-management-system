@@ -27,7 +27,7 @@ public class MarkNotificationAsReadCommandHandler : IRequestHandler<MarkNotifica
 
     public async Task Handle(MarkNotificationAsReadCommand request, CancellationToken cancellationToken)
     {
-        // Notification'ı bul ve kullanıcının erişim yetkisini kontrol et
+        // Find notification and verify user access
         var notification = await _context.DeviceNotifications
             .Include(dn => dn.Site)
             .FirstOrDefaultAsync(dn => dn.Id == request.NotificationId, cancellationToken);
@@ -37,10 +37,10 @@ public class MarkNotificationAsReadCommandHandler : IRequestHandler<MarkNotifica
             throw new ArgumentException($"Notification with ID {request.NotificationId} not found.");
         }
 
-        // Site erişim yetkisini kontrol et
+        // Validate site access
         await ValidateNotificationAccessAsync(notification.SiteId, cancellationToken);
 
-        // Notification'ı okundu olarak işaretle
+        // Mark notification as read
         notification.IsProcessed = true;
 
         await _context.SaveChangesAsync(cancellationToken);
@@ -48,7 +48,7 @@ public class MarkNotificationAsReadCommandHandler : IRequestHandler<MarkNotifica
 
     private async Task ValidateNotificationAccessAsync(Guid siteId, CancellationToken cancellationToken)
     {
-        // Admin kullanıcılar tüm site'lara erişebilir
+        // Admin users can access all sites
         if (_user.Id != null)
         {
             var isAdmin = await _identityService.IsInRoleAsync(_user.Id, "Administrator");
@@ -58,13 +58,13 @@ public class MarkNotificationAsReadCommandHandler : IRequestHandler<MarkNotifica
             }
         }
 
-        // Site sahibi kontrolü
+        // Check if user is site owner
         var isOwner = await _context.Sites
             .AnyAsync(s => s.Id == siteId && s.UserId == _user.Id, cancellationToken);
 
         if (isOwner) return;
 
-        // UserSite erişim kontrolü
+        // Check UserSite access
         var hasUserSiteAccess = await _context.UserSites
             .AnyAsync(us => us.SiteId == siteId && us.UserId == _user.Id, cancellationToken);
 

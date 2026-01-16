@@ -321,11 +321,10 @@ public class DeviceNotificationTypeDto
     public Guid Id { get; set; }
     public string Code { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
-    public int Register { get; set; }
-    public int Value { get; set; }
     public string Category { get; set; } = string.Empty;
+    public string Severity { get; set; } = string.Empty;
     public string Version { get; set; } = string.Empty;
+    public string Manufacturer { get; set; } = string.Empty;
     public bool IsActive { get; set; }
 }

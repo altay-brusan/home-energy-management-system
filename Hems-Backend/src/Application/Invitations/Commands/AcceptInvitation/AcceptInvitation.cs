@@ -35,14 +35,14 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
     {
         var currentUserId = _user.Id ?? throw new UnauthorizedAccessException("User not authenticated");
         
-        // Kullanıcının email'ini al
+        // Get current user's email
         var currentUserEmail = await _identityService.GetUserEmailAsync(currentUserId)
-            ?? throw new UnauthorizedAccessException("Kullanıcı email adresi bulunamadı");
+            ?? throw new UnauthorizedAccessException("User email address not found");
 
         var utcNow = _timeProvider.GetUtcNow();
         var twentyFourHoursAgo = utcNow.AddHours(-24);
 
-        // Token ile davetiyeyi bul
+        // Find invitation by token
         var invitation = await _context.Invitations
             .FirstOrDefaultAsync(i =>
                 i.Token == request.Token &&
@@ -59,23 +59,23 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
             throw new InvalidOperationException("This invitation has expired. Please request a new invitation.");
         }
 
-        // Invitation'ı güncelle
+        // Update invitation
         invitation.Status = InvitationStatus.Accepted;
         invitation.AcceptanceTime = utcNow;
-        
-        // Eğer InvitedUserId boşsa, şimdi güncelle
+
+        // If InvitedUserId is empty, update it now
         if (string.IsNullOrEmpty(invitation.InvitedUserId))
         {
             invitation.InvitedUserId = currentUserId;
         }
 
-        // UserSite kaydı oluştur (önce kontrol et, zaten varsa hata ver)
+        // Create UserSite record (check first, throw error if already exists)
         var existingUserSite = await _context.UserSites
             .FirstOrDefaultAsync(us => us.UserId == currentUserId && us.SiteId == invitation.SiteId, cancellationToken);
 
         if (existingUserSite != null)
         {
-            throw new InvalidOperationException("Bu site zaten sizinle paylaşılmış.");
+            throw new InvalidOperationException("This site is already shared with you.");
         }
 
         var userSite = new UserSite
@@ -89,7 +89,7 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
 
         _context.UserSites.Add(userSite);
 
-        // Notification'ı güncelle
+        // Update notification
         var notification = await _context.Notifications
             .FirstOrDefaultAsync(n => n.InvitationId == invitation.Id, cancellationToken);
 

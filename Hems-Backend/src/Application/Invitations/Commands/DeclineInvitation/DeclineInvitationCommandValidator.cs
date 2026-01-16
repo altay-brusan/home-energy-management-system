@@ -7,9 +7,9 @@ public class DeclineInvitationCommandValidator : AbstractValidator<DeclineInvita
     public DeclineInvitationCommandValidator()
     {
         RuleFor(v => v.Token)
-            .NotEmpty().WithMessage("Token zorunludur.")
-            .Length(6).WithMessage("Token 6 haneli olmalıdır.")
-            .Matches("^[0-9]+$").WithMessage("Token sadece rakamlardan oluşmalıdır.");
+            .NotEmpty().WithMessage("Token is required.")
+            .Length(6).WithMessage("Token must be 6 digits.")
+            .Matches("^[0-9]+$").WithMessage("Token must contain only numbers.");
     }
 }
 

@@ -83,6 +83,9 @@ public static class DependencyInjection
         // Device Activity Service (centralized telemetry-based activity tracking)
         builder.Services.AddScoped<IDeviceActivityService, DeviceActivityService>();
 
+        // Alarm Notification Sender (sends SignalR notifications for device alarms)
+        builder.Services.AddScoped<IAlarmNotificationSender, AlarmNotificationSender>();
+
         // Parameter Update Background Service (SignalR-based async updates)
         builder.Services.AddSingleton<ParameterUpdateBackgroundService>();
         builder.Services.AddSingleton<IParameterUpdateQueueService>(sp => sp.GetRequiredService<ParameterUpdateBackgroundService>());

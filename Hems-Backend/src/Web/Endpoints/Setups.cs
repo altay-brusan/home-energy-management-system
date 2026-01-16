@@ -7,29 +7,41 @@ using Hems_Backend.Application.Setups.Queries.GetSetups;
 using Hems_Backend.Application.Setups.Queries.GetSetupDevicesByUser;
 using Hems_Backend.Domain.Constants;
 using Hems_Backend.Web.Infrastructure;
-using Microsoft.AspNetCore.Authorization;
 
 namespace Hems_Backend.Web.Endpoints;
 
+/// <summary>
+/// Setups API - Manages device setups and configurations.
+/// - Admin operations: Full CRUD access to all setups
+/// - User operations: CRUD access to own setups
+/// </summary>
 public class Setups : EndpointGroupBase
 {
     public override void Map(WebApplication app)
     {
+        // ==== ADMIN ONLY - Full access to all setups ====
+        app.MapGroup(this)
+            .RequireAuthorization(Policies.AdminOnly)
+            .MapGet(GetSetups, "Admin/Setups")
+            .MapGet(GetSetup, "Admin/Setup/{id}")
+            .MapDelete(DeleteSetupAdmin, "Admin/Setup/{id}");
+
+        // ==== ALL AUTHENTICATED USERS - Own setups ====
         app.MapGroup(this)
             .RequireAuthorization()
-            // Admin endpoints (sadece admin kullanabilir)
-            .MapGet(GetSetups)
-            .MapGet(GetSetup, "{id}")
-            .MapDelete(DeleteSetupAdmin, "{id}")
-            // Mobile endpoints (normal kullanıcılar için)
-            .MapGet(GetSetupDevice, "mobile/get-setup-device")
-            .MapPost(CreateSetup, "mobile/create-setup")
-            .MapPut(UpdateSetup, "mobile/update-setup/{id}")
-            .MapDelete(DeleteSetupMobile, "mobile/delete-setup/{id}");
+            .MapGet(GetSetupDevice, "SetupDevice")
+            .MapPost(CreateSetup, "Setup")
+            .MapPut(UpdateSetup, "Setup/{id}")
+            .MapDelete(DeleteSetupMobile, "Setup/{id}");
     }
 
-    // Admin endpoints
-    [Authorize(Policies.AdminOnly)]
+    // ========================================================================
+    // ADMIN ENDPOINTS
+    // ========================================================================
+
+    /// <summary>
+    /// Get all setups (paginated). Admin only.
+    /// </summary>
     public async Task<PaginatedList<SetupDto>> GetSetups(
         ISender sender,
         [AsParameters] GetSetupsQuery query)
@@ -38,14 +50,9 @@ public class Setups : EndpointGroupBase
     }
 
     /// <summary>
-    /// Get a setup by id.
-    /// NOTE: This endpoint does NOT return the nested device details by default — <c>SetupDto.SetupDevice</c> will be null unless the implementation
-    /// explicitly loads the related SetupDevice (for example by using Include or AutoMapper's ProjectTo to fetch the nested data).
+    /// Get a setup by id. Admin only.
+    /// NOTE: This endpoint does NOT return the nested device details by default.
     /// </summary>
-    /// <param name="sender">Mediator</param>
-    /// <param name="id">Setup id</param>
-    /// <returns>The requested Setup; device details are not included by default</returns>
-    [Authorize(Policies.AdminOnly)]
     public async Task<SetupDto?> GetSetup(
         ISender sender,
         Guid id)
@@ -53,7 +60,9 @@ public class Setups : EndpointGroupBase
         return await sender.Send(new GetSetupByIdQuery(id));
     }
 
-    [Authorize(Policies.AdminOnly)]
+    /// <summary>
+    /// Delete a setup by id. Admin only.
+    /// </summary>
     public async Task<IResult> DeleteSetupAdmin(
         ISender sender,
         Guid id)
@@ -62,8 +71,13 @@ public class Setups : EndpointGroupBase
         return Results.NoContent();
     }
 
-    // Mobile endpoints (normal kullanıcılar için)
-    [Authorize]
+    // ========================================================================
+    // USER ENDPOINTS
+    // ========================================================================
+
+    /// <summary>
+    /// Get setup device for the current user by site.
+    /// </summary>
     public async Task<UserSetupDeviceDto?> GetSetupDevice(
         ISender sender,
         Guid siteId)
@@ -71,7 +85,9 @@ public class Setups : EndpointGroupBase
         return await sender.Send(new GetSetupDevicesByUserQuery { SiteId = siteId });
     }
 
-    [Authorize]
+    /// <summary>
+    /// Create a new setup.
+    /// </summary>
     public async Task<Guid> CreateSetup(
         ISender sender,
         CreateSetupCommand command)
@@ -79,7 +95,9 @@ public class Setups : EndpointGroupBase
         return await sender.Send(command);
     }
 
-    [Authorize]
+    /// <summary>
+    /// Update an existing setup.
+    /// </summary>
     public async Task<IResult> UpdateSetup(
         ISender sender,
         Guid id,
@@ -90,7 +108,9 @@ public class Setups : EndpointGroupBase
         return Results.NoContent();
     }
 
-    [Authorize]
+    /// <summary>
+    /// Delete a setup.
+    /// </summary>
     public async Task<IResult> DeleteSetupMobile(
         ISender sender,
         Guid id)
@@ -99,7 +119,3 @@ public class Setups : EndpointGroupBase
         return Results.NoContent();
     }
 }
-
-
-
-

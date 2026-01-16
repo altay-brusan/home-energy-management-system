@@ -64,30 +64,51 @@ This refactoring reorganized device parameter management endpoints into two clea
 **Endpoint Structure**:
 
 ```
-/api/ParameterSchemas (Admin-only)
-├── PARAMETER GROUPS (Category organization)
-│   ├── GET    /groups                - List all groups
-│   ├── GET    /groups/{id}           - Get specific group
-│   ├── POST   /groups                - Create group
-│   ├── PUT    /groups/{id}           - Update group
-│   └── DELETE /groups/{id}           - Delete group
+/api/ParameterSchemas
+├── ADMIN OPERATIONS (Admin only)
+│   ├── PARAMETER GROUPS
+│   │   ├── GET    /Admin/Groups                - List all groups
+│   │   ├── GET    /Admin/Groups/{id}           - Get specific group
+│   │   ├── POST   /Admin/Groups                - Create group
+│   │   ├── PUT    /Admin/Groups/{id}           - Update group
+│   │   └── DELETE /Admin/Groups/{id}           - Delete group
+│   │
+│   ├── PARAMETERS
+│   │   ├── GET    /Admin/Parameters            - List parameters
+│   │   ├── GET    /Admin/Parameters/{id}       - Get specific parameter
+│   │   ├── POST   /Admin/Parameters            - Create parameter
+│   │   ├── PUT    /Admin/Parameters/{id}       - Update parameter
+│   │   └── DELETE /Admin/Parameters/{id}       - Delete parameter
+│   │
+│   └── VALUE SCHEMES (Write operations)
+│       ├── POST   /Admin/Values                - Create scheme
+│       ├── PUT    /Admin/Values/{id}           - Update scheme
+│       └── DELETE /Admin/Values/{id}           - Delete scheme
 │
-├── PARAMETERS (Parameter definitions)
-│   ├── GET    /parameters            - List parameters
-│   ├── GET    /parameters/{id}       - Get specific parameter
-│   ├── POST   /parameters            - Create parameter
-│   ├── PUT    /parameters/{id}       - Update parameter
-│   └── DELETE /parameters/{id}       - Delete parameter
-│
-└── VALUE SCHEMES (Model-specific default values)
-    ├── GET    /values                - List schemes
-    ├── GET    /values/tree           - Get tree structure
-    ├── POST   /values                - Create scheme
-    ├── PUT    /values/{id}           - Update scheme
-    └── DELETE /values/{id}           - Delete scheme
+└── USER OPERATIONS (All authenticated users)
+    └── VALUE SCHEMES (Read operations)
+        ├── GET    /Values                      - List schemes
+        └── GET    /Values/Tree                 - Get tree structure
 ```
 
-**Authorization**: Admin only (all operations)
+**Authorization**:
+- `/Admin/*`: Admin only (all operations)
+- `/Values` (GET): All authenticated users
+
+**Path Changes:**
+| Old Path | New Path |
+|----------|----------|
+| `/groups` | `/Admin/Groups` |
+| `/groups/{id}` | `/Admin/Groups/{id}` |
+| `/parameters` | `/Admin/Parameters` |
+| `/parameters/{id}` | `/Admin/Parameters/{id}` |
+| `/values` (POST/PUT/DELETE) | `/Admin/Values` |
+| `/values/{id}` (PUT/DELETE) | `/Admin/Values/{id}` |
+| `/values` (GET) | `/Values` |
+| `/values/tree` (GET) | `/Values/Tree` |
+
+**Frontend Migration Note**:
+The old endpoint `/ParameterValueSettingSchemes/tree` is now at `/ParameterSchemas/Values/Tree`
 
 ---
 
@@ -289,3 +310,306 @@ GET /api/ParameterSchemas/values
 - RPC-synced operations are recommended for all user-facing features
 - Database-only operations should be reserved for admin tools and offline scenarios
 - Demo/testing operations are isolated under `/demo` prefix
+
+---
+
+## Admin Endpoints Convention
+
+All admin-only endpoints that are NOT used by the frontend mobile app follow the `/Admin/` prefix convention. These endpoints are for data management without direct database access.
+
+### 3. Devices Endpoint (`/api/Devices`)
+
+**User-facing Endpoints:**
+```
+/api/Devices
+└── POST   /login                          - Device authentication (no auth required)
+```
+
+**Admin Endpoints (require AdminOnly authorization):**
+```
+/api/Devices/Admin
+├── GET    /Device/{id}                    - Get device by ID
+├── POST   /Device                         - Create new device
+├── PUT    /Device/{id}                    - Update device
+└── DELETE /Device/{id}                    - Delete device
+```
+
+**Note:** These CRUD operations are NOT used by the frontend mobile app. Device management is handled through Setups and DeviceComponents endpoints.
+
+---
+
+### 4. DeviceComponents Endpoint (`/api/DeviceComponents`)
+
+**User-facing Endpoints:**
+```
+/api/DeviceComponents
+├── GET    /DeviceSummary                  - Get device summary for dashboard
+└── GET    /Details/{componentId}          - Get component details
+```
+
+**Admin Endpoints (require AdminOnly authorization):**
+```
+/api/DeviceComponents/Admin
+├── GET    /DeviceComponents/{deviceId}    - Get components by device ID
+├── GET    /Component/{id}                 - Get component by ID
+├── POST   /Component                      - Create new component
+├── PUT    /Component/{id}                 - Update component
+└── DELETE /Component/{id}                 - Delete component
+```
+
+---
+
+### 5. DeviceNotifications Endpoint (`/api/DeviceNotifications`)
+
+**Device Endpoints (require DeviceOnly authorization):**
+```
+/api/DeviceNotifications
+└── POST   /                               - Create notification (device-initiated)
+```
+
+**User-facing Endpoints (require authorization):**
+```
+/api/DeviceNotifications
+├── GET    /                               - Get paginated notifications
+├── GET    /Deleted                        - Get soft-deleted notifications
+├── PUT    /{id}/MarkRead                  - Mark notification as read
+├── PUT    /MarkAllRead/{siteId}           - Mark all site notifications as read
+├── PUT    /{id}/Restore                   - Restore deleted notification
+├── DELETE /{id}                           - Soft delete notification
+└── DELETE /{id}/Purge                     - Permanently delete notification
+```
+
+**Admin Endpoints (require AdminOnly authorization):**
+```
+/api/DeviceNotifications/Admin
+└── GET    /Types                          - Get all notification types
+```
+
+**Telemetry Processing (via DeviceData):**
+```
+/api/DeviceData
+└── POST   /Alarm                          - Process alarm telemetry from gateway
+```
+
+---
+
+## Admin Endpoint Summary
+
+| Endpoint Group | Admin Path | Operations |
+|----------------|-----------|------------|
+| Devices | `/api/Devices/Admin/Device` | GET, POST, PUT, DELETE |
+| DeviceComponents | `/api/DeviceComponents/Admin/Component` | GET, POST, PUT, DELETE |
+| DeviceComponents | `/api/DeviceComponents/Admin/DeviceComponents/{deviceId}` | GET |
+| DeviceNotifications | `/api/DeviceNotifications/Admin/Types` | GET |
+| DeviceSettings | `/api/DeviceSettings/admin` | GET, POST, PUT, DELETE |
+| ParameterSchemas | `/api/ParameterSchemas/Admin/Groups` | All (admin-only) |
+| ParameterSchemas | `/api/ParameterSchemas/Admin/Parameters` | All (admin-only) |
+| ParameterSchemas | `/api/ParameterSchemas/Admin/Values` | POST/PUT/DELETE (admin-only) |
+| ParameterSchemas | `/api/ParameterSchemas/Values` | GET (all users) |
+| RoleManagement | `/api/RoleManagement/Admin/Roles` | GET, POST, DELETE (admin-only) |
+| RoleManagement | `/api/RoleManagement/Admin/Assign` | PUT (admin-only) |
+| RoleManagement | `/api/RoleManagement/Admin/User/{userId}/Roles` | GET (admin-only) |
+| Setups | `/api/Setups/Admin/Setups` | GET (admin-only) |
+| Setups | `/api/Setups/Admin/Setup/{id}` | GET, DELETE (admin-only) |
+| Sites | `/api/Sites/Admin/Sites` | GET (admin-only) |
+| Sites | `/api/Sites/Admin/Site/{id}` | GET, DELETE (admin-only) |
+
+---
+
+### 6. Invitations Endpoint (`/api/Invitations`)
+
+**User-facing Endpoints (require authorization):**
+```
+/api/Invitations
+├── POST   /Create                         - Create invitation to share site
+├── GET    /BySite/{siteId}                - Get invitations for a site
+├── POST   /Accept                         - Accept invitation
+├── POST   /Decline                        - Decline invitation
+└── DELETE /RemoveUser/{invitationId}      - Remove user from shared site
+```
+
+**Path Changes (kebab-case → PascalCase):**
+| Old Path | New Path |
+|----------|----------|
+| `/create` | `/Create` |
+| `/by-site/{siteId}` | `/BySite/{siteId}` |
+| `/accept` | `/Accept` |
+| `/decline` | `/Decline` |
+| `/remove-user/{invitationId}` | `/RemoveUser/{invitationId}` |
+
+**Removed Obsolete Endpoints:**
+- ~~`GET /user-home-sites`~~ - Use `/api/Sites/mobile/get-sites` instead
+- ~~`GET /notifications`~~ - Not used by any client
+- ~~`PUT /notifications/{id}/mark-read`~~ - Not used by any client
+
+**Localization Changes:**
+- All comments and messages translated to English
+- All validation messages translated to English
+- Response messages translated to English
+
+**Validation Messages:**
+| Field | Message |
+|-------|---------|
+| Email | "Email is required." |
+| Email | "Please enter a valid email address." |
+| SiteId | "Site ID is required." |
+| Token | "Token is required." |
+| Token | "Token must be 6 digits." |
+| Token | "Token must contain only numbers." |
+
+**Error Messages:**
+| Endpoint | Error Message |
+|----------|---------------|
+| All | "User not authenticated" |
+| All | "User email address not found" |
+| Create | "A pending invitation already exists for this user and site." |
+| Accept | "This invitation has expired. Please request a new invitation." |
+| Accept | "This site is already shared with you." |
+
+**Success Response Messages:**
+| Endpoint | Response |
+|----------|----------|
+| POST /Accept | `{ "message": "Invitation accepted successfully." }` |
+| POST /Decline | `{ "message": "Invitation declined." }` |
+| DELETE /RemoveUser/{invitationId} | `{ "message": "User removed from site successfully." }` |
+
+---
+
+### 7. DeviceNotifications Response Messages
+
+**Validation Messages:**
+| Field | Message |
+|-------|---------|
+| NotificationId | "Notification ID is required." |
+
+**Error Messages:**
+| Context | Message |
+|---------|---------|
+| Not Found | "Notification with ID {id} not found." |
+| Access Denied | "You don't have access to site {siteId}" |
+
+---
+
+### 8. Locations Endpoint (`/api/Locations`)
+
+**User-facing Endpoints (require authorization):**
+```
+/api/Locations
+├── GET    /                              - Get all countries
+└── GET    /Cities/{countryId}            - Get cities by country
+```
+
+**Path Changes:**
+| Old Path | New Path |
+|----------|----------|
+| `/cities/{countryId}` | `/Cities/{countryId}` |
+
+**Method Renamed:**
+| Old Name | New Name |
+|----------|----------|
+| `GetCitiesByCountry` | `GetCountryCities` |
+
+---
+
+### 9. RoleManagement Endpoint (`/api/RoleManagement`)
+
+**Purpose**: Admin-only access for managing roles and user role assignments.
+
+**Admin Tool Endpoints (require AdminOnly authorization):**
+```
+/api/RoleManagement/Admin
+├── GET    /Roles                         - Get all roles
+├── POST   /Roles                         - Create a new role
+├── DELETE /Roles/{roleName}              - Delete a role by name
+├── PUT    /Assign                        - Assign a role to a user
+└── GET    /User/{userId}/Roles           - Get all roles for a user
+```
+
+**Path Changes (Root → Admin/ prefix with PascalCase):**
+| Old Path | New Path |
+|----------|----------|
+| `/` (GET) | `/Admin/Roles` |
+| `/` (POST) | `/Admin/Roles` |
+| `/{roleName}` | `/Admin/Roles/{roleName}` |
+| `/assign` | `/Admin/Assign` |
+| `/user/{userId}` | `/Admin/User/{userId}/Roles` |
+
+**Authorization**: Admin only (all operations)
+
+**Note**: Obsolete markers have been removed. These endpoints are now active admin tools.
+
+---
+
+### 10. Setups Endpoint (`/api/Setups`)
+
+**Purpose**: Manages device setups and configurations.
+
+**Admin Tool Endpoints (require AdminOnly authorization):**
+```
+/api/Setups/Admin
+├── GET    /Setups                        - Get all setups (paginated)
+├── GET    /Setup/{id}                    - Get setup by ID
+└── DELETE /Setup/{id}                    - Delete setup
+```
+
+**User-facing Endpoints (require authorization):**
+```
+/api/Setups
+├── GET    /SetupDevice                   - Get setup device for current user (by siteId)
+├── POST   /Setup                         - Create a new setup
+├── PUT    /Setup/{id}                    - Update setup
+└── DELETE /Setup/{id}                    - Delete setup
+```
+
+**Path Changes:**
+| Old Path | New Path |
+|----------|----------|
+| `/` (GET list) | `/Admin/Setups` |
+| `/{id}` (GET) | `/Admin/Setup/{id}` |
+| `/{id}` (DELETE admin) | `/Admin/Setup/{id}` |
+| `/mobile/get-setup-device` | `/SetupDevice` |
+| `/mobile/create-setup` | `/Setup` |
+| `/mobile/update-setup/{id}` | `/Setup/{id}` |
+| `/mobile/delete-setup/{id}` | `/Setup/{id}` |
+
+**Authorization**:
+- `/Admin/*`: Admin only
+- Other endpoints: All authenticated users
+
+---
+
+### 11. Sites Endpoint (`/api/Sites`)
+
+**Purpose**: Manages user sites and locations.
+
+**Admin Tool Endpoints (require AdminOnly authorization):**
+```
+/api/Sites/Admin
+├── GET    /Sites                         - Get all sites (paginated)
+├── GET    /Site/{id}                     - Get site by ID
+└── DELETE /Site/{id}                     - Delete site
+```
+
+**User-facing Endpoints (require authorization):**
+```
+/api/Sites
+├── GET    /UserSites                     - Get all sites for current user
+├── POST   /Site                          - Create a new site
+├── PUT    /Site/{id}                     - Update site
+└── DELETE /Site/{id}                     - Delete site
+```
+
+**Path Changes:**
+| Old Path | New Path |
+|----------|----------|
+| `/` (GET list) | `/Admin/Sites` |
+| `/{id}` (GET) | `/Admin/Site/{id}` |
+| `/{id}` (DELETE admin) | `/Admin/Site/{id}` |
+| `/mobile/get-sites` | `/UserSites` |
+| `/mobile/create-site` | `/Site` |
+| `/mobile/update-site/{id}` | `/Site/{id}` |
+| `/mobile/delete-site/{id}` | `/Site/{id}` |
+
+**Authorization**:
+- `/Admin/*`: Admin only
+- Other endpoints: All authenticated users

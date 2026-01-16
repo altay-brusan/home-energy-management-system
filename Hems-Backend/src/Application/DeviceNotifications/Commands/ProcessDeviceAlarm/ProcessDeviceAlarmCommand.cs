@@ -1,5 +1,6 @@
 using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Domain.Entities;
+using Hems_Backend.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
@@ -10,6 +11,11 @@ public record ProcessDeviceAlarmCommand : IRequest<ProcessDeviceAlarmResult>
 {
     public Guid DeviceId { get; init; }
     public InverterAlarmStateDto AlarmState { get; init; } = null!;
+
+    /// <summary>
+    /// Original raw JSON payload for storage in AdditionalData
+    /// </summary>
+    public string? RawJson { get; init; }
 }
 
 public record ProcessDeviceAlarmResult
@@ -31,7 +37,7 @@ public record ProcessedNotificationInfo
     public Guid Id { get; init; }
 
     /// <summary>
-    /// The notification type code (e.g., INV-FAT-F01, BMS-WAR-A01).
+    /// The notification type code (e.g., W2, W31, F1, F44).
     /// </summary>
     public string Key { get; init; } = string.Empty;
 
@@ -41,12 +47,12 @@ public record ProcessedNotificationInfo
     public string Message { get; init; } = string.Empty;
 
     /// <summary>
-    /// The severity level: ALARM, WARNING, or ERROR.
+    /// The severity level: Warning or Error.
     /// </summary>
     public string Severity { get; init; } = string.Empty;
 
     /// <summary>
-    /// Detailed description including register values and diagnostic information.
+    /// Detailed description including troubleshooting steps.
     /// </summary>
     public string Description { get; init; } = string.Empty;
 }
@@ -55,293 +61,22 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
 {
     private readonly IApplicationDbContext _context;
 
+    // Warning mappings: W1-W32 spread across 2 words (16 bits each)
+    // warningWord1Raw: W1-W16 (bits 0-15) - bit N maps to W(N+1)
+    // warningWord2Raw: W17-W32 (bits 0-15) - bit N maps to W(17+N)
+    //
+    // Fault mappings: F1-F64 spread across 4 words (16 bits each)
+    // faultWord1Raw: F1-F16 (bits 0-15)
+    // faultWord2Raw: F17-F32 (bits 0-15)
+    // faultWord3Raw: F33-F48 (bits 0-15)
+    // faultWord4Raw: F49-F64 (bits 0-15)
+    //
+    // CommBoard fault mappings: F65-F67
+    // commBoardFaultRaw: Bit0=F65 (Flash chip error), Bit1=F66 (Time error), Bit2=F67 (EEPROM error)
+
     public ProcessDeviceAlarmCommandHandler(IApplicationDbContext context)
     {
         _context = context;
-    }
-
-    /// <summary>
-    /// Resolves the notification type code based on the alarm's source device, severity, and message key.
-    /// Template: [INV/BMS]-[SEVERITY_CODE]-[device's code]
-    /// Severity Codes: ALM (Alarm), ERR (Error), WAR (Warning)
-    /// </summary>
-    private static string ResolveNotificationTypeCode(AlarmDto alarm)
-    {
-        var sourceDevice = alarm.SourceDevice?.ToUpperInvariant() ?? "INV";
-        var severity = alarm.Severity?.ToUpperInvariant() ?? "FAULT";
-        var messageKey = alarm.MessageKey?.ToUpperInvariant() ?? "";
-
-        // Determine device prefix
-        var devicePrefix = sourceDevice switch
-        {
-            "BMS" or "BATTERY" => "BMS",
-            _ => "INV"
-        };
-
-        // Determine severity code based on alarm severity
-        var severityCode = severity switch
-        {
-            "ALARM" or "FAULT" or "CRITICAL" or "PROTECTION" => "ALM",
-            "ERROR" => "ERR",
-            "WARNING" => "WAR",
-            _ => "ALM" // Default to alarm for unknown severity
-        };
-
-        // Extract the device code (e.g., F01, P01, A01, etc.)
-        // messageKey typically contains the fault/alarm code like "F01", "F58", "P01", "A01"
-        var deviceCode = messageKey;
-
-        // If messageKey doesn't look like a code, try to construct one
-        if (string.IsNullOrEmpty(deviceCode) || !IsValidDeviceCode(deviceCode))
-        {
-            // For inverter alarms (critical), use Fxx format
-            if (devicePrefix == "INV" && severityCode == "ALM")
-            {
-                deviceCode = $"F{alarm.VendorCode:D2}";
-            }
-            // For BMS alarms (protections), use Pxx format
-            else if (devicePrefix == "BMS" && severityCode == "ALM")
-            {
-                deviceCode = $"P{alarm.VendorCode:D2}";
-            }
-            // For BMS warnings, use Axx format
-            else if (devicePrefix == "BMS" && severityCode == "WAR")
-            {
-                deviceCode = $"A{alarm.VendorCode:D2}";
-            }
-            // For BMS errors, use Exx format
-            else if (devicePrefix == "BMS" && severityCode == "ERR")
-            {
-                deviceCode = $"E{alarm.VendorCode:D2}";
-            }
-            // For inverter warnings, use Wxx format
-            else if (devicePrefix == "INV" && severityCode == "WAR")
-            {
-                deviceCode = $"W{alarm.VendorCode:D2}";
-            }
-            else
-            {
-                deviceCode = alarm.VendorCode.ToString("D2");
-            }
-        }
-
-        return $"{devicePrefix}-{severityCode}-{deviceCode}";
-    }
-
-    /// <summary>
-    /// Checks if a string looks like a valid device code (e.g., F01, P02, A03)
-    /// </summary>
-    private static bool IsValidDeviceCode(string code)
-    {
-        if (string.IsNullOrEmpty(code) || code.Length < 2)
-            return false;
-
-        // Valid codes start with a letter followed by digits (F01, P02, A03, W01, E01, I01)
-        return char.IsLetter(code[0]) && code.Skip(1).All(char.IsDigit);
-    }
-
-    /// <summary>
-    /// Resolves the generic notification type code based on the alarm's source device and severity.
-    /// Template: [INV/BMS]-[SEVERITY_CODE]-GENERIC
-    /// </summary>
-    private static string ResolveGenericNotificationTypeCode(AlarmDto alarm)
-    {
-        var sourceDevice = alarm.SourceDevice?.ToUpperInvariant() ?? "INV";
-        var severity = alarm.Severity?.ToUpperInvariant() ?? "FAULT";
-
-        var devicePrefix = sourceDevice switch
-        {
-            "BMS" or "BATTERY" => "BMS",
-            _ => "INV"
-        };
-
-        var severityCode = severity switch
-        {
-            "ALARM" or "FAULT" or "CRITICAL" or "PROTECTION" => "ALM",
-            "ERROR" => "ERR",
-            "WARNING" => "WAR",
-            _ => "ALM"
-        };
-
-        return $"{devicePrefix}-{severityCode}-GENERIC";
-    }
-
-    /// <summary>
-    /// Maps severity code (ALM, WAR, ERR) to severity value (ALARM, WARNING, ERROR).
-    /// </summary>
-    private static string MapSeverityCodeToValue(string severityCode)
-    {
-        return severityCode switch
-        {
-            "ALM" => "ALARM",
-            "WAR" => "WARNING",
-            "ERR" => "ERROR",
-            _ => "ALARM"
-        };
-    }
-
-    /// <summary>
-    /// Builds a detailed description including register values for diagnostic purposes.
-    /// </summary>
-    private static string BuildDetailedDescription(
-        InverterAlarmStateDto alarmState,
-        AlarmDto? alarm,
-        string notificationTypeDescription,
-        bool isGenericFallback)
-    {
-        var parts = new List<string>();
-
-        // Start with the notification type description
-        parts.Add(notificationTypeDescription);
-
-        // Add register values for diagnostic purposes
-        var registerInfo = new List<string>();
-
-        if (alarmState.RunStateRaw > 0)
-            registerInfo.Add($"RunState: 0x{alarmState.RunStateRaw:X4}");
-
-        if (alarmState.WarningWord1Raw > 0)
-            registerInfo.Add($"Warning1: 0x{alarmState.WarningWord1Raw:X4}");
-
-        if (alarmState.WarningWord2Raw > 0)
-            registerInfo.Add($"Warning2: 0x{alarmState.WarningWord2Raw:X4}");
-
-        if (alarmState.FaultWord1Raw > 0)
-            registerInfo.Add($"Fault1: 0x{alarmState.FaultWord1Raw:X4}");
-
-        if (alarmState.FaultWord2Raw > 0)
-            registerInfo.Add($"Fault2: 0x{alarmState.FaultWord2Raw:X4}");
-
-        if (alarmState.FaultWord3Raw > 0)
-            registerInfo.Add($"Fault3: 0x{alarmState.FaultWord3Raw:X4}");
-
-        if (alarmState.FaultWord4Raw > 0)
-            registerInfo.Add($"Fault4: 0x{alarmState.FaultWord4Raw:X4}");
-
-        if (registerInfo.Count > 0)
-        {
-            parts.Add($"Registers: [{string.Join(", ", registerInfo)}]");
-        }
-
-        // Add alarm-specific info if available
-        if (alarm != null)
-        {
-            if (!string.IsNullOrEmpty(alarm.MessageKey))
-                parts.Add($"MessageKey: {alarm.MessageKey}");
-
-            if (alarm.VendorCode > 0)
-                parts.Add($"VendorCode: {alarm.VendorCode}");
-
-            if (alarm.Code > 0)
-                parts.Add($"Code: {alarm.Code}");
-        }
-
-        if (isGenericFallback)
-        {
-            parts.Add("(Generic fallback - specific alarm type not found)");
-        }
-
-        return string.Join(" | ", parts);
-    }
-
-    /// <summary>
-    /// Builds a human-readable message from raw register values for unknown alarms.
-    /// </summary>
-    private static string BuildRawRegisterMessage(InverterAlarmStateDto alarmState, AlarmDto alarm)
-    {
-        var parts = new List<string>();
-
-        if (alarmState.RunStateRaw > 0)
-            parts.Add($"RunState: 0x{alarmState.RunStateRaw:X4}");
-
-        if (alarmState.WarningWord1Raw > 0)
-            parts.Add($"Warn1: 0x{alarmState.WarningWord1Raw:X4}");
-
-        if (alarmState.WarningWord2Raw > 0)
-            parts.Add($"Warn2: 0x{alarmState.WarningWord2Raw:X4}");
-
-        if (alarmState.FaultWord1Raw > 0)
-            parts.Add($"Fault1: 0x{alarmState.FaultWord1Raw:X4}");
-
-        if (alarmState.FaultWord2Raw > 0)
-            parts.Add($"Fault2: 0x{alarmState.FaultWord2Raw:X4}");
-
-        if (alarmState.FaultWord3Raw > 0)
-            parts.Add($"Fault3: 0x{alarmState.FaultWord3Raw:X4}");
-
-        if (alarmState.FaultWord4Raw > 0)
-            parts.Add($"Fault4: 0x{alarmState.FaultWord4Raw:X4}");
-
-        // Add alarm-specific info
-        if (!string.IsNullOrEmpty(alarm.MessageKey))
-            parts.Add($"Key: {alarm.MessageKey}");
-
-        if (alarm.VendorCode > 0)
-            parts.Add($"VendorCode: {alarm.VendorCode}");
-
-        if (alarm.Code > 0)
-            parts.Add($"Code: {alarm.Code}");
-
-        return parts.Count > 0
-            ? string.Join(" | ", parts)
-            : "Unknown alarm - no register data available";
-    }
-
-    /// <summary>
-    /// Checks if any raw register values indicate active issues.
-    /// </summary>
-    private static bool HasActiveRegisterIssues(InverterAlarmStateDto alarmState)
-    {
-        return alarmState.WarningWord1Raw != 0 ||
-               alarmState.WarningWord2Raw != 0 ||
-               alarmState.FaultWord1Raw != 0 ||
-               alarmState.FaultWord2Raw != 0 ||
-               alarmState.FaultWord3Raw != 0 ||
-               alarmState.FaultWord4Raw != 0;
-    }
-
-    /// <summary>
-    /// Determines the severity based on raw register values.
-    /// </summary>
-    private static string DetermineRawRegisterSeverity(InverterAlarmStateDto alarmState)
-    {
-        // Alarms (faults) are more severe than warnings
-        if (alarmState.FaultWord1Raw != 0 || alarmState.FaultWord2Raw != 0 ||
-            alarmState.FaultWord3Raw != 0 || alarmState.FaultWord4Raw != 0)
-        {
-            return "ALARM";
-        }
-
-        if (alarmState.WarningWord1Raw != 0 || alarmState.WarningWord2Raw != 0)
-        {
-            return "WARNING";
-        }
-
-        return "WARNING";
-    }
-
-    /// <summary>
-    /// Builds the raw register code string for display.
-    /// Format: Fxx for faults, Wxx for warnings
-    /// </summary>
-    private static string BuildRawRegisterCode(InverterAlarmStateDto alarmState)
-    {
-        var parts = new List<string>();
-
-        if (alarmState.FaultWord1Raw != 0)
-            parts.Add($"FW1:0x{alarmState.FaultWord1Raw:X4}");
-        if (alarmState.FaultWord2Raw != 0)
-            parts.Add($"FW2:0x{alarmState.FaultWord2Raw:X4}");
-        if (alarmState.FaultWord3Raw != 0)
-            parts.Add($"FW3:0x{alarmState.FaultWord3Raw:X4}");
-        if (alarmState.FaultWord4Raw != 0)
-            parts.Add($"FW4:0x{alarmState.FaultWord4Raw:X4}");
-        if (alarmState.WarningWord1Raw != 0)
-            parts.Add($"WW1:0x{alarmState.WarningWord1Raw:X4}");
-        if (alarmState.WarningWord2Raw != 0)
-            parts.Add($"WW2:0x{alarmState.WarningWord2Raw:X4}");
-
-        return parts.Count > 0 ? string.Join(", ", parts) : "Unknown";
     }
 
     public async Task<ProcessDeviceAlarmResult> Handle(ProcessDeviceAlarmCommand request, CancellationToken cancellationToken)
@@ -373,97 +108,16 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
             ? parsedTime
             : DateTimeOffset.UtcNow;
 
-        // Handle case when activeAlarms is empty but raw registers indicate issues
-        if ((request.AlarmState.ActiveAlarms == null || !request.AlarmState.ActiveAlarms.Any()) &&
-            HasActiveRegisterIssues(request.AlarmState))
+        // Determine device category from Kind field
+        // TODO: In the future, this should also consider device type and version for more specific handling
+        var category = DetermineCategory(request.AlarmState.Kind);
+
+        // Extract notification codes from raw register values
+        var extractedCodes = ExtractNotificationCodes(request.AlarmState);
+
+        if (!extractedCodes.Any())
         {
-            try
-            {
-                var severity = DetermineRawRegisterSeverity(request.AlarmState);
-                var rawCode = BuildRawRegisterCode(request.AlarmState);
-
-                // Determine generic notification type based on severity
-                var genericCode = severity == "ALARM" ? "INV-ALM-GENERIC" :
-                                  severity == "WARNING" ? "INV-WAR-GENERIC" : "INV-ERR-GENERIC";
-
-                var notificationType = await _context.DeviceNotificationTypes
-                    .FirstOrDefaultAsync(nt => nt.Code == genericCode && nt.IsActive, cancellationToken);
-
-                if (notificationType != null)
-                {
-                    // Check if this notification already exists (avoid duplicates)
-                    var existingNotification = await _context.DeviceNotifications
-                        .Where(dn => dn.DeviceId == request.DeviceId &&
-                                     dn.DeviceNotificationTypeId == notificationType.Id &&
-                                     !dn.IsProcessed &&
-                                     dn.Timestamp >= timestamp.AddMinutes(-5))
-                        .FirstOrDefaultAsync(cancellationToken);
-
-                    if (existingNotification == null)
-                    {
-                        var additionalDataDict = new Dictionary<string, object>
-                        {
-                            ["resolvedCode"] = genericCode,
-                            ["severity"] = severity,
-                            ["sourceDevice"] = "INV",
-                            ["category"] = "raw-register",
-                            ["rawRegisterCode"] = rawCode,
-                            ["gatewayId"] = request.AlarmState.GatewayId ?? string.Empty,
-                            ["inverterSerialNumber"] = request.AlarmState.InverterSerialNumber ?? string.Empty,
-                            ["runStateRaw"] = request.AlarmState.RunStateRaw,
-                            ["warningWord1Raw"] = request.AlarmState.WarningWord1Raw,
-                            ["warningWord2Raw"] = request.AlarmState.WarningWord2Raw,
-                            ["faultWord1Raw"] = request.AlarmState.FaultWord1Raw,
-                            ["faultWord2Raw"] = request.AlarmState.FaultWord2Raw,
-                            ["faultWord3Raw"] = request.AlarmState.FaultWord3Raw,
-                            ["faultWord4Raw"] = request.AlarmState.FaultWord4Raw,
-                            ["isGenericFallback"] = true,
-                            ["displayMessage"] = $"Device issue detected (Code: {rawCode}). Please contact technical support for assistance."
-                        };
-
-                        var deviceNotification = new DeviceNotification
-                        {
-                            DeviceId = request.DeviceId,
-                            SiteId = device.SetupDevice.Setup.SiteId,
-                            SetupDeviceId = device.SetupDevice.Id,
-                            DeviceNotificationTypeId = notificationType.Id,
-                            Timestamp = timestamp,
-                            AdditionalData = JsonSerializer.Serialize(additionalDataDict),
-                            IsProcessed = false
-                        };
-
-                        _context.DeviceNotifications.Add(deviceNotification);
-                        createdNotificationIds.Add(deviceNotification.Id);
-
-                        // Build detailed description with register values
-                        var detailedDescription = BuildDetailedDescription(
-                            request.AlarmState,
-                            null,
-                            notificationType.Description,
-                            isGenericFallback: true);
-
-                        processedNotifications.Add(new ProcessedNotificationInfo
-                        {
-                            Id = deviceNotification.Id,
-                            Key = notificationType.Code,
-                            Message = notificationType.Message,
-                            Severity = notificationType.Severity,
-                            Description = detailedDescription
-                        });
-
-                        await _context.SaveChangesAsync(cancellationToken);
-                    }
-                }
-                else
-                {
-                    errors.Add($"Generic notification type '{genericCode}' not found for raw register alarm");
-                }
-            }
-            catch (Exception ex)
-            {
-                errors.Add($"Error processing raw register alarm: {ex.Message}");
-            }
-
+            // No warnings or faults detected
             return new ProcessDeviceAlarmResult
             {
                 ProcessedAlarmsCount = 0,
@@ -473,135 +127,62 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
             };
         }
 
-        // If activeAlarms is null or empty and no raw register issues, return early
-        if (request.AlarmState.ActiveAlarms == null || !request.AlarmState.ActiveAlarms.Any())
-        {
-            return new ProcessDeviceAlarmResult
-            {
-                ProcessedAlarmsCount = 0,
-                CreatedNotificationIds = createdNotificationIds,
-                Notifications = processedNotifications,
-                Errors = errors
-            };
-        }
+        // Load all active notification types for the determined category
+        var notificationTypes = await _context.DeviceNotificationTypes
+            .Where(nt => nt.IsActive && nt.Category == category)
+            .ToListAsync(cancellationToken);
 
-        // Process each active alarm
-        foreach (var alarm in request.AlarmState.ActiveAlarms)
+        // Also load generic fallback types
+        var genericTypes = await _context.DeviceNotificationTypes
+            .Where(nt => nt.IsActive && nt.Manufacturer == "Generic" && nt.Category == category)
+            .ToListAsync(cancellationToken);
+
+        // Process each extracted code
+        foreach (var codeInfo in extractedCodes)
         {
             try
             {
-                // Resolve the notification type code using the new template format
-                // Template: [INV/BMS]-[CATEGORY]-[device's code]
-                var notificationTypeCode = ResolveNotificationTypeCode(alarm);
+                // Look up notification type by Code
+                var notificationType = notificationTypes.FirstOrDefault(nt => nt.Code == codeInfo.Code);
                 var isGenericFallback = false;
-                string? rawRegisterMessage = null;
 
-                var notificationType = await _context.DeviceNotificationTypes
-                    .FirstOrDefaultAsync(nt => nt.Code == notificationTypeCode && nt.IsActive, cancellationToken);
-
-                // Fallback 1: Try lookup by Register (alarm.Code) + Value (alarm.VendorCode)
-                // This supports old seed format with descriptive codes like INV-WARN-FEED-IN-POWER-LIMIT
-                if (notificationType == null && alarm.Code > 0)
-                {
-                    notificationType = await _context.DeviceNotificationTypes
-                        .FirstOrDefaultAsync(nt => nt.Register == alarm.Code &&
-                                                   nt.Value == alarm.VendorCode &&
-                                                   nt.IsActive, cancellationToken);
-                }
-
-                // Fallback 2: Try generic fallback code (INV-WAR-GENERIC, INV-ALM-GENERIC, etc.)
+                // Fallback to generic type if specific code not found
                 if (notificationType == null)
                 {
-                    var genericCode = ResolveGenericNotificationTypeCode(alarm);
-                    notificationType = await _context.DeviceNotificationTypes
-                        .FirstOrDefaultAsync(nt => nt.Code == genericCode && nt.IsActive, cancellationToken);
+                    notificationType = GetGenericFallbackType(genericTypes, codeInfo.Severity, category);
+                    isGenericFallback = true;
 
                     if (notificationType == null)
                     {
-                        // Log detailed info for debugging - none of the lookup methods found a match
-                        errors.Add($"Notification type not found for alarm. Tried: code='{notificationTypeCode}', " +
-                                  $"register/value=({alarm.Code}/{alarm.VendorCode}), generic='{genericCode}'. " +
-                                  $"Alarm details: severity={alarm.Severity}, sourceDevice={alarm.SourceDevice}, " +
-                                  $"messageKey={alarm.MessageKey}. Skipping.");
+                        errors.Add($"Notification type not found for code '{codeInfo.Code}' (severity: {codeInfo.Severity}, category: {category}). No generic fallback available.");
                         continue;
                     }
-
-                    // Using generic fallback - build raw register message
-                    isGenericFallback = true;
-                    rawRegisterMessage = BuildRawRegisterMessage(request.AlarmState, alarm);
-                    notificationTypeCode = genericCode;
                 }
 
-                // Check if this notification already exists (avoid duplicates)
+                // Check for duplicate notifications (within last 5 minutes)
                 var existingNotification = await _context.DeviceNotifications
                     .Where(dn => dn.DeviceId == request.DeviceId &&
                                  dn.DeviceNotificationTypeId == notificationType.Id &&
                                  !dn.IsProcessed &&
-                                 dn.Timestamp >= timestamp.AddMinutes(-5)) // Within last 5 minutes
+                                 dn.Timestamp >= timestamp.AddMinutes(-5))
                     .FirstOrDefaultAsync(cancellationToken);
 
                 if (existingNotification != null)
                 {
-                    // Update existing notification with new occurrence
-                    var additionalData = JsonSerializer.Deserialize<Dictionary<string, object>>(
-                        existingNotification.AdditionalData) ?? new Dictionary<string, object>();
-
-                    if (additionalData.ContainsKey("occurrenceCount"))
-                    {
-                        additionalData["occurrenceCount"] = alarm.OccurrenceCount;
-                    }
-
-                    additionalData["lastOccurredUtc"] = alarm.LastOccurredUtc ?? string.Empty;
-
-                    existingNotification.AdditionalData = JsonSerializer.Serialize(additionalData);
+                    // Update existing notification timestamp
                     existingNotification.Timestamp = timestamp;
-
                     continue;
                 }
 
+                // Build AdditionalData with raw JSON and extracted info
+                var additionalDataDict = BuildAdditionalData(
+                    request.AlarmState,
+                    request.RawJson,
+                    codeInfo,
+                    notificationType,
+                    isGenericFallback);
+
                 // Create new notification
-                var additionalDataDict = new Dictionary<string, object>
-                {
-                    ["resolvedCode"] = notificationTypeCode,
-                    ["severity"] = alarm.Severity ?? string.Empty,
-                    ["sourceDevice"] = alarm.SourceDevice ?? string.Empty,
-                    ["category"] = alarm.Category ?? string.Empty,
-                    ["messageKey"] = alarm.MessageKey ?? string.Empty,
-                    ["vendorCode"] = alarm.VendorCode,
-                    ["alarmCode"] = alarm.Code,
-                    ["messageParams"] = alarm.MessageParams ?? new Dictionary<string, object>(),
-                    ["firstOccurredUtc"] = alarm.FirstOccurredUtc ?? string.Empty,
-                    ["lastOccurredUtc"] = alarm.LastOccurredUtc ?? string.Empty,
-                    ["occurrenceCount"] = alarm.OccurrenceCount,
-                    ["gatewayId"] = request.AlarmState.GatewayId ?? string.Empty,
-                    ["inverterSerialNumber"] = request.AlarmState.InverterSerialNumber ?? string.Empty,
-                    ["runStateRaw"] = request.AlarmState.RunStateRaw,
-                    ["warningWord1Raw"] = request.AlarmState.WarningWord1Raw,
-                    ["warningWord2Raw"] = request.AlarmState.WarningWord2Raw,
-                    ["faultWord1Raw"] = request.AlarmState.FaultWord1Raw,
-                    ["faultWord2Raw"] = request.AlarmState.FaultWord2Raw,
-                    ["faultWord3Raw"] = request.AlarmState.FaultWord3Raw,
-                    ["faultWord4Raw"] = request.AlarmState.FaultWord4Raw,
-                    ["isGenericFallback"] = isGenericFallback
-                };
-
-                // Add display message - use notification type message for known alarms,
-                // or build a generic message for unknown alarms
-                if (isGenericFallback)
-                {
-                    var rawRegisterCode = BuildRawRegisterCode(request.AlarmState);
-                    additionalDataDict["displayMessage"] = $"Device issue detected (Code: {alarm.MessageKey ?? rawRegisterCode}). Please contact technical support for assistance.";
-                    if (!string.IsNullOrEmpty(rawRegisterMessage))
-                    {
-                        additionalDataDict["rawRegisterMessage"] = rawRegisterMessage;
-                    }
-                }
-                else
-                {
-                    // Use the notification type's description for known alarms
-                    additionalDataDict["displayMessage"] = notificationType.Description;
-                }
-
                 var deviceNotification = new DeviceNotification
                 {
                     DeviceId = request.DeviceId,
@@ -616,25 +197,20 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
                 _context.DeviceNotifications.Add(deviceNotification);
                 createdNotificationIds.Add(deviceNotification.Id);
 
-                // Build detailed description with register values
-                var detailedDescription = BuildDetailedDescription(
-                    request.AlarmState,
-                    alarm,
-                    notificationType.Description,
-                    isGenericFallback);
-
                 processedNotifications.Add(new ProcessedNotificationInfo
                 {
                     Id = deviceNotification.Id,
                     Key = notificationType.Code,
                     Message = notificationType.Message,
                     Severity = notificationType.Severity,
-                    Description = detailedDescription
+                    Description = isGenericFallback
+                        ? $"{notificationType.Description} (Code: {codeInfo.Code})"
+                        : notificationType.Description
                 });
             }
             catch (Exception ex)
             {
-                errors.Add($"Error processing alarm {alarm.Code}: {ex.Message}");
+                errors.Add($"Error processing notification code {codeInfo.Code}: {ex.Message}");
             }
         }
 
@@ -645,10 +221,238 @@ public class ProcessDeviceAlarmCommandHandler : IRequestHandler<ProcessDeviceAla
 
         return new ProcessDeviceAlarmResult
         {
-            ProcessedAlarmsCount = request.AlarmState.ActiveAlarms.Count,
+            ProcessedAlarmsCount = extractedCodes.Count,
             CreatedNotificationIds = createdNotificationIds,
             Notifications = processedNotifications,
             Errors = errors
         };
     }
+
+    /// <summary>
+    /// Determines the notification category based on the Kind field.
+    /// Maps "InverterAlarmState" to "Inverter" and "BatteryAlarmState" to "Battery".
+    /// </summary>
+    private static string DetermineCategory(string kind)
+    {
+        return kind?.ToUpperInvariant() switch
+        {
+            "INVERTERALARMSTATE" => nameof(DeviceType.Invertor).Replace("Invertor", "Inverter"),
+            "BATTERYALARMSTATE" => nameof(DeviceType.Battery),
+            "BMSALARMSTATE" => nameof(DeviceType.Battery),
+            _ => "Inverter" // Default to Inverter for backward compatibility
+        };
+    }
+
+    /// <summary>
+    /// Extracts warning and fault codes from raw register values.
+    /// </summary>
+    private static List<ExtractedCodeInfo> ExtractNotificationCodes(DeviceAlarmStateDto alarmState)
+    {
+        var codes = new List<ExtractedCodeInfo>();
+
+        // Extract warnings from warningWord1Raw (W1-W16)
+        // Bit N maps to W(N+1): bit0=W1, bit1=W2, ..., bit15=W16
+        ExtractWarningCodes(alarmState.WarningWord1Raw, 1, codes);
+
+        // Extract warnings from warningWord2Raw (W17-W32)
+        // Bit N maps to W(17+N): bit0=W17, bit1=W18, ..., bit15=W32
+        ExtractWarningCodes(alarmState.WarningWord2Raw, 17, codes);
+
+        // Extract faults from faultWord1Raw (F1-F16)
+        ExtractFaultCodes(alarmState.FaultWord1Raw, 1, codes);
+
+        // Extract faults from faultWord2Raw (F17-F32)
+        ExtractFaultCodes(alarmState.FaultWord2Raw, 17, codes);
+
+        // Extract faults from faultWord3Raw (F33-F48)
+        ExtractFaultCodes(alarmState.FaultWord3Raw, 33, codes);
+
+        // Extract faults from faultWord4Raw (F49-F64)
+        ExtractFaultCodes(alarmState.FaultWord4Raw, 49, codes);
+
+        // Extract comm board faults (F65-F67)
+        // Bit0=F65 (Flash chip error), Bit1=F66 (Time error), Bit2=F67 (EEPROM error)
+        ExtractCommBoardFaultCodes(alarmState.CommBoardFaultRaw, codes);
+
+        return codes;
+    }
+
+    /// <summary>
+    /// Extracts warning codes from a warning register.
+    /// Each bit position maps to a warning code (W1-W32).
+    /// </summary>
+    private static void ExtractWarningCodes(int registerValue, int baseCode, List<ExtractedCodeInfo> codes)
+    {
+        if (registerValue == 0) return;
+
+        for (int bit = 0; bit < 16; bit++)
+        {
+            var bitMask = 1 << bit;
+            if ((registerValue & bitMask) != 0)
+            {
+                var warningNumber = baseCode + bit;
+                codes.Add(new ExtractedCodeInfo
+                {
+                    Code = $"W{warningNumber}",
+                    Severity = "Warning",
+                    BitPosition = bit,
+                    RegisterValue = registerValue
+                });
+            }
+        }
+    }
+
+    /// <summary>
+    /// Extracts fault codes from a fault register.
+    /// Each bit position maps to a fault code (F1-F64).
+    /// </summary>
+    private static void ExtractFaultCodes(int registerValue, int baseCode, List<ExtractedCodeInfo> codes)
+    {
+        if (registerValue == 0) return;
+
+        for (int bit = 0; bit < 16; bit++)
+        {
+            var bitMask = 1 << bit;
+            if ((registerValue & bitMask) != 0)
+            {
+                var faultNumber = baseCode + bit;
+                codes.Add(new ExtractedCodeInfo
+                {
+                    Code = $"F{faultNumber}",
+                    Severity = "Error", // All faults map to Error severity
+                    BitPosition = bit,
+                    RegisterValue = registerValue
+                });
+            }
+        }
+    }
+
+    /// <summary>
+    /// Extracts comm board fault codes from the commBoardFaultRaw register.
+    /// Bit0=F65 (Flash chip error), Bit1=F66 (Time error), Bit2=F67 (EEPROM error)
+    /// </summary>
+    private static void ExtractCommBoardFaultCodes(int registerValue, List<ExtractedCodeInfo> codes)
+    {
+        if (registerValue == 0) return;
+
+        // F65: Bit0 - Flash chip error
+        if ((registerValue & 0x01) != 0)
+        {
+            codes.Add(new ExtractedCodeInfo
+            {
+                Code = "F65",
+                Severity = "Error",
+                BitPosition = 0,
+                RegisterValue = registerValue
+            });
+        }
+
+        // F66: Bit1 - Time error
+        if ((registerValue & 0x02) != 0)
+        {
+            codes.Add(new ExtractedCodeInfo
+            {
+                Code = "F66",
+                Severity = "Error",
+                BitPosition = 1,
+                RegisterValue = registerValue
+            });
+        }
+
+        // F67: Bit2 - EEPROM error
+        if ((registerValue & 0x04) != 0)
+        {
+            codes.Add(new ExtractedCodeInfo
+            {
+                Code = "F67",
+                Severity = "Error",
+                BitPosition = 2,
+                RegisterValue = registerValue
+            });
+        }
+    }
+
+    /// <summary>
+    /// Gets the appropriate generic fallback notification type.
+    /// </summary>
+    private static DeviceNotificationType? GetGenericFallbackType(
+        List<DeviceNotificationType> genericTypes,
+        string severity,
+        string category)
+    {
+        var prefix = category switch
+        {
+            "Inverter" => "INV",
+            "Battery" => "BMS",
+            _ => "INV"
+        };
+
+        var severityCode = severity?.ToUpperInvariant() switch
+        {
+            "WARNING" => "WAR",
+            "ERROR" => "ERR",
+            "ALARM" => "ALM",
+            _ => "ERR"
+        };
+
+        var genericCode = $"{prefix}-{severityCode}-GENERIC";
+        return genericTypes.FirstOrDefault(nt => nt.Code == genericCode);
+    }
+
+    /// <summary>
+    /// Builds the AdditionalData dictionary for storage.
+    /// </summary>
+    private static Dictionary<string, object> BuildAdditionalData(
+        DeviceAlarmStateDto alarmState,
+        string? rawJson,
+        ExtractedCodeInfo codeInfo,
+        DeviceNotificationType notificationType,
+        bool isGenericFallback)
+    {
+        var additionalData = new Dictionary<string, object>
+        {
+            ["kind"] = alarmState.Kind,
+            ["extractedCode"] = codeInfo.Code,
+            ["severity"] = codeInfo.Severity,
+            ["bitPosition"] = codeInfo.BitPosition,
+            ["registerValue"] = codeInfo.RegisterValue,
+            ["isGenericFallback"] = isGenericFallback,
+            ["notificationTypeCode"] = notificationType.Code,
+            ["gatewayId"] = alarmState.GatewayId ?? string.Empty,
+            ["serialNumber"] = alarmState.SerialNumber ?? string.Empty,
+            ["version"] = alarmState.Version,
+            // Raw register values for diagnostic purposes
+            ["registers"] = new Dictionary<string, int>
+            {
+                ["runStateRaw"] = alarmState.RunStateRaw,
+                ["commBoardFaultRaw"] = alarmState.CommBoardFaultRaw,
+                ["warningWord1Raw"] = alarmState.WarningWord1Raw,
+                ["warningWord2Raw"] = alarmState.WarningWord2Raw,
+                ["faultWord1Raw"] = alarmState.FaultWord1Raw,
+                ["faultWord2Raw"] = alarmState.FaultWord2Raw,
+                ["faultWord3Raw"] = alarmState.FaultWord3Raw,
+                ["faultWord4Raw"] = alarmState.FaultWord4Raw,
+                ["workFlagTripData"] = alarmState.WorkFlagTripData
+            }
+        };
+
+        // Include raw JSON payload if provided
+        if (!string.IsNullOrEmpty(rawJson))
+        {
+            additionalData["rawPayload"] = rawJson;
+        }
+
+        return additionalData;
+    }
+}
+
+/// <summary>
+/// Internal record for tracking extracted notification codes.
+/// </summary>
+internal record ExtractedCodeInfo
+{
+    public string Code { get; init; } = string.Empty;
+    public string Severity { get; init; } = string.Empty;
+    public int BitPosition { get; init; }
+    public int RegisterValue { get; init; }
 }
