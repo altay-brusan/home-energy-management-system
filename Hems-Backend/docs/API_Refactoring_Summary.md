@@ -1072,6 +1072,71 @@ Broadcast data  errors >= 3?
 
 ---
 
+## Inverter Detail - Missing Phase C Power Translation
+
+### Issue
+
+On the Inverter Detail screen under the "Grid" section, Phase C Power was displaying as `inverterDetails.PhaseCPower` instead of the human-readable label "Phase C Power".
+
+**What user saw:**
+```
+Grid
+├── Grid Power          1234.5 W
+├── Phase A Power        411.5 W
+├── Phase B Power        411.5 W
+└── inverterDetails.PhaseCPower   411.5 W  ← BUG: Raw i18n key shown
+```
+
+### Root Cause
+
+The translation key `phaseCPower` was missing from all language files (`en.json`, `tr.json`, `nl.json`). When i18n cannot find a translation key, it falls back to displaying the raw key path.
+
+The `phaseAPower` and `phaseBPower` keys existed, but `phaseCPower` was accidentally omitted.
+
+### Solution
+
+Added the missing translation key to all three language files:
+
+**English (`en.json`):**
+```json
+"phaseAPower": "Phase A Power",
+"phaseBPower": "Phase B Power",
+"phaseCPower": "Phase C Power",  // ADDED
+"gridStatus": "Grid Status",
+```
+
+**Turkish (`tr.json`):**
+```json
+"phaseAPower": "Faz A Gücü",
+"phaseBPower": "Faz B Gücü",
+"phaseCPower": "Faz C Gücü",  // ADDED
+"gridStatus": "Şebeke Durumu",
+```
+
+**Dutch (`nl.json`):**
+```json
+"phaseAPower": "Fase A Vermogen",
+"phaseBPower": "Fase B Vermogen",
+"phaseCPower": "Fase C Vermogen",  // ADDED
+"gridStatus": "Netstatus",
+```
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `src/lib/i18n/locales/en.json` | Added `phaseCPower` translation |
+| `src/lib/i18n/locales/tr.json` | Added `phaseCPower` translation |
+| `src/lib/i18n/locales/nl.json` | Added `phaseCPower` translation |
+
+### Notes
+
+- The frontend code in `InverterDetailScreen.tsx` was correct - it properly used `t("inverterDetail.phaseCPower")`
+- The backend was returning the correct data with `gridSidePhaseCPower` field
+- This was purely a missing i18n translation issue
+
+---
+
 ## Frontend Files Changed Summary
 
 | File | Change Description |
@@ -1081,6 +1146,9 @@ Broadcast data  errors >= 3?
 | `src/hooks/useDeviceStatus.ts` | Added REST API fallback, auto-subscribe on reconnect, `isLoadingInitialStatus` state |
 | `src/services/deviceStatusService.ts` | Added SignalR retry mechanism with exponential backoff |
 | `src/app/screens/dashboard/ui/weatherStatus/WeatherStatus.tsx` | Updated loading indicator logic |
+| `src/lib/i18n/locales/en.json` | Added missing `phaseCPower` translation |
+| `src/lib/i18n/locales/tr.json` | Added missing `phaseCPower` translation |
+| `src/lib/i18n/locales/nl.json` | Added missing `phaseCPower` translation |
 
 ## Backend Files Changed Summary
 
