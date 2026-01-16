@@ -53,6 +53,17 @@ public record ParameterUpdateCompletedMessage
     public int TotalParameters { get; init; }
     public int SuccessCount { get; init; }
     public int FailedCount { get; init; }
+    public int SkippedCount { get; init; }
     public DateTime CompletedAt { get; init; }
     public TimeSpan Duration { get; init; }
+    public bool WasCancelled { get; init; }
+    public List<FailedParameterInfo> FailedParameters { get; init; } = new();
+}
+
+public record FailedParameterInfo
+{
+    public Guid ParameterId { get; init; }
+    public string ParameterName { get; init; } = string.Empty;
+    public string ErrorMessage { get; init; } = string.Empty;
+    public int RetryAttempts { get; init; }
 }

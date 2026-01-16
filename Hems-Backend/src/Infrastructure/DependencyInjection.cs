@@ -91,6 +91,9 @@ public static class DependencyInjection
         builder.Services.AddSingleton<IParameterUpdateQueueService>(sp => sp.GetRequiredService<ParameterUpdateBackgroundService>());
         builder.Services.AddHostedService(sp => sp.GetRequiredService<ParameterUpdateBackgroundService>());
 
+        // Device Lock Service (prevents concurrent device settings updates)
+        builder.Services.AddSingleton<IDeviceLockService, DeviceLockService>();
+
         // ThingsBoard Services
         builder.Services.AddHttpClient<IThingsBoardConnectorService, ThingsBoardConnectorService>();
 

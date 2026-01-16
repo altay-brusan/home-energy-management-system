@@ -40,6 +40,7 @@ public class DeviceSettings : EndpointGroupBase
             .MapGet(GetDeviceParameterValuesTree, "device/{deviceId:guid}/tree")
             .MapPut(UpdateDeviceParameter, "device/{deviceId:guid}/parameters/{parameterId:guid}")
             .MapPut(UpdateDeviceParameters, "device/{deviceId:guid}/parameters")
+            .MapPost(CancelParameterUpdate, "device/{deviceId:guid}/parameters/cancel/{correlationId}")
             .MapGet(GetAvailableModes, "modes")
             .MapGet(GetCurrentDeviceMode, "device/{deviceId:guid}/mode")
             .MapPost(SetDeviceMode, "device/{deviceId:guid}/mode")
@@ -148,6 +149,57 @@ public class DeviceSettings : EndpointGroupBase
             message = result.ErrorMessage ?? "Failed to update parameters",
             successfulUpdates = result.SuccessfulUpdates,
             failedUpdates = result.FailedUpdates
+        });
+    }
+
+    /// <summary>
+    /// Cancel an in-progress parameter update operation
+    /// </summary>
+    /// <param name="queueService">Parameter update queue service</param>
+    /// <param name="deviceId">Device ID</param>
+    /// <param name="correlationId">Correlation ID of the operation to cancel</param>
+    /// <returns>Result indicating if cancellation was successful</returns>
+    [Authorize]
+    public IResult CancelParameterUpdate(
+        IParameterUpdateQueueService queueService,
+        Guid deviceId,
+        string correlationId)
+    {
+        if (string.IsNullOrEmpty(correlationId))
+        {
+            return Results.BadRequest(new
+            {
+                success = false,
+                message = "Correlation ID is required"
+            });
+        }
+
+        // Check if the operation is active
+        if (!queueService.IsOperationActive(correlationId))
+        {
+            return Results.NotFound(new
+            {
+                success = false,
+                message = "No active operation found with the specified correlation ID"
+            });
+        }
+
+        // Request cancellation
+        var cancelled = queueService.CancelOperation(correlationId);
+
+        if (cancelled)
+        {
+            return Results.Ok(new
+            {
+                success = true,
+                message = "Cancellation requested. The operation will stop after the current parameter update completes."
+            });
+        }
+
+        return Results.BadRequest(new
+        {
+            success = false,
+            message = "Failed to cancel operation. It may have already completed."
         });
     }
 

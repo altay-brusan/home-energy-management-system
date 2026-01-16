@@ -17,21 +17,53 @@ public class SetDeviceModeCommandHandler : IRequestHandler<SetDeviceModeCommand,
 {
     private readonly IApplicationDbContext _context;
     private readonly IDeviceRpcExecutorService _rpcExecutor;
+    private readonly IDeviceLockService _deviceLockService;
     private readonly ILogger<SetDeviceModeCommandHandler> _logger;
 
     private const string ExportStrategyParameterName = "ExportStrategySelection";
+    private const int DeviceLockTimeoutMs = 30000; // 30 seconds for mode changes
 
     public SetDeviceModeCommandHandler(
         IApplicationDbContext context,
         IDeviceRpcExecutorService rpcExecutor,
+        IDeviceLockService deviceLockService,
         ILogger<SetDeviceModeCommandHandler> logger)
     {
         _context = context;
         _rpcExecutor = rpcExecutor;
+        _deviceLockService = deviceLockService;
         _logger = logger;
     }
 
     public async Task<SetDeviceModeResult> Handle(SetDeviceModeCommand request, CancellationToken cancellationToken)
+    {
+        // Acquire device lock to prevent concurrent updates
+        var lockHandle = await _deviceLockService.AcquireLockAsync(request.DeviceId, DeviceLockTimeoutMs, cancellationToken);
+
+        if (lockHandle == null)
+        {
+            _logger.LogWarning(
+                "Failed to acquire device lock for {DeviceId} - another update is in progress",
+                request.DeviceId);
+
+            return new SetDeviceModeResult
+            {
+                Success = false,
+                ErrorMessage = "Device is busy - another update is in progress. Please try again."
+            };
+        }
+
+        try
+        {
+            return await SetDeviceModeInternalAsync(request, cancellationToken);
+        }
+        finally
+        {
+            await lockHandle.DisposeAsync();
+        }
+    }
+
+    private async Task<SetDeviceModeResult> SetDeviceModeInternalAsync(SetDeviceModeCommand request, CancellationToken cancellationToken)
     {
         // Find SetupDevice by DeviceId (needed for all modes)
         var setupDevice = await _context.SetupDevices
