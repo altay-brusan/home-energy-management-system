@@ -90,7 +90,7 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
     #region Demo Device Details
 
     /// <summary>
-    /// Build device details for demo devices using simulated data
+    /// Build device details for demo devices using centralized DemoSimulationDataService
     /// </summary>
     private DeviceDetailsResponseDto BuildDemoDeviceDetails(Domain.Entities.DeviceComponent component)
     {
@@ -118,476 +118,65 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
     }
 
     /// <summary>
-    /// Build simulated battery details for demo devices
-    /// Uses GetBatterySoc() from simulation service for consistent SOC with dashboard
+    /// Build simulated battery details for demo devices using centralized service
     /// </summary>
     private List<DeviceDetailItemDto> BuildDemoBatteryDetails(Domain.Entities.DeviceComponent component)
     {
         var details = new List<DeviceDetailItemDto>();
 
-        // Get SOC from simulation service (same as dashboard uses)
-        var soc = _demoSimulationService.GetBatterySoc(DateTime.UtcNow);
-
-        // Realtime data
-        details.Add(new DeviceDetailItemDto
+        // Get realtime data from centralized service
+        var realtimeDetails = _demoSimulationService.GetDemoBatteryRealtimeDetails();
+        details.AddRange(realtimeDetails.Select(d => new DeviceDetailItemDto
         {
-            Key = "soc",
-            Value = Math.Round(soc, 1),
-            Unit = "%",
-            LabelKey = "realtime.soc"
-        });
+            Key = d.Key,
+            Value = d.Value,
+            Unit = d.Unit,
+            LabelKey = d.LabelKey
+        }));
 
-        // State of Health (simulated - batteries typically maintain 95%+ for first few years)
-        details.Add(new DeviceDetailItemDto
+        // Get parameter data from centralized service
+        var parameterDetails = _demoSimulationService.GetDemoBatteryParameterDetails(
+            component.Name, component.Manufacturer, component.ModelNumber, component.SerialNumber);
+        details.AddRange(parameterDetails.Select(d => new DeviceDetailItemDto
         {
-            Key = "soh",
-            Value = 98.5,
-            Unit = "%",
-            LabelKey = "realtime.soh"
-        });
-
-        // Battery voltage - realistic for a 51.2V LiFePO4 battery pack
-        // Voltage varies with SOC: ~48V at 0%, ~54V at 100%
-        var voltage = 48.0 + (soc / 100.0) * 6.0;
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "voltage",
-            Value = Math.Round(voltage, 1),
-            Unit = "V",
-            LabelKey = "realtime.voltage"
-        });
-
-        // Battery current - based on current power flow
-        // Positive = charging, Negative = discharging
-        var powerFlow = _demoSimulationService.GetCurrentPowerFlow(Guid.Empty);
-        var batteryCurrent = (powerFlow.BatteryPowerKw * 1000) / voltage; // I = P/V
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "current",
-            Value = Math.Round(batteryCurrent, 2),
-            Unit = "A",
-            LabelKey = "realtime.current"
-        });
-
-        // Battery temperature (realistic range 20-35°C during operation)
-        var hour = DateTime.UtcNow.Hour;
-        var baseTemp = 25.0 + Math.Sin((hour - 6) * Math.PI / 12) * 5; // Varies with time of day
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "temperature",
-            Value = Math.Round(baseTemp, 1),
-            Unit = "°C",
-            LabelKey = "realtime.temperature"
-        });
-
-        // Cycle count (simulated - ~500 cycles for a 2-year old battery)
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "cycleCount",
-            Value = 487,
-            Unit = null,
-            LabelKey = "realtime.cycleCount"
-        });
-
-        // Parameter data from component
-        AddDemoBatteryParameterDetails(details, component);
+            Key = d.Key,
+            Value = d.Value,
+            Unit = d.Unit,
+            LabelKey = d.LabelKey
+        }));
 
         return details;
     }
 
     /// <summary>
-    /// Add parameter details for demo battery
-    /// </summary>
-    private void AddDemoBatteryParameterDetails(List<DeviceDetailItemDto> details, Domain.Entities.DeviceComponent component)
-    {
-        // Name
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "name",
-            Value = component.Name ?? "Demo Battery",
-            Unit = null,
-            LabelKey = "parameter.name"
-        });
-
-        // Manufacturer
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "manufacturer",
-            Value = component.Manufacturer ?? "Pylontech",
-            Unit = null,
-            LabelKey = "parameter.manufacturer"
-        });
-
-        // Model
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "model",
-            Value = component.ModelNumber ?? "US3000C",
-            Unit = null,
-            LabelKey = "parameter.model"
-        });
-
-        // Serial Number
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "serialNumber",
-            Value = component.SerialNumber ?? "DEMO-BAT-001",
-            Unit = null,
-            LabelKey = "parameter.serialNumber"
-        });
-
-        // Capacity
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "capacity",
-            Value = 3.55,
-            Unit = "kWh",
-            LabelKey = "parameter.capacity"
-        });
-
-        // Rated Voltage
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "ratedVoltage",
-            Value = 51.2,
-            Unit = "V",
-            LabelKey = "parameter.ratedVoltage"
-        });
-
-        // Chemistry
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "chemistry",
-            Value = "LiFePO4",
-            Unit = null,
-            LabelKey = "parameter.chemistry"
-        });
-
-        // Firmware Version
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "firmwareVersion",
-            Value = "V2.8",
-            Unit = null,
-            LabelKey = "parameter.firmwareVersion"
-        });
-    }
-
-    /// <summary>
-    /// Build simulated inverter details for demo devices
+    /// Build simulated inverter details for demo devices using centralized service
     /// </summary>
     private List<DeviceDetailItemDto> BuildDemoInverterDetails(Domain.Entities.DeviceComponent component)
     {
         var details = new List<DeviceDetailItemDto>();
 
-        // Get current power flow for realistic values
-        var powerFlow = _demoSimulationService.GetCurrentPowerFlow(Guid.Empty);
-
-        // Run State
-        var runState = (powerFlow.SolarPowerKw > 0.1) ? "Normal Operation" : "Standby";
-        details.Add(new DeviceDetailItemDto
+        // Get realtime data from centralized service
+        var realtimeDetails = _demoSimulationService.GetDemoInverterRealtimeDetails();
+        details.AddRange(realtimeDetails.Select(d => new DeviceDetailItemDto
         {
-            Key = "runState",
-            Value = runState,
-            Unit = null,
-            LabelKey = "realtime.runState"
-        });
+            Key = d.Key,
+            Value = d.Value,
+            Unit = d.Unit,
+            LabelKey = d.LabelKey
+        }));
 
-        // Output Active Power (total load power in W)
-        details.Add(new DeviceDetailItemDto
+        // Get parameter data from centralized service
+        var parameterDetails = _demoSimulationService.GetDemoInverterParameterDetails(
+            component.Name, component.Manufacturer, component.ModelNumber, component.SerialNumber);
+        details.AddRange(parameterDetails.Select(d => new DeviceDetailItemDto
         {
-            Key = "outputActivePower",
-            Value = Math.Round(powerFlow.LoadPowerKw * 1000, 0),
-            Unit = "W",
-            LabelKey = "realtime.outputActivePower"
-        });
-
-        // Output Apparent Power (slightly higher than active due to power factor)
-        var apparentPower = powerFlow.LoadPowerKw * 1000 * 1.05;
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "outputApparentPower",
-            Value = Math.Round(apparentPower, 0),
-            Unit = "VA",
-            LabelKey = "realtime.outputApparentPower"
-        });
-
-        // Three-phase output data (European standard 230V ± 5% per phase)
-        // Use seeded random for consistent values per call
-        var voltageRandom = new Random(DateTime.UtcNow.Hour * 60 + DateTime.UtcNow.Minute / 5);
-
-        // Calculate phase voltages
-        var phaseAVoltage = 230.0 + (voltageRandom.NextDouble() * 6 - 3);
-        var phaseBVoltage = 230.0 + (voltageRandom.NextDouble() * 6 - 3);
-        var phaseCVoltage = 230.0 + (voltageRandom.NextDouble() * 6 - 3);
-
-        // Calculate phase currents (balanced load distribution across 3 phases)
-        var totalCurrent = (powerFlow.LoadPowerKw * 1000) / 230.0;
-        var phaseACurrent = totalCurrent / 3 * (0.95 + voltageRandom.NextDouble() * 0.1);
-        var phaseBCurrent = totalCurrent / 3 * (0.95 + voltageRandom.NextDouble() * 0.1);
-        var phaseCCurrent = totalCurrent / 3 * (0.95 + voltageRandom.NextDouble() * 0.1);
-
-        // Calculate phase power (P = V * I)
-        var phaseAPower = phaseAVoltage * phaseACurrent;
-        var phaseBPower = phaseBVoltage * phaseBCurrent;
-        var phaseCPower = phaseCVoltage * phaseCCurrent;
-
-        // Return phases as an array (format expected by frontend)
-        var phases = new[]
-        {
-            new Dictionary<string, object>
-            {
-                { "Phase Id", 1 },
-                { "Voltage", Math.Round(phaseAVoltage, 1) },
-                { "Current", Math.Round(phaseACurrent, 2) },
-                { "Power", Math.Round(phaseAPower, 0) }
-            },
-            new Dictionary<string, object>
-            {
-                { "Phase Id", 2 },
-                { "Voltage", Math.Round(phaseBVoltage, 1) },
-                { "Current", Math.Round(phaseBCurrent, 2) },
-                { "Power", Math.Round(phaseBPower, 0) }
-            },
-            new Dictionary<string, object>
-            {
-                { "Phase Id", 3 },
-                { "Voltage", Math.Round(phaseCVoltage, 1) },
-                { "Current", Math.Round(phaseCCurrent, 2) },
-                { "Power", Math.Round(phaseCPower, 0) }
-            }
-        };
-
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "Phases",
-            Value = phases,
-            Unit = null,
-            LabelKey = "realtime.phases"
-        });
-
-        // Output Frequency (European standard 50Hz) - single value shared across all phases
-        var outputFrequency = 50.0 + (voltageRandom.NextDouble() * 0.2 - 0.1);
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "outputFrequency",
-            Value = Math.Round(outputFrequency, 2),
-            Unit = "Hz",
-            LabelKey = "realtime.outputFrequency"
-        });
-
-        // Grid Side Active Power
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "gridSideActivePower",
-            Value = Math.Round(powerFlow.GridPowerKw * 1000, 0),
-            Unit = "W",
-            LabelKey = "realtime.gridSideActivePower"
-        });
-
-        // Load data (similar to Grid, using LoadPowerKw)
-        var loadPowerW = powerFlow.LoadPowerKw * 1000;
-
-        // Load Total Active Power
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "loadTotalActivePower",
-            Value = Math.Round(loadPowerW, 0),
-            Unit = "W",
-            LabelKey = "realtime.loadTotalActivePower"
-        });
-
-        // Load Phase Powers (distributed across 3 phases)
-        var loadPhaseAPower = loadPowerW / 3 * (0.9 + voltageRandom.NextDouble() * 0.2);
-        var loadPhaseBPower = loadPowerW / 3 * (0.9 + voltageRandom.NextDouble() * 0.2);
-        var loadPhaseCPower = loadPowerW - loadPhaseAPower - loadPhaseBPower;
-
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "loadPhaseAPower",
-            Value = Math.Round(loadPhaseAPower, 0),
-            Unit = "W",
-            LabelKey = "realtime.loadPhaseAPower"
-        });
-
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "loadPhaseBPower",
-            Value = Math.Round(loadPhaseBPower, 0),
-            Unit = "W",
-            LabelKey = "realtime.loadPhaseBPower"
-        });
-
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "loadPhaseCPower",
-            Value = Math.Round(loadPhaseCPower, 0),
-            Unit = "W",
-            LabelKey = "realtime.loadPhaseCPower"
-        });
-
-        // Load Phase Voltages (similar to output voltages)
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "loadPhaseAVoltage",
-            Value = Math.Round(phaseAVoltage, 1),
-            Unit = "V",
-            LabelKey = "realtime.loadPhaseAVoltage"
-        });
-
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "loadPhaseBVoltage",
-            Value = Math.Round(phaseBVoltage, 1),
-            Unit = "V",
-            LabelKey = "realtime.loadPhaseBVoltage"
-        });
-
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "loadPhaseCVoltage",
-            Value = Math.Round(phaseCVoltage, 1),
-            Unit = "V",
-            LabelKey = "realtime.loadPhaseCVoltage"
-        });
-
-        // Load Frequency
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "loadFrequency",
-            Value = Math.Round(outputFrequency, 2),
-            Unit = "Hz",
-            LabelKey = "realtime.loadFrequency"
-        });
-
-        // Load Scope
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "loadScope",
-            Value = "backup_load",
-            Unit = null,
-            LabelKey = "realtime.loadScope"
-        });
-
-        // Inverter Heatsink Temperature (realistic 35-55°C during operation)
-        var heatsinkTemp = 40.0 + Math.Abs(powerFlow.LoadPowerKw) * 3 + (voltageRandom.NextDouble() * 5);
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "inverterHeatsinkTemp",
-            Value = Math.Round(heatsinkTemp, 1),
-            Unit = "°C",
-            LabelKey = "realtime.inverterHeatsinkTemp"
-        });
-
-        // Internal Ambient Temperature
-        var ambientTemp = 28.0 + (voltageRandom.NextDouble() * 4);
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "internalAmbientTemp",
-            Value = Math.Round(ambientTemp, 1),
-            Unit = "°C",
-            LabelKey = "realtime.internalAmbientTemp"
-        });
-
-        // AC Input Status
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "gridSignalPresent",
-            Value = true,
-            Unit = null,
-            LabelKey = "realtime.gridSignalPresent"
-        });
-
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "generatorSignalPresent",
-            Value = false,
-            Unit = null,
-            LabelKey = "realtime.generatorSignalPresent"
-        });
-
-        // Parameter data from component
-        AddDemoInverterParameterDetails(details, component);
+            Key = d.Key,
+            Value = d.Value,
+            Unit = d.Unit,
+            LabelKey = d.LabelKey
+        }));
 
         return details;
-    }
-
-    /// <summary>
-    /// Add parameter details for demo inverter
-    /// </summary>
-    private void AddDemoInverterParameterDetails(List<DeviceDetailItemDto> details, Domain.Entities.DeviceComponent component)
-    {
-        // Name
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "name",
-            Value = component.Name ?? "Demo Inverter",
-            Unit = null,
-            LabelKey = "parameter.name"
-        });
-
-        // Manufacturer
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "manufacturer",
-            Value = component.Manufacturer ?? "Growatt",
-            Unit = null,
-            LabelKey = "parameter.manufacturer"
-        });
-
-        // Model
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "model",
-            Value = component.ModelNumber ?? "SPH5000",
-            Unit = null,
-            LabelKey = "parameter.model"
-        });
-
-        // Serial Number
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "serialNumber",
-            Value = component.SerialNumber ?? "DEMO-INV-001",
-            Unit = null,
-            LabelKey = "parameter.serialNumber"
-        });
-
-        // Rated Power
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "ratedPower",
-            Value = 5000,
-            Unit = "W",
-            LabelKey = "parameter.ratedPower"
-        });
-
-        // Rated Voltage
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "ratedVoltage",
-            Value = 230,
-            Unit = "V",
-            LabelKey = "parameter.ratedVoltage"
-        });
-
-        // Rated Frequency
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "ratedFrequency",
-            Value = 50,
-            Unit = "Hz",
-            LabelKey = "parameter.ratedFrequency"
-        });
-
-        // Firmware Version
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "firmwareVersion",
-            Value = "V3.2.1",
-            Unit = null,
-            LabelKey = "parameter.firmwareVersion"
-        });
     }
 
     #endregion
