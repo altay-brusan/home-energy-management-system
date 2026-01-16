@@ -75,9 +75,19 @@ public class SharedDeviceStreamManager : ISharedDeviceStreamManager, IDisposable
         stream.EnsurePollingStarted(_scopeFactory, _logger, cancellationToken);
 
         // If we have recent cached data, send it immediately
+        // But if device is offline, send zero data instead of potentially stale real data
         if (stream.LastData != null && !stream.IsDataStale(_options.StaleDataThresholdSeconds))
         {
-            await subscription.SendDataAsync(stream.LastData);
+            if (stream.IsDeviceOffline)
+            {
+                // Device is offline - send zero data to new subscriber
+                var zeroData = CreateZeroData(deviceId);
+                await subscription.SendDataAsync(zeroData);
+            }
+            else
+            {
+                await subscription.SendDataAsync(stream.LastData);
+            }
         }
 
         _logger.LogInformation(
@@ -157,6 +167,23 @@ public class SharedDeviceStreamManager : ISharedDeviceStreamManager, IDisposable
                     deviceId);
             }
         });
+    }
+
+    /// <summary>
+    /// Creates a PowerFlowDto with all zero values to indicate device is offline.
+    /// </summary>
+    private static PowerFlowDto CreateZeroData(Guid deviceId)
+    {
+        return new PowerFlowDto
+        {
+            DeviceId = deviceId,
+            TimestampUtc = DateTimeOffset.UtcNow,
+            SolarPowerKw = 0,
+            GridPowerKw = 0,
+            LoadPowerKw = 0,
+            BatteryPowerKw = 0,
+            GeneratorPowerKw = 0
+        };
     }
 
     public SharedStreamStatistics GetStatistics()
@@ -332,6 +359,18 @@ internal class SharedDeviceStream : IDisposable
                     // Broadcast to all subscribers
                     await BroadcastToSubscribersAsync(data, logger);
                 }
+                else
+                {
+                    // GetPowerFlowAsync returned null - treat as failure
+                    // This happens when RPC fails, device is offline, or mapping not found
+                    consecutiveErrors++;
+                    logger.LogWarning(
+                        "PowerFlow returned null for device {DeviceId} (consecutive errors: {ErrorCount})",
+                        DeviceId, consecutiveErrors);
+
+                    // Handle offline detection
+                    await HandleConsecutiveErrorsAsync(consecutiveErrors, maxConsecutiveErrors, logger, cancellationToken);
+                }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -344,52 +383,8 @@ internal class SharedDeviceStream : IDisposable
                 logger.LogError(ex, "Error fetching PowerFlow for device {DeviceId} (consecutive errors: {ErrorCount})",
                     DeviceId, consecutiveErrors);
 
-                // After DeviceOfflineThreshold (3) consecutive errors, send zero data to indicate device is offline
-                // This causes the frontend to show gray (no flow) state instead of stale cached data
-                if (consecutiveErrors == DeviceOfflineThreshold && !IsDeviceOffline)
-                {
-                    logger.LogWarning(
-                        "Device {DeviceId} appears offline after {ErrorCount} consecutive errors - sending zero PowerFlow data",
-                        DeviceId, consecutiveErrors);
-
-                    IsDeviceOffline = true;
-
-                    // Create zero PowerFlow data to indicate device is offline
-                    var zeroData = new PowerFlowDto
-                    {
-                        DeviceId = DeviceId,
-                        TimestampUtc = DateTimeOffset.UtcNow,
-                        SolarPowerKw = 0,
-                        GridPowerKw = 0,
-                        LoadPowerKw = 0,
-                        BatteryPowerKw = 0,
-                        GeneratorPowerKw = 0
-                    };
-
-                    LastData = zeroData;
-                    LastUpdated = DateTime.UtcNow;
-
-                    // Broadcast zero data to all subscribers
-                    await BroadcastToSubscribersAsync(zeroData, logger);
-                }
-
-                // If too many consecutive errors, add a longer delay to prevent hammering
-                if (consecutiveErrors >= maxConsecutiveErrors)
-                {
-                    logger.LogWarning(
-                        "Device {DeviceId} has {ErrorCount} consecutive errors, adding extended delay",
-                        DeviceId, consecutiveErrors);
-
-                    try
-                    {
-                        await Task.Delay(TimeSpan.FromSeconds(30), cancellationToken);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        break;
-                    }
-                }
-                // Continue polling despite errors
+                // Handle offline detection
+                await HandleConsecutiveErrorsAsync(consecutiveErrors, maxConsecutiveErrors, logger, cancellationToken);
             }
 
             try
@@ -403,6 +398,67 @@ internal class SharedDeviceStream : IDisposable
         }
 
         logger.LogInformation("Polling loop ended for device {DeviceId}", DeviceId);
+    }
+
+    /// <summary>
+    /// Handles consecutive errors by detecting offline state and sending zero data.
+    /// This is called for both null returns and exceptions from GetPowerFlowAsync.
+    /// </summary>
+    private async Task HandleConsecutiveErrorsAsync(
+        int consecutiveErrors,
+        int maxConsecutiveErrors,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        // After DeviceOfflineThreshold (3) consecutive errors, send zero data to indicate device is offline
+        // This causes the frontend to show gray (no flow) state instead of stale cached data
+        if (consecutiveErrors >= DeviceOfflineThreshold)
+        {
+            if (!IsDeviceOffline)
+            {
+                logger.LogWarning(
+                    "Device {DeviceId} appears offline after {ErrorCount} consecutive errors - sending zero PowerFlow data",
+                    DeviceId, consecutiveErrors);
+                IsDeviceOffline = true;
+            }
+
+            // Create and broadcast zero PowerFlow data
+            // We do this on EVERY error after threshold, not just the first time
+            // This ensures new subscribers also get zero data immediately
+            var zeroData = new PowerFlowDto
+            {
+                DeviceId = DeviceId,
+                TimestampUtc = DateTimeOffset.UtcNow,
+                SolarPowerKw = 0,
+                GridPowerKw = 0,
+                LoadPowerKw = 0,
+                BatteryPowerKw = 0,
+                GeneratorPowerKw = 0
+            };
+
+            LastData = zeroData;
+            LastUpdated = DateTime.UtcNow;
+
+            // Broadcast zero data to all subscribers
+            await BroadcastToSubscribersAsync(zeroData, logger);
+        }
+
+        // If too many consecutive errors, add a longer delay to prevent hammering
+        if (consecutiveErrors >= maxConsecutiveErrors)
+        {
+            logger.LogWarning(
+                "Device {DeviceId} has {ErrorCount} consecutive errors, adding extended delay",
+                DeviceId, consecutiveErrors);
+
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(30), cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                // Let the caller handle this
+            }
+        }
     }
 
     private async Task BroadcastToSubscribersAsync(PowerFlowDto data, ILogger logger)
