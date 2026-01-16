@@ -709,3 +709,382 @@ await _activityService.RecordActivityAsync(
 | Status Accuracy | False "offline" when no data | True connectivity status |
 
 **Key Takeaway**: Device status should ALWAYS come from the heartbeat system (DeviceStatusHub), not from data availability checks. The heartbeat cache is updated by all device data endpoints, ensuring any successful device communication keeps the device status as "online"
+
+---
+
+## Device Status - REST API Fallback with SignalR Live Updates
+
+### Issue
+
+When users opened the home page, the device status would show "Offline" even though the backend reported "OK". This happened because:
+
+1. **SignalR Initial Connection Delay**: The SignalR hub connection takes time to establish
+2. **No Retry Mechanism**: If the initial SignalR connection failed, there was no retry logic
+3. **60-Second Status Check Interval**: The `DeviceHeartbeatMonitorService` only checks every 60 seconds, so users had to wait for the next broadcast
+4. **Initial State Problem**: The `useDeviceStatus` hook initialized `connectionState` to `'Disconnected'`, causing immediate "Offline" display
+
+### Solution: Hybrid REST + SignalR Pattern
+
+We implemented a two-step approach:
+1. **Immediate REST API Call**: Fetch device status via REST API on page load (fast, reliable)
+2. **SignalR for Live Updates**: After initial status is displayed, SignalR provides real-time updates
+
+### Backend Changes
+
+**New Endpoint Added**: `GET /api/DeviceData/Status/{deviceId}`
+
+This endpoint returns the current device heartbeat status immediately without waiting for SignalR:
+
+```csharp
+// Response DTO
+public class DeviceHeartbeatStatusDto
+{
+    public string DeviceId { get; set; }
+    public DeviceStatusType Status { get; set; }  // OK, PENDING, WAITING, DISCONNECTED, NOT_TRACKED
+    public string Timestamp { get; set; }
+    public string? LastHeartbeat { get; set; }
+    public string? LastPowerFlow { get; set; }
+    public int MissedHeartbeats { get; set; }
+}
+```
+
+### Frontend Changes
+
+**1. API Client Configuration** (`config.ts`):
+```typescript
+DEVICE_DATA: {
+  GET_ALL: '/DeviceData',
+  CREATE: '/DeviceData',
+  CREATE_ENERGY: '/DeviceData/energy',
+  BULK_CREATE: '/DeviceData/bulk',
+  GET_STATUS: '/DeviceData/Status/:deviceId',  // NEW
+},
+```
+
+**2. Device Data Service** (`deviceDataService.ts`):
+```typescript
+export interface DeviceHeartbeatStatusDto {
+  deviceId: string;
+  status: DeviceStatusType;
+  timestamp: string;
+  lastHeartbeat?: string;
+  lastPowerFlow?: string;
+  missedHeartbeats: number;
+}
+
+async getStatus(deviceId: string): Promise<DeviceHeartbeatStatusDto> {
+  const url = ENDPOINTS.DEVICE_DATA.GET_STATUS.replace(':deviceId', deviceId);
+  const response = await apiClient.get<DeviceHeartbeatStatusDto>(url);
+  return response.data;
+},
+```
+
+**3. useDeviceStatus Hook** (`useDeviceStatus.ts`):
+
+The hook now implements a two-step status fetching:
+
+```typescript
+// New state for loading indicator
+const [isLoadingInitialStatus, setIsLoadingInitialStatus] = useState<boolean>(false);
+const hasFetchedInitialStatus = useRef(false);
+
+// STEP 1: Fetch initial status via REST API (fast, reliable)
+useEffect(() => {
+  if (!deviceId) return;
+  if (hasFetchedInitialStatus.current) return;
+
+  const fetchInitialStatus = async () => {
+    setIsLoadingInitialStatus(true);
+    try {
+      const response = await deviceDataService.getStatus(deviceId);
+      // Only update if we don't have status yet (SignalR might have provided one)
+      if (!deviceStatus || deviceStatus !== response.status) {
+        setDeviceStatus(response.status);
+        setMissedHeartbeats(response.missedHeartbeats);
+        setLastUpdate(response.timestamp);
+      }
+      hasFetchedInitialStatus.current = true;
+    } catch (error) {
+      // Don't set error state - SignalR might still work
+    } finally {
+      setIsLoadingInitialStatus(false);
+    }
+  };
+  fetchInitialStatus();
+}, [deviceId]);
+
+// STEP 2: SignalR provides live updates after that
+// (existing SignalR subscription logic)
+```
+
+**4. SignalR Retry Mechanism** (`deviceStatusService.ts`):
+
+Added retry logic for initial SignalR connection with exponential backoff:
+
+```typescript
+// Retry configuration
+private readonly MAX_INITIAL_RETRIES = 5;
+private readonly INITIAL_RETRY_DELAY_MS = 2000;
+private readonly MAX_RETRY_DELAY_MS = 30000;
+
+private async connectWithRetry(attemptNumber: number): Promise<void> {
+  try {
+    this.notifyConnectionState('Connecting');
+    await this.connection.start();
+    this.notifyConnectionState('Connected');
+  } catch (error) {
+    if (attemptNumber < this.MAX_INITIAL_RETRIES) {
+      const delay = Math.min(
+        this.INITIAL_RETRY_DELAY_MS * Math.pow(2, attemptNumber),
+        this.MAX_RETRY_DELAY_MS
+      );
+      this.notifyConnectionState('Reconnecting');
+      setTimeout(() => this.connectWithRetry(attemptNumber + 1), delay);
+    } else {
+      this.notifyConnectionState('Failed');
+    }
+  }
+}
+```
+
+**5. Auto-Subscribe on Connection Restore**:
+
+When SignalR connection is restored, automatically re-subscribe to device updates:
+
+```typescript
+useEffect(() => {
+  const unsubscribe = deviceStatusService.addConnectionStateListener(async (state) => {
+    if (state === 'Connected' && currentDeviceIdRef.current) {
+      await deviceStatusService.subscribeToDevice(currentDeviceIdRef.current);
+    }
+  });
+  return unsubscribe;
+}, []);
+```
+
+**6. WeatherStatus Component** (`WeatherStatus.tsx`):
+
+Updated loading indicator logic:
+
+```typescript
+const shouldShowLoading = (
+  connectionState: SignalRConnectionState,
+  deviceStatus: DeviceStatusType | null,
+  isLoadingInitialStatus: boolean
+): boolean => {
+  // Show loading if fetching initial status via REST API
+  if (isLoadingInitialStatus) return true;
+  // Show loading if SignalR is connecting and we don't have status yet
+  return (connectionState === 'Connecting' || connectionState === 'Reconnecting') && !deviceStatus;
+};
+
+const { deviceStatus, connectionState, isLoadingInitialStatus } = useDeviceStatus(deviceId);
+```
+
+### Status Flow Diagram
+
+```
+User Opens Home Page
+        │
+        ▼
+┌───────────────────────────────┐
+│ 1. REST API Call              │
+│    GET /DeviceData/Status/xxx │
+│    (Immediate, ~100-200ms)    │
+└───────────────┬───────────────┘
+                │
+                ▼
+┌───────────────────────────────┐
+│ 2. Display Status from REST   │
+│    Shows "OK" immediately     │
+└───────────────┬───────────────┘
+                │
+                ▼
+┌───────────────────────────────┐
+│ 3. SignalR Connects           │
+│    (Background, with retry)   │
+└───────────────┬───────────────┘
+                │
+                ▼
+┌───────────────────────────────┐
+│ 4. Live Updates via SignalR   │
+│    Real-time status changes   │
+└───────────────────────────────┘
+```
+
+### Return Values from useDeviceStatus
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `deviceStatus` | `DeviceStatusType \| null` | Current status: OK, PENDING, WAITING, DISCONNECTED, NOT_TRACKED |
+| `connectionState` | `SignalRConnectionState` | SignalR state: Connected, Connecting, Reconnecting, Disconnected, Failed |
+| `isLoadingInitialStatus` | `boolean` | True while REST API call is in progress |
+| `missedHeartbeats` | `number` | Number of consecutive missed heartbeats |
+| `lastUpdate` | `string \| null` | Timestamp of last status update |
+| `isInitialStatus` | `boolean` | True if status came from initial REST call |
+
+---
+
+## PowerFlow Cache Fix - Device Offline Detection
+
+### Issue
+
+When a device went offline, the PowerFlow data continued showing the last cached values instead of zeroing out. This caused users to see stale data even though the device was disconnected.
+
+### Root Cause
+
+The `SharedDevicePowerFlowStreamManager` had several issues:
+
+1. **Null Return Not Treated as Error**: When `GetPowerFlowAsync` returned `null` (device offline), the code did nothing - no error increment, no cache clear
+2. **New Subscribers Got Stale Cache**: When a new user subscribed to an offline device, they received the last cached (stale) data
+3. **Zero Data Sent Only Once**: Zero data was only broadcast when `consecutiveErrors == DeviceOfflineThreshold` (exactly 3), not on subsequent errors
+
+### Solution
+
+**1. Treat Null Return as Failure** (`SharedDevicePowerFlowStreamManager.cs`):
+
+```csharp
+// In RunPollingLoopAsync
+var data = await GetPowerFlowAsync(deviceId, cancellationToken);
+
+if (data != null)
+{
+    // Success path - reset errors, broadcast data
+    consecutiveErrors = 0;
+    IsDeviceOffline = false;
+    LastData = data;
+    await BroadcastToSubscribersAsync(data, logger);
+}
+else
+{
+    // NULL return = device offline, treat as failure
+    consecutiveErrors++;
+    await HandleConsecutiveErrorsAsync(consecutiveErrors, maxConsecutiveErrors, logger, cancellationToken);
+}
+```
+
+**2. New Subscribers Get Zero Data When Offline**:
+
+```csharp
+// In SubscribeAsync - check IsDeviceOffline before sending cached data
+if (stream.IsDeviceOffline)
+{
+    // Device is offline - send zero data to new subscriber
+    var zeroData = CreateZeroData(deviceId);
+    await subscription.SendDataAsync(zeroData);
+}
+else
+{
+    // Device is online - send cached data
+    await subscription.SendDataAsync(stream.LastData);
+}
+```
+
+**3. Broadcast Zero Data on EVERY Error After Threshold**:
+
+```csharp
+private async Task HandleConsecutiveErrorsAsync(
+    int consecutiveErrors,
+    int maxConsecutiveErrors,
+    ILogger logger,
+    CancellationToken cancellationToken)
+{
+    // Changed from == to >= to broadcast on every error after threshold
+    if (consecutiveErrors >= DeviceOfflineThreshold)
+    {
+        if (!IsDeviceOffline)
+        {
+            IsDeviceOffline = true;
+            logger.LogWarning("Device {DeviceId} marked as offline after {Errors} consecutive errors",
+                DeviceId, consecutiveErrors);
+        }
+
+        // Broadcast zero data on EVERY error after threshold (not just once)
+        var zeroData = CreateZeroData(DeviceId);
+        LastData = zeroData;
+        await BroadcastToSubscribersAsync(zeroData, logger);
+    }
+}
+```
+
+**4. Zero Data Structure**:
+
+```csharp
+private static PowerFlowDto CreateZeroData(string deviceId) => new PowerFlowDto
+{
+    DeviceId = deviceId,
+    Timestamp = DateTime.UtcNow,
+    GridPowerKw = 0,
+    SolarPowerKw = 0,
+    BatteryPowerKw = 0,
+    LoadPowerKw = 0,
+    BatterySoc = 0,
+    // ... all values set to 0
+};
+```
+
+### Cache Behavior Summary
+
+| Scenario | Before Fix | After Fix |
+|----------|------------|-----------|
+| Device goes offline | Last cached data shown | Zero data broadcast |
+| New subscriber to offline device | Gets stale cached data | Gets zero data |
+| 4th, 5th, Nth error | Nothing (only 3rd triggered zero) | Zero data broadcast each time |
+| `GetPowerFlowAsync` returns null | Ignored, no error count | Treated as error, count incremented |
+
+### Device Offline Detection Flow
+
+```
+Device Communication
+        │
+        ▼
+┌─────────────────────────┐
+│ GetPowerFlowAsync()     │
+└───────────┬─────────────┘
+            │
+    ┌───────┴───────┐
+    ▼               ▼
+ Success          Null/Error
+    │               │
+    ▼               ▼
+Reset errors    Increment errors
+IsOffline=false     │
+    │               │
+    ▼               ▼
+Broadcast data  errors >= 3?
+                    │
+            ┌───────┴───────┐
+            ▼               ▼
+           Yes              No
+            │               │
+            ▼               ▼
+    IsOffline=true      Wait for
+    Broadcast zeros     next poll
+```
+
+### Files Modified for PowerFlow Cache Fix
+
+| File | Changes |
+|------|---------|
+| `SharedDevicePowerFlowStreamManager.cs` | Added null check, HandleConsecutiveErrorsAsync, CreateZeroData, IsDeviceOffline flag |
+| `SharedDevicePowerFlowStreamManager.cs` | Fixed >= vs == for threshold check |
+| `SharedDevicePowerFlowStreamManager.cs` | New subscribers get zero data when device offline |
+
+---
+
+## Frontend Files Changed Summary
+
+| File | Change Description |
+|------|-------------------|
+| `src/api/client/config.ts` | Added `GET_STATUS` endpoint |
+| `src/api/services/deviceDataService.ts` | Added `getStatus()` method and `DeviceHeartbeatStatusDto` |
+| `src/hooks/useDeviceStatus.ts` | Added REST API fallback, auto-subscribe on reconnect, `isLoadingInitialStatus` state |
+| `src/services/deviceStatusService.ts` | Added SignalR retry mechanism with exponential backoff |
+| `src/app/screens/dashboard/ui/weatherStatus/WeatherStatus.tsx` | Updated loading indicator logic |
+
+## Backend Files Changed Summary
+
+| File | Change Description |
+|------|-------------------|
+| `src/Infrastructure/Services/SharedDevicePowerFlowStreamManager.cs` | PowerFlow cache fixes for offline detection |
+| `src/Web/Endpoints/DeviceData.cs` | New endpoint `GET /Status/{deviceId}` |

@@ -1,10 +1,10 @@
-# Shared Device Stream Manager
+# Shared Device PowerFlow Stream Manager
 
-This document describes the reference-counted shared stream caching system for device data streaming (PowerFlow, etc.).
+This document describes the reference-counted shared stream caching system for PowerFlow data streaming.
 
 ## Overview
 
-The `SharedDeviceStreamManager` provides an in-memory caching layer for device data streams. It ensures that only one polling loop runs per device, regardless of how many users are viewing that device's data. This dramatically reduces RPC calls to ThingsBoard and improves overall system performance.
+The `SharedDevicePowerFlowStreamManager` provides an in-memory caching layer for device data streams. It ensures that only one polling loop runs per device, regardless of how many users are viewing that device's data. This dramatically reduces RPC calls to ThingsBoard and improves overall system performance.
 
 ## Problem Statement
 
@@ -44,7 +44,7 @@ User 3 ─┘
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                    SharedDeviceStreamManager (Singleton)                │
+│                    SharedDevicePowerFlowStreamManager (Singleton)                │
 ├─────────────────────────────────────────────────────────────────────────┤
 │  ConcurrentDictionary<Guid, SharedDeviceStream>                         │
 │                                                                         │
@@ -166,10 +166,10 @@ T=95s  Cleanup executes
 
 ## Key Components
 
-### ISharedDeviceStreamManager
+### ISharedDevicePowerFlowStreamManager
 
 ```csharp
-public interface ISharedDeviceStreamManager
+public interface ISharedDevicePowerFlowStreamManager
 {
     // Subscribe to a device's data stream
     Task<IDeviceStreamSubscription> SubscribeAsync(
@@ -424,7 +424,7 @@ Use `StreamPowerFlow` for new implementations.
 
 | Component | Path |
 |-----------|------|
-| Interface | `src/Application/Common/Interfaces/ISharedDeviceStreamManager.cs` |
-| Implementation | `src/Infrastructure/Services/SharedDeviceStreamManager.cs` |
+| Interface | `src/Application/Common/Interfaces/ISharedDevicePowerFlowStreamManager.cs` |
+| Implementation | `src/Infrastructure/Services/SharedDevicePowerFlowStreamManager.cs` |
 | DI Registration | `src/Infrastructure/DependencyInjection.cs` |
 | Hub Usage | `src/Web/Hubs/PowerFlowHub.cs` |

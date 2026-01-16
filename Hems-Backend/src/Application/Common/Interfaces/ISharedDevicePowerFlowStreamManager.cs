@@ -90,11 +90,11 @@ public interface IDeviceStreamSubscription : IAsyncDisposable
 }
 
 /// <summary>
-/// Manages shared device data streams with reference counting.
+/// Manages shared device PowerFlow streams with reference counting.
 /// Ensures only one polling loop per device regardless of subscriber count.
 /// Automatically cleans up when last subscriber disconnects.
 /// </summary>
-public interface ISharedDeviceStreamManager
+public interface ISharedDevicePowerFlowStreamManager
 {
     /// <summary>
     /// Subscribe to a device's data stream.

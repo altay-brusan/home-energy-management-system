@@ -9,15 +9,15 @@ using Microsoft.Extensions.Options;
 namespace Hems_Backend.Infrastructure.Services;
 
 /// <summary>
-/// Manages shared device data streams with reference counting.
+/// Manages shared device PowerFlow streams with reference counting.
 /// Ensures only one polling loop per device regardless of subscriber count.
 /// Thread-safe implementation using ConcurrentDictionary and Channels.
 /// Uses IServiceScopeFactory to resolve scoped services (like IPowerFlowService) from a singleton.
 /// </summary>
-public class SharedDeviceStreamManager : ISharedDeviceStreamManager, IDisposable
+public class SharedDevicePowerFlowStreamManager : ISharedDevicePowerFlowStreamManager, IDisposable
 {
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly ILogger<SharedDeviceStreamManager> _logger;
+    private readonly ILogger<SharedDevicePowerFlowStreamManager> _logger;
     private readonly SharedStreamOptions _options;
 
     // Main storage: DeviceId -> SharedDeviceStream
@@ -28,9 +28,9 @@ public class SharedDeviceStreamManager : ISharedDeviceStreamManager, IDisposable
 
     private bool _disposed;
 
-    public SharedDeviceStreamManager(
+    public SharedDevicePowerFlowStreamManager(
         IServiceScopeFactory scopeFactory,
-        ILogger<SharedDeviceStreamManager> logger,
+        ILogger<SharedDevicePowerFlowStreamManager> logger,
         IOptions<SharedStreamOptions>? options = null)
     {
         _scopeFactory = scopeFactory;
@@ -215,7 +215,7 @@ public class SharedDeviceStreamManager : ISharedDeviceStreamManager, IDisposable
         if (_disposed) return;
         _disposed = true;
 
-        _logger.LogInformation("Disposing SharedDeviceStreamManager with {StreamCount} active streams", _streams.Count);
+        _logger.LogInformation("Disposing SharedDevicePowerFlowStreamManager with {StreamCount} active streams", _streams.Count);
 
         foreach (var stream in _streams.Values)
         {
