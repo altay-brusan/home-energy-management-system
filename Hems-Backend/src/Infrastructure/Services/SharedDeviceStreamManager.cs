@@ -206,11 +206,23 @@ public class SharedDeviceStreamManager : ISharedDeviceStreamManager, IDisposable
 /// </summary>
 internal class SharedDeviceStream : IDisposable
 {
+    /// <summary>
+    /// Number of consecutive RPC failures before sending zero PowerFlow data.
+    /// At 5-second polling interval, 3 failures = 15 seconds before showing "no data".
+    /// </summary>
+    private const int DeviceOfflineThreshold = 3;
+
     public Guid DeviceId { get; }
     public int IntervalSeconds { get; }
     public PowerFlowDto? LastData { get; private set; }
     public DateTime? LastUpdated { get; private set; }
     public int SubscriberCount => _subscribers.Count;
+
+    /// <summary>
+    /// Indicates if zero data has been sent due to device being offline.
+    /// Reset when real data is received again.
+    /// </summary>
+    public bool IsDeviceOffline { get; private set; }
 
     private readonly ConcurrentDictionary<string, DeviceStreamSubscription> _subscribers = new();
     private readonly object _pollingLock = new();
@@ -304,6 +316,15 @@ internal class SharedDeviceStream : IDisposable
 
                 if (data != null)
                 {
+                    // Device recovered - reset offline state and error count
+                    if (IsDeviceOffline)
+                    {
+                        logger.LogInformation(
+                            "Device {DeviceId} recovered - resuming real PowerFlow data",
+                            DeviceId);
+                        IsDeviceOffline = false;
+                    }
+
                     LastData = data;
                     LastUpdated = DateTime.UtcNow;
                     consecutiveErrors = 0; // Reset error count on success
@@ -322,6 +343,35 @@ internal class SharedDeviceStream : IDisposable
                 consecutiveErrors++;
                 logger.LogError(ex, "Error fetching PowerFlow for device {DeviceId} (consecutive errors: {ErrorCount})",
                     DeviceId, consecutiveErrors);
+
+                // After DeviceOfflineThreshold (3) consecutive errors, send zero data to indicate device is offline
+                // This causes the frontend to show gray (no flow) state instead of stale cached data
+                if (consecutiveErrors == DeviceOfflineThreshold && !IsDeviceOffline)
+                {
+                    logger.LogWarning(
+                        "Device {DeviceId} appears offline after {ErrorCount} consecutive errors - sending zero PowerFlow data",
+                        DeviceId, consecutiveErrors);
+
+                    IsDeviceOffline = true;
+
+                    // Create zero PowerFlow data to indicate device is offline
+                    var zeroData = new PowerFlowDto
+                    {
+                        DeviceId = DeviceId,
+                        TimestampUtc = DateTimeOffset.UtcNow,
+                        SolarPowerKw = 0,
+                        GridPowerKw = 0,
+                        LoadPowerKw = 0,
+                        BatteryPowerKw = 0,
+                        GeneratorPowerKw = 0
+                    };
+
+                    LastData = zeroData;
+                    LastUpdated = DateTime.UtcNow;
+
+                    // Broadcast zero data to all subscribers
+                    await BroadcastToSubscribersAsync(zeroData, logger);
+                }
 
                 // If too many consecutive errors, add a longer delay to prevent hammering
                 if (consecutiveErrors >= maxConsecutiveErrors)

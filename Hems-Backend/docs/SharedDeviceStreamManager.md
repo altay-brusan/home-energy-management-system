@@ -301,6 +301,114 @@ public SharedStreamStatistics GetStreamStatistics()
 - **Dead subscriptions**: Automatically detected and removed during broadcast
 - **Cancellation**: Graceful cleanup of all resources
 
+## Device Offline Detection
+
+When a device becomes unreachable (power loss, network issues, etc.), the stream manager detects this and sends zero values to subscribers instead of showing stale cached data.
+
+### Offline Detection Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    DEVICE OFFLINE DETECTION                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  RPC Poll #1 ──► FAIL ──► consecutiveErrors = 1                 │
+│       │                                                         │
+│       ▼ (5 seconds)                                             │
+│  RPC Poll #2 ──► FAIL ──► consecutiveErrors = 2                 │
+│       │                                                         │
+│       ▼ (5 seconds)                                             │
+│  RPC Poll #3 ──► FAIL ──► consecutiveErrors = 3 ⚠️              │
+│       │                   │                                     │
+│       │                   ▼                                     │
+│       │         ┌─────────────────────────────────┐             │
+│       │         │ DeviceOfflineThreshold reached! │             │
+│       │         │                                 │             │
+│       │         │ 1. Set IsDeviceOffline = true   │             │
+│       │         │ 2. Create zero PowerFlowDto     │             │
+│       │         │ 3. Broadcast to all subscribers │             │
+│       │         └─────────────────────────────────┘             │
+│       │                                                         │
+│       ▼                                                         │
+│  Frontend receives zero data ──► Shows gray flow lines          │
+│                                  (no active power flow)         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Recovery Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    DEVICE RECOVERY DETECTION                    │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Device comes back online                                       │
+│       │                                                         │
+│       ▼                                                         │
+│  RPC Poll ──► SUCCESS ──► Real PowerFlowDto received            │
+│       │                   │                                     │
+│       │                   ▼                                     │
+│       │         ┌─────────────────────────────────┐             │
+│       │         │ Device recovered!               │             │
+│       │         │                                 │             │
+│       │         │ 1. Set IsDeviceOffline = false  │             │
+│       │         │ 2. Reset consecutiveErrors = 0  │             │
+│       │         │ 3. Broadcast real data          │             │
+│       │         └─────────────────────────────────┘             │
+│       │                                                         │
+│       ▼                                                         │
+│  Frontend receives real data ──► Shows active flow lines        │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Configuration
+
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `DeviceOfflineThreshold` | 3 | Consecutive RPC failures before sending zero data |
+| `maxConsecutiveErrors` | 10 | Consecutive failures before adding extended delay |
+
+### Timing
+
+With default 5-second polling interval:
+- **Device offline detected**: 15 seconds (3 × 5s)
+- **Extended delay triggered**: 50 seconds (10 × 5s)
+
+### Zero PowerFlowDto
+
+When device is detected as offline, the following data is sent:
+
+```json
+{
+  "deviceId": "device-guid",
+  "timestampUtc": "2025-01-16T14:00:00Z",
+  "solarPowerKw": 0,
+  "gridPowerKw": 0,
+  "loadPowerKw": 0,
+  "batteryPowerKw": 0,
+  "generatorPowerKw": 0
+}
+```
+
+This causes the frontend to display gray flow lines (no active power flow) instead of stale cached data from when the device was last online.
+
+### Integration with Device Status
+
+The PowerFlow offline detection works alongside the heartbeat-based device status system:
+
+| System | Detection Time | Purpose |
+|--------|---------------|---------|
+| **DeviceHeartbeatCache** | ~210 seconds | Official device online/offline status |
+| **PowerFlow Offline** | ~15 seconds | Clear stale PowerFlow visualization |
+
+The PowerFlow offline detection is faster because:
+1. It polls every 5 seconds (vs 60-second heartbeat interval)
+2. It only needs 3 failures (vs 3+ missed heartbeats)
+
+This ensures users see accurate PowerFlow data quickly when a device disconnects, while the heartbeat system provides authoritative status tracking with database logging.
+
 ## Backwards Compatibility
 
 The legacy direct polling method is still available:
