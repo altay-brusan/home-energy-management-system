@@ -124,7 +124,6 @@ app.MapEndpoints();
 app.MapHub<DeviceNotificationHub>("/deviceNotificationHub");
 app.MapHub<PowerFlowHub>("/powerFlowHub");
 app.MapHub<DeviceStatusHub>("/deviceStatusHub");
-app.MapHub<DeviceSettingsHub>("/deviceSettingsHub");
 app.Run();
 
 public partial class Program { }
