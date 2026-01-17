@@ -119,6 +119,32 @@ public class ParameterUpdateBackgroundService : BackgroundService, IParameterUpd
     }
 
     /// <summary>
+    /// Initialize operation state as "pending" before queuing
+    /// Called by command handler to ensure state exists when API returns
+    /// </summary>
+    public void InitializeOperationState(string correlationId, Guid deviceId, int totalParameters)
+    {
+        var state = new BatchOperationStateSnapshot
+        {
+            CorrelationId = correlationId,
+            DeviceId = deviceId,
+            Status = "pending",
+            TotalParameters = totalParameters,
+            CurrentIndex = 0,
+            SuccessCount = 0,
+            FailedCount = 0,
+            SkippedCount = 0,
+            WasCancelled = false,
+            StartedAt = null,
+            CompletedAt = null,
+            Duration = null,
+            FailedParameters = new List<FailedParameterSnapshot>()
+        };
+        _operationStates[correlationId] = state;
+        _logger.LogDebug("Initialized pending operation state for {CorrelationId}", correlationId);
+    }
+
+    /// <summary>
     /// Update and store the current operation state
     /// </summary>
     private void UpdateOperationState(BatchOperationStateSnapshot state)
@@ -255,16 +281,9 @@ public class ParameterUpdateBackgroundService : BackgroundService, IParameterUpd
         var rpcExecutor = scope.ServiceProvider.GetRequiredService<IDeviceRpcExecutorService>();
         var notificationService = scope.ServiceProvider.GetRequiredService<IDeviceSettingsNotificationService>();
 
-        // Notify start
-        await notificationService.NotifyParameterUpdateStartedAsync(new ParameterUpdateStartedMessage
-        {
-            CorrelationId = request.CorrelationId,
-            DeviceId = request.DeviceId,
-            TotalParameters = request.Parameters.Count,
-            StartedAt = startTime
-        }, cancellationToken);
-
-        // Cache initial operation state for late-subscribing clients
+        // IMPORTANT: Cache state BEFORE sending notification
+        // This ensures late-subscribing clients can get state even if they subscribe
+        // after we send the notification but before any parameters are processed
         UpdateOperationState(new BatchOperationStateSnapshot
         {
             CorrelationId = request.CorrelationId,
@@ -281,6 +300,15 @@ public class ParameterUpdateBackgroundService : BackgroundService, IParameterUpd
             Duration = null,
             FailedParameters = new List<FailedParameterSnapshot>()
         });
+
+        // Notify start (clients in group will receive this; late subscribers will get cached state)
+        await notificationService.NotifyParameterUpdateStartedAsync(new ParameterUpdateStartedMessage
+        {
+            CorrelationId = request.CorrelationId,
+            DeviceId = request.DeviceId,
+            TotalParameters = request.Parameters.Count,
+            StartedAt = startTime
+        }, cancellationToken);
 
         // Get all parameter values for this device
         var parameterIds = request.Parameters.Select(p => p.ParameterId).ToList();

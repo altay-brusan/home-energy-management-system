@@ -26,6 +26,13 @@ public interface IParameterUpdateQueueService
     /// Returns null if operation not found or expired
     /// </summary>
     BatchOperationStateSnapshot? GetOperationState(string correlationId);
+
+    /// <summary>
+    /// Initialize operation state as "pending" before queuing
+    /// Called by command handler to ensure state exists when API returns
+    /// This guarantees late-subscribing clients will find cached state
+    /// </summary>
+    void InitializeOperationState(string correlationId, Guid deviceId, int totalParameters);
 }
 
 /// <summary>
