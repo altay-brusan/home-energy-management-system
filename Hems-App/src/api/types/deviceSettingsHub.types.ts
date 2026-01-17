@@ -64,6 +64,16 @@ export interface ParameterUpdateFailedDto {
 }
 
 /**
+ * Failed parameter info included in completion message
+ */
+export interface FailedParameterInfo {
+  parameterId: string;
+  parameterName: string;
+  errorMessage: string;
+  retryAttempts: number;
+}
+
+/**
  * Fired when all parameters have been processed
  */
 export interface ParameterUpdateCompletedDto {
@@ -72,8 +82,11 @@ export interface ParameterUpdateCompletedDto {
   totalParameters: number;
   successCount: number;
   failedCount: number;
+  skippedCount: number;
   completedAt: string; // ISO date
   duration: string; // TimeSpan format: "00:00:05.123"
+  wasCancelled: boolean;
+  failedParameters: FailedParameterInfo[];
 }
 
 // ============================================================================
@@ -93,7 +106,10 @@ export interface BatchOperationState {
   currentIndex: number;
   successCount: number;
   failedCount: number;
+  skippedCount: number;
+  wasCancelled: boolean;
   failedParameters: ParameterUpdateFailedDto[];
+  failedParametersInfo: FailedParameterInfo[];
   startedAt: string | null;
   completedAt: string | null;
   duration: string | null;

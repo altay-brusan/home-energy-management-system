@@ -7,7 +7,8 @@ export interface DeviceNotificationTypeDto {
   description: string;
   register: number;
   value: number;
-  category: string;
+  category: string; // Device category (inverter, battery, etc.)
+  severity: string; // Severity level (WARNING, ERROR, ALARM)
   version: string;
   isActive: boolean;
 }
@@ -50,7 +51,8 @@ export interface GetDeviceNotificationsParams {
   PageSize: number;
   IsToday?: boolean | null;
   IsProcessed?: boolean | null;
-  Category?: string | null;
+  Category?: string | null; // Device category (inverter, battery, etc.)
+  Severity?: string | null; // Severity level (WARNING, ERROR, ALARM)
   IncludeDeleted?: boolean | null;
 }
 
@@ -59,7 +61,8 @@ export interface GetDeletedDeviceNotificationsParams {
   PageNumber: number;
   PageSize: number;
   IsToday?: boolean | null;
-  Category?: string | null;
+  Category?: string | null; // Device category (inverter, battery, etc.)
+  Severity?: string | null; // Severity level (WARNING, ERROR, ALARM)
 }
 
 export interface MarkDeviceNotificationAsReadParams {

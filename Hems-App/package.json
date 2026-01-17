@@ -47,7 +47,7 @@
     "react-native-gifted-charts": "^1.4.65",
     "react-native-linear-gradient": "^2.8.3",
     "react-native-phone-number-input": "^2.1.0",
-    "react-native-reanimated": "^3.16.5",
+    "react-native-reanimated": "^3.19.5",
     "react-native-safe-area-context": "^5.5.2",
     "react-native-screens": "^4.15.4",
     "react-native-svg": "^15.13.0",

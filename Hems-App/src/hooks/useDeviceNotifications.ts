@@ -41,7 +41,8 @@ const PAGE_SIZE = 20;
 export interface DeviceNotificationFilters {
   isToday?: boolean | null;
   isProcessed?: boolean | null;
-  category?: string | null;
+  category?: string | null; // Device category (inverter, battery, etc.)
+  severity?: string | null; // Severity level (WARNING, ERROR, ALARM)
   includeDeleted?: boolean | null;
 }
 
@@ -171,6 +172,7 @@ export function useDeviceNotifications (filters?: DeviceNotificationFilters) {
           IsToday: filters?.isToday,
           IsProcessed: filters?.isProcessed,
           Category: filters?.category,
+          Severity: filters?.severity,
           IncludeDeleted: filters?.includeDeleted,
         });
 
@@ -193,6 +195,7 @@ export function useDeviceNotifications (filters?: DeviceNotificationFilters) {
         IsToday: filters?.isToday,
         IsProcessed: filters?.isProcessed,
         Category: filters?.category,
+        Severity: filters?.severity,
         IncludeDeleted: filters?.includeDeleted,
       });
 
@@ -250,6 +253,7 @@ export function useDeviceNotifications (filters?: DeviceNotificationFilters) {
           PageSize: PAGE_SIZE,
           IsToday: filters?.isToday,
           Category: filters?.category,
+          Severity: filters?.severity,
         });
 
         const mappedNotifications = response.items.map(mapApiNotificationToNotification);
@@ -270,6 +274,7 @@ export function useDeviceNotifications (filters?: DeviceNotificationFilters) {
         PageSize: PAGE_SIZE,
         IsToday: filters?.isToday,
         Category: filters?.category,
+        Severity: filters?.severity,
       });
 
       const mappedNotifications = response.items.map(mapApiNotificationToNotification);
@@ -408,7 +413,7 @@ export function useDeviceNotifications (filters?: DeviceNotificationFilters) {
 
   const permanentDeleteNotification = useCallback(async (id: string) => {
     try {
-      await deviceNotificationsService.permanentDeleteDeviceNotification({ id });
+      await deviceNotificationsService.purgeDeviceNotification({ id });
       setDeletedNotifications(prev => prev.filter(notification => notification.id !== id));
     } catch (error) {
       throw error;

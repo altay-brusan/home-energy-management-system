@@ -9,6 +9,17 @@ import {
   GetDeviceDataParams,
   PaginatedDeviceDataList,
 } from '../types/deviceData.types';
+import { DeviceStatusType } from '../types/signalR.types';
+
+// Response from GET /api/DeviceData/Status/{deviceId}
+export interface DeviceHeartbeatStatusDto {
+  deviceId: string;
+  status: DeviceStatusType;
+  timestamp: string;
+  lastHeartbeat?: string;
+  lastPowerFlow?: string;
+  missedHeartbeats: number;
+}
 
 export const deviceDataService = {
   async getAll(params: GetDeviceDataParams): Promise<PaginatedDeviceDataList> {
@@ -37,6 +48,16 @@ export const deviceDataService = {
 
   async bulkCreate(data: BulkCreateDeviceDataCommand): Promise<BulkCreateDeviceDataResult> {
     const response = await apiClient.post<BulkCreateDeviceDataResult>(ENDPOINTS.DEVICE_DATA.BULK_CREATE, data);
+    return response.data;
+  },
+
+  /**
+   * Get device heartbeat status via REST API.
+   * Use this for immediate status on page load, then use SignalR for live updates.
+   */
+  async getStatus(deviceId: string): Promise<DeviceHeartbeatStatusDto> {
+    const url = ENDPOINTS.DEVICE_DATA.GET_STATUS.replace(':deviceId', deviceId);
+    const response = await apiClient.get<DeviceHeartbeatStatusDto>(url);
     return response.data;
   },
 };

@@ -56,8 +56,8 @@ export const sitesService = {
     await apiClient.put(url, data);
   },
 
-  async deleteMobile(id: string): Promise<void> {
-    const url = ENDPOINTS.SITES.DELETE_MOBILE.replace(':id', id);
+  async delete(id: string): Promise<void> {
+    const url = ENDPOINTS.SITES.DELETE.replace(':id', id);
     await apiClient.delete(url);
   },
 

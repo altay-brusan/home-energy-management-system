@@ -159,7 +159,7 @@ export const useSitesStore = create<SitesState>((set, get) => ({
   deleteSite: async (id: string) => {
     set({ isLoading: true, error: null });
     try {
-      await sitesService.deleteMobile(id);
+      await sitesService.delete(id);
       const currentSites = get().sites;
       if (!currentSites || !Array.isArray(currentSites)) {
         set({ isLoading: false });

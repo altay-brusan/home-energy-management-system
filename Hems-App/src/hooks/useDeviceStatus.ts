@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { SignalRConnectionState, DeviceStatusChangedDto, DeviceStatusType } from '../api/types/signalR.types';
 import { deviceStatusService } from '../services/deviceStatusService';
+import { deviceDataService } from '../api/services/deviceDataService';
 
 export const useDeviceStatus = (deviceId?: string) => {
     const [isConnected, setIsConnected] = useState(false);
@@ -10,16 +11,74 @@ export const useDeviceStatus = (deviceId?: string) => {
     const [missedHeartbeats, setMissedHeartbeats] = useState<number>(0);
     const [lastUpdate, setLastUpdate] = useState<string | null>(null);
     const [isInitialStatus, setIsInitialStatus] = useState<boolean>(false);
+    const [isLoadingInitialStatus, setIsLoadingInitialStatus] = useState<boolean>(false);
 
     const appState = useRef(AppState.currentState);
     const isAppActive = useRef(true);
     const currentDeviceIdRef = useRef<string | undefined>(undefined);
+    const hasFetchedInitialStatus = useRef(false);
 
-    // Connection state listener
+    // STEP 1: Fetch initial status via REST API (fast, reliable)
+    // This provides immediate status while SignalR is connecting
     useEffect(() => {
-        const unsubscribe = deviceStatusService.addConnectionStateListener((state) => {
+        if (!deviceId) {
+            hasFetchedInitialStatus.current = false;
+            return;
+        }
+
+        // Reset flag when deviceId changes
+        if (currentDeviceIdRef.current !== deviceId) {
+            hasFetchedInitialStatus.current = false;
+        }
+
+        // Only fetch if we haven't fetched for this device yet
+        if (hasFetchedInitialStatus.current) {
+            return;
+        }
+
+        const fetchInitialStatus = async () => {
+            setIsLoadingInitialStatus(true);
+            try {
+                console.log('[useDeviceStatus] Fetching initial status via REST API for device:', deviceId);
+                const response = await deviceDataService.getStatus(deviceId);
+                console.log('[useDeviceStatus] REST API status response:', response);
+
+                // Only update if we don't have a status yet (SignalR might have provided one already)
+                if (!deviceStatus || deviceStatus !== response.status) {
+                    setDeviceStatus(response.status);
+                    setMissedHeartbeats(response.missedHeartbeats);
+                    setLastUpdate(response.timestamp);
+                    setIsInitialStatus(true);
+                }
+                hasFetchedInitialStatus.current = true;
+            } catch (error) {
+                console.log('[useDeviceStatus] REST API status fetch failed:', error);
+                // Don't set error state - SignalR might still work
+            } finally {
+                setIsLoadingInitialStatus(false);
+            }
+        };
+
+        fetchInitialStatus();
+    }, [deviceId]); // Note: deviceStatus intentionally excluded to avoid loops
+
+    // STEP 2: Connection state listener for SignalR
+    // When connection becomes 'Connected', automatically try to subscribe to device
+    useEffect(() => {
+        const unsubscribe = deviceStatusService.addConnectionStateListener(async (state) => {
+            console.log('[useDeviceStatus] Connection state changed to:', state);
             setConnectionState(state);
             setIsConnected(state === 'Connected');
+
+            // When connection becomes connected, try to subscribe to current device
+            if (state === 'Connected' && currentDeviceIdRef.current) {
+                console.log('[useDeviceStatus] Connection restored, subscribing to device:', currentDeviceIdRef.current);
+                try {
+                    await deviceStatusService.subscribeToDevice(currentDeviceIdRef.current);
+                } catch (error) {
+                    console.log('[useDeviceStatus] Auto-subscribe after connection failed:', error);
+                }
+            }
         });
 
         return unsubscribe;
@@ -140,6 +199,7 @@ export const useDeviceStatus = (deviceId?: string) => {
         missedHeartbeats,
         lastUpdate,
         isInitialStatus,
+        isLoadingInitialStatus,
         connectAndSubscribe,
         unsubscribe,
         disconnect,

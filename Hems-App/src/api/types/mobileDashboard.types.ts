@@ -217,12 +217,6 @@ export interface ComponentDto {
   componentData?: any;
 }
 
-export interface GetComponentLiveDataResponse {
-  success: boolean;
-  message?: string;
-  data?: any;
-}
-
 export interface DeviceComponentDto {
   componentId: string;
   componentName: string;

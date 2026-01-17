@@ -1,5 +1,5 @@
 import MaterialIcons from '@react-native-vector-icons/material-icons';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -15,13 +15,20 @@ import Reanimated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSelectedSiteDevice } from '../../../../../hooks/useSelectedSiteDevice';
 import { deviceSettingsService } from '../../../../../api/services/deviceSettingsService';
-import { ExportStrategy } from '../../../../../api/types/deviceSettings.types';
 import { getDashboardModeCardStyles } from './DashboardModeCard.styles';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-type ExportStrategyOption = {
-  id: ExportStrategy;
+// Device mode numbers from backend (matches DeviceMode enum)
+enum DeviceMode {
+  SellToGrid = 1,
+  SelfConsumption = 2,
+  SmartZeroExport = 3,
+  Custom = 99,
+}
+
+type DeviceModeOption = {
+  mode: DeviceMode;
   title: string;
   description: string;
 };
@@ -39,11 +46,12 @@ export default function DashboardModeCard({ COLORS }: DashboardModeCardProps) {
   // Bottom sheet states
   const [modeSheetVisible, setModeSheetVisible] = useState(false);
   const [confirmSheetVisible, setConfirmSheetVisible] = useState(false);
-  const [selectedStrategy, setSelectedStrategy] = useState<ExportStrategyOption | null>(null);
+  const [selectedMode, setSelectedMode] = useState<DeviceModeOption | null>(null);
   const [isChanging, setIsChanging] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Current active export strategy
-  const [currentStrategy, setCurrentStrategy] = useState<ExportStrategy>(ExportStrategy.ZeroExportToLoad);
+  // Current active device mode
+  const [currentMode, setCurrentMode] = useState<DeviceMode>(DeviceMode.SelfConsumption);
 
   // Animation refs
   const modeSheetY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
@@ -51,31 +59,61 @@ export default function DashboardModeCard({ COLORS }: DashboardModeCardProps) {
   const confirmSheetY = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const confirmSheetOpacity = useRef(new Animated.Value(0)).current;
 
-  const exportStrategies: ExportStrategyOption[] = [
+  const deviceModes: DeviceModeOption[] = [
     {
-      id: ExportStrategy.SellFirst,
-      title: t('exportStrategy.sellFirst.title'),
-      description: t('exportStrategy.sellFirst.description'),
+      mode: DeviceMode.SellToGrid,
+      title: t('deviceMode.sellToGrid.title', 'Sell to Grid'),
+      description: t('deviceMode.sellToGrid.description', 'Export excess solar and battery energy to the grid for income'),
     },
     {
-      id: ExportStrategy.ZeroExportToLoad,
-      title: t('exportStrategy.zeroExportToLoad.title'),
-      description: t('exportStrategy.zeroExportToLoad.description'),
+      mode: DeviceMode.SelfConsumption,
+      title: t('deviceMode.selfConsumption.title', 'Self Consumption'),
+      description: t('deviceMode.selfConsumption.description', 'Use all energy at home - no export to grid'),
     },
     {
-      id: ExportStrategy.ZeroExportToCt,
-      title: t('exportStrategy.zeroExportToCt.title'),
-      description: t('exportStrategy.zeroExportToCt.description'),
+      mode: DeviceMode.SmartZeroExport,
+      title: t('deviceMode.smartZeroExport.title', 'Smart Zero Export'),
+      description: t('deviceMode.smartZeroExport.description', 'Zero export with precise smart meter control'),
     },
   ];
 
-  // Get current strategy display info
-  const getCurrentStrategyInfo = () => {
-    const strategy = exportStrategies.find((s) => s.id === currentStrategy);
-    return strategy || exportStrategies[1]; // Default to ZeroExportToLoad
+  // Fetch current device mode from backend
+  const fetchCurrentMode = useCallback(async () => {
+    if (!device?.id) return;
+
+    try {
+      setIsLoading(true);
+      const response = await deviceSettingsService.getDeviceMode(device.id);
+      if (response.success) {
+        setCurrentMode(response.mode as DeviceMode);
+      }
+    } catch (error) {
+      console.log('[DashboardModeCard] Failed to fetch device mode:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [device?.id]);
+
+  // Fetch mode on mount and when device changes
+  useEffect(() => {
+    fetchCurrentMode();
+  }, [fetchCurrentMode]);
+
+  // Get current mode display info
+  const getCurrentModeInfo = () => {
+    // Handle Custom mode specially
+    if (currentMode === DeviceMode.Custom) {
+      return {
+        mode: DeviceMode.Custom,
+        title: t('deviceMode.custom.title', 'Custom Mode'),
+        description: t('deviceMode.custom.description', 'Custom settings configured'),
+      };
+    }
+    const mode = deviceModes.find((m) => m.mode === currentMode);
+    return mode || deviceModes[1]; // Default to SelfConsumption
   };
 
-  const currentStrategyInfo = getCurrentStrategyInfo();
+  const currentModeInfo = getCurrentModeInfo();
 
   // Mode sheet animations
   useEffect(() => {
@@ -148,7 +186,7 @@ export default function DashboardModeCard({ COLORS }: DashboardModeCardProps) {
       }),
     ]).start(() => {
       setConfirmSheetVisible(false);
-      setSelectedStrategy(null);
+      setSelectedMode(null);
     });
   };
 
@@ -156,8 +194,8 @@ export default function DashboardModeCard({ COLORS }: DashboardModeCardProps) {
     setModeSheetVisible(true);
   };
 
-  const handleStrategySelect = (strategy: ExportStrategyOption) => {
-    setSelectedStrategy(strategy);
+  const handleModeSelect = (mode: DeviceModeOption) => {
+    setSelectedMode(mode);
     closeModeSheet();
     setTimeout(() => {
       setConfirmSheetVisible(true);
@@ -165,21 +203,17 @@ export default function DashboardModeCard({ COLORS }: DashboardModeCardProps) {
   };
 
   const handleConfirm = async () => {
-    if (!selectedStrategy || !device?.id) return;
+    if (!selectedMode || !device?.id) return;
 
     setIsChanging(true);
     try {
-      const result = await deviceSettingsService.changeExportStrategy({
-        deviceId: device.id,
-        exportStrategy: selectedStrategy.id,
+      await deviceSettingsService.updateDeviceMode(device.id, {
+        mode: selectedMode.mode,
       });
-
-      if (result.success) {
-        // Update current strategy on success
-        setCurrentStrategy(selectedStrategy.id);
-      }
+      // Update current mode on success
+      setCurrentMode(selectedMode.mode);
     } catch (error) {
-      // Error is handled by the API client
+      console.log('[DashboardModeCard] Failed to update device mode:', error);
     } finally {
       setIsChanging(false);
       closeConfirmSheet();
@@ -196,11 +230,17 @@ export default function DashboardModeCard({ COLORS }: DashboardModeCardProps) {
           </View>
 
           <View style={styles.modeRow}>
-            <Text style={styles.mode}>{currentStrategyInfo.title}</Text>
-            <MaterialIcons name="check" size={20} color={COLORS.accent} style={styles.check} />
+            {isLoading ? (
+              <ActivityIndicator size="small" color={COLORS.accent} />
+            ) : (
+              <>
+                <Text style={styles.mode}>{currentModeInfo.title}</Text>
+                <MaterialIcons name="check" size={20} color={COLORS.accent} style={styles.check} />
+              </>
+            )}
           </View>
 
-          <Text style={styles.desc}>{currentStrategyInfo.description}</Text>
+          <Text style={styles.desc}>{isLoading ? '' : currentModeInfo.description}</Text>
         </TouchableOpacity>
       </Reanimated.View>
 
@@ -260,7 +300,7 @@ export default function DashboardModeCard({ COLORS }: DashboardModeCardProps) {
             }}
           >
             <Text style={{ fontSize: 18, fontWeight: '600', color: COLORS.text }}>
-              {t('exportStrategy.title')}
+              {t('deviceMode.selectTitle', 'Select Mode')}
             </Text>
             <TouchableOpacity onPress={closeModeSheet}>
               <MaterialIcons name="close" size={24} color={COLORS.textSoft} />
@@ -269,13 +309,13 @@ export default function DashboardModeCard({ COLORS }: DashboardModeCardProps) {
 
           {/* Options */}
           <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
-            {exportStrategies.map((strategy) => {
-              const isDisabled = strategy.id === ExportStrategy.SellFirst;
-              const isSelected = strategy.id === currentStrategy;
+            {deviceModes.map((mode) => {
+              const isDisabled = mode.mode === DeviceMode.SellToGrid;
+              const isSelected = mode.mode === currentMode;
               return (
                 <TouchableOpacity
-                  key={strategy.id}
-                  onPress={() => !isDisabled && handleStrategySelect(strategy)}
+                  key={mode.mode}
+                  onPress={() => !isDisabled && handleModeSelect(mode)}
                   disabled={isDisabled}
                   style={{
                     backgroundColor: isSelected ? `${COLORS.accent}15` : COLORS.background,
@@ -298,14 +338,14 @@ export default function DashboardModeCard({ COLORS }: DashboardModeCardProps) {
                         flex: 1,
                       }}
                     >
-                      {strategy.title}
+                      {mode.title}
                     </Text>
                     {isSelected && (
                       <MaterialIcons name="check-circle" size={22} color={COLORS.accent} />
                     )}
                   </View>
                   <Text style={{ fontSize: 14, color: COLORS.textSoft, lineHeight: 20 }}>
-                    {strategy.description}
+                    {mode.description}
                   </Text>
                 </TouchableOpacity>
               );
@@ -368,7 +408,7 @@ export default function DashboardModeCard({ COLORS }: DashboardModeCardProps) {
                 marginBottom: 8,
               }}
             >
-              {t('exportStrategy.confirmTitle')}
+              {t('deviceMode.confirmTitle', 'Confirm Mode Change')}
             </Text>
 
             <Text
@@ -380,11 +420,11 @@ export default function DashboardModeCard({ COLORS }: DashboardModeCardProps) {
                 lineHeight: 20,
               }}
             >
-              {t('exportStrategy.confirmMessage', { mode: selectedStrategy?.title })}
+              {t('deviceMode.confirmMessage', { mode: selectedMode?.title })}
             </Text>
 
             {/* Selected mode info */}
-            {selectedStrategy && (
+            {selectedMode && (
               <View
                 style={{
                   backgroundColor: COLORS.background,
@@ -396,10 +436,10 @@ export default function DashboardModeCard({ COLORS }: DashboardModeCardProps) {
                 }}
               >
                 <Text style={{ fontSize: 16, fontWeight: '600', color: COLORS.accent, marginBottom: 4 }}>
-                  {selectedStrategy.title}
+                  {selectedMode.title}
                 </Text>
                 <Text style={{ fontSize: 14, color: COLORS.textSoft, lineHeight: 20 }}>
-                  {selectedStrategy.description}
+                  {selectedMode.description}
                 </Text>
               </View>
             )}

@@ -111,7 +111,7 @@ export default function MaintenanceScreen({ error }: MaintenanceScreenProps) {
       <Text style={styles.title}>{getErrorTitle()}</Text>
       <Text style={styles.message}>{getErrorMessage()}</Text>
 
-      {error?.status && (
+      {!!error?.status && (
         <Text style={styles.errorCode}>
           {t('common.error', 'Hata')} {t('common.code', 'Kodu')}: {error.code} {error.status ? `• ${error.status}` : ''}
         </Text>

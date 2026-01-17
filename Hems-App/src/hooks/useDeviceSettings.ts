@@ -12,6 +12,7 @@ import { useRoles } from './useRoles';
 import { useToastStore } from '../store/toastStore';
 import { useDeviceSettingsUpdateStore } from '../store/deviceSettingsUpdateStore';
 import { useDeviceSettingsHub } from './useDeviceSettingsHub';
+import { deviceSettingsHubService } from '../services/deviceSettingsHubService';
 import { useInverterModeStore } from '../store/inverterModeStore';
 import {
   DeviceSettingsConfig,
@@ -159,14 +160,31 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
   }, [deviceId, storeFetchSettings]);
 
   // Save settings with SignalR progress tracking
+  // IMPORTANT: Connect to SignalR BEFORE calling API to avoid missing early events
   const saveSettings = useCallback(async (): Promise<boolean> => {
+    // Step 1: Connect to SignalR hub first (but don't subscribe yet - we need correlationId)
+    try {
+      await deviceSettingsHubService.connect();
+      console.log('[useDeviceSettings] SignalR connected, ready for API call');
+    } catch (connectError) {
+      console.log('[useDeviceSettings] SignalR pre-connect failed:', connectError);
+      // Continue anyway - we'll try again after API call
+    }
+
+    // Step 2: Call API to start the update
     const result = await storeSaveSettings();
 
     if (result.success && result.correlationId) {
-      // Start progress tracking via SignalR
+      // Step 3: Immediately subscribe to the batch operation
+      // This must happen ASAP after getting correlationId to catch all events
       try {
+        // Update UI state first (shows modal)
         startUpdate(result.correlationId, result.totalParameters);
+
+        // Subscribe to SignalR events for this correlationId
         await startBatchTracking(result.correlationId);
+        console.log('[useDeviceSettings] Subscribed to batch operation:', result.correlationId);
+
         // Don't show success toast here - wait for SignalR completion
         return true;
       } catch (signalRError) {
@@ -192,7 +210,7 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
 
     // No changes to save
     return true;
-  }, [storeSaveSettings, startUpdate, startBatchTracking, showToast, storeFinalizeSave]);
+  }, [storeSaveSettings, startUpdate, startBatchTracking, showToast, storeFinalizeSave, setCustomModeActive]);
 
   // Category-specific update helpers
   const updateBatterySettings = useCallback(

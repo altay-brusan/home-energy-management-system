@@ -57,7 +57,8 @@ export const useDeviceSettingsUpdateStore = create<DeviceSettingsUpdateState>((s
   /**
    * Start a new update operation
    */
-  startUpdate: (correlationId: string, totalParameters?: number) =>
+  startUpdate: (correlationId: string, totalParameters?: number) => {
+    console.log('[deviceSettingsUpdateStore] 🚀 startUpdate called:', correlationId, 'params:', totalParameters);
     set({
       isUpdateActive: true,
       correlationId,
@@ -71,20 +72,26 @@ export const useDeviceSettingsUpdateStore = create<DeviceSettingsUpdateState>((s
         currentIndex: 0,
         successCount: 0,
         failedCount: 0,
+        skippedCount: 0,
+        wasCancelled: false,
         failedParameters: [],
+        failedParametersInfo: [],
         startedAt: null,
         completedAt: null,
         duration: null,
       },
-    }),
+    });
+  },
 
   /**
    * Update progress from SignalR events
    */
-  updateProgress: (state: BatchOperationState) =>
+  updateProgress: (state: BatchOperationState) => {
+    console.log('[deviceSettingsUpdateStore] 📊 updateProgress called:', state.status, state.currentIndex, '/', state.totalParameters);
     set({
       batchState: state,
-    }),
+    });
+  },
 
   /**
    * Mark update as complete

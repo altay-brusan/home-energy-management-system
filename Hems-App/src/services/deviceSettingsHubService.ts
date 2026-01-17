@@ -68,7 +68,8 @@ class DeviceSettingsHubService {
             const freshToken = await this.getAccessToken();
             return freshToken || '';
           },
-          transport: HttpTransportType.LongPolling,
+          transport: HttpTransportType.WebSockets,
+          skipNegotiation: true,
         })
         .withServerTimeout(120000)
         .withKeepAliveInterval(15000)
@@ -139,7 +140,13 @@ class DeviceSettingsHubService {
 
     try {
       console.log('[DeviceSettingsHubService] Subscribing to batch operation:', correlationId);
-      await this.connection.invoke(DEVICE_SETTINGS_HUB_METHODS.SUBSCRIBE_TO_BATCH, correlationId);
+      try {
+        await this.connection.invoke(DEVICE_SETTINGS_HUB_METHODS.SUBSCRIBE_TO_BATCH, correlationId);
+        console.log('[DeviceSettingsHubService] Subscribe invoke completed');
+      } catch (invokeError) {
+        console.error('[DeviceSettingsHubService] Subscribe invoke FAILED:', invokeError);
+        throw invokeError;
+      }
       this.currentCorrelationId = correlationId;
 
       // Initialize batch state
@@ -151,7 +158,10 @@ class DeviceSettingsHubService {
         currentIndex: 0,
         successCount: 0,
         failedCount: 0,
+        skippedCount: 0,
+        wasCancelled: false,
         failedParameters: [],
+        failedParametersInfo: [],
         startedAt: null,
         completedAt: null,
         duration: null,
@@ -230,6 +240,15 @@ class DeviceSettingsHubService {
 
     console.log('[DeviceSettingsHubService] Setting up message handlers');
 
+    // Debug: Log ALL incoming messages
+    const originalOn = this.connection.on.bind(this.connection);
+    this.connection.on = (methodName: string, callback: (...args: any[]) => void) => {
+      return originalOn(methodName, (...args: any[]) => {
+        console.log(`[DeviceSettingsHubService] RAW MESSAGE RECEIVED: ${methodName}`, args);
+        callback(...args);
+      });
+    };
+
     // ParameterUpdateStarted
     this.connection.on(
       DEVICE_SETTINGS_HUB_EVENTS.PARAMETER_UPDATE_STARTED,
@@ -256,10 +275,19 @@ class DeviceSettingsHubService {
         console.log('[DeviceSettingsHubService] ParameterUpdated:', data.parameterName, data.currentIndex);
 
         if (this.batchState && this.batchState.correlationId === data.correlationId) {
+          // Check if this is a progress sync message from late subscription
+          // Progress sync messages have parameterName = "[Progress Sync]" and are used to
+          // update the UI with current progress when a client subscribes after operation started
+          const isProgressSync = data.parameterName === '[Progress Sync]';
+
           this.batchState = {
             ...this.batchState,
+            deviceId: data.deviceId || this.batchState.deviceId,
+            status: 'in_progress',
             currentIndex: data.currentIndex,
-            successCount: this.batchState.successCount + 1,
+            totalParameters: data.totalParameters || this.batchState.totalParameters,
+            // Only increment successCount for real parameter updates, not progress syncs
+            successCount: isProgressSync ? data.currentIndex : this.batchState.successCount + 1,
           };
           this.notifyBatchOperationUpdate(this.batchState);
         }
@@ -291,11 +319,20 @@ class DeviceSettingsHubService {
         console.log('[DeviceSettingsHubService] ParameterUpdateCompleted:', data);
 
         if (this.batchState && this.batchState.correlationId === data.correlationId) {
+          // Determine status based on results
+          let status: 'completed' | 'failed' = 'completed';
+          if (data.wasCancelled || data.failedCount > 0) {
+            status = 'failed';
+          }
+
           this.batchState = {
             ...this.batchState,
-            status: data.failedCount > 0 ? 'failed' : 'completed',
+            status,
             successCount: data.successCount,
             failedCount: data.failedCount,
+            skippedCount: data.skippedCount,
+            wasCancelled: data.wasCancelled,
+            failedParametersInfo: data.failedParameters || [],
             completedAt: data.completedAt,
             duration: data.duration,
           };

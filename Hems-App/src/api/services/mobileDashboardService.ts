@@ -67,12 +67,6 @@ export interface ComponentDto {
   componentData?: any;
 }
 
-export interface GetComponentLiveDataResponse {
-  success: boolean;
-  message?: string;
-  data?: any;
-}
-
 export interface EnergyFlowResponseDto {
   date: string;
   range: string;
@@ -261,17 +255,10 @@ export const mobileDashboardService = {
     return response.data;
   },
 
-  // Get device with data
-  async getDeviceWithData (deviceId: string): Promise<DeviceWithDataResponseDto> {
-    const url = `${ENDPOINTS.DASHBOARD.GET_DEVICE_WITH_DATA}?deviceId=${deviceId}`;
+  // Get device components status (telemetry data for each component)
+  async getDeviceComponentsStatus (deviceId: string): Promise<DeviceWithDataResponseDto> {
+    const url = `${ENDPOINTS.DASHBOARD.GET_DEVICE_COMPONENTS_STATUS}?deviceId=${deviceId}`;
     const response = await apiClient.get<DeviceWithDataResponseDto>(url);
-    return response.data;
-  },
-
-  // Get component live data
-  async getComponentLiveData (deviceId: string, componentId: string): Promise<GetComponentLiveDataResponse> {
-    const url = `${ENDPOINTS.DASHBOARD.GET_COMPONENT_LIVE_DATA}?deviceId=${deviceId}&componentId=${componentId}`;
-    const response = await apiClient.get<GetComponentLiveDataResponse>(url);
     return response.data;
   },
 

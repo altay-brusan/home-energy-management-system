@@ -28,14 +28,8 @@ export const invitationsService = {
     return response.data;
   },
 
-  async deleteInvitation(invitationId: string): Promise<void> {
-    const url = ENDPOINTS.INVITATIONS.DELETE.replace(':invitationId', invitationId);
+  async removeUser(invitationId: string): Promise<void> {
+    const url = ENDPOINTS.INVITATIONS.REMOVE_USER.replace(':invitationId', invitationId);
     await apiClient.delete(url);
   },
-
-  async removeUser(id: string): Promise<void> {
-    const url = `${ENDPOINTS.INVITATIONS.REMOVE_USER}/${id}`;
-    await apiClient.delete(url);
-  },
-
 };

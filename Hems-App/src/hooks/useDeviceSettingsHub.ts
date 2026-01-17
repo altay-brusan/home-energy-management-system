@@ -68,7 +68,9 @@ export const useDeviceSettingsHub = (
 
   // Batch operation listener
   useEffect(() => {
+    console.log('[useDeviceSettingsHub] Setting up batch operation listener');
     const unsubscribe = deviceSettingsHubService.addBatchOperationListener((state) => {
+      console.log('[useDeviceSettingsHub] 🔔 Batch operation update received:', state.status, state.currentIndex, '/', state.totalParameters);
       setBatchState(state);
       // Update store
       updateProgress(state);
@@ -76,19 +78,27 @@ export const useDeviceSettingsHub = (
       onBatchUpdate?.(state);
     });
 
-    return unsubscribe;
+    return () => {
+      console.log('[useDeviceSettingsHub] Cleaning up batch operation listener');
+      unsubscribe();
+    };
   }, [onBatchUpdate, updateProgress]);
 
   // Completion listener
   useEffect(() => {
+    console.log('[useDeviceSettingsHub] Setting up completion listener');
     const unsubscribe = deviceSettingsHubService.addCompletionListener((result) => {
+      console.log('[useDeviceSettingsHub] 🏁 Completion received:', result.successCount, 'success,', result.failedCount, 'failed');
       // Update store
       completeUpdate(result);
       // Call external callback
       onCompleted?.(result);
     });
 
-    return unsubscribe;
+    return () => {
+      console.log('[useDeviceSettingsHub] Cleaning up completion listener');
+      unsubscribe();
+    };
   }, [onCompleted, completeUpdate]);
 
   // App state handling - reconnect when app becomes active

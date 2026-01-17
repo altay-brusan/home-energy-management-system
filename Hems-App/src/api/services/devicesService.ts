@@ -6,8 +6,6 @@ import {
   UpdateDeviceCommand,
   DeviceLoginCommand,
   DeviceLoginResult,
-  GetDevicesParams,
-  PaginatedDeviceList,
 } from '../types/devices.types';
 import {
   DeviceComponentDto,
@@ -17,14 +15,6 @@ import {
 } from '../types/deviceComponents.types';
 
 export const devicesService = {
-  async getAll(params: GetDevicesParams): Promise<PaginatedDeviceList> {
-    const response = await apiClient.get<PaginatedDeviceList>(
-      ENDPOINTS.DEVICES.GET_ALL,
-      { params }
-    );
-    return response.data;
-  },
-
   async getById(id: string): Promise<DeviceDto> {
     const url = ENDPOINTS.DEVICES.GET_BY_ID.replace(':id', id);
     const response = await apiClient.get<DeviceDto>(url);
