@@ -174,12 +174,17 @@ public class ParameterUpdateBackgroundService : BackgroundService, IParameterUpd
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Parameter Update Background Service started (with write-verify-retry pattern)");
+        // Use Warning level to ensure visibility in logs
+        _logger.LogWarning("🚀 ParameterUpdateBackgroundService.ExecuteAsync STARTED - listening for queue items");
 
         try
         {
             await foreach (var request in _channel.Reader.ReadAllAsync(stoppingToken))
             {
+                _logger.LogWarning(
+                    "📥 Received queue item: CorrelationId={CorrelationId}, DeviceId={DeviceId}, ParameterCount={Count}",
+                    request.CorrelationId, request.DeviceId, request.Parameters.Count);
+
                 try
                 {
                     await ProcessParameterUpdateWithLockAsync(request, stoppingToken);
@@ -251,8 +256,8 @@ public class ParameterUpdateBackgroundService : BackgroundService, IParameterUpd
 
         try
         {
-            _logger.LogDebug(
-                "Acquired lock for device {DeviceId} (CorrelationId: {CorrelationId})",
+            _logger.LogWarning(
+                "🔒 Acquired lock for device {DeviceId} (CorrelationId: {CorrelationId}) - starting processing",
                 request.DeviceId, request.CorrelationId);
 
             await ProcessParameterUpdatesAsync(request, operationCts.Token);
@@ -302,6 +307,10 @@ public class ParameterUpdateBackgroundService : BackgroundService, IParameterUpd
         });
 
         // Notify start (clients in group will receive this; late subscribers will get cached state)
+        _logger.LogWarning(
+            "📡 Sending ParameterUpdateStarted notification: CorrelationId={CorrelationId}, DeviceId={DeviceId}, TotalParameters={Total}",
+            request.CorrelationId, request.DeviceId, request.Parameters.Count);
+
         await notificationService.NotifyParameterUpdateStartedAsync(new ParameterUpdateStartedMessage
         {
             CorrelationId = request.CorrelationId,
@@ -309,6 +318,8 @@ public class ParameterUpdateBackgroundService : BackgroundService, IParameterUpd
             TotalParameters = request.Parameters.Count,
             StartedAt = startTime
         }, cancellationToken);
+
+        _logger.LogWarning("📡 ParameterUpdateStarted notification sent successfully");
 
         // Get all parameter values for this device
         var parameterIds = request.Parameters.Select(p => p.ParameterId).ToList();
@@ -534,6 +545,10 @@ public class ParameterUpdateBackgroundService : BackgroundService, IParameterUpd
         }
 
         // Notify completion with list of failed parameters
+        _logger.LogWarning(
+            "📡 Sending ParameterUpdateCompleted: CorrelationId={CorrelationId}, Success={Success}, Failed={Failed}, Duration={Duration}",
+            request.CorrelationId, successCount, failedCount, duration);
+
         await notificationService.NotifyParameterUpdateCompletedAsync(new ParameterUpdateCompletedMessage
         {
             CorrelationId = request.CorrelationId,
@@ -547,6 +562,8 @@ public class ParameterUpdateBackgroundService : BackgroundService, IParameterUpd
             WasCancelled = wasCancelled,
             FailedParameters = failedParameters
         }, CancellationToken.None); // Use None to ensure completion message is sent even if cancelled
+
+        _logger.LogWarning("✅ ParameterUpdateCompleted notification sent successfully");
 
         // Cache final state for late-subscribing clients
         var finalStatus = wasCancelled ? "cancelled" : (failedCount > 0 ? "failed" : "completed");
