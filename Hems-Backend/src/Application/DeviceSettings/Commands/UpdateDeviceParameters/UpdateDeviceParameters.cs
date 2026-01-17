@@ -148,6 +148,11 @@ public class UpdateDeviceParametersCommandHandler : IRequestHandler<UpdateDevice
         // Generate correlation ID for tracking this batch operation
         var correlationId = Guid.NewGuid().ToString("N");
 
+        // IMPORTANT: Initialize state as "pending" BEFORE queuing
+        // This ensures late-subscribing SignalR clients will find cached state
+        // when they subscribe after the API returns but before processing starts
+        _updateQueue.InitializeOperationState(correlationId, request.DeviceId, validParameters.Count);
+
         // Queue the update request for background processing
         await _updateQueue.QueueParameterUpdateAsync(new ParameterUpdateQueueRequest
         {

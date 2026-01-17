@@ -87,21 +87,34 @@ public class DeviceSettingsHub : Hub<IDeviceSettingsHubClient>
                     }).ToList()
                 });
             }
-            else if (cachedState.Status == "in_progress")
+            else if (cachedState.Status == "in_progress" || cachedState.Status == "pending")
             {
-                // Operation in progress - send a synthetic ParameterUpdated to show current progress
-                // This uses the last successful update info from the cached state
-                await Clients.Caller.ParameterUpdated(new ParameterUpdatedMessage
+                // Operation pending or in progress - send ParameterUpdateStarted to sync state
+                // For pending: processing hasn't started yet but state is initialized
+                // For in_progress: processing is ongoing
+                await Clients.Caller.ParameterUpdateStarted(new ParameterUpdateStartedMessage
                 {
                     CorrelationId = cachedState.CorrelationId,
                     DeviceId = cachedState.DeviceId,
-                    ParameterId = Guid.Empty, // Synthetic update for progress sync
-                    ParameterName = "[Progress Sync]",
-                    NewValue = string.Empty,
-                    CurrentIndex = cachedState.CurrentIndex,
                     TotalParameters = cachedState.TotalParameters,
-                    UpdatedAt = DateTime.UtcNow
+                    StartedAt = cachedState.StartedAt ?? DateTime.UtcNow
                 });
+
+                // If in_progress with some progress, also send current progress
+                if (cachedState.Status == "in_progress" && cachedState.CurrentIndex > 0)
+                {
+                    await Clients.Caller.ParameterUpdated(new ParameterUpdatedMessage
+                    {
+                        CorrelationId = cachedState.CorrelationId,
+                        DeviceId = cachedState.DeviceId,
+                        ParameterId = Guid.Empty, // Synthetic update for progress sync
+                        ParameterName = "[Progress Sync]",
+                        NewValue = string.Empty,
+                        CurrentIndex = cachedState.CurrentIndex,
+                        TotalParameters = cachedState.TotalParameters,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                }
             }
         }
     }
