@@ -1,5 +1,7 @@
 export const API_CONFIG = {
-  BASE_URL: 'https://hems-api-dev.oklidis.com.tr/api',
+  // LOCAL TESTING - change back to 'https://hems-api-dev.oklidis.com.tr/api' for production
+  // Android Emulator: use 10.0.2.2 to reach host machine's localhost
+  BASE_URL: 'http://10.0.2.2:7163/api',
   TIMEOUT: 30000,
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000,
@@ -188,6 +190,9 @@ export const ENDPOINTS = {
     UPDATE_DEVICE_MODE: '/DeviceSettings/device/:deviceId/mode',
     GET_DEVICE_PRICE: '/DeviceSettings/device/:deviceId/price',
     UPDATE_DEVICE_PRICE: '/DeviceSettings/device/:deviceId/price',
+    // Operation state and history (for cloud resilience)
+    GET_OPERATION_STATE: '/DeviceSettings/operations/:correlationId',
+    GET_OPERATION_HISTORY: '/DeviceSettings/device/:deviceId/history',
     // Demo/testing
     CHANGE_EXPORT_STRATEGY: '/DeviceSettings/demo/export-strategy',
     // Admin database-only operations

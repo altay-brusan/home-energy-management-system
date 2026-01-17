@@ -2,7 +2,7 @@
  * CustomModeScreen
  * API yapısına uyumlu cihaz ayarları ekranı
  * Toplu kaydetme (Save butonu) ile çalışır
- * SignalR ile gerçek zamanlı progress tracking içerir
+ * Now uses synchronous REST API - no SignalR needed
  */
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
@@ -60,12 +60,10 @@ const CustomModeScreen: React.FC = () => {
     timeOfUseValidationError,
   } = useDeviceSettings();
 
-  // Update progress store
+  // Update progress store - simplified
   const {
-    isProgressModalVisible,
-    isUpdateActive,
-    hideProgressModal,
-    confirmNavigation,
+    isSaving: isUpdateInProgress,
+    showResultDialog,
     reset: resetUpdateStore,
   } = useDeviceSettingsUpdateStore();
 
@@ -156,20 +154,11 @@ const CustomModeScreen: React.FC = () => {
 
   const handleBack = () => {
     // Check if update is in progress
-    if (isUpdateActive) {
+    if (isUpdateInProgress) {
       Alert.alert(
         t('deviceSettings.update.inProgressTitle', 'Update In Progress'),
-        t('deviceSettings.update.navigateWarning', 'Settings are being updated. Continue in background?'),
-        [
-          { text: t('common.cancel', 'Cancel'), style: 'cancel' },
-          {
-            text: t('deviceSettings.update.continueInBackground', 'Continue in Background'),
-            onPress: () => {
-              confirmNavigation();
-              navigation.goBack();
-            },
-          },
-        ]
+        t('deviceSettings.update.cannotLeave', 'Please wait for the update to complete.'),
+        [{ text: t('common.ok', 'OK'), style: 'default' }]
       );
       return;
     }
@@ -190,7 +179,7 @@ const CustomModeScreen: React.FC = () => {
             onPress: async () => {
               const success = await saveSettings();
               if (success) {
-                // Don't navigate - wait for modal to complete
+                navigation.goBack();
               }
             },
           },
@@ -202,17 +191,9 @@ const CustomModeScreen: React.FC = () => {
     }
   };
 
-  // Handle continue in background from modal
-  const handleContinueInBackground = () => {
-    confirmNavigation();
-  };
-
   // Handle modal close
   const handleModalClose = () => {
-    if (!isUpdateActive) {
-      hideProgressModal();
-      resetUpdateStore();
-    }
+    resetUpdateStore();
   };
 
   const navigateToTimeOfUse = () => {
@@ -438,11 +419,10 @@ const CustomModeScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Update Progress Modal */}
+        {/* Update Progress/Result Modal - shown when saving or when there are failures */}
         <UpdateProgressModal
-          visible={isProgressModalVisible}
+          visible={isUpdateInProgress || showResultDialog}
           onClose={handleModalClose}
-          onContinueInBackground={handleContinueInBackground}
         />
       </View>
     </GestureHandlerRootView>

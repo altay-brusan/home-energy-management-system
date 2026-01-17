@@ -17,7 +17,9 @@ class DeviceStatusService {
     private isRetrying = false;
     private retryTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    private readonly HUB_URL = "https://hems-api-dev.oklidis.com.tr/deviceStatusHub";
+    // LOCAL TESTING - change back to 'https://hems-api-dev.oklidis.com.tr/deviceStatusHub' for production
+    // Android Emulator: use 10.0.2.2 to reach host machine's localhost
+    private readonly HUB_URL = "http://10.0.2.2:7163/deviceStatusHub";
 
     async connect(): Promise<void> {
         // Already connected, skip

@@ -127,6 +127,23 @@ export const makeUpdateProgressModalStyles = (isDark: boolean) => {
       color: tokens.semantic.error,
     },
 
+    // Error container (when no specific failed parameters)
+    errorContainer: {
+      width: '100%',
+      marginTop: SPACING.md,
+      padding: SPACING.md,
+      backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.05)',
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: 'rgba(239, 68, 68, 0.2)',
+    },
+    errorMessage: {
+      fontSize: 14,
+      fontFamily: FONTS.regular,
+      color: tokens.semantic.error,
+      textAlign: 'center',
+    },
+
     // Failed parameters list
     failedListContainer: {
       width: '100%',
