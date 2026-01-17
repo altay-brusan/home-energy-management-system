@@ -175,6 +175,19 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
     const result = await storeSaveSettings();
 
     if (result.success && result.correlationId) {
+      // Validate totalParameters before showing modal
+      if (!result.totalParameters || result.totalParameters === 0) {
+        console.warn('[useDeviceSettings] No parameters to update (totalParameters is 0 or undefined)');
+        // Still successful but nothing to track
+        setCustomModeActive();
+        showToast({
+          type: 'success',
+          message: 'No changes to save',
+        });
+        storeFinalizeSave(true);
+        return true;
+      }
+
       // Step 3: Immediately subscribe to the batch operation
       // This must happen ASAP after getting correlationId to catch all events
       try {

@@ -9,6 +9,7 @@ import {
   BatchOperationState,
   ParameterUpdateCompletedDto,
 } from '../api/types/deviceSettingsHub.types';
+import { useDeviceSettingsStore } from './deviceSettingsStore';
 
 interface DeviceSettingsUpdateState {
   // Progress tracking
@@ -85,28 +86,67 @@ export const useDeviceSettingsUpdateStore = create<DeviceSettingsUpdateState>((s
 
   /**
    * Update progress from SignalR events
+   * NOTE: Don't update if already completed to prevent late events from breaking UI
    */
   updateProgress: (state: BatchOperationState) => {
+    const currentState = get();
+    const currentStatus = currentState.batchState?.status;
+
+    // Don't allow updates after completion - late SignalR events should be ignored
+    if (currentStatus === 'completed' || currentStatus === 'failed') {
+      console.log('[deviceSettingsUpdateStore] ⚠️ Ignoring updateProgress - already completed:', currentStatus);
+      return;
+    }
+
     console.log('[deviceSettingsUpdateStore] 📊 updateProgress called:', state.status, state.currentIndex, '/', state.totalParameters);
+
+    // If incoming state is completed/failed, also update isUpdateActive
+    // This handles the case where SignalR sends a progress update with completed status
+    const isCompleting = state.status === 'completed' || state.status === 'failed';
+
     set({
       batchState: state,
+      // Also update isUpdateActive if this is a completion state
+      ...(isCompleting && {
+        isUpdateActive: false,
+        isNavigationBlocked: false,
+      }),
     });
+
+    // If completing via progress update, also finalize the main store
+    if (isCompleting) {
+      console.log('[deviceSettingsUpdateStore] 📊 Progress update contained completion status, finalizing...');
+      const { finalizeSave } = useDeviceSettingsStore.getState();
+      const failedIds = state.failedParameters?.map(p => p.parameterId) ?? [];
+      finalizeSave(state.status === 'completed' && (state.failedCount ?? 0) === 0, failedIds);
+    }
   },
 
   /**
    * Mark update as complete
+   * Also finalizes the save in the main deviceSettingsStore to reset isSaving state
    */
   completeUpdate: (result: ParameterUpdateCompletedDto) => {
+    const currentState = get();
+    const currentStatus = currentState.batchState?.status;
+
+    // Don't complete again if already completed
+    if (currentStatus === 'completed' || currentStatus === 'failed') {
+      console.log('[deviceSettingsUpdateStore] ⚠️ Ignoring completeUpdate - already completed:', currentStatus);
+      return;
+    }
+
     const hasFailures = result.failedCount > 0;
-    const currentBatchState = get().batchState;
+    const newStatus = hasFailures ? 'failed' : 'completed';
+    console.log('[deviceSettingsUpdateStore] ✅ completeUpdate called:', newStatus, 'success:', result.successCount, 'failed:', result.failedCount);
 
     set({
       isUpdateActive: false,
       isNavigationBlocked: false,
-      batchState: currentBatchState
+      batchState: currentState.batchState
         ? {
-            ...currentBatchState,
-            status: hasFailures ? 'failed' : 'completed',
+            ...currentState.batchState,
+            status: newStatus,
             successCount: result.successCount,
             failedCount: result.failedCount,
             completedAt: result.completedAt,
@@ -114,6 +154,13 @@ export const useDeviceSettingsUpdateStore = create<DeviceSettingsUpdateState>((s
           }
         : null,
     });
+
+    // Also finalize the save in the main store to reset isSaving state
+    // This ensures the "Saving..." button text is updated regardless of completion path
+    const failedIds = result.failedParameters?.map(p => p.parameterId) ?? [];
+    const { finalizeSave } = useDeviceSettingsStore.getState();
+    finalizeSave(!hasFailures, failedIds);
+    console.log('[deviceSettingsUpdateStore] Called finalizeSave on main store, isSaving should now be false');
   },
 
   /**

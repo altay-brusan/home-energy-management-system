@@ -418,7 +418,9 @@ const CustomModeScreen: React.FC = () => {
             style={[
               styles.saveButton,
               {
-                backgroundColor: canSave ? COLORS.accent : COLORS.gray200,
+                backgroundColor: canSave
+                  ? COLORS.accent
+                  : (isDark ? COLORS.gray700 : COLORS.gray200),
                 opacity: isSaving ? 0.7 : 1,
               },
             ]}

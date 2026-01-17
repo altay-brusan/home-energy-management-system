@@ -83,11 +83,16 @@ class DeviceSettingsHubService {
         .build();
 
       this.setupConnectionEvents();
-      this.setupMessageHandlers();
+      // NOTE: setupMessageHandlers() is called AFTER start() - handlers must be registered
+      // on a started connection in React Native for reliable event delivery
 
       await this.connection.start();
       console.log('[DeviceSettingsHubService] Connected successfully to:', this.HUB_URL);
       console.log('[DeviceSettingsHubService] Connection ID:', this.connection.connectionId);
+
+      // CRITICAL: Set up message handlers AFTER connection is started
+      // In React Native, handlers registered before start() may not work reliably
+      this.setupMessageHandlers();
 
       this.notifyConnectionState('Connected');
     } catch (error) {

@@ -111,7 +111,15 @@ export const useDeviceSettingsHub = (
           console.log('[useDeviceSettingsHub] App active - reconnecting...');
           try {
             await deviceSettingsHubService.connect();
+
+            // Validate connection before subscribing
+            if (!deviceSettingsHubService.isConnected) {
+              console.log('[useDeviceSettingsHub] Re-connect failed - not connected');
+              return;
+            }
+
             await deviceSettingsHubService.subscribeToBatchOperation(currentCorrelationRef.current);
+            console.log('[useDeviceSettingsHub] Re-connected and subscribed successfully');
           } catch (error) {
             console.log('[useDeviceSettingsHub] Re-connect on app active failed:', error);
           }
@@ -136,6 +144,12 @@ export const useDeviceSettingsHub = (
     try {
       currentCorrelationRef.current = correlationId;
       await deviceSettingsHubService.connect();
+
+      // Validate connection succeeded before subscribing
+      if (!deviceSettingsHubService.isConnected) {
+        throw new Error('Failed to connect to SignalR hub - connection not established');
+      }
+
       await deviceSettingsHubService.subscribeToBatchOperation(correlationId);
       console.log('[useDeviceSettingsHub] Batch tracking started successfully');
     } catch (error) {

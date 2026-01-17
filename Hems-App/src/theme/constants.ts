@@ -49,9 +49,11 @@ export function getThemeColors (isDark: boolean) {
     slate900: tokens.utility.slate900,
     slate700: tokens.utility.slate700,
     slate400: tokens.utility.slate400,
+    gray50: tokens.utility.gray50,
     gray100: tokens.utility.gray100,
     gray200: tokens.utility.gray200,
-    gray50: tokens.utility.gray50,
+    gray600: tokens.utility.gray600,
+    gray700: tokens.utility.gray700,
   };
 }
 
