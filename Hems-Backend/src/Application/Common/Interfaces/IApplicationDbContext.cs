@@ -57,5 +57,7 @@ public interface IApplicationDbContext
 
     DbSet<DeviceSettingUpdateHistory> DeviceSettingUpdateHistories { get; }
 
+    DbSet<MobileAppVersion> MobileAppVersions { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }
