@@ -1,7 +1,7 @@
 /**
- * Update Progress Modal (Simplified)
- * Shows loading state during save and result dialog if there are failures
- * Now uses synchronous REST API - no SignalR progress tracking needed
+ * Update Progress Modal
+ * Shows real-time progress during save and result dialog if there are failures
+ * Now uses SignalR for live progress tracking
  */
 
 import React, { useEffect, useRef } from 'react';
@@ -19,7 +19,7 @@ import { CheckCircle, XCircle, AlertTriangle, X } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../store/themeStore';
 import { getDesignTokens } from '../../theme/design-tokens';
-import { useDeviceSettingsUpdateStore } from '../../store/deviceSettingsUpdateStore';
+import { useDeviceSettingsUpdateStore, useProgressState } from '../../store/deviceSettingsUpdateStore';
 import { makeUpdateProgressModalStyles } from './UpdateProgressModal.styles';
 
 export interface UpdateProgressModalProps {
@@ -38,12 +38,25 @@ export const UpdateProgressModal: React.FC<UpdateProgressModalProps> = ({
   const tokens = getDesignTokens(isDark);
   const styles = makeUpdateProgressModalStyles(isDark);
 
-  // Get simplified store state
-  const { isSaving, lastResult, hideResultDialog } = useDeviceSettingsUpdateStore();
+  // Get store state
+  const { lastResult, hideResultDialog } = useDeviceSettingsUpdateStore();
+
+  // Get real-time progress state
+  const progressState = useProgressState();
+  const {
+    isSaving,
+    totalParameters,
+    currentIndex,
+    successCount,
+    failedCount,
+    currentParameterName,
+    failedParametersDuringProgress,
+  } = progressState;
 
   // Animation values
   const sheetY = useRef(new Animated.Value(400)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
+  const progressWidth = useRef(new Animated.Value(0)).current;
 
   // Animate modal in/out
   useEffect(() => {
@@ -77,6 +90,17 @@ export const UpdateProgressModal: React.FC<UpdateProgressModalProps> = ({
     }
   }, [visible, sheetY, overlayOpacity]);
 
+  // Animate progress bar
+  useEffect(() => {
+    if (totalParameters > 0) {
+      Animated.timing(progressWidth, {
+        toValue: (currentIndex / totalParameters) * 100,
+        duration: 200,
+        useNativeDriver: false,
+      }).start();
+    }
+  }, [currentIndex, totalParameters, progressWidth]);
+
   // Determine state
   const isCompleted = !isSaving && lastResult !== null;
   const hasFailures = (lastResult?.failedCount ?? 0) > 0;
@@ -102,6 +126,11 @@ export const UpdateProgressModal: React.FC<UpdateProgressModalProps> = ({
   // Get status text based on current state
   const getStatusText = (): string => {
     if (isSaving) {
+      if (currentParameterName) {
+        return t('deviceSettings.update.updatingParameter', 'Updating: {{name}}', {
+          name: currentParameterName,
+        });
+      }
       return t('deviceSettings.update.inProgress', 'Updating parameters...');
     }
 
@@ -194,6 +223,68 @@ export const UpdateProgressModal: React.FC<UpdateProgressModalProps> = ({
             {getStatusText()}
           </Text>
 
+          {/* Real-time Progress Bar (while saving) */}
+          {isSaving && totalParameters > 0 && (
+            <View style={styles.progressContainer}>
+              <View style={styles.progressBarBackground}>
+                <Animated.View
+                  style={[
+                    styles.progressBarFill,
+                    {
+                      width: progressWidth.interpolate({
+                        inputRange: [0, 100],
+                        outputRange: ['0%', '100%'],
+                      }),
+                    },
+                  ]}
+                />
+              </View>
+              <Text style={styles.progressText}>
+                {currentIndex} / {totalParameters}
+              </Text>
+              <View style={styles.progressCountsRow}>
+                {successCount > 0 && (
+                  <View style={styles.progressCountItem}>
+                    <CheckCircle size={14} color={tokens.semantic.success} />
+                    <Text style={[styles.progressCountText, { color: tokens.semantic.success }]}>
+                      {successCount}
+                    </Text>
+                  </View>
+                )}
+                {failedCount > 0 && (
+                  <View style={styles.progressCountItem}>
+                    <XCircle size={14} color={tokens.semantic.error} />
+                    <Text style={[styles.progressCountText, { color: tokens.semantic.error }]}>
+                      {failedCount}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
+
+          {/* Show failures as they happen during progress */}
+          {isSaving && failedParametersDuringProgress.length > 0 && (
+            <ScrollView
+              style={styles.failedListContainer}
+              showsVerticalScrollIndicator={false}
+            >
+              <Text style={styles.failedTitle}>
+                {t('deviceSettings.update.failedDuringProgress', 'Failed:')}
+              </Text>
+              {failedParametersDuringProgress.map((param, index) => (
+                <View key={`${param.parameterId}-${index}`} style={styles.failedItem}>
+                  <Text style={styles.failedParamName}>
+                    {param.parameterName}
+                  </Text>
+                  <Text style={styles.failedParamError}>
+                    {param.errorMessage}
+                  </Text>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+
           {/* Summary (when completed) */}
           {isCompleted && lastResult && (
             <View style={styles.summaryContainer}>
@@ -233,8 +324,8 @@ export const UpdateProgressModal: React.FC<UpdateProgressModalProps> = ({
             </View>
           )}
 
-          {/* Failed Parameters List */}
-          {hasFailures && lastResult?.failedParameters && lastResult.failedParameters.length > 0 && (
+          {/* Failed Parameters List (when completed) */}
+          {isCompleted && hasFailures && lastResult?.failedParameters && lastResult.failedParameters.length > 0 && (
             <ScrollView
               style={styles.failedListContainer}
               showsVerticalScrollIndicator={false}

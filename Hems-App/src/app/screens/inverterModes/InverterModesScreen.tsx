@@ -3,7 +3,7 @@
  * API-driven mode selection with grid layout
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, RefreshCw } from 'lucide-react-native';
 import Reanimated, { FadeInDown } from 'react-native-reanimated';
@@ -23,6 +23,7 @@ import { getThemeColors } from '../../../theme/constants';
 import { useInverterModeStore } from '../../../store/inverterModeStore';
 import { useSitesStore } from '../../../store/sitesStore';
 import { ModeCard } from '../../../components/inverterModes';
+import { useDeviceBusyInfo } from '../../../store/deviceSettingsStore';
 
 const InverterModesScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -44,6 +45,12 @@ const InverterModesScreen: React.FC = () => {
   const { selectedSiteDevice } = useSitesStore();
   const deviceId = selectedSiteDevice?.device?.id;
 
+  // Device busy state
+  const deviceBusyInfo = useDeviceBusyInfo();
+  const isDeviceBusy = deviceBusyInfo?.isDeviceBusy &&
+    deviceBusyInfo.busyUntil &&
+    Date.now() < deviceBusyInfo.busyUntil;
+
   // Fetch modes and active mode on mount
   useEffect(() => {
     fetchModes();
@@ -53,6 +60,20 @@ const InverterModesScreen: React.FC = () => {
   }, [fetchModes, fetchActiveMode, deviceId]);
 
   const handleModePress = (modeId: string) => {
+    // Check if device is busy with an update
+    if (isDeviceBusy) {
+      const progressText = deviceBusyInfo?.progressPercentage !== undefined
+        ? `\n${t('deviceSettings.busy.progress', { progress: deviceBusyInfo.progressPercentage })}`
+        : '';
+
+      Alert.alert(
+        t('deviceSettings.busy.title', 'Settings Update In Progress'),
+        t('deviceSettings.busy.modesDisabled', 'Mode selection is temporarily disabled while settings are being synchronized.') + progressText,
+        [{ text: t('common.ok', 'OK'), style: 'default' }]
+      );
+      return;
+    }
+
     const mode = modes.find((m) => m.id === modeId);
     if (mode?.isCustom) {
       // Check if custom mode is already active

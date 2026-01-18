@@ -82,16 +82,23 @@ export const numberToString = (appValue: number): string => {
 
 /**
  * Time String Transformer (HH:MM format)
- * Handles 24:00 -> 00:00 conversion (midnight representation)
+ * For end times: '00:00' represents midnight (end of day) and should be displayed as '24:00'
+ * For start times: '00:00' represents start of day
+ *
+ * Note: This transformer is used for both start and end times without context.
+ * The conversion is done here for end times that come from API as '00:00' but represent midnight.
+ * The last slot's endTime should always be '24:00' in the app.
  */
 export const timeStringToApp = (apiValue: string): string => {
   if (!apiValue) return '00:00';
-  // API'den 24:00 gelebilir, bunu 00:00'a çeviriyoruz
-  if (apiValue === '24:00') return '00:00';
+  // Keep value as-is - no conversion needed
+  // The store and validation logic handles both '00:00' and '24:00' for midnight
   return apiValue;
 };
 
 export const timeStringToAPI = (appValue: string): string => {
+  // Convert '24:00' to '00:00' for API if needed (some APIs expect 00:00 for midnight)
+  // But most inverter APIs accept '24:00' directly
   return appValue || '00:00';
 };
 

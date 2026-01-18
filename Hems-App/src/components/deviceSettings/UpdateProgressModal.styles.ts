@@ -83,14 +83,14 @@ export const makeUpdateProgressModalStyles = (isDark: boolean) => {
       alignItems: 'center',
       marginBottom: SPACING.lg,
     },
-    progressBar: {
+    progressBarBackground: {
       width: '100%',
       height: 8,
       borderRadius: 4,
       backgroundColor: tokens.utility.gray200,
       overflow: 'hidden',
     },
-    progressFill: {
+    progressBarFill: {
       height: '100%',
       borderRadius: 4,
       backgroundColor: tokens.brand.accent,
@@ -100,6 +100,21 @@ export const makeUpdateProgressModalStyles = (isDark: boolean) => {
       fontSize: 14,
       fontFamily: FONTS.regular,
       color: tokens.text.secondary,
+    },
+    progressCountsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 16,
+      marginTop: 8,
+    },
+    progressCountItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    progressCountText: {
+      fontSize: 14,
+      fontFamily: FONTS.medium,
     },
 
     // Summary

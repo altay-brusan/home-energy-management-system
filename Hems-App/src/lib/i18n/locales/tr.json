@@ -2075,6 +2075,13 @@
       "continueInBackground": "Arka Planda Devam Et",
       "inProgressTitle": "Güncelleme Devam Ediyor",
       "navigateWarning": "Ayarlar güncelleniyor. Arka planda devam etsin mi?"
+    },
+    "busy": {
+      "title": "Ayarlar Güncelleniyor",
+      "message": "Cihaz ayarları şu anda güncelleniyor. Lütfen bekleyin ve daha sonra tekrar deneyin.",
+      "progress": "İlerleme: %{{progress}}",
+      "estimatedTime": "Tahmini kalan süre: {{seconds}} saniye",
+      "modesDisabled": "Ayarlar senkronize edilirken mod seçimi geçici olarak devre dışı bırakıldı."
     }
   }
 }

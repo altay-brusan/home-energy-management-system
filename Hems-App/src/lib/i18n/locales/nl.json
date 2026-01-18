@@ -1998,6 +1998,13 @@
       "continueInBackground": "Doorgaan op Achtergrond",
       "inProgressTitle": "Update Bezig",
       "navigateWarning": "Instellingen worden bijgewerkt. Doorgaan op de achtergrond?"
+    },
+    "busy": {
+      "title": "Instellingen worden bijgewerkt",
+      "message": "Apparaatinstellingen worden momenteel bijgewerkt. Probeer het later opnieuw.",
+      "progress": "Voortgang: {{progress}}%",
+      "estimatedTime": "Geschatte resterende tijd: {{seconds}} seconden",
+      "modesDisabled": "Modusselectie is tijdelijk uitgeschakeld terwijl de instellingen worden gesynchroniseerd."
     }
   }
 }

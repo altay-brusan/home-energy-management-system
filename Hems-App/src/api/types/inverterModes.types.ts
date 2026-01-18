@@ -237,7 +237,7 @@ export const DEFAULT_TIME_SLOTS: TimeOfUseConfig['timeSlots'] = [
   { id: 'P3', startTime: '10:00', endTime: '14:00', gridCharge: 'off', genCharge: 'off', maxDischarge: 3000, minBatterySOC: 30, minBatteryVoltage: 48 },
   { id: 'P4', startTime: '14:00', endTime: '18:00', gridCharge: 'off', genCharge: 'off', maxDischarge: 3000, minBatterySOC: 30, minBatteryVoltage: 48 },
   { id: 'P5', startTime: '18:00', endTime: '22:00', gridCharge: 'off', genCharge: 'off', maxDischarge: 3000, minBatterySOC: 30, minBatteryVoltage: 48 },
-  { id: 'P6', startTime: '22:00', endTime: '00:00', gridCharge: 'off', genCharge: 'off', maxDischarge: 3000, minBatterySOC: 30, minBatteryVoltage: 48 },
+  { id: 'P6', startTime: '22:00', endTime: '24:00', gridCharge: 'off', genCharge: 'off', maxDischarge: 3000, minBatterySOC: 30, minBatteryVoltage: 48 },
 ];
 
 export const DEFAULT_ACTIVE_DAYS: ActiveDays = {

@@ -24,6 +24,21 @@ export interface ExportStrategyStateDto {
 export interface DeviceSettingsTreeVm {
   setupDeviceId: string;
   parameterGroups: ParameterGroupTreeDto[];
+  /**
+   * Indicates if a parameter update operation is currently in progress.
+   * When true, the client should disable mode/settings changes and retry later.
+   */
+  isDeviceBusy?: boolean;
+  /**
+   * Estimated time remaining for the current operation (in seconds).
+   * Only populated when isDeviceBusy is true.
+   */
+  estimatedSecondsRemaining?: number;
+  /**
+   * Current progress of the operation (0-100).
+   * Only populated when isDeviceBusy is true.
+   */
+  progressPercentage?: number;
 }
 
 export interface ParameterGroupTreeDto {

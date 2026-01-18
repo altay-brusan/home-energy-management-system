@@ -2,16 +2,18 @@
  * useDeviceSettings Hook
  * CustomModeScreen ve ayar ekranları için yüksek seviyeli hook
  * Yeni DeviceSettings API kullanır (deviceId bazlı)
- * Now uses synchronous REST API - no SignalR needed
+ * Now uses synchronous REST API with SignalR for real-time progress
  */
 
-import { useCallback } from 'react';
-import { useDeviceSettingsStore } from '../store/deviceSettingsStore';
+import { useCallback, useEffect } from 'react';
+import { useDeviceSettingsStore, DeviceBusyInfo } from '../store/deviceSettingsStore';
 import { useSelectedSiteDevice } from './useSelectedSiteDevice';
 import { useRoles } from './useRoles';
 import { useToastStore } from '../store/toastStore';
 import { useDeviceSettingsUpdateStore } from '../store/deviceSettingsUpdateStore';
 import { useInverterModeStore } from '../store/inverterModeStore';
+import { useDeviceSettingsSignalR } from './useDeviceSettingsSignalR';
+import { deviceSettingsSignalRService } from '../services/deviceSettingsSignalRService';
 import {
   DeviceSettingsConfig,
   TimeSlot,
@@ -37,6 +39,10 @@ export interface UseDeviceSettingsReturn {
   isSaving: boolean;
   isDirty: boolean;
   error: string | null;
+
+  // Device busy state (when another update is in progress)
+  deviceBusyInfo: DeviceBusyInfo | null;
+  isDeviceBusy: boolean;
 
   // TimeOfUse validation
   timeOfUseValidationError: string | null;
@@ -79,6 +85,13 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
   const isDirty = useDeviceSettingsStore((state) => state.isDirty);
   const error = useDeviceSettingsStore((state) => state.error);
   const timeOfUseValidationError = useDeviceSettingsStore((state) => state.timeOfUseValidationError);
+  const deviceBusyInfo = useDeviceSettingsStore((state) => state.deviceBusyInfo);
+  const clearDeviceBusy = useDeviceSettingsStore((state) => state.clearDeviceBusy);
+
+  // Compute isDeviceBusy - check if busy and not expired
+  const isDeviceBusy = deviceBusyInfo?.isDeviceBusy &&
+    deviceBusyInfo.busyUntil &&
+    Date.now() < deviceBusyInfo.busyUntil;
 
   // Compute canSave
   const canSave = isDirty && !timeOfUseValidationError;
@@ -93,6 +106,10 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
   const updateTimeSlot = useDeviceSettingsStore((state) => state.updateTimeSlot);
   const clearError = useDeviceSettingsStore((state) => state.clearError);
 
+  // Snapshot/rollback actions
+  const capturePreSaveSnapshot = useDeviceSettingsStore((state) => state.capturePreSaveSnapshot);
+  const clearPreSaveSnapshot = useDeviceSettingsStore((state) => state.clearPreSaveSnapshot);
+
   // Update progress store actions
   const { startSaving, completeSaving } = useDeviceSettingsUpdateStore();
 
@@ -101,6 +118,9 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
 
   // Get deviceId from the device object
   const deviceId = device?.id;
+
+  // Initialize SignalR connection for real-time progress updates
+  useDeviceSettingsSignalR({ deviceId, enabled: !!deviceId });
 
   // NO AUTO-FETCH - Let the screen control when to fetch
   // This prevents infinite loops from useEffect dependencies
@@ -112,17 +132,33 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
     }
   }, [deviceId, storeFetchSettings]);
 
-  // Save settings - now synchronous, no SignalR needed
+  // Save settings - now synchronous with SignalR for real-time progress
   const saveSettings = useCallback(async (): Promise<boolean> => {
+    // Ensure SignalR is connected for real-time progress updates
+    // Wait up to 3 seconds for connection to be ready
+    if (deviceId) {
+      const isConnected = await deviceSettingsSignalRService.ensureConnected(deviceId, 3000);
+      if (isConnected) {
+        console.log('[useDeviceSettings] SignalR connected, proceeding with save');
+      } else {
+        console.log('[useDeviceSettings] SignalR not connected, save will proceed without real-time progress');
+      }
+    }
+
+    // Capture pre-save snapshot for potential rollback on failure
+    capturePreSaveSnapshot();
+
     // Start saving state
     startSaving();
 
     try {
       // Call API - now waits for completion
+      // SignalR events will be received via useDeviceSettingsSignalR hook
       const result = await storeSaveSettings();
 
       if (result.success) {
-        // Full success
+        // Full success - clear snapshot as all changes are saved
+        clearPreSaveSnapshot();
         setCustomModeActive();
         showToast({
           type: 'success',
@@ -204,7 +240,7 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
       });
       return false;
     }
-  }, [storeSaveSettings, startSaving, completeSaving, showToast, setCustomModeActive]);
+  }, [deviceId, storeSaveSettings, startSaving, completeSaving, showToast, setCustomModeActive, capturePreSaveSnapshot, clearPreSaveSnapshot]);
 
   // Category-specific update helpers
   const updateBatterySettings = useCallback(
@@ -271,6 +307,10 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
     isSaving,
     isDirty,
     error,
+
+    // Device busy state
+    deviceBusyInfo,
+    isDeviceBusy: !!isDeviceBusy,
 
     // TimeOfUse validation
     timeOfUseValidationError,

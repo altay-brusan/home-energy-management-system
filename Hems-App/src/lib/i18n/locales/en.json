@@ -2098,6 +2098,13 @@
       "continueInBackground": "Continue in Background",
       "inProgressTitle": "Update In Progress",
       "navigateWarning": "Settings are being updated. Continue in background?"
+    },
+    "busy": {
+      "title": "Settings Update In Progress",
+      "message": "Device settings are currently being updated. Please wait and try again later.",
+      "progress": "Progress: {{progress}}%",
+      "estimatedTime": "Estimated time remaining: {{seconds}} seconds",
+      "modesDisabled": "Mode selection is temporarily disabled while settings are being synchronized."
     }
   }
 }
