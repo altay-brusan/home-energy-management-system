@@ -214,4 +214,8 @@ export const ENDPOINTS = {
     UPDATE: '/DeviceSettings/admin/:id',
     DELETE: '/DeviceSettings/admin/:id',
   },
+  // Mobile App Version Check
+  MOBILE_APP_VERSIONS: {
+    CHECK: '/MobileAppVersions/Check',
+  },
 } as const;

@@ -1090,6 +1090,18 @@
       "moveToSignal": "Daha iyi sinyal alanına gidin"
     }
   },
+  "update": {
+    "requiredTitle": "Güncelleme Gerekli",
+    "availableTitle": "Güncelleme Mevcut",
+    "requiredSubtitle": "Devam etmek için uygulamanın yeni bir sürümü gereklidir. Lütfen en son sürüme güncelleyin.",
+    "availableSubtitle": "Uygulamanın yeni bir sürümü mevcut. En iyi deneyim için şimdi güncelleyin.",
+    "currentVersion": "Mevcut Sürüm",
+    "latestVersion": "Son Sürüm",
+    "whatsNew": "Yenilikler",
+    "updateNow": "Şimdi Güncelle",
+    "later": "Daha Sonra Hatırlat",
+    "requiredFooter": "Bu güncelleme, uygulamayı kullanmaya devam etmek için gereklidir."
+  },
   "trash": {
     "title": "Çöp Kutusu",
     "restoreAll": "Tümünü Geri Yükle",

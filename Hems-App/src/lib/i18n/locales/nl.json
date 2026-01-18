@@ -1055,6 +1055,18 @@
         "moveToSignal": "Ga naar een gebied met beter signaal"
       }
     },
+    "update": {
+      "requiredTitle": "Update Vereist",
+      "availableTitle": "Update Beschikbaar",
+      "requiredSubtitle": "Een nieuwe versie van de app is vereist om door te gaan. Werk bij naar de nieuwste versie.",
+      "availableSubtitle": "Een nieuwe versie van de app is beschikbaar. Update nu voor de beste ervaring.",
+      "currentVersion": "Huidige Versie",
+      "latestVersion": "Nieuwste Versie",
+      "whatsNew": "Wat is nieuw",
+      "updateNow": "Nu Updaten",
+      "later": "Later Herinneren",
+      "requiredFooter": "Deze update is vereist om de app te blijven gebruiken."
+    },
     "trash": {
       "title": "Prullenbak",
       "restoreAll": "Alles Herstellen",
