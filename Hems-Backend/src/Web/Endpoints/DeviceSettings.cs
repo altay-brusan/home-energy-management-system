@@ -121,7 +121,7 @@ public class DeviceSettings : EndpointGroupBase
     /// <summary>
     /// Update multiple device parameters in batch (synchronous)
     /// Waits for all updates to complete and returns the complete result.
-    /// Timeout: ~2 minutes depending on number of parameters.
+    /// Timeout: 3 minutes (handles up to ~50 parameters safely).
     /// </summary>
     /// <remarks>
     /// This endpoint is now synchronous - it waits for all parameter updates to complete
@@ -140,7 +140,8 @@ public class DeviceSettings : EndpointGroupBase
         ISender sender,
         ILogger<DeviceSettings> logger,
         Guid deviceId,
-        UpdateDeviceParametersRequest request)
+        UpdateDeviceParametersRequest request,
+        CancellationToken cancellationToken)
     {
         // DEBUG: Log incoming request
         logger.LogInformation(
@@ -149,72 +150,88 @@ public class DeviceSettings : EndpointGroupBase
             request.Parameters.Count,
             string.Join("; ", request.Parameters.Select(p => $"Id={p.ParameterId}, Value='{p.Value}'")));
 
+        // Create a timeout token (3 minutes) to prevent indefinite hangs
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeoutCts.CancelAfter(TimeSpan.FromMinutes(3));
+
         var command = new UpdateDeviceParametersCommand
         {
             DeviceId = deviceId,
             Parameters = request.Parameters
         };
 
-        var result = await sender.Send(command);
-
-        // DEBUG: Log result
-        logger.LogInformation(
-            "📤 [Endpoint] UpdateDeviceParameters result: Success={Success}, ErrorCode={ErrorCode}, ErrorMessage={ErrorMessage}, " +
-            "TotalParams={Total}, SuccessCount={SuccessCount}, FailedCount={FailedCount}, FailedParams=[{FailedParams}]",
-            result.Success,
-            result.ErrorCode ?? "none",
-            result.ErrorMessage ?? "none",
-            result.TotalParameters,
-            result.SuccessCount,
-            result.FailedCount,
-            string.Join("; ", result.FailedParameters.Select(p => $"{p.ParameterName}: {p.ErrorMessage}")));
-
-        if (result.Success)
+        try
         {
-            return Results.Ok(new
+            var result = await sender.Send(command, timeoutCts.Token);
+
+            // DEBUG: Log result
+            logger.LogInformation(
+                "📤 [Endpoint] UpdateDeviceParameters result: Success={Success}, ErrorCode={ErrorCode}, ErrorMessage={ErrorMessage}, " +
+                "TotalParams={Total}, SuccessCount={SuccessCount}, FailedCount={FailedCount}, FailedParams=[{FailedParams}]",
+                result.Success,
+                result.ErrorCode ?? "none",
+                result.ErrorMessage ?? "none",
+                result.TotalParameters,
+                result.SuccessCount,
+                result.FailedCount,
+                string.Join("; ", result.FailedParameters.Select(p => $"{p.ParameterName}: {p.ErrorMessage}")));
+
+            if (result.Success)
             {
-                success = true,
-                totalParameters = result.TotalParameters,
-                successCount = result.SuccessCount,
-                failedCount = result.FailedCount,
-                failedParameters = result.FailedParameters,
-                duration = result.Duration.ToString()
-            });
-        }
+                return Results.Ok(new
+                {
+                    success = true,
+                    totalParameters = result.TotalParameters,
+                    successCount = result.SuccessCount,
+                    failedCount = result.FailedCount,
+                    failedParameters = result.FailedParameters,
+                    duration = result.Duration.ToString()
+                });
+            }
 
-        // Handle specific error codes
-        if (result.ErrorCode == "DEVICE_BUSY")
-        {
+            // Handle specific error codes
+            if (result.ErrorCode == "DEVICE_BUSY")
+            {
+                return Results.BadRequest(new
+                {
+                    success = false,
+                    errorCode = result.ErrorCode,
+                    message = result.ErrorMessage
+                });
+            }
+
+            // Partial success (some parameters updated, some failed)
+            if (result.SuccessCount > 0)
+            {
+                return Results.Ok(new
+                {
+                    success = false, // Not fully successful
+                    totalParameters = result.TotalParameters,
+                    successCount = result.SuccessCount,
+                    failedCount = result.FailedCount,
+                    failedParameters = result.FailedParameters,
+                    duration = result.Duration.ToString(),
+                    message = $"{result.SuccessCount} parameters updated, {result.FailedCount} failed"
+                });
+            }
+
             return Results.BadRequest(new
             {
                 success = false,
                 errorCode = result.ErrorCode,
-                message = result.ErrorMessage
+                message = result.ErrorMessage ?? "Failed to update parameters",
+                failedParameters = result.FailedParameters
             });
         }
-
-        // Partial success (some parameters updated, some failed)
-        if (result.SuccessCount > 0)
+        catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
-            return Results.Ok(new
-            {
-                success = false, // Not fully successful
-                totalParameters = result.TotalParameters,
-                successCount = result.SuccessCount,
-                failedCount = result.FailedCount,
-                failedParameters = result.FailedParameters,
-                duration = result.Duration.ToString(),
-                message = $"{result.SuccessCount} parameters updated, {result.FailedCount} failed"
-            });
+            // Timeout occurred (not client cancellation)
+            logger.LogWarning(
+                "⏱️ [Endpoint] UpdateDeviceParameters timed out after 3 minutes: DeviceId={DeviceId}, ParameterCount={Count}",
+                deviceId, request.Parameters.Count);
+
+            return Results.StatusCode(504); // Gateway Timeout
         }
-
-        return Results.BadRequest(new
-        {
-            success = false,
-            errorCode = result.ErrorCode,
-            message = result.ErrorMessage ?? "Failed to update parameters",
-            failedParameters = result.FailedParameters
-        });
     }
 
     /// <summary>

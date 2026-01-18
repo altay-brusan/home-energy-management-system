@@ -221,6 +221,14 @@ public class UpdateDeviceParametersCommandHandler : IRequestHandler<UpdateDevice
             validParameters.Count,
             string.Join("; ", validParameters.Select(p => $"{p.ParameterName}='{p.Value}'")));
 
+        // Sort parameters to ensure time slots are updated in order (slot 1, slot 2, slot 3, etc.)
+        // This is important because slot boundaries depend on each other (slot 2 start = slot 1 end)
+        var orderedParameters = OrderParametersForUpdate(validParameters);
+
+        _logger.LogInformation(
+            "📋 Parameters ordered for update: [{Parameters}]",
+            string.Join("; ", orderedParameters.Select(p => $"{p.ParameterName}='{p.Value}'")));
+
         try
         {
             // Execute synchronous update - this waits for completion
@@ -229,7 +237,7 @@ public class UpdateDeviceParametersCommandHandler : IRequestHandler<UpdateDevice
                 request.DeviceId,
                 setupDevice.Id,
                 device.ThingsBoardDeviceId,
-                validParameters,
+                orderedParameters,
                 cancellationToken);
 
             _logger.LogInformation(
@@ -273,6 +281,68 @@ public class UpdateDeviceParametersCommandHandler : IRequestHandler<UpdateDevice
                 ErrorMessage = "Operation timed out."
             };
         }
+    }
+
+    /// <summary>
+    /// Orders parameters for update to ensure time slots are processed in slot order (1, 2, 3, etc.)
+    /// This is critical because time slot boundaries depend on each other.
+    /// Non-time-slot parameters are processed first, then time slots in order.
+    /// </summary>
+    private static List<ParameterUpdateItem> OrderParametersForUpdate(List<ParameterUpdateItem> parameters)
+    {
+        // Regex to extract slot number from parameter names like "TimeSlot1StartTime", "TimeSlot2EndTime", etc.
+        var timeSlotRegex = new System.Text.RegularExpressions.Regex(@"TimeSlot(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        // Separate time slot parameters from non-time slot parameters
+        var nonTimeSlotParams = new List<ParameterUpdateItem>();
+        var timeSlotParams = new List<(ParameterUpdateItem Param, int SlotNumber, int FieldOrder)>();
+
+        foreach (var param in parameters)
+        {
+            var match = timeSlotRegex.Match(param.ParameterName);
+            if (match.Success && int.TryParse(match.Groups[1].Value, out var slotNumber))
+            {
+                // Determine field order within a slot (StartTime first, then EndTime, then other fields)
+                var fieldOrder = GetTimeSlotFieldOrder(param.ParameterName);
+                timeSlotParams.Add((param, slotNumber, fieldOrder));
+            }
+            else
+            {
+                nonTimeSlotParams.Add(param);
+            }
+        }
+
+        // Sort time slot parameters by slot number, then by field order within each slot
+        var orderedTimeSlotParams = timeSlotParams
+            .OrderBy(p => p.SlotNumber)
+            .ThenBy(p => p.FieldOrder)
+            .Select(p => p.Param)
+            .ToList();
+
+        // Return non-time-slot params first, then ordered time slot params
+        var result = new List<ParameterUpdateItem>(nonTimeSlotParams.Count + orderedTimeSlotParams.Count);
+        result.AddRange(nonTimeSlotParams);
+        result.AddRange(orderedTimeSlotParams);
+
+        return result;
+    }
+
+    /// <summary>
+    /// Gets the order of a field within a time slot for proper sequencing.
+    /// StartTime should come before EndTime within the same slot.
+    /// </summary>
+    private static int GetTimeSlotFieldOrder(string parameterName)
+    {
+        var nameLower = parameterName.ToLowerInvariant();
+
+        if (nameLower.Contains("starttime")) return 0;
+        if (nameLower.Contains("endtime")) return 1;
+        if (nameLower.Contains("gridcharge") || nameLower.Contains("allowgridcharge")) return 2;
+        if (nameLower.Contains("generatorcharge") || nameLower.Contains("allowgeneratorcharge")) return 3;
+        if (nameLower.Contains("dischargepower") || nameLower.Contains("maxbatterydischargepower")) return 4;
+        if (nameLower.Contains("threshold") || nameLower.Contains("soc") || nameLower.Contains("voltage")) return 5;
+
+        return 99; // Unknown fields last
     }
 }
 

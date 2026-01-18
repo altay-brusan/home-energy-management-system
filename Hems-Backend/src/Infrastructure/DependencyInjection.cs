@@ -86,11 +86,14 @@ public static class DependencyInjection
         // Alarm Notification Sender (sends SignalR notifications for device alarms)
         builder.Services.AddScoped<IAlarmNotificationSender, AlarmNotificationSender>();
 
-        // Device Parameter Update Service (synchronous REST-based updates)
+        // Device Parameter Update Service (synchronous REST-based updates with SignalR progress)
         builder.Services.AddScoped<IDeviceParameterUpdateService, DeviceParameterUpdateService>();
 
         // Device Lock Service (prevents concurrent device settings updates)
         builder.Services.AddSingleton<IDeviceLockService, DeviceLockService>();
+
+        // Operation State Service (tracks parameter update operations for SignalR reconnection)
+        builder.Services.AddSingleton<IOperationStateService, OperationStateService>();
 
         // ThingsBoard Services
         builder.Services.AddHttpClient<IThingsBoardConnectorService, ThingsBoardConnectorService>();

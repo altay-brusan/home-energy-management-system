@@ -1,5 +1,8 @@
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Domain.Entities;
+using Hems_Backend.Infrastructure.Hubs;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -15,6 +18,8 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
 {
     private readonly IDeviceLockService _lockService;
     private readonly IServiceScopeFactory _serviceScopeFactory;
+    private readonly IHubContext<DeviceSettingsHub, IDeviceSettingsHubClient> _hubContext;
+    private readonly IOperationStateService _operationStateService;
     private readonly ILogger<DeviceParameterUpdateService> _logger;
 
     /// <summary>
@@ -35,10 +40,14 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
     public DeviceParameterUpdateService(
         IDeviceLockService lockService,
         IServiceScopeFactory serviceScopeFactory,
+        IHubContext<DeviceSettingsHub, IDeviceSettingsHubClient> hubContext,
+        IOperationStateService operationStateService,
         ILogger<DeviceParameterUpdateService> logger)
     {
         _lockService = lockService;
         _serviceScopeFactory = serviceScopeFactory;
+        _hubContext = hubContext;
+        _operationStateService = operationStateService;
         _logger = logger;
     }
 
@@ -67,11 +76,23 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
             throw new DeviceBusyException("Another update operation is in progress for this device.");
         }
 
+        // Create operation for tracking
+        var operationId = _operationStateService.CreateOperation(deviceId, "system", parameters);
+        var deviceGroup = _hubContext.Clients.Group($"Device_{deviceId}");
+
         try
         {
             _logger.LogInformation(
-                "Starting synchronous parameter update for device {DeviceId} with {Count} parameters",
-                deviceId, parameters.Count);
+                "Starting synchronous parameter update for device {DeviceId} with {Count} parameters (Operation: {OperationId})",
+                deviceId, parameters.Count, operationId);
+
+            // Send OperationStarted event (fire-and-forget, don't wait)
+            _ = deviceGroup.OperationStarted(new OperationStartedEvent(
+                operationId,
+                deviceId,
+                parameters.Count,
+                startTime
+            ));
 
             // Create a scope for database operations
             using var scope = _serviceScopeFactory.CreateScope();
@@ -87,10 +108,16 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
                     parameterIds.Contains(sdpv.ParameterId))
                 .ToDictionaryAsync(pv => pv.ParameterId, cancellationToken);
 
+            var currentIndex = 0;
+
             // Process each parameter sequentially
             foreach (var param in parameters)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                currentIndex++;
+
+                // Mark parameter as in-progress
+                _operationStateService.UpdateParameterProgress(operationId, param.ParameterId, ParameterUpdateStatus.InProgress, null);
 
                 try
                 {
@@ -110,6 +137,8 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
                         }
 
                         result.SuccessCount++;
+                        _operationStateService.UpdateParameterProgress(operationId, param.ParameterId, ParameterUpdateStatus.Success, null);
+
                         _logger.LogDebug(
                             "Successfully updated parameter {ParameterName} on device {DeviceId}",
                             param.ParameterName, deviceId);
@@ -123,11 +152,26 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
                             ParameterName = param.ParameterName,
                             ErrorMessage = updateSuccess.errorMessage ?? "Update failed"
                         });
+                        _operationStateService.UpdateParameterProgress(operationId, param.ParameterId, ParameterUpdateStatus.Failed, updateSuccess.errorMessage);
 
                         _logger.LogWarning(
                             "Failed to update parameter {ParameterName} on device {DeviceId}: {Error}",
                             param.ParameterName, deviceId, updateSuccess.errorMessage);
                     }
+
+                    // Send ParameterProgress event (fire-and-forget)
+                    _ = deviceGroup.ParameterProgress(new ParameterProgressEvent(
+                        operationId,
+                        deviceId,
+                        param.ParameterId,
+                        param.ParameterName,
+                        updateSuccess.success ? ParameterUpdateStatus.Success : ParameterUpdateStatus.Failed,
+                        updateSuccess.errorMessage,
+                        currentIndex,
+                        parameters.Count,
+                        result.SuccessCount,
+                        result.FailedCount
+                    ));
                 }
                 catch (OperationCanceledException)
                 {
@@ -142,6 +186,21 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
                         ParameterName = param.ParameterName,
                         ErrorMessage = ex.Message
                     });
+                    _operationStateService.UpdateParameterProgress(operationId, param.ParameterId, ParameterUpdateStatus.Failed, ex.Message);
+
+                    // Send ParameterProgress event for failure (fire-and-forget)
+                    _ = deviceGroup.ParameterProgress(new ParameterProgressEvent(
+                        operationId,
+                        deviceId,
+                        param.ParameterId,
+                        param.ParameterName,
+                        ParameterUpdateStatus.Failed,
+                        ex.Message,
+                        currentIndex,
+                        parameters.Count,
+                        result.SuccessCount,
+                        result.FailedCount
+                    ));
 
                     _logger.LogError(ex,
                         "Exception updating parameter {ParameterName} on device {DeviceId}",
@@ -157,6 +216,25 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
 
             result.Success = result.FailedCount == 0;
             result.Duration = DateTime.UtcNow - startTime;
+
+            // Mark operation as completed
+            _operationStateService.CompleteOperation(operationId, result.Success);
+
+            // Send OperationCompleted event (fire-and-forget)
+            _ = deviceGroup.OperationCompleted(new OperationCompletedEvent(
+                operationId,
+                deviceId,
+                result.Success,
+                result.TotalParameters,
+                result.SuccessCount,
+                result.FailedCount,
+                result.FailedParameters.Select(fp => new FailedParameterInfo(
+                    fp.ParameterId,
+                    fp.ParameterName,
+                    fp.ErrorMessage
+                )).ToList(),
+                result.Duration
+            ));
 
             _logger.LogInformation(
                 "Completed parameter update for device {DeviceId}: {Success}/{Total} succeeded, {Failed} failed in {Duration}ms",
