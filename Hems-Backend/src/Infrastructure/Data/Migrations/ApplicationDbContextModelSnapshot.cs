@@ -769,6 +769,69 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.ToTable("DevicePowerData", (string)null);
                 });
 
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceSettingUpdateHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AttemptedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("CorrelationId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("DeviceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("FailedReason")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("NewValue")
+                        .HasColumnType("text");
+
+                    b.Property<string>("OldValue")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ParameterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ParameterName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("RetryAttempts")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("VerifiedValue")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeviceId");
+
+                    b.ToTable("DeviceSettingUpdateHistories");
+                });
+
             modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceWeatherData", b =>
                 {
                     b.Property<int>("Id")
@@ -1835,6 +1898,17 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .WithMany()
                         .HasForeignKey("ThingsBoardDeviceId")
                         .HasPrincipalKey("ThingsBoardDeviceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Device");
+                });
+
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceSettingUpdateHistory", b =>
+                {
+                    b.HasOne("Hems_Backend.Domain.Entities.Device", "Device")
+                        .WithMany()
+                        .HasForeignKey("DeviceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

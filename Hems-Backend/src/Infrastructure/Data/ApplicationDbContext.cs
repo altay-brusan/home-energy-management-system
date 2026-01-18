@@ -62,6 +62,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
 
     public DbSet<DeviceOperationHistory> DeviceOperationHistories => Set<DeviceOperationHistory>();
 
+    public DbSet<DeviceSettingUpdateHistory> DeviceSettingUpdateHistories => Set<DeviceSettingUpdateHistory>();
+
     // Data Protection Keys for multi-pod environments
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 

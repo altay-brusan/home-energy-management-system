@@ -55,5 +55,7 @@ public interface IApplicationDbContext
 
     DbSet<DeviceOperationHistory> DeviceOperationHistories { get; }
 
+    DbSet<DeviceSettingUpdateHistory> DeviceSettingUpdateHistories { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

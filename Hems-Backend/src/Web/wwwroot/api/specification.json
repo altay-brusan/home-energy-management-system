@@ -5804,6 +5804,19 @@
             "items": {
               "$ref": "#/components/schemas/ParameterGroupTreeDto"
             }
+          },
+          "isDeviceBusy": {
+            "type": "boolean"
+          },
+          "estimatedSecondsRemaining": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "progressPercentage": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
           }
         }
       },

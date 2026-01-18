@@ -37,6 +37,14 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
     /// </summary>
     private const int CustomModeValue = 99;
 
+    /// <summary>
+    /// Regex to identify time slot end parameters (e.g., TimeSlot1End, TimeSlot2End, etc.)
+    /// These parameters should NOT be sent to the device via RPC - the device handles them internally.
+    /// We only save them to our local database for UI display purposes.
+    /// </summary>
+    private static readonly System.Text.RegularExpressions.Regex TimeSlotEndRegex =
+        new(@"^TimeSlot\d+End$", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled);
+
     public DeviceParameterUpdateService(
         IDeviceLockService lockService,
         IServiceScopeFactory serviceScopeFactory,
@@ -66,6 +74,7 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
 
         // Acquire device lock with short timeout (5 seconds)
         // If we can't get it quickly, another operation is in progress
+        // NOTE: We use the passed cancellationToken here so the caller can cancel if needed during lock wait
         var lockHandle = await _lockService.AcquireLockAsync(deviceId, 5000, cancellationToken);
         if (lockHandle == null)
         {
@@ -75,6 +84,12 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
 
             throw new DeviceBusyException("Another update operation is in progress for this device.");
         }
+
+        // IMPORTANT: From this point on, we use CancellationToken.None to ensure the operation
+        // completes even if the client disconnects. This guarantees that SetupDeviceParameterValue
+        // stays in sync with the actual device - we never leave an operation half-done.
+        // The lock will be released when the operation completes, allowing subsequent operations.
+        var updateToken = CancellationToken.None;
 
         // Create operation for tracking
         var operationId = _operationStateService.CreateOperation(deviceId, "system", parameters);
@@ -106,34 +121,99 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
                 .Where(sdpv =>
                     sdpv.SetupDeviceId == setupDeviceId &&
                     parameterIds.Contains(sdpv.ParameterId))
-                .ToDictionaryAsync(pv => pv.ParameterId, cancellationToken);
+                .ToDictionaryAsync(pv => pv.ParameterId, updateToken);
 
             var currentIndex = 0;
 
             // Process each parameter sequentially
+            // NOTE: We do NOT check cancellation here - operation must complete to keep DB in sync with device
             foreach (var param in parameters)
             {
-                cancellationToken.ThrowIfCancellationRequested();
                 currentIndex++;
+
+                // Capture old value before update (from database)
+                string? oldValue = null;
+                if (parameterValues.TryGetValue(param.ParameterId, out var paramValue))
+                {
+                    oldValue = paramValue.Value;
+                }
 
                 // Mark parameter as in-progress
                 _operationStateService.UpdateParameterProgress(operationId, param.ParameterId, ParameterUpdateStatus.InProgress, null);
 
                 try
                 {
-                    var updateSuccess = await TryUpdateParameterAsync(
+                    // Check if this is a time slot end parameter - these should NOT be sent to device via RPC
+                    // The device handles end times internally. We only save to our local database for UI display.
+                    var isTimeSlotEnd = IsTimeSlotEndParameter(param.ParameterName);
+
+                    if (isTimeSlotEnd)
+                    {
+                        // Skip RPC for time slot end parameters - just update local database
+                        _logger.LogInformation(
+                            "⏭️ Skipping RPC for time slot end parameter {ParameterName} - saving to local database only",
+                            param.ParameterName);
+
+                        // Update database
+                        if (paramValue != null)
+                        {
+                            paramValue.Value = param.Value;
+                            await context.SaveChangesAsync(updateToken);
+                        }
+
+                        result.SuccessCount++;
+                        _operationStateService.UpdateParameterProgress(operationId, param.ParameterId, ParameterUpdateStatus.Success, null);
+
+                        // Record in history (marked as success, no RPC verification)
+                        context.DeviceSettingUpdateHistories.Add(new DeviceSettingUpdateHistory
+                        {
+                            DeviceId = deviceId,
+                            CorrelationId = operationId,
+                            ParameterId = param.ParameterId,
+                            ParameterName = param.ParameterName,
+                            Status = DeviceSettingUpdateStatus.Success,
+                            NewValue = param.Value,
+                            OldValue = oldValue,
+                            VerifiedValue = null, // No RPC verification for end times
+                            FailedReason = null,
+                            RetryAttempts = 0,
+                            AttemptedAt = DateTime.UtcNow
+                        });
+
+                        // Save history record
+                        await context.SaveChangesAsync(updateToken);
+
+                        // Send ParameterProgress event (fire-and-forget)
+                        _ = deviceGroup.ParameterProgress(new ParameterProgressEvent(
+                            operationId,
+                            deviceId,
+                            param.ParameterId,
+                            param.ParameterName,
+                            ParameterUpdateStatus.Success,
+                            null,
+                            currentIndex,
+                            parameters.Count,
+                            result.SuccessCount,
+                            result.FailedCount
+                        ));
+
+                        continue; // Move to next parameter
+                    }
+
+                    // Normal parameter - execute RPC with write-verify pattern
+                    var updateResult = await TryUpdateParameterAsync(
                         rpcExecutor,
                         thingsBoardDeviceId,
                         param,
-                        cancellationToken);
+                        updateToken);
 
-                    if (updateSuccess.success)
+                    if (updateResult.success)
                     {
                         // Update database
-                        if (parameterValues.TryGetValue(param.ParameterId, out var paramValue))
+                        if (paramValue != null)
                         {
                             paramValue.Value = param.Value;
-                            await context.SaveChangesAsync(cancellationToken);
+                            await context.SaveChangesAsync(updateToken);
                         }
 
                         result.SuccessCount++;
@@ -142,6 +222,21 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
                         _logger.LogDebug(
                             "Successfully updated parameter {ParameterName} on device {DeviceId}",
                             param.ParameterName, deviceId);
+
+                        // Record successful update in history
+                        context.DeviceSettingUpdateHistories.Add(new DeviceSettingUpdateHistory
+                        {
+                            DeviceId = deviceId,
+                            CorrelationId = operationId,
+                            ParameterId = param.ParameterId,
+                            ParameterName = param.ParameterName,
+                            Status = DeviceSettingUpdateStatus.Success,
+                            NewValue = param.Value,
+                            OldValue = oldValue,
+                            VerifiedValue = updateResult.verifiedValue,
+                            RetryAttempts = updateResult.retryAttempts,
+                            AttemptedAt = DateTime.UtcNow
+                        });
                     }
                     else
                     {
@@ -150,14 +245,33 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
                         {
                             ParameterId = param.ParameterId,
                             ParameterName = param.ParameterName,
-                            ErrorMessage = updateSuccess.errorMessage ?? "Update failed"
+                            ErrorMessage = updateResult.errorMessage ?? "Update failed"
                         });
-                        _operationStateService.UpdateParameterProgress(operationId, param.ParameterId, ParameterUpdateStatus.Failed, updateSuccess.errorMessage);
+                        _operationStateService.UpdateParameterProgress(operationId, param.ParameterId, ParameterUpdateStatus.Failed, updateResult.errorMessage);
 
                         _logger.LogWarning(
                             "Failed to update parameter {ParameterName} on device {DeviceId}: {Error}",
-                            param.ParameterName, deviceId, updateSuccess.errorMessage);
+                            param.ParameterName, deviceId, updateResult.errorMessage);
+
+                        // Record failed update in history
+                        context.DeviceSettingUpdateHistories.Add(new DeviceSettingUpdateHistory
+                        {
+                            DeviceId = deviceId,
+                            CorrelationId = operationId,
+                            ParameterId = param.ParameterId,
+                            ParameterName = param.ParameterName,
+                            Status = DeviceSettingUpdateStatus.Failed,
+                            NewValue = param.Value,
+                            OldValue = oldValue,
+                            VerifiedValue = updateResult.verifiedValue,
+                            FailedReason = updateResult.errorMessage,
+                            RetryAttempts = updateResult.retryAttempts,
+                            AttemptedAt = DateTime.UtcNow
+                        });
                     }
+
+                    // Save history record
+                    await context.SaveChangesAsync(updateToken);
 
                     // Send ParameterProgress event (fire-and-forget)
                     _ = deviceGroup.ParameterProgress(new ParameterProgressEvent(
@@ -165,17 +279,13 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
                         deviceId,
                         param.ParameterId,
                         param.ParameterName,
-                        updateSuccess.success ? ParameterUpdateStatus.Success : ParameterUpdateStatus.Failed,
-                        updateSuccess.errorMessage,
+                        updateResult.success ? ParameterUpdateStatus.Success : ParameterUpdateStatus.Failed,
+                        updateResult.errorMessage,
                         currentIndex,
                         parameters.Count,
                         result.SuccessCount,
                         result.FailedCount
                     ));
-                }
-                catch (OperationCanceledException)
-                {
-                    throw; // Re-throw to exit the loop
                 }
                 catch (Exception ex)
                 {
@@ -187,6 +297,21 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
                         ErrorMessage = ex.Message
                     });
                     _operationStateService.UpdateParameterProgress(operationId, param.ParameterId, ParameterUpdateStatus.Failed, ex.Message);
+
+                    // Record failed update in history (exception case)
+                    context.DeviceSettingUpdateHistories.Add(new DeviceSettingUpdateHistory
+                    {
+                        DeviceId = deviceId,
+                        CorrelationId = operationId,
+                        ParameterId = param.ParameterId,
+                        ParameterName = param.ParameterName,
+                        Status = DeviceSettingUpdateStatus.Failed,
+                        NewValue = param.Value,
+                        OldValue = oldValue,
+                        FailedReason = ex.Message,
+                        AttemptedAt = DateTime.UtcNow
+                    });
+                    await context.SaveChangesAsync(updateToken);
 
                     // Send ParameterProgress event for failure (fire-and-forget)
                     _ = deviceGroup.ParameterProgress(new ParameterProgressEvent(
@@ -211,7 +336,7 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
             // Set device mode to Custom if any parameters were successfully updated
             if (result.SuccessCount > 0)
             {
-                await SetDeviceModeToCustomAsync(context, deviceId, cancellationToken);
+                await SetDeviceModeToCustomAsync(context, deviceId, updateToken);
             }
 
             result.Success = result.FailedCount == 0;
@@ -250,15 +375,32 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
     }
 
     /// <summary>
+    /// Checks if a parameter is a time slot end parameter.
+    /// Time slot end parameters (e.g., TimeSlot1End, TimeSlot2End) should NOT be sent to the device via RPC.
+    /// The device handles end times internally - we only save them to our local database for UI display.
+    /// </summary>
+    private static bool IsTimeSlotEndParameter(string parameterName)
+    {
+        return TimeSlotEndRegex.IsMatch(parameterName);
+    }
+
+    /// <summary>
     /// Attempts to update a single parameter with write-verify-retry pattern
     /// </summary>
-    private async Task<(bool success, string? errorMessage)> TryUpdateParameterAsync(
+    /// <returns>
+    /// success: whether the update succeeded
+    /// errorMessage: error message if failed
+    /// verifiedValue: the value read back from device after write (for audit)
+    /// retryAttempts: number of retry attempts made
+    /// </returns>
+    private async Task<(bool success, string? errorMessage, string? verifiedValue, int retryAttempts)> TryUpdateParameterAsync(
         IDeviceRpcExecutorService rpcExecutor,
         Guid thingsBoardDeviceId,
         ParameterUpdateItem param,
         CancellationToken cancellationToken)
     {
         string? lastError = null;
+        string? lastVerifiedValue = null;
 
         for (int attempt = 0; attempt <= MaxRetries; attempt++)
         {
@@ -270,27 +412,34 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
                 await Task.Delay(500, cancellationToken); // Brief delay before retry
             }
 
-            var (success, error) = await WriteAndVerifyAsync(
+            var (success, error, verifiedValue) = await WriteAndVerifyAsync(
                 rpcExecutor,
                 thingsBoardDeviceId,
                 param,
                 cancellationToken);
 
+            lastVerifiedValue = verifiedValue;
+
             if (success)
             {
-                return (true, null);
+                return (true, null, verifiedValue, attempt);
             }
 
             lastError = error;
         }
 
-        return (false, lastError);
+        return (false, lastError, lastVerifiedValue, MaxRetries);
     }
 
     /// <summary>
     /// Writes a parameter value and verifies it was written correctly
     /// </summary>
-    private async Task<(bool success, string? error)> WriteAndVerifyAsync(
+    /// <returns>
+    /// success: whether the write and verify succeeded
+    /// error: error message if failed
+    /// verifiedValue: the value read back from the device (for audit trail)
+    /// </returns>
+    private async Task<(bool success, string? error, string? verifiedValue)> WriteAndVerifyAsync(
         IDeviceRpcExecutorService rpcExecutor,
         Guid thingsBoardDeviceId,
         ParameterUpdateItem param,
@@ -318,7 +467,7 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
 
         if (!writeResult.Success)
         {
-            return (false, $"Write failed: {writeResult.ErrorMessage}");
+            return (false, $"Write failed: {writeResult.ErrorMessage}", null);
         }
 
         // Step 2: Wait for device to process
@@ -337,7 +486,7 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
 
         if (readValue == null)
         {
-            return (false, "Read verification failed: could not read back value");
+            return (false, "Read verification failed: could not read back value", null);
         }
 
         // Step 4: Verify value matches
@@ -350,10 +499,10 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
 
         if (!matches)
         {
-            return (false, $"Verification failed: expected '{param.Value}', got '{readValue}'");
+            return (false, $"Verification failed: expected '{param.Value}', got '{readValue}'", readValue);
         }
 
-        return (true, null);
+        return (true, null, readValue);
     }
 
     /// <summary>

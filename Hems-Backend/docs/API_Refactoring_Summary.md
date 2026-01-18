@@ -1548,6 +1548,245 @@ const getStatusText = (status, connectionState, t) => {
 
 ---
 
+## Device Settings Update System (Synchronous REST + SignalR Progress)
+
+### Overview
+
+The device settings update system has been refactored to use a synchronous REST API with SignalR for real-time progress updates. This replaces the previous async-only approach and provides better reliability and user feedback.
+
+### Update Flow
+
+```
+Frontend                          Backend                           Device
+   │                                │                                 │
+   │ POST /device/{id}/parameters   │                                 │
+   │ (23 parameters)                │                                 │
+   │──────────────────────────────>│                                 │
+   │                                │                                 │
+   │  SignalR: OperationStarted     │                                 │
+   │<──────────────────────────────│                                 │
+   │                                │                                 │
+   │                                │ For each parameter:             │
+   │                                │   1. Write via RPC ────────────>│
+   │                                │   2. Wait 150ms                 │
+   │                                │   3. Read back for verify <─────│
+   │                                │   4. Retry if mismatch (1x)     │
+   │                                │                                 │
+   │  SignalR: ParameterProgress    │                                 │
+   │<──────────────────────────────│                                 │
+   │  (for each parameter)          │                                 │
+   │                                │                                 │
+   │  SignalR: OperationCompleted   │                                 │
+   │<──────────────────────────────│                                 │
+   │                                │                                 │
+   │  HTTP Response (final result)  │                                 │
+   │<──────────────────────────────│                                 │
+```
+
+### Key Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/DeviceSettings/device/{deviceId}/tree` | Get all parameter values as tree structure |
+| `POST` | `/api/DeviceSettings/device/{deviceId}/parameters` | Update multiple parameters (synchronous) |
+
+### GET Tree Endpoint
+
+**Request:**
+```http
+GET /api/DeviceSettings/device/a089891e-ad8c-42ef-8ce0-6516fcddbb51/tree
+Authorization: Bearer {token}
+```
+
+**Response:**
+```json
+{
+  "setupDeviceId": "guid",
+  "parameterGroups": [
+    {
+      "id": "guid",
+      "name": "BatterySettings",
+      "children": [...],
+      "parameters": [
+        {
+          "id": "guid",
+          "name": "GridChargingEnabled",
+          "setupDeviceParameterValue": {
+            "id": "guid",
+            "value": "true",
+            "lastModified": "2025-01-18T10:30:00Z"
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+### POST Parameters Endpoint (Batch Update)
+
+**Request:**
+```http
+POST /api/DeviceSettings/device/a089891e-ad8c-42ef-8ce0-6516fcddbb51/parameters
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "parameters": [
+    { "parameterId": "guid-1", "value": "true" },
+    { "parameterId": "guid-2", "value": "12000" }
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "totalParameters": 23,
+  "successCount": 23,
+  "failedCount": 0,
+  "failedParameters": [],
+  "duration": "00:00:15.234"
+}
+```
+
+### SignalR Events
+
+**Hub:** `DeviceSettingsHub` at `/hubs/device-settings`
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `OperationStarted` | `{ operationId, deviceId, totalParameters, startedAt }` | Batch operation started |
+| `ParameterProgress` | `{ operationId, parameterId, parameterName, status, errorMessage, currentIndex, totalCount, successCount, failedCount }` | Each parameter result |
+| `OperationCompleted` | `{ operationId, success, totalParameters, successCount, failedCount, failedParameters, duration }` | Batch operation completed |
+
+### Write-Verify-Retry Pattern
+
+For each parameter, the backend:
+1. **Write**: Send RPC to device with new value
+2. **Wait**: 150ms delay for device processing
+3. **Verify**: Read back value from device
+4. **Compare**: Check if written value matches read value
+5. **Retry**: If mismatch, retry once (total 2 attempts)
+
+### Time Slot End Parameters - RPC Skip
+
+**Important for frontend developers:**
+
+Time slot END time parameters (`TimeSlot1End`, `TimeSlot2End`, etc.) are **NOT sent to the device via RPC**. The device handles end times internally based on start times.
+
+| Parameter | RPC to Device | Saved to DB | History Tracked |
+|-----------|---------------|-------------|-----------------|
+| `TimeSlot1Start` | ✅ Yes | ✅ Yes | ✅ Yes |
+| `TimeSlot1End` | ❌ No (skipped) | ✅ Yes | ✅ Yes |
+
+The frontend should still send both start and end times - the backend handles the filtering.
+
+### Device Setting Update History Table
+
+Individual parameter updates are now tracked in `DeviceSettingUpdateHistory` for audit and debugging:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `DeviceId` | Guid | The device |
+| `CorrelationId` | string | Groups all params from same operation |
+| `ParameterId` | Guid | Which parameter |
+| `ParameterName` | string | Human-readable name |
+| `Status` | enum | Success, Failed, Skipped |
+| `OldValue` | string? | Value before update |
+| `NewValue` | string? | Value sent to device |
+| `VerifiedValue` | string? | Value read back from device |
+| `FailedReason` | string? | Error message if failed |
+| `RetryAttempts` | int | Number of retries made |
+| `AttemptedAt` | DateTime | When attempted |
+
+**Query examples:**
+```sql
+-- Get all updates for an operation
+SELECT * FROM DeviceSettingUpdateHistories
+WHERE CorrelationId = 'operation-id'
+ORDER BY AttemptedAt;
+
+-- Get failed updates for a device
+SELECT * FROM DeviceSettingUpdateHistories
+WHERE DeviceId = 'device-id' AND Status = 1
+ORDER BY AttemptedAt DESC;
+```
+
+### Frontend Cache Behavior
+
+**Fetch Once Per Device Session:**
+
+The `CustomModeScreen` fetches settings **once per device** when first focused. This ensures:
+- User sees actual values when first entering the screen
+- Pending changes are NOT lost when navigating to/from sub-screens (like Time of Use)
+- Re-fetches automatically when device changes or app restarts
+
+```typescript
+// CustomModeScreen.tsx
+useFocusEffect(
+  useCallback(() => {
+    const deviceChanged = lastDeviceIdRef.current !== device?.id;
+
+    if (device?.id && (!hasFetchedRef.current || deviceChanged)) {
+      lastDeviceIdRef.current = device.id;
+      hasFetchedRef.current = true;
+      fetchSettings();
+    }
+  }, [device?.id, fetchSettings])
+);
+```
+
+**When fresh data is fetched:**
+- First time entering screen (new component mount)
+- Device changed
+- App killed and restarted (refs reset on fresh mount)
+- User taps Retry button after error
+
+**When cached data is used:**
+- Returning from sub-screens (Time of Use, Maintenance Settings)
+- Screen loses and regains focus within same session
+
+### Error Handling
+
+**Device Busy (409 Conflict):**
+```json
+{
+  "success": false,
+  "errorCode": "DEVICE_BUSY",
+  "message": "Another update operation is in progress for this device."
+}
+```
+
+**Partial Success:**
+```json
+{
+  "success": false,
+  "totalParameters": 23,
+  "successCount": 20,
+  "failedCount": 3,
+  "failedParameters": [
+    { "parameterId": "guid", "parameterName": "SolarSell", "errorMessage": "Verification failed" }
+  ]
+}
+```
+
+### Kestrel Timeout Configuration
+
+The Web API is configured with a 5-minute timeout for long-running parameter updates:
+
+```csharp
+// Program.cs
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(5);
+    options.Limits.RequestHeadersTimeout = TimeSpan.FromMinutes(5);
+});
+```
+
+---
+
 ## Component Details Cache (5-Second TTL)
 
 ### Overview
