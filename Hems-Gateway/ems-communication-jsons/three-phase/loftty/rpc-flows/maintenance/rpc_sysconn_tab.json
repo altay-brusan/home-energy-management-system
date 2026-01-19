@@ -65,7 +65,7 @@
         "type": "comment",
         "z": "85b12fa4e969a934",
         "name": "getSystemConnectionStructure / setSystemConnectionStructure",
-        "info": "Read/Write system connection structure:\n\nR/W Registers:\n- 019: gridVoltageLevelCode\n- 051: gridStandardRaw\n- 204: ratedCapacityAh\n- 213: batteryControlMode\n- 235: generatorInputMode\n- 244: exportLimitMode\n- 285: gridFrequency\n- 286: gridType\n- 291: generatorConnectedToGrid\n- 325: lithiumBatteryType",
+        "info": "Read/Write system connection structure:\n\nRead-Only:\n- 100: deviceType\n- 103-107: Serial Number\n- 114-118: Firmware versions\n- 120-121: Rated power\n- 202: battery capacity\n\nR/W Registers:\n- 282: gridStandardRaw [0-4]\n- 283: gridFrequencyHz [0=50Hz,1=60Hz]\n- 284: gridType [0-3]\n- 238: gridVoltageLevelCode [0-4]\n- 247: gridPhaseSequence [0-1]\n- 211: batteryControlMode [0-2]\n- 233: generator.inputMode [0-2]\n- 289: generator.connectedToGridInput [0-1]\n- 242: exportLimitMode [0-2]",
         "x": 290,
         "y": 100,
         "wires": []

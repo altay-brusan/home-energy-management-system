@@ -356,7 +356,7 @@
               "mpptAndPhasesRaw": null,
               "batteryInputCount": null,
               "outputTopology": null,
-              "gridType": null,
+              "gridType": "three_phase_208v",
               "regionVariant": null,
               "safetyTypeRaw": null,
               "gridPhaseCount": 3,
@@ -942,7 +942,7 @@
             "mpptAndPhasesRaw": null,
             "batteryInputCount": null,
             "outputTopology": null,
-            "gridType": null,
+            "gridType": "three_phase_208v",
             "regionVariant": null,
             "safetyTypeRaw": null,
             "gridPhaseCount": 3,
@@ -1014,6 +1014,26 @@
             }
           }
         },
+      {
+        "rpcName": "setSystemConnectionStructure",
+        "kind": "SystemConnectionStructure",
+        "type": "write",
+        "pairedWith": "getSystemConnectionStructure",
+        "request": {
+          "gridType": 2,
+          "gridStandardRaw": 0,
+          "gridFrequencyHz": 50,
+          "gridVoltageLevelCode": 0,
+          "gridPhaseSequence": "ABC_0_120_240",
+          "batteryControlMode": "capacity",
+          "generator": {
+            "inputMode": "generator_input",
+            "connectedToGridInput": false
+          },
+          "exportLimitMode": "internal_meter"
+        },
+        "note": "All fields optional. Values: gridType[0-3], gridStandardRaw[0-4], gridFrequencyHz[50/60 or 0/1], gridVoltageLevelCode[0-4], gridPhaseSequence[0-1 or string], batteryControlMode[0-2 or string], generator.inputMode[0-2 or string], generator.connectedToGridInput[bool], exportLimitMode[0-2 or string]"
+      },
         {
         "rpcName": "getInverterInfo",
         "kind": "InverterInfoState",

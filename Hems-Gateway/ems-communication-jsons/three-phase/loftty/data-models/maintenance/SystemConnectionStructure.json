@@ -34,7 +34,12 @@ SystemConnectionStructure
       "batteryInputCount": null,             // Bu datasheet'te yok
       "outputTopology": null,                // Bu datasheet'te yok - deviceType'tan derive edilebilir
 
-      "gridType": null,                      // 284 - 3-fazlı için geçersiz (现在是三相，无效)
+  "gridType": "number",                      // 284 - 电网类型设置 Grid Type (R/W)
+                                           //   0x00 = Single-phase (220V/230V/240V)
+                                           //   0x01 = Two-phase (120V/240V)
+                                           //   0x02 = Three-phase (208V 120°)
+                                           //   0x03 = 120V Single Phase
+                                           //   Not: Three-phase cihazlarda bu değer sabit olabilir
 
       "regionVariant": null,                 // Bu datasheet'te yok
 
@@ -42,21 +47,21 @@ SystemConnectionStructure
 
       "gridPhaseCount": 3,                   // Derived: deviceType == 0x05 || 0x06 → 3
 
-      "gridStandardRaw": "number",           // 282 - 并网标准 Grid Mode
+      "gridStandardRaw": "number",           // 282 - 并网标准 Grid Mode (R/W)
                                              //   0 = General standard
                                              //   1 = UL1741 & IEEE1547
                                              //   2 = CPUC RULE21
                                              //   3 = SRD-UL1741
                                              //   4 = CEI 0-21
 
-      "gridFrequencyHz": "number",           // 283 - 电网频率设置 Grid Frequency
+      "gridFrequencyHz": "number",           // 283 - 电网频率设置 Grid Frequency (R/W)
                                              //   0x00 = 50Hz
                                              //   0x01 = 60Hz
 
-      "gridVoltageLevelCode": "number",      // 238 - 输出电压等级设定 Output voltage level
+      "gridVoltageLevelCode": "number",      // 238 - 输出电压等级设定 Output voltage level (R/W)
                                              //   0 = 220V, 1 = 230V, 2 = 240V, 3 = 120V, 4 = 133VAC
 
-      "gridPhaseSequence": "string",         // 247 - 三相ABC电网相序设定 Grid Phase
+      "gridPhaseSequence": "string",         // 247 - 三相ABC电网相序设定 Grid Phase (R/W)
                                              //   0 = "ABC_0_120_240"
                                              //   1 = "ACB_0_240_120"
 
@@ -65,7 +70,7 @@ SystemConnectionStructure
   },
 
   "battery": {
-    "batteryControlMode": "string",          // 211 - 电池工作根据电压还是容量
+    "batteryControlMode": "string",          // 211 - 电池工作根据电压还是容量 (R/W)
                                              //   0 = "voltage"
                                              //   1 = "capacity"
                                              //   2 = "no_battery"
@@ -84,12 +89,12 @@ SystemConnectionStructure
   },
 
   "generator": {
-    "inputMode": "string",                   // 233 - 发电机输入作为负载输出使能
+    "inputMode": "string",                   // 233 - 发电机输入作为负载输出使能 (R/W)
                                              //   0 = "generator_input" (只作为发电机输入)
                                              //   1 = "smart_load" (智能负载输出)
                                              //   2 = "micro_inverter_input" (逆变器输入)
 
-    "connectedToGridInput": "boolean"        // 289 - 发电机连接到电网输入端
+    "connectedToGridInput": "boolean"        // 289 - 发电机连接到电网输入端 (R/W)
                                              //   0 = disable
                                              //   1 = enabled
   },
@@ -132,7 +137,7 @@ SystemConnectionStructure
   "loadAndGrid": {
     "homeLoadConnectionPoint": null,         // Bu datasheet'te yok - commissioning config
 
-    "exportLimitMode": "string",             // 242 - limit控制功能
+    "exportLimitMode": "string",             // 242 - limit控制功能 (R/W)
                                              //   0x00 = "sell_enabled" (使能卖电)
                                              //   0x01 = "internal_meter" (使能内置)
                                              //   0x02 = "external_ct" (使能外置)
