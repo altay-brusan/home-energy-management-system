@@ -1,5 +1,7 @@
 export const API_CONFIG = {
-  BASE_URL: 'https://hems-api-dev.oklidis.com.tr/api',
+  // LOCAL TESTING - change back to 'https://hems-api-dev.oklidis.com.tr/api' for production
+  // Android Emulator: use 10.0.2.2 to reach host machine's localhost
+  BASE_URL: 'http://10.0.2.2:7163/api',
   TIMEOUT: 30000,
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000,

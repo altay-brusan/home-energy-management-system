@@ -27,6 +27,37 @@ export interface ParameterMapping {
  * BatterySettings Mappings
  */
 export const BATTERY_SETTINGS_MAPPING: ParameterMapping[] = [
+  // BatteryConfiguration
+  {
+    apiName: 'BatteryCapacity',
+    storePath: 'batterySettings.batteryConfiguration.capacity',
+    transformerType: 'number',
+    unit: 'Ah',
+    min: 0,
+    max: 2000,
+    step: 10,
+    roleType: 'User',
+  },
+  {
+    apiName: 'MaxBatteryChargeCurrent',
+    storePath: 'batterySettings.batteryConfiguration.maxChargeCurrent',
+    transformerType: 'number',
+    unit: 'A',
+    min: 0,
+    max: 240,
+    step: 5,
+    roleType: 'User',
+  },
+  {
+    apiName: 'MaxBatteryDischargeCurrent',
+    storePath: 'batterySettings.batteryConfiguration.maxDischargeCurrent',
+    transformerType: 'number',
+    unit: 'A',
+    min: 0,
+    max: 240,
+    step: 5,
+    roleType: 'User',
+  },
   // ChargeSources -> GridCharging
   {
     apiName: 'GridChargingEnabled',
@@ -157,6 +188,16 @@ export const SYSTEM_WORK_MODE_MAPPING: ParameterMapping[] = [
     apiName: 'SolarSell',
     storePath: 'systemWorkMode.solarSell',
     transformerType: 'boolean',
+    roleType: 'User',
+  },
+  {
+    apiName: 'MaxSolarSellPower',
+    storePath: 'systemWorkMode.maxSolarSellPower',
+    transformerType: 'number',
+    unit: 'W',
+    min: 0,
+    max: 15000,
+    step: 100,
     roleType: 'User',
   },
   {

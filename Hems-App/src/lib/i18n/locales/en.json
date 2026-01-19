@@ -1855,7 +1855,8 @@
       "smartLoad": "Smart Load",
       "generatorSmartLoad": "Generator & Smart Load",
       "batteryMaintenance": "Battery Maintenance",
-      "gridCode": "Grid Code Configuration"
+      "gridCode": "Grid Code Configuration",
+      "batteryConfiguration": "Battery Configuration"
     },
     "labels": {
       "workMode": "Work Mode",
@@ -1866,9 +1867,11 @@
       "gridPeakShaving": "Grid Peak Shaving",
       "peakShavingPower": "Peak Shaving Power",
       "batteryType": "Battery Type",
-      "batteryCapacity": "Capacity",
+      "batteryCapacity": "Battery Capacity",
       "maxChargeCurrent": "Max Charge Current",
       "maxDischargeCurrent": "Max Discharge Current",
+      "maxBatteryChargeCurrent": "Max Charge Current",
+      "maxBatteryDischargeCurrent": "Max Discharge Current",
       "shutdownSOC": "Shutdown SOC",
       "lowBattSOC": "Low Batt SOC",
       "lowBatteryWarning": "Low Battery Warning",

@@ -346,6 +346,15 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
 export const useBatterySettingsSection = () => {
   const { batterySettings, updateSetting, isLoading, isDirty } = useDeviceSettings();
 
+  const updateBatteryConfiguration = useCallback(
+    (updates: Partial<BatterySettingsConfig['batteryConfiguration']>) => {
+      Object.entries(updates).forEach(([key, value]) => {
+        updateSetting(`batterySettings.batteryConfiguration.${key}`, value);
+      });
+    },
+    [updateSetting]
+  );
+
   const updateGridCharging = useCallback(
     (updates: Partial<BatterySettingsConfig['gridCharging']>) => {
       Object.entries(updates).forEach(([key, value]) => {
@@ -374,9 +383,11 @@ export const useBatterySettingsSection = () => {
   );
 
   return {
+    batteryConfiguration: batterySettings.batteryConfiguration,
     gridCharging: batterySettings.gridCharging,
     generatorCharging: batterySettings.generatorCharging,
     protectionThresholds: batterySettings.protectionThresholds,
+    updateBatteryConfiguration,
     updateGridCharging,
     updateGeneratorCharging,
     updateProtectionThresholds,
