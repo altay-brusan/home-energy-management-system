@@ -53,5 +53,11 @@ public interface IApplicationDbContext
 
     DbSet<DeviceModeHistory> DeviceModeHistory { get; }
 
+    DbSet<DeviceOperationHistory> DeviceOperationHistories { get; }
+
+    DbSet<DeviceSettingUpdateHistory> DeviceSettingUpdateHistories { get; }
+
+    DbSet<MobileAppVersion> MobileAppVersions { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

@@ -1548,6 +1548,245 @@ const getStatusText = (status, connectionState, t) => {
 
 ---
 
+## Device Settings Update System (Synchronous REST + SignalR Progress)
+
+### Overview
+
+The device settings update system has been refactored to use a synchronous REST API with SignalR for real-time progress updates. This replaces the previous async-only approach and provides better reliability and user feedback.
+
+### Update Flow
+
+```
+Frontend                          Backend                           Device
+   │                                │                                 │
+   │ POST /device/{id}/parameters   │                                 │
+   │ (23 parameters)                │                                 │
+   │──────────────────────────────>│                                 │
+   │                                │                                 │
+   │  SignalR: OperationStarted     │                                 │
+   │<──────────────────────────────│                                 │
+   │                                │                                 │
+   │                                │ For each parameter:             │
+   │                                │   1. Write via RPC ────────────>│
+   │                                │   2. Wait 150ms                 │
+   │                                │   3. Read back for verify <─────│
+   │                                │   4. Retry if mismatch (1x)     │
+   │                                │                                 │
+   │  SignalR: ParameterProgress    │                                 │
+   │<──────────────────────────────│                                 │
+   │  (for each parameter)          │                                 │
+   │                                │                                 │
+   │  SignalR: OperationCompleted   │                                 │
+   │<──────────────────────────────│                                 │
+   │                                │                                 │
+   │  HTTP Response (final result)  │                                 │
+   │<──────────────────────────────│                                 │
+```
+
+### Key Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/DeviceSettings/device/{deviceId}/tree` | Get all parameter values as tree structure |
+| `POST` | `/api/DeviceSettings/device/{deviceId}/parameters` | Update multiple parameters (synchronous) |
+
+### GET Tree Endpoint
+
+**Request:**
+```http
+GET /api/DeviceSettings/device/a089891e-ad8c-42ef-8ce0-6516fcddbb51/tree
+Authorization: Bearer {token}
+```
+
+**Response:**
+```json
+{
+  "setupDeviceId": "guid",
+  "parameterGroups": [
+    {
+      "id": "guid",
+      "name": "BatterySettings",
+      "children": [...],
+      "parameters": [
+        {
+          "id": "guid",
+          "name": "GridChargingEnabled",
+          "setupDeviceParameterValue": {
+            "id": "guid",
+            "value": "true",
+            "lastModified": "2025-01-18T10:30:00Z"
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+### POST Parameters Endpoint (Batch Update)
+
+**Request:**
+```http
+POST /api/DeviceSettings/device/a089891e-ad8c-42ef-8ce0-6516fcddbb51/parameters
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "parameters": [
+    { "parameterId": "guid-1", "value": "true" },
+    { "parameterId": "guid-2", "value": "12000" }
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "totalParameters": 23,
+  "successCount": 23,
+  "failedCount": 0,
+  "failedParameters": [],
+  "duration": "00:00:15.234"
+}
+```
+
+### SignalR Events
+
+**Hub:** `DeviceSettingsHub` at `/hubs/device-settings`
+
+| Event | Payload | Description |
+|-------|---------|-------------|
+| `OperationStarted` | `{ operationId, deviceId, totalParameters, startedAt }` | Batch operation started |
+| `ParameterProgress` | `{ operationId, parameterId, parameterName, status, errorMessage, currentIndex, totalCount, successCount, failedCount }` | Each parameter result |
+| `OperationCompleted` | `{ operationId, success, totalParameters, successCount, failedCount, failedParameters, duration }` | Batch operation completed |
+
+### Write-Verify-Retry Pattern
+
+For each parameter, the backend:
+1. **Write**: Send RPC to device with new value
+2. **Wait**: 150ms delay for device processing
+3. **Verify**: Read back value from device
+4. **Compare**: Check if written value matches read value
+5. **Retry**: If mismatch, retry once (total 2 attempts)
+
+### Time Slot End Parameters - RPC Skip
+
+**Important for frontend developers:**
+
+Time slot END time parameters (`TimeSlot1End`, `TimeSlot2End`, etc.) are **NOT sent to the device via RPC**. The device handles end times internally based on start times.
+
+| Parameter | RPC to Device | Saved to DB | History Tracked |
+|-----------|---------------|-------------|-----------------|
+| `TimeSlot1Start` | ✅ Yes | ✅ Yes | ✅ Yes |
+| `TimeSlot1End` | ❌ No (skipped) | ✅ Yes | ✅ Yes |
+
+The frontend should still send both start and end times - the backend handles the filtering.
+
+### Device Setting Update History Table
+
+Individual parameter updates are now tracked in `DeviceSettingUpdateHistory` for audit and debugging:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `DeviceId` | Guid | The device |
+| `CorrelationId` | string | Groups all params from same operation |
+| `ParameterId` | Guid | Which parameter |
+| `ParameterName` | string | Human-readable name |
+| `Status` | enum | Success, Failed, Skipped |
+| `OldValue` | string? | Value before update |
+| `NewValue` | string? | Value sent to device |
+| `VerifiedValue` | string? | Value read back from device |
+| `FailedReason` | string? | Error message if failed |
+| `RetryAttempts` | int | Number of retries made |
+| `AttemptedAt` | DateTime | When attempted |
+
+**Query examples:**
+```sql
+-- Get all updates for an operation
+SELECT * FROM DeviceSettingUpdateHistories
+WHERE CorrelationId = 'operation-id'
+ORDER BY AttemptedAt;
+
+-- Get failed updates for a device
+SELECT * FROM DeviceSettingUpdateHistories
+WHERE DeviceId = 'device-id' AND Status = 1
+ORDER BY AttemptedAt DESC;
+```
+
+### Frontend Cache Behavior
+
+**Fetch Once Per Device Session:**
+
+The `CustomModeScreen` fetches settings **once per device** when first focused. This ensures:
+- User sees actual values when first entering the screen
+- Pending changes are NOT lost when navigating to/from sub-screens (like Time of Use)
+- Re-fetches automatically when device changes or app restarts
+
+```typescript
+// CustomModeScreen.tsx
+useFocusEffect(
+  useCallback(() => {
+    const deviceChanged = lastDeviceIdRef.current !== device?.id;
+
+    if (device?.id && (!hasFetchedRef.current || deviceChanged)) {
+      lastDeviceIdRef.current = device.id;
+      hasFetchedRef.current = true;
+      fetchSettings();
+    }
+  }, [device?.id, fetchSettings])
+);
+```
+
+**When fresh data is fetched:**
+- First time entering screen (new component mount)
+- Device changed
+- App killed and restarted (refs reset on fresh mount)
+- User taps Retry button after error
+
+**When cached data is used:**
+- Returning from sub-screens (Time of Use, Maintenance Settings)
+- Screen loses and regains focus within same session
+
+### Error Handling
+
+**Device Busy (409 Conflict):**
+```json
+{
+  "success": false,
+  "errorCode": "DEVICE_BUSY",
+  "message": "Another update operation is in progress for this device."
+}
+```
+
+**Partial Success:**
+```json
+{
+  "success": false,
+  "totalParameters": 23,
+  "successCount": 20,
+  "failedCount": 3,
+  "failedParameters": [
+    { "parameterId": "guid", "parameterName": "SolarSell", "errorMessage": "Verification failed" }
+  ]
+}
+```
+
+### Kestrel Timeout Configuration
+
+The Web API is configured with a 5-minute timeout for long-running parameter updates:
+
+```csharp
+// Program.cs
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(5);
+    options.Limits.RequestHeadersTimeout = TimeSpan.FromMinutes(5);
+});
+```
+
+---
+
 ## Component Details Cache (5-Second TTL)
 
 ### Overview
@@ -1681,3 +1920,232 @@ var stats = _cacheService.GetCacheStats();
 // stats.CurrentEntries = 5
 // stats.HitRatio = 83.33%  (150 / 180 * 100)
 ```
+
+---
+
+## Mobile App Version Check System
+
+### Overview
+
+A version checking system that allows iOS and Android mobile apps to check if updates are required before using the app. This enables mandatory update enforcement, version revocation for security issues, and graceful update prompts.
+
+### Key Design Decisions
+
+- **Entity name**: `MobileAppVersion` - clear, specific, extensible
+- **Check endpoint**: Public (no authentication) - allows version check before login
+- **Store URLs**: Optional per-version - supports different app store links for iOS/Android
+- **Platform enum**: `iOS = 1`, `Android = 2`
+
+### Entity: MobileAppVersion
+
+**File:** `src/Domain/Entities/MobileAppVersion.cs`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `Platform` | `MobilePlatform` | iOS (1) or Android (2) |
+| `Version` | `string` | Semantic version string (e.g., "1.0.0") |
+| `VersionMajor` | `int` | Parsed major version for DB comparison |
+| `VersionMinor` | `int` | Parsed minor version |
+| `VersionPatch` | `int` | Parsed patch version |
+| `BuildNumber` | `int?` | Optional build number |
+| `StoreUrl` | `string?` | App store link (optional) |
+| `ReleaseNotes` | `string?` | Description of the release |
+| `IsMandatory` | `bool` | Forces older versions to update |
+| `MinimumRequiredVersion` | `string?` | Floor version (e.g., "1.5.0") |
+| `IsRevoked` | `bool` | Block this specific version |
+| `RevocationReason` | `string?` | Reason for revocation |
+| `IsLatest` | `bool` | Current latest version per platform |
+| `IsActive` | `bool` | Soft delete flag |
+| `ReleasedAt` | `DateTimeOffset?` | Release timestamp |
+
+### API Endpoints
+
+**Public Endpoints (no authentication):**
+```
+/api/MobileAppVersions
+└── GET    /Check?platform=1&version=1.0.0    - Check if update is required
+```
+
+**Admin Endpoints (require AdminOnly authorization):**
+```
+/api/MobileAppVersions/Admin
+├── GET    /Versions                          - List all versions (paginated)
+├── GET    /Versions/{id}                     - Get version by ID
+├── POST   /Versions                          - Create new version
+├── PUT    /Versions/{id}                     - Update version
+├── DELETE /Versions/{id}                     - Soft delete version
+├── POST   /Versions/{id}/SetLatest           - Mark as latest version
+└── POST   /Versions/{id}/Revoke              - Revoke a version
+```
+
+### Check Endpoint Response
+
+**Request:**
+```http
+GET /api/MobileAppVersions/Check?platform=2&version=1.0.0
+```
+
+**Response:**
+```json
+{
+  "version": "2.0.0",
+  "isUpdateRequired": true,
+  "isUpdateAvailable": true,
+  "storeUrl": "https://play.google.com/store/apps/details?id=com.netzr.hems",
+  "description": "Critical security update",
+  "revocationReason": null
+}
+```
+
+### Update Required Logic
+
+`isUpdateRequired = true` when ANY of these conditions are met:
+
+1. **Version Revoked**: Current version is marked `IsRevoked = true`
+2. **Below Minimum**: Current version < `MinimumRequiredVersion` on latest entry
+3. **Mandatory Version Exists**: Any version between current and latest has `IsMandatory = true`
+
+### Create Version Request
+
+**Request:**
+```http
+POST /api/MobileAppVersions/Admin/Versions
+Authorization: Bearer {admin-token}
+Content-Type: application/json
+
+{
+  "platform": 2,
+  "version": "1.0.0",
+  "storeUrl": "https://play.google.com/store/apps/details?id=com.netzr.hems",
+  "releaseNotes": "Initial release",
+  "isMandatory": false,
+  "minimumRequiredVersion": null,
+  "isLatest": true
+}
+```
+
+### Revoke Version Request
+
+**Request:**
+```http
+POST /api/MobileAppVersions/Admin/Versions/{id}/Revoke
+Authorization: Bearer {admin-token}
+Content-Type: application/json
+
+{
+  "reason": "Critical security vulnerability discovered"
+}
+```
+
+### Frontend Integration
+
+**Mobile App (React Native):**
+
+The version check is performed at app startup in `RootNavigator`:
+
+```typescript
+// useVersionCheck hook
+const { versionInfo, isChecking, error } = useVersionCheck();
+
+// Check on app launch
+useEffect(() => {
+  if (versionInfo?.isUpdateRequired) {
+    // Show UpdateRequiredScreen - blocks app usage
+  } else if (versionInfo?.isUpdateAvailable) {
+    // Optional: Show update prompt
+  }
+}, [versionInfo]);
+```
+
+**Version Service:**
+```typescript
+// versionService.ts
+const APP_VERSION = '1.0.0';
+
+export const versionService = {
+  async checkVersion(platform?: MobilePlatform, version?: string) {
+    const response = await axios.get(`${API_URL}/MobileAppVersions/Check`, {
+      params: { platform, version }
+    });
+    return response.data;
+  }
+};
+```
+
+**Update Required Screen:**
+- Displays when `isUpdateRequired = true`
+- Shows revocation reason if version is revoked
+- "Update Now" button opens app store link
+- Blocks access to the rest of the app
+
+### Files Created
+
+**Domain Layer:**
+- `src/Domain/Enums/MobilePlatform.cs`
+- `src/Domain/Entities/MobileAppVersion.cs`
+
+**Infrastructure Layer:**
+- `src/Infrastructure/Data/Configurations/MobileAppVersionConfiguration.cs`
+- Migration: `AddMobileAppVersions`
+- Migration: `MakeStoreUrlOptional`
+
+**Application Layer:**
+```
+src/Application/MobileAppVersions/
+├── Commands/
+│   ├── CreateMobileAppVersion/
+│   │   ├── CreateMobileAppVersion.cs
+│   │   └── CreateMobileAppVersionCommandValidator.cs
+│   ├── UpdateMobileAppVersion/
+│   │   ├── UpdateMobileAppVersion.cs
+│   │   └── UpdateMobileAppVersionCommandValidator.cs
+│   ├── DeleteMobileAppVersion/
+│   │   └── DeleteMobileAppVersion.cs
+│   ├── SetLatestVersion/
+│   │   └── SetLatestVersion.cs
+│   └── RevokeVersion/
+│       └── RevokeVersion.cs
+└── Queries/
+    ├── CheckAppVersion/
+    │   ├── CheckAppVersion.cs
+    │   └── AppVersionCheckResultDto.cs
+    ├── GetMobileAppVersions/
+    │   ├── GetMobileAppVersions.cs
+    │   └── MobileAppVersionDto.cs
+    └── GetMobileAppVersionById/
+        └── GetMobileAppVersionById.cs
+```
+
+**Web Layer:**
+- `src/Web/Endpoints/MobileAppVersions.cs`
+
+**Mobile App (Hems-App):**
+- `src/api/types/version.types.ts`
+- `src/api/services/versionService.ts`
+- `src/hooks/useVersionCheck.ts`
+- `src/app/screens/updateRequired/UpdateRequiredScreen.tsx`
+- `src/app/screens/updateRequired/UpdateRequiredScreen.styles.ts`
+- Updated `src/app/routes/index.tsx`
+- Updated `src/api/client/config.ts`
+- Updated i18n files (`en.json`, `nl.json`, `tr.json`)
+
+### Admin Endpoint Summary (Updated)
+
+| Endpoint Group | Admin Path | Operations |
+|----------------|-----------|------------|
+| MobileAppVersions | `/api/MobileAppVersions/Admin/Versions` | GET (list), POST |
+| MobileAppVersions | `/api/MobileAppVersions/Admin/Versions/{id}` | GET, PUT, DELETE |
+| MobileAppVersions | `/api/MobileAppVersions/Admin/Versions/{id}/SetLatest` | POST |
+| MobileAppVersions | `/api/MobileAppVersions/Admin/Versions/{id}/Revoke` | POST |
+| Devices | `/api/Devices/Admin/Device` | GET, POST, PUT, DELETE |
+| DeviceComponents | `/api/DeviceComponents/Admin/Component` | GET, POST, PUT, DELETE |
+| DeviceNotifications | `/api/DeviceNotifications/Admin/Types` | GET |
+| DeviceSettings | `/api/DeviceSettings/admin` | GET, POST, PUT, DELETE |
+| ParameterSchemas | `/api/ParameterSchemas/Admin/Groups` | All (admin-only) |
+| ParameterSchemas | `/api/ParameterSchemas/Admin/Parameters` | All (admin-only) |
+| ParameterSchemas | `/api/ParameterSchemas/Admin/Values` | POST/PUT/DELETE (admin-only) |
+| RoleManagement | `/api/RoleManagement/Admin/Roles` | GET, POST, DELETE |
+| Setups | `/api/Setups/Admin/Setups` | GET (admin-only) |
+| Sites | `/api/Sites/Admin/Sites` | GET (admin-only) |
+
+---
