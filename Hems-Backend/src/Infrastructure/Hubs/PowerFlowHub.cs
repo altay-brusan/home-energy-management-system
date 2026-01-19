@@ -139,22 +139,83 @@ public class PowerFlowHub : Hub
                 "PowerFlowHub - Subscribed to device {DeviceId}, subscriptionId: {SubscriptionId}, total subscribers: {Count}",
                 deviceId, subscription.SubscriptionId, _streamManager.GetSubscriberCount(deviceId));
 
-            // Read from the shared channel
+            // Read from the shared channel with timeout-based checks
+            // This prevents hanging when SignalR cancellation doesn't propagate properly
+            // (common issue with unexpected disconnections on mobile/emulator)
             _logger.LogInformation("PowerFlowHub - Starting to read from channel for device {DeviceId}...", deviceId);
             var itemCount = 0;
-            await foreach (var data in subscription.DataChannel.ReadAllAsync(cancellationToken))
+            var readTimeoutMs = 30000; // 30 second timeout for each read attempt
+
+            while (!cancellationToken.IsCancellationRequested)
             {
-                itemCount++;
-                if (data is PowerFlowDto powerFlowDto)
+                // Check for connection abort before attempting read
+                if (Context.ConnectionAborted.IsCancellationRequested)
                 {
-                    _logger.LogDebug("PowerFlowHub - Yielding PowerFlow item #{Count} for device {DeviceId}", itemCount, deviceId);
-                    yield return powerFlowDto;
+                    _logger.LogInformation("PowerFlowHub - Connection aborted detected for device {DeviceId}", deviceId);
+                    break;
                 }
-                else
+
+                // Wait for data with a timeout
+                bool hasData;
+                bool timedOut = false;
+
+                using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
                 {
-                    _logger.LogWarning("PowerFlowHub - Received non-PowerFlowDto data type: {Type}", data?.GetType().Name ?? "null");
+                    timeoutCts.CancelAfter(readTimeoutMs);
+
+                    try
+                    {
+                        hasData = await subscription.DataChannel.WaitToReadAsync(timeoutCts.Token);
+                    }
+                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                    {
+                        // Client disconnected - normal exit
+                        _logger.LogInformation("PowerFlowHub - Client cancelled for device {DeviceId}", deviceId);
+                        break;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Read timeout - check if connection is still alive
+                        if (Context.ConnectionAborted.IsCancellationRequested)
+                        {
+                            _logger.LogInformation("PowerFlowHub - Connection aborted detected after timeout for device {DeviceId}", deviceId);
+                            break;
+                        }
+                        // Timeout but connection still alive - continue waiting for data
+                        _logger.LogDebug("PowerFlowHub - Read timeout for device {DeviceId}, connection still alive, continuing...", deviceId);
+                        timedOut = true;
+                        hasData = false;
+                    }
+                }
+
+                if (timedOut)
+                {
+                    continue;
+                }
+
+                if (!hasData)
+                {
+                    // Channel completed (no more data will be written)
+                    _logger.LogInformation("PowerFlowHub - Channel completed for device {DeviceId}", deviceId);
+                    break;
+                }
+
+                // Try to read all available items (yield is outside try-catch)
+                while (subscription.DataChannel.TryRead(out var data))
+                {
+                    itemCount++;
+                    if (data is PowerFlowDto powerFlowDto)
+                    {
+                        _logger.LogDebug("PowerFlowHub - Yielding PowerFlow item #{Count} for device {DeviceId}", itemCount, deviceId);
+                        yield return powerFlowDto;
+                    }
+                    else
+                    {
+                        _logger.LogWarning("PowerFlowHub - Received non-PowerFlowDto data type: {Type}", data?.GetType().Name ?? "null");
+                    }
                 }
             }
+
             _logger.LogInformation("PowerFlowHub - Channel reading completed for device {DeviceId}, total items: {Count}", deviceId, itemCount);
         }
         finally

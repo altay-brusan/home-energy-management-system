@@ -35,12 +35,11 @@ public class DeviceSettings : EndpointGroupBase
     {
         app.MapGroup(this)
             .RequireAuthorization()
-            // ==== RPC-SYNCED OPERATIONS (New - Recommended for users) ====
+            // ==== RPC-SYNCED OPERATIONS (Synchronous - waits for completion) ====
             .MapGet(GetDeviceParameters, "device/{deviceId:guid}/parameters")
             .MapGet(GetDeviceParameterValuesTree, "device/{deviceId:guid}/tree")
             .MapPut(UpdateDeviceParameter, "device/{deviceId:guid}/parameters/{parameterId:guid}")
             .MapPut(UpdateDeviceParameters, "device/{deviceId:guid}/parameters")
-            .MapPost(CancelParameterUpdate, "device/{deviceId:guid}/parameters/cancel/{correlationId}")
             .MapGet(GetAvailableModes, "modes")
             .MapGet(GetCurrentDeviceMode, "device/{deviceId:guid}/mode")
             .MapPost(SetDeviceMode, "device/{deviceId:guid}/mode")
@@ -64,7 +63,7 @@ public class DeviceSettings : EndpointGroupBase
 
     // ========================================================================
     // RPC-SYNCED OPERATIONS - Updates both device and database
-    // Recommended for all user-facing operations
+    // Now synchronous - waits for completion and returns complete result
     // ========================================================================
 
     /// <summary>
@@ -120,87 +119,119 @@ public class DeviceSettings : EndpointGroupBase
     }
 
     /// <summary>
-    /// Update multiple device parameters in batch
-    /// Groups parameters by RPC method to minimize RPC calls
-    /// Updates the device via RPC first, then updates the database if successful
+    /// Update multiple device parameters in batch (synchronous)
+    /// Waits for all updates to complete and returns the complete result.
+    /// Timeout: 3 minutes (handles up to ~50 parameters safely).
     /// </summary>
+    /// <remarks>
+    /// This endpoint is now synchronous - it waits for all parameter updates to complete
+    /// before returning. The response includes:
+    /// - success: true if all parameters updated successfully
+    /// - totalParameters: number of parameters in the request
+    /// - successCount: number of parameters successfully updated
+    /// - failedCount: number of parameters that failed
+    /// - failedParameters: details of each failed parameter
+    /// - duration: total time taken for the operation
+    ///
+    /// If the device is busy (another update in progress), returns 400 with errorCode "DEVICE_BUSY"
+    /// </remarks>
     [Authorize]
     public async Task<IResult> UpdateDeviceParameters(
         ISender sender,
+        ILogger<DeviceSettings> logger,
         Guid deviceId,
-        UpdateDeviceParametersRequest request)
+        UpdateDeviceParametersRequest request,
+        CancellationToken cancellationToken)
     {
+        // DEBUG: Log incoming request
+        logger.LogInformation(
+            "📥 [Endpoint] UpdateDeviceParameters called: DeviceId={DeviceId}, ParameterCount={Count}, Parameters=[{Params}]",
+            deviceId,
+            request.Parameters.Count,
+            string.Join("; ", request.Parameters.Select(p => $"Id={p.ParameterId}, Value='{p.Value}'")));
+
+        // Create a timeout token (3 minutes) to prevent indefinite hangs
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeoutCts.CancelAfter(TimeSpan.FromMinutes(3));
+
         var command = new UpdateDeviceParametersCommand
         {
             DeviceId = deviceId,
             Parameters = request.Parameters
         };
 
-        var result = await sender.Send(command);
-
-        if (result.Success)
+        try
         {
-            return Results.Ok(result);
-        }
+            var result = await sender.Send(command, timeoutCts.Token);
 
-        return Results.BadRequest(new
-        {
-            success = false,
-            message = result.ErrorMessage ?? "Failed to update parameters",
-            successfulUpdates = result.SuccessfulUpdates,
-            failedUpdates = result.FailedUpdates
-        });
-    }
+            // DEBUG: Log result
+            logger.LogInformation(
+                "📤 [Endpoint] UpdateDeviceParameters result: Success={Success}, ErrorCode={ErrorCode}, ErrorMessage={ErrorMessage}, " +
+                "TotalParams={Total}, SuccessCount={SuccessCount}, FailedCount={FailedCount}, FailedParams=[{FailedParams}]",
+                result.Success,
+                result.ErrorCode ?? "none",
+                result.ErrorMessage ?? "none",
+                result.TotalParameters,
+                result.SuccessCount,
+                result.FailedCount,
+                string.Join("; ", result.FailedParameters.Select(p => $"{p.ParameterName}: {p.ErrorMessage}")));
 
-    /// <summary>
-    /// Cancel an in-progress parameter update operation
-    /// </summary>
-    /// <param name="queueService">Parameter update queue service</param>
-    /// <param name="deviceId">Device ID</param>
-    /// <param name="correlationId">Correlation ID of the operation to cancel</param>
-    /// <returns>Result indicating if cancellation was successful</returns>
-    [Authorize]
-    public IResult CancelParameterUpdate(
-        IParameterUpdateQueueService queueService,
-        Guid deviceId,
-        string correlationId)
-    {
-        if (string.IsNullOrEmpty(correlationId))
-        {
+            if (result.Success)
+            {
+                return Results.Ok(new
+                {
+                    success = true,
+                    totalParameters = result.TotalParameters,
+                    successCount = result.SuccessCount,
+                    failedCount = result.FailedCount,
+                    failedParameters = result.FailedParameters,
+                    duration = result.Duration.ToString()
+                });
+            }
+
+            // Handle specific error codes
+            if (result.ErrorCode == "DEVICE_BUSY")
+            {
+                return Results.BadRequest(new
+                {
+                    success = false,
+                    errorCode = result.ErrorCode,
+                    message = result.ErrorMessage
+                });
+            }
+
+            // Partial success (some parameters updated, some failed)
+            if (result.SuccessCount > 0)
+            {
+                return Results.Ok(new
+                {
+                    success = false, // Not fully successful
+                    totalParameters = result.TotalParameters,
+                    successCount = result.SuccessCount,
+                    failedCount = result.FailedCount,
+                    failedParameters = result.FailedParameters,
+                    duration = result.Duration.ToString(),
+                    message = $"{result.SuccessCount} parameters updated, {result.FailedCount} failed"
+                });
+            }
+
             return Results.BadRequest(new
             {
                 success = false,
-                message = "Correlation ID is required"
+                errorCode = result.ErrorCode,
+                message = result.ErrorMessage ?? "Failed to update parameters",
+                failedParameters = result.FailedParameters
             });
         }
-
-        // Check if the operation is active
-        if (!queueService.IsOperationActive(correlationId))
+        catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
-            return Results.NotFound(new
-            {
-                success = false,
-                message = "No active operation found with the specified correlation ID"
-            });
+            // Timeout occurred (not client cancellation)
+            logger.LogWarning(
+                "⏱️ [Endpoint] UpdateDeviceParameters timed out after 3 minutes: DeviceId={DeviceId}, ParameterCount={Count}",
+                deviceId, request.Parameters.Count);
+
+            return Results.StatusCode(504); // Gateway Timeout
         }
-
-        // Request cancellation
-        var cancelled = queueService.CancelOperation(correlationId);
-
-        if (cancelled)
-        {
-            return Results.Ok(new
-            {
-                success = true,
-                message = "Cancellation requested. The operation will stop after the current parameter update completes."
-            });
-        }
-
-        return Results.BadRequest(new
-        {
-            success = false,
-            message = "Failed to cancel operation. It may have already completed."
-        });
     }
 
     /// <summary>

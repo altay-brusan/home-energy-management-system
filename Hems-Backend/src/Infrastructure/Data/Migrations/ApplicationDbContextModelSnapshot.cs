@@ -608,6 +608,72 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.ToTable("DeviceNotificationTypes");
                 });
 
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceOperationHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CompletedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("CorrelationId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("DeviceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<TimeSpan>("Duration")
+                        .HasColumnType("interval");
+
+                    b.Property<int>("FailedCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("FailedParametersJson")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<int>("SkippedCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("SuccessCount")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalParameters")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("WasCancelled")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeviceId");
+
+                    b.ToTable("DeviceOperationHistories");
+                });
+
             modelBuilder.Entity("Hems_Backend.Domain.Entities.DevicePowerData", b =>
                 {
                     b.Property<int>("Id")
@@ -701,6 +767,69 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .HasDatabaseName("IX_DevicePowerData_ThingsBoardDeviceId_DeviceLocalTime_DataType");
 
                     b.ToTable("DevicePowerData", (string)null);
+                });
+
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceSettingUpdateHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("AttemptedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("CorrelationId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("DeviceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("FailedReason")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("NewValue")
+                        .HasColumnType("text");
+
+                    b.Property<string>("OldValue")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ParameterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ParameterName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("RetryAttempts")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("VerifiedValue")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeviceId");
+
+                    b.ToTable("DeviceSettingUpdateHistories");
                 });
 
             modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceWeatherData", b =>
@@ -950,6 +1079,101 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.HasIndex("Token", "Status");
 
                     b.ToTable("Invitations");
+                });
+
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.MobileAppVersion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("BuildNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
+                    b.Property<bool>("IsLatest")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsMandatory")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsRevoked")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MinimumRequiredVersion")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("Platform")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ReleaseNotes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTimeOffset?>("ReleasedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RevocationReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("StoreUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Version")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("VersionMajor")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("VersionMinor")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("VersionPatch")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("IsLatest");
+
+                    b.HasIndex("Platform");
+
+                    b.HasIndex("Platform", "IsLatest");
+
+                    b.HasIndex("Platform", "Version")
+                        .IsUnique();
+
+                    b.HasIndex("Platform", "VersionMajor", "VersionMinor", "VersionPatch");
+
+                    b.ToTable("MobileAppVersions");
                 });
 
             modelBuilder.Entity("Hems_Backend.Domain.Entities.Notification", b =>
@@ -1752,12 +1976,34 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.Navigation("Site");
                 });
 
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceOperationHistory", b =>
+                {
+                    b.HasOne("Hems_Backend.Domain.Entities.Device", "Device")
+                        .WithMany()
+                        .HasForeignKey("DeviceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Device");
+                });
+
             modelBuilder.Entity("Hems_Backend.Domain.Entities.DevicePowerData", b =>
                 {
                     b.HasOne("Hems_Backend.Domain.Entities.Device", "Device")
                         .WithMany()
                         .HasForeignKey("ThingsBoardDeviceId")
                         .HasPrincipalKey("ThingsBoardDeviceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Device");
+                });
+
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.DeviceSettingUpdateHistory", b =>
+                {
+                    b.HasOne("Hems_Backend.Domain.Entities.Device", "Device")
+                        .WithMany()
+                        .HasForeignKey("DeviceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

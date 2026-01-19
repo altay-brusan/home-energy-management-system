@@ -570,6 +570,9 @@ internal class DeviceStreamSubscription : IDeviceStreamSubscription
     public void MarkInactive()
     {
         IsActive = false;
+        // Complete the channel to unblock any readers waiting for data
+        // This is critical to prevent hanging when a client disconnects
+        _channel.Writer.TryComplete();
     }
 
     public void Complete()

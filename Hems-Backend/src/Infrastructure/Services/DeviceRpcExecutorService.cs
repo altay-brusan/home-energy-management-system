@@ -749,7 +749,11 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
                 config.StartTimeLocal = value as string;
                 break;
             case "endTimeLocal":
-                config.EndTimeLocal = value as string;
+                // Convert "00:00" to "24:00" for end times
+                // "00:00" as end time means midnight at END of day, not start
+                // Device expects "24:00" to indicate full 24-hour coverage
+                var endTime = value as string;
+                config.EndTimeLocal = endTime == "00:00" ? "24:00" : endTime;
                 break;
             case "allowGridCharge":
                 config.AllowGridCharge = Convert.ToBoolean(value);

@@ -539,11 +539,68 @@ The `IDeviceRpcExecutorService` is designed to be reusable across different feat
 
 ---
 
+## Implemented Enhancements
+
+### 1. Device Setting Update History (Audit Logging) ✅
+
+All parameter updates are now tracked in `DeviceSettingUpdateHistory` table:
+
+| Column | Description |
+|--------|-------------|
+| `DeviceId` | The device being updated |
+| `CorrelationId` | Groups all parameters from the same batch operation |
+| `ParameterId` / `ParameterName` | Which parameter was updated |
+| `Status` | Success, Failed, or Skipped |
+| `OldValue` | Value before update (from database) |
+| `NewValue` | Value sent to device |
+| `VerifiedValue` | Value read back after write |
+| `FailedReason` | Error message if failed |
+| `RetryAttempts` | Number of retry attempts made |
+| `AttemptedAt` | Timestamp of the attempt |
+
+### 2. Time Slot End Parameters - RPC Skip ✅
+
+Time slot END parameters are automatically skipped for RPC but saved to the local database:
+
+```
+TimeSlot1Start → RPC + Database
+TimeSlot1End   → Database only (device handles internally)
+TimeSlot2Start → RPC + Database
+TimeSlot2End   → Database only
+...
+```
+
+This is handled transparently - frontend should send both start and end times.
+
+### 3. Write-Verify-Retry Pattern ✅
+
+For each parameter update:
+1. **Write**: Send value to device via RPC
+2. **Wait**: 150ms for device processing
+3. **Verify**: Read back value from device
+4. **Compare**: Check if written == verified
+5. **Retry**: If mismatch, retry once (max 2 attempts)
+
+### 4. Synchronous REST + SignalR Progress ✅
+
+- HTTP POST waits for all parameters to complete (up to 5 min timeout)
+- SignalR provides real-time progress updates during the operation
+- Frontend can show progress bar with parameter-by-parameter status
+
+### 5. Device Lock for Concurrent Updates ✅
+
+Only one update operation per device at a time:
+- Uses `IDeviceLockService` to acquire lock
+- Returns `DEVICE_BUSY` error code if already locked
+- Lock automatically released after operation completes
+
+---
+
 ## Future Enhancements
 
-1. **Parameter validation**: Add value range validation based on parameter type
-2. **Rollback support**: Automatic rollback if database update fails after successful RPC
-3. **Audit logging**: Track all parameter changes with user and timestamp
+1. ~~**Parameter validation**: Add value range validation based on parameter type~~ (partial - basic validation exists)
+2. ~~**Rollback support**: Automatic rollback if database update fails after successful RPC~~ (implemented via dirty tracking on frontend)
+3. ~~**Audit logging**: Track all parameter changes with user and timestamp~~ ✅ Implemented
 4. **Bulk device updates**: Update same parameter across multiple devices
-5. **Parameter history**: Track historical values of parameters
+5. ~~**Parameter history**: Track historical values of parameters~~ ✅ Implemented via DeviceSettingUpdateHistory
 6. **Custom modes**: Allow users to save their own custom modes

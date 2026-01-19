@@ -42,4 +42,22 @@ public class SetupDeviceParameterValuesTreeVm
 {
     public Guid SetupDeviceId { get; set; }
     public List<ParameterGroupTreeDto> ParameterGroups { get; set; } = new();
+
+    /// <summary>
+    /// Indicates if a parameter update operation is currently in progress for this device.
+    /// When true, the client should disable mode/settings changes and retry later.
+    /// </summary>
+    public bool IsDeviceBusy { get; set; }
+
+    /// <summary>
+    /// Estimated time remaining for the current operation to complete (in seconds).
+    /// Only populated when IsDeviceBusy is true.
+    /// </summary>
+    public int? EstimatedSecondsRemaining { get; set; }
+
+    /// <summary>
+    /// Current progress of the operation (0-100).
+    /// Only populated when IsDeviceBusy is true.
+    /// </summary>
+    public int? ProgressPercentage { get; set; }
 }
