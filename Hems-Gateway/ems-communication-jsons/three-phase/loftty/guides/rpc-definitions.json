@@ -497,6 +497,32 @@
         }
       },
       {
+        "rpcName": "getBatteryCapacityConfig",
+        "kind": "BatteryCapacityConfigState",
+        "type": "read",
+        "pairedWith": "setBatteryCapacityConfig",
+        "response": {
+          "kind": "BatteryCapacityConfigState",
+          "timestampUtc": "2026-01-19T11:31:15.796Z",
+          "gatewayId": "EC100-GW-001",
+          "inverterSerialNumber": "Unknown",
+          "batteryCapacityAh": 100,
+          "maxChargeCurrentA": 50,
+          "maxDischargeCurrentA": 100
+        }
+      },
+      {
+        "rpcName": "setBatteryCapacityConfig",
+        "kind": "BatteryCapacityConfigState",
+        "type": "write",
+        "pairedWith": "getBatteryCapacityConfig",
+        "request": {
+          "batteryCapacityAh": 200,
+          "maxChargeCurrentA": 100,
+          "maxDischargeCurrentA": 100
+        }
+      },
+      {
         "rpcName": "getExportStrategy",
         "kind": "ExportStrategyState",
         "type": "read",
@@ -1228,6 +1254,11 @@
         "get": "getBatteryThresholdConfig",
         "set": "setBatteryThresholdConfig",
         "kind": "BatteryThresholdConfigState"
+      },
+      {
+        "get": "getBatteryCapacityConfig",
+        "set": "setBatteryCapacityConfig",
+        "kind": "BatteryCapacityConfigState"
       },
       {
         "get": "getExportStrategy",
