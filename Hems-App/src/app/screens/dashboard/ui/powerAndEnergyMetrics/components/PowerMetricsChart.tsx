@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, Switch, ActivityIndicator, Platform, PanResponder, TouchableOpacity } from 'react-native';
+import { View, Text, Switch, ActivityIndicator, Platform, PanResponder, TouchableOpacity, useWindowDimensions } from 'react-native';
 import Svg, { Path, Line, Defs, LinearGradient, Stop, G, Text as SvgText, Rect, Circle } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import { getPowerMetricsChartStyles } from './PowerMetricsChart.styles';
@@ -41,6 +41,12 @@ export default function PowerMetricsChart({ COLORS }: Props) {
   const navigation = useNavigation<any>();
   const { device, hasDevice } = useSelectedSiteDevice();
   const { registerRefreshCallback } = useDashboardRefresh();
+  const { width: screenWidth } = useWindowDimensions();
+
+  // Responsive chart dimensions - tablet gets larger chart
+  const isTablet = screenWidth >= 768;
+  const chartWidth = isTablet ? Math.min(screenWidth - 64, 800) : Math.min(screenWidth - 48, 350);
+  const chartHeight = isTablet ? 450 : 350;
 
   // Toggle states for each power metric
   const [showSolar, setShowSolar] = useState(true);
@@ -133,8 +139,7 @@ export default function PowerMetricsChart({ COLORS }: Props) {
 
   // Render the iOS chart with SVG
   const renderChart = () => {
-    const chartWidth = 350;
-    const chartHeight = 350;
+    // Use responsive dimensions from component state
     const padding = { top: 20, right: 20, bottom: 80, left: 10 };
     const innerWidth = chartWidth - padding.left - padding.right;
     const innerHeight = chartHeight - padding.top - padding.bottom;
@@ -531,8 +536,8 @@ export default function PowerMetricsChart({ COLORS }: Props) {
         {touchX !== null && selectedDataPoint && (
           <View style={{
             position: 'absolute',
-            top: -120,
-            left: Math.max(10, Math.min(touchX - 100, 350 - 210)), // Center card on touch point with bounds
+            top: isTablet ? -130 : -120,
+            left: Math.max(10, Math.min(touchX - 100, chartWidth - 210)), // Center card on touch point with bounds
             backgroundColor: COLORS.cardBg,
             borderRadius: 12,
             padding: 14,
