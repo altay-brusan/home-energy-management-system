@@ -805,6 +805,51 @@ public static class RpcMethodMapping
                 _ => int.Parse(val)
             }
         },
+        // ===== SYSTEM CONNECTION STRUCTURE =====
+        // RPC: getSystemConnectionStructure / setSystemConnectionStructure
+        // Grid Panel 1 parameters (Grid Code Selection)
+
+        ["PhaseType"] = new()
+        {
+            RpcMethod = "setSystemConnectionStructure",
+            RpcGetMethod = "getSystemConnectionStructure",
+            FieldPath = "gridPhaseSequence",
+            RpcKind = "SystemConnectionStructure",
+            ValueMapper = val => val switch
+            {
+                "ABC_0_120_240" => 0,
+                "ACB_0_240_120" => 1,
+                "0" => 0,
+                "1" => 1,
+                _ => val // Pass string value directly if it's already in the right format
+            }
+        },
+        ["GridLevel"] = new()
+        {
+            RpcMethod = "setSystemConnectionStructure",
+            RpcGetMethod = "getSystemConnectionStructure",
+            FieldPath = "gridVoltageLevelCode",
+            RpcKind = "SystemConnectionStructure",
+            ValueMapper = val => val switch
+            {
+                "LN:220VAC LL:380VAC" => 0,
+                "LN:230VAC LL:400VAC" => 1,
+                "LN:240VAC LL:420VAC" => 2,
+                "LN:120VAC LL:208VAC" => 3,
+                "LN:133VAC LL:230VAC" => 4,
+                _ => int.Parse(val)
+            }
+        },
+        ["ITSystemNeutralGrounded"] = new()
+        {
+            RpcMethod = "setSystemConnectionStructure",
+            RpcGetMethod = "getSystemConnectionStructure",
+            FieldPath = "inverter.acSide.itSystemNeutralUngrounded",
+            RpcKind = "SystemConnectionStructure",
+            ValueMapper = val => !bool.Parse(val) // Inverted: Grounded = !Ungrounded
+        },
+
+        // ===== GRID CODE CONFIGURATION (continued) =====
         ["GridVoltageHigh"] = new()
         {
             RpcMethod = "setGridCodeConfig",
