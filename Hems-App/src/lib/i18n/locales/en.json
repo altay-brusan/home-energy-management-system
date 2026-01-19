@@ -1087,6 +1087,18 @@
         "moveToSignal": "Move to better signal area"
       }
     },
+    "update": {
+      "requiredTitle": "Update Required",
+      "availableTitle": "Update Available",
+      "requiredSubtitle": "A new version of the app is required to continue. Please update to the latest version.",
+      "availableSubtitle": "A new version of the app is available. Update now for the best experience.",
+      "currentVersion": "Current Version",
+      "latestVersion": "Latest Version",
+      "whatsNew": "What's New",
+      "updateNow": "Update Now",
+      "later": "Remind Me Later",
+      "requiredFooter": "This update is required to continue using the app."
+    },
     "trash": {
       "title": "Trash Bin",
       "restoreAll": "Restore All",
@@ -1612,7 +1624,17 @@
     "gridPower": "Grid Power",
     "phaseAPower": "Phase A Power",
     "phaseBPower": "Phase B Power",
+    "phaseCPower": "Phase C Power",
     "gridStatus": "Grid Status",
+    "load": "Load",
+    "loadPower": "Load Power",
+    "loadPhaseAPower": "Phase A Power",
+    "loadPhaseBPower": "Phase B Power",
+    "loadPhaseCPower": "Phase C Power",
+    "loadPhaseAVoltage": "Phase A Voltage",
+    "loadPhaseBVoltage": "Phase B Voltage",
+    "loadPhaseCVoltage": "Phase C Voltage",
+    "loadFrequency": "Frequency",
     "connected": "Connected",
     "disconnected": "Disconnected",
     "generator": "Generator",
@@ -1833,7 +1855,8 @@
       "smartLoad": "Smart Load",
       "generatorSmartLoad": "Generator & Smart Load",
       "batteryMaintenance": "Battery Maintenance",
-      "gridCode": "Grid Code Configuration"
+      "gridCode": "Grid Code Configuration",
+      "batteryConfiguration": "Battery Configuration"
     },
     "labels": {
       "workMode": "Work Mode",
@@ -1844,9 +1867,11 @@
       "gridPeakShaving": "Grid Peak Shaving",
       "peakShavingPower": "Peak Shaving Power",
       "batteryType": "Battery Type",
-      "batteryCapacity": "Capacity",
+      "batteryCapacity": "Battery Capacity",
       "maxChargeCurrent": "Max Charge Current",
       "maxDischargeCurrent": "Max Discharge Current",
+      "maxBatteryChargeCurrent": "Max Charge Current",
+      "maxBatteryDischargeCurrent": "Max Discharge Current",
       "shutdownSOC": "Shutdown SOC",
       "lowBattSOC": "Low Batt SOC",
       "lowBatteryWarning": "Low Battery Warning",
@@ -2088,6 +2113,13 @@
       "continueInBackground": "Continue in Background",
       "inProgressTitle": "Update In Progress",
       "navigateWarning": "Settings are being updated. Continue in background?"
+    },
+    "busy": {
+      "title": "Settings Update In Progress",
+      "message": "Device settings are currently being updated. Please wait and try again later.",
+      "progress": "Progress: {{progress}}%",
+      "estimatedTime": "Estimated time remaining: {{seconds}} seconds",
+      "modesDisabled": "Mode selection is temporarily disabled while settings are being synchronized."
     }
   }
 }

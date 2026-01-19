@@ -1090,6 +1090,18 @@
       "moveToSignal": "Daha iyi sinyal alanına gidin"
     }
   },
+  "update": {
+    "requiredTitle": "Güncelleme Gerekli",
+    "availableTitle": "Güncelleme Mevcut",
+    "requiredSubtitle": "Devam etmek için uygulamanın yeni bir sürümü gereklidir. Lütfen en son sürüme güncelleyin.",
+    "availableSubtitle": "Uygulamanın yeni bir sürümü mevcut. En iyi deneyim için şimdi güncelleyin.",
+    "currentVersion": "Mevcut Sürüm",
+    "latestVersion": "Son Sürüm",
+    "whatsNew": "Yenilikler",
+    "updateNow": "Şimdi Güncelle",
+    "later": "Daha Sonra Hatırlat",
+    "requiredFooter": "Bu güncelleme, uygulamayı kullanmaya devam etmek için gereklidir."
+  },
   "trash": {
     "title": "Çöp Kutusu",
     "restoreAll": "Tümünü Geri Yükle",
@@ -1615,7 +1627,17 @@
   "gridPower": "Şebeke Gücü",
   "phaseAPower": "Faz A Gücü",
   "phaseBPower": "Faz B Gücü",
+  "phaseCPower": "Faz C Gücü",
   "gridStatus": "Şebeke Durumu",
+  "load": "Yük",
+  "loadPower": "Yük Gücü",
+  "loadPhaseAPower": "Faz A Gücü",
+  "loadPhaseBPower": "Faz B Gücü",
+  "loadPhaseCPower": "Faz C Gücü",
+  "loadPhaseAVoltage": "Faz A Voltajı",
+  "loadPhaseBVoltage": "Faz B Voltajı",
+  "loadPhaseCVoltage": "Faz C Voltajı",
+  "loadFrequency": "Frekans",
   "connected": "Bağlı",
   "disconnected": "Bağlı Değil",
   "generator": "Jeneratör",
@@ -2065,6 +2087,13 @@
       "continueInBackground": "Arka Planda Devam Et",
       "inProgressTitle": "Güncelleme Devam Ediyor",
       "navigateWarning": "Ayarlar güncelleniyor. Arka planda devam etsin mi?"
+    },
+    "busy": {
+      "title": "Ayarlar Güncelleniyor",
+      "message": "Cihaz ayarları şu anda güncelleniyor. Lütfen bekleyin ve daha sonra tekrar deneyin.",
+      "progress": "İlerleme: %{{progress}}",
+      "estimatedTime": "Tahmini kalan süre: {{seconds}} saniye",
+      "modesDisabled": "Ayarlar senkronize edilirken mod seçimi geçici olarak devre dışı bırakıldı."
     }
   }
 }

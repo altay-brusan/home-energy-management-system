@@ -18,8 +18,8 @@ import {
   ParameterGroupTreeDto,
   ParameterTreeDto,
   UpdateParameterItem,
+  UpdateDeviceParametersResponse,
 } from '../api/types/deviceSettings.types';
-import { UpdateParametersResponse } from '../api/types/deviceSettingsHub.types';
 import { deviceSettingsService } from '../api/services/deviceSettingsService';
 import {
   findMappingByApiName,
@@ -37,6 +37,22 @@ export interface ParameterMetadata {
   currentValue: string;
   modelNumber?: string;
   parameterGroupId?: string;
+}
+
+// Pre-save snapshot for rollback on failure
+export interface PreSaveSnapshotItem {
+  parameterId: string;
+  storePath: string;
+  originalValue: string; // Value before any changes
+  attemptedValue: string; // Value we tried to set
+}
+
+// Device busy info returned when an update operation is in progress
+export interface DeviceBusyInfo {
+  isDeviceBusy: boolean;
+  estimatedSecondsRemaining?: number;
+  progressPercentage?: number;
+  busyUntil?: number; // Timestamp when we should re-enable mode buttons
 }
 
 // Store State
@@ -60,6 +76,9 @@ interface DeviceSettingsState {
   error: string | null;
   lastFetchedAt: number | null;
 
+  // Device busy state (when another update is in progress)
+  deviceBusyInfo: DeviceBusyInfo | null;
+
   // Dirty tracking
   isDirty: boolean;
   dirtyFields: Set<string>;
@@ -67,9 +86,12 @@ interface DeviceSettingsState {
   // TimeOfUse validation
   timeOfUseValidationError: string | null;
 
+  // Pre-save snapshot for rollback
+  preSaveSnapshot: Record<string, PreSaveSnapshotItem> | null;
+
   // Actions
   fetchSettings: (deviceId: string) => Promise<void>;
-  saveSettings: () => Promise<{ success: boolean; correlationId?: string; totalParameters?: number; error?: string }>;
+  saveSettings: () => Promise<UpdateDeviceParametersResponse & { error?: string; errorCode?: string }>;
   finalizeSave: (success: boolean, failedParameterIds?: string[]) => void;
   resetToOriginal: () => void;
   resetToDefaults: () => void;
@@ -80,6 +102,14 @@ interface DeviceSettingsState {
 
   // TimeSlot specific
   updateTimeSlot: (slotIndex: number, updates: Partial<TimeSlot>) => void;
+
+  // Snapshot/Rollback for SignalR-based updates
+  capturePreSaveSnapshot: () => void;
+  rollbackParameters: (failedParameterIds: string[]) => void;
+  clearPreSaveSnapshot: () => void;
+
+  // Device busy
+  clearDeviceBusy: () => void;
 
   // Utility
   clearError: () => void;
@@ -213,6 +243,12 @@ const transformApiTreeToSettings = (
 
   tree.parameterGroups.forEach(processGroup);
 
+  // Normalize last slot's endTime: '00:00' should be displayed as '24:00' (end of day)
+  // The last slot (index 5) ends at midnight, which should be represented as '24:00'
+  if (settings.timeOfUse.timeSlots[5].endTime === '00:00') {
+    settings.timeOfUse.timeSlots[5].endTime = '24:00';
+  }
+
   // Extract visibility
   const visibility = extractTimeSlotVisibility(tree);
 
@@ -282,6 +318,7 @@ const getChangedParameters = (
 };
 
 // Helper: Validate TimeOfUse 24-hour coverage
+// Slots must cover full 24 hours: [00:00,a] [a,b] [b,c] [c,d] [d,e] [e,24:00]
 // Only validates when TimeOfUse is enabled
 const validateTimeOfUseCoverage = (timeSlots: TimeSlot[], enabled: 'on' | 'off'): string | null => {
   // Skip validation if TimeOfUse is disabled
@@ -294,12 +331,13 @@ const validateTimeOfUseCoverage = (timeSlots: TimeSlot[], enabled: 'on' | 'off')
     return 'firstPeriodStart';
   }
 
-  // 2. Last period must end at 00:00 (midnight = next day)
-  if (timeSlots[5].endTime !== '00:00') {
+  // 2. Last period must end at 24:00 (or 00:00 which represents midnight/end of day)
+  const lastEndTime = timeSlots[5].endTime;
+  if (lastEndTime !== '24:00' && lastEndTime !== '00:00') {
     return 'lastPeriodEnd';
   }
 
-  // 3. Each period's end time must match next period's start time
+  // 3. Each period's end time must match next period's start time (contiguous slots)
   for (let i = 0; i < 5; i++) {
     if (timeSlots[i].endTime !== timeSlots[i + 1].startTime) {
       return 'periodGap';
@@ -323,9 +361,11 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
       isSaving: false,
       error: null,
       lastFetchedAt: null,
+      deviceBusyInfo: null,
       isDirty: false,
       dirtyFields: new Set<string>(),
       timeOfUseValidationError: null,
+      preSaveSnapshot: null,
 
       // Fetch settings from API
       fetchSettings: async (deviceId: string) => {
@@ -341,6 +381,31 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
         try {
           console.log('[DeviceSettings] Fetching tree for deviceId:', deviceId);
           const tree = await deviceSettingsService.getTree(deviceId);
+
+          // Check if device is busy with an update operation
+          if (tree.isDeviceBusy) {
+            console.log('[DeviceSettings] Device is busy with update operation:', {
+              progressPercentage: tree.progressPercentage,
+              estimatedSecondsRemaining: tree.estimatedSecondsRemaining,
+            });
+
+            // Calculate when the busy state should expire (2 minutes from now)
+            const BUSY_DURATION_MS = 2 * 60 * 1000; // 2 minutes
+            const busyUntil = Date.now() + BUSY_DURATION_MS;
+
+            set({
+              isLoading: false,
+              deviceBusyInfo: {
+                isDeviceBusy: true,
+                estimatedSecondsRemaining: tree.estimatedSecondsRemaining,
+                progressPercentage: tree.progressPercentage,
+                busyUntil,
+              },
+            });
+            return;
+          }
+
+          // Device is not busy - clear busy state and process settings
           const { settings, metadata, visibility } = transformApiTreeToSettings(tree);
 
           // Validate initial state (only if TimeOfUse is enabled)
@@ -356,6 +421,7 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
             isDirty: false,
             dirtyFields: new Set<string>(),
             timeOfUseValidationError: validationError,
+            deviceBusyInfo: null, // Clear busy state on successful fetch
           });
           console.log('[DeviceSettings] Fetch completed successfully');
         } catch (err: any) {
@@ -368,12 +434,19 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
       },
 
       // Save changed settings to API (bulk update)
-      // Returns correlationId for SignalR progress tracking
+      // Now synchronous - waits for completion and returns full result
       saveSettings: async () => {
-        const { settings, parameterMetadata, dirtyFields, deviceId } = get();
+        const { settings, parameterMetadata, dirtyFields, deviceId, finalizeSave } = get();
 
         if (!deviceId || dirtyFields.size === 0) {
-          return { success: true };
+          return {
+            success: true,
+            totalParameters: 0,
+            successCount: 0,
+            failedCount: 0,
+            failedParameters: [],
+            duration: '00:00:00',
+          };
         }
 
         set({ isSaving: true, error: null });
@@ -383,7 +456,14 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
 
           if (changes.length === 0) {
             set({ isSaving: false });
-            return { success: true };
+            return {
+              success: true,
+              totalParameters: 0,
+              successCount: 0,
+              failedCount: 0,
+              failedParameters: [],
+              duration: '00:00:00',
+            };
           }
 
           // Build bulk update payload
@@ -392,27 +472,96 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
             value: change.newValue,
           }));
 
-          // Send bulk update - now returns correlationId for SignalR tracking
+          // Log what we're sending (always log for debugging, not just __DEV__)
+          console.log('[DeviceSettings] 📤 API Request Payload:', {
+            deviceId,
+            parameterCount: parameters.length,
+            parameters: parameters.map(p => ({
+              parameterId: p.parameterId,
+              value: p.value,
+            })),
+          });
+          if (__DEV__) {
+            console.log('[DeviceSettings] 📤 Full change details:', {
+              changes: changes.map(c => ({
+                storePath: c.mapping.storePath,
+                apiName: c.mapping.apiName,
+                transformerType: c.mapping.transformerType,
+                originalValue: c.meta.originalValue,
+                newValue: c.newValue,
+              })),
+            });
+          }
+
+          // Send bulk update - now synchronous, waits for completion
+          console.log('[DeviceSettings] Sending synchronous parameter update request');
           const response = await deviceSettingsService.updateParameters(deviceId, { parameters });
 
-          if (response.success && response.correlationId) {
-            // Don't update metadata yet - wait for SignalR completion
-            // Keep isSaving true until finalizeSave is called
-            return {
-              success: true,
-              correlationId: response.correlationId,
-              totalParameters: response.totalParameters,
-            };
-          } else {
-            set({ isSaving: false, error: response.errorMessage || response.message });
-            return { success: false, error: response.errorMessage || response.message };
-          }
-        } catch (err: any) {
-          set({
-            isSaving: false,
-            error: err.message || 'Failed to save settings',
+          console.log('[DeviceSettings] Parameter update response:', {
+            success: response.success,
+            successCount: response.successCount,
+            failedCount: response.failedCount,
+            duration: response.duration,
           });
-          return { success: false, error: err.message };
+
+          // Handle the response - finalize save based on result
+          const failedIds = response.failedParameters?.map(p => p.parameterId) ?? [];
+          finalizeSave(response.successCount > 0, failedIds);
+
+          return response;
+        } catch (err: any) {
+          // DEBUG: Log the complete error object
+          // Note: apiClient transforms AxiosError → ApiError, so err is already an ApiError object
+          // ApiError shape: { status, title, detail, message, type, errors, url }
+          console.error('[DeviceSettings] ❌ API Error - Full error object:', {
+            errorType: err.constructor?.name,
+            status: err.status ?? err.response?.status,
+            title: err.title,
+            detail: err.detail,
+            message: err.message,
+            errors: err.errors,
+            // Also check for Axios-style response in case it wasn't transformed
+            axiosResponse: err.response?.data,
+          });
+
+          // Extract error details - handle both ApiError (transformed) and AxiosError (raw)
+          // ApiError has: { status, message, detail, ... }
+          // AxiosError has: { response: { data: { message, failedParameters, ... } } }
+          const isApiError = err.status !== undefined && !err.response;
+          const responseData = isApiError ? err : err.response?.data;
+
+          const errorMessage = responseData?.detail || responseData?.message || err.message || 'Failed to save settings';
+          const errorCode = responseData?.errorCode;
+          const failedParameters = responseData?.failedParameters || [];
+          const totalParameters = responseData?.totalParameters || 0;
+          const successCount = responseData?.successCount || 0;
+          const failedCount = responseData?.failedCount || failedParameters.length || 0;
+
+          console.error('[DeviceSettings] Save error (parsed):', {
+            isApiError,
+            status: responseData?.status ?? err.response?.status,
+            errorMessage,
+            errorCode,
+            totalParameters,
+            successCount,
+            failedCount,
+            failedParameters,
+          });
+
+          // Don't set global error state for save failures - it would trigger full-screen error
+          // The error is returned in the result and handled by useDeviceSettings hook (shows toast)
+          set({ isSaving: false });
+
+          return {
+            success: false,
+            error: errorMessage,
+            errorCode,
+            totalParameters,
+            successCount,
+            failedCount,
+            failedParameters,
+            duration: '00:00:00',
+          };
         }
       },
 
@@ -421,25 +570,66 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
       finalizeSave: (success: boolean, failedParameterIds?: string[]) => {
         const { settings, parameterMetadata, dirtyFields } = get();
 
+        console.log('[DeviceSettingsStore] finalizeSave called:', {
+          success,
+          failedParameterIds,
+          dirtyFieldsCount: dirtyFields.size,
+          dirtyFields: Array.from(dirtyFields),
+        });
+
         if (success) {
           const changes = getChangedParameters(settings, parameterMetadata, dirtyFields);
+          console.log('[DeviceSettingsStore] finalizeSave - changes found:', changes.length, changes.map(c => c.mapping.storePath));
 
           // Update metadata with new original values (excluding failed)
           const updatedMeta = { ...parameterMetadata };
-          const remainingDirty = new Set(dirtyFields);
 
+          // Build remainingDirty from scratch - only keep fields that:
+          // 1. Failed in this save attempt, OR
+          // 2. Still have actual changes (apiValue !== originalValue) but weren't sent
+          const remainingDirty = new Set<string>();
+
+          // First, process the changes that were sent to API
           changes.forEach((change) => {
             const isFailed = failedParameterIds?.includes(change.meta.parameterId);
-            if (!isFailed) {
+            if (isFailed) {
+              // Keep failed parameters in dirty
+              remainingDirty.add(change.mapping.storePath);
+              console.log('[DeviceSettingsStore] Parameter failed, keeping dirty:', change.mapping.storePath);
+            } else {
               // Update metadata for successful parameters
               updatedMeta[change.mapping.storePath] = {
                 ...change.meta,
                 originalValue: change.newValue,
                 currentValue: change.newValue,
               };
-              // Remove from dirty fields
-              remainingDirty.delete(change.mapping.storePath);
+              console.log('[DeviceSettingsStore] Parameter succeeded, clearing dirty:', change.mapping.storePath);
             }
+          });
+
+          // Check for dirty fields that weren't in changes (no meta/mapping or no actual change)
+          // These should be cleared since they can't be saved anyway
+          dirtyFields.forEach((storePath) => {
+            const wasInChanges = changes.some(c => c.mapping.storePath === storePath);
+            if (!wasInChanges) {
+              const meta = parameterMetadata[storePath];
+              const mapping = ALL_MAPPINGS.find((m) => m.storePath === storePath);
+
+              if (!meta || !mapping) {
+                // No meta or mapping - can't be saved, clear it
+                console.log('[DeviceSettingsStore] Clearing dirty field without meta/mapping:', storePath);
+              } else {
+                // Has meta and mapping but wasn't in changes - value equals original, clear it
+                console.log('[DeviceSettingsStore] Clearing dirty field with no actual change:', storePath);
+              }
+              // Don't add to remainingDirty - effectively clearing it
+            }
+          });
+
+          console.log('[DeviceSettingsStore] finalizeSave - setting state:', {
+            remainingDirtyCount: remainingDirty.size,
+            remainingDirty: Array.from(remainingDirty),
+            isDirty: remainingDirty.size > 0,
           });
 
           set({
@@ -450,6 +640,7 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
             error: null,
           });
         } else {
+          console.log('[DeviceSettingsStore] finalizeSave - success=false, only resetting isSaving');
           // Just stop saving state on failure
           set({ isSaving: false });
         }
@@ -547,8 +738,92 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
       },
 
       // Update TimeSlot with auto-sync and validation
+      // Slots must be contiguous: [00:00,a] [a,b] [b,c] [c,d] [d,e] [e,24:00]
+      // When endTime changes → next slot's startTime updates (forward sync)
+      // When startTime changes → previous slot's endTime updates (backward sync)
+      //
+      // FIXED BOUNDARIES:
+      // - First slot (index 0) startTime is ALWAYS 00:00 (not editable)
+      // - Last slot (index 5) endTime is ALWAYS 00:00/24:00 (not editable)
+      //
+      // OVERLAP PREVENTION:
+      // - startTime cannot be earlier than previous slot's startTime
+      // - endTime cannot be later than next slot's endTime
       updateTimeSlot: (slotIndex: number, updates: Partial<TimeSlot>) => {
         const { settings, dirtyFields } = get();
+        const currentSlots = settings.timeOfUse.timeSlots;
+
+        console.log('[DeviceSettings] updateTimeSlot called:', {
+          slotIndex,
+          updates,
+          currentSlot: currentSlots[slotIndex],
+        });
+
+        // VALIDATION: Prevent editing fixed boundaries
+        if (updates.startTime !== undefined && slotIndex === 0) {
+          console.log('[DeviceSettings] Cannot change first slot startTime - fixed at 00:00');
+          return; // First slot's startTime is fixed at 00:00
+        }
+        if (updates.endTime !== undefined && slotIndex === 5) {
+          console.log('[DeviceSettings] Cannot change last slot endTime - fixed at 24:00');
+          return; // Last slot's endTime is fixed at 24:00/00:00
+        }
+
+        // VALIDATION: Prevent overlapping times
+        // Helper to convert time string to minutes for comparison
+        // '24:00' represents end of day (1440 minutes)
+        // '00:00' can mean start of day (0) or end of day (1440) depending on context
+        const timeToMinutes = (time: string, isEndTime: boolean = false): number => {
+          const [h, m] = time.split(':').map(Number);
+          // '24:00' is always end of day (1440)
+          if (h === 24) return 1440;
+          // '00:00' is end of day (1440) only when used as endTime, otherwise start of day (0)
+          if (h === 0 && m === 0 && isEndTime) return 1440;
+          return h * 60 + m;
+        };
+
+        // Check startTime constraints
+        if (updates.startTime !== undefined && slotIndex > 0) {
+          const newStartMinutes = timeToMinutes(updates.startTime, false); // startTime, not endTime
+          const prevSlotStartMinutes = timeToMinutes(currentSlots[slotIndex - 1].startTime, false);
+
+          // New startTime cannot be earlier than or equal to previous slot's startTime
+          // (because it would make previous slot have endTime <= startTime after auto-sync)
+          if (newStartMinutes <= prevSlotStartMinutes) {
+            console.log('[DeviceSettings] Invalid startTime - would overlap with previous slot');
+            return;
+          }
+
+          // New startTime cannot be later than or equal to current slot's endTime
+          const currentEndMinutes = timeToMinutes(currentSlots[slotIndex].endTime, true); // endTime
+          if (newStartMinutes >= currentEndMinutes) {
+            console.log('[DeviceSettings] Invalid startTime - must be before slot endTime');
+            return;
+          }
+        }
+
+        // Check endTime constraints
+        if (updates.endTime !== undefined && slotIndex < 5) {
+          const newEndMinutes = timeToMinutes(updates.endTime, true); // endTime
+          const nextSlotEndMinutes = timeToMinutes(currentSlots[slotIndex + 1].endTime, true); // endTime
+
+          // New endTime cannot be later than or equal to next slot's endTime
+          // (because it would make next slot have startTime >= endTime after auto-sync)
+          if (newEndMinutes >= nextSlotEndMinutes) {
+            console.log('[DeviceSettings] Invalid endTime - would overlap with next slot');
+            return;
+          }
+
+          // New endTime cannot be earlier than or equal to current slot's startTime
+          const currentStartMinutes = timeToMinutes(currentSlots[slotIndex].startTime, false); // startTime
+          if (newEndMinutes <= currentStartMinutes) {
+            console.log('[DeviceSettings] Invalid endTime - must be after slot startTime');
+            return;
+          }
+        }
+
+        console.log('[DeviceSettings] Validation passed, updating time slots');
+
         const newTimeSlots = [...settings.timeOfUse.timeSlots] as DeviceSettingsConfig['timeOfUse']['timeSlots'];
         newTimeSlots[slotIndex] = { ...newTimeSlots[slotIndex], ...updates };
 
@@ -557,8 +832,9 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
           newDirtyFields.add(`timeOfUse.timeSlots.${slotIndex}.${key}`);
         });
 
-        // AUTO-SYNC: When endTime changes, update next slot's startTime
+        // AUTO-SYNC FORWARD: When endTime changes, update next slot's startTime
         if (updates.endTime !== undefined && slotIndex < 5) {
+          console.log('[DeviceSettings] Auto-sync forward: updating slot', slotIndex + 1, 'startTime to', updates.endTime);
           newTimeSlots[slotIndex + 1] = {
             ...newTimeSlots[slotIndex + 1],
             startTime: updates.endTime,
@@ -566,8 +842,23 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
           newDirtyFields.add(`timeOfUse.timeSlots.${slotIndex + 1}.startTime`);
         }
 
+        // AUTO-SYNC BACKWARD: When startTime changes, update previous slot's endTime
+        if (updates.startTime !== undefined && slotIndex > 0) {
+          console.log('[DeviceSettings] Auto-sync backward: updating slot', slotIndex - 1, 'endTime to', updates.startTime);
+          newTimeSlots[slotIndex - 1] = {
+            ...newTimeSlots[slotIndex - 1],
+            endTime: updates.startTime,
+          };
+          newDirtyFields.add(`timeOfUse.timeSlots.${slotIndex - 1}.endTime`);
+        }
+
         // Run validation (only if TimeOfUse is enabled)
         const validationError = validateTimeOfUseCoverage(newTimeSlots, settings.timeOfUse.enabled);
+
+        console.log('[DeviceSettings] Setting new state:', {
+          updatedSlot: newTimeSlots[slotIndex],
+          validationError,
+        });
 
         set({
           settings: {
@@ -583,8 +874,98 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
         });
       },
 
+      // Capture pre-save snapshot of dirty values for potential rollback
+      capturePreSaveSnapshot: () => {
+        const { settings, parameterMetadata, dirtyFields } = get();
+        const snapshot: Record<string, PreSaveSnapshotItem> = {};
+
+        dirtyFields.forEach((storePath) => {
+          const meta = parameterMetadata[storePath];
+          const mapping = ALL_MAPPINGS.find((m) => m.storePath === storePath);
+
+          if (meta && mapping) {
+            const appValue = getNestedValue(settings, storePath);
+            const transformerKey = mapping.transformerType as keyof typeof transformerRegistry.toAPI;
+            const transformer = transformerRegistry.toAPI[transformerKey] as ((v: any) => string) | undefined;
+            const apiValue = transformer ? transformer(appValue) : String(appValue);
+
+            snapshot[meta.parameterId] = {
+              parameterId: meta.parameterId,
+              storePath,
+              originalValue: meta.originalValue,
+              attemptedValue: apiValue,
+            };
+          }
+        });
+
+        console.log('[DeviceSettingsStore] Captured pre-save snapshot:', Object.keys(snapshot).length, 'parameters');
+        set({ preSaveSnapshot: snapshot });
+      },
+
+      // Rollback failed parameters to their original values
+      rollbackParameters: (failedParameterIds: string[]) => {
+        const { settings, parameterMetadata, preSaveSnapshot, dirtyFields } = get();
+
+        if (!preSaveSnapshot || failedParameterIds.length === 0) {
+          console.log('[DeviceSettingsStore] No snapshot or no failed parameters to rollback');
+          return;
+        }
+
+        let newSettings = { ...settings };
+        const newDirtyFields = new Set(dirtyFields);
+
+        failedParameterIds.forEach((parameterId) => {
+          const snapshotItem = preSaveSnapshot[parameterId];
+          if (!snapshotItem) {
+            console.warn('[DeviceSettingsStore] No snapshot for failed parameter:', parameterId);
+            return;
+          }
+
+          const mapping = ALL_MAPPINGS.find((m) => m.storePath === snapshotItem.storePath);
+          if (!mapping) {
+            console.warn('[DeviceSettingsStore] No mapping for store path:', snapshotItem.storePath);
+            return;
+          }
+
+          // Transform original value back to app format
+          const transformer = transformerRegistry.toApp[mapping.transformerType as keyof typeof transformerRegistry.toApp];
+          const appValue = transformer ? transformer(snapshotItem.originalValue) : snapshotItem.originalValue;
+
+          console.log('[DeviceSettingsStore] Rolling back parameter:', snapshotItem.storePath, 'to:', appValue);
+          newSettings = setNestedValue(newSettings, snapshotItem.storePath, appValue);
+
+          // Keep in dirty fields so user knows it wasn't saved
+          // Or remove if you want to show it as "reverted"
+          // newDirtyFields.delete(snapshotItem.storePath);
+        });
+
+        // Validate TimeOfUse after rollback
+        const validationError = validateTimeOfUseCoverage(
+          newSettings.timeOfUse.timeSlots,
+          newSettings.timeOfUse.enabled
+        );
+
+        set({
+          settings: newSettings,
+          dirtyFields: newDirtyFields,
+          isDirty: newDirtyFields.size > 0,
+          timeOfUseValidationError: validationError,
+        });
+
+        console.log('[DeviceSettingsStore] Rolled back', failedParameterIds.length, 'parameters');
+      },
+
+      // Clear pre-save snapshot after successful save
+      clearPreSaveSnapshot: () => {
+        console.log('[DeviceSettingsStore] Clearing pre-save snapshot');
+        set({ preSaveSnapshot: null });
+      },
+
       // Clear error
       clearError: () => set({ error: null }),
+
+      // Clear device busy state
+      clearDeviceBusy: () => set({ deviceBusyInfo: null }),
 
       // Set device ID
       setDeviceId: (id: string | null) => set({ deviceId: id }),
@@ -631,3 +1012,7 @@ export const useTimeOfUseValidationError = () =>
 // TimeSlot visibility selector
 export const useTimeSlotVisibility = () =>
   useDeviceSettingsStore((state) => state.timeSlotVisibility);
+
+// Device busy info selector
+export const useDeviceBusyInfo = () =>
+  useDeviceSettingsStore((state) => state.deviceBusyInfo);

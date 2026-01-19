@@ -21,8 +21,8 @@ import { sitesService } from "../../../api/services/sitesService";
 import { deviceComponentsService } from "../../../api/services/deviceComponentsService";
 import { ConnectedDeviceCard } from "../../../components/ui/ConnectedDeviceCard";
 import { DeviceInfoCard } from "../../../components/ui/DeviceInfoCard";
-import { useDeviceLiveData } from "../../../hooks/useDeviceLiveData";
 import { useDeviceNotifications } from "../../../hooks/useDeviceNotifications";
+import { useDeviceStatus } from "../../../hooks/useDeviceStatus";
 import { useI18n } from "../../../hooks/useI18n";
 import { useRoles } from "../../../hooks/useRoles";
 import { useSelectedSiteUtils } from "../../../hooks/useSelectedSite";
@@ -99,7 +99,8 @@ export default function DeviceDetail() {
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isFocused = useIsFocused();
 
-  const { fetchLiveData } = useDeviceLiveData(deviceId);
+  // Device heartbeat status from SignalR (proper online/offline detection)
+  const { deviceStatus } = useDeviceStatus(deviceId ?? undefined);
 
   // Fetch device summary (realtime data for inverter and battery)
   const fetchDeviceSummary = useCallback(async () => {
@@ -167,7 +168,7 @@ export default function DeviceDetail() {
       setDeviceId(device.id);
       setSetupId(setupRes?.setupId || null);
 
-      const deviceData = await mobileDashboardService.getDeviceWithData(device.id);
+      const deviceData = await mobileDashboardService.getDeviceComponentsStatus(device.id);
 
       const comps = deviceData?.components?.map((c: any) => ({
         id: c.componentId,
@@ -233,27 +234,6 @@ export default function DeviceDetail() {
     };
   }, [deviceId, isFocused, fetchDeviceSummary]);
 
-  // PERFORMANCE: Inverter live data'yı sayfa açılışında yükleme
-  // Sadece gerektiğinde (manuel refresh veya kullanıcı istediğinde) yükle
-  // useEffect(() => {
-  //   const loadInverterLiveData = async () => {
-  //     const inverterComp = components.find((c) =>
-  //       c.name.toLowerCase().includes("inverter")
-  //     );
-  //     if (inverterComp) {
-  //       const data = await fetchLiveData(inverterComp);
-  //       if (data && data["Active Power"] !== undefined) {
-  //         setInverterData(data);
-  //       }
-  //     }
-  //   };
-  //
-  //   if (components.length > 0) {
-  //     loadInverterLiveData();
-  //   }
-  // }, [components]);
-
-
   const navigateToInverterDetail = () => {
     const inverterComp = components.find((c) =>
       c.name.toLowerCase().includes("inverter")
@@ -315,6 +295,15 @@ export default function DeviceDetail() {
 
   const inverterActivePower = inverterSummary?.activePowerKw;
   const batteryStateOfCharge = batterySummary?.stateOfCharge;
+
+  // Convert heartbeat status to UI status for DeviceInfoCard
+  // Uses SignalR heartbeat status instead of checking if data exists
+  const componentStatus = useMemo(() => {
+    if (!deviceStatus) return 'warning'; // Still waiting for status
+    if (deviceStatus === 'OK') return 'online';
+    if (deviceStatus === 'DISCONNECTED') return 'offline';
+    return 'warning'; // PENDING, WAITING, NOT_TRACKED
+  }, [deviceStatus]);
 
   return (
     <View style={[styles.container, { backgroundColor: isDark ? 'rgba(28, 34, 43, 1)' : 'rgba(243, 243, 245, 1)' }]}>
@@ -420,7 +409,7 @@ export default function DeviceDetail() {
                 title={t("deviceDetail.inverter.title")}
                 subtitle={t("deviceDetail.inverter.subtitle")}
                 icon={<Zap size={24} color={COLORS.accent} />}
-                status={inverterSummary.activePowerKw !== null ? "online" : "offline"}
+                status={componentStatus}
                 onPress={() => navigation.navigate("InverterDetail", { componentId: inverterSummary.id })}
                 style={{ flex: 1 }}
               />
@@ -442,7 +431,7 @@ export default function DeviceDetail() {
                     borderColor={COLORS.textSoft}
                   />
                 }
-                status={batteryStateOfCharge !== null ? "online" : "offline"}
+                status={componentStatus}
                 onPress={navigateToBatteryList}
                 style={{ flex: 1 }}
               />

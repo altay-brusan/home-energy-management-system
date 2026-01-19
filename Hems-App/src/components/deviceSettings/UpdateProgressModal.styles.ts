@@ -83,14 +83,14 @@ export const makeUpdateProgressModalStyles = (isDark: boolean) => {
       alignItems: 'center',
       marginBottom: SPACING.lg,
     },
-    progressBar: {
+    progressBarBackground: {
       width: '100%',
       height: 8,
       borderRadius: 4,
       backgroundColor: tokens.utility.gray200,
       overflow: 'hidden',
     },
-    progressFill: {
+    progressBarFill: {
       height: '100%',
       borderRadius: 4,
       backgroundColor: tokens.brand.accent,
@@ -100,6 +100,21 @@ export const makeUpdateProgressModalStyles = (isDark: boolean) => {
       fontSize: 14,
       fontFamily: FONTS.regular,
       color: tokens.text.secondary,
+    },
+    progressCountsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 16,
+      marginTop: 8,
+    },
+    progressCountItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    progressCountText: {
+      fontSize: 14,
+      fontFamily: FONTS.medium,
     },
 
     // Summary
@@ -125,6 +140,23 @@ export const makeUpdateProgressModalStyles = (isDark: boolean) => {
       fontSize: 14,
       fontFamily: FONTS.regular,
       color: tokens.semantic.error,
+    },
+
+    // Error container (when no specific failed parameters)
+    errorContainer: {
+      width: '100%',
+      marginTop: SPACING.md,
+      padding: SPACING.md,
+      backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.05)',
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: 'rgba(239, 68, 68, 0.2)',
+    },
+    errorMessage: {
+      fontSize: 14,
+      fontFamily: FONTS.regular,
+      color: tokens.semantic.error,
+      textAlign: 'center',
     },
 
     // Failed parameters list

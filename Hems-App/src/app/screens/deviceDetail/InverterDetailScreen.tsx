@@ -128,12 +128,23 @@ export default function InverterDetailScreen() {
   // Get values from Details API (only what's actually returned)
   const runState = getDetailValue('runState');
   const outputActivePower = getDetailValue('outputActivePower') || 0;
-  const outputVoltage = getDetailValue('outputVoltage');
-  const outputCurrent = getDetailValue('outputCurrent');
+  const phases = getDetailValue('Phases') as Array<{ "Phase Id": number; Voltage: number; Current: number; Power: number }> | null;
   const outputFrequency = getDetailValue('outputFrequency');
   const gridSideActivePower = getDetailValue('gridSideActivePower');
   const gridSidePhaseAPower = getDetailValue('gridSidePhaseAPower');
   const gridSidePhaseBPower = getDetailValue('gridSidePhaseBPower');
+  const gridSidePhaseCPower = getDetailValue('gridSidePhaseCPower');
+
+  // Load data
+  const loadTotalActivePower = getDetailValue('loadTotalActivePower');
+  const loadPhaseAPower = getDetailValue('loadPhaseAPower');
+  const loadPhaseBPower = getDetailValue('loadPhaseBPower');
+  const loadPhaseCPower = getDetailValue('loadPhaseCPower');
+  const loadPhaseAVoltage = getDetailValue('loadPhaseAVoltage');
+  const loadPhaseBVoltage = getDetailValue('loadPhaseBVoltage');
+  const loadPhaseCVoltage = getDetailValue('loadPhaseCVoltage');
+  const loadFrequency = getDetailValue('loadFrequency');
+
   const inverterHeatsinkTemp = getDetailValue('inverterHeatsinkTemp');
   const internalAmbientTemp = getDetailValue('internalAmbientTemp');
   const generatorSignalPresent = getDetailValue('generatorSignalPresent');
@@ -302,52 +313,7 @@ export default function InverterDetailScreen() {
             {t("inverterDetail.output")}
           </Text>
 
-          <View style={styles.row}>
-            <Text
-              style={[
-                styles.label,
-                {
-                  color: COLORS.textSoft,
-                },
-              ]}
-            >
-              {t("inverterDetail.outputVoltage")}
-            </Text>
-            <Text
-              style={[
-                styles.value,
-                {
-                  color: COLORS.text,
-                },
-              ]}
-            >
-              {outputVoltage != null ? `${outputVoltage.toFixed(1)} V` : "-"}
-            </Text>
-          </View>
-
-          <View style={styles.row}>
-            <Text
-              style={[
-                styles.label,
-                {
-                  color: COLORS.textSoft,
-                },
-              ]}
-            >
-              {t("inverterDetail.outputCurrent")}
-            </Text>
-            <Text
-              style={[
-                styles.value,
-                {
-                  color: COLORS.text,
-                },
-              ]}
-            >
-              {outputCurrent != null ? `${outputCurrent.toFixed(1)} A` : "-"}
-            </Text>
-          </View>
-
+          {/* Output Frequency - single value shared across all phases */}
           <View style={styles.row}>
             <Text
               style={[
@@ -370,10 +336,54 @@ export default function InverterDetailScreen() {
               {outputFrequency != null ? `${outputFrequency.toFixed(1)} Hz` : "-"}
             </Text>
           </View>
+
+          {/* Per-phase output data (Voltage, Current, Power) */}
+          {phases && phases.length > 0 && phases.map((phase, index) => (
+            <View key={phase["Phase Id"] || index} style={[styles.phaseCard, { backgroundColor: `${COLORS.accent}08`, marginTop: index === 0 ? 12 : 8, borderRadius: 8, padding: 12 }]}>
+              <Text
+                style={[
+                  styles.phaseTitle,
+                  {
+                    color: COLORS.accent,
+                    marginBottom: 8,
+                  },
+                ]}
+              >
+                {t("inverterDetail.phaseLabel", { id: phase["Phase Id"] || index + 1 })}
+              </Text>
+
+              <View style={styles.row}>
+                <Text style={[styles.label, { color: COLORS.textSoft }]}>
+                  {t("inverterDetail.voltage")}
+                </Text>
+                <Text style={[styles.value, { color: COLORS.text }]}>
+                  {phase.Voltage?.toFixed(1) || 0} V
+                </Text>
+              </View>
+
+              <View style={styles.row}>
+                <Text style={[styles.label, { color: COLORS.textSoft }]}>
+                  {t("inverterDetail.current")}
+                </Text>
+                <Text style={[styles.value, { color: COLORS.text }]}>
+                  {phase.Current?.toFixed(2) || 0} A
+                </Text>
+              </View>
+
+              <View style={styles.row}>
+                <Text style={[styles.label, { color: COLORS.textSoft }]}>
+                  {t("inverterDetail.power")}
+                </Text>
+                <Text style={[styles.value, { color: COLORS.text }]}>
+                  {phase.Power?.toFixed(0) || 0} W
+                </Text>
+              </View>
+            </View>
+          ))}
         </View>
 
         {/* Grid Section */}
-        {(gridSideActivePower != null || gridSidePhaseAPower != null || gridSidePhaseBPower != null) && (
+        {(gridSideActivePower != null || gridSidePhaseAPower != null || gridSidePhaseBPower != null || gridSidePhaseCPower != null) && (
           <View
             style={[
               styles.section,
@@ -419,53 +429,54 @@ export default function InverterDetailScreen() {
               </View>
             )}
 
+            {/* Phase A Card */}
             {gridSidePhaseAPower != null && (
-              <View style={styles.row}>
-                <Text
-                  style={[
-                    styles.label,
-                    {
-                      color: COLORS.textSoft,
-                    },
-                  ]}
-                >
-                  {t("inverterDetail.phaseAPower")}
+              <View style={[styles.phaseCard, { backgroundColor: `${COLORS.accent}08`, marginTop: 12, borderRadius: 8, padding: 12 }]}>
+                <Text style={[styles.phaseTitle, { color: COLORS.accent, marginBottom: 8 }]}>
+                  {t("inverterDetail.phaseLabel", { id: "A" })}
                 </Text>
-                <Text
-                  style={[
-                    styles.value,
-                    {
-                      color: COLORS.text,
-                    },
-                  ]}
-                >
-                  {gridSidePhaseAPower.toFixed(1)} W
-                </Text>
+                <View style={styles.row}>
+                  <Text style={[styles.label, { color: COLORS.textSoft }]}>
+                    {t("inverterDetail.power")}
+                  </Text>
+                  <Text style={[styles.value, { color: COLORS.text }]}>
+                    {gridSidePhaseAPower.toFixed(1)} W
+                  </Text>
+                </View>
               </View>
             )}
 
+            {/* Phase B Card */}
             {gridSidePhaseBPower != null && (
-              <View style={styles.row}>
-                <Text
-                  style={[
-                    styles.label,
-                    {
-                      color: COLORS.textSoft,
-                    },
-                  ]}
-                >
-                  {t("inverterDetail.phaseBPower")}
+              <View style={[styles.phaseCard, { backgroundColor: `${COLORS.accent}08`, marginTop: 8, borderRadius: 8, padding: 12 }]}>
+                <Text style={[styles.phaseTitle, { color: COLORS.accent, marginBottom: 8 }]}>
+                  {t("inverterDetail.phaseLabel", { id: "B" })}
                 </Text>
-                <Text
-                  style={[
-                    styles.value,
-                    {
-                      color: COLORS.text,
-                    },
-                  ]}
-                >
-                  {gridSidePhaseBPower.toFixed(1)} W
+                <View style={styles.row}>
+                  <Text style={[styles.label, { color: COLORS.textSoft }]}>
+                    {t("inverterDetail.power")}
+                  </Text>
+                  <Text style={[styles.value, { color: COLORS.text }]}>
+                    {gridSidePhaseBPower.toFixed(1)} W
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* Phase C Card */}
+            {gridSidePhaseCPower != null && (
+              <View style={[styles.phaseCard, { backgroundColor: `${COLORS.accent}08`, marginTop: 8, borderRadius: 8, padding: 12 }]}>
+                <Text style={[styles.phaseTitle, { color: COLORS.accent, marginBottom: 8 }]}>
+                  {t("inverterDetail.phaseLabel", { id: "C" })}
                 </Text>
+                <View style={styles.row}>
+                  <Text style={[styles.label, { color: COLORS.textSoft }]}>
+                    {t("inverterDetail.power")}
+                  </Text>
+                  <Text style={[styles.value, { color: COLORS.text }]}>
+                    {gridSidePhaseCPower.toFixed(1)} W
+                  </Text>
+                </View>
               </View>
             )}
 
@@ -491,6 +502,167 @@ export default function InverterDetailScreen() {
                 >
                   {generatorSignalPresent ? t("inverterDetail.active") : t("inverterDetail.inactive")}
                 </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Load Section */}
+        {(loadTotalActivePower != null || loadPhaseAPower != null || loadPhaseBPower != null || loadPhaseCPower != null) && (
+          <View
+            style={[
+              styles.section,
+              {
+                backgroundColor: COLORS.surface,
+                borderColor: COLORS.border,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.sectionTitle,
+                {
+                  color: COLORS.text,
+                },
+              ]}
+            >
+              {t("inverterDetail.load")}
+            </Text>
+
+            {loadTotalActivePower != null && (
+              <View style={styles.row}>
+                <Text
+                  style={[
+                    styles.label,
+                    {
+                      color: COLORS.textSoft,
+                    },
+                  ]}
+                >
+                  {t("inverterDetail.loadPower")}
+                </Text>
+                <Text
+                  style={[
+                    styles.value,
+                    {
+                      color: COLORS.text,
+                    },
+                  ]}
+                >
+                  {loadTotalActivePower.toFixed(1)} W
+                </Text>
+              </View>
+            )}
+
+            {loadFrequency != null && (
+              <View style={styles.row}>
+                <Text
+                  style={[
+                    styles.label,
+                    {
+                      color: COLORS.textSoft,
+                    },
+                  ]}
+                >
+                  {t("inverterDetail.loadFrequency")}
+                </Text>
+                <Text
+                  style={[
+                    styles.value,
+                    {
+                      color: COLORS.text,
+                    },
+                  ]}
+                >
+                  {loadFrequency.toFixed(2)} Hz
+                </Text>
+              </View>
+            )}
+
+            {/* Phase A Card */}
+            {(loadPhaseAPower != null || loadPhaseAVoltage != null) && (
+              <View style={[styles.phaseCard, { backgroundColor: `${COLORS.accent}08`, marginTop: 12, borderRadius: 8, padding: 12 }]}>
+                <Text style={[styles.phaseTitle, { color: COLORS.accent, marginBottom: 8 }]}>
+                  {t("inverterDetail.phaseLabel", { id: "A" })}
+                </Text>
+                {loadPhaseAVoltage != null && (
+                  <View style={styles.row}>
+                    <Text style={[styles.label, { color: COLORS.textSoft }]}>
+                      {t("inverterDetail.voltage")}
+                    </Text>
+                    <Text style={[styles.value, { color: COLORS.text }]}>
+                      {loadPhaseAVoltage.toFixed(1)} V
+                    </Text>
+                  </View>
+                )}
+                {loadPhaseAPower != null && (
+                  <View style={styles.row}>
+                    <Text style={[styles.label, { color: COLORS.textSoft }]}>
+                      {t("inverterDetail.power")}
+                    </Text>
+                    <Text style={[styles.value, { color: COLORS.text }]}>
+                      {loadPhaseAPower.toFixed(1)} W
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* Phase B Card */}
+            {(loadPhaseBPower != null || loadPhaseBVoltage != null) && (
+              <View style={[styles.phaseCard, { backgroundColor: `${COLORS.accent}08`, marginTop: 8, borderRadius: 8, padding: 12 }]}>
+                <Text style={[styles.phaseTitle, { color: COLORS.accent, marginBottom: 8 }]}>
+                  {t("inverterDetail.phaseLabel", { id: "B" })}
+                </Text>
+                {loadPhaseBVoltage != null && (
+                  <View style={styles.row}>
+                    <Text style={[styles.label, { color: COLORS.textSoft }]}>
+                      {t("inverterDetail.voltage")}
+                    </Text>
+                    <Text style={[styles.value, { color: COLORS.text }]}>
+                      {loadPhaseBVoltage.toFixed(1)} V
+                    </Text>
+                  </View>
+                )}
+                {loadPhaseBPower != null && (
+                  <View style={styles.row}>
+                    <Text style={[styles.label, { color: COLORS.textSoft }]}>
+                      {t("inverterDetail.power")}
+                    </Text>
+                    <Text style={[styles.value, { color: COLORS.text }]}>
+                      {loadPhaseBPower.toFixed(1)} W
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* Phase C Card */}
+            {(loadPhaseCPower != null || loadPhaseCVoltage != null) && (
+              <View style={[styles.phaseCard, { backgroundColor: `${COLORS.accent}08`, marginTop: 8, borderRadius: 8, padding: 12 }]}>
+                <Text style={[styles.phaseTitle, { color: COLORS.accent, marginBottom: 8 }]}>
+                  {t("inverterDetail.phaseLabel", { id: "C" })}
+                </Text>
+                {loadPhaseCVoltage != null && (
+                  <View style={styles.row}>
+                    <Text style={[styles.label, { color: COLORS.textSoft }]}>
+                      {t("inverterDetail.voltage")}
+                    </Text>
+                    <Text style={[styles.value, { color: COLORS.text }]}>
+                      {loadPhaseCVoltage.toFixed(1)} V
+                    </Text>
+                  </View>
+                )}
+                {loadPhaseCPower != null && (
+                  <View style={styles.row}>
+                    <Text style={[styles.label, { color: COLORS.textSoft }]}>
+                      {t("inverterDetail.power")}
+                    </Text>
+                    <Text style={[styles.value, { color: COLORS.text }]}>
+                      {loadPhaseCPower.toFixed(1)} W
+                    </Text>
+                  </View>
+                )}
               </View>
             )}
           </View>
@@ -567,114 +739,6 @@ export default function InverterDetailScreen() {
                 </Text>
               </View>
             )}
-          </View>
-        )}
-
-        {/* Phases removed - not in new API */}
-        {false && (
-          <View
-            style={[
-              styles.section,
-              {
-                backgroundColor: COLORS.surface,
-                borderColor: COLORS.border,
-              },
-            ]}
-          >
-            <Text
-              style={[
-                styles.sectionTitle,
-                {
-                  color: COLORS.text,
-                },
-              ]}
-            >
-              {t("inverterDetail.phaseData")}
-            </Text>
-
-            {inverterData.Phases.map((phase: any, index: number) => (
-              <View key={index} style={styles.phaseCard}>
-                <Text
-                  style={[
-                    styles.phaseTitle,
-                    {
-                      color: COLORS.text,
-                    },
-                  ]}
-                >
-                  {t("inverterDetail.phaseLabel", { id: phase["Phase Id"] || index + 1 })}
-                </Text>
-
-                <View style={styles.row}>
-                  <Text
-                    style={[
-                      styles.label,
-                      {
-                        color: COLORS.textSoft,
-                      },
-                    ]}
-                  >
-                    {t("inverterDetail.voltage")}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.value,
-                      {
-                        color: COLORS.text,
-                      },
-                    ]}
-                  >
-                    {phase.Voltage?.toFixed(1) || 0} V
-                  </Text>
-                </View>
-
-                <View style={styles.row}>
-                  <Text
-                    style={[
-                      styles.label,
-                      {
-                        color: COLORS.textSoft,
-                      },
-                    ]}
-                  >
-                    {t("inverterDetail.current")}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.value,
-                      {
-                        color: COLORS.text,
-                      },
-                    ]}
-                  >
-                    {phase.Current?.toFixed(2) || 0} A
-                  </Text>
-                </View>
-
-                <View style={styles.row}>
-                  <Text
-                    style={[
-                      styles.label,
-                      {
-                        color: COLORS.textSoft,
-                      },
-                    ]}
-                  >
-                    {t("inverterDetail.power")}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.value,
-                      {
-                        color: COLORS.text,
-                      },
-                    ]}
-                  >
-                    {phase.Power?.toFixed(0) || 0} W
-                  </Text>
-                </View>
-              </View>
-            ))}
           </View>
         )}
 

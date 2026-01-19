@@ -2,17 +2,18 @@
  * useDeviceSettings Hook
  * CustomModeScreen ve ayar ekranları için yüksek seviyeli hook
  * Yeni DeviceSettings API kullanır (deviceId bazlı)
- * SignalR ile gerçek zamanlı progress tracking içerir
+ * Now uses synchronous REST API with SignalR for real-time progress
  */
 
-import { useCallback, useRef } from 'react';
-import { useDeviceSettingsStore } from '../store/deviceSettingsStore';
+import { useCallback, useEffect } from 'react';
+import { useDeviceSettingsStore, DeviceBusyInfo } from '../store/deviceSettingsStore';
 import { useSelectedSiteDevice } from './useSelectedSiteDevice';
 import { useRoles } from './useRoles';
 import { useToastStore } from '../store/toastStore';
 import { useDeviceSettingsUpdateStore } from '../store/deviceSettingsUpdateStore';
-import { useDeviceSettingsHub } from './useDeviceSettingsHub';
 import { useInverterModeStore } from '../store/inverterModeStore';
+import { useDeviceSettingsSignalR } from './useDeviceSettingsSignalR';
+import { deviceSettingsSignalRService } from '../services/deviceSettingsSignalRService';
 import {
   DeviceSettingsConfig,
   TimeSlot,
@@ -23,7 +24,6 @@ import {
   GeneratorSmartLoadConfig,
   MaintenanceSettingsConfig,
 } from '../api/types/inverterModes.types';
-import { ParameterUpdateCompletedDto } from '../api/types/deviceSettingsHub.types';
 
 export interface UseDeviceSettingsReturn {
   // Data
@@ -39,6 +39,10 @@ export interface UseDeviceSettingsReturn {
   isSaving: boolean;
   isDirty: boolean;
   error: string | null;
+
+  // Device busy state (when another update is in progress)
+  deviceBusyInfo: DeviceBusyInfo | null;
+  isDeviceBusy: boolean;
 
   // TimeOfUse validation
   timeOfUseValidationError: string | null;
@@ -81,6 +85,13 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
   const isDirty = useDeviceSettingsStore((state) => state.isDirty);
   const error = useDeviceSettingsStore((state) => state.error);
   const timeOfUseValidationError = useDeviceSettingsStore((state) => state.timeOfUseValidationError);
+  const deviceBusyInfo = useDeviceSettingsStore((state) => state.deviceBusyInfo);
+  const clearDeviceBusy = useDeviceSettingsStore((state) => state.clearDeviceBusy);
+
+  // Compute isDeviceBusy - check if busy and not expired
+  const isDeviceBusy = deviceBusyInfo?.isDeviceBusy &&
+    deviceBusyInfo.busyUntil &&
+    Date.now() < deviceBusyInfo.busyUntil;
 
   // Compute canSave
   const canSave = isDirty && !timeOfUseValidationError;
@@ -88,7 +99,6 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
   // Get actions directly from store (stable references)
   const storeFetchSettings = useDeviceSettingsStore((state) => state.fetchSettings);
   const storeSaveSettings = useDeviceSettingsStore((state) => state.saveSettings);
-  const storeFinalizeSave = useDeviceSettingsStore((state) => state.finalizeSave);
   const resetToOriginal = useDeviceSettingsStore((state) => state.resetToOriginal);
   const resetToDefaults = useDeviceSettingsStore((state) => state.resetToDefaults);
   const updateSetting = useDeviceSettingsStore((state) => state.updateSetting);
@@ -96,57 +106,21 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
   const updateTimeSlot = useDeviceSettingsStore((state) => state.updateTimeSlot);
   const clearError = useDeviceSettingsStore((state) => state.clearError);
 
+  // Snapshot/rollback actions
+  const capturePreSaveSnapshot = useDeviceSettingsStore((state) => state.capturePreSaveSnapshot);
+  const clearPreSaveSnapshot = useDeviceSettingsStore((state) => state.clearPreSaveSnapshot);
+
   // Update progress store actions
-  const { startUpdate, isProgressModalVisible } = useDeviceSettingsUpdateStore();
+  const { startSaving, completeSaving } = useDeviceSettingsUpdateStore();
 
   // Inverter mode store action
   const setCustomModeActive = useInverterModeStore((state) => state.setCustomModeActive);
 
-  // Ref to track if we should show toast (when modal is hidden)
-  const showToastOnCompleteRef = useRef(false);
-
-  // Handle SignalR completion callback
-  const handleSignalRComplete = useCallback(
-    (result: ParameterUpdateCompletedDto) => {
-      // Get failed parameter IDs for partial update
-      const failedParameterIds = result.failedCount > 0
-        ? useDeviceSettingsUpdateStore.getState().batchState?.failedParameters.map((p) => p.parameterId) ?? []
-        : [];
-
-      // Finalize the save in the store
-      storeFinalizeSave(result.failedCount === 0, failedParameterIds);
-
-      // Set custom mode as active after successful save
-      if (result.failedCount === 0) {
-        setCustomModeActive();
-      }
-
-      // Show toast if modal is hidden (background mode)
-      if (showToastOnCompleteRef.current || !useDeviceSettingsUpdateStore.getState().isProgressModalVisible) {
-        if (result.failedCount === 0) {
-          showToast({
-            type: 'success',
-            message: 'Settings saved successfully',
-          });
-        } else {
-          showToast({
-            type: 'warning',
-            message: `${result.successCount} settings saved, ${result.failedCount} failed`,
-          });
-        }
-      }
-      showToastOnCompleteRef.current = false;
-    },
-    [storeFinalizeSave, showToast, setCustomModeActive]
-  );
-
-  // SignalR hook for progress tracking
-  const { startBatchTracking, stopBatchTracking } = useDeviceSettingsHub({
-    onCompleted: handleSignalRComplete,
-  });
-
   // Get deviceId from the device object
   const deviceId = device?.id;
+
+  // Initialize SignalR connection for real-time progress updates
+  useDeviceSettingsSignalR({ deviceId, enabled: !!deviceId });
 
   // NO AUTO-FETCH - Let the screen control when to fetch
   // This prevents infinite loops from useEffect dependencies
@@ -158,41 +132,115 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
     }
   }, [deviceId, storeFetchSettings]);
 
-  // Save settings with SignalR progress tracking
+  // Save settings - now synchronous with SignalR for real-time progress
   const saveSettings = useCallback(async (): Promise<boolean> => {
-    const result = await storeSaveSettings();
+    // Ensure SignalR is connected for real-time progress updates
+    // Wait up to 3 seconds for connection to be ready
+    if (deviceId) {
+      const isConnected = await deviceSettingsSignalRService.ensureConnected(deviceId, 3000);
+      if (isConnected) {
+        console.log('[useDeviceSettings] SignalR connected, proceeding with save');
+      } else {
+        console.log('[useDeviceSettings] SignalR not connected, save will proceed without real-time progress');
+      }
+    }
 
-    if (result.success && result.correlationId) {
-      // Start progress tracking via SignalR
-      try {
-        startUpdate(result.correlationId, result.totalParameters);
-        await startBatchTracking(result.correlationId);
-        // Don't show success toast here - wait for SignalR completion
-        return true;
-      } catch (signalRError) {
-        console.log('[useDeviceSettings] SignalR tracking failed:', signalRError);
-        // If SignalR fails, still consider save successful (API call succeeded)
-        // Set custom mode as active
+    // Capture pre-save snapshot for potential rollback on failure
+    capturePreSaveSnapshot();
+
+    // Start saving state
+    startSaving();
+
+    try {
+      // Call API - now waits for completion
+      // SignalR events will be received via useDeviceSettingsSignalR hook
+      const result = await storeSaveSettings();
+
+      if (result.success) {
+        // Full success - clear snapshot as all changes are saved
+        clearPreSaveSnapshot();
         setCustomModeActive();
-        // Just show immediate toast
         showToast({
           type: 'success',
-          message: 'Settings saved successfully',
+          message: result.successCount === 1
+            ? '1 parameter updated successfully'
+            : `${result.successCount} parameters updated successfully`,
         });
-        storeFinalizeSave(true);
+        completeSaving({
+          success: true,
+          totalParameters: result.totalParameters,
+          successCount: result.successCount,
+          failedCount: result.failedCount,
+          failedParameters: result.failedParameters,
+          duration: result.duration,
+        });
         return true;
+      } else if (result.errorCode === 'DEVICE_BUSY') {
+        // Device is busy - another update in progress
+        showToast({
+          type: 'warning',
+          title: 'Device Busy',
+          message: 'Another update is in progress. Please wait and try again.',
+        });
+        completeSaving({
+          success: false,
+          totalParameters: 0,
+          successCount: 0,
+          failedCount: 0,
+          failedParameters: [],
+          errorMessage: 'Device busy',
+        });
+        return false;
+      } else if (result.successCount > 0 && result.failedCount > 0) {
+        // Partial success - some parameters updated, some failed
+        setCustomModeActive();
+        showToast({
+          type: 'warning',
+          message: `${result.successCount} updated, ${result.failedCount} failed`,
+        });
+        completeSaving({
+          success: false,
+          totalParameters: result.totalParameters,
+          successCount: result.successCount,
+          failedCount: result.failedCount,
+          failedParameters: result.failedParameters,
+          duration: result.duration,
+        });
+        return false;
+      } else {
+        // Complete failure
+        showToast({
+          type: 'error',
+          message: result.error || result.message || 'Failed to save settings',
+        });
+        completeSaving({
+          success: false,
+          totalParameters: result.totalParameters || 0,
+          successCount: 0,
+          failedCount: result.failedCount || 0,
+          failedParameters: result.failedParameters || [],
+          errorMessage: result.error || result.message,
+        });
+        return false;
       }
-    } else if (!result.success) {
+    } catch (error) {
+      // Network or unexpected error
+      console.error('[useDeviceSettings] Save error:', error);
       showToast({
         type: 'error',
-        message: result.error || 'Failed to save settings',
+        message: 'Connection error. Please try again.',
+      });
+      completeSaving({
+        success: false,
+        totalParameters: 0,
+        successCount: 0,
+        failedCount: 0,
+        failedParameters: [],
+        errorMessage: 'Connection error',
       });
       return false;
     }
-
-    // No changes to save
-    return true;
-  }, [storeSaveSettings, startUpdate, startBatchTracking, showToast, storeFinalizeSave]);
+  }, [deviceId, storeSaveSettings, startSaving, completeSaving, showToast, setCustomModeActive, capturePreSaveSnapshot, clearPreSaveSnapshot]);
 
   // Category-specific update helpers
   const updateBatterySettings = useCallback(
@@ -260,6 +308,10 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
     isDirty,
     error,
 
+    // Device busy state
+    deviceBusyInfo,
+    isDeviceBusy: !!isDeviceBusy,
+
     // TimeOfUse validation
     timeOfUseValidationError,
     canSave,
@@ -294,6 +346,15 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
 export const useBatterySettingsSection = () => {
   const { batterySettings, updateSetting, isLoading, isDirty } = useDeviceSettings();
 
+  const updateBatteryConfiguration = useCallback(
+    (updates: Partial<BatterySettingsConfig['batteryConfiguration']>) => {
+      Object.entries(updates).forEach(([key, value]) => {
+        updateSetting(`batterySettings.batteryConfiguration.${key}`, value);
+      });
+    },
+    [updateSetting]
+  );
+
   const updateGridCharging = useCallback(
     (updates: Partial<BatterySettingsConfig['gridCharging']>) => {
       Object.entries(updates).forEach(([key, value]) => {
@@ -322,9 +383,11 @@ export const useBatterySettingsSection = () => {
   );
 
   return {
+    batteryConfiguration: batterySettings.batteryConfiguration,
     gridCharging: batterySettings.gridCharging,
     generatorCharging: batterySettings.generatorCharging,
     protectionThresholds: batterySettings.protectionThresholds,
+    updateBatteryConfiguration,
     updateGridCharging,
     updateGeneratorCharging,
     updateProtectionThresholds,

@@ -5,13 +5,13 @@ import {
   ExportStrategyStateDto,
   DeviceSettingsTreeVm,
   UpdateDeviceParametersCommand,
+  UpdateDeviceParametersResponse,
 } from '../types/deviceSettings.types';
 import {
   GetModesResponse,
   GetDeviceModeResponse,
   UpdateDeviceModeCommand,
 } from '../types/inverterModes.types';
-import { UpdateParametersResponse } from '../types/deviceSettingsHub.types';
 
 export const deviceSettingsService = {
   /**
@@ -25,16 +25,19 @@ export const deviceSettingsService = {
   },
 
   /**
-   * Update device parameters (bulk)
+   * Update device parameters (bulk) - synchronous
    * PUT /DeviceSettings/device/{deviceId}/parameters
-   * Returns correlationId for SignalR progress tracking
+   * Now waits for completion and returns full result directly
    */
   async updateParameters(
     deviceId: string,
     command: UpdateDeviceParametersCommand
-  ): Promise<UpdateParametersResponse> {
+  ): Promise<UpdateDeviceParametersResponse> {
     const url = ENDPOINTS.DEVICE_SETTINGS.UPDATE_PARAMETERS.replace(':deviceId', deviceId);
-    const response = await apiClient.put<UpdateParametersResponse>(url, command);
+    // Use longer timeout for parameter updates (2 minutes)
+    const response = await apiClient.put<UpdateDeviceParametersResponse>(url, command, {
+      timeout: 120000,
+    });
     return response.data;
   },
 

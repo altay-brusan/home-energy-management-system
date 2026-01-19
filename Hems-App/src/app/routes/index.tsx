@@ -6,12 +6,14 @@ import {
   NavigationContainerRef,
 } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, View } from 'react-native';
 import { Home, Smartphone, User, Shield, Settings, Bell } from 'lucide-react-native';
 import { apiClient } from '../../api/client/apiClient';
 import { invitationsService } from '../../api/services/devicesharingService';
+import { versionService } from '../../api/services/versionService';
+import { AppVersionCheckResponse } from '../../api/types/version.types';
 import { InvitationModal } from '../../components/InvitationModal/InvitationModal';
 import { useRoles } from '../../hooks/useRoles';
 import { getUserData, removeUserData } from '../../lib/storage/token';
@@ -21,6 +23,7 @@ import { useSitesStore, useHasValidSiteWithDevice } from '../../store/sitesStore
 import { useThemeStore } from '../../store/themeStore';
 import { getThemeColors } from '../../theme/constants';
 import { toast } from '../../utils/toast';
+import { UpdateRequiredScreen } from '../screens/updateRequired';
 
 export const navigationRef = React.createRef<NavigationContainerRef<any>>();
 
@@ -268,6 +271,15 @@ export function RootNavigator () {
   const [isLoading, setIsLoading] = useState(true);
   const [initialRoute, setInitialRoute] = useState<'Login' | 'Home' | 'MainTabs' | 'HomeSetup'>('Login');
 
+  // Version check state
+  const [versionCheck, setVersionCheck] = useState<AppVersionCheckResponse | null>(null);
+  const [showUpdateScreen, setShowUpdateScreen] = useState(false);
+
+  // Skip update handler for optional updates
+  const handleSkipUpdate = useCallback(() => {
+    setShowUpdateScreen(false);
+  }, []);
+
   // Invitation modal logic
   const handleAcceptInvitation = async () => {
     if (!pendingInvitationCode) return;
@@ -336,8 +348,31 @@ export function RootNavigator () {
   }, [user, pendingInvitationCode, isInvitationModalVisible, showInvitationModal, t]);
 
   useEffect(() => {
-    const checkAuthAndHomes = async () => {
+    const checkVersionAndAuth = async () => {
       try {
+        // Step 1: Check app version (public endpoint, no auth required)
+        try {
+          const versionResult = await versionService.checkVersion();
+          setVersionCheck(versionResult);
+
+          // If update is required, show update screen and stop
+          if (versionResult.isUpdateRequired) {
+            setShowUpdateScreen(true);
+            setIsLoading(false);
+            return;
+          }
+
+          // If optional update is available, show update screen but allow skipping
+          if (versionResult.isUpdateAvailable) {
+            setShowUpdateScreen(true);
+            // Continue with auth check - user can skip the update
+          }
+        } catch (versionError) {
+          // Version check failed - continue without blocking
+          console.log('[RootNavigator] Version check failed, continuing:', versionError);
+        }
+
+        // Step 2: Check authentication
         const accessToken = await apiClient.getAccessToken();
         const storedUser = await getUserData();
 
@@ -388,7 +423,7 @@ export function RootNavigator () {
       }
     };
 
-    checkAuthAndHomes();
+    checkVersionAndAuth();
   }, [setUser, getUserSites]);
 
   if (isLoading) {
@@ -396,6 +431,20 @@ export function RootNavigator () {
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.dark }}>
         <ActivityIndicator size="large" color={COLORS.accent} />
       </View>
+    );
+  }
+
+  // Show update required/available screen
+  if (showUpdateScreen && versionCheck) {
+    return (
+      <UpdateRequiredScreen
+        latestVersion={versionCheck.version}
+        storeUrl={versionCheck.storeUrl}
+        description={versionCheck.description}
+        revocationReason={versionCheck.revocationReason}
+        isRequired={versionCheck.isUpdateRequired}
+        onSkip={versionCheck.isUpdateRequired ? undefined : handleSkipUpdate}
+      />
     );
   }
 

@@ -79,6 +79,7 @@ export interface SystemWorkModeSettings {
   exportStrategy: WorkModeType;
   energyPriority: EnergyPatternType;
   solarSell: OnOffStatus;
+  maxSolarSellPower: number;
   maxSellPower: number;
   zeroExportLimit: number;
   forceOffGrid: OnOffStatus;
@@ -90,6 +91,11 @@ export interface SystemWorkModeSettings {
  * BatterySettings - API sortOrder: 1
  */
 export interface BatterySettingsConfig {
+  batteryConfiguration: {
+    capacity: number;
+    maxChargeCurrent: number;
+    maxDischargeCurrent: number;
+  };
   gridCharging: {
     enabled: OnOffStatus;
     startSOC: number;
@@ -232,12 +238,12 @@ export interface DeviceSettingsConfig {
 // ============================================
 
 export const DEFAULT_TIME_SLOTS: TimeOfUseConfig['timeSlots'] = [
-  { id: 'P1', startTime: '00:00', endTime: '06:00', gridCharge: 'off', genCharge: 'off', maxDischarge: 3000, minBatterySOC: 30, minBatteryVoltage: 48 },
-  { id: 'P2', startTime: '06:00', endTime: '10:00', gridCharge: 'off', genCharge: 'off', maxDischarge: 3000, minBatterySOC: 30, minBatteryVoltage: 48 },
-  { id: 'P3', startTime: '10:00', endTime: '14:00', gridCharge: 'off', genCharge: 'off', maxDischarge: 3000, minBatterySOC: 30, minBatteryVoltage: 48 },
-  { id: 'P4', startTime: '14:00', endTime: '18:00', gridCharge: 'off', genCharge: 'off', maxDischarge: 3000, minBatterySOC: 30, minBatteryVoltage: 48 },
-  { id: 'P5', startTime: '18:00', endTime: '22:00', gridCharge: 'off', genCharge: 'off', maxDischarge: 3000, minBatterySOC: 30, minBatteryVoltage: 48 },
-  { id: 'P6', startTime: '22:00', endTime: '00:00', gridCharge: 'off', genCharge: 'off', maxDischarge: 3000, minBatterySOC: 30, minBatteryVoltage: 48 },
+  { id: 'P1', startTime: '00:00', endTime: '04:00', gridCharge: 'off', genCharge: 'off', maxDischarge: 12000, minBatterySOC: 80, minBatteryVoltage: 48 },
+  { id: 'P2', startTime: '05:00', endTime: '09:00', gridCharge: 'off', genCharge: 'off', maxDischarge: 12000, minBatterySOC: 80, minBatteryVoltage: 48 },
+  { id: 'P3', startTime: '09:00', endTime: '13:00', gridCharge: 'off', genCharge: 'off', maxDischarge: 12000, minBatterySOC: 80, minBatteryVoltage: 48 },
+  { id: 'P4', startTime: '13:00', endTime: '17:00', gridCharge: 'off', genCharge: 'off', maxDischarge: 12000, minBatterySOC: 80, minBatteryVoltage: 48 },
+  { id: 'P5', startTime: '17:00', endTime: '21:00', gridCharge: 'off', genCharge: 'off', maxDischarge: 12000, minBatterySOC: 80, minBatteryVoltage: 48 },
+  { id: 'P6', startTime: '21:00', endTime: '24:00', gridCharge: 'off', genCharge: 'off', maxDischarge: 12000, minBatterySOC: 80, minBatteryVoltage: 48 },
 ];
 
 export const DEFAULT_ACTIVE_DAYS: ActiveDays = {
@@ -252,21 +258,26 @@ export const DEFAULT_ACTIVE_DAYS: ActiveDays = {
 
 export const DEFAULT_DEVICE_SETTINGS: DeviceSettingsConfig = {
   batterySettings: {
+    batteryConfiguration: {
+      capacity: 200,
+      maxChargeCurrent: 100,
+      maxDischargeCurrent: 100,
+    },
     gridCharging: {
       enabled: 'off',
-      startSOC: 30,
-      current: 40,
+      startSOC: 20,
+      current: 100,
     },
     generatorCharging: {
       enabled: 'off',
-      startSOC: 30,
-      current: 40,
+      startSOC: 20,
+      current: 100,
       maxRunTime: 24,
       coolingTime: 0,
     },
     protectionThresholds: {
-      shutdownSOC: 20,
-      lowBatteryWarning: 35,
+      shutdownSOC: 10,
+      lowBatteryWarning: 15,
       restartSOC: 50,
     },
   },
@@ -274,11 +285,12 @@ export const DEFAULT_DEVICE_SETTINGS: DeviceSettingsConfig = {
     exportStrategy: 'zero_export_to_ct',
     energyPriority: 'batt_first',
     solarSell: 'off',
-    maxSellPower: 12000,
+    maxSolarSellPower: 12000,
+    maxSellPower: 100,
     zeroExportLimit: 20,
     forceOffGrid: 'off',
     gridPeakShavingEnabled: 'off',
-    gridPeakShavingLimitPower: 8000,
+    gridPeakShavingLimitPower: 2000,
   },
   timeOfUse: {
     enabled: 'off',
@@ -458,6 +470,11 @@ export interface ValidationRule {
 }
 
 export interface DeviceSettingsValidation {
+  batteryConfig: {
+    capacity: ValidationRule;
+    maxChargeCurrent: ValidationRule;
+    maxDischargeCurrent: ValidationRule;
+  };
   batterySOC: {
     shutdown: ValidationRule;
     lowBattery: ValidationRule;
@@ -488,6 +505,11 @@ export interface DeviceSettingsValidation {
 }
 
 export const DEVICE_SETTINGS_VALIDATION: DeviceSettingsValidation = {
+  batteryConfig: {
+    capacity: { min: 0, max: 2000, step: 10 },
+    maxChargeCurrent: { min: 0, max: 240, step: 5 },
+    maxDischargeCurrent: { min: 0, max: 240, step: 5 },
+  },
   batterySOC: {
     shutdown: { min: 0, max: 30, step: 1 },
     lowBattery: { min: 10, max: 50, step: 1 },

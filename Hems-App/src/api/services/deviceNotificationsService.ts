@@ -36,6 +36,9 @@ export const deviceNotificationsService = {
     if (params.Category) {
       queryParams.append('Category', params.Category);
     }
+    if (params.Severity) {
+      queryParams.append('Severity', params.Severity);
+    }
     if (params.IncludeDeleted !== undefined && params.IncludeDeleted !== null) {
       queryParams.append('IncludeDeleted', params.IncludeDeleted.toString());
     }
@@ -58,6 +61,9 @@ export const deviceNotificationsService = {
     }
     if (params.Category) {
       queryParams.append('Category', params.Category);
+    }
+    if (params.Severity) {
+      queryParams.append('Severity', params.Severity);
     }
 
     const url = `${ENDPOINTS.DEVICE_NOTIFICATIONS.GET_DELETED}?${queryParams.toString()}`;
@@ -90,8 +96,8 @@ export const deviceNotificationsService = {
     await apiClient.put<void>(url);
   },
 
-  permanentDeleteDeviceNotification: async (params: PermanentDeleteDeviceNotificationParams): Promise<void> => {
-    const url = `${ENDPOINTS.DEVICE_NOTIFICATIONS.PERMANENT_DELETE.replace(':id', params.id)}`;
+  purgeDeviceNotification: async (params: PermanentDeleteDeviceNotificationParams): Promise<void> => {
+    const url = `${ENDPOINTS.DEVICE_NOTIFICATIONS.PURGE.replace(':id', params.id)}`;
     await apiClient.delete<void>(url);
   },
 };

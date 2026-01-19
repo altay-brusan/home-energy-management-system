@@ -335,7 +335,10 @@ class ApiClient {
 
     if (error.response) {
       const responseError = error.response.data as ApiError;
+      // Preserve ALL fields from backend response (including failedParameters, errorCode, etc.)
+      // then override with standard ApiError fields
       apiError = {
+        ...(responseError as any), // Spread all backend fields first
         status: error.response.status,
         title: responseError.title || i18n.t('api.error.defaultTitle'),
         detail: responseError.detail,

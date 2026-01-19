@@ -28,9 +28,11 @@ const BatterySettingsSection: React.FC<BatterySettingsSectionProps> = ({
   const COLORS = getThemeColors(isDark);
 
   const {
+    batteryConfiguration,
     gridCharging,
     generatorCharging,
     protectionThresholds,
+    updateBatteryConfiguration,
     updateGridCharging,
     updateGeneratorCharging,
     updateProtectionThresholds,
@@ -49,8 +51,40 @@ const BatterySettingsSection: React.FC<BatterySettingsSectionProps> = ({
       icon="battery-full"
       defaultExpanded={defaultExpanded}
     >
-      {/* Grid Charging */}
+      {/* Battery Configuration */}
       <Text style={[styles.subHeader, { color: COLORS.text }]}>
+        {t('inverterModes.settings.batteryConfiguration', 'Battery Configuration')}
+      </Text>
+      <SettingSlider
+        label={t('inverterModes.labels.batteryCapacity', 'Battery Capacity')}
+        value={batteryConfiguration.capacity}
+        onChange={(value) => updateBatteryConfiguration({ capacity: value })}
+        min={validation.batteryConfig.capacity.min}
+        max={validation.batteryConfig.capacity.max}
+        step={validation.batteryConfig.capacity.step}
+        unit="Ah"
+      />
+      <SettingSlider
+        label={t('inverterModes.labels.maxBatteryChargeCurrent', 'Max Charge Current')}
+        value={batteryConfiguration.maxChargeCurrent}
+        onChange={(value) => updateBatteryConfiguration({ maxChargeCurrent: value })}
+        min={validation.batteryConfig.maxChargeCurrent.min}
+        max={validation.batteryConfig.maxChargeCurrent.max}
+        step={validation.batteryConfig.maxChargeCurrent.step}
+        unit="A"
+      />
+      <SettingSlider
+        label={t('inverterModes.labels.maxBatteryDischargeCurrent', 'Max Discharge Current')}
+        value={batteryConfiguration.maxDischargeCurrent}
+        onChange={(value) => updateBatteryConfiguration({ maxDischargeCurrent: value })}
+        min={validation.batteryConfig.maxDischargeCurrent.min}
+        max={validation.batteryConfig.maxDischargeCurrent.max}
+        step={validation.batteryConfig.maxDischargeCurrent.step}
+        unit="A"
+      />
+
+      {/* Grid Charging */}
+      <Text style={[styles.subHeader, { color: COLORS.text, marginTop: 16 }]}>
         {t('inverterModes.settings.gridCharging', 'Grid Charging')}
       </Text>
       <SettingToggle

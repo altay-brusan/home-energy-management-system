@@ -1,159 +1,233 @@
 /**
  * Device Settings Update Store
- * Manages the state of ongoing device parameter update operations
- * Handles progress tracking, modal visibility, and navigation blocking
+ * Manages loading state, real-time progress, and result dialog for device parameter updates.
+ * Now supports SignalR-based real-time progress tracking.
  */
 
 import { create } from 'zustand';
+import { FailedParameterInfo } from '../api/types/deviceSettings.types';
 import {
-  BatchOperationState,
-  ParameterUpdateCompletedDto,
-} from '../api/types/deviceSettingsHub.types';
+  OperationStartedEvent,
+  ParameterProgressEvent,
+  OperationCompletedEvent,
+  ParameterUpdateStatus,
+} from '../api/types/deviceSettingsSignalR.types';
+
+/**
+ * Update result shown in dialog/toast
+ */
+export interface UpdateResult {
+  success: boolean;
+  totalParameters: number;
+  successCount: number;
+  failedCount: number;
+  failedParameters: FailedParameterInfo[];
+  errorMessage?: string;
+  duration?: string;
+}
+
+/**
+ * Failed parameter info during progress (shown as they happen)
+ */
+export interface FailedParameterDuringProgress {
+  parameterId: string;
+  parameterName: string;
+  errorMessage: string;
+}
 
 interface DeviceSettingsUpdateState {
-  // Progress tracking
-  isUpdateActive: boolean;
-  correlationId: string | null;
-  batchState: BatchOperationState | null;
+  // Simple loading state
+  isSaving: boolean;
 
-  // Modal visibility
-  isProgressModalVisible: boolean;
+  // Result state (shown in dialog/toast)
+  lastResult: UpdateResult | null;
+  showResultDialog: boolean;
 
-  // Navigation blocking
-  isNavigationBlocked: boolean;
-  pendingNavigation: (() => void) | null;
+  // Real-time progress state (SignalR)
+  currentOperationId: string | null;
+  totalParameters: number;
+  currentIndex: number;
+  successCount: number;
+  failedCount: number;
+  currentParameterName: string | null;
+  failedParametersDuringProgress: FailedParameterDuringProgress[];
 
   // Actions
-  startUpdate: (correlationId: string, totalParameters?: number) => void;
-  updateProgress: (state: BatchOperationState) => void;
-  completeUpdate: (result: ParameterUpdateCompletedDto) => void;
-  cancelUpdate: () => void;
+  startSaving: () => void;
+  completeSaving: (result: UpdateResult) => void;
+  clearResult: () => void;
+  hideResultDialog: () => void;
 
-  // Modal controls
-  showProgressModal: () => void;
-  hideProgressModal: () => void;
-
-  // Navigation controls
-  setPendingNavigation: (callback: (() => void) | null) => void;
-  confirmNavigation: () => void;
-  cancelNavigation: () => void;
+  // SignalR event actions
+  setOperationStarted: (event: OperationStartedEvent) => void;
+  updateProgress: (event: ParameterProgressEvent) => void;
+  setOperationCompleted: (event: OperationCompletedEvent) => void;
 
   // Reset
   reset: () => void;
 }
 
 const initialState = {
-  isUpdateActive: false,
-  correlationId: null,
-  batchState: null,
-  isProgressModalVisible: false,
-  isNavigationBlocked: false,
-  pendingNavigation: null,
+  isSaving: false,
+  lastResult: null,
+  showResultDialog: false,
+  currentOperationId: null,
+  totalParameters: 0,
+  currentIndex: 0,
+  successCount: 0,
+  failedCount: 0,
+  currentParameterName: null,
+  failedParametersDuringProgress: [] as FailedParameterDuringProgress[],
 };
 
 export const useDeviceSettingsUpdateStore = create<DeviceSettingsUpdateState>((set, get) => ({
   ...initialState,
 
   /**
-   * Start a new update operation
+   * Start saving operation (shows loading indicator)
    */
-  startUpdate: (correlationId: string, totalParameters?: number) =>
+  startSaving: () => {
+    console.log('[deviceSettingsUpdateStore] startSaving called');
     set({
-      isUpdateActive: true,
-      correlationId,
-      isProgressModalVisible: true,
-      isNavigationBlocked: true,
-      batchState: {
-        correlationId,
-        deviceId: '',
-        status: 'pending',
-        totalParameters: totalParameters ?? 0,
-        currentIndex: 0,
-        successCount: 0,
-        failedCount: 0,
-        failedParameters: [],
-        startedAt: null,
-        completedAt: null,
-        duration: null,
-      },
-    }),
-
-  /**
-   * Update progress from SignalR events
-   */
-  updateProgress: (state: BatchOperationState) =>
-    set({
-      batchState: state,
-    }),
-
-  /**
-   * Mark update as complete
-   */
-  completeUpdate: (result: ParameterUpdateCompletedDto) => {
-    const hasFailures = result.failedCount > 0;
-    const currentBatchState = get().batchState;
-
-    set({
-      isUpdateActive: false,
-      isNavigationBlocked: false,
-      batchState: currentBatchState
-        ? {
-            ...currentBatchState,
-            status: hasFailures ? 'failed' : 'completed',
-            successCount: result.successCount,
-            failedCount: result.failedCount,
-            completedAt: result.completedAt,
-            duration: result.duration,
-          }
-        : null,
+      isSaving: true,
+      lastResult: null,
+      currentOperationId: null,
+      totalParameters: 0,
+      currentIndex: 0,
+      successCount: 0,
+      failedCount: 0,
+      currentParameterName: null,
+      failedParametersDuringProgress: [],
     });
   },
 
   /**
-   * Cancel update (cleanup without completion)
+   * Complete saving operation with result
+   * Shows dialog if there are failures OR an error occurred
    */
-  cancelUpdate: () =>
-    set({
-      isUpdateActive: false,
-      isNavigationBlocked: false,
-    }),
-
-  /**
-   * Show progress modal
-   */
-  showProgressModal: () => set({ isProgressModalVisible: true }),
-
-  /**
-   * Hide progress modal
-   */
-  hideProgressModal: () => set({ isProgressModalVisible: false }),
-
-  /**
-   * Set pending navigation callback
-   */
-  setPendingNavigation: (callback: (() => void) | null) =>
-    set({ pendingNavigation: callback }),
-
-  /**
-   * Confirm navigation - continue update in background
-   */
-  confirmNavigation: () => {
-    const { pendingNavigation } = get();
-    // Hide modal but keep tracking in background
-    set({
-      isProgressModalVisible: false,
-      pendingNavigation: null,
+  completeSaving: (result: UpdateResult) => {
+    console.log('[deviceSettingsUpdateStore] completeSaving called:', {
+      success: result.success,
+      successCount: result.successCount,
+      failedCount: result.failedCount,
+      hasErrorMessage: !!result.errorMessage,
+      failedParametersCount: result.failedParameters?.length || 0,
     });
-    // Execute the pending navigation
-    if (pendingNavigation) {
-      pendingNavigation();
+
+    // Show dialog if:
+    // 1. There are failed parameters (partial or complete failure)
+    // 2. There's an error message (like "Device busy", "No parameters found", etc.)
+    // 3. The operation failed without success
+    const shouldShowDialog =
+      result.failedCount > 0 ||
+      (result.failedParameters?.length || 0) > 0 ||
+      (!result.success && result.errorMessage);
+
+    set({
+      isSaving: false,
+      lastResult: result,
+      showResultDialog: shouldShowDialog,
+      currentOperationId: null,
+      currentParameterName: null,
+    });
+  },
+
+  /**
+   * Clear last result
+   */
+  clearResult: () => set({ lastResult: null }),
+
+  /**
+   * Hide result dialog
+   */
+  hideResultDialog: () => set({ showResultDialog: false }),
+
+  /**
+   * SignalR: Operation started event
+   */
+  setOperationStarted: (event: OperationStartedEvent) => {
+    console.log('[deviceSettingsUpdateStore] setOperationStarted:', event.operationId);
+    set({
+      isSaving: true,
+      currentOperationId: event.operationId,
+      totalParameters: event.totalParameters,
+      currentIndex: 0,
+      successCount: 0,
+      failedCount: 0,
+      currentParameterName: null,
+      failedParametersDuringProgress: [],
+      lastResult: null,
+    });
+  },
+
+  /**
+   * SignalR: Parameter progress event
+   */
+  updateProgress: (event: ParameterProgressEvent) => {
+    console.log('[deviceSettingsUpdateStore] updateProgress:', {
+      parameterName: event.parameterName,
+      status: event.status,
+      currentIndex: event.currentIndex,
+      totalParameters: event.totalParameters,
+    });
+
+    const { failedParametersDuringProgress } = get();
+    let newFailedParameters = failedParametersDuringProgress;
+
+    // Add to failed list if this parameter failed
+    if (event.status === ParameterUpdateStatus.Failed) {
+      newFailedParameters = [
+        ...failedParametersDuringProgress,
+        {
+          parameterId: event.parameterId,
+          parameterName: event.parameterName,
+          errorMessage: event.errorMessage || 'Unknown error',
+        },
+      ];
     }
+
+    set({
+      currentIndex: event.currentIndex,
+      successCount: event.successCount,
+      failedCount: event.failedCount,
+      currentParameterName:
+        event.status === ParameterUpdateStatus.InProgress ? event.parameterName : null,
+      failedParametersDuringProgress: newFailedParameters,
+    });
   },
 
   /**
-   * Cancel pending navigation
+   * SignalR: Operation completed event
    */
-  cancelNavigation: () => set({ pendingNavigation: null }),
+  setOperationCompleted: (event: OperationCompletedEvent) => {
+    console.log('[deviceSettingsUpdateStore] setOperationCompleted:', {
+      operationId: event.operationId,
+      success: event.success,
+      successCount: event.successCount,
+      failedCount: event.failedCount,
+    });
+
+    // Convert to UpdateResult format
+    const result: UpdateResult = {
+      success: event.success,
+      totalParameters: event.totalParameters,
+      successCount: event.successCount,
+      failedCount: event.failedCount,
+      failedParameters: event.failedParameters,
+      duration: event.duration,
+    };
+
+    // Show dialog if there are failures
+    const shouldShowDialog = event.failedCount > 0 || event.failedParameters.length > 0;
+
+    set({
+      isSaving: false,
+      lastResult: result,
+      showResultDialog: shouldShowDialog,
+      currentOperationId: null,
+      currentParameterName: null,
+    });
+  },
 
   /**
    * Reset store to initial state
@@ -165,14 +239,43 @@ export const useDeviceSettingsUpdateStore = create<DeviceSettingsUpdateState>((s
 // Selectors
 // ============================================================================
 
-export const useIsUpdateActive = () =>
-  useDeviceSettingsUpdateStore((state) => state.isUpdateActive);
+export const useIsSaving = () => useDeviceSettingsUpdateStore((state) => state.isSaving);
 
-export const useBatchProgress = () =>
-  useDeviceSettingsUpdateStore((state) => state.batchState);
+export const useLastResult = () => useDeviceSettingsUpdateStore((state) => state.lastResult);
 
-export const useIsProgressModalVisible = () =>
-  useDeviceSettingsUpdateStore((state) => state.isProgressModalVisible);
+export const useShowResultDialog = () => useDeviceSettingsUpdateStore((state) => state.showResultDialog);
 
-export const useIsNavigationBlocked = () =>
-  useDeviceSettingsUpdateStore((state) => state.isNavigationBlocked);
+// Real-time progress selectors
+export const useCurrentOperationId = () =>
+  useDeviceSettingsUpdateStore((state) => state.currentOperationId);
+
+export const useTotalParameters = () =>
+  useDeviceSettingsUpdateStore((state) => state.totalParameters);
+
+export const useCurrentIndex = () =>
+  useDeviceSettingsUpdateStore((state) => state.currentIndex);
+
+export const useProgressSuccessCount = () =>
+  useDeviceSettingsUpdateStore((state) => state.successCount);
+
+export const useProgressFailedCount = () =>
+  useDeviceSettingsUpdateStore((state) => state.failedCount);
+
+export const useCurrentParameterName = () =>
+  useDeviceSettingsUpdateStore((state) => state.currentParameterName);
+
+export const useFailedParametersDuringProgress = () =>
+  useDeviceSettingsUpdateStore((state) => state.failedParametersDuringProgress);
+
+// Combined progress selector for the modal
+export const useProgressState = () =>
+  useDeviceSettingsUpdateStore((state) => ({
+    isSaving: state.isSaving,
+    currentOperationId: state.currentOperationId,
+    totalParameters: state.totalParameters,
+    currentIndex: state.currentIndex,
+    successCount: state.successCount,
+    failedCount: state.failedCount,
+    currentParameterName: state.currentParameterName,
+    failedParametersDuringProgress: state.failedParametersDuringProgress,
+  }));

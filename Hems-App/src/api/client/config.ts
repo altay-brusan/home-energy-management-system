@@ -1,5 +1,7 @@
 export const API_CONFIG = {
-  BASE_URL: 'https://hems-api-dev.oklidis.com.tr/api',
+  // LOCAL TESTING - change back to 'https://hems-api-dev.oklidis.com.tr/api' for production
+  // Android Emulator: use 10.0.2.2 to reach host machine's localhost
+  BASE_URL: 'http://10.0.2.2:7163/api',
   TIMEOUT: 30000,
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000,
@@ -23,45 +25,53 @@ export const ENDPOINTS = {
     UPDATE_PROFILE: '/Users/update-profile',
   },
   SITES: {
-    GET_ALL: '/Sites',
-    GET_BY_ID: '/Sites/:id',
-    GET_USER_SITES: '/Sites/mobile/get-sites',
-    CREATE: '/Sites/mobile/create-site',
-    UPDATE: '/Sites/mobile/update-site/:id',
-    DELETE_MOBILE: '/Sites/mobile/delete-site/:id',
-    DELETE_ADMIN: '/Sites/:id',
+    // Admin endpoints (require AdminOnly authorization)
+    GET_ALL: '/Sites/Admin/Sites',
+    GET_BY_ID: '/Sites/Admin/Site/:id',
+    DELETE_ADMIN: '/Sites/Admin/Site/:id',
+    // User-facing endpoints
+    GET_USER_SITES: '/Sites/UserSites',
+    CREATE: '/Sites/Site',
+    UPDATE: '/Sites/Site/:id',
+    DELETE: '/Sites/Site/:id',
   },
   SETUPS: {
-    GET_ALL: '/Setups',
-    GET_BY_ID: '/Setups/:id',
-    GET_SETUP_DEVICE: '/Setups/mobile/get-setup-device',
-    CREATE: '/Setups/mobile/create-setup',
-    UPDATE: '/Setups/mobile/update-setup/:id',
-    DELETE_MOBILE: '/Setups/mobile/delete-setup/:id',
-    DELETE_ADMIN: '/Setups/:id',
+    // Admin endpoints (require AdminOnly authorization)
+    GET_ALL: '/Setups/Admin/Setups',
+    GET_BY_ID: '/Setups/Admin/Setup/:id',
+    DELETE_ADMIN: '/Setups/Admin/Setup/:id',
+    // User-facing endpoints
+    GET_SETUP_DEVICE: '/Setups/SetupDevice',
+    CREATE: '/Setups/Setup',
+    UPDATE: '/Setups/Setup/:id',
+    DELETE: '/Setups/Setup/:id',
   },
   DEVICES: {
-    GET_ALL: '/Devices',
-    GET_BY_ID: '/Devices/:id',
-    CREATE: '/Devices',
-    UPDATE: '/Devices/:id',
-    DELETE: '/Devices/:id',
+    // User-facing endpoint
     LOGIN: '/Devices/login',
+    // Admin endpoints (require AdminOnly authorization)
+    GET_BY_ID: '/Devices/Admin/Device/:id',
+    CREATE: '/Devices/Admin/Device',
+    UPDATE: '/Devices/Admin/Device/:id',
+    DELETE: '/Devices/Admin/Device/:id',
   },
   DEVICE_COMPONENTS: {
-    GET_BY_DEVICE: '/DeviceComponents/device/:deviceId',
-    GET_BY_ID: '/DeviceComponents/:id',
-    CREATE: '/DeviceComponents',
-    UPDATE: '/DeviceComponents/:id',
-    DELETE: '/DeviceComponents/:id',
+    // User-facing endpoints (used by mobile app)
     GET_DEVICE_SUMMARY: '/DeviceComponents/DeviceSummary',
     GET_COMPONENT_DETAILS: '/DeviceComponents/Details/:componentId',
+    // Admin endpoints (require AdminOnly authorization)
+    GET_BY_DEVICE: '/DeviceComponents/Admin/DeviceComponents/:deviceId',
+    GET_BY_ID: '/DeviceComponents/Admin/Component/:id',
+    CREATE: '/DeviceComponents/Admin/Component',
+    UPDATE: '/DeviceComponents/Admin/Component/:id',
+    DELETE: '/DeviceComponents/Admin/Component/:id',
   },
   DEVICE_DATA: {
     GET_ALL: '/DeviceData',
     CREATE: '/DeviceData',
     CREATE_ENERGY: '/DeviceData/energy',
     BULK_CREATE: '/DeviceData/bulk',
+    GET_STATUS: '/DeviceData/Status/:deviceId',
   },
   DASHBOARD: {
     GET_MOBILE: '/Dashboard/mobile/get-dashboard',
@@ -71,8 +81,7 @@ export const ENDPOINTS = {
     SOH: '/Dashboard/Soh',
     TODAY_SUMMARY: '/Dashboard/TodayEnergySummary',
     POWER_AND_ENERGY_METRICS: '/Dashboard/PowerAndEnergyMetrics',
-    GET_DEVICE_WITH_DATA: '/Dashboard/device/GetWithData',
-    GET_COMPONENT_LIVE_DATA: '/Dashboard/device/component/getComponentLiveData',
+    GET_DEVICE_COMPONENTS_STATUS: '/Dashboard/DeviceComponentsStatus',
     BATTERY_COMPONENT: '/Dashboard/graphs/Components/Battery',
     INVERTER_COMPONENT: '/Dashboard/graphs/Components/Inverter',
     ENERGY_FLOW: '/Dashboard/graphs/EnergyFlow',
@@ -87,91 +96,126 @@ export const ENDPOINTS = {
     ENERGY_REVENUE: '/Dashboard/EnergyRevenue',
   },
   ROLES: {
-    GET_ALL: '/RoleManagement',
-    CREATE: '/RoleManagement',
-    DELETE: '/RoleManagement/:roleName',
-    ASSIGN: '/RoleManagement/assign',
-    GET_USER_ROLES: '/RoleManagement/user/:userId',
+    // Admin endpoints (require AdminOnly authorization)
+    GET_ALL: '/RoleManagement/Admin/Roles',
+    CREATE: '/RoleManagement/Admin/Roles',
+    DELETE: '/RoleManagement/Admin/Roles/:roleName',
+    ASSIGN: '/RoleManagement/Admin/Assign',
+    GET_USER_ROLES: '/RoleManagement/Admin/User/:userId/Roles',
   },
   INVITATIONS: {
-    CREATE: '/Invitations/create',
-    GET_BY_SITE: '/Invitations/by-site/:siteId',
-    ACCEPT: '/Invitations/accept',
-    DECLINE: '/Invitations/decline',
-    DELETE: '/Invitations/:invitationId',
-    REMOVE_USER: '/Invitations/remove-user',
-    USER_HOME_SITES: '/Invitations/user-home-sites',
-    GET_NOTIFICATIONS: '/Invitations/notifications',
-    MARK_NOTIFICATION_READ: '/Invitations/notifications/:notificationId/mark-read',
+    CREATE: '/Invitations/Create',
+    GET_BY_SITE: '/Invitations/BySite/:siteId',
+    ACCEPT: '/Invitations/Accept',
+    DECLINE: '/Invitations/Decline',
+    REMOVE_USER: '/Invitations/RemoveUser/:invitationId',
   },
   DEVICE_NOTIFICATIONS: {
     CREATE: '/DeviceNotifications',
     GET_ALL: '/DeviceNotifications',
-    GET_DELETED: '/DeviceNotifications/deleted',
-    GET_TYPES: '/DeviceNotifications/types',
-    MARK_READ: '/DeviceNotifications/:id/mark-read',
-    MARK_ALL_READ: '/DeviceNotifications/mark-all-read/:siteId',
+    GET_DELETED: '/DeviceNotifications/Deleted',
+    MARK_READ: '/DeviceNotifications/:id/MarkRead',
+    MARK_ALL_READ: '/DeviceNotifications/MarkAllRead/:siteId',
     DELETE: '/DeviceNotifications/:id',
-    RESTORE: '/DeviceNotifications/:id/restore',
-    PERMANENT_DELETE: '/DeviceNotifications/:id/permanent',
-  },
-  TODO_ITEMS: {
-    GET_ALL: '/TodoItems',
-    CREATE: '/TodoItems',
-    UPDATE: '/TodoItems/:id',
-    UPDATE_DETAIL: '/TodoItems/UpdateDetail/:id',
-    DELETE: '/TodoItems/:id',
-  },
-  TODO_LISTS: {
-    GET_ALL: '/TodoLists',
-    CREATE: '/TodoLists',
-    UPDATE: '/TodoLists/:id',
-    DELETE: '/TodoLists/:id',
+    RESTORE: '/DeviceNotifications/:id/Restore',
+    PURGE: '/DeviceNotifications/:id/Purge',
+    // Admin endpoints (require AdminOnly authorization)
+    GET_TYPES: '/DeviceNotifications/Admin/Types',
   },
   WEATHER_FORECASTS: {
     GET_BY_SITE: '/WeatherForecasts/:siteId',
   },
   LOCATIONS: {
     GET_COUNTRIES: '/Locations',
-    GET_CITIES_BY_COUNTRY: '/Locations/cities/:countryId',
+    GET_CITIES_BY_COUNTRY: '/Locations/Cities/:countryId',
   },
+  // ParameterSchemas - merged from ParameterGroups, Parameters, ParameterValueSettingSchemes
+  PARAMETER_SCHEMAS: {
+    // Admin endpoints (require AdminOnly authorization)
+    GROUPS: {
+      GET_ALL: '/ParameterSchemas/Admin/Groups',
+      GET_BY_ID: '/ParameterSchemas/Admin/Groups/:id',
+      CREATE: '/ParameterSchemas/Admin/Groups',
+      UPDATE: '/ParameterSchemas/Admin/Groups/:id',
+      DELETE: '/ParameterSchemas/Admin/Groups/:id',
+    },
+    PARAMETERS: {
+      GET_ALL: '/ParameterSchemas/Admin/Parameters',
+      GET_BY_ID: '/ParameterSchemas/Admin/Parameters/:id',
+      CREATE: '/ParameterSchemas/Admin/Parameters',
+      UPDATE: '/ParameterSchemas/Admin/Parameters/:id',
+      DELETE: '/ParameterSchemas/Admin/Parameters/:id',
+    },
+    VALUES: {
+      // User-facing (all authenticated users)
+      GET_ALL: '/ParameterSchemas/Values',
+      GET_TREE: '/ParameterSchemas/Values/Tree',
+      // Admin only
+      CREATE: '/ParameterSchemas/Admin/Values',
+      UPDATE: '/ParameterSchemas/Admin/Values/:id',
+      DELETE: '/ParameterSchemas/Admin/Values/:id',
+    },
+  },
+  // Legacy endpoints kept for backward compatibility - will be removed
   PARAMETER_GROUPS: {
-    GET_ALL: '/ParameterGroups',
-    GET_BY_ID: '/ParameterGroups/:id',
-    CREATE: '/ParameterGroups',
-    UPDATE: '/ParameterGroups/:id',
-    DELETE: '/ParameterGroups/:id',
+    GET_ALL: '/ParameterSchemas/Admin/Groups',
+    GET_BY_ID: '/ParameterSchemas/Admin/Groups/:id',
+    CREATE: '/ParameterSchemas/Admin/Groups',
+    UPDATE: '/ParameterSchemas/Admin/Groups/:id',
+    DELETE: '/ParameterSchemas/Admin/Groups/:id',
   },
   PARAMETERS: {
-    GET_ALL: '/Parameters',
-    GET_BY_ID: '/Parameters/:id',
-    CREATE: '/Parameters',
-    UPDATE: '/Parameters/:id',
-    DELETE: '/Parameters/:id',
+    GET_ALL: '/ParameterSchemas/Admin/Parameters',
+    GET_BY_ID: '/ParameterSchemas/Admin/Parameters/:id',
+    CREATE: '/ParameterSchemas/Admin/Parameters',
+    UPDATE: '/ParameterSchemas/Admin/Parameters/:id',
+    DELETE: '/ParameterSchemas/Admin/Parameters/:id',
   },
   PARAMETER_VALUE_SETTING_SCHEMES: {
-    GET_ALL: '/ParameterValueSettingSchemes',
-    GET_TREE: '/ParameterValueSettingSchemes/tree',
-    CREATE: '/ParameterValueSettingSchemes',
-    UPDATE: '/ParameterValueSettingSchemes/:id',
-    DELETE: '/ParameterValueSettingSchemes/:id',
+    GET_ALL: '/ParameterSchemas/Values',
+    GET_TREE: '/ParameterSchemas/Values/Tree',
+    CREATE: '/ParameterSchemas/Admin/Values',
+    UPDATE: '/ParameterSchemas/Admin/Values/:id',
+    DELETE: '/ParameterSchemas/Admin/Values/:id',
   },
-  SETUP_DEVICE_PARAMETER_VALUES: {
-    GET_ALL: '/SetupDeviceParameterValues',
-    GET_TREE: '/SetupDeviceParameterValues/tree',
-    CREATE: '/SetupDeviceParameterValues',
-    UPDATE: '/SetupDeviceParameterValues/:id',
-    DELETE: '/SetupDeviceParameterValues/:id',
-  },
+  // DeviceSettings - includes RPC-synced operations and admin database operations
   DEVICE_SETTINGS: {
-    CHANGE_EXPORT_STRATEGY: '/DeviceSettings/ChangeExportStrategy',
+    // RPC-synced operations (User-facing, recommended)
+    GET_PARAMETERS: '/DeviceSettings/device/:deviceId/parameters',
     GET_TREE: '/DeviceSettings/device/:deviceId/tree',
+    UPDATE_PARAMETER: '/DeviceSettings/device/:deviceId/parameters/:parameterId',
     UPDATE_PARAMETERS: '/DeviceSettings/device/:deviceId/parameters',
     GET_MODES: '/DeviceSettings/modes',
     GET_DEVICE_MODE: '/DeviceSettings/device/:deviceId/mode',
     UPDATE_DEVICE_MODE: '/DeviceSettings/device/:deviceId/mode',
     GET_DEVICE_PRICE: '/DeviceSettings/device/:deviceId/price',
     UPDATE_DEVICE_PRICE: '/DeviceSettings/device/:deviceId/price',
+    // Operation state and history (for cloud resilience)
+    GET_OPERATION_STATE: '/DeviceSettings/operations/:correlationId',
+    GET_OPERATION_HISTORY: '/DeviceSettings/device/:deviceId/history',
+    // Demo/testing
+    CHANGE_EXPORT_STRATEGY: '/DeviceSettings/demo/export-strategy',
+    // Admin database-only operations
+    ADMIN: {
+      GET_ALL: '/DeviceSettings/admin',
+      GET_TREE: '/DeviceSettings/admin/tree',
+      CREATE: '/DeviceSettings/admin',
+      UPDATE: '/DeviceSettings/admin/:id',
+      DELETE: '/DeviceSettings/admin/:id',
+      INITIALIZE: '/DeviceSettings/admin/device/:deviceId/initialize',
+      UPDATE_PARAMETER: '/DeviceSettings/admin/device/:deviceId/parameter/:parameterId',
+    },
+  },
+  // Legacy - kept for backward compatibility
+  SETUP_DEVICE_PARAMETER_VALUES: {
+    GET_ALL: '/DeviceSettings/admin',
+    GET_TREE: '/DeviceSettings/admin/tree',
+    CREATE: '/DeviceSettings/admin',
+    UPDATE: '/DeviceSettings/admin/:id',
+    DELETE: '/DeviceSettings/admin/:id',
+  },
+  // Mobile App Version Check
+  MOBILE_APP_VERSIONS: {
+    CHECK: '/MobileAppVersions/Check',
   },
 } as const;
-

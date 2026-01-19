@@ -20,7 +20,23 @@ interface WeatherStatusProps {
 
 // Status renklerini belirleyen helper fonksiyon
 const getStatusColor = (status: DeviceStatusType | null, connectionState: SignalRConnectionState, COLORS: Record<string, string>): string => {
-  // Bağlantı durumu kontrolü
+  // If we have a device status from REST API, prioritize it over SignalR connection state
+  if (status) {
+    switch (status) {
+      case 'OK':
+        return COLORS.success;
+      case 'PENDING':
+        return COLORS.warning || '#FFA500';
+      case 'WAITING':
+        return COLORS.warning || '#FFA500';
+      case 'DISCONNECTED':
+        return COLORS.error || '#FF4444';
+      case 'NOT_TRACKED':
+        return COLORS.textSoft;
+    }
+  }
+
+  // No device status yet - show connection state colors
   if (connectionState === 'Connecting' || connectionState === 'Reconnecting') {
     return COLORS.warning || '#FFA500';
   }
@@ -28,28 +44,28 @@ const getStatusColor = (status: DeviceStatusType | null, connectionState: Signal
     return COLORS.textSoft;
   }
 
-  // Device status kontrolü
-  if (!status) {
-    return COLORS.textSoft;
-  }
-
-  switch (status) {
-    case 'OK':
-      return COLORS.success;
-    case 'PENDING':
-      return COLORS.warning || '#FFA500';
-    case 'WAITING':
-      return COLORS.warning || '#FFA500';
-    case 'DISCONNECTED':
-      return COLORS.error || '#FF4444';
-    case 'NOT_TRACKED':
-      return COLORS.textSoft;
-  }
+  return COLORS.textSoft;
 };
 
 // Status text'ini belirleyen helper fonksiyon
 const getStatusText = (status: DeviceStatusType | null, connectionState: SignalRConnectionState, t: (key: string) => string): string => {
-  // Bağlantı durumu kontrolü
+  // If we have a device status from REST API, prioritize it over SignalR connection state
+  if (status) {
+    switch (status) {
+      case 'OK':
+        return t('dashboard.deviceStatus.ok');
+      case 'PENDING':
+        return t('dashboard.deviceStatus.pending');
+      case 'WAITING':
+        return t('dashboard.deviceStatus.waiting');
+      case 'DISCONNECTED':
+        return t('dashboard.deviceStatus.disconnected');
+      case 'NOT_TRACKED':
+        return t('dashboard.deviceStatus.notTracked');
+    }
+  }
+
+  // No device status yet - show connection state
   if (connectionState === 'Connecting' || connectionState === 'Reconnecting') {
     return t('dashboard.deviceStatus.connecting');
   }
@@ -57,29 +73,19 @@ const getStatusText = (status: DeviceStatusType | null, connectionState: SignalR
     return t('dashboard.deviceStatus.offline');
   }
 
-  // Device status henüz gelmemişse
-  if (!status) {
-    return t('dashboard.deviceStatus.waiting');
-  }
-
-  switch (status) {
-    case 'OK':
-      return t('dashboard.deviceStatus.ok');
-    case 'PENDING':
-      return t('dashboard.deviceStatus.pending');
-    case 'WAITING':
-      return t('dashboard.deviceStatus.waiting');
-    case 'DISCONNECTED':
-      return t('dashboard.deviceStatus.disconnected');
-    case 'NOT_TRACKED':
-      return t('dashboard.deviceStatus.notTracked');
-  }
+  return t('dashboard.deviceStatus.waiting');
 };
 
 // Bağlantı durumuna göre loading indicator göster
-const shouldShowLoading = (connectionState: SignalRConnectionState, deviceStatus: DeviceStatusType | null): boolean => {
-  return connectionState === 'Connecting' || connectionState === 'Reconnecting' ||
-         (connectionState === 'Connected' && !deviceStatus);
+const shouldShowLoading = (
+  connectionState: SignalRConnectionState,
+  deviceStatus: DeviceStatusType | null,
+  isLoadingInitialStatus: boolean
+): boolean => {
+  // Show loading if fetching initial status via REST API
+  if (isLoadingInitialStatus) return true;
+  // Show loading if SignalR is connecting and we don't have status yet
+  return (connectionState === 'Connecting' || connectionState === 'Reconnecting') && !deviceStatus;
 };
 
 export const WeatherStatus: React.FC<WeatherStatusProps> = ({ deviceId }) => {
@@ -94,8 +100,8 @@ export const WeatherStatus: React.FC<WeatherStatusProps> = ({ deviceId }) => {
   const [weather, setWeather] = useState<WeatherForecastDto | null>(null);
   const { registerRefreshCallback } = useDashboardRefresh();
 
-  // DeviceStatus hook - SignalR üzerinden cihaz durumu
-  const { deviceStatus, connectionState } = useDeviceStatus(deviceId);
+  // DeviceStatus hook - REST API for initial status, then SignalR for live updates
+  const { deviceStatus, connectionState, isLoadingInitialStatus } = useDeviceStatus(deviceId);
 
   // Fetch weather separately
   const fetchWeather = useCallback(async () => {
@@ -161,7 +167,7 @@ export const WeatherStatus: React.FC<WeatherStatusProps> = ({ deviceId }) => {
 
       {/* Status - Right */}
       <View style={styles.statusContainer}>
-        {shouldShowLoading(connectionState, deviceStatus) && (
+        {shouldShowLoading(connectionState, deviceStatus, isLoadingInitialStatus) && (
           <ActivityIndicator size="small" color={COLORS.accent} style={{ marginRight: 4 }} />
         )}
         <Text style={styles.statusLabel}>{t('dashboard.status')}</Text>

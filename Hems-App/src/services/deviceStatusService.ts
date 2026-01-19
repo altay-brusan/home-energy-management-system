@@ -10,21 +10,59 @@ class DeviceStatusService {
     private connectionListeners: Set<(state: SignalRConnectionState) => void> = new Set();
     private statusListeners: Set<(data: DeviceStatusChangedDto) => void> = new Set();
 
-    private readonly HUB_URL = "https://hems-api-dev.oklidis.com.tr/deviceStatusHub";
+    // Retry configuration for initial connection
+    private readonly MAX_INITIAL_RETRIES = 5;
+    private readonly INITIAL_RETRY_DELAY_MS = 2000;
+    private readonly MAX_RETRY_DELAY_MS = 30000;
+    private isRetrying = false;
+    private retryTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    // LOCAL TESTING - change back to 'https://hems-api-dev.oklidis.com.tr/deviceStatusHub' for production
+    // Android Emulator: use 10.0.2.2 to reach host machine's localhost
+    private readonly HUB_URL = "http://10.0.2.2:7163/deviceStatusHub";
 
     async connect(): Promise<void> {
-        // Zaten bağlıysa tekrar bağlanma
+        // Already connected, skip
         if (this.connection?.state === HubConnectionState.Connected) {
             console.log('[DeviceStatusService] Already connected, skipping. Connection ID:', this.connection.connectionId);
             return;
         }
 
+        // Already retrying, don't start another retry loop
+        if (this.isRetrying) {
+            console.log('[DeviceStatusService] Already retrying connection, skipping duplicate call');
+            return;
+        }
+
         console.log('[DeviceStatusService] Current connection state:', this.connection?.state ?? 'null');
+        this.isManualDisconnect = false;
+
+        // Try to connect with retries
+        await this.connectWithRetry(0);
+    }
+
+    private async connectWithRetry(attemptNumber: number): Promise<void> {
+        // Check if we should stop retrying
+        if (this.isManualDisconnect) {
+            console.log('[DeviceStatusService] Manual disconnect requested, stopping retry');
+            this.isRetrying = false;
+            return;
+        }
+
+        // Already connected (maybe another call succeeded)
+        if (this.connection?.state === HubConnectionState.Connected) {
+            console.log('[DeviceStatusService] Already connected during retry, skipping');
+            this.isRetrying = false;
+            return;
+        }
+
+        this.isRetrying = attemptNumber > 0;
 
         try {
-            this.isManualDisconnect = false;
-
+            console.log('[DeviceStatusService] Connection attempt', attemptNumber + 1, 'of', this.MAX_INITIAL_RETRIES + 1);
             console.log('[DeviceStatusService] Connecting to:', this.HUB_URL);
+
+            this.notifyConnectionState('Connecting');
 
             this.connection = new HubConnectionBuilder()
                 .withUrl(this.HUB_URL, {
@@ -56,12 +94,32 @@ class DeviceStatusService {
             console.log('[DeviceStatusService] ✅ Connected successfully to:', this.HUB_URL);
             console.log('[DeviceStatusService] Connection ID:', this.connection.connectionId);
 
+            this.isRetrying = false;
             this.notifyConnectionState('Connected');
 
         } catch (error) {
-            console.log('[DeviceStatusService] Connection failed:', error);
-            this.notifyConnectionState('Failed');
-            throw error;
+            console.log('[DeviceStatusService] Connection attempt', attemptNumber + 1, 'failed:', error);
+
+            // Check if we have more retries left
+            if (attemptNumber < this.MAX_INITIAL_RETRIES && !this.isManualDisconnect) {
+                const delay = Math.min(
+                    this.INITIAL_RETRY_DELAY_MS * Math.pow(2, attemptNumber),
+                    this.MAX_RETRY_DELAY_MS
+                );
+                console.log('[DeviceStatusService] Retrying in', delay, 'ms... (attempt', attemptNumber + 2, 'of', this.MAX_INITIAL_RETRIES + 1, ')');
+
+                this.notifyConnectionState('Reconnecting');
+
+                // Schedule retry
+                this.retryTimeoutId = setTimeout(() => {
+                    this.connectWithRetry(attemptNumber + 1);
+                }, delay);
+            } else {
+                // Max retries reached or manual disconnect
+                console.log('[DeviceStatusService] ❌ Max retries reached or manual disconnect. Giving up.');
+                this.isRetrying = false;
+                this.notifyConnectionState('Failed');
+            }
         }
     }
 
@@ -119,8 +177,15 @@ class DeviceStatusService {
 
     async disconnect(): Promise<void> {
         this.isManualDisconnect = true;
+        this.isRetrying = false;
 
-        // Önce device subscription'ı kaldır
+        // Cancel any pending retry
+        if (this.retryTimeoutId) {
+            clearTimeout(this.retryTimeoutId);
+            this.retryTimeoutId = null;
+        }
+
+        // Unsubscribe from device first
         await this.unsubscribeFromDevice();
 
         if (this.connection) {
@@ -243,6 +308,41 @@ class DeviceStatusService {
 
     get currentDevice(): string | null {
         return this.currentDeviceId;
+    }
+
+    get isCurrentlyRetrying(): boolean {
+        return this.isRetrying;
+    }
+
+    /**
+     * Manually trigger a connection retry.
+     * Useful when the initial connection failed and user wants to try again.
+     */
+    async retryConnection(): Promise<void> {
+        console.log('[DeviceStatusService] Manual retry requested');
+
+        // Reset states to allow fresh connection attempt
+        this.isManualDisconnect = false;
+        this.isRetrying = false;
+
+        // Cancel any pending retry
+        if (this.retryTimeoutId) {
+            clearTimeout(this.retryTimeoutId);
+            this.retryTimeoutId = null;
+        }
+
+        // Clean up existing connection if any
+        if (this.connection) {
+            try {
+                await this.connection.stop();
+            } catch (error) {
+                // Silent error handling
+            }
+            this.connection = null;
+        }
+
+        // Start fresh connection with retries
+        await this.connectWithRetry(0);
     }
 }
 

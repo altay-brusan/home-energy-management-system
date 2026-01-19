@@ -4,7 +4,7 @@
  * API yapısına uyumlu - TimeSlot tipini kullanır
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -45,8 +45,19 @@ const TimePickerModal: React.FC<{
   const [selectedHour, setSelectedHour] = useState(hours);
   const [selectedMinute, setSelectedMinute] = useState(minutes);
 
+  // Sync local state when value prop changes or when modal becomes visible
+  // This ensures the picker shows the current store value, not stale state
+  useEffect(() => {
+    if (visible) {
+      const [h, m] = value.split(':').map(Number);
+      setSelectedHour(h);
+      setSelectedMinute(m);
+    }
+  }, [visible, value]);
+
   const handleConfirm = () => {
     const time = `${selectedHour.toString().padStart(2, '0')}:${selectedMinute.toString().padStart(2, '0')}`;
+    console.log('[TimePickerModal] handleConfirm - selected time:', time);
     onSelect(time);
     onClose();
   };
@@ -212,10 +223,17 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
 
+  // Debug: Log when period prop changes
+  console.log('[PeriodCard] Render - period:', period.id, 'startTime:', period.startTime, 'endTime:', period.endTime);
+
   const validation = DEVICE_SETTINGS_VALIDATION;
 
   // Merge with defaults to ensure all keys exist
   const vis = { ...DEFAULT_VISIBILITY, ...visibility };
+
+  // Fixed boundaries: first slot's startTime and last slot's endTime cannot be changed
+  const isStartTimeFixed = index === 0; // First slot starts at 00:00 (fixed)
+  const isEndTimeFixed = index === 5;   // Last slot ends at 24:00/00:00 (fixed)
 
   return (
     <View
@@ -244,12 +262,26 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
         <View style={styles.timeRow}>
           {vis.startTime && (
             <TouchableOpacity
-              onPress={() => editable && setShowStartPicker(true)}
-              style={[styles.timeButton, { backgroundColor: isDark ? COLORS.border : COLORS.gray100 }]}
-              disabled={!editable}
+              onPress={() => editable && !isStartTimeFixed && setShowStartPicker(true)}
+              style={[
+                styles.timeButton,
+                { backgroundColor: isDark ? COLORS.border : COLORS.gray100 },
+                isStartTimeFixed && styles.timeButtonFixed,
+              ]}
+              disabled={!editable || isStartTimeFixed}
             >
-              <Text style={[styles.timeLabel, { color: COLORS.textSoft }]}>{t('timeOfUse.startTime')}</Text>
-              <Text style={[styles.timeValue, { color: COLORS.text }]}>{period.startTime}</Text>
+              <View style={styles.timeLabelRow}>
+                <Text style={[styles.timeLabel, { color: COLORS.textSoft }]}>{t('timeOfUse.startTime')}</Text>
+                {isStartTimeFixed && (
+                  <MaterialIcons name="lock" size={12} color={COLORS.textSoft} style={styles.lockIcon} />
+                )}
+              </View>
+              <Text style={[
+                styles.timeValue,
+                { color: isStartTimeFixed ? COLORS.textSoft : COLORS.text },
+              ]}>
+                {period.startTime}
+              </Text>
             </TouchableOpacity>
           )}
 
@@ -259,12 +291,26 @@ const PeriodCard: React.FC<PeriodCardProps> = ({
 
           {vis.endTime && (
             <TouchableOpacity
-              onPress={() => editable && setShowEndPicker(true)}
-              style={[styles.timeButton, { backgroundColor: isDark ? COLORS.border : COLORS.gray100 }]}
-              disabled={!editable}
+              onPress={() => editable && !isEndTimeFixed && setShowEndPicker(true)}
+              style={[
+                styles.timeButton,
+                { backgroundColor: isDark ? COLORS.border : COLORS.gray100 },
+                isEndTimeFixed && styles.timeButtonFixed,
+              ]}
+              disabled={!editable || isEndTimeFixed}
             >
-              <Text style={[styles.timeLabel, { color: COLORS.textSoft }]}>{t('timeOfUse.endTime')}</Text>
-              <Text style={[styles.timeValue, { color: COLORS.text }]}>{period.endTime}</Text>
+              <View style={styles.timeLabelRow}>
+                <Text style={[styles.timeLabel, { color: COLORS.textSoft }]}>{t('timeOfUse.endTime')}</Text>
+                {isEndTimeFixed && (
+                  <MaterialIcons name="lock" size={12} color={COLORS.textSoft} style={styles.lockIcon} />
+                )}
+              </View>
+              <Text style={[
+                styles.timeValue,
+                { color: isEndTimeFixed ? COLORS.textSoft : COLORS.text },
+              ]}>
+                {period.endTime}
+              </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -412,8 +458,21 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
   },
+  timeButtonFixed: {
+    opacity: 0.7,
+  },
+  timeLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
   timeLabel: {
     fontSize: 11,
+    marginBottom: 2,
+  },
+  lockIcon: {
+    marginLeft: 2,
     marginBottom: 2,
   },
   timeValue: {

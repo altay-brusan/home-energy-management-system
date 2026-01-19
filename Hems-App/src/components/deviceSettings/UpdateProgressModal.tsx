@@ -1,6 +1,7 @@
 /**
  * Update Progress Modal
- * Shows real-time progress when updating device settings via SignalR
+ * Shows real-time progress during save and result dialog if there are failures
+ * Now uses SignalR for live progress tracking
  */
 
 import React, { useEffect, useRef } from 'react';
@@ -18,19 +19,17 @@ import { CheckCircle, XCircle, AlertTriangle, X } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../store/themeStore';
 import { getDesignTokens } from '../../theme/design-tokens';
-import { useDeviceSettingsUpdateStore } from '../../store/deviceSettingsUpdateStore';
+import { useDeviceSettingsUpdateStore, useProgressState } from '../../store/deviceSettingsUpdateStore';
 import { makeUpdateProgressModalStyles } from './UpdateProgressModal.styles';
 
 export interface UpdateProgressModalProps {
   visible: boolean;
   onClose: () => void;
-  onContinueInBackground?: () => void;
 }
 
 export const UpdateProgressModal: React.FC<UpdateProgressModalProps> = ({
   visible,
   onClose,
-  onContinueInBackground,
 }) => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -39,11 +38,25 @@ export const UpdateProgressModal: React.FC<UpdateProgressModalProps> = ({
   const tokens = getDesignTokens(isDark);
   const styles = makeUpdateProgressModalStyles(isDark);
 
-  const { batchState, isUpdateActive } = useDeviceSettingsUpdateStore();
+  // Get store state
+  const { lastResult, hideResultDialog } = useDeviceSettingsUpdateStore();
+
+  // Get real-time progress state
+  const progressState = useProgressState();
+  const {
+    isSaving,
+    totalParameters,
+    currentIndex,
+    successCount,
+    failedCount,
+    currentParameterName,
+    failedParametersDuringProgress,
+  } = progressState;
 
   // Animation values
   const sheetY = useRef(new Animated.Value(400)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
+  const progressWidth = useRef(new Animated.Value(0)).current;
 
   // Animate modal in/out
   useEffect(() => {
@@ -77,18 +90,25 @@ export const UpdateProgressModal: React.FC<UpdateProgressModalProps> = ({
     }
   }, [visible, sheetY, overlayOpacity]);
 
-  // Calculate progress percentage
-  const progress = batchState && batchState.totalParameters > 0
-    ? (batchState.currentIndex / batchState.totalParameters) * 100
-    : 0;
+  // Animate progress bar
+  useEffect(() => {
+    if (totalParameters > 0) {
+      Animated.timing(progressWidth, {
+        toValue: (currentIndex / totalParameters) * 100,
+        duration: 200,
+        useNativeDriver: false,
+      }).start();
+    }
+  }, [currentIndex, totalParameters, progressWidth]);
 
-  // Determine completion status
-  const isCompleted = batchState?.status === 'completed' || batchState?.status === 'failed';
-  const hasFailures = (batchState?.failedCount ?? 0) > 0;
+  // Determine state
+  const isCompleted = !isSaving && lastResult !== null;
+  const hasFailures = (lastResult?.failedCount ?? 0) > 0;
+  const hasSuccesses = (lastResult?.successCount ?? 0) > 0;
 
   // Get status icon based on current state
   const renderStatusIcon = () => {
-    if (!isCompleted) {
+    if (isSaving) {
       return <ActivityIndicator size="large" color={tokens.brand.accent} />;
     }
 
@@ -96,46 +116,56 @@ export const UpdateProgressModal: React.FC<UpdateProgressModalProps> = ({
       return <AlertTriangle size={48} color={tokens.semantic.warning} />;
     }
 
-    return <CheckCircle size={48} color={tokens.semantic.success} />;
+    if (hasSuccesses) {
+      return <CheckCircle size={48} color={tokens.semantic.success} />;
+    }
+
+    return <XCircle size={48} color={tokens.semantic.error} />;
   };
 
   // Get status text based on current state
   const getStatusText = (): string => {
-    if (!batchState) {
-      return t('deviceSettings.update.preparing', 'Preparing...');
+    if (isSaving) {
+      if (currentParameterName) {
+        return t('deviceSettings.update.updatingParameter', 'Updating: {{name}}', {
+          name: currentParameterName,
+        });
+      }
+      return t('deviceSettings.update.inProgress', 'Updating parameters...');
     }
 
-    switch (batchState.status) {
-      case 'pending':
-        return t('deviceSettings.update.connecting', 'Connecting...');
-      case 'in_progress':
-        return t('deviceSettings.update.inProgress', 'Updating parameters...');
-      case 'completed':
-        return t('deviceSettings.update.completed', 'Update completed!');
-      case 'failed':
-        return t('deviceSettings.update.completedWithErrors', 'Completed with errors');
-      default:
-        return '';
+    if (!lastResult) {
+      return '';
     }
+
+    if (lastResult.errorMessage === 'Device busy') {
+      return t('deviceSettings.update.deviceBusy', 'Device is busy');
+    }
+
+    if (hasFailures && hasSuccesses) {
+      return t('deviceSettings.update.completedWithErrors', 'Completed with errors');
+    }
+
+    if (hasFailures && !hasSuccesses) {
+      return t('deviceSettings.update.failed', 'Update failed');
+    }
+
+    return t('deviceSettings.update.completed', 'Update completed!');
   };
 
-  // Handle close - only allow when not updating
+  // Handle close
   const handleClose = () => {
-    if (!isUpdateActive) {
+    if (!isSaving) {
+      hideResultDialog();
       onClose();
     }
-  };
-
-  // Handle continue in background
-  const handleContinueInBackground = () => {
-    onContinueInBackground?.();
   };
 
   return (
     <Modal
       transparent
       visible={visible}
-      onRequestClose={isUpdateActive ? undefined : handleClose}
+      onRequestClose={isSaving ? undefined : handleClose}
       statusBarTranslucent
       animationType="none"
     >
@@ -147,7 +177,7 @@ export const UpdateProgressModal: React.FC<UpdateProgressModalProps> = ({
         ]}
       >
         {/* Allow tap to dismiss only when completed */}
-        {!isUpdateActive && (
+        {!isSaving && (
           <Pressable style={{ flex: 1 }} onPress={handleClose} />
         )}
       </Animated.View>
@@ -170,9 +200,11 @@ export const UpdateProgressModal: React.FC<UpdateProgressModalProps> = ({
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>
-            {t('deviceSettings.update.title', 'Updating Settings')}
+            {isSaving
+              ? t('deviceSettings.update.title', 'Updating Settings')
+              : t('deviceSettings.update.resultTitle', 'Update Result')}
           </Text>
-          {!isUpdateActive && (
+          {!isSaving && (
             <Pressable onPress={handleClose} style={styles.closeButton}>
               <X size={24} color={tokens.text.secondary} />
             </Pressable>
@@ -191,49 +223,109 @@ export const UpdateProgressModal: React.FC<UpdateProgressModalProps> = ({
             {getStatusText()}
           </Text>
 
-          {/* Progress Bar (shown during update) */}
-          {!isCompleted && batchState && batchState.totalParameters > 0 && (
+          {/* Real-time Progress Bar (while saving) */}
+          {isSaving && totalParameters > 0 && (
             <View style={styles.progressContainer}>
-              <View style={styles.progressBar}>
-                <View
+              <View style={styles.progressBarBackground}>
+                <Animated.View
                   style={[
-                    styles.progressFill,
-                    { width: `${Math.min(progress, 100)}%` },
+                    styles.progressBarFill,
+                    {
+                      width: progressWidth.interpolate({
+                        inputRange: [0, 100],
+                        outputRange: ['0%', '100%'],
+                      }),
+                    },
                   ]}
                 />
               </View>
               <Text style={styles.progressText}>
-                {batchState.currentIndex} / {batchState.totalParameters}
+                {currentIndex} / {totalParameters}
               </Text>
+              <View style={styles.progressCountsRow}>
+                {successCount > 0 && (
+                  <View style={styles.progressCountItem}>
+                    <CheckCircle size={14} color={tokens.semantic.success} />
+                    <Text style={[styles.progressCountText, { color: tokens.semantic.success }]}>
+                      {successCount}
+                    </Text>
+                  </View>
+                )}
+                {failedCount > 0 && (
+                  <View style={styles.progressCountItem}>
+                    <XCircle size={14} color={tokens.semantic.error} />
+                    <Text style={[styles.progressCountText, { color: tokens.semantic.error }]}>
+                      {failedCount}
+                    </Text>
+                  </View>
+                )}
+              </View>
             </View>
           )}
 
+          {/* Show failures as they happen during progress */}
+          {isSaving && failedParametersDuringProgress.length > 0 && (
+            <ScrollView
+              style={styles.failedListContainer}
+              showsVerticalScrollIndicator={false}
+            >
+              <Text style={styles.failedTitle}>
+                {t('deviceSettings.update.failedDuringProgress', 'Failed:')}
+              </Text>
+              {failedParametersDuringProgress.map((param, index) => (
+                <View key={`${param.parameterId}-${index}`} style={styles.failedItem}>
+                  <Text style={styles.failedParamName}>
+                    {param.parameterName}
+                  </Text>
+                  <Text style={styles.failedParamError}>
+                    {param.errorMessage}
+                  </Text>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+
           {/* Summary (when completed) */}
-          {isCompleted && batchState && (
+          {isCompleted && lastResult && (
             <View style={styles.summaryContainer}>
-              <View style={styles.summaryRow}>
-                <CheckCircle size={16} color={tokens.semantic.success} />
-                <Text style={styles.summaryText}>
-                  {t('deviceSettings.update.successCount', '{{count}} parameters updated', {
-                    count: batchState.successCount,
-                  })}
-                </Text>
-              </View>
+              {lastResult.successCount > 0 && (
+                <View style={styles.summaryRow}>
+                  <CheckCircle size={16} color={tokens.semantic.success} />
+                  <Text style={styles.summaryText}>
+                    {lastResult.successCount === 1
+                      ? t('deviceSettings.update.successCountSingular', '1 parameter updated')
+                      : t('deviceSettings.update.successCount', '{{count}} parameters updated', {
+                          count: lastResult.successCount,
+                        })}
+                  </Text>
+                </View>
+              )}
               {hasFailures && (
                 <View style={styles.summaryRow}>
                   <XCircle size={16} color={tokens.semantic.error} />
                   <Text style={styles.summaryTextError}>
-                    {t('deviceSettings.update.failedCount', '{{count}} parameters failed', {
-                      count: batchState.failedCount,
-                    })}
+                    {lastResult.failedCount === 1
+                      ? t('deviceSettings.update.failedCountSingular', '1 parameter failed')
+                      : t('deviceSettings.update.failedCount', '{{count}} parameters failed', {
+                          count: lastResult.failedCount,
+                        })}
                   </Text>
                 </View>
               )}
             </View>
           )}
 
-          {/* Failed Parameters List */}
-          {hasFailures && batchState?.failedParameters && batchState.failedParameters.length > 0 && (
+          {/* Error Message (when no specific failed parameters) */}
+          {isCompleted && lastResult && !hasFailures && !hasSuccesses && lastResult.errorMessage && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorMessage}>
+                {lastResult.errorMessage}
+              </Text>
+            </View>
+          )}
+
+          {/* Failed Parameters List (when completed) */}
+          {isCompleted && hasFailures && lastResult?.failedParameters && lastResult.failedParameters.length > 0 && (
             <ScrollView
               style={styles.failedListContainer}
               showsVerticalScrollIndicator={false}
@@ -241,7 +333,7 @@ export const UpdateProgressModal: React.FC<UpdateProgressModalProps> = ({
               <Text style={styles.failedTitle}>
                 {t('deviceSettings.update.failedParameters', 'Failed Parameters:')}
               </Text>
-              {batchState.failedParameters.map((param, index) => (
+              {lastResult.failedParameters.map((param, index) => (
                 <View key={`${param.parameterId}-${index}`} style={styles.failedItem}>
                   <Text style={styles.failedParamName}>
                     {param.parameterName}
@@ -257,18 +349,6 @@ export const UpdateProgressModal: React.FC<UpdateProgressModalProps> = ({
 
         {/* Actions */}
         <View style={styles.actionsContainer}>
-          {/* Continue in Background button (during update) */}
-          {isUpdateActive && onContinueInBackground && (
-            <Pressable
-              style={[styles.button, styles.secondaryButton]}
-              onPress={handleContinueInBackground}
-            >
-              <Text style={styles.secondaryButtonText}>
-                {t('deviceSettings.update.continueInBackground', 'Continue in Background')}
-              </Text>
-            </Pressable>
-          )}
-
           {/* Close button (when completed) */}
           {isCompleted && (
             <Pressable
