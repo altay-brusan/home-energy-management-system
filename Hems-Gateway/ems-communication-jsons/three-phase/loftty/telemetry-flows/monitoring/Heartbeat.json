@@ -1,0 +1,227 @@
+[
+    {
+        "id": "8000655a344eb07d",
+        "type": "tab",
+        "label": "Heartbeat",
+        "disabled": false,
+        "info": "Simple Heartbeat\nSends every 1 minute + RPC trigger"
+    },
+    {
+        "id": "903bc15525b6abdb",
+        "type": "inject",
+        "z": "8000655a344eb07d",
+        "name": "Every 1 min",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "60",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 120,
+        "wires": [
+            [
+                "17d46bced4d407de"
+            ]
+        ]
+    },
+    {
+        "id": "cab8cce1a83a9f15",
+        "type": "inject",
+        "z": "8000655a344eb07d",
+        "name": "Manual Test",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 160,
+        "wires": [
+            [
+                "17d46bced4d407de"
+            ]
+        ]
+    },
+    {
+        "id": "f3fb0bcd4481db3e",
+        "type": "mqtt in",
+        "z": "8000655a344eb07d",
+        "name": "RPC Request",
+        "topic": "v1/devices/me/rpc/request/+",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "tb-broker",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 140,
+        "y": 240,
+        "wires": [
+            [
+                "b4d91e9e5685db24"
+            ]
+        ]
+    },
+    {
+        "id": "b4d91e9e5685db24",
+        "type": "function",
+        "z": "8000655a344eb07d",
+        "name": "Filter RPC",
+        "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nconst rpc = msg.payload || {};\n\nif (rpc.method !== 'getHeartbeat' && rpc.method !== 'heartbeat' && rpc.method !== 'ping') {\n    return null;\n}\n\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 340,
+        "y": 240,
+        "wires": [
+            [
+                "17d46bced4d407de"
+            ]
+        ]
+    },
+    {
+        "id": "17d46bced4d407de",
+        "type": "function",
+        "z": "8000655a344eb07d",
+        "name": "Build Response",
+        "func": "msg.payload = {\n    kind: 'Heartbeat',\n    timestampUtc: new Date().toISOString()\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 540,
+        "y": 200,
+        "wires": [
+            [
+                "4444d293f087eefa",
+                "8d595e44bce31c06",
+                "c70c0488511edf02"
+            ]
+        ]
+    },
+    {
+        "id": "4444d293f087eefa",
+        "type": "debug",
+        "z": "8000655a344eb07d",
+        "name": "Heartbeat",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 740,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "c70c0488511edf02",
+        "type": "mqtt out",
+        "z": "8000655a344eb07d",
+        "name": "Send to ThingsBoard",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 780,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "8d595e44bce31c06",
+        "type": "function",
+        "z": "8000655a344eb07d",
+        "name": "RPC Response",
+        "func": "// Only handle messages that came from RPC\nif (!msg.rpcResponseTopic) {\n    return null;\n}\n\nmsg.topic = msg.rpcResponseTopic;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 760,
+        "y": 280,
+        "wires": [
+            [
+                "c039332dd8e99bbe"
+            ]
+        ]
+    },
+    {
+        "id": "c039332dd8e99bbe",
+        "type": "mqtt out",
+        "z": "8000655a344eb07d",
+        "name": "MQTT Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 970,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]
