@@ -149,12 +149,24 @@
               "activePowerW": 42
             }
           },
-          "gridSide": {
-            "totalActivePowerW": 0,
-            "phaseAPowerW": 0,
-            "phaseBPowerW": 0,
-            "phaseCPowerW": 0
+          {
+            "gridSide": {
+              "phaseA": {
+                "voltageV": 226,
+                "powerW": 2
+              },
+              "phaseB": {
+                "voltageV": 226,
+                "powerW": 1
+              },
+              "phaseC": {
+                "voltageV": 228.6,
+                "powerW": 2
+              },
+              "totalActivePowerW": 5
+            }
           },
+
           "temperatures": {
             "dcTransformerTempC": 25,
             "heatsinkTempC": 137.5

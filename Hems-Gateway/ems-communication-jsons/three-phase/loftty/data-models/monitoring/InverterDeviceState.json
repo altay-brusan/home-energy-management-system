@@ -28,12 +28,20 @@
   },
 
   "gridSide": {
-    "totalActivePowerW": "number",           // 725 (low) + 790 (high) - Grid total power (1W, S32)
-    "phaseAPowerW": "number",                // 722 (low) + 787 (high) - Grid A-phase power (1W, S32)
-    "phaseBPowerW": "number",                // 723 (low) + 788 (high) - Grid B-phase power (1W, S32)
-    "phaseCPowerW": "number"                 // 724 (low) + 789 (high) - Grid C-phase power (1W, S32)
+    "phaseA": {
+      "voltageV": "number",        // 698 - Grid phase voltage A (0.1V)
+      "powerW": "number"           // 722 (low) + 787 (high)
+    },
+    "phaseB": {
+      "voltageV": "number",        // 699 - Grid phase voltage B (0.1V)
+      "powerW": "number"           // 723 (low) + 788 (high)
+    },
+    "phaseC": {
+      "voltageV": "number",        // 700 - Grid phase voltage C (0.1V)
+      "powerW": "number"           // 724 (low) + 789 (high)
+    },
+    "totalActivePowerW": "number" // 725 (low) + 790 (high)
   },
-
   "temperatures": {
     "dcTransformerTempC": "number",          // 640 - DC transformer temp (0.1°C, offset 1000)
     "heatsinkTempC": "number"                // 641 - Heat sink temp (0.1°C)
