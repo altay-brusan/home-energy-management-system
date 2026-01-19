@@ -46,9 +46,7 @@ class DeviceSettingsSignalRService {
   // App state tracking for reconnection
   private appStateSubscription: { remove: () => void } | null = null;
 
-  // LOCAL TESTING - change back to production URL
-  // Android Emulator: use 10.0.2.2 to reach host machine's localhost
-  private readonly HUB_URL = 'http://10.0.2.2:7163/deviceSettingsHub';
+  private readonly HUB_URL = 'https://hems-api-dev.oklidis.com.tr/deviceSettingsHub';
 
   /**
    * Subscribe to device settings updates (reference counted)

@@ -45,9 +45,7 @@ class PowerFlowService {
     private connectionListeners: Set<(state: SignalRConnectionState) => void> = new Set();
     private isConnecting = false;
 
-    // LOCAL TESTING - change back to 'https://hems-api-dev.oklidis.com.tr/powerFlowHub' for production
-    // Android Emulator: use 10.0.2.2 to reach host machine's localhost
-    private readonly HUB_URL = "http://10.0.2.2:7163/powerFlowHub";
+    private readonly HUB_URL = "https://hems-api-dev.oklidis.com.tr/powerFlowHub";
 
     /**
      * Lazy connection - Only connects when first stream is requested
