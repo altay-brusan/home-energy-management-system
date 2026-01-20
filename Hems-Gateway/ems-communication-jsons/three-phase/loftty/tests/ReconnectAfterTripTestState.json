@@ -1,0 +1,14 @@
+ReconnectAfterTripTestState
+{
+  "version": 1,
+
+  "faultRecoveryRiseRateSeconds": "number",  // 516 - 故障恢复上升速率 Fault recovery rate of rise (R/W)
+
+  "voltageHighV": "number",                  // 450 - 重连电网过压保护点 Reconnect overvoltage (R/W) 0.1V
+
+  "voltageLowV": "number",                   // 451 - 重连电网欠压保护点 Reconnect undervoltage (R/W) 0.1V
+
+  "frequencyHighHz": "number",               // 452 - 重连电网过频保护点 Reconnect overfrequency (R/W) 0.01Hz
+
+  "frequencyLowHz": "number"                 // 453 - 重连电网欠频保护点 Reconnect underfrequency (R/W) 0.01Hz
+}

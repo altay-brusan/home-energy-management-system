@@ -817,13 +817,21 @@
         "pairedWith": "setGridCodeConfig",
         "response": {
           "kind": "GridCodeConfigState",
-          "timestampUtc": "2025-12-18T07:34:42.841Z",
+          "timestampUtc": "2026-01-20T06:21:22.617Z",
           "version": 1,
           "gatewayId": "EC100-GW-001",
           "gridModeRaw": 0,
           "gridFrequencyHz": 50,
-          "outputVoltageLevelCode": 0,
+          "outputVoltageLevelCode": 1,
+          "gridPowerRiseRateSeconds": 60,
           "normalConnect": {
+            "voltageHighV": 253,
+            "voltageLowV": 207,
+            "frequencyHighHz": 51,
+            "frequencyLowHz": 49
+          },
+          "reconnectAfterTrip": {
+            "faultRecoveryRiseRateSeconds": 60,
             "voltageHighV": 265,
             "voltageLowV": 185,
             "frequencyHighHz": 51.5,
@@ -831,8 +839,8 @@
           },
           "reconnectionTimeSeconds": 60,
           "powerFactorTarget": 100,
-          "activePowerRegulationPercentPerStep": null,
-          "reactivePowerRegulationPercentPerStep": 0
+          "activePowerRegulationPercent": 10,
+          "reactivePowerRegulationPercent": 10
         }
       },
       {
@@ -844,17 +852,26 @@
           "gridModeRaw": 0,
           "gridFrequencyHz": 50,
           "outputVoltageLevelCode": 1,
+          "gridPowerRiseRateSeconds": 60,
           "normalConnect": {
             "voltageHighV": 253,
             "voltageLowV": 207,
             "frequencyHighHz": 51,
             "frequencyLowHz": 49
           },
+          "reconnectAfterTrip": {
+            "faultRecoveryRiseRateSeconds": 60,
+            "voltageHighV": 265,
+            "voltageLowV": 185,
+            "frequencyHighHz": 51.5,
+            "frequencyLowHz": 48
+          },
           "reconnectionTimeSeconds": 60,
           "powerFactorTarget": 100,
-          "activePowerRegulationPercentPerStep": 10,
-          "reactivePowerRegulationPercentPerStep": 10
-        }
+          "activePowerRegulationPercent": 10,
+          "reactivePowerRegulationPercent": 10
+        },
+        "note": "All fields optional. normalConnect and reconnectAfterTrip support partial updates."
       },
       {
         "rpcName": "getInverterAdvancedFunctionConfig",
