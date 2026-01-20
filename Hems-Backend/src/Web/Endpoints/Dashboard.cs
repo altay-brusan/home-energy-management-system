@@ -1,15 +1,12 @@
 using Hems_Backend.Application.Common.Models;
-//using Hems_Backend.Application.Dashboard.Queries.GetChargeDischarge;
-//using Hems_Backend.Application.Dashboard.Queries.GetEnergyConsumption;
-//using Hems_Backend.Application.Dashboard.Queries.GetEnergyData;
-//using Hems_Backend.Application.Dashboard.Queries.GetEnergyProduction;
 using Hems_Backend.Application.Dashboard.Queries.GetEnergyRevenue;
 using Hems_Backend.Application.Dashboard.Queries.GetGridPerformance;
 using Hems_Backend.Application.Dashboard.Queries.GetGridPerformanceSummary;
-//using Hems_Backend.Application.Dashboard.Queries.GetHero;
 using Hems_Backend.Application.Dashboard.Queries.GetLifetimeEnergy;
+using Hems_Backend.Application.Dashboard.Queries.GetEnergySourceMix;
 using Hems_Backend.Application.Dashboard.Queries.GetPowerMetrics;
 using Hems_Backend.Application.Dashboard.Queries.GetSoc;
+using Hems_Backend.Application.Dashboard.Queries.GetSocHistory;
 using Hems_Backend.Application.Dashboard.Queries.GetSoh;
 using Hems_Backend.Application.Dashboard.Queries.GetTodayEnergySummary;
 using Hems_Backend.Application.Devices.Queries.GetDeviceComponentsStatus;
@@ -28,12 +25,14 @@ public class Dashboard : EndpointGroupBase
             .RequireAuthorization()
             .MapGet(SOC, "Soc")
             .MapGet(SOH, "Soh")
+            .MapGet(SocHistory, "SocHistory")
             .MapGet(TodayEnergySummary, "TodayEnergySummary")
             .MapGet(GridPerformanceSummary, "GridPerformanceSummary")
             .MapGet(GridPerformance, "GridPerformance")
             .MapGet(EnergyRevenue, "EnergyRevenue")
             .MapGet(LifetimeEnergy, "LifetimeEnergy")
             .MapGet(PowerAndEnergyMetrics, "PowerAndEnergyMetrics")
+            .MapGet(EnergySourceMix, "EnergySourceMix")
             .MapGet(GetDeviceComponentsStatus, "DeviceComponentsStatus");
     }
 
@@ -63,6 +62,20 @@ public class Dashboard : EndpointGroupBase
         return await sender.Send(query);
     }
 
+    [Authorize]
+    public async Task<SocHistoryResponseDto> SocHistory(
+        ISender sender,
+        [FromQuery] Guid deviceId,
+        [FromQuery] DateOnly date)
+    {
+        var query = new GetSocHistoryQuery
+        {
+            DeviceId = deviceId,
+            Date = date
+        };
+
+        return await sender.Send(query);
+    }
 
     [Authorize]
     public async Task<DailyEnergySummaryDto> TodayEnergySummary(
@@ -178,6 +191,21 @@ public class Dashboard : EndpointGroupBase
         var query = new GetLifetimeEnergyQuery
         {
             DeviceId = deviceId
+        };
+
+        return await sender.Send(query);
+    }
+
+    [Authorize]
+    public async Task<EnergySourceMixDto> EnergySourceMix(
+        ISender sender,
+        [FromQuery] Guid deviceId,
+        [FromQuery] DateOnly date)
+    {
+        var query = new GetEnergySourceMixQuery
+        {
+            DeviceId = deviceId,
+            Date = date
         };
 
         return await sender.Send(query);
