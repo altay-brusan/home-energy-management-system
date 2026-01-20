@@ -540,6 +540,7 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
             "InverterAdvancedFunctionConfigState" => new InverterAdvancedFunctionConfigRequest(),
             "ExternalRelayConfigState" => new ExternalRelayConfigRequest(),
             "GeneratorSmartLoadOverride" => new GeneratorSmartLoadOverrideRequest(),
+            "SystemConnectionStructure" => new SystemConnectionStructureRequest(),
             _ => throw new NotSupportedException($"Unsupported RPC kind: {rpcKind}")
         };
     }
@@ -579,6 +580,9 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
                 break;
             case GeneratorSmartLoadOverrideRequest generatorSmartLoadOverrideRequest:
                 PopulateGeneratorSmartLoadOverrideField(generatorSmartLoadOverrideRequest, parts, value);
+                break;
+            case SystemConnectionStructureRequest systemConnectionRequest:
+                PopulateSystemConnectionStructureField(systemConnectionRequest, parts, value);
                 break;
             default:
                 throw new NotSupportedException($"Unsupported request type: {request.GetType().Name}");
@@ -1158,6 +1162,110 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
         {
             case "forceSmartLoadOn":
                 request.ForceSmartLoadOn = Convert.ToBoolean(value);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Populates a field in SystemConnectionStructureRequest
+    /// Handles both top-level fields and nested fields under inverter.acSide
+    /// </summary>
+    /// <summary>
+    /// Populates a field in SystemConnectionStructureRequest
+    /// Supports both flat structure (root-level fields) and nested paths
+    /// </summary>
+    private static void PopulateSystemConnectionStructureField(SystemConnectionStructureRequest request, string[] parts, object value)
+    {
+        if (parts.Length == 0) return;
+
+        var section = parts[0];
+
+        switch (section)
+        {
+            // Root-level fields (flat structure as per RPC spec)
+            case "gridPhaseSequence":
+                request.GridPhaseSequence = value;  // Can be int or string
+                break;
+            case "gridVoltageLevelCode":
+                request.GridVoltageLevelCode = Convert.ToInt32(value);
+                break;
+            case "gridType":
+                request.GridType = Convert.ToInt32(value);
+                break;
+            case "gridStandardRaw":
+                request.GridStandardRaw = Convert.ToInt32(value);
+                break;
+            case "gridFrequencyHz":
+                request.GridFrequencyHz = Convert.ToInt32(value);
+                break;
+            case "batteryControlMode":
+                request.BatteryControlMode = value;  // Can be int or string
+                break;
+            case "exportLimitMode":
+                request.ExportLimitMode = value;  // Can be int or string
+                break;
+            case "itSystemNeutralUngrounded":
+                request.ItSystemNeutralUngrounded = Convert.ToBoolean(value);
+                break;
+
+            // Nested fields under generator
+            case "generator":
+                request.Generator ??= new SystemConnectionGeneratorConfig();
+                if (parts.Length >= 2)
+                {
+                    SetSystemConnectionGeneratorProperty(request.Generator, parts[1], value);
+                }
+                break;
+
+            // Nested fields under acSide (direct child of root)
+            case "acSide":
+                request.AcSide ??= new SystemConnectionAcSideConfig();
+                if (parts.Length >= 2)
+                {
+                    SetSystemConnectionAcSideProperty(request.AcSide, parts[1], value);
+                }
+                break;
+
+            // Nested fields under inverter.acSide (for backwards compatibility)
+            case "inverter":
+                request.Inverter ??= new SystemConnectionInverterConfig();
+                if (parts.Length >= 2 && parts[1] == "acSide")
+                {
+                    request.Inverter.AcSide ??= new SystemConnectionAcSideConfig();
+                    if (parts.Length >= 3)
+                    {
+                        SetSystemConnectionAcSideProperty(request.Inverter.AcSide, parts[2], value);
+                    }
+                }
+                break;
+        }
+    }
+
+    private static void SetSystemConnectionGeneratorProperty(SystemConnectionGeneratorConfig generator, string propertyName, object value)
+    {
+        switch (propertyName)
+        {
+            case "inputMode":
+                generator.InputMode = value;  // Can be int or string
+                break;
+            case "connectedToGridInput":
+                generator.ConnectedToGridInput = Convert.ToBoolean(value);
+                break;
+        }
+    }
+
+    private static void SetSystemConnectionAcSideProperty(SystemConnectionAcSideConfig acSide, string propertyName, object value)
+    {
+        switch (propertyName)
+        {
+            case "itSystemNeutralUngrounded":
+                acSide.ItSystemNeutralUngrounded = Convert.ToBoolean(value);
+                break;
+            case "gridPhaseSequence":
+                acSide.GridPhaseSequence = value;  // Can be int or string
+                break;
+            case "gridVoltageLevelCode":
+                acSide.GridVoltageLevelCode = Convert.ToInt32(value);
                 break;
         }
     }
