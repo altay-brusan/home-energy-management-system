@@ -40,7 +40,7 @@ class SignalRService {
     
     // LOCAL TESTING - change back to 'https://hems-api-dev.oklidis.com.tr/deviceNotificationHub' for production
     // Android Emulator: use 10.0.2.2 to reach host machine's localhost
-    private readonly HUB_URL = "http://10.0.2.2:7163/deviceNotificationHub";
+    private readonly HUB_URL = "https://hems-api-dev.oklidis.com.tr/deviceNotificationHub";
     
     async connect(siteId?: string): Promise<void> {
         if (this.connection?.state === HubConnectionState.Connected) {

@@ -803,6 +803,15 @@
         "discharging": "Discharging"
       }
     },
+    "demandBreakdown": {
+      "title": "Demand Breakdown",
+      "totalDemand": "Total Demand",
+      "sources": {
+        "solar": "Solar",
+        "battery": "Battery",
+        "grid": "Grid"
+      }
+    },
     "dashboardChargeDischargeChart": {
       "title": "Charge & Discharge Power (kW)",
       "legend": {
@@ -852,6 +861,16 @@
     "gridPerformanceDetail": {
       "selectStartDate": "Start Date",
       "selectEndDate": "End Date"
+    },
+    "socHistoryDetail": {
+      "title": "Battery History",
+      "selectDate": "Select Date",
+      "selectDatePrompt": "Select a date to view data",
+      "selectDateDescription": "Choose a day to see hourly SOC data",
+      "chartTitle": "State of Charge (%)",
+      "min": "Min",
+      "avg": "Avg",
+      "max": "Max"
     },
     "dashboardSidebar": {
       "header": "My Houses",

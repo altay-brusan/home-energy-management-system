@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { View, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import Svg, { Path } from 'react-native-svg';
+import { useNavigation } from '@react-navigation/native';
 import { useI18n } from '../../../../../hooks/useI18n';
 import { useDashboardRefresh } from '../../../../../hooks/useDashboardRefresh';
 import { dashboardService } from '../../../../../api/services/dashboardService';
@@ -10,11 +12,25 @@ import { getThemeColors } from '../../../../../theme/constants';
 import { createStyles } from './BatteryStateCard.styles';
 import { BatteryStateCardProps } from './BatteryStateCard.types';
 
+// History Icon Component
+const HistoryIcon: React.FC<{ color: string }> = ({ color }) => (
+  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
 const BatteryStateCard: React.FC<BatteryStateCardProps> = ({ deviceId }) => {
   const mode = useThemeStore(s => s.mode);
   const isDark = mode === 'dark';
   const COLORS = getThemeColors(isDark);
   const { t } = useI18n();
+  const navigation = useNavigation();
   const styles = createStyles(COLORS);
 
   const [loading, setLoading] = useState(true);
@@ -98,13 +114,22 @@ const BatteryStateCard: React.FC<BatteryStateCardProps> = ({ deviceId }) => {
     progressColor = COLORS.accent;
   }
 
+  const handleHistoryPress = () => {
+    navigation.navigate('SocHistoryDetail' as never);
+  };
+
   return (
     <Animated.View entering={FadeInDown.delay(300).duration(600)} style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>{t('batteryStateCard.title')}</Text>
-        <Text style={[styles.percentage, { color: progressColor }]}>
-          {Math.round(soc)}%
-        </Text>
+        <View style={styles.headerRight}>
+          <Text style={[styles.percentage, { color: progressColor }]}>
+            {Math.round(soc)}%
+          </Text>
+          <TouchableOpacity onPress={handleHistoryPress} style={styles.historyButton}>
+            <HistoryIcon color={COLORS.accent} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.progressBarContainer}>

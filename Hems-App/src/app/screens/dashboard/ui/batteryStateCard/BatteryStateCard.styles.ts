@@ -15,6 +15,11 @@ export const createStyles = (COLORS: Record<string, string>) => {
       alignItems: 'center',
       marginBottom: SPACING.md,
     },
+    headerRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.sm,
+    },
     title: {
       fontSize: TYPOGRAPHY.lg,
       fontWeight: '700',
@@ -23,6 +28,9 @@ export const createStyles = (COLORS: Record<string, string>) => {
     percentage: {
       fontSize: TYPOGRAPHY.xl,
       fontWeight: '700',
+    },
+    historyButton: {
+      padding: 4,
     },
     progressBarContainer: {
       height: 8,
