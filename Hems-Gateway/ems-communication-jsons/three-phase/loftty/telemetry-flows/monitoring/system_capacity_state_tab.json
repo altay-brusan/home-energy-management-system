@@ -1,6 +1,6 @@
 [
     {
-        "id": "f4c7e7e8f7dce6c4",
+        "id": "d85d9e44ebe439b1",
         "type": "tab",
         "label": "SystemCapacityState",
         "disabled": false,
@@ -9,7 +9,7 @@
     {
         "id": "4db5c16e6f2d8c39",
         "type": "comment",
-        "z": "f4c7e7e8f7dce6c4",
+        "z": "d85d9e44ebe439b1",
         "name": "Periodic polling (12 hours) - sends only if changed",
         "info": "",
         "x": 250,
@@ -19,7 +19,7 @@
     {
         "id": "c5024eb19e7c051c",
         "type": "comment",
-        "z": "f4c7e7e8f7dce6c4",
+        "z": "d85d9e44ebe439b1",
         "name": "RPC Trigger (getSystemCapacityState) - always responds",
         "info": "",
         "x": 250,
@@ -29,7 +29,7 @@
     {
         "id": "588c0262fe9a994c",
         "type": "inject",
-        "z": "f4c7e7e8f7dce6c4",
+        "z": "d85d9e44ebe439b1",
         "name": "Poll SystemCapacityState (12hours)",
         "props": [
             {
@@ -59,9 +59,11 @@
     {
         "id": "3f72382ac3ff4b3a",
         "type": "link in",
-        "z": "f4c7e7e8f7dce6c4",
+        "z": "d85d9e44ebe439b1",
         "name": "RPC getSystemCapacityState",
-        "links": [],
+        "links": [
+            "rpc_scs_link_out"
+        ],
         "x": 155,
         "y": 220,
         "wires": [
@@ -73,7 +75,7 @@
     {
         "id": "6cce8a309e0da02c",
         "type": "function",
-        "z": "f4c7e7e8f7dce6c4",
+        "z": "d85d9e44ebe439b1",
         "name": "Prep Parallel Reads",
         "func": "// Read all capacity-related registers in parallel\nconst reads = [\n    { name: 'deviceType', address: 100, quantity: 1 },\n    { name: 'ratedPower', address: 120, quantity: 2 },  // 32-bit\n    { name: 'batteryCapacity', address: 202, quantity: 1 },\n    { name: 'batteryMode', address: 211, quantity: 1 },\n    { name: 'batterySoc', address: 688, quantity: 1 }\n];\n\nconst messages = reads.map(r => ({\n    payload: {\n        fc: 3,\n        unitid: 1,\n        address: r.address,\n        quantity: r.quantity\n    },\n    readName: r.name\n}));\n\nreturn [messages];",
         "outputs": 1,
@@ -93,7 +95,7 @@
     {
         "id": "af791e41dd15836d",
         "type": "modbus-flex-getter",
-        "z": "f4c7e7e8f7dce6c4",
+        "z": "d85d9e44ebe439b1",
         "name": "Read Capacity Regs",
         "showStatusActivities": true,
         "showErrors": true,
@@ -119,7 +121,7 @@
     {
         "id": "81d8127709b81336",
         "type": "function",
-        "z": "f4c7e7e8f7dce6c4",
+        "z": "d85d9e44ebe439b1",
         "name": "Collect All Reads",
         "func": "const flowKey = 'scs_reads';\nlet collected = flow.get(flowKey) || {};\nlet expectedCount = 5;\n\nlet data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data) || data.length < 1) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Read failed: \" + msg.readName });\n    return null;\n}\n\nconst readName = msg.readName;\n\n// Store the data based on type\nif (readName === 'ratedPower') {\n    // 32-bit value (2 registers)\n    collected[readName] = data;\n} else {\n    // Single register reads\n    collected[readName] = data[0];\n}\n\nflow.set(flowKey, collected);\n\nconst collectedCount = Object.keys(collected).length;\nnode.status({ fill: \"blue\", shape: \"dot\", text: `Collected ${collectedCount}/${expectedCount}` });\n\nif (collectedCount >= expectedCount) {\n    flow.set(flowKey, null);\n    msg.collectedData = collected;\n    msg.payload = collected;\n    return msg;\n}\n\nreturn null;",
         "outputs": 1,
@@ -139,7 +141,7 @@
     {
         "id": "74813bfbf0b48e5e",
         "type": "function",
-        "z": "f4c7e7e8f7dce6c4",
+        "z": "d85d9e44ebe439b1",
         "name": "Build SystemCapacityState JSON",
         "func": "// Build SystemCapacityState from Modbus reads\n\nconst data = msg.collectedData;\n\nif (!data) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"No data\" });\n    return null;\n}\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\nconst serialNumber = global.get(\"INVERTER_SN\") || \"Unknown\";\n\n// Parse device type\nconst deviceType = data.deviceType;\n\n// Parse rated power (32-bit: high word << 16 | low word)\nconst ratedPowerRaw = (data.ratedPower[1] << 16) | data.ratedPower[0];\nconst ratedPowerW = ratedPowerRaw / 10;  // 0.1W scale\nconst ratedPowerKw = ratedPowerW / 1000;\n\n// Parse battery data\nconst capacityAh = data.batteryCapacity;\nconst socPercent = data.batterySoc;\nconst controlMode = data.batteryMode;\n\n// Assume nominal voltage (typical for LFP batteries)\nconst nominalVoltageV = 51.2;  // Standard LFP voltage\nconst capacityKwh = (capacityAh * nominalVoltageV) / 1000;\n\n// Build state object\nconst state = {\n    kind: \"SystemCapacityState\",\n    version: 1,\n    timestampUtc: new Date().toISOString(),\n    gatewayId: gatewayId,\n    inverterSerialNumber: serialNumber,\n    \n    inverter: {\n        deviceType: deviceType,\n        ratedPowerW: ratedPowerW,\n        ratedPowerKw: ratedPowerKw\n    },\n    \n    battery: {\n        capacityAh: capacityAh,\n        nominalVoltageV: nominalVoltageV,\n        capacityKwh: capacityKwh,\n        socPercent: socPercent,\n        controlMode: controlMode\n    },\n    \n    rawRegisters: {\n        reg100: deviceType,\n        reg120: data.ratedPower[0],\n        reg121: data.ratedPower[1],\n        reg202: capacityAh,\n        reg211: controlMode,\n        reg688: socPercent\n    }\n};\n\n// Create a hash for change detection\nconst stateHash = JSON.stringify({\n    deviceType: deviceType,\n    ratedPowerW: ratedPowerW,\n    capacityAh: capacityAh,\n    socPercent: socPercent,\n    controlMode: controlMode\n});\n\nmsg.currentStateHash = stateHash;\nmsg.previousStateHash = flow.get(\"lastCapacityStateHash\");\n\n// Update stored hash\nflow.set(\"lastCapacityStateHash\", stateHash);\n\nmsg.payload = state;\nmsg.state = state;\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `${ratedPowerKw}kW / ${capacityAh}Ah (${socPercent}%)` });\n\nreturn msg;",
         "outputs": 1,
@@ -160,7 +162,7 @@
     {
         "id": "4a157f9635615ec0",
         "type": "function",
-        "z": "f4c7e7e8f7dce6c4",
+        "z": "d85d9e44ebe439b1",
         "name": "Check State Change",
         "func": "// Check if capacity state has changed\n// RPC requests always get response\n// Periodic polls only send to ThingsBoard if value changed\n\nconst currentHash = msg.currentStateHash;\nconst previousHash = msg.previousStateHash;\nconst isRpc = msg.isRpcRequest === true;\n\n// Determine if state changed\nconst stateChanged = (previousHash === undefined || previousHash === null || currentHash !== previousHash);\n\nmsg.stateChanged = stateChanged;\n\n// Debug status\nif (stateChanged) {\n    node.status({ fill: \"green\", shape: \"dot\", text: \"State changed - sending to TB\" });\n} else {\n    node.status({ fill: \"grey\", shape: \"ring\", text: \"No change\" });\n}\n\n// Output routing:\n// Output 1: Debug (always)\n// Output 2: MQTT ThingsBoard (only if changed)\n// Output 3: RPC Response (only if RPC request)\n\nconst debugMsg = { ...msg };\nconst mqttMsg = stateChanged ? { ...msg } : null;\nconst rpcMsg = isRpc ? { ...msg } : null;\n\nreturn [debugMsg, mqttMsg, rpcMsg];",
         "outputs": 3,
@@ -184,7 +186,7 @@
     {
         "id": "a4f027486857f811",
         "type": "debug",
-        "z": "f4c7e7e8f7dce6c4",
+        "z": "d85d9e44ebe439b1",
         "name": "SystemCapacityState JSON",
         "active": false,
         "tosidebar": true,
@@ -201,7 +203,7 @@
     {
         "id": "3b088688f5561011",
         "type": "mqtt out",
-        "z": "f4c7e7e8f7dce6c4",
+        "z": "d85d9e44ebe439b1",
         "name": "Send to ThingsBoard (if changed)",
         "topic": "v1/devices/me/telemetry",
         "qos": "1",
@@ -219,7 +221,7 @@
     {
         "id": "8e46008efe5241c7",
         "type": "function",
-        "z": "f4c7e7e8f7dce6c4",
+        "z": "d85d9e44ebe439b1",
         "name": "Prepare RPC Response",
         "func": "// Only respond if this came from RPC\nif (!msg.rpcResponseTopic) {\n    return null;\n}\n\nconst state = msg.state || msg.payload;\n\nmsg.payload = state;\nmsg.topic = msg.rpcResponseTopic;\n\nreturn msg;",
         "outputs": 1,
@@ -239,7 +241,7 @@
     {
         "id": "1a3451eab82a30fb",
         "type": "mqtt out",
-        "z": "f4c7e7e8f7dce6c4",
+        "z": "d85d9e44ebe439b1",
         "name": "RPC Response",
         "topic": "",
         "qos": "1",
@@ -289,7 +291,7 @@
         "type": "mqtt-broker",
         "name": "ThingsBoard Development Env.",
         "broker": "REDACTED_HOST",
-        "port": "31883",
+        "port": "31884",
         "tls": "",
         "clientid": "",
         "autoConnect": true,
