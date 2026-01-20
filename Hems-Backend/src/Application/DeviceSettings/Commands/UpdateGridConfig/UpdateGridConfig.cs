@@ -346,6 +346,27 @@ public class UpdateGridConfigCommandHandler : IRequestHandler<UpdateGridConfigCo
             result.Success = result.FailedCount == 0;
             result.Duration = DateTime.UtcNow - startTime;
 
+            // Record operation in DeviceOperationHistory for audit trail
+            var operationHistory = new DeviceOperationHistory
+            {
+                DeviceId = request.DeviceId,
+                CorrelationId = correlationId,
+                Status = result.Success ? "completed" : (result.SuccessCount > 0 ? "partial" : "failed"),
+                TotalParameters = result.TotalParameters,
+                SuccessCount = result.SuccessCount,
+                FailedCount = result.FailedCount,
+                SkippedCount = 0,
+                FailedParametersJson = result.FailedParameters.Count > 0
+                    ? System.Text.Json.JsonSerializer.Serialize(result.FailedParameters)
+                    : null,
+                StartedAt = startTime,
+                CompletedAt = DateTime.UtcNow,
+                Duration = result.Duration,
+                WasCancelled = false
+            };
+            _context.DeviceOperationHistories.Add(operationHistory);
+            await _context.SaveChangesAsync(CancellationToken.None);
+
             return result;
         }
         finally

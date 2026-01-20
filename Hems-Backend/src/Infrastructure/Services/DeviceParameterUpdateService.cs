@@ -572,6 +572,27 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
             result.Success = result.FailedCount == 0;
             result.Duration = DateTime.UtcNow - startTime;
 
+            // Record operation in DeviceOperationHistory for audit trail
+            var operationHistory = new DeviceOperationHistory
+            {
+                DeviceId = deviceId,
+                CorrelationId = operationId.ToString(),
+                Status = result.Success ? "completed" : (result.SuccessCount > 0 ? "partial" : "failed"),
+                TotalParameters = result.TotalParameters,
+                SuccessCount = result.SuccessCount,
+                FailedCount = result.FailedCount,
+                SkippedCount = 0,
+                FailedParametersJson = result.FailedParameters.Count > 0
+                    ? System.Text.Json.JsonSerializer.Serialize(result.FailedParameters)
+                    : null,
+                StartedAt = startTime,
+                CompletedAt = DateTime.UtcNow,
+                Duration = result.Duration,
+                WasCancelled = false
+            };
+            context.DeviceOperationHistories.Add(operationHistory);
+            await context.SaveChangesAsync(updateToken);
+
             // Mark operation as completed
             _operationStateService.CompleteOperation(operationId, result.Success);
 

@@ -179,7 +179,7 @@ CROSS JOIN (VALUES
     ('GridPeakShaving', 'GridPeakShavingEnabled', 'Enable/Disable Grid Peak Shaving', 'Boolean', '', 'false', 1),
     ('GridPeakShaving', 'GridPeakShavingLimitPower', 'Grid Peak Shaving Limit Power', 'Decimal', 'W', '2000', 2),
     ('GridStandard', 'GridStandard', 'Grid Standard', 'Text', '', 'General', 1),
-    ('GridStandard', 'GridFrequency', 'Grid Frequency', 'Decimal', 'Hz', '50', 2),
+    ('GridStandard', 'GridFrequency', 'Grid Frequency (50Hz or 60Hz)', 'Text', 'Hz', '50', 2),
     ('GridStandard', 'OutputVoltageLevel', 'Output Voltage Level', 'Text', '', '230V', 3),
     ('GridStandard', 'PhaseType', 'Grid Phase Sequence (ABC/ACB)', 'Text', '', 'ABC_0_120_240', 4),
     ('GridStandard', 'GridLevel', 'Grid Level (LN/LL Voltage)', 'Text', '', 'LN:230VAC LL:400VAC', 5),
