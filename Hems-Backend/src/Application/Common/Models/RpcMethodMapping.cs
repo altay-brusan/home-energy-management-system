@@ -7,6 +7,78 @@ namespace Hems_Backend.Application.Common.Models;
 public static class RpcMethodMapping
 {
     /// <summary>
+    /// RPC methods that cause the device to restart when invoked.
+    /// For these methods, we use fire-and-forget pattern (no verification) since
+    /// the device will restart and won't be able to respond.
+    /// </summary>
+    public static readonly HashSet<string> RestartCausingMethods = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "setGridCodeConfig",
+        "setSystemConnectionStructure"
+    };
+
+    /// <summary>
+    /// Parameters that belong to Grid Configuration.
+    /// These parameters use restart-causing RPC methods and should be updated via
+    /// the dedicated grid-config endpoint with fire-and-forget pattern.
+    /// </summary>
+    public static readonly HashSet<string> GridConfigParameters = new(StringComparer.OrdinalIgnoreCase)
+    {
+        // From setGridCodeConfig
+        "GridStandard",
+        "GridFrequency",
+        "OutputVoltageLevel",
+        "GridVoltageHigh",
+        "GridVoltageLow",
+        "GridFrequencyHigh",
+        "GridFrequencyLow",
+        "ReconnectionTime",
+        "PowerFactorTarget",
+        "ActivePowerRegulation",
+        "ReactivePowerRegulation",
+
+        // From setSystemConnectionStructure
+        "PhaseType",
+        "GridLevel",
+        "ITSystemNeutralGrounded"
+    };
+
+    /// <summary>
+    /// Checks if a parameter is a grid configuration parameter.
+    /// Grid config parameters cause device restart when updated.
+    /// </summary>
+    /// <param name="parameterName">The parameter name</param>
+    /// <returns>True if the parameter is a grid configuration parameter</returns>
+    public static bool IsGridConfigParameter(string parameterName)
+    {
+        return GridConfigParameters.Contains(parameterName);
+    }
+
+    /// <summary>
+    /// Checks if an RPC method causes device restart.
+    /// </summary>
+    /// <param name="rpcMethod">The RPC method name</param>
+    /// <returns>True if the method causes device restart</returns>
+    public static bool IsRestartCausingMethod(string rpcMethod)
+    {
+        return RestartCausingMethods.Contains(rpcMethod);
+    }
+
+    /// <summary>
+    /// Checks if a parameter uses an RPC method that causes device restart.
+    /// </summary>
+    /// <param name="parameterName">The parameter name</param>
+    /// <returns>True if updating this parameter causes device restart</returns>
+    public static bool IsRestartCausingParameter(string parameterName)
+    {
+        if (TryGetMapping(parameterName, out var config) && config != null)
+        {
+            return IsRestartCausingMethod(config.RpcMethod);
+        }
+        return false;
+    }
+
+    /// <summary>
     /// Configuration for a parameter's RPC mapping
     /// </summary>
     public record RpcMethodConfig

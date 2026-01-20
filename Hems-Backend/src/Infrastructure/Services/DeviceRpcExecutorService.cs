@@ -1656,4 +1656,147 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
     }
 
     #endregion
+
+    #region Fire-and-Forget Methods for Restart-Causing Parameters
+
+    /// <summary>
+    /// Executes a fire-and-forget parameter update for restart-causing parameters.
+    /// Only sends the write RPC without waiting for verification (device will restart).
+    /// This is used for parameters like GridStandard that cause device restart.
+    /// </summary>
+    public async Task<RpcExecutionResult> ExecuteFireAndForgetUpdateAsync(
+        Guid tbDeviceId,
+        string parameterName,
+        string value,
+        CancellationToken cancellationToken = default)
+    {
+        var stopwatch = Stopwatch.StartNew();
+
+        // Get RPC method mapping
+        if (!RpcMethodMapping.TryGetMapping(parameterName, out var config) || config == null)
+        {
+            return new RpcExecutionResult
+            {
+                Success = false,
+                ErrorMessage = $"No RPC mapping found for parameter: {parameterName}",
+                ErrorCategory = RpcErrorCategory.MappingNotFound,
+                RetryAttempts = 0,
+                TotalDurationMs = stopwatch.ElapsedMilliseconds
+            };
+        }
+
+        // Verify this is actually a restart-causing method
+        if (!RpcMethodMapping.IsRestartCausingMethod(config.RpcMethod))
+        {
+            _logger.LogWarning(
+                "ExecuteFireAndForgetUpdateAsync called for non-restart-causing parameter {ParameterName} (RPC: {RpcMethod}). " +
+                "This method should only be used for restart-causing parameters.",
+                parameterName, config.RpcMethod);
+        }
+
+        _logger.LogInformation(
+            "🔄 Fire-and-forget RPC for restart-causing parameter: DeviceId={DeviceId}, Parameter={ParameterName}, " +
+            "RpcMethod={RpcMethod}, Value={Value}",
+            tbDeviceId, parameterName, config.RpcMethod, value);
+
+        // Build request
+        var mappedValue = config.ValueMapper != null ? config.ValueMapper(value) : value;
+        var request = BuildRequestObject(config.RpcKind, config.FieldPath, mappedValue);
+        var requestDict = SerializeToDict(request);
+
+        try
+        {
+            // Send request - device will restart so we only care if the write was sent
+            // Use shorter timeout since we don't expect a full verification cycle
+            var updateResponse = await _tbService.SendTwoWayRpcAsync(
+                deviceId: tbDeviceId,
+                method: config.RpcMethod,
+                parameters: requestDict,
+                timeoutMs: 30000, // 30 seconds - enough to send write, not wait for verify
+                cancellationToken: cancellationToken
+            );
+
+            // For restart-causing parameters, we consider it successful if the RPC was accepted
+            // The device may or may not respond before restarting
+            if (updateResponse != null && updateResponse.Success)
+            {
+                _logger.LogInformation(
+                    "✅ Fire-and-forget RPC sent successfully for {ParameterName}. Device will restart.",
+                    parameterName);
+
+                return new RpcExecutionResult
+                {
+                    Success = true,
+                    RpcMethod = config.RpcMethod,
+                    Response = updateResponse.Response,
+                    ErrorCategory = RpcErrorCategory.None,
+                    RetryAttempts = 0,
+                    TotalDurationMs = stopwatch.ElapsedMilliseconds
+                };
+            }
+
+            // If we got a response but it wasn't successful, log but still return info
+            var errorMessage = GetDetailedErrorMessage(updateResponse, config.RpcMethod);
+            _logger.LogWarning(
+                "⚠️ Fire-and-forget RPC response for {ParameterName}: {ErrorMessage}. " +
+                "Device may still restart if write was partially processed.",
+                parameterName, errorMessage);
+
+            return new RpcExecutionResult
+            {
+                Success = false,
+                ErrorMessage = errorMessage,
+                RpcMethod = config.RpcMethod,
+                ErrorCategory = CategorizeError(updateResponse),
+                RetryAttempts = 0,
+                TotalDurationMs = stopwatch.ElapsedMilliseconds
+            };
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // For restart-causing parameters, timeout or connection loss might actually mean
+            // the device is restarting, so we log but return a softer error
+            var errorCategory = CategorizeException(ex);
+
+            // If it's a timeout or network error, the device might have restarted
+            if (errorCategory == RpcErrorCategory.Timeout || errorCategory == RpcErrorCategory.NetworkError)
+            {
+                _logger.LogInformation(
+                    "🔄 Fire-and-forget RPC for {ParameterName} ended with {ErrorCategory}. " +
+                    "This may indicate the device has started restarting.",
+                    parameterName, errorCategory);
+
+                // Consider this a "soft success" - the RPC was likely received before restart
+                return new RpcExecutionResult
+                {
+                    Success = true,
+                    ErrorMessage = $"RPC sent, but device may have started restarting: {ex.Message}",
+                    RpcMethod = config.RpcMethod,
+                    ErrorCategory = errorCategory,
+                    RetryAttempts = 0,
+                    TotalDurationMs = stopwatch.ElapsedMilliseconds
+                };
+            }
+
+            _logger.LogError(ex,
+                "❌ Fire-and-forget RPC failed for {ParameterName}: {ErrorCategory}",
+                parameterName, errorCategory);
+
+            return new RpcExecutionResult
+            {
+                Success = false,
+                ErrorMessage = $"RPC execution failed: {ex.Message}",
+                RpcMethod = config.RpcMethod,
+                ErrorCategory = errorCategory,
+                RetryAttempts = 0,
+                TotalDurationMs = stopwatch.ElapsedMilliseconds
+            };
+        }
+    }
+
+    #endregion
 }

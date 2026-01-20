@@ -76,6 +76,22 @@ public class UpdateDeviceParametersCommandHandler : IRequestHandler<UpdateDevice
             };
         }
 
+        // Check if device is currently restarting (from grid config update)
+        if (_deviceLockService.IsDeviceRestarting(request.DeviceId))
+        {
+            var restartInfo = _deviceLockService.GetRestartInfo(request.DeviceId);
+            _logger.LogWarning(
+                "Device {DeviceId} is currently restarting. Estimated available at: {EstimatedAvailableAt}",
+                request.DeviceId, restartInfo?.EstimatedAvailableAt);
+
+            return new UpdateDeviceParametersResult
+            {
+                Success = false,
+                ErrorMessage = "Device is restarting. Please wait and try again.",
+                ErrorCode = "DEVICE_RESTARTING"
+            };
+        }
+
         // Check if device is currently locked (immediate feedback)
         if (_deviceLockService.IsDeviceLocked(request.DeviceId))
         {
@@ -260,7 +276,10 @@ public class UpdateDeviceParametersCommandHandler : IRequestHandler<UpdateDevice
                     ParameterName = fp.ParameterName,
                     ErrorMessage = fp.ErrorMessage
                 }).ToList(),
-                Duration = updateResult.Duration
+                Duration = updateResult.Duration,
+                DeviceWillRestart = updateResult.DeviceWillRestart,
+                RestartReason = updateResult.RestartReason,
+                RestartCausingParameters = updateResult.RestartCausingParameters
             };
         }
         catch (DeviceBusyException)
@@ -379,6 +398,25 @@ public record UpdateDeviceParametersResult
     /// Total duration of the operation
     /// </summary>
     public TimeSpan Duration { get; init; }
+
+    /// <summary>
+    /// Indicates that the device will restart as a result of this update.
+    /// When true, the device will be temporarily unavailable (typically 2-4 minutes).
+    /// UI should show restart notification and poll for device online status.
+    /// </summary>
+    public bool DeviceWillRestart { get; init; }
+
+    /// <summary>
+    /// Reason for device restart (e.g., "Grid Standard settings changed").
+    /// Only populated when DeviceWillRestart is true.
+    /// </summary>
+    public string? RestartReason { get; init; }
+
+    /// <summary>
+    /// List of parameter names that caused the restart.
+    /// Only populated when DeviceWillRestart is true.
+    /// </summary>
+    public List<string> RestartCausingParameters { get; init; } = new();
 }
 
 /// <summary>
