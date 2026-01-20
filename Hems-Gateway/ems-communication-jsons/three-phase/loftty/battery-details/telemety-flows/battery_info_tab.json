@@ -36,7 +36,8 @@
         "y": 140,
         "wires": [
             [
-                "229a6dba6c6cbdad"
+                "229a6dba6c6cbdad",
+                "32a7d772cbe1e740"
             ]
         ]
     },
@@ -107,8 +108,83 @@
         "wires": []
     },
     {
+        "id": "32a7d772cbe1e740",
+        "type": "delay",
+        "z": "ca6a04bf0ad93382",
+        "name": "Throttle 5s",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "5",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 510,
+        "y": 200,
+        "wires": [
+            [
+                "ae09b14f7c7d8699"
+            ]
+        ]
+    },
+    {
+        "id": "ae09b14f7c7d8699",
+        "type": "mqtt out",
+        "z": "ca6a04bf0ad93382",
+        "name": "ThingsBoard Telemetry",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 720,
+        "y": 200,
+        "wires": []
+    },
+    {
         "id": "537471527fc35bc4",
         "type": "socketcan-config",
         "interface": "can0"
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31884",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
     }
 ]
