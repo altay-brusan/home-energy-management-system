@@ -119,6 +119,9 @@ public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDevice
         var batteryChargeEnergy = isDailyData ? request.BatteryChargeEnergyKWhToday : request.BatteryChargeEnergyKWhTotal;
         var loadEnergy = isDailyData ? request.LoadEnergyKWhToday : request.LoadEnergyKWhTotal;
 
+        // Get PhaseType from device ModelNumber (cached)
+        var phaseType = await _deviceMapping.GetPhaseTypeAsync(request.DeviceId, cancellationToken);
+
         if (existingRecord != null)
         {
             // Update existing record
@@ -129,6 +132,7 @@ public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDevice
             existingRecord.BatteryDischargeEnergyKWh = batteryDischargeEnergy;
             existingRecord.BatteryChargeEnergyKWh = batteryChargeEnergy;
             existingRecord.LoadEnergyKWh = loadEnergy;
+            existingRecord.PhaseType = phaseType.ToString();
 
             // Update MPPT values if provided
             if (request.PvMppt1EnergyKWh.HasValue) existingRecord.PvMppt1EnergyKWh = request.PvMppt1EnergyKWh;
@@ -148,7 +152,7 @@ public class CreateDeviceEnergyDataCommandHandler : IRequestHandler<CreateDevice
                 DeviceLocalTime = localDeviceLocalTime, // Store in device local time
                 DataType = request.DataType,
                 MessageType = MessageTypes.Telemetry,
-                PhaseType = PhaseTypes.SinglePhase,
+                PhaseType = phaseType.ToString(),
 
                 PvTotalEnergyKWh = pvEnergy,
                 PvMppt1EnergyKWh = request.PvMppt1EnergyKWh,
