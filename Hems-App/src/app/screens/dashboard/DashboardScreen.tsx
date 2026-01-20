@@ -27,6 +27,7 @@ import { GridPerformanceCard } from './ui/gridPerformanceCard';
 import { PowerFlowDiagram } from './ui/powerFlowDiagram';
 import { TodaySummary } from './ui/todaySummary';
 import { WeatherStatus } from './ui/weatherStatus';
+import { DemandBreakdownChart } from './ui/demandBreakdownChart';
 
 type Range = 'Day' | 'Week' | 'Month' | 'Year';
 
@@ -318,6 +319,7 @@ export default function DashboardScreen (): JSX.Element {
         <BatteryStateCard deviceId={device?.id} />
         <InverterModeCard COLORS={COLORS} />
         {/* <DashboardModeCard COLORS={COLORS} /> */}
+        <DemandBreakdownChart />
         <PowerAndEnergyMetrics
           COLORS={COLORS}
           isDark={isDark}

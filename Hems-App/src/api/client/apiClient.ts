@@ -390,6 +390,11 @@ class ApiClient {
       return;
     }
 
+    // Skip toast for register endpoint - handled by useRegister hook
+    if (apiError.url?.includes(ENDPOINTS.AUTH.REGISTER)) {
+      return;
+    }
+
     let title = i18n.t('api.error.defaultTitle');
     let message = i18n.t('api.error.defaultMessage');
 

@@ -1,7 +1,8 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { Control, Controller, FieldErrors } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { Text, View, Pressable } from 'react-native';
+import { Text, View, Pressable, TouchableOpacity } from 'react-native';
+import { Eye, EyeOff } from 'lucide-react-native';
 
 import Input from '../../../components/forms/Input';
 import Button from '../../../components/ui/Button';
@@ -35,6 +36,17 @@ function SignUpFormFields ({
   const { t } = useTranslation();
   const [legalModalVisible, setLegalModalVisible] = useState(false);
   const [legalModalType, setLegalModalType] = useState<'privacy' | 'terms'>('terms');
+  const [secureReady, setSecureReady] = useState(false); // Delay secure entry to bypass iOS AutoFill
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Delay enabling secureTextEntry to bypass iOS AutoFill overlay
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSecureReady(true);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   const openLegalModal = (type: 'privacy' | 'terms') => {
     setLegalModalType(type);
@@ -107,19 +119,37 @@ function SignUpFormFields ({
           control={control}
           name="password"
           render={({ field: { onChange, onBlur, value } }) => (
-            <Input
-              label={t('auth.password')}
-              placeholder={t('auth.passwordPlaceholder')}
-              secureTextEntry
-              autoCorrect={false}
-              autoComplete="password"
-              textContentType="newPassword"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              error={errors.password?.message}
-              returnKeyType="next"
-            />
+            <View>
+              <Input
+                label={t('auth.password')}
+                placeholder={t('auth.passwordPlaceholder')}
+                secureTextEntry={secureReady && !showPassword}
+                autoCorrect={false}
+                autoCapitalize="none"
+                autoComplete="off"
+                textContentType="none"
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                error={errors.password?.message}
+                returnKeyType="next"
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: 12,
+                  top: 38,
+                  padding: 4,
+                }}
+              >
+                {showPassword ? (
+                  <Eye size={20} color="#9CA3AF" />
+                ) : (
+                  <EyeOff size={20} color="#9CA3AF" />
+                )}
+              </TouchableOpacity>
+            </View>
           )}
         />
 
@@ -127,20 +157,38 @@ function SignUpFormFields ({
           control={control}
           name="confirmPassword"
           render={({ field: { onChange, onBlur, value } }) => (
-            <Input
-              label={t('auth.confirmPassword')}
-              placeholder={t('auth.confirmPasswordPlaceholder')}
-              secureTextEntry
-              autoCorrect={false}
-              autoComplete="password"
-              textContentType="password"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              error={errors.confirmPassword?.message}
-              returnKeyType="done"
-              onSubmitEditing={onSubmit}
-            />
+            <View>
+              <Input
+                label={t('auth.confirmPassword')}
+                placeholder={t('auth.confirmPasswordPlaceholder')}
+                secureTextEntry={secureReady && !showConfirmPassword}
+                autoCorrect={false}
+                autoCapitalize="none"
+                autoComplete="off"
+                textContentType="none"
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                error={errors.confirmPassword?.message}
+                returnKeyType="done"
+                onSubmitEditing={onSubmit}
+              />
+              <TouchableOpacity
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={{
+                  position: 'absolute',
+                  right: 12,
+                  top: 38,
+                  padding: 4,
+                }}
+              >
+                {showConfirmPassword ? (
+                  <Eye size={20} color="#9CA3AF" />
+                ) : (
+                  <EyeOff size={20} color="#9CA3AF" />
+                )}
+              </TouchableOpacity>
+            </View>
           )}
         />
 

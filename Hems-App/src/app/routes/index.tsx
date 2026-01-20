@@ -55,6 +55,7 @@ import DashboardScreen from '../screens/dashboard/DashboardScreen';
 import PowerMetricsDetailScreen from '../screens/powerMetricsDetail/PowerMetricsDetailScreen';
 import GridPerformanceDetailScreen from '../screens/gridPerformanceDetail/GridPerformanceDetailScreen';
 import EnergyRevenueDetailScreen from '../screens/energyRevenueDetail/EnergyRevenueDetailScreen';
+import SocHistoryDetailScreen from '../screens/socHistoryDetail/SocHistoryDetailScreen';
 import DeviceDetail from '../screens/deviceDetail/DeviceDetail';
 import GatewayDetailScreen from '../screens/deviceDetail/GatewayDetailScreen';
 import PVPanelDetailScreen from '../screens/deviceDetail/PVPanelDetailScreen';
@@ -496,6 +497,11 @@ export function RootNavigator () {
             <Stack.Screen
               name="EnergyRevenueDetail"
               component={EnergyRevenueDetailScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="SocHistoryDetail"
+              component={SocHistoryDetailScreen}
               options={{ animation: 'slide_from_right' }}
             />
             <Stack.Screen

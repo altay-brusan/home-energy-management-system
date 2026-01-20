@@ -819,6 +819,15 @@
       "discharging": "Deşarj Oluyor"
     }
   },
+  "demandBreakdown": {
+    "title": "Tüketim Dağılımı",
+    "totalDemand": "Toplam Tüketim",
+    "sources": {
+      "solar": "Solar",
+      "battery": "Batarya",
+      "grid": "Şebeke"
+    }
+  },
   "dashboardChargeDischargeChart": {
     "title": "Şarj ve Deşarj Gücü (kW)",
     "legend": {
@@ -868,6 +877,16 @@
   "gridPerformanceDetail": {
     "selectStartDate": "Başlangıç Tarihi",
     "selectEndDate": "Bitiş Tarihi"
+  },
+  "socHistoryDetail": {
+    "title": "Batarya Geçmişi",
+    "selectDate": "Tarih Seçin",
+    "selectDatePrompt": "Veri görüntülemek için tarih seçin",
+    "selectDateDescription": "Saatlik SOC verilerini görmek için bir gün seçin",
+    "chartTitle": "Şarj Durumu (%)",
+    "min": "Min",
+    "avg": "Ort",
+    "max": "Maks"
   },
   "dashboardSidebar": {
     "header": "Evlerim",

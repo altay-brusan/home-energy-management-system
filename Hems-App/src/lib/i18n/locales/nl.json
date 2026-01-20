@@ -785,6 +785,15 @@
         "discharging": "Ontladen"
       }
     },
+    "demandBreakdown": {
+      "title": "Verbruiksverdeling",
+      "totalDemand": "Totaal Verbruik",
+      "sources": {
+        "solar": "Zonne-energie",
+        "battery": "Batterij",
+        "grid": "Net"
+      }
+    },
     "dashboardChargeDischargeChart": {
       "title": "Opladen & Ontladen Vermogen (kW)",
       "legend": {
@@ -830,6 +839,16 @@
       "buyLabel": "Net Kopen",
       "sellLabel": "Net Verkopen",
       "noData": "Geen netgegevens beschikbaar"
+    },
+    "socHistoryDetail": {
+      "title": "Batterijgeschiedenis",
+      "selectDate": "Selecteer Datum",
+      "selectDatePrompt": "Selecteer een datum om gegevens te bekijken",
+      "selectDateDescription": "Kies een dag om uurlijkse SOC-gegevens te zien",
+      "chartTitle": "Laadtoestand (%)",
+      "min": "Min",
+      "avg": "Gem",
+      "max": "Max"
     },
     "dashboardSidebar": {
       "header": "Mijn Woningen",
