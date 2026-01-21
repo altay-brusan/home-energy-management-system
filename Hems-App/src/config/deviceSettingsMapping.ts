@@ -430,11 +430,11 @@ export const GENERATOR_SMART_LOAD_MAPPING: ParameterMapping[] = [
     step: 100,
     roleType: 'User',
   },
-  // SmartLoad
+  // SmartLoad (SmartLoadEnabled is an enum: 0=Generator, 1=SmartLoad, 2=Microinverter)
   {
     apiName: 'SmartLoadEnabled',
     storePath: 'generatorAndSmartLoad.smartLoad.enabled',
-    transformerType: 'boolean',
+    transformerType: 'number',
     roleType: 'User',
   },
   {

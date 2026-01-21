@@ -67,6 +67,13 @@ export interface InverterMode {
 export type EnergyPatternType = 'batt_first' | 'load_first';
 export type OnOffStatus = 'on' | 'off';
 export type TimeOfUsePeriodId = 'P1' | 'P2' | 'P3' | 'P4' | 'P5' | 'P6';
+/**
+ * SmartLoadMode - The type of device connected to generator port
+ * 0 = Generator Only (default - generator input used for generator)
+ * 1 = Smart Load (generator port used for smart load output)
+ * 2 = Microinverter (generator port used for microinverter input)
+ */
+export type SmartLoadMode = 0 | 1 | 2;
 
 // ============================================
 // API YAPISINA UYUMLU YENİ TİPLER
@@ -168,7 +175,8 @@ export interface TimeOfUseConfig {
  * SmartLoad Settings - YENİ
  */
 export interface SmartLoadSettings {
-  enabled: OnOffStatus;
+  /** Smart Load Mode: 0=Generator Only, 1=Smart Load, 2=Microinverter */
+  enabled: SmartLoadMode;
   offSOC: number;
   onSOC: number;
   pvPowerThreshold: number;
@@ -345,7 +353,7 @@ export const DEFAULT_DEVICE_SETTINGS: DeviceSettingsConfig = {
       limitPower: 8000,
     },
     smartLoad: {
-      enabled: 'off',
+      enabled: 0,  // 0=Generator Only, 1=Smart Load, 2=Microinverter
       offSOC: 10,
       onSOC: 90,
       pvPowerThreshold: 0,

@@ -1,19 +1,21 @@
 /**
  * GeneratorSmartLoadSection Component
  * API sortOrder: 4 - GeneratorAndSmartLoad kategorisi
- * Tek bir section içinde: GeneratorSettings, GeneratorPeakShaving, SmartLoad
+ * Contains: GeneratorPeakShaving, SmartLoad
+ * Note: Generator charging settings are in BatterySettings > GeneratorCharging section
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Text, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors } from '../../../theme/constants';
 import { useGeneratorSmartLoadSection } from '../../../hooks/useDeviceSettings';
-import { DEVICE_SETTINGS_VALIDATION } from '../../../api/types/inverterModes.types';
+import { DEVICE_SETTINGS_VALIDATION, SmartLoadMode } from '../../../api/types/inverterModes.types';
 import SettingSection from '../SettingSection';
 import SettingToggle from '../SettingToggle';
 import SettingSlider from '../SettingSlider';
+import SettingPicker from '../SettingPicker';
 
 interface GeneratorSmartLoadSectionProps {
   defaultExpanded?: boolean;
@@ -28,16 +30,24 @@ const GeneratorSmartLoadSection: React.FC<GeneratorSmartLoadSectionProps> = ({
   const COLORS = getThemeColors(isDark);
 
   const {
-    generatorSettings,
     generatorPeakShaving,
     smartLoad,
-    updateGeneratorSettings,
     updateGeneratorPeakShaving,
     updateSmartLoad,
     isLoading,
   } = useGeneratorSmartLoadSection();
 
   const validation = DEVICE_SETTINGS_VALIDATION;
+
+  // Smart Load Mode options (0=Generator, 1=SmartLoad, 2=Microinverter)
+  const smartLoadModeOptions = useMemo(() => [
+    { value: '0', label: t('inverterModes.smartLoadModes.generator', 'Generator Only') },
+    { value: '1', label: t('inverterModes.smartLoadModes.smartLoad', 'Smart Load') },
+    { value: '2', label: t('inverterModes.smartLoadModes.microinverter', 'Microinverter') },
+  ], [t]);
+
+  // Check if Smart Load mode is active (mode 1)
+  const isSmartLoadActive = smartLoad.enabled === 1;
 
   if (isLoading) {
     return null;
@@ -49,47 +59,8 @@ const GeneratorSmartLoadSection: React.FC<GeneratorSmartLoadSectionProps> = ({
       icon="bolt"
       defaultExpanded={defaultExpanded}
     >
-      {/* Generator Settings */}
-      <Text style={[styles.subHeader, { color: COLORS.text }]}>
-        {t('inverterModes.settings.generatorSettings', 'Generator Settings')}
-      </Text>
-      <SettingToggle
-        label={t('inverterModes.labels.generatorCharge', 'Generator Charge')}
-        value={generatorSettings.charge}
-        onChange={(value) => updateGeneratorSettings({ charge: value })}
-        description={t('inverterModes.descriptions.generatorCharge', 'Allow generator to charge battery')}
-      />
-      <SettingToggle
-        label={t('inverterModes.labels.generatorGridCharge', 'Generator Grid Charge')}
-        value={generatorSettings.gridCharge}
-        onChange={(value) => updateGeneratorSettings({ gridCharge: value })}
-        description={t('inverterModes.descriptions.generatorGridCharge', 'Allow generator to charge when grid is available')}
-      />
-      {generatorSettings.charge === 'on' && (
-        <>
-          <SettingSlider
-            label={t('inverterModes.labels.generatorStartSOC', 'Start SOC')}
-            value={generatorSettings.startSOC}
-            onChange={(value) => updateGeneratorSettings({ startSOC: value })}
-            min={validation.batterySOC.generatorStart.min}
-            max={validation.batterySOC.generatorStart.max}
-            step={validation.batterySOC.generatorStart.step}
-            unit="%"
-          />
-          <SettingSlider
-            label={t('inverterModes.labels.generatorChargeCurrent', 'Charge Current')}
-            value={generatorSettings.chargeCurrent}
-            onChange={(value) => updateGeneratorSettings({ chargeCurrent: value })}
-            min={validation.current.genCharge.min}
-            max={validation.current.genCharge.max}
-            step={validation.current.genCharge.step}
-            unit="A"
-          />
-        </>
-      )}
-
       {/* Generator Peak Shaving */}
-      <Text style={[styles.subHeader, { color: COLORS.text, marginTop: 16 }]}>
+      <Text style={[styles.subHeader, { color: COLORS.text }]}>
         {t('inverterModes.settings.generatorPeakShaving', 'Generator Peak Shaving')}
       </Text>
       <SettingToggle
@@ -114,15 +85,13 @@ const GeneratorSmartLoadSection: React.FC<GeneratorSmartLoadSectionProps> = ({
       <Text style={[styles.subHeader, { color: COLORS.text, marginTop: 16 }]}>
         {t('inverterModes.settings.smartLoad', 'Smart Load')}
       </Text>
-      <Text style={[styles.infoText, { color: COLORS.textSoft }]}>
-        {t('inverterModes.descriptions.smartLoad', 'Configure smart load behavior based on battery and PV conditions')}
-      </Text>
-      <SettingToggle
-        label={t('inverterModes.labels.smartLoadEnabled', 'Enable Smart Load')}
-        value={smartLoad.enabled}
-        onChange={(value) => updateSmartLoad({ enabled: value })}
+      <SettingPicker
+        label={t('inverterModes.labels.smartLoadMode', 'Generator Port Mode')}
+        value={String(smartLoad.enabled)}
+        options={smartLoadModeOptions}
+        onChange={(value) => updateSmartLoad({ enabled: Number(value) as SmartLoadMode })}
       />
-      {smartLoad.enabled === 'on' && (
+      {isSmartLoadActive && (
         <>
           <SettingSlider
             label={t('inverterModes.labels.smartLoadOffSOC', 'Turn Off SOC')}
