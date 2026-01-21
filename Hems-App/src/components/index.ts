@@ -14,3 +14,4 @@ export { CitySelector } from './ui/CitySelector';
 export { CountrySelector } from './ui/CountrySelector';
 export { default as FlowSankey } from './FlowSankey';
 export { LegalModal } from './LegalModal';
+export { default as TextScannerModal } from './TextScannerModal';

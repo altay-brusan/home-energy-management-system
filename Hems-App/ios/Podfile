@@ -5,7 +5,7 @@ require Pod::Executable.execute_command('node', ['-p',
     {paths: [process.argv[1]]},
   )', __dir__]).strip
 
-platform :ios, min_ios_version_supported
+platform :ios, '15.5'
 prepare_react_native_project!
 
 linkage = ENV['USE_FRAMEWORKS']
@@ -31,7 +31,7 @@ target 'N2NEnergyMobile' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
-    
+
     # Font linking for vector icons
     installer.pods_project.targets.each do |target|
       if target.name == 'react-native-vector-icons'
@@ -39,6 +39,22 @@ target 'N2NEnergyMobile' do
           config.build_settings['OTHER_LDFLAGS'] ||= ['$(inherited)']
           config.build_settings['OTHER_LDFLAGS'] << '-ObjC'
         end
+      end
+    end
+
+    # Fix ARCHS unbound variable in CocoaPods scripts (Xcode 26 compatibility)
+    Dir.glob("#{installer.sandbox.root}/Target Support Files/**/*.sh").each do |script|
+      content = File.read(script)
+      if content.include?('set -u')
+        content = content.gsub('set -u', 'set +u')
+        File.write(script, content)
+      end
+    end
+
+    # Fix EXCLUDED_ARCHS for simulator on Apple Silicon
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = ''
       end
     end
   end

@@ -19,9 +19,8 @@ import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Card, Button, BackButton } from '../../../components';
+import { Card, Button, BackButton, TextScannerModal } from '../../../components';
 import Input from '../../../components/forms/Input';
-import QrScannerModal from '../../../components/QrScannerModal';
 import { useThemeStore } from '../../../store/themeStore';
 import { useSitesStore } from '../../../store/sitesStore';
 import { setupsService } from '../../../api/services/setupsService';
@@ -53,7 +52,7 @@ export default function DeviceAddScreen() {
   const insets = useSafeAreaInsets();
   const { sites, getUserSites, loadSelectedSiteDevice, selectedSite } = useSitesStore();
   
-  const [isQrScannerVisible, setIsQrScannerVisible] = useState(false);
+  const [isTextScannerVisible, setIsTextScannerVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const mode = useThemeStore(s => s.mode);
@@ -78,10 +77,10 @@ export default function DeviceAddScreen() {
 
   const watchedSerialNumber = watch('deviceSerialNumber');
 
-  const handleQrScan = useCallback(
-    (code: string) => {
-      setValue('deviceSerialNumber', code);
-      setIsQrScannerVisible(false);
+  const handleTextScan = useCallback(
+    (serialNumber: string) => {
+      setValue('deviceSerialNumber', serialNumber);
+      setIsTextScannerVisible(false);
     },
     [setValue],
   );
@@ -203,10 +202,10 @@ export default function DeviceAddScreen() {
               />
 
               <Button
-                title={t('deviceAdd.scanQr')}
+                title={t('textScanner.scanButton')}
                 variant="secondary"
-                onPress={() => setIsQrScannerVisible(true)}
-                leftIcon={<MaterialIcons name="qr-code-scanner" size={20} color="inherit" />}
+                onPress={() => setIsTextScannerVisible(true)}
+                leftIcon={<MaterialIcons name="document-scanner" size={20} color="inherit" />}
               />
             </View>
 
@@ -229,10 +228,10 @@ export default function DeviceAddScreen() {
       </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
 
-      <QrScannerModal
-        visible={isQrScannerVisible}
-        onClose={() => setIsQrScannerVisible(false)}
-        onScan={handleQrScan}
+      <TextScannerModal
+        visible={isTextScannerVisible}
+        onClose={() => setIsTextScannerVisible(false)}
+        onTextSelected={handleTextScan}
       />
     </SafeAreaView>
   );
