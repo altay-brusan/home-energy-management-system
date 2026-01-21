@@ -212,14 +212,41 @@ export interface MaintenanceSettingsConfig {
     frequencyHigh: number;
     frequencyLow: number;
     reconnectionTime: number;
+    // Power Factor Settings
+    powerFactorTarget: number;
+    activePowerRegulation: number;
+    reactivePowerRegulation: number;
   };
   advanced: {
     arcFaultDetection: OnOffStatus;
     islandProtection: OnOffStatus;
+    lithiumBatteryLossFaultEnabled: OnOffStatus;
     parallelEnabled: OnOffStatus;
     parallelRole: string;
+    parallelPhase: string;
+    modbusAddress: number;
     externalCTRatio: number;
+    externalMeterCTRatio: number;
   };
+  externalRelay: {
+    enabled: OnOffStatus;
+    bitmap: number;
+  };
+  generatorOverride: {
+    forceSmartLoadOn: OnOffStatus;
+  };
+}
+
+/**
+ * GridStandard - User level grid configuration (under SystemWorkMode)
+ */
+export interface GridStandardConfig {
+  standard: string;
+  frequency: number;
+  outputVoltageLevel: string;
+  phaseType: string;
+  gridLevel: string;
+  itSystemNeutralGrounded: OnOffStatus;
 }
 
 /**
@@ -228,6 +255,7 @@ export interface MaintenanceSettingsConfig {
 export interface DeviceSettingsConfig {
   batterySettings: BatterySettingsConfig;
   systemWorkMode: SystemWorkModeSettings;
+  gridStandard: GridStandardConfig;
   timeOfUse: TimeOfUseConfig;
   generatorAndSmartLoad: GeneratorSmartLoadConfig;
   maintenanceSettings?: MaintenanceSettingsConfig;
@@ -291,6 +319,14 @@ export const DEFAULT_DEVICE_SETTINGS: DeviceSettingsConfig = {
     forceOffGrid: 'off',
     gridPeakShavingEnabled: 'off',
     gridPeakShavingLimitPower: 2000,
+  },
+  gridStandard: {
+    standard: 'General',
+    frequency: 50,
+    outputVoltageLevel: '230V',
+    phaseType: 'ABC_0_120_240',
+    gridLevel: 'LN:230VAC LL:400VAC',
+    itSystemNeutralGrounded: 'off',
   },
   timeOfUse: {
     enabled: 'off',
@@ -639,6 +675,7 @@ export const BATTERY_TYPE_LABELS: Record<BatteryType, string> = {
 export type SettingCategory =
   | 'batterySettings'
   | 'systemWorkMode'
+  | 'gridStandard'
   | 'timeOfUse'
   | 'generatorAndSmartLoad'
   | 'maintenanceSettings';
@@ -646,7 +683,8 @@ export type SettingCategory =
 export const SETTING_CATEGORIES: { id: SettingCategory; sortOrder: number; adminOnly: boolean }[] = [
   { id: 'batterySettings', sortOrder: 1, adminOnly: false },
   { id: 'systemWorkMode', sortOrder: 2, adminOnly: false },
-  { id: 'timeOfUse', sortOrder: 3, adminOnly: false },
-  { id: 'generatorAndSmartLoad', sortOrder: 4, adminOnly: false },
-  { id: 'maintenanceSettings', sortOrder: 5, adminOnly: true },
+  { id: 'gridStandard', sortOrder: 3, adminOnly: false },
+  { id: 'timeOfUse', sortOrder: 4, adminOnly: false },
+  { id: 'generatorAndSmartLoad', sortOrder: 5, adminOnly: false },
+  { id: 'maintenanceSettings', sortOrder: 6, adminOnly: true },
 ];

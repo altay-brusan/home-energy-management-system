@@ -5,8 +5,8 @@
  * Now uses synchronous REST API with SignalR for real-time progress
  */
 
-import { useCallback, useEffect } from 'react';
-import { useDeviceSettingsStore, DeviceBusyInfo } from '../store/deviceSettingsStore';
+import { useCallback, useEffect, useMemo } from 'react';
+import { useDeviceSettingsStore, DeviceBusyInfo, DeviceRestartingInfo } from '../store/deviceSettingsStore';
 import { useSelectedSiteDevice } from './useSelectedSiteDevice';
 import { useRoles } from './useRoles';
 import { useToastStore } from '../store/toastStore';
@@ -14,12 +14,14 @@ import { useDeviceSettingsUpdateStore } from '../store/deviceSettingsUpdateStore
 import { useInverterModeStore } from '../store/inverterModeStore';
 import { useDeviceSettingsSignalR } from './useDeviceSettingsSignalR';
 import { deviceSettingsSignalRService } from '../services/deviceSettingsSignalRService';
+import { isGridConfigStorePath } from '../config/deviceSettingsMapping';
 import {
   DeviceSettingsConfig,
   TimeSlot,
   TimeSlotVisibility,
   BatterySettingsConfig,
   SystemWorkModeSettings,
+  GridStandardConfig,
   TimeOfUseConfig,
   GeneratorSmartLoadConfig,
   MaintenanceSettingsConfig,
@@ -30,6 +32,7 @@ export interface UseDeviceSettingsReturn {
   settings: DeviceSettingsConfig;
   batterySettings: BatterySettingsConfig;
   systemWorkMode: SystemWorkModeSettings;
+  gridStandard: GridStandardConfig;
   timeOfUse: TimeOfUseConfig;
   generatorSmartLoad: GeneratorSmartLoadConfig;
   maintenanceSettings?: MaintenanceSettingsConfig;
@@ -43,6 +46,21 @@ export interface UseDeviceSettingsReturn {
   // Device busy state (when another update is in progress)
   deviceBusyInfo: DeviceBusyInfo | null;
   isDeviceBusy: boolean;
+
+  // Device restarting state (after grid config change)
+  deviceRestartingInfo: DeviceRestartingInfo | null;
+  isDeviceRestarting: boolean;
+
+  // Grid config
+  hasGridConfigChanges: boolean;
+  saveGridConfig: () => Promise<{
+    success: boolean;
+    deviceWillRestart?: boolean;
+    restartGracePeriodSeconds?: number;
+    estimatedAvailableAt?: string;
+    error?: string;
+    errorCode?: string;
+  }>;
 
   // TimeOfUse validation
   timeOfUseValidationError: string | null;
@@ -87,11 +105,28 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
   const timeOfUseValidationError = useDeviceSettingsStore((state) => state.timeOfUseValidationError);
   const deviceBusyInfo = useDeviceSettingsStore((state) => state.deviceBusyInfo);
   const clearDeviceBusy = useDeviceSettingsStore((state) => state.clearDeviceBusy);
+  const deviceRestartingInfo = useDeviceSettingsStore((state) => state.deviceRestartingInfo);
+  const isDeviceRestartingFn = useDeviceSettingsStore((state) => state.isDeviceRestarting);
+  const dirtyFields = useDeviceSettingsStore((state) => state.dirtyFields);
+  const saveGridConfigFn = useDeviceSettingsStore((state) => state.saveGridConfig);
 
   // Compute isDeviceBusy - check if busy and not expired
   const isDeviceBusy = deviceBusyInfo?.isDeviceBusy &&
     deviceBusyInfo.busyUntil &&
     Date.now() < deviceBusyInfo.busyUntil;
+
+  // Compute isDeviceRestarting
+  const isDeviceRestarting = isDeviceRestartingFn();
+
+  // Compute hasGridConfigChanges - reactive based on dirtyFields
+  const hasGridConfigChanges = useMemo(() => {
+    for (const storePath of dirtyFields) {
+      if (isGridConfigStorePath(storePath)) {
+        return true;
+      }
+    }
+    return false;
+  }, [dirtyFields]);
 
   // Compute canSave
   const canSave = isDirty && !timeOfUseValidationError;
@@ -189,6 +224,22 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
           failedCount: 0,
           failedParameters: [],
           errorMessage: 'Device busy',
+        });
+        return false;
+      } else if (result.errorCode === 'DEVICE_RESTARTING') {
+        // Device is restarting from previous grid config change
+        showToast({
+          type: 'warning',
+          title: 'Device Restarting',
+          message: 'Device is restarting. Please wait a moment and try again.',
+        });
+        completeSaving({
+          success: false,
+          totalParameters: 0,
+          successCount: 0,
+          failedCount: 0,
+          failedParameters: [],
+          errorMessage: 'Device restarting',
         });
         return false;
       } else if (result.successCount > 0 && result.failedCount > 0) {
@@ -298,6 +349,7 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
     settings,
     batterySettings: settings.batterySettings,
     systemWorkMode: settings.systemWorkMode,
+    gridStandard: settings.gridStandard,
     timeOfUse: settings.timeOfUse,
     generatorSmartLoad: settings.generatorAndSmartLoad,
     maintenanceSettings: settings.maintenanceSettings,
@@ -311,6 +363,14 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
     // Device busy state
     deviceBusyInfo,
     isDeviceBusy: !!isDeviceBusy,
+
+    // Device restarting state
+    deviceRestartingInfo,
+    isDeviceRestarting,
+
+    // Grid config
+    hasGridConfigChanges,
+    saveGridConfig: saveGridConfigFn,
 
     // TimeOfUse validation
     timeOfUseValidationError,

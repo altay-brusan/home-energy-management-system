@@ -68,7 +68,7 @@ const MaintenanceSettingsScreen: React.FC = () => {
     );
   }
 
-  const { batteryMaintenance, gridCode, advanced } = maintenanceSettings;
+  const { batteryMaintenance, gridCode, advanced, externalRelay, generatorOverride } = maintenanceSettings;
 
   return (
     <View
@@ -151,42 +151,11 @@ const MaintenanceSettingsScreen: React.FC = () => {
           />
         </SettingSection>
 
-        {/* Grid Code Configuration */}
+        {/* Grid Protection Parameters */}
         <SettingSection
-          title={t('inverterModes.settings.gridCode', 'Grid Code Configuration')}
+          title={t('inverterModes.settings.gridProtection', 'Grid Protection Parameters')}
           icon="plug"
         >
-          <SettingPicker
-            label={t('inverterModes.labels.gridStandard', 'Grid Standard')}
-            value={gridCode.standard}
-            options={[
-              { value: 'EN50549', label: 'EN 50549' },
-              { value: 'VDE4105', label: 'VDE 4105' },
-              { value: 'CEI021', label: 'CEI 0-21' },
-              { value: 'G99', label: 'G99 UK' },
-              { value: 'AS4777', label: 'AS 4777' },
-            ]}
-            onChange={(value) => updateSetting('maintenanceSettings.gridCode.standard', value)}
-          />
-          <SettingSlider
-            label={t('inverterModes.labels.gridFrequency', 'Grid Frequency')}
-            value={gridCode.frequency}
-            onChange={(value) => updateSetting('maintenanceSettings.gridCode.frequency', value)}
-            min={45}
-            max={65}
-            step={0.1}
-            unit="Hz"
-          />
-          <SettingPicker
-            label={t('inverterModes.labels.outputVoltageLevel', 'Output Voltage Level')}
-            value={gridCode.outputVoltageLevel}
-            options={[
-              { value: '220V', label: '220V' },
-              { value: '230V', label: '230V' },
-              { value: '240V', label: '240V' },
-            ]}
-            onChange={(value) => updateSetting('maintenanceSettings.gridCode.outputVoltageLevel', value)}
-          />
           <SettingSlider
             label={t('inverterModes.labels.voltageHigh', 'Voltage High Limit')}
             value={gridCode.voltageHigh}
@@ -234,6 +203,40 @@ const MaintenanceSettingsScreen: React.FC = () => {
           />
         </SettingSection>
 
+        {/* Power Factor Settings */}
+        <SettingSection
+          title={t('inverterModes.settings.powerFactor', 'Power Factor Settings')}
+          icon="activity"
+        >
+          <SettingSlider
+            label={t('inverterModes.labels.powerFactorTarget', 'Power Factor Target')}
+            value={gridCode.powerFactorTarget}
+            onChange={(value) => updateSetting('maintenanceSettings.gridCode.powerFactorTarget', value)}
+            min={0.8}
+            max={1.0}
+            step={0.01}
+            unit=""
+          />
+          <SettingSlider
+            label={t('inverterModes.labels.activePowerRegulation', 'Active Power Regulation')}
+            value={gridCode.activePowerRegulation}
+            onChange={(value) => updateSetting('maintenanceSettings.gridCode.activePowerRegulation', value)}
+            min={0}
+            max={100}
+            step={1}
+            unit="%"
+          />
+          <SettingSlider
+            label={t('inverterModes.labels.reactivePowerRegulation', 'Reactive Power Regulation')}
+            value={gridCode.reactivePowerRegulation}
+            onChange={(value) => updateSetting('maintenanceSettings.gridCode.reactivePowerRegulation', value)}
+            min={0}
+            max={100}
+            step={1}
+            unit="%"
+          />
+        </SettingSection>
+
         {/* Advanced Functions */}
         <SettingSection
           title={t('inverterModes.settings.advanced', 'Advanced Functions')}
@@ -252,30 +255,118 @@ const MaintenanceSettingsScreen: React.FC = () => {
             description={t('inverterModes.descriptions.islandProtection', 'Anti-islanding protection for grid safety')}
           />
           <SettingToggle
+            label={t('inverterModes.labels.lithiumBatteryLossFault', 'Lithium Battery Loss Fault')}
+            value={advanced.lithiumBatteryLossFaultEnabled}
+            onChange={(value) => updateSetting('maintenanceSettings.advanced.lithiumBatteryLossFaultEnabled', value)}
+            description={t('inverterModes.descriptions.lithiumBatteryLossFault', 'Enable lithium battery communication loss fault')}
+          />
+        </SettingSection>
+
+        {/* Parallel Settings */}
+        <SettingSection
+          title={t('inverterModes.settings.parallel', 'Parallel Settings')}
+          icon="git-merge"
+        >
+          <SettingToggle
             label={t('inverterModes.labels.parallelEnabled', 'Parallel Operation')}
             value={advanced.parallelEnabled}
             onChange={(value) => updateSetting('maintenanceSettings.advanced.parallelEnabled', value)}
             description={t('inverterModes.descriptions.parallelEnabled', 'Enable parallel inverter operation')}
           />
           {advanced.parallelEnabled === 'on' && (
-            <SettingPicker
-              label={t('inverterModes.labels.parallelRole', 'Parallel Role')}
-              value={advanced.parallelRole}
-              options={[
-                { value: 'Master', label: 'Master' },
-                { value: 'Slave', label: 'Slave' },
-              ]}
-              onChange={(value) => updateSetting('maintenanceSettings.advanced.parallelRole', value)}
-            />
+            <>
+              <SettingPicker
+                label={t('inverterModes.labels.parallelRole', 'Parallel Role')}
+                value={advanced.parallelRole}
+                options={[
+                  { value: 'standalone', label: 'Standalone' },
+                  { value: 'Master', label: 'Master' },
+                  { value: 'Slave', label: 'Slave' },
+                ]}
+                onChange={(value) => updateSetting('maintenanceSettings.advanced.parallelRole', value)}
+              />
+              <SettingPicker
+                label={t('inverterModes.labels.parallelPhase', 'Parallel Phase')}
+                value={advanced.parallelPhase}
+                options={[
+                  { value: 'A', label: 'Phase A' },
+                  { value: 'B', label: 'Phase B' },
+                  { value: 'C', label: 'Phase C' },
+                ]}
+                onChange={(value) => updateSetting('maintenanceSettings.advanced.parallelPhase', value)}
+              />
+              <SettingSlider
+                label={t('inverterModes.labels.modbusAddress', 'Modbus Address')}
+                value={advanced.modbusAddress}
+                onChange={(value) => updateSetting('maintenanceSettings.advanced.modbusAddress', value)}
+                min={0}
+                max={63}
+                step={1}
+                unit=""
+              />
+            </>
           )}
+        </SettingSection>
+
+        {/* CT Settings */}
+        <SettingSection
+          title={t('inverterModes.settings.ctSettings', 'CT Settings')}
+          icon="radio"
+        >
           <SettingSlider
             label={t('inverterModes.labels.externalCTRatio', 'External CT Ratio')}
             value={advanced.externalCTRatio}
             onChange={(value) => updateSetting('maintenanceSettings.advanced.externalCTRatio', value)}
             min={1}
-            max={3000}
+            max={5000}
             step={1}
             unit=":1"
+          />
+          <SettingSlider
+            label={t('inverterModes.labels.externalMeterCTRatio', 'External Meter CT Ratio')}
+            value={advanced.externalMeterCTRatio}
+            onChange={(value) => updateSetting('maintenanceSettings.advanced.externalMeterCTRatio', value)}
+            min={1}
+            max={100}
+            step={1}
+            unit=":1"
+          />
+        </SettingSection>
+
+        {/* External Relay Configuration */}
+        <SettingSection
+          title={t('inverterModes.settings.externalRelay', 'External Relay Configuration')}
+          icon="toggle-right"
+        >
+          <SettingToggle
+            label={t('inverterModes.labels.externalRelayEnabled', 'External Relay Feature')}
+            value={externalRelay?.enabled || 'off'}
+            onChange={(value) => updateSetting('maintenanceSettings.externalRelay.enabled', value)}
+            description={t('inverterModes.descriptions.externalRelayEnabled', 'Enable external relay control feature')}
+          />
+          {externalRelay?.enabled === 'on' && (
+            <SettingSlider
+              label={t('inverterModes.labels.relayBitmap', 'Relay Bitmap')}
+              value={externalRelay?.bitmap || 0}
+              onChange={(value) => updateSetting('maintenanceSettings.externalRelay.bitmap', value)}
+              min={0}
+              max={65535}
+              step={1}
+              unit=""
+            />
+          )}
+        </SettingSection>
+
+        {/* Generator Override */}
+        <SettingSection
+          title={t('inverterModes.settings.generatorOverride', 'Generator Override')}
+          icon="zap"
+        >
+          <SettingToggle
+            label={t('inverterModes.labels.forceSmartLoadOn', 'Force Smart Load On')}
+            value={generatorOverride?.forceSmartLoadOn || 'off'}
+            onChange={(value) => updateSetting('maintenanceSettings.generatorOverride.forceSmartLoadOn', value)}
+            description={t('inverterModes.descriptions.forceSmartLoadOn', 'Override smart load settings to force it on')}
           />
         </SettingSection>
 
