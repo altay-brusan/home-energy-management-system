@@ -1735,8 +1735,38 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
                 };
             }
 
-            // If we got a response but it wasn't successful, log but still return info
+            // If we got a response but it wasn't successful, check if it's a "soft success" scenario
             var errorMessage = GetDetailedErrorMessage(updateResponse, config.RpcMethod);
+            var errorCategory = CategorizeError(updateResponse);
+
+            // For fire-and-forget operations, "No response from device" typically means
+            // the device received the command and started restarting before it could respond.
+            // Treat this as a soft success.
+            var lowerError = (updateResponse?.Error ?? errorMessage).ToLowerInvariant();
+            var isNoResponseError = lowerError.Contains("no response") ||
+                                    lowerError.Contains("did not respond") ||
+                                    lowerError.Contains("timeout") ||
+                                    errorCategory == RpcErrorCategory.Timeout ||
+                                    errorCategory == RpcErrorCategory.DeviceOffline;
+
+            if (isNoResponseError)
+            {
+                _logger.LogInformation(
+                    "🔄 Fire-and-forget RPC for {ParameterName} got no response. " +
+                    "Treating as soft success - device likely restarting. Error: {ErrorMessage}",
+                    parameterName, errorMessage);
+
+                return new RpcExecutionResult
+                {
+                    Success = true,
+                    ErrorMessage = $"RPC sent, device did not respond (likely restarting): {errorMessage}",
+                    RpcMethod = config.RpcMethod,
+                    ErrorCategory = errorCategory,
+                    RetryAttempts = 0,
+                    TotalDurationMs = stopwatch.ElapsedMilliseconds
+                };
+            }
+
             _logger.LogWarning(
                 "⚠️ Fire-and-forget RPC response for {ParameterName}: {ErrorMessage}. " +
                 "Device may still restart if write was partially processed.",
@@ -1747,7 +1777,7 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
                 Success = false,
                 ErrorMessage = errorMessage,
                 RpcMethod = config.RpcMethod,
-                ErrorCategory = CategorizeError(updateResponse),
+                ErrorCategory = errorCategory,
                 RetryAttempts = 0,
                 TotalDurationMs = stopwatch.ElapsedMilliseconds
             };

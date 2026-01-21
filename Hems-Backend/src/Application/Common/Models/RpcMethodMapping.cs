@@ -906,10 +906,11 @@ public static class RpcMethodMapping
             {
                 "LN:220VAC LL:380VAC" => 0,
                 "LN:230VAC LL:400VAC" => 1,
+                "LN:240VAC LL:415VAC" => 2,  // Australia/UK variant
                 "LN:240VAC LL:420VAC" => 2,
                 "LN:120VAC LL:208VAC" => 3,
                 "LN:133VAC LL:230VAC" => 4,
-                _ => int.Parse(val)
+                _ => int.TryParse(val, out var code) ? code : throw new FormatException($"Unknown GridLevel value: '{val}'")
             }
         },
         ["ITSystemNeutralGrounded"] = new()
