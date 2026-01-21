@@ -1,66 +1,28 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, Modal, Dimensions } from 'react-native';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { View, Text, TouchableOpacity, ActivityIndicator, Modal, Dimensions, PanResponder } from 'react-native';
 import { ArrowLeft, Calendar } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Calendar as RNCalendar } from 'react-native-calendars';
-import Svg, { Path, Line, Text as SvgText, G, Circle, Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
+import Svg, { Path, Line, Text as SvgText, G, Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { useSelectedSiteDevice } from '../../../hooks/useSelectedSiteDevice';
 import { useThemeStore } from '../../../store/themeStore';
 import { getThemeColors } from '../../../theme/constants';
 import { createStyles } from './SocHistoryDetailScreen.styles';
+import { dashboardService } from '../../../api/services/dashboardService';
+import { SocHistoryDataPointDto } from '../../../api/types/dashboard.types';
 
-interface HourlySocData {
-  hour: string;
+interface SocDataPoint {
+  timestamp: string;
   soc: number;
+  isInterpolated: boolean;
 }
 
-// Demo data generator for a single day - generates realistic SOC curve
-const generateDemoData = (date: string): HourlySocData[] => {
-  const data: HourlySocData[] = [];
-  const seed = date.split('-').reduce((acc, val) => acc + parseInt(val, 10), 0);
-
-  // Start with a random SOC between 30-60%
-  let currentSoc = 30 + ((seed * 17) % 30);
-
-  for (let hour = 0; hour < 24; hour++) {
-    // Simulate realistic SOC behavior:
-    // - Night (0-6): slow discharge (powering home)
-    // - Morning (6-10): solar starts, SOC increases
-    // - Midday (10-14): peak solar, fast charging
-    // - Afternoon (14-18): moderate solar, slower charging
-    // - Evening (18-24): discharge (no solar, powering home)
-
-    let socChange = 0;
-    const randomFactor = ((seed * (hour + 1) * 7) % 100) / 100;
-
-    if (hour >= 0 && hour < 6) {
-      // Night discharge
-      socChange = -2 - randomFactor * 2;
-    } else if (hour >= 6 && hour < 10) {
-      // Morning - solar starts
-      socChange = 3 + randomFactor * 3;
-    } else if (hour >= 10 && hour < 14) {
-      // Peak solar
-      socChange = 5 + randomFactor * 4;
-    } else if (hour >= 14 && hour < 18) {
-      // Afternoon solar
-      socChange = 2 + randomFactor * 3;
-    } else {
-      // Evening discharge
-      socChange = -4 - randomFactor * 3;
-    }
-
-    currentSoc = Math.max(10, Math.min(100, currentSoc + socChange));
-
-    data.push({
-      hour: `${hour.toString().padStart(2, '0')}:00`,
-      soc: Math.round(currentSoc),
-    });
-  }
-
-  return data;
+// Get today's date in YYYY-MM-DD format
+const getTodayString = (): string => {
+  const today = new Date();
+  return today.toISOString().split('T')[0];
 };
 
 export default function SocHistoryDetailScreen() {
@@ -72,20 +34,35 @@ export default function SocHistoryDetailScreen() {
   const COLORS = getThemeColors(isDark);
   const styles = createStyles(COLORS, isDark);
   const { device, hasDevice } = useSelectedSiteDevice();
-  const [loading, setLoading] = useState(false);
-  const [hourlyData, setHourlyData] = useState<HourlySocData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [socData, setSocData] = useState<SocDataPoint[]>([]);
   const [minSoc, setMinSoc] = useState(0);
   const [maxSoc, setMaxSoc] = useState(0);
   const [avgSoc, setAvgSoc] = useState(0);
 
-  // Single date selection
-  const [selectedDate, setSelectedDate] = useState<string>('');
+  // Single date selection - default to today
+  const todayString = getTodayString();
+  const [selectedDate, setSelectedDate] = useState<string>(todayString);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [markedDates, setMarkedDates] = useState<any>({});
+  const [markedDates, setMarkedDates] = useState<any>({
+    [todayString]: {
+      selected: true,
+      selectedColor: COLORS.accent,
+      selectedTextColor: COLORS.white,
+    },
+  });
+
+  // Touch interaction state
+  const [touchX, setTouchX] = useState<number | null>(null);
+  const [selectedPoint, setSelectedPoint] = useState<SocDataPoint | null>(null);
 
   const screenWidth = Dimensions.get('window').width;
-  const chartHeight = 280;
-  const chartPadding = { top: 40, right: 16, bottom: 50, left: 12 };
+  const chartWidth = screenWidth - 32;
+  const chartHeight = 260;
+  const chartPadding = { top: 30, right: 15, bottom: 40, left: 5 };
+  const innerWidth = chartWidth - chartPadding.left - chartPadding.right;
+  const innerHeight = chartHeight - chartPadding.top - chartPadding.bottom;
 
   // Format date for display
   const formatDate = (dateString: string): string => {
@@ -99,9 +76,9 @@ export default function SocHistoryDetailScreen() {
   // Handle date selection
   const handleDateSelect = (day: any) => {
     const selected = day.dateString;
-    const selectedDateObj = new Date(selected);
+    const selectedDateObj = new Date(selected + 'T00:00:00');
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setHours(23, 59, 59, 999); // End of today
 
     // Validate: Cannot select future dates
     if (selectedDateObj > today) {
@@ -119,25 +96,37 @@ export default function SocHistoryDetailScreen() {
     setShowDatePicker(false);
   };
 
-  // Load data
+  // Load data from API
   const loadData = useCallback(async () => {
     if (!hasDevice || !device?.id || !selectedDate) {
+      setLoading(false);
       return;
     }
 
     setLoading(true);
+    setError(null);
     try {
-      // Use demo data since backend is not available
-      const data = generateDemoData(selectedDate);
-      setHourlyData(data);
+      const response = await dashboardService.getSocHistory(device.id, selectedDate);
+
+      // Transform API data to component format
+      const transformedData: SocDataPoint[] = response.data.map((point: SocHistoryDataPointDto) => ({
+        timestamp: point.timestamp,
+        soc: point.socPercent,
+        isInterpolated: point.isInterpolated,
+      }));
+
+      setSocData(transformedData);
 
       // Calculate statistics
-      const socValues = data.map(d => d.soc);
-      setMinSoc(Math.min(...socValues));
-      setMaxSoc(Math.max(...socValues));
-      setAvgSoc(Math.round(socValues.reduce((a, b) => a + b, 0) / socValues.length));
-    } catch (error) {
-      console.error('Error loading SOC history:', error);
+      if (transformedData.length > 0) {
+        const socValues = transformedData.map(d => d.soc);
+        setMinSoc(Math.round(Math.min(...socValues)));
+        setMaxSoc(Math.round(Math.max(...socValues)));
+        setAvgSoc(Math.round(socValues.reduce((a, b) => a + b, 0) / socValues.length));
+      }
+    } catch (err: any) {
+      console.error('Error loading SOC history:', err);
+      setError(err.message || 'Failed to load SOC history');
     } finally {
       setLoading(false);
     }
@@ -154,25 +143,64 @@ export default function SocHistoryDetailScreen() {
     return '#10B981'; // Green
   };
 
+  // Scale functions
+  const yScale = useCallback((value: number) => {
+    return chartPadding.top + innerHeight - (value / 100) * innerHeight;
+  }, [innerHeight]);
+
+  const xScale = useCallback((index: number) => {
+    if (socData.length <= 1) return chartPadding.left;
+    return chartPadding.left + (index / (socData.length - 1)) * innerWidth;
+  }, [socData.length, innerWidth]);
+
+  // Get point at touch position
+  const getPointAtPosition = useCallback((touchPosition: number) => {
+    if (socData.length === 0) return null;
+
+    const adjustedX = touchPosition - chartPadding.left;
+    const index = Math.round((adjustedX / innerWidth) * (socData.length - 1));
+    const clampedIndex = Math.max(0, Math.min(socData.length - 1, index));
+
+    return {
+      point: socData[clampedIndex],
+      index: clampedIndex,
+      x: xScale(clampedIndex),
+    };
+  }, [socData, innerWidth, xScale]);
+
+  // Pan responder for touch interaction
+  const panResponder = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderGrant: (evt) => {
+      const touchPosition = evt.nativeEvent.locationX;
+      const result = getPointAtPosition(touchPosition);
+      if (result) {
+        setSelectedPoint(result.point);
+        setTouchX(result.x);
+      }
+    },
+    onPanResponderMove: (evt) => {
+      const touchPosition = evt.nativeEvent.locationX;
+      const result = getPointAtPosition(touchPosition);
+      if (result) {
+        setSelectedPoint(result.point);
+        setTouchX(result.x);
+      }
+    },
+    onPanResponderRelease: () => {
+      setTouchX(null);
+      setSelectedPoint(null);
+    },
+    onPanResponderTerminationRequest: () => true,
+  }), [getPointAtPosition]);
+
   // Render line chart
   const renderChart = () => {
-    if (hourlyData.length === 0) return null;
-
-    const chartWidth = screenWidth - 32;
-    const innerWidth = chartWidth - chartPadding.left - chartPadding.right;
-    const innerHeight = chartHeight - chartPadding.top - chartPadding.bottom;
-
-    // Scale: Y axis is 0-100%
-    const yScale = (value: number) => {
-      return chartPadding.top + innerHeight - (value / 100) * innerHeight;
-    };
-
-    const xScale = (index: number) => {
-      return chartPadding.left + (index / (hourlyData.length - 1)) * innerWidth;
-    };
+    if (socData.length === 0) return null;
 
     // Create path for the line
-    const linePath = hourlyData
+    const linePath = socData
       .map((point, index) => {
         const x = xScale(index);
         const y = yScale(point.soc);
@@ -181,98 +209,176 @@ export default function SocHistoryDetailScreen() {
       .join(' ');
 
     // Create path for the gradient fill area
-    const areaPath = `${linePath} L ${xScale(hourlyData.length - 1)} ${chartPadding.top + innerHeight} L ${chartPadding.left} ${chartPadding.top + innerHeight} Z`;
+    const areaPath = `${linePath} L ${xScale(socData.length - 1)} ${chartPadding.top + innerHeight} L ${chartPadding.left} ${chartPadding.top + innerHeight} Z`;
+
+    // Calculate step for showing points (show ~6-8 points)
+    const pointStep = Math.max(1, Math.floor(socData.length / 6));
+
+    // Calculate step for X-axis labels (show ~7 labels)
+    const labelStep = Math.max(1, Math.floor(socData.length / 7));
 
     return (
       <View style={styles.chartContainer}>
         <Text style={styles.chartTitle}>{t('socHistoryDetail.chartTitle')}</Text>
-        <Svg width={chartWidth} height={chartHeight}>
-          <Defs>
-            <LinearGradient id="socGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <Stop offset="0%" stopColor={COLORS.accent} stopOpacity="0.3" />
-              <Stop offset="100%" stopColor={COLORS.accent} stopOpacity="0.05" />
-            </LinearGradient>
-          </Defs>
 
-          {/* Y-axis grid lines and labels */}
-          {[0, 25, 50, 75, 100].map((value) => {
-            const y = yScale(value);
-            return (
-              <G key={`grid-${value}`}>
+        {/* Floating Tooltip */}
+        {touchX !== null && selectedPoint && (
+          <View
+            style={{
+              position: 'absolute',
+              top: 25,
+              left: Math.max(8, Math.min(touchX - 55, chartWidth - 120)),
+              backgroundColor: COLORS.cardBg,
+              borderRadius: 10,
+              padding: 10,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.25,
+              shadowRadius: 3.84,
+              elevation: 5,
+              minWidth: 100,
+              zIndex: 100,
+            }}
+          >
+            <Text style={{ color: COLORS.textSoft, fontSize: 12, fontWeight: '700', marginBottom: 6 }}>
+              {selectedPoint.timestamp}
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+              <Text style={{ color: COLORS.textSoft, fontSize: 11, fontWeight: '500' }}>
+                SOC
+              </Text>
+              <Text style={{ color: getSocColor(selectedPoint.soc), fontSize: 13, fontWeight: '700' }}>
+                {selectedPoint.soc.toFixed(1)}%
+              </Text>
+            </View>
+            {selectedPoint.isInterpolated && (
+              <Text style={{ color: COLORS.textSoft, fontSize: 9, marginTop: 3, fontStyle: 'italic' }}>
+                {t('socHistoryDetail.interpolated', 'Interpolated')}
+              </Text>
+            )}
+          </View>
+        )}
+
+        <View {...panResponder.panHandlers}>
+          <Svg width={chartWidth} height={chartHeight}>
+            <Defs>
+              <LinearGradient id="socGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <Stop offset="0%" stopColor={COLORS.accent} stopOpacity="0.3" />
+                <Stop offset="100%" stopColor={COLORS.accent} stopOpacity="0.05" />
+              </LinearGradient>
+            </Defs>
+
+            {/* Y-axis grid lines and labels */}
+            {[0, 25, 50, 75, 100].map((value) => {
+              const y = yScale(value);
+              return (
+                <G key={`grid-${value}`}>
+                  <Line
+                    x1={chartPadding.left}
+                    y1={y}
+                    x2={chartWidth - chartPadding.right}
+                    y2={y}
+                    stroke={isDark ? '#333' : '#e5e5e5'}
+                    strokeWidth={1}
+                    strokeDasharray={value === 0 ? '0' : '4,4'}
+                  />
+                  <SvgText
+                    x={chartPadding.left + 3}
+                    y={y - 4}
+                    fontSize={9}
+                    fill={isDark ? '#888' : '#999'}
+                    textAnchor="start"
+                  >
+                    {value}%
+                  </SvgText>
+                </G>
+              );
+            })}
+
+            {/* Gradient fill area */}
+            <Path d={areaPath} fill="url(#socGradient)" />
+
+            {/* Main line */}
+            <Path
+              d={linePath}
+              stroke={COLORS.accent}
+              strokeWidth={2.5}
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+
+            {/* Touch indicator line */}
+            {touchX !== null && selectedPoint && (
+              <>
                 <Line
-                  x1={chartPadding.left}
-                  y1={y}
-                  x2={chartWidth - chartPadding.right}
-                  y2={y}
-                  stroke={isDark ? '#333' : '#e5e5e5'}
+                  x1={touchX}
+                  y1={chartPadding.top}
+                  x2={touchX}
+                  y2={chartPadding.top + innerHeight}
+                  stroke={COLORS.accent}
                   strokeWidth={1}
-                  strokeDasharray={value === 0 ? '0' : '4,4'}
+                  strokeDasharray="4,3"
+                  opacity={0.7}
                 />
-                <SvgText
-                  x={chartPadding.left + 4}
-                  y={y - 4}
-                  fontSize={10}
-                  fill={isDark ? '#666' : '#888'}
-                  textAnchor="start"
-                >
-                  {value}%
-                </SvgText>
-              </G>
-            );
-          })}
-
-          {/* Gradient fill area */}
-          <Path d={areaPath} fill="url(#socGradient)" />
-
-          {/* Main line */}
-          <Path
-            d={linePath}
-            stroke={COLORS.accent}
-            strokeWidth={2.5}
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-
-          {/* Data points */}
-          {hourlyData.map((point, index) => {
-            // Only show points every 4 hours to avoid clutter
-            if (index % 4 !== 0 && index !== hourlyData.length - 1) return null;
-            const x = xScale(index);
-            const y = yScale(point.soc);
-            return (
-              <G key={`point-${index}`}>
                 <Circle
-                  cx={x}
-                  cy={y}
-                  r={4}
+                  cx={touchX}
+                  cy={yScale(selectedPoint.soc)}
+                  r={5}
                   fill={COLORS.accent}
                   stroke={isDark ? COLORS.surface : '#fff'}
                   strokeWidth={2}
                 />
-              </G>
-            );
-          })}
+                <Circle
+                  cx={touchX}
+                  cy={yScale(selectedPoint.soc)}
+                  r={8}
+                  fill="transparent"
+                  stroke={COLORS.accent}
+                  strokeWidth={1.5}
+                  opacity={0.4}
+                />
+              </>
+            )}
 
-          {/* X-axis labels (every 4 hours) */}
-          {[0, 4, 8, 12, 16, 20, 23].map((hour) => {
-            const index = hour;
-            if (index >= hourlyData.length) return null;
-            const x = xScale(index);
-            return (
-              <SvgText
-                key={`x-label-${hour}`}
-                x={x}
-                y={chartHeight - 15}
-                fontSize={10}
-                fill={isDark ? '#888' : '#666'}
-                textAnchor="middle"
-              >
-                {hourlyData[index]?.hour || `${hour.toString().padStart(2, '0')}:00`}
-              </SvgText>
-            );
-          })}
-        </Svg>
+            {/* Data points - show every pointStep points (only when not touching) */}
+            {touchX === null && socData.map((point, index) => {
+              if (index % pointStep !== 0 && index !== socData.length - 1) return null;
+              const x = xScale(index);
+              const y = yScale(point.soc);
+              return (
+                <G key={`point-${index}`}>
+                  <Circle
+                    cx={x}
+                    cy={y}
+                    r={4}
+                    fill={point.isInterpolated ? COLORS.textSoft : COLORS.accent}
+                    stroke={isDark ? COLORS.surface : '#fff'}
+                    strokeWidth={2}
+                  />
+                </G>
+              );
+            })}
+
+            {/* X-axis labels */}
+            {socData.map((point, index) => {
+              if (index % labelStep !== 0 && index !== socData.length - 1) return null;
+              const x = xScale(index);
+              return (
+                <SvgText
+                  key={`x-label-${index}`}
+                  x={x}
+                  y={chartPadding.top + innerHeight + 18}
+                  fontSize={9}
+                  fill={isDark ? '#888' : '#666'}
+                  textAnchor="middle"
+                >
+                  {point.timestamp}
+                </SvgText>
+              );
+            })}
+          </Svg>
+        </View>
       </View>
     );
   };
@@ -305,17 +411,20 @@ export default function SocHistoryDetailScreen() {
 
       {/* Content */}
       <View style={styles.content}>
-        {!selectedDate ? (
-          <View style={styles.emptyStateContainer}>
-            <Calendar size={48} color={COLORS.textSoft} strokeWidth={1.5} />
-            <Text style={styles.emptyStateText}>{t('socHistoryDetail.selectDatePrompt')}</Text>
-            <Text style={styles.emptyStateSubtext}>
-              {t('socHistoryDetail.selectDateDescription')}
-            </Text>
-          </View>
-        ) : loading ? (
+        {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={COLORS.accent} />
+          </View>
+        ) : error ? (
+          <View style={styles.emptyStateContainer}>
+            <Text style={[styles.emptyStateText, { color: COLORS.error }]}>{error}</Text>
+            <TouchableOpacity onPress={loadData} style={{ marginTop: 16 }}>
+              <Text style={{ color: COLORS.accent }}>{t('common.retry', 'Retry')}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : socData.length === 0 ? (
+          <View style={styles.emptyStateContainer}>
+            <Text style={styles.emptyStateText}>{t('socHistoryDetail.noData', 'No data available for this date')}</Text>
           </View>
         ) : (
           <>
@@ -370,7 +479,7 @@ export default function SocHistoryDetailScreen() {
             <RNCalendar
               onDayPress={handleDateSelect}
               markedDates={markedDates}
-              maxDate={new Date().toISOString().split('T')[0]}
+              maxDate={todayString}
               theme={{
                 backgroundColor: COLORS.surface,
                 calendarBackground: COLORS.surface,

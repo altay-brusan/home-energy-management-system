@@ -1,6 +1,6 @@
 import apiClient from '../client/apiClient';
 import { ENDPOINTS } from '../client/config';
-import { MobileDashboardDto, WeatherForecastDto, SocResponseDto, EnergyRevenueResponseDto } from '../types/dashboard.types';
+import { MobileDashboardDto, WeatherForecastDto, SocResponseDto, EnergyRevenueResponseDto, LoadEnergySourceDistributionDto, SocHistoryResponseDto } from '../types/dashboard.types';
 import { PowerMetricsResponseDto } from './mobileDashboardService';
 
 export const dashboardService = {
@@ -89,6 +89,32 @@ export const dashboardService = {
     }
 
     const response = await apiClient.get<EnergyRevenueResponseDto>(url);
+    return response.data;
+  },
+
+  async getEnergySourceMix(
+    deviceId: string,
+    date: string
+  ): Promise<LoadEnergySourceDistributionDto> {
+    const response = await apiClient.get<LoadEnergySourceDistributionDto>(
+      ENDPOINTS.DASHBOARD.ENERGY_SOURCE_MIX,
+      {
+        params: { deviceId, date }
+      }
+    );
+    return response.data;
+  },
+
+  async getSocHistory(
+    deviceId: string,
+    date: string
+  ): Promise<SocHistoryResponseDto> {
+    const response = await apiClient.get<SocHistoryResponseDto>(
+      ENDPOINTS.DASHBOARD.SOC_HISTORY,
+      {
+        params: { deviceId, date }
+      }
+    );
     return response.data;
   },
 };

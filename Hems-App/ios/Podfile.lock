@@ -2498,7 +2498,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - RNReanimated (3.19.1):
+  - RNReanimated (3.19.5):
     - boost
     - DoubleConversion
     - fast_float
@@ -2525,11 +2525,11 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNReanimated/reanimated (= 3.19.1)
-    - RNReanimated/worklets (= 3.19.1)
+    - RNReanimated/reanimated (= 3.19.5)
+    - RNReanimated/worklets (= 3.19.5)
     - SocketRocket
     - Yoga
-  - RNReanimated/reanimated (3.19.1):
+  - RNReanimated/reanimated (3.19.5):
     - boost
     - DoubleConversion
     - fast_float
@@ -2556,10 +2556,10 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNReanimated/reanimated/apple (= 3.19.1)
+    - RNReanimated/reanimated/apple (= 3.19.5)
     - SocketRocket
     - Yoga
-  - RNReanimated/reanimated/apple (3.19.1):
+  - RNReanimated/reanimated/apple (3.19.5):
     - boost
     - DoubleConversion
     - fast_float
@@ -2588,7 +2588,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - RNReanimated/worklets (3.19.1):
+  - RNReanimated/worklets (3.19.5):
     - boost
     - DoubleConversion
     - fast_float
@@ -2615,10 +2615,10 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNReanimated/worklets/apple (= 3.19.1)
+    - RNReanimated/worklets/apple (= 3.19.5)
     - SocketRocket
     - Yoga
-  - RNReanimated/worklets/apple (3.19.1):
+  - RNReanimated/worklets/apple (3.19.5):
     - boost
     - DoubleConversion
     - fast_float
@@ -3158,11 +3158,11 @@ SPEC CHECKSUMS:
   React-timing: 97ada2c47b4c5932e7f773c7d239c52b90d6ca68
   React-utils: f0949d247a46b4c09f03e5a3cb1167602d0b729a
   ReactAppDependencyProvider: 3eb9096cb139eb433965693bbe541d96eb3d3ec9
-  ReactCodegen: 4d203eddf6f977caa324640a20f92e70408d648b
+  ReactCodegen: bf3e40487bd29216c267bee00f45a64f8ba44899
   ReactCommon: ce5d4226dfaf9d5dacbef57b4528819e39d3a120
   RNCAsyncStorage: 29f0230e1a25f36c20b05f65e2eb8958d6526e82
   RNGestureHandler: 3a73f098d74712952870e948b3d9cf7b6cae9961
-  RNReanimated: d39bf1990c5f3e9efee9ec54c0470622c09a5b82
+  RNReanimated: 9af1b9f7d221d1cc2f99d935bab08419cae7c1ce
   RNScreens: db22525a8ed56bb87ab038b8f03a050bf40e6ed8
   RNSVG: 6c39befcfad06eec55b40c19a030b2d9eca63334
   RNVectorIcons: 791f13226ec4a3fd13062eda9e892159f0981fae
@@ -3173,4 +3173,4 @@ SPEC CHECKSUMS:
 
 PODFILE CHECKSUM: bb10aba4b40959d203f43b9fb5b569b419c7fde0
 
-COCOAPODS: 1.16.2
+COCOAPODS: 1.15.2

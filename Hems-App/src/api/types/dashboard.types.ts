@@ -129,3 +129,38 @@ export interface EnergyRevenueResponseDto {
   data: EnergyRevenueDataPointDto[];
   total: EnergyRevenueTotalDto;
 }
+
+export interface EnergySourceDto {
+  source: string;
+  providedEnergyWh: number;
+  contribution: number;
+}
+
+export interface EnergySourceDistributionSummaryDto {
+  sampleCount: number;
+  firstSampleTime: string;
+  lastSampleTime: string;
+  averageIntervalMinutes: number;
+  totalTimeSpanMinutes: number;
+  zeroSupplySamples: number;
+}
+
+export interface LoadEnergySourceDistributionDto {
+  date: string;
+  deviceId: string;
+  loadDemandWh: number;
+  sources: EnergySourceDto[];
+  summary: EnergySourceDistributionSummaryDto;
+}
+
+export interface SocHistoryDataPointDto {
+  timestamp: string;
+  socPercent: number;
+  isInterpolated: boolean;
+}
+
+export interface SocHistoryResponseDto {
+  date: string;
+  deviceId: string;
+  data: SocHistoryDataPointDto[];
+}
