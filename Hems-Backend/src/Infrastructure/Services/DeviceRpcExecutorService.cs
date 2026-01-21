@@ -541,6 +541,7 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
             "ExternalRelayConfigState" => new ExternalRelayConfigRequest(),
             "GeneratorSmartLoadOverride" => new GeneratorSmartLoadOverrideRequest(),
             "SystemConnectionStructure" => new SystemConnectionStructureRequest(),
+            "BatteryCapacityConfigState" => new BatteryCapacityConfigRequest(),
             _ => throw new NotSupportedException($"Unsupported RPC kind: {rpcKind}")
         };
     }
@@ -583,6 +584,9 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
                 break;
             case SystemConnectionStructureRequest systemConnectionRequest:
                 PopulateSystemConnectionStructureField(systemConnectionRequest, parts, value);
+                break;
+            case BatteryCapacityConfigRequest batteryCapacityRequest:
+                PopulateBatteryCapacityField(batteryCapacityRequest, parts, value);
                 break;
             default:
                 throw new NotSupportedException($"Unsupported request type: {request.GetType().Name}");
@@ -1270,6 +1274,28 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
         }
     }
 
+    /// <summary>
+    /// Populates a field in BatteryCapacityConfigRequest
+    /// </summary>
+    private static void PopulateBatteryCapacityField(BatteryCapacityConfigRequest request, string[] parts, object value)
+    {
+        if (parts.Length == 0) return;
+
+        var property = parts[0];
+
+        switch (property)
+        {
+            case "batteryCapacityAh":
+                request.BatteryCapacityAh = Convert.ToInt32(value);
+                break;
+            case "maxChargeCurrentA":
+                request.MaxChargeCurrentA = Convert.ToInt32(value);
+                break;
+            case "maxDischargeCurrentA":
+                request.MaxDischargeCurrentA = Convert.ToInt32(value);
+                break;
+        }
+    }
 
     /// <summary>
     /// Serializes a strongly-typed request object to Dictionary<string, object> for RPC calls.

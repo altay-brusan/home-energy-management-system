@@ -114,6 +114,34 @@ public static class RpcMethodMapping
     /// </summary>
     public static readonly Dictionary<string, RpcMethodConfig> ParameterMappings = new()
     {
+        // ===== BATTERY CAPACITY CONFIGURATION =====
+        // RPC: getBatteryCapacityConfig / setBatteryCapacityConfig
+
+        ["BatteryCapacity"] = new()
+        {
+            RpcMethod = "setBatteryCapacityConfig",
+            RpcGetMethod = "getBatteryCapacityConfig",
+            FieldPath = "batteryCapacityAh",
+            RpcKind = "BatteryCapacityConfigState",
+            ValueMapper = val => int.Parse(val)
+        },
+        ["MaxBatteryChargeCurrent"] = new()
+        {
+            RpcMethod = "setBatteryCapacityConfig",
+            RpcGetMethod = "getBatteryCapacityConfig",
+            FieldPath = "maxChargeCurrentA",
+            RpcKind = "BatteryCapacityConfigState",
+            ValueMapper = val => int.Parse(val)
+        },
+        ["MaxBatteryDischargeCurrent"] = new()
+        {
+            RpcMethod = "setBatteryCapacityConfig",
+            RpcGetMethod = "getBatteryCapacityConfig",
+            FieldPath = "maxDischargeCurrentA",
+            RpcKind = "BatteryCapacityConfigState",
+            ValueMapper = val => int.Parse(val)
+        },
+
         // ===== BATTERY CHARGE SOURCE CONFIGURATION =====
         // RPC: getBatteryChargeSourceConfig / setBatteryChargeSourceConfig
 
