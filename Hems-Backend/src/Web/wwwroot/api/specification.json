@@ -486,12 +486,12 @@
         ]
       }
     },
-    "/api/Dashboard/LoadEnergySourceDistribution": {
+    "/api/Dashboard/EnergySourceMix": {
       "get": {
         "tags": [
           "Dashboard"
         ],
-        "operationId": "LoadEnergySourceDistribution",
+        "operationId": "EnergySourceMix",
         "parameters": [
           {
             "name": "deviceId",
@@ -520,7 +520,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/LoadEnergySourceDistributionDto"
+                  "$ref": "#/components/schemas/EnergySourceMixDto"
                 }
               }
             }
@@ -5158,7 +5158,7 @@
           }
         }
       },
-      "LoadEnergySourceDistributionDto": {
+      "EnergySourceMixDto": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -5180,7 +5180,7 @@
             }
           },
           "summary": {
-            "$ref": "#/components/schemas/EnergyDistributionSummary"
+            "$ref": "#/components/schemas/EnergySourceMixSummary"
           }
         }
       },
@@ -5201,7 +5201,7 @@
           }
         }
       },
-      "EnergyDistributionSummary": {
+      "EnergySourceMixSummary": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
