@@ -18,22 +18,15 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
     private readonly ILogger<DeviceRpcExecutorService> _logger;
     private readonly Random _jitterRandom = new();
 
-    // TODO: REFACTOR - These parameters are temporarily disabled due to RPC execution issues.
-    // The GeneratorAndSmartLoadConfig RPC needs investigation and proper fix.
-    // Remove this skip list and re-enable these parameters once the issue is resolved.
+    // These parameters are hidden duplicates from GeneratorSettings that overlap with
+    // GeneratorCharging settings. They are hidden in the UI (Visible=false) but we still
+    // skip RPC for them as the "real" parameters in GeneratorCharging handle the device updates.
     private static readonly HashSet<string> SkippedParameters = new(StringComparer.OrdinalIgnoreCase)
     {
-        "GeneratorCharge",
-        "GeneratorGridCharge",
-        "GeneratorStartSOC",
-        "GeneratorChargeCurrent",
-        "GeneratorPeakShavingEnabled",
-        "GeneratorPeakShavingLimitPower",
-        "SmartLoadEnabled",
-        "SmartLoadOffSOC",
-        "SmartLoadOnSOC",
-        "SmartLoadPVPowerThreshold",
-        "SmartLoadOpenDelay"
+        "GeneratorCharge",        // Duplicate of GeneratorChargingEnabled
+        "GeneratorGridCharge",    // Duplicate of GridChargingEnabled
+        "GeneratorStartSOC",      // Duplicate of GeneratorChargingStartSOC
+        "GeneratorChargeCurrent"  // Duplicate of GeneratorChargingCurrent
     };
 
     // Error messages that indicate retryable conditions
@@ -429,18 +422,32 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
 
             if (response == null || !response.Success || response.Response == null)
             {
+                _logger.LogWarning(
+                    "📖 GetParameterValueAsync failed for {ParameterName}: Response={ResponseNull}, Success={Success}, ResponseData={ResponseDataNull}",
+                    parameterName,
+                    response == null ? "null" : "not-null",
+                    response?.Success,
+                    response?.Response == null ? "null" : "not-null");
                 return null;
             }
 
             var configJson = JsonSerializer.Serialize(response.Response);
+            _logger.LogInformation(
+                "📖 GetParameterValueAsync RPC response for {ParameterName} ({RpcMethod}): {ConfigJson}",
+                parameterName, config.RpcGetMethod, configJson);
+
             var configDict = JsonSerializer.Deserialize<Dictionary<string, object>>(configJson);
 
             if (configDict == null)
             {
+                _logger.LogWarning("📖 GetParameterValueAsync: configDict is null after deserialization");
                 return null;
             }
 
             var value = GetNestedValue(configDict, config.FieldPath);
+            _logger.LogInformation(
+                "📖 GetParameterValueAsync: FieldPath={FieldPath}, ExtractedValue={Value}",
+                config.FieldPath, value?.ToString() ?? "null");
             return value?.ToString();
         }
         catch

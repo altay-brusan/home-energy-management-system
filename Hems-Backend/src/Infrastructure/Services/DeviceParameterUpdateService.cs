@@ -50,6 +50,20 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
     private static readonly System.Text.RegularExpressions.Regex TimeSlotEndRegex =
         new(@"^TimeSlot\d+End$", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled);
 
+    /// <summary>
+    /// Hidden duplicate parameters from GeneratorSettings that overlap with GeneratorCharging.
+    /// These are hidden in the UI (Visible=false) and skipped for RPC since the "real"
+    /// parameters in GeneratorCharging handle the device updates.
+    /// Must match the SkippedParameters set in DeviceRpcExecutorService.
+    /// </summary>
+    private static readonly HashSet<string> SkippedParameters = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "GeneratorCharge",        // Duplicate of GeneratorChargingEnabled
+        "GeneratorGridCharge",    // Duplicate of GridChargingEnabled
+        "GeneratorStartSOC",      // Duplicate of GeneratorChargingStartSOC
+        "GeneratorChargeCurrent"  // Duplicate of GeneratorChargingCurrent
+    };
+
     public DeviceParameterUpdateService(
         IDeviceLockService lockService,
         IServiceScopeFactory serviceScopeFactory,
@@ -188,12 +202,19 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
                     // The device handles end times internally. We only save to our local database for UI display.
                     var isTimeSlotEnd = IsTimeSlotEndParameter(param.ParameterName);
 
-                    if (isTimeSlotEnd)
+                    // Check if this parameter is temporarily disabled (RPC has issues)
+                    var isSkippedParameter = IsSkippedParameter(param.ParameterName);
+
+                    if (isTimeSlotEnd || isSkippedParameter)
                     {
-                        // Skip RPC for time slot end parameters - just update local database
+                        // Skip RPC for these parameters - just update local database
+                        var skipReason = isTimeSlotEnd
+                            ? "time slot end parameter"
+                            : "temporarily disabled (GeneratorAndSmartLoadConfig RPC issue)";
+
                         _logger.LogInformation(
-                            "⏭️ Skipping RPC for time slot end parameter {ParameterName} - saving to local database only",
-                            param.ParameterName);
+                            "⏭️ Skipping RPC for {ParameterName} ({Reason}) - saving to local database only",
+                            param.ParameterName, skipReason);
 
                         // Update database
                         if (paramValue != null)
@@ -215,7 +236,7 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
                             Status = DeviceSettingUpdateStatus.Success,
                             NewValue = param.Value,
                             OldValue = oldValue,
-                            VerifiedValue = null, // No RPC verification for end times
+                            VerifiedValue = null, // No RPC verification for skipped parameters
                             FailedReason = null,
                             RetryAttempts = 0,
                             AttemptedAt = DateTime.UtcNow
@@ -633,6 +654,16 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
     private static bool IsTimeSlotEndParameter(string parameterName)
     {
         return TimeSlotEndRegex.IsMatch(parameterName);
+    }
+
+    /// <summary>
+    /// Checks if a parameter is temporarily disabled due to RPC issues.
+    /// These parameters are saved to the local database but not sent via RPC.
+    /// TODO: REFACTOR - Remove this once GeneratorAndSmartLoadConfig RPC is fixed.
+    /// </summary>
+    private static bool IsSkippedParameter(string parameterName)
+    {
+        return SkippedParameters.Contains(parameterName);
     }
 
     /// <summary>

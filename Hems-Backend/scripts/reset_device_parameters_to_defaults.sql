@@ -155,7 +155,7 @@ INSERT INTO temp_default_values (param_name, default_value) VALUES
     ('GeneratorChargeCurrent', '40'),
     ('GeneratorPeakShavingEnabled', 'false'),
     ('GeneratorPeakShavingLimitPower', '2000'),
-    ('SmartLoadEnabled', 'false'),
+    ('SmartLoadEnabled', '0'),  -- 0=Generator Only, 1=Smart Load, 2=Microinverter
     ('SmartLoadOffSOC', '95'),
     ('SmartLoadOnSOC', '100'),
     ('SmartLoadPVPowerThreshold', '0'),

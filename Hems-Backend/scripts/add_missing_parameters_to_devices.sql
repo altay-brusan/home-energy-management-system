@@ -240,7 +240,7 @@ CROSS JOIN (VALUES
     ('GeneratorSettings', 'GeneratorChargeCurrent', 'Generator Charge Current', 'Decimal', 'A', '40', 4),
     ('GeneratorPeakShaving', 'GeneratorPeakShavingEnabled', 'Enable/Disable Generator Peak Shaving', 'Boolean', '', 'false', 1),
     ('GeneratorPeakShaving', 'GeneratorPeakShavingLimitPower', 'Generator Peak Shaving Limit Power', 'Decimal', 'W', '2000', 2),
-    ('SmartLoad', 'SmartLoadEnabled', 'Enable/Disable Smart Load', 'Boolean', '', 'false', 1),
+    ('SmartLoad', 'SmartLoadEnabled', 'Generator port connection mode', 'Decimal', '', '0', 1),
     ('SmartLoad', 'SmartLoadOffSOC', 'Smart Load OFF SOC (turn off below)', 'Decimal', '%', '95', 2),
     ('SmartLoad', 'SmartLoadOnSOC', 'Smart Load ON SOC (turn on above)', 'Decimal', '%', '100', 3),
     ('SmartLoad', 'SmartLoadPVPowerThreshold', 'Smart Load PV Power Threshold', 'Decimal', 'W', '0', 4),
@@ -300,7 +300,7 @@ INSERT INTO temp_defaults (param_name, default_value) VALUES
     ('TimeSlot6GenCharge', 'false'), ('TimeSlot6MaxDischarge', '12000'), ('TimeSlot6MinBatterySOC', '80'), ('TimeSlot6MinBatteryVoltage', '48.0'),
     ('GeneratorCharge', 'false'), ('GeneratorGridCharge', 'true'), ('GeneratorStartSOC', '20'), ('GeneratorChargeCurrent', '40'),
     ('GeneratorPeakShavingEnabled', 'false'), ('GeneratorPeakShavingLimitPower', '2000'),
-    ('SmartLoadEnabled', 'false'), ('SmartLoadOffSOC', '95'), ('SmartLoadOnSOC', '100'),
+    ('SmartLoadEnabled', '0'), ('SmartLoadOffSOC', '95'), ('SmartLoadOnSOC', '100'),
     ('SmartLoadPVPowerThreshold', '0'), ('SmartLoadOpenDelay', '100'), ('SmartLoadOnGridAlwaysOn', 'false');
 
 -- Add missing schemes for single-phase-loftty
