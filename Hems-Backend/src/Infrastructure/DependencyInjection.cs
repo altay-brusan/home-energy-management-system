@@ -117,6 +117,10 @@ public static class DependencyInjection
         builder.Services.AddTransient<IEmailSender<ApplicationUser>, EmailSender>();
         builder.Services.AddTransient<IInvitationEmailService, InvitationEmailService>();
 
+        // App Links settings for smart invitation redirect
+        builder.Services.Configure<AppLinksSettings>(builder.Configuration.GetSection("AppLinks"));
+        builder.Services.AddSingleton<IPlatformDetectionService, PlatformDetectionService>();
+
         // Demo Data Service (for app store assessment demo users)
         builder.Services.AddScoped<IDemoDataService, DemoDataService>();
 

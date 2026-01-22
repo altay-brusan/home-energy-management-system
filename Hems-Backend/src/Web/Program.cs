@@ -101,7 +101,19 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.UseStaticFiles();
+// Configure static files with proper content type for apple-app-site-association
+app.UseStaticFiles(new StaticFileOptions
+{
+    ServeUnknownFileTypes = true,
+    OnPrepareResponse = ctx =>
+    {
+        // Apple App Site Association file must be served as application/json
+        if (ctx.File.Name == "apple-app-site-association")
+        {
+            ctx.Context.Response.ContentType = "application/json";
+        }
+    }
+});
 
 // Use custom exception handler instead of developer exception page
 app.UseExceptionHandler(options => { });
