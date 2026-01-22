@@ -4,7 +4,7 @@ import {
   CreateInvitationCommand,
   InvitationListDto,
 } from '../types/deviceSharingService.ts';
-import { AcceptInvitationCommand } from '../types/invitations.types';
+import { AcceptInvitationCommand, PendingInvitationsResult } from '../types/invitations.types';
 
 export const invitationsService = {
   async createInvitation(data: any): Promise<void> {
@@ -31,5 +31,10 @@ export const invitationsService = {
   async removeUser(invitationId: string): Promise<void> {
     const url = ENDPOINTS.INVITATIONS.REMOVE_USER.replace(':invitationId', invitationId);
     await apiClient.delete(url);
+  },
+
+  async getPendingInvitations(): Promise<PendingInvitationsResult> {
+    const response = await apiClient.get<PendingInvitationsResult>(ENDPOINTS.INVITATIONS.GET_PENDING);
+    return response.data;
   },
 };

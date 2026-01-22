@@ -101,8 +101,8 @@ export default function DashboardScreen (): JSX.Element {
     if (isAdminUser) return;
 
     if (needsSetup === 'no_sites') {
-      // User has no sites - go to HomeSetup
-      navigation.reset({ index: 0, routes: [{ name: 'HomeSetup' }] });
+      // User has no sites - go to JoinOrCreate (can create home or enter invitation code)
+      navigation.reset({ index: 0, routes: [{ name: 'JoinOrCreate' }] });
     } else if (needsSetup === 'no_selected_site') {
       // User has sites but none selected - go to Home to select one
       navigation.reset({ index: 0, routes: [{ name: 'Home' }] });

@@ -13,6 +13,7 @@ import { useInvitation } from '../../../../hooks/useInvitation';
 import {
   DeviceSharingForm,
   DeviceSharingUserItem,
+  AcceptInvitationForm,
 } from './ui';
 
 export default function DeviceSharingScreen({ navigation }: any) {
@@ -114,6 +115,10 @@ export default function DeviceSharingScreen({ navigation }: any) {
         COLORS={COLORS}
         styles={styles}
         navigation={navigation}
+      />
+      <AcceptInvitationForm
+        COLORS={COLORS}
+        styles={styles}
       />
       {allUsers.length > 0 && (
         <Text style={[styles.sharedWithTitle, { color: COLORS.text }]}>

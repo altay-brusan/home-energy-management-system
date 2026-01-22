@@ -6,6 +6,9 @@ import {
   DeviceSettingsTreeVm,
   UpdateDeviceParametersCommand,
   UpdateDeviceParametersResponse,
+  GetGridConfigResponse,
+  UpdateGridConfigCommand,
+  UpdateGridConfigResponse,
 } from '../types/deviceSettings.types';
 import {
   GetModesResponse,
@@ -88,5 +91,38 @@ export const deviceSettingsService = {
       deviceId
     );
     await apiClient.post(url, command);
+  },
+
+  // ========================================================================
+  // Grid Config Operations (fire-and-forget, causes device restart)
+  // ========================================================================
+
+  /**
+   * Get grid configuration parameters
+   * GET /DeviceSettings/device/{deviceId}/grid-config
+   */
+  async getGridConfig(deviceId: string): Promise<GetGridConfigResponse> {
+    const url = ENDPOINTS.DEVICE_SETTINGS.GET_GRID_CONFIG.replace(':deviceId', deviceId);
+    const response = await apiClient.get<GetGridConfigResponse>(url);
+    return response.data;
+  },
+
+  /**
+   * Update grid configuration (fire-and-forget, causes device restart)
+   * PUT /DeviceSettings/device/{deviceId}/grid-config
+   *
+   * IMPORTANT: This operation causes the device to restart.
+   * The response includes restart timing information.
+   */
+  async updateGridConfig(
+    deviceId: string,
+    command: UpdateGridConfigCommand
+  ): Promise<UpdateGridConfigResponse> {
+    const url = ENDPOINTS.DEVICE_SETTINGS.UPDATE_GRID_CONFIG.replace(':deviceId', deviceId);
+    // Use longer timeout for grid config updates (3 minutes)
+    const response = await apiClient.put<UpdateGridConfigResponse>(url, command, {
+      timeout: 180000,
+    });
+    return response.data;
   },
 };

@@ -39,18 +39,17 @@ export const getOnboardingStyles = (
       alignSelf: 'center',
       borderRadius: 20,
       backgroundColor: COLORS.cardBg,
-      borderWidth: isDark ? 0 : 1, // light modda hafif sınır
+      borderWidth: isDark ? 0 : 1,
       borderColor: isDark ? 'transparent' : COLORS.border,
       elevation: 0,
       shadowOpacity: 0,
       shadowRadius: 0,
       shadowOffset: { width: 0, height: 0 },
       zIndex: 1,
-      minHeight: 400,
       marginTop: -SPACING.md,
+      paddingBottom: SPACING.lg,
     },
     inner: {
-      flex: 1,
     },
     stepLabel: {
       fontSize: TYPOGRAPHY.sm,

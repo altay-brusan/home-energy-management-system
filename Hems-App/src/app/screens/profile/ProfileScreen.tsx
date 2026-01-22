@@ -33,13 +33,13 @@ export default function ProfileScreen ({ navigation }: any) {
   const isAdmin = hasRole('Admin') || hasRole('Administrator');
   const { sites } = useSitesStore();
 
-  // Site'ı olmayan kullanıcıları HomeSetup'a yönlendir
+  // Site'ı olmayan kullanıcıları JoinOrCreate'e yönlendir (ev oluşturabilir veya davet kodu girebilir)
   useEffect(() => {
     if (!isAdmin && sites.length === 0) {
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
-          routes: [{ name: 'HomeSetup' }],
+          routes: [{ name: 'JoinOrCreate' }],
         })
       );
     }

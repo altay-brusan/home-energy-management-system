@@ -36,6 +36,7 @@ import { reverseGeocode, GeocodingResult } from '../../../utils/geocoding';
 import MainLayout from '../../layouts/MainLayout';
 import { getOnboardingStyles } from './Onboarding.styles';
 import { getHomeSetupSchema, type HomeSetupForm } from './home.schema';
+import { navigationRef } from '../../routes';
 
 type RootStackParamList = {
   Home: undefined;
@@ -254,7 +255,11 @@ export default function HomeSetupScreen () {
           },
         });
 
-        navigation.navigate('Home');
+        // Reset navigation stack to MainTabs to show the tab bar
+        navigationRef.current?.reset({
+          index: 0,
+          routes: [{ name: 'MainTabs' }],
+        });
       } catch (error) {
         showToast({
           type: 'error',

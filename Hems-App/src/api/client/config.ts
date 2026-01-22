@@ -106,6 +106,7 @@ export const ENDPOINTS = {
   INVITATIONS: {
     CREATE: '/Invitations/Create',
     GET_BY_SITE: '/Invitations/BySite/:siteId',
+    GET_PENDING: '/Invitations/Pending',
     ACCEPT: '/Invitations/Accept',
     DECLINE: '/Invitations/Decline',
     REMOVE_USER: '/Invitations/RemoveUser/:invitationId',
@@ -190,6 +191,9 @@ export const ENDPOINTS = {
     UPDATE_DEVICE_MODE: '/DeviceSettings/device/:deviceId/mode',
     GET_DEVICE_PRICE: '/DeviceSettings/device/:deviceId/price',
     UPDATE_DEVICE_PRICE: '/DeviceSettings/device/:deviceId/price',
+    // Grid config operations (fire-and-forget, causes device restart)
+    GET_GRID_CONFIG: '/DeviceSettings/device/:deviceId/grid-config',
+    UPDATE_GRID_CONFIG: '/DeviceSettings/device/:deviceId/grid-config',
     // Operation state and history (for cloud resilience)
     GET_OPERATION_STATE: '/DeviceSettings/operations/:correlationId',
     GET_OPERATION_HISTORY: '/DeviceSettings/device/:deviceId/history',
