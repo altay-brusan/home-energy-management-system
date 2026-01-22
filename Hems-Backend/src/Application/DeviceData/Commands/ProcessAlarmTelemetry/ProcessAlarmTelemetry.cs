@@ -61,7 +61,8 @@ public class ProcessAlarmTelemetryCommandHandler : IRequestHandler<ProcessAlarmT
     {
         var body = request.RawBody;
 
-        _logger.LogInformation("Alarm telemetry received at {UtcNow}", DateTime.UtcNow);
+        _logger.LogInformation("Alarm telemetry received at {UtcNow}. Raw data: {RawBody}",
+            DateTime.UtcNow, body.GetRawText());
 
         // 1) Parse ThingsBoardDeviceId from root level "deviceId" field
         Guid thingsBoardDeviceId = Guid.Empty;
