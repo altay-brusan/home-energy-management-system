@@ -1,5 +1,8 @@
+using Hems_Backend.Application.Common.Exceptions;
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Models;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hems_Backend.Application.ParameterGroups.Commands.DeleteParameterGroup;
 
@@ -24,25 +27,31 @@ public class DeleteParameterGroupCommandHandler : IRequestHandler<DeleteParamete
 
         if (entity == null)
         {
-            throw new ArgumentException("Kayıt bulunamadı.");
+            throw AppException.NotFound(
+                MessageCodes.PARAMETER_GROUP_NOT_FOUND,
+                new Dictionary<string, object> { ["parameterGroupId"] = request.Id });
         }
 
-        // Alt grup kontrolü
+        // Check for subgroups
         var hasChildren = await _context.ParameterGroups
             .AnyAsync(pg => pg.ParentId == request.Id, cancellationToken);
 
         if (hasChildren)
         {
-            throw new InvalidOperationException("Üst kayıtta alt kayıt bulunduğu için silme işlemi gerçekleştirilemedi.");
+            throw AppException.BadRequest(
+                MessageCodes.PARAMETER_GROUP_HAS_SUBGROUPS,
+                new Dictionary<string, object> { ["parameterGroupId"] = request.Id });
         }
 
-        // Parameters tablosunda referans kontrolü
+        // Check for parameters in this group
         var hasParameters = await _context.Parameters
             .AnyAsync(p => p.ParameterGroupId == request.Id, cancellationToken);
 
         if (hasParameters)
         {
-            throw new InvalidOperationException("Bu gruba ait parametreler bulunduğu için silme işlemi gerçekleştirilemedi.");
+            throw AppException.BadRequest(
+                MessageCodes.PARAMETER_GROUP_HAS_PARAMETERS,
+                new Dictionary<string, object> { ["parameterGroupId"] = request.Id });
         }
 
         _context.ParameterGroups.Remove(entity);

@@ -1,5 +1,6 @@
 using Hems_Backend.Application.Common.Exceptions;
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Domain.Entities;
 using Hems_Backend.Domain.Enums;
 using MediatR;
@@ -37,18 +38,22 @@ public class CreateInvitationCommandHandler : IRequestHandler<CreateInvitationCo
 
     public async Task<Guid> Handle(CreateInvitationCommand request, CancellationToken cancellationToken)
     {
-        var currentUserId = _user.Id ?? throw new UnauthorizedAccessException("User not authenticated");
+        var currentUserId = _user.Id
+            ?? throw AppException.Unauthorized(MessageCodes.AUTH_USER_NOT_AUTHENTICATED);
 
         // Verify site exists
         var site = await _context.Sites
             .FirstOrDefaultAsync(s => s.Id == request.SiteId && !s.IsDeleted, cancellationToken)
-            ?? throw new Common.Exceptions.NotFoundException(nameof(Site), request.SiteId);
+            ?? throw AppException.NotFound(
+                MessageCodes.SITE_NOT_FOUND,
+                new Dictionary<string, object> { ["siteId"] = request.SiteId });
 
         // Only site owner can send invitations
         if (site.UserId != currentUserId)
         {
-            throw new Common.Exceptions.ForbiddenAccessException(
-                "Only the site owner can send invitations. You do not have permission to invite others to this site.");
+            throw AppException.Forbidden(
+                MessageCodes.INVITATION_ONLY_OWNER_CAN_INVITE,
+                new Dictionary<string, object> { ["siteId"] = request.SiteId });
         }
 
         // Look up user by email
@@ -64,19 +69,23 @@ public class CreateInvitationCommandHandler : IRequestHandler<CreateInvitationCo
 
         if (existingInvitation != null)
         {
-            throw new InvalidOperationException("A pending invitation already exists for this user and site.");
+            throw AppException.BadRequest(
+                MessageCodes.INVITATION_ALREADY_EXISTS,
+                new Dictionary<string, object> { ["email"] = request.Email, ["siteId"] = request.SiteId });
         }
 
         // Check if user is trying to invite themselves
         if (!string.IsNullOrEmpty(invitedUserId) && invitedUserId == currentUserId)
         {
-            throw new InvalidOperationException("You cannot invite yourself.");
+            throw AppException.BadRequest(MessageCodes.INVITATION_CANNOT_INVITE_SELF);
         }
 
         // Check if user is the site owner (can't invite yourself)
         if (site.UserId == invitedUserId && !string.IsNullOrEmpty(invitedUserId))
         {
-            throw new InvalidOperationException("Cannot invite the site owner.");
+            throw AppException.BadRequest(
+                MessageCodes.INVITATION_CANNOT_INVITE_OWNER,
+                new Dictionary<string, object> { ["email"] = request.Email });
         }
 
         // Check if user is already a member of the site (prevent spam invitations)
@@ -87,7 +96,9 @@ public class CreateInvitationCommandHandler : IRequestHandler<CreateInvitationCo
 
             if (existingMembership)
             {
-                throw new InvalidOperationException("This user is already a member of this site.");
+                throw AppException.BadRequest(
+                    MessageCodes.INVITATION_USER_ALREADY_MEMBER,
+                    new Dictionary<string, object> { ["email"] = request.Email, ["siteId"] = request.SiteId });
             }
         }
 
@@ -112,14 +123,6 @@ public class CreateInvitationCommandHandler : IRequestHandler<CreateInvitationCo
         _context.Invitations.Add(invitation);
 
         // Create notification record
-        // TODO: Refactor notification delivery system
-        // Currently, this notification is only stored in the database but not actively delivered to the user.
-        // The invited user may not be registered yet, so SignalR real-time notification won't work.
-        // We need to implement a mechanism to fetch pending notifications when the user logs in.
-        // Options to consider:
-        // 1. Add GET /api/Invitations/Pending endpoint to fetch pending invitations by email
-        // 2. Include unread notification count in login/user-info response
-        // 3. Frontend should call notification endpoint after successful login
         var notification = new Notification
         {
             Id = Guid.NewGuid(),
@@ -169,4 +172,3 @@ public class CreateInvitationCommandHandler : IRequestHandler<CreateInvitationCo
         return token;
     }
 }
-

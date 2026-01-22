@@ -1,4 +1,6 @@
+using Hems_Backend.Application.Common.Exceptions;
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,7 +36,9 @@ public class MarkNotificationAsReadCommandHandler : IRequestHandler<MarkNotifica
 
         if (notification == null)
         {
-            throw new ArgumentException($"Notification with ID {request.NotificationId} not found.");
+            throw AppException.NotFound(
+                MessageCodes.NOTIFICATION_NOT_FOUND,
+                new Dictionary<string, object> { ["notificationId"] = request.NotificationId });
         }
 
         // Validate site access
@@ -70,7 +74,9 @@ public class MarkNotificationAsReadCommandHandler : IRequestHandler<MarkNotifica
 
         if (!hasUserSiteAccess)
         {
-            throw new UnauthorizedAccessException($"You don't have access to site {siteId}");
+            throw AppException.Forbidden(
+                MessageCodes.NOTIFICATION_ACCESS_DENIED,
+                new Dictionary<string, object> { ["siteId"] = siteId });
         }
     }
 }

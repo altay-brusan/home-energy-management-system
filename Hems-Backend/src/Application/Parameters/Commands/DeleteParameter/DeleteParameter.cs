@@ -1,5 +1,8 @@
+using Hems_Backend.Application.Common.Exceptions;
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Models;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hems_Backend.Application.Parameters.Commands.DeleteParameter;
 
@@ -24,25 +27,31 @@ public class DeleteParameterCommandHandler : IRequestHandler<DeleteParameterComm
 
         if (entity == null)
         {
-            throw new ArgumentException("Kayıt bulunamadı.");
+            throw AppException.NotFound(
+                MessageCodes.PARAMETER_NOT_FOUND,
+                new Dictionary<string, object> { ["parameterId"] = request.Id });
         }
 
-        // SetupDeviceParameterValues tablosunda referans kontrolü
+        // Check for references in SetupDeviceParameterValues
         var hasSetupDeviceParameterValues = await _context.SetupDeviceParameterValues
             .AnyAsync(sdpv => sdpv.ParameterId == request.Id, cancellationToken);
 
         if (hasSetupDeviceParameterValues)
         {
-            throw new InvalidOperationException("Bu parametre kullanıldığı için silme işlemi gerçekleştirilemedi.");
+            throw AppException.BadRequest(
+                MessageCodes.PARAMETER_IN_USE,
+                new Dictionary<string, object> { ["parameterId"] = request.Id });
         }
 
-        // ParameterValueSettingScheme tablosunda referans kontrolü
+        // Check for references in ParameterValueSettingScheme
         var hasParameterValueSettingSchemes = await _context.ParameterValueSettingSchemes
             .AnyAsync(pvss => pvss.ParameterId == request.Id, cancellationToken);
 
         if (hasParameterValueSettingSchemes)
         {
-            throw new InvalidOperationException("Bu parametre şemada kullanıldığı için silme işlemi gerçekleştirilemedi.");
+            throw AppException.BadRequest(
+                MessageCodes.PARAMETER_IN_SCHEMA,
+                new Dictionary<string, object> { ["parameterId"] = request.Id });
         }
 
         _context.Parameters.Remove(entity);

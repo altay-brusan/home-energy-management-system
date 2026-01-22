@@ -1,6 +1,9 @@
+using Hems_Backend.Application.Common.Exceptions;
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Domain.Entities;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hems_Backend.Application.DeviceSettings.Commands.CreateSetupDeviceParameterValue;
 
@@ -29,34 +32,40 @@ public class CreateSetupDeviceParameterValueCommandHandler : IRequestHandler<Cre
 
     public async Task<Guid> Handle(CreateSetupDeviceParameterValueCommand request, CancellationToken cancellationToken)
     {
-        // Unique constraint kontrolü
+        // Check unique constraint
         var existingRecord = await _context.SetupDeviceParameterValues
             .AnyAsync(sdpv => sdpv.SetupDeviceId == request.SetupDeviceId && sdpv.ParameterId == request.ParameterId, cancellationToken);
 
         if (existingRecord)
         {
-            throw new InvalidOperationException("Bu setup device için bu parametre zaten mevcut.");
+            throw AppException.BadRequest(
+                MessageCodes.PARAMETER_ALREADY_EXISTS,
+                new Dictionary<string, object> { ["setupDeviceId"] = request.SetupDeviceId, ["parameterId"] = request.ParameterId });
         }
 
-        // ParameterId doğrulama
+        // Validate ParameterId
         var parameterExists = await _context.Parameters
             .AnyAsync(p => p.Id == request.ParameterId, cancellationToken);
 
         if (!parameterExists)
         {
-            throw new ArgumentException("Parametre bulunamadı.");
+            throw AppException.NotFound(
+                MessageCodes.PARAMETER_NOT_FOUND,
+                new Dictionary<string, object> { ["parameterId"] = request.ParameterId });
         }
 
-        // SetupDeviceId doğrulama
+        // Validate SetupDeviceId
         var setupDeviceExists = await _context.SetupDevices
             .AnyAsync(sd => sd.Id == request.SetupDeviceId, cancellationToken);
 
         if (!setupDeviceExists)
         {
-            throw new ArgumentException("Setup device bulunamadı.");
+            throw AppException.NotFound(
+                MessageCodes.DEVICE_NOT_FOUND,
+                new Dictionary<string, object> { ["setupDeviceId"] = request.SetupDeviceId });
         }
 
-        // ParameterGroupId doğrulama (varsa)
+        // Validate ParameterGroupId if provided
         if (request.ParameterGroupId.HasValue)
         {
             var groupExists = await _context.ParameterGroups
@@ -64,7 +73,9 @@ public class CreateSetupDeviceParameterValueCommandHandler : IRequestHandler<Cre
 
             if (!groupExists)
             {
-                throw new ArgumentException("Parametre grubu bulunamadı.");
+                throw AppException.NotFound(
+                    MessageCodes.PARAMETER_GROUP_NOT_FOUND,
+                    new Dictionary<string, object> { ["parameterGroupId"] = request.ParameterGroupId.Value });
             }
         }
 

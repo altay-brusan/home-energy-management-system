@@ -4,6 +4,7 @@ using Hems_Backend.Application.Invitations.Commands.CreateInvitation;
 using Hems_Backend.Application.Invitations.Commands.DeclineInvitation;
 using Hems_Backend.Application.Invitations.Commands.RemoveUserFromSite;
 using Hems_Backend.Application.Invitations.Queries.GetInvitationsBySite;
+using Hems_Backend.Application.Invitations.Queries.GetPendingInvitationsForUser;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Hems_Backend.Web.Endpoints;
@@ -16,6 +17,7 @@ public class Invitations : EndpointGroupBase
             .RequireAuthorization()
             .MapPost(CreateInvitation, "Create")
             .MapGet(GetInvitationsBySite, "BySite/{siteId}")
+            .MapGet(GetPendingInvitationsForUser, "Pending")
             .MapPost(AcceptInvitation, "Accept")
             .MapPost(DeclineInvitation, "Decline")
             .MapDelete(RemoveUserFromSite, "RemoveUser/{invitationId}");
@@ -41,6 +43,17 @@ public class Invitations : EndpointGroupBase
         Guid siteId)
     {
         return await sender.Send(new GetInvitationsBySiteQuery { SiteId = siteId });
+    }
+
+    /// <summary>
+    /// Get pending invitations for the current user (by email).
+    /// Used to check if a new user has pending invitations before forcing home creation.
+    /// </summary>
+    [Authorize]
+    public async Task<PendingInvitationsResult> GetPendingInvitationsForUser(
+        ISender sender)
+    {
+        return await sender.Send(new GetPendingInvitationsForUserQuery());
     }
 
     /// <summary>

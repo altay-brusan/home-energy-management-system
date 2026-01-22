@@ -1,6 +1,9 @@
+using Hems_Backend.Application.Common.Exceptions;
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Domain.Entities;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hems_Backend.Application.ParameterGroups.Commands.CreateParameterGroup;
 
@@ -28,15 +31,17 @@ public class CreateParameterGroupCommandHandler : IRequestHandler<CreateParamete
 
     public async Task<Guid> Handle(CreateParameterGroupCommand request, CancellationToken cancellationToken)
     {
-        // ParentId doğrulama
+        // Validate ParentId
         if (request.ParentId.HasValue)
         {
             var parentExists = await _context.ParameterGroups
                 .AnyAsync(pg => pg.Id == request.ParentId.Value, cancellationToken);
-            
+
             if (!parentExists)
             {
-                throw new ArgumentException("Üst grup bulunamadı.");
+                throw AppException.NotFound(
+                    MessageCodes.PARAMETER_GROUP_NOT_FOUND,
+                    new Dictionary<string, object> { ["parameterGroupId"] = request.ParentId.Value });
             }
         }
 

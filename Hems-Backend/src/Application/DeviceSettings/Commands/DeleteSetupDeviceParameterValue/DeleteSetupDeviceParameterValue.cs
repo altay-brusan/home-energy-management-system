@@ -1,4 +1,6 @@
+using Hems_Backend.Application.Common.Exceptions;
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Models;
 using MediatR;
 
 namespace Hems_Backend.Application.DeviceSettings.Commands.DeleteSetupDeviceParameterValue;
@@ -24,7 +26,9 @@ public class DeleteSetupDeviceParameterValueCommandHandler : IRequestHandler<Del
 
         if (entity == null)
         {
-            throw new ArgumentException("Kayıt bulunamadı.");
+            throw AppException.NotFound(
+                MessageCodes.PARAMETER_VALUE_NOT_FOUND,
+                new Dictionary<string, object> { ["id"] = request.Id });
         }
 
         _context.SetupDeviceParameterValues.Remove(entity);

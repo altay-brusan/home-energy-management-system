@@ -115,8 +115,8 @@ app.UseStaticFiles(new StaticFileOptions
     }
 });
 
-// Use custom exception handler instead of developer exception page
-app.UseExceptionHandler(options => { });
+// Use custom exception handler to convert exceptions to structured API responses
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 // Extract access_token from query string for SignalR WebSocket connections
 // MUST be before UseAuthentication to inject token into Authorization header

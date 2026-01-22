@@ -1,5 +1,6 @@
 using Hems_Backend.Application.Common.Exceptions;
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Domain.Entities;
 using Hems_Backend.Domain.Enums;
 using MediatR;
@@ -33,11 +34,12 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
 
     public async Task<Unit> Handle(AcceptInvitationCommand request, CancellationToken cancellationToken)
     {
-        var currentUserId = _user.Id ?? throw new UnauthorizedAccessException("User not authenticated");
-        
+        var currentUserId = _user.Id
+            ?? throw AppException.Unauthorized(MessageCodes.AUTH_USER_NOT_AUTHENTICATED);
+
         // Get current user's email
         var currentUserEmail = await _identityService.GetUserEmailAsync(currentUserId)
-            ?? throw new UnauthorizedAccessException("User email address not found");
+            ?? throw AppException.Unauthorized(MessageCodes.USER_EMAIL_NOT_FOUND);
 
         var utcNow = _timeProvider.GetUtcNow();
         var twentyFourHoursAgo = utcNow.AddHours(-24);
@@ -49,14 +51,18 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
                 i.Status == InvitationStatus.Pending &&
                 (i.Email == currentUserEmail || i.InvitedUserId == currentUserId),
                 cancellationToken)
-            ?? throw new Common.Exceptions.NotFoundException(nameof(Invitation), request.Token);
+            ?? throw AppException.NotFound(
+                MessageCodes.INVITATION_NOT_FOUND,
+                new Dictionary<string, object> { ["token"] = request.Token });
 
         // Check if invitation has expired (24 hours)
         if (invitation.Created < twentyFourHoursAgo)
         {
             invitation.Status = InvitationStatus.Expired;
             await _context.SaveChangesAsync(cancellationToken);
-            throw new InvalidOperationException("This invitation has expired. Please request a new invitation.");
+            throw AppException.BadRequest(
+                MessageCodes.INVITATION_EXPIRED,
+                new Dictionary<string, object> { ["token"] = request.Token });
         }
 
         // Update invitation
@@ -75,7 +81,9 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
 
         if (existingUserSite != null)
         {
-            throw new InvalidOperationException("This site is already shared with you.");
+            throw AppException.BadRequest(
+                MessageCodes.INVITATION_SITE_ALREADY_SHARED,
+                new Dictionary<string, object> { ["siteId"] = invitation.SiteId });
         }
 
         var userSite = new UserSite
@@ -103,4 +111,3 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
         return Unit.Value;
     }
 }
-

@@ -1,5 +1,8 @@
+using Hems_Backend.Application.Common.Exceptions;
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Models;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hems_Backend.Application.DeviceSettings.Commands.UpdateDeviceParameterValue;
 
@@ -35,7 +38,9 @@ public class UpdateDeviceParameterValueCommandHandler : IRequestHandler<UpdateDe
 
         if (setupDevice == null)
         {
-            throw new ArgumentException("Device not found in any setup.");
+            throw AppException.NotFound(
+                MessageCodes.DEVICE_NOT_IN_SETUP,
+                new Dictionary<string, object> { ["deviceId"] = request.DeviceId });
         }
 
         // Find the parameter value for this device and parameter
@@ -45,7 +50,9 @@ public class UpdateDeviceParameterValueCommandHandler : IRequestHandler<UpdateDe
 
         if (entity == null)
         {
-            throw new ArgumentException("Parameter value not found for this device.");
+            throw AppException.NotFound(
+                MessageCodes.PARAMETER_VALUE_NOT_FOUND,
+                new Dictionary<string, object> { ["deviceId"] = request.DeviceId, ["parameterId"] = request.ParameterId });
         }
 
         entity.Value = request.Value;
