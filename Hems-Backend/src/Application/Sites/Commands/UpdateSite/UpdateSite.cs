@@ -33,13 +33,16 @@ public class UpdateSiteCommandHandler : IRequestHandler<UpdateSiteCommand>
     {
         var userId = _user.Id ?? throw new UnauthorizedAccessException("User not authenticated");
 
-        // Only the site owner can update the site (not guests)
+        // Verify site exists
         var entity = await _context.Sites
-            .FirstOrDefaultAsync(x => x.Id == request.Id && x.UserId == userId && !x.IsDeleted, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Id == request.Id && !x.IsDeleted, cancellationToken)
+            ?? throw new Hems_Backend.Application.Common.Exceptions.NotFoundException(nameof(Site), request.Id);
 
-        if (entity == null)
+        // Only the site owner can update the site (not guests)
+        if (entity.UserId != userId)
         {
-            throw new Hems_Backend.Application.Common.Exceptions.NotFoundException(nameof(Site), request.Id);
+            throw new Hems_Backend.Application.Common.Exceptions.ForbiddenAccessException(
+                "Only the site owner can update site settings. You do not have permission to modify this site.");
         }
 
         entity.Name = request.Name;

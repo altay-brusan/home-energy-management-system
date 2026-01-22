@@ -39,13 +39,17 @@ public class CreateInvitationCommandHandler : IRequestHandler<CreateInvitationCo
     {
         var currentUserId = _user.Id ?? throw new UnauthorizedAccessException("User not authenticated");
 
-        // Verify site exists and user is the OWNER (only owners can send invitations)
+        // Verify site exists
         var site = await _context.Sites
-            .FirstOrDefaultAsync(s => s.Id == request.SiteId &&
-                                     !s.IsDeleted &&
-                                     s.UserId == currentUserId,  // Only owner can invite
-                                 cancellationToken)
+            .FirstOrDefaultAsync(s => s.Id == request.SiteId && !s.IsDeleted, cancellationToken)
             ?? throw new Common.Exceptions.NotFoundException(nameof(Site), request.SiteId);
+
+        // Only site owner can send invitations
+        if (site.UserId != currentUserId)
+        {
+            throw new Common.Exceptions.ForbiddenAccessException(
+                "Only the site owner can send invitations. You do not have permission to invite others to this site.");
+        }
 
         // Look up user by email
         var invitedUserId = await _identityService.GetUserIdByEmailAsync(request.Email);

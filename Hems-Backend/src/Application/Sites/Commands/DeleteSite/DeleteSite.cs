@@ -21,12 +21,16 @@ public class DeleteSiteCommandHandler : IRequestHandler<DeleteSiteCommand>
     {
         var userId = _user.Id ?? throw new UnauthorizedAccessException("User not authenticated");
 
+        // Verify site exists
         var entity = await _context.Sites
-            .FirstOrDefaultAsync(x => x.Id == request.Id && x.UserId == userId && !x.IsDeleted, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Id == request.Id && !x.IsDeleted, cancellationToken)
+            ?? throw new Hems_Backend.Application.Common.Exceptions.NotFoundException(nameof(Domain.Entities.Site), request.Id);
 
-        if (entity == null)
+        // Only the site owner can delete the site
+        if (entity.UserId != userId)
         {
-            throw new Hems_Backend.Application.Common.Exceptions.NotFoundException(nameof(Domain.Entities.Site), request.Id);
+            throw new Hems_Backend.Application.Common.Exceptions.ForbiddenAccessException(
+                "Only the site owner can delete this site. You do not have permission to delete it.");
         }
 
         // Site'ın setup'ı var mı kontrol et
