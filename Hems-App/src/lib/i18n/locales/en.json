@@ -903,10 +903,12 @@
     "demandBreakdown": {
       "title": "Demand Breakdown",
       "totalDemand": "Total Demand",
+      "noData": "No data available for today",
       "sources": {
         "solar": "Solar",
         "battery": "Battery",
-        "grid": "Grid"
+        "grid": "Grid",
+        "generator": "Generator"
       }
     },
     "dashboardChargeDischargeChart": {

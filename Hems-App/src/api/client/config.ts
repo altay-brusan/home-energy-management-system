@@ -94,6 +94,7 @@ export const ENDPOINTS = {
     GRID_PERFORMANCE_SUMMARY: '/Dashboard/GridPerformanceSummary',
     GET_WEATHER_FORECAST: '/WeatherForecasts/:siteId',
     ENERGY_REVENUE: '/Dashboard/EnergyRevenue',
+    ENERGY_SOURCE_MIX: '/Dashboard/EnergySourceMix',
   },
   ROLES: {
     // Admin endpoints (require AdminOnly authorization)

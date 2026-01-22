@@ -129,3 +129,27 @@ export interface EnergyRevenueResponseDto {
   data: EnergyRevenueDataPointDto[];
   total: EnergyRevenueTotalDto;
 }
+
+// Energy Source Mix types (for demand breakdown chart)
+export interface EnergySourceContribution {
+  source: string; // "Solar", "Battery", "Grid", "Generator"
+  providedEnergyWh: number;
+  contribution: number; // Percentage 0-100
+}
+
+export interface EnergySourceMixSummary {
+  sampleCount: number;
+  firstSampleTime?: string;
+  lastSampleTime?: string;
+  averageIntervalMinutes: number;
+  totalTimeSpanMinutes: number;
+  zeroSupplySamples: number;
+}
+
+export interface EnergySourceMixDto {
+  date: string; // yyyy-MM-dd
+  deviceId: string;
+  loadDemandWh: number;
+  sources: EnergySourceContribution[];
+  summary: EnergySourceMixSummary;
+}

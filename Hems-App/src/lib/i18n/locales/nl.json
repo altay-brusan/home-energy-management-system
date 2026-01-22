@@ -885,10 +885,12 @@
     "demandBreakdown": {
       "title": "Verbruiksverdeling",
       "totalDemand": "Totaal Verbruik",
+      "noData": "Geen gegevens beschikbaar voor vandaag",
       "sources": {
         "solar": "Zonne-energie",
         "battery": "Batterij",
-        "grid": "Net"
+        "grid": "Net",
+        "generator": "Generator"
       }
     },
     "dashboardChargeDischargeChart": {

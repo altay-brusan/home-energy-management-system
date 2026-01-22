@@ -919,10 +919,12 @@
   "demandBreakdown": {
     "title": "Tüketim Dağılımı",
     "totalDemand": "Toplam Tüketim",
+    "noData": "Bugün için veri bulunmuyor",
     "sources": {
       "solar": "Solar",
       "battery": "Batarya",
-      "grid": "Şebeke"
+      "grid": "Şebeke",
+      "generator": "Jeneratör"
     }
   },
   "dashboardChargeDischargeChart": {
