@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using Hems_Backend.Application.Common.Exceptions;
 
 namespace Hems_Backend.Web.Infrastructure;
 
@@ -33,6 +34,24 @@ public class GlobalExceptionMiddleware
 
         var response = exception switch
         {
+            ForbiddenAccessException => new ErrorResponse
+            {
+                StatusCode = (int)HttpStatusCode.Forbidden,
+                Message = exception.Message,
+                Type = "Forbidden"
+            },
+            Hems_Backend.Application.Common.Exceptions.NotFoundException => new ErrorResponse
+            {
+                StatusCode = (int)HttpStatusCode.NotFound,
+                Message = exception.Message,
+                Type = "NotFound"
+            },
+            Ardalis.GuardClauses.NotFoundException => new ErrorResponse
+            {
+                StatusCode = (int)HttpStatusCode.NotFound,
+                Message = exception.Message,
+                Type = "NotFound"
+            },
             InvalidOperationException => new ErrorResponse
             {
                 StatusCode = (int)HttpStatusCode.BadRequest,

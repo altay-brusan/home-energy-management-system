@@ -17,7 +17,6 @@ public class Invite : EndpointGroupBase
             var settings = appLinksSettings.Value;
             var inviteCode = httpContext.Request.Query["inviteCode"].ToString();
             var safeCode = string.IsNullOrEmpty(inviteCode) ? string.Empty : Uri.EscapeDataString(inviteCode);
-            var htmlEncodedCode = System.Net.WebUtility.HtmlEncode(inviteCode);
 
             var userAgent = httpContext.Request.Headers.UserAgent.ToString();
             var platform = platformDetectionService.DetectPlatform(userAgent);
@@ -33,8 +32,6 @@ public class Invite : EndpointGroupBase
             var html = BuildSmartRedirectHtml(
                 platform,
                 isInAppBrowser,
-                inviteCode,
-                htmlEncodedCode,
                 deepLinkUrl,
                 androidIntentUrl,
                 settings);
@@ -46,8 +43,6 @@ public class Invite : EndpointGroupBase
     private static string BuildSmartRedirectHtml(
         DetectedPlatform platform,
         bool isInAppBrowser,
-        string inviteCode,
-        string htmlEncodedCode,
         string deepLinkUrl,
         string androidIntentUrl,
         AppLinksSettings settings)
@@ -175,30 +170,6 @@ public class Invite : EndpointGroupBase
       background: #000;
       color: #fff;
     }}
-    .code-box {{
-      background: #f8f9fa;
-      border: 2px dashed #00A270;
-      border-radius: 12px;
-      padding: 16px;
-      margin-top: 24px;
-    }}
-    .code-label {{
-      font-size: 13px;
-      color: #666;
-      margin-bottom: 8px;
-    }}
-    .code-value {{
-      font-family: 'SF Mono', Monaco, Consolas, monospace;
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: 4px;
-      color: #00A270;
-    }}
-    .code-hint {{
-      font-size: 12px;
-      color: #999;
-      margin-top: 8px;
-    }}
     .warning {{
       background: #fff3cd;
       border: 1px solid #ffc107;
@@ -264,12 +235,6 @@ public class Invite : EndpointGroupBase
     </div>
 
     {platformButtons}
-
-    <div class=""code-box"">
-      <div class=""code-label"">Your Invitation Code</div>
-      <div class=""code-value"">{htmlEncodedCode}</div>
-      <div class=""code-hint"">Enter this code manually in the Netzr app</div>
-    </div>
 
     <noscript>
       <p style=""color:#666;margin-top:20px;font-size:14px;"">

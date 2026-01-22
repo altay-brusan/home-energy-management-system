@@ -2410,6 +2410,31 @@
         ]
       }
     },
+    "/api/Invitations/Pending": {
+      "get": {
+        "tags": [
+          "Invitations"
+        ],
+        "operationId": "GetPendingInvitationsForUser",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PendingInvitationsResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/Invitations/Accept": {
       "post": {
         "tags": [
@@ -6709,6 +6734,47 @@
           4,
           5
         ]
+      },
+      "PendingInvitationsResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "hasPendingInvitations": {
+            "type": "boolean"
+          },
+          "invitations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PendingInvitationDto"
+            }
+          }
+        }
+      },
+      "PendingInvitationDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "invitationId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "siteName": {
+            "type": "string"
+          },
+          "invitedByEmail": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "isExpired": {
+            "type": "boolean"
+          }
+        }
       },
       "AcceptInvitationCommand": {
         "type": "object",
