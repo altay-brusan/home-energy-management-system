@@ -64,6 +64,24 @@ public class CreateInvitationCommandHandler : IRequestHandler<CreateInvitationCo
             throw new InvalidOperationException("A pending invitation already exists for this user and site.");
         }
 
+        // Check if user is the site owner (can't invite yourself)
+        if (site.UserId == invitedUserId && !string.IsNullOrEmpty(invitedUserId))
+        {
+            throw new InvalidOperationException("Cannot invite the site owner.");
+        }
+
+        // Check if user is already a member of the site (prevent spam invitations)
+        if (!string.IsNullOrEmpty(invitedUserId))
+        {
+            var existingMembership = await _context.UserSites
+                .AnyAsync(us => us.UserId == invitedUserId && us.SiteId == request.SiteId, cancellationToken);
+
+            if (existingMembership)
+            {
+                throw new InvalidOperationException("This user is already a member of this site.");
+            }
+        }
+
         // Generate token (6-digit random number)
         var token = await GenerateUniqueTokenAsync(cancellationToken);
 
