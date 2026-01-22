@@ -206,6 +206,8 @@
         "conflictMessage": "Deze bewerking bestaat al",
         "validationError": "Validatiefout",
         "validationErrorMessage": "De ingediende gegevens kunnen niet worden gevalideerd",
+        "forbidden": "Toegang Geweigerd",
+        "forbiddenMessage": "U heeft geen toestemming voor deze bewerking.",
         "serverError": "Serverfout",
         "serverErrorMessage": "Er is een serverfout opgetreden, probeer het later opnieuw",
         "connectionError": "Verbindingsfout",

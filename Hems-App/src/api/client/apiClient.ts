@@ -386,10 +386,6 @@ class ApiClient {
       return;
     }
 
-    if (apiError.status === 403) {
-      return;
-    }
-
     let title = i18n.t('api.error.defaultTitle');
     let message = i18n.t('api.error.defaultMessage');
 
@@ -413,6 +409,9 @@ class ApiClient {
       } else if (apiError.status === 422) {
         title = i18n.t('api.error.validationError');
         message = i18n.t('api.error.validationErrorMessage');
+      } else if (apiError.status === 403) {
+        title = i18n.t('api.error.forbidden');
+        message = i18n.t('api.error.forbiddenMessage');
       } else if (apiError.status === 500) {
         title = i18n.t('api.error.serverError');
         message = i18n.t('api.error.serverErrorMessage');

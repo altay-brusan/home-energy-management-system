@@ -207,6 +207,8 @@
         "conflictMessage": "This operation already exists",
         "validationError": "Validation Error",
         "validationErrorMessage": "The submitted data could not be validated",
+        "forbidden": "Access Denied",
+        "forbiddenMessage": "You do not have permission for this operation.",
         "serverError": "Server Error",
         "serverErrorMessage": "A server error occurred, please try again later",
         "connectionError": "Connection Error",

@@ -223,6 +223,8 @@
       "conflictMessage": "Bu işlem zaten mevcut",
       "validationError": "Doğrulama Hatası",
       "validationErrorMessage": "Gönderilen veriler doğrulanamadı",
+      "forbidden": "Erişim Engellendi",
+      "forbiddenMessage": "Bu işlem için yetkiniz bulunmuyor.",
       "serverError": "Sunucu Hatası",
       "serverErrorMessage": "Sunucuda bir hata oluştu, lütfen daha sonra tekrar deneyin",
       "connectionError": "Bağlantı Hatası",
