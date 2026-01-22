@@ -64,6 +64,12 @@ public class CreateInvitationCommandHandler : IRequestHandler<CreateInvitationCo
             throw new InvalidOperationException("A pending invitation already exists for this user and site.");
         }
 
+        // Check if user is trying to invite themselves
+        if (!string.IsNullOrEmpty(invitedUserId) && invitedUserId == currentUserId)
+        {
+            throw new InvalidOperationException("You cannot invite yourself.");
+        }
+
         // Check if user is the site owner (can't invite yourself)
         if (site.UserId == invitedUserId && !string.IsNullOrEmpty(invitedUserId))
         {
