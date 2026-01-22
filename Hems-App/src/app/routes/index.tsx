@@ -85,6 +85,7 @@ import NotificationScreen from '../screens/notification/NotificationScreen';
 import NotificationDetailScreen from '../screens/notificationDetail/NotificationDetailScreen';
 import DeviceSetupScreen from '../screens/onboarding/DeviceSetupScreen';
 import HomeSetupScreen from '../screens/onboarding/HomeSetupScreen';
+import JoinOrCreateScreen from '../screens/onboarding/JoinOrCreateScreen';
 import CompanyInfoScreen from '../screens/profile/CompanyInfo/CompanyInfoScreen';
 import DeviceSharingDetailScreen from '../screens/profile/DeviceSharing/DeviceSharingDetail/DeviceSharingDetail';
 import DeviceSharingScreen from '../screens/profile/DeviceSharing/DeviceSharingScreen';
@@ -108,12 +109,12 @@ function TabNavigator () {
   const hasValidSiteWithDevice = useHasValidSiteWithDevice();
   const isAdminUserCheck = isAdmin || hasRole('Administrator');
 
-  // Site'ı olmayan kullanıcıları HomeSetup'a yönlendir
+  // Site'ı olmayan kullanıcıları JoinOrCreate'e yönlendir
   useEffect(() => {
     if (!isAdminUserCheck && sites.length === 0) {
       navigationRef.current?.reset({
         index: 0,
-        routes: [{ name: 'HomeSetup' }],
+        routes: [{ name: 'JoinOrCreate' }],
       });
     }
   }, [sites, isAdminUserCheck]);
@@ -269,7 +270,7 @@ export function RootNavigator () {
     clearPendingInvitation
   } = useInvitationStore();
   const [isLoading, setIsLoading] = useState(true);
-  const [initialRoute, setInitialRoute] = useState<'Login' | 'Home' | 'MainTabs' | 'HomeSetup'>('Login');
+  const [initialRoute, setInitialRoute] = useState<'Login' | 'Home' | 'MainTabs' | 'HomeSetup' | 'JoinOrCreate'>('Login');
 
   // Version check state
   const [versionCheck, setVersionCheck] = useState<AppVersionCheckResponse | null>(null);
@@ -392,19 +393,19 @@ export function RootNavigator () {
               if (hasAdminRole) {
                 setInitialRoute('MainTabs');
               } else if (userSites.length === 0) {
-                // No sites - force to HomeSetup
-                setInitialRoute('HomeSetup');
+                // No sites - show JoinOrCreate screen to let user choose
+                setInitialRoute('JoinOrCreate');
               } else {
                 // Has sites - go to MainTabs
                 setInitialRoute('MainTabs');
               }
             } catch (sitesError) {
-              // Sites fetch failed - go to HomeSetup to be safe
+              // Sites fetch failed - go to JoinOrCreate to be safe
               console.log('[RootNavigator] Sites fetch error:', sitesError);
               if (hasAdminRole) {
                 setInitialRoute('MainTabs');
               } else {
-                setInitialRoute('HomeSetup');
+                setInitialRoute('JoinOrCreate');
               }
             }
           } else {
@@ -480,6 +481,7 @@ export function RootNavigator () {
             )}
             <Stack.Screen name="CompanyInfo" component={CompanyInfoScreen} />
             <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen name="JoinOrCreate" component={JoinOrCreateScreen} />
             <Stack.Screen name="HomeSetup" component={HomeSetupScreen} />
             <Stack.Screen name="DeviceSetup" component={DeviceSetupScreen} />
             <Stack.Screen name="DeviceAdd" component={DeviceAddScreen} />

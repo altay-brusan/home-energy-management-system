@@ -106,6 +106,7 @@ export const ENDPOINTS = {
   INVITATIONS: {
     CREATE: '/Invitations/Create',
     GET_BY_SITE: '/Invitations/BySite/:siteId',
+    GET_PENDING: '/Invitations/Pending',
     ACCEPT: '/Invitations/Accept',
     DECLINE: '/Invitations/Decline',
     REMOVE_USER: '/Invitations/RemoveUser/:invitationId',
