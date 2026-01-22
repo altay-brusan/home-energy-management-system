@@ -53,6 +53,8 @@ export interface UseDeviceSettingsReturn {
 
   // Grid config
   hasGridConfigChanges: boolean;
+  gridConfigChangesCount: number;
+  revertGridConfigChanges: () => void;
   saveGridConfig: () => Promise<{
     success: boolean;
     deviceWillRestart?: boolean;
@@ -109,6 +111,7 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
   const isDeviceRestartingFn = useDeviceSettingsStore((state) => state.isDeviceRestarting);
   const dirtyFields = useDeviceSettingsStore((state) => state.dirtyFields);
   const saveGridConfigFn = useDeviceSettingsStore((state) => state.saveGridConfig);
+  const revertGridConfigChangesFn = useDeviceSettingsStore((state) => state.revertGridConfigChanges);
 
   // Compute isDeviceBusy - check if busy and not expired
   const isDeviceBusy = deviceBusyInfo?.isDeviceBusy &&
@@ -126,6 +129,17 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
       }
     }
     return false;
+  }, [dirtyFields]);
+
+  // Compute gridConfigChangesCount - count of changed grid config parameters
+  const gridConfigChangesCount = useMemo(() => {
+    let count = 0;
+    for (const storePath of dirtyFields) {
+      if (isGridConfigStorePath(storePath)) {
+        count++;
+      }
+    }
+    return count;
   }, [dirtyFields]);
 
   // Compute canSave
@@ -370,6 +384,8 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
 
     // Grid config
     hasGridConfigChanges,
+    gridConfigChangesCount,
+    revertGridConfigChanges: revertGridConfigChangesFn,
     saveGridConfig: saveGridConfigFn,
 
     // TimeOfUse validation

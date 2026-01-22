@@ -131,6 +131,9 @@ interface DeviceSettingsState {
 
   // Grid config specific
   hasGridConfigChanges: () => boolean;
+  getGridConfigChangesCount: () => number;
+  getChangedGridConfigPaths: () => string[];
+  revertGridConfigChanges: () => void;
   getGridConfigChanges: () => Array<{ parameterId: string; value: string }>;
   saveGridConfig: () => Promise<{
     success: boolean;
@@ -1031,6 +1034,59 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
           }
         }
         return false;
+      },
+
+      getGridConfigChangesCount: () => {
+        const { dirtyFields } = get();
+        let count = 0;
+        for (const storePath of dirtyFields) {
+          if (isGridConfigStorePath(storePath)) {
+            count++;
+          }
+        }
+        return count;
+      },
+
+      getChangedGridConfigPaths: () => {
+        const { dirtyFields } = get();
+        const paths: string[] = [];
+        for (const storePath of dirtyFields) {
+          if (isGridConfigStorePath(storePath)) {
+            paths.push(storePath);
+          }
+        }
+        return paths;
+      },
+
+      revertGridConfigChanges: () => {
+        const { settings, parameterMetadata, dirtyFields } = get();
+        let newSettings = JSON.parse(JSON.stringify(settings));
+        const newDirtyFields = new Set(dirtyFields);
+
+        // Find and revert all grid config changes
+        for (const storePath of dirtyFields) {
+          if (isGridConfigStorePath(storePath)) {
+            const meta = parameterMetadata[storePath];
+            const mapping = ALL_MAPPINGS.find((m) => m.storePath === storePath);
+
+            if (meta && mapping) {
+              // Transform original value back to app format and restore it
+              const transformer =
+                transformerRegistry.toApp[mapping.transformerType as keyof typeof transformerRegistry.toApp];
+              const appValue = transformer ? transformer(meta.originalValue) : meta.originalValue;
+              newSettings = setNestedValue(newSettings, storePath, appValue);
+              // Remove from dirty fields
+              newDirtyFields.delete(storePath);
+            }
+          }
+        }
+
+        // Update state
+        set({
+          settings: newSettings,
+          dirtyFields: newDirtyFields,
+          isDirty: newDirtyFields.size > 0,
+        });
       },
 
       getGridConfigChanges: () => {

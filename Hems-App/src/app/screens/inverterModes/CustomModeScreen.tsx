@@ -67,6 +67,8 @@ const CustomModeScreen: React.FC = () => {
     deviceBusyInfo,
     // Grid config related
     hasGridConfigChanges,
+    gridConfigChangesCount,
+    revertGridConfigChanges,
     saveGridConfig,
     deviceRestartingInfo,
     isDeviceRestarting,
@@ -173,6 +175,24 @@ const CustomModeScreen: React.FC = () => {
   }, [clearError, fetchSettings]);
 
   const handleSave = async () => {
+    // Check if multiple grid config items are changed - only one allowed at a time
+    if (gridConfigChangesCount > 1) {
+      Alert.alert(
+        t('inverterModes.gridConfigLimit.title', 'Multiple Grid Settings Changed'),
+        t('inverterModes.gridConfigLimit.message', 'Only one Grid Standard setting can be changed at a time. Your grid setting changes have been reverted. Please change only one setting and try again.'),
+        [
+          {
+            text: t('common.ok', 'OK'),
+            onPress: () => {
+              // Revert all grid config changes
+              revertGridConfigChanges();
+            },
+          },
+        ]
+      );
+      return;
+    }
+
     // Check if there are grid config changes that will cause device restart
     if (hasGridConfigChanges) {
       setShowGridConfigConfirm(true);
@@ -315,9 +335,10 @@ const CustomModeScreen: React.FC = () => {
         </Text>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={[styles.retryButton, { backgroundColor: COLORS.accent, marginTop: 16 }]}
+          style={[styles.saveButton, { backgroundColor: COLORS.accent, marginTop: 16 }]}
         >
-          <Text style={styles.retryButtonText}>{t('common.goBack', 'Go Back')}</Text>
+          <ArrowLeft size={20} color="#fff" />
+          <Text style={styles.saveButtonText}>{t('common.goBack', 'Go Back')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -333,9 +354,10 @@ const CustomModeScreen: React.FC = () => {
         </Text>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={[styles.retryButton, { backgroundColor: COLORS.gray200, marginTop: 24 }]}
+          style={[styles.saveButton, { backgroundColor: COLORS.accent, marginTop: 24 }]}
         >
-          <Text style={[styles.retryButtonText, { color: COLORS.text }]}>{t('common.goBack', 'Go Back')}</Text>
+          <ArrowLeft size={20} color="#fff" />
+          <Text style={styles.saveButtonText}>{t('common.goBack', 'Go Back')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -355,16 +377,17 @@ const CustomModeScreen: React.FC = () => {
         <View style={styles.errorButtons}>
           <TouchableOpacity
             onPress={handleRetry}
-            style={[styles.retryButton, { backgroundColor: COLORS.accent }]}
+            style={[styles.saveButton, { backgroundColor: COLORS.accent, flex: 1 }]}
           >
-            <RefreshCw size={16} color="#fff" />
-            <Text style={styles.retryButtonText}>{t('common.retry', 'Retry')}</Text>
+            <RefreshCw size={20} color="#fff" />
+            <Text style={styles.saveButtonText}>{t('common.retry', 'Retry')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
-            style={[styles.retryButton, { backgroundColor: isDark ? COLORS.border : COLORS.gray200 }]}
+            style={[styles.saveButton, { backgroundColor: COLORS.accent, flex: 1 }]}
           >
-            <Text style={styles.retryButtonText}>{t('common.goBack', 'Go Back')}</Text>
+            <ArrowLeft size={20} color="#fff" />
+            <Text style={styles.saveButtonText}>{t('common.goBack', 'Go Back')}</Text>
           </TouchableOpacity>
         </View>
       </View>
