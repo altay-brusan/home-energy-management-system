@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using Hems_Backend.Application.Common.Exceptions;
+using Hems_Backend.Application.Common.Models;
 
 namespace Hems_Backend.Web.Infrastructure;
 
@@ -34,53 +35,92 @@ public class GlobalExceptionMiddleware
 
         var response = exception switch
         {
-            ForbiddenAccessException => new ErrorResponse
+            // Our new structured AppException
+            AppException appEx => new ApiErrorResponse
+            {
+                StatusCode = (int)appEx.StatusCode,
+                Code = appEx.Code,
+                Message = appEx.Message,
+                Params = appEx.Params
+            },
+
+            // Existing exceptions - map to message codes
+            ForbiddenAccessException => new ApiErrorResponse
             {
                 StatusCode = (int)HttpStatusCode.Forbidden,
-                Message = exception.Message,
-                Type = "Forbidden"
+                Code = MessageCodes.AUTH_PERMISSION_DENIED,
+                Message = string.IsNullOrEmpty(exception.Message)
+                    ? MessageDefaults.GetMessage(MessageCodes.AUTH_PERMISSION_DENIED)
+                    : exception.Message
             },
-            Hems_Backend.Application.Common.Exceptions.NotFoundException => new ErrorResponse
+
+            Hems_Backend.Application.Common.Exceptions.NotFoundException notFoundEx => new ApiErrorResponse
             {
                 StatusCode = (int)HttpStatusCode.NotFound,
-                Message = exception.Message,
-                Type = "NotFound"
+                Code = MessageCodes.RECORD_NOT_FOUND,
+                Message = notFoundEx.Message
             },
-            Ardalis.GuardClauses.NotFoundException => new ErrorResponse
+
+            Ardalis.GuardClauses.NotFoundException => new ApiErrorResponse
             {
                 StatusCode = (int)HttpStatusCode.NotFound,
-                Message = exception.Message,
-                Type = "NotFound"
+                Code = MessageCodes.RECORD_NOT_FOUND,
+                Message = exception.Message
             },
-            InvalidOperationException => new ErrorResponse
+
+            Hems_Backend.Application.Common.Exceptions.ValidationException validationEx => new ApiErrorResponse
             {
                 StatusCode = (int)HttpStatusCode.BadRequest,
-                Message = exception.Message,
-                Type = "BusinessRuleViolation"
+                Code = MessageCodes.VALIDATION_FAILED,
+                Message = validationEx.Message,
+                Params = validationEx.Errors?.ToDictionary(e => e.Key, e => (object)e.Value)
             },
-            ArgumentException => new ErrorResponse
+
+            FluentValidation.ValidationException fluentEx => new ApiErrorResponse
             {
                 StatusCode = (int)HttpStatusCode.BadRequest,
-                Message = exception.Message,
-                Type = "InvalidArgument"
+                Code = MessageCodes.VALIDATION_FAILED,
+                Message = "Validation failed",
+                Params = fluentEx.Errors
+                    .GroupBy(e => e.PropertyName)
+                    .ToDictionary(g => g.Key, g => (object)g.Select(e => e.ErrorMessage).ToArray())
             },
-            UnauthorizedAccessException => new ErrorResponse
+
+            InvalidOperationException => new ApiErrorResponse
+            {
+                StatusCode = (int)HttpStatusCode.BadRequest,
+                Code = MessageCodes.VALIDATION_FAILED,
+                Message = exception.Message
+            },
+
+            ArgumentException => new ApiErrorResponse
+            {
+                StatusCode = (int)HttpStatusCode.BadRequest,
+                Code = MessageCodes.VALIDATION_FAILED,
+                Message = exception.Message
+            },
+
+            UnauthorizedAccessException => new ApiErrorResponse
             {
                 StatusCode = (int)HttpStatusCode.Unauthorized,
-                Message = "Access denied",
-                Type = "Unauthorized"
+                Code = MessageCodes.AUTH_USER_NOT_AUTHENTICATED,
+                Message = string.IsNullOrEmpty(exception.Message)
+                    ? MessageDefaults.GetMessage(MessageCodes.AUTH_USER_NOT_AUTHENTICATED)
+                    : exception.Message
             },
-            KeyNotFoundException => new ErrorResponse
+
+            KeyNotFoundException => new ApiErrorResponse
             {
                 StatusCode = (int)HttpStatusCode.NotFound,
-                Message = exception.Message,
-                Type = "ResourceNotFound"
+                Code = MessageCodes.RECORD_NOT_FOUND,
+                Message = exception.Message
             },
-            _ => new ErrorResponse
+
+            _ => new ApiErrorResponse
             {
                 StatusCode = (int)HttpStatusCode.InternalServerError,
-                Message = "An error occurred while processing your request",
-                Type = "InternalError"
+                Code = MessageCodes.INTERNAL_ERROR,
+                Message = MessageDefaults.GetMessage(MessageCodes.INTERNAL_ERROR)
             }
         };
 
@@ -88,17 +128,10 @@ public class GlobalExceptionMiddleware
 
         var jsonResponse = JsonSerializer.Serialize(response, new JsonSerializerOptions
         {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
         });
 
         await context.Response.WriteAsync(jsonResponse);
-    }
-
-    private class ErrorResponse
-    {
-        public int StatusCode { get; set; }
-        public string Message { get; set; } = string.Empty;
-        public string Type { get; set; } = string.Empty;
-        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     }
 }

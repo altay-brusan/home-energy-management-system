@@ -1,5 +1,6 @@
+using Hems_Backend.Application.Common.Exceptions;
 using Hems_Backend.Application.Common.Interfaces;
-using Hems_Backend.Domain.Entities;
+using Hems_Backend.Application.Common.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,12 +24,16 @@ public class SetLatestVersionCommandHandler : IRequestHandler<SetLatestVersionCo
 
         if (entity == null)
         {
-            throw new Common.Exceptions.NotFoundException(nameof(MobileAppVersion), request.Id);
+            throw AppException.NotFound(
+                MessageCodes.VERSION_NOT_FOUND,
+                new Dictionary<string, object> { ["versionId"] = request.Id });
         }
 
         if (!entity.IsActive)
         {
-            throw new InvalidOperationException("Cannot set an inactive version as latest.");
+            throw AppException.BadRequest(
+                MessageCodes.VERSION_CANNOT_SET_INACTIVE_LATEST,
+                new Dictionary<string, object> { ["versionId"] = request.Id });
         }
 
         // Unmark current latest version for this platform

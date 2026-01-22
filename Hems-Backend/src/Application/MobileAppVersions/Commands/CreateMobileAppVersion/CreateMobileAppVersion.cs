@@ -1,4 +1,6 @@
+using Hems_Backend.Application.Common.Exceptions;
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Domain.Entities;
 using Hems_Backend.Domain.Enums;
 using MediatR;
@@ -38,7 +40,9 @@ public class CreateMobileAppVersionCommandHandler : IRequestHandler<CreateMobile
 
         if (existingVersion)
         {
-            throw new InvalidOperationException($"Version {request.Version} already exists for platform {request.Platform}.");
+            throw AppException.BadRequest(
+                MessageCodes.VERSION_ALREADY_EXISTS,
+                new Dictionary<string, object> { ["version"] = request.Version, ["platform"] = request.Platform.ToString() });
         }
 
         // If this is marked as latest, unmark other versions for this platform
