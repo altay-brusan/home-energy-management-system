@@ -1,6 +1,6 @@
 [
     {
-        "id": "8a1cc43dddaffd95",
+        "id": "4639e9288cec95a0",
         "type": "tab",
         "label": "RPC_GenSmartLoadOverride",
         "disabled": false,
@@ -9,7 +9,7 @@
     {
         "id": "rpc_gensmartload_mqtt_in",
         "type": "mqtt in",
-        "z": "8a1cc43dddaffd95",
+        "z": "4639e9288cec95a0",
         "name": "RPC Request",
         "topic": "v1/devices/me/rpc/request/+",
         "qos": "2",
@@ -30,7 +30,7 @@
     {
         "id": "rpc_gensmartload_handle",
         "type": "function",
-        "z": "8a1cc43dddaffd95",
+        "z": "4639e9288cec95a0",
         "name": "Handle RPC",
         "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\n\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\nif (msg.rpcMethod === 'getGeneratorSmartLoadOverride') {\n    msg.operationType = 'read';\n    return msg;\n}\nelse if (msg.rpcMethod === 'setGeneratorSmartLoadOverride') {\n    msg.operationType = 'write';\n    return msg;\n}\nelse {\n    return null;\n}",
         "outputs": 1,
@@ -50,10 +50,12 @@
     {
         "id": "rpc_gensmartload_link_out",
         "type": "link out",
-        "z": "8a1cc43dddaffd95",
+        "z": "4639e9288cec95a0",
         "name": "To Main Flow",
         "mode": "link",
-        "links": [],
+        "links": [
+            "931c703c00392edf"
+        ],
         "x": 495,
         "y": 160,
         "wires": []
@@ -61,7 +63,7 @@
     {
         "id": "rpc_gensmartload_comment",
         "type": "comment",
-        "z": "8a1cc43dddaffd95",
+        "z": "4639e9288cec95a0",
         "name": "getGeneratorSmartLoadOverride / setGeneratorSmartLoadOverride",
         "info": "Read/Write generator smart load override:\n- forceSmartLoadOn: bool (Reg234)\n\nPrerequisite: Reg235 = 1 (generatorAsLoadEnabled)",
         "x": 300,
@@ -73,7 +75,7 @@
         "type": "mqtt-broker",
         "name": "ThingsBoard Development Env.",
         "broker": "REDACTED_HOST",
-        "port": "31883",
+        "port": "31884",
         "tls": "",
         "clientid": "",
         "autoConnect": true,

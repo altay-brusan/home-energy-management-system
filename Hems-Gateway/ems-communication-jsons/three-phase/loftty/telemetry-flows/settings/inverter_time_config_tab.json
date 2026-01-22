@@ -1,6 +1,6 @@
 [
     {
-        "id": "3411ecc52dafa9f6",
+        "id": "f728a58c7cd3f370",
         "type": "tab",
         "label": "InverterTimeConfig",
         "disabled": false,
@@ -9,10 +9,10 @@
     {
         "id": "c0d241b8874fb31f",
         "type": "link in",
-        "z": "3411ecc52dafa9f6",
+        "z": "f728a58c7cd3f370",
         "name": "RPC Request",
         "links": [
-            "6b61fb7f7feb6e1a"
+            "rpc_itc_link_out"
         ],
         "x": 135,
         "y": 180,
@@ -25,7 +25,7 @@
     {
         "id": "f70e8394d16ee32e",
         "type": "inject",
-        "z": "3411ecc52dafa9f6",
+        "z": "f728a58c7cd3f370",
         "name": "Manual Read",
         "props": [
             {
@@ -55,7 +55,7 @@
     {
         "id": "72f89afec191f97a",
         "type": "inject",
-        "z": "3411ecc52dafa9f6",
+        "z": "f728a58c7cd3f370",
         "name": "Write: Current Time",
         "props": [
             {
@@ -90,7 +90,7 @@
     {
         "id": "ecdde25cd8fab9fd",
         "type": "inject",
-        "z": "3411ecc52dafa9f6",
+        "z": "f728a58c7cd3f370",
         "name": "Write: Custom Time",
         "props": [
             {
@@ -125,7 +125,7 @@
     {
         "id": "50215459b18869ca",
         "type": "function",
-        "z": "3411ecc52dafa9f6",
+        "z": "f728a58c7cd3f370",
         "name": "Route: Read or Write?",
         "func": "const opType = msg.operationType || 'read';\n\nif (opType === 'write') {\n    return [null, msg];\n} else {\n    return [msg, null];\n}",
         "outputs": 2,
@@ -148,7 +148,7 @@
     {
         "id": "f55a25a042811bf7",
         "type": "function",
-        "z": "3411ecc52dafa9f6",
+        "z": "f728a58c7cd3f370",
         "name": "Start Read",
         "func": "flow.set(\"itc_rpc_response_topic\", msg.rpcResponseTopic);\nflow.set(\"itc_write_result\", msg.writeResult || null);\n\nreturn msg;",
         "outputs": 1,
@@ -168,7 +168,7 @@
     {
         "id": "bff93765aada7eca",
         "type": "function",
-        "z": "3411ecc52dafa9f6",
+        "z": "f728a58c7cd3f370",
         "name": "Prepare (162-164)",
         "func": "msg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 162,\n    quantity: 3\n};\nreturn msg;",
         "outputs": 1,
@@ -188,7 +188,7 @@
     {
         "id": "722f8f0f5ebdcc71",
         "type": "modbus-flex-getter",
-        "z": "3411ecc52dafa9f6",
+        "z": "f728a58c7cd3f370",
         "name": "Read 162-164",
         "showStatusActivities": true,
         "showErrors": true,
@@ -214,7 +214,7 @@
     {
         "id": "d1e3b1aa2abc1b16",
         "type": "function",
-        "z": "3411ecc52dafa9f6",
+        "z": "f728a58c7cd3f370",
         "name": "Build JSON State",
         "func": "let raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data) || data.length < 3) {\n    node.error(\"Invalid modbus response\");\n    return null;\n}\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\n\nconst reg162 = data[0];\nconst reg163 = data[1];\nconst reg164 = data[2];\n\n// Unpack bytes\nconst year = (reg162 >> 8) & 0xFF;      // High byte\nconst month = reg162 & 0xFF;            // Low byte\nconst day = (reg163 >> 8) & 0xFF;       // High byte\nconst hour = reg163 & 0xFF;             // Low byte\nconst minute = (reg164 >> 8) & 0xFF;    // High byte\nconst second = reg164 & 0xFF;           // Low byte\n\n// Build ISO timestamp (year is 2000-based)\nconst fullYear = 2000 + year;\nconst timestamp = new Date(\n    fullYear,\n    month - 1,  // JavaScript months are 0-based\n    day,\n    hour,\n    minute,\n    second\n).toISOString();\n\nconst state = {\n    kind: \"InverterTimeConfigState\",\n    timestampUtc: new Date().toISOString(),\n    gatewayId: gatewayId,\n    version: 1,\n    \n    systemTime: {\n        year: year,\n        month: month,\n        day: day,\n        hour: hour,\n        minute: minute,\n        second: second\n    },\n    \n    localtimestamp: timestamp\n};\n\nconst writeResult = flow.get(\"itc_write_result\");\nconst rpcResponseTopic = flow.get(\"itc_rpc_response_topic\");\n\nflow.set(\"itc_write_result\", null);\nflow.set(\"itc_rpc_response_topic\", null);\n\nif (writeResult) {\n    msg.payload = {\n        success: writeResult.success,\n        message: writeResult.message,\n        state: state\n    };\n} else {\n    msg.payload = state;\n}\n\nmsg.state = state;\nmsg.rpcResponseTopic = rpcResponseTopic;\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `${fullYear}-${month.toString().padStart(2,'0')}-${day.toString().padStart(2,'0')} ${hour.toString().padStart(2,'0')}:${minute.toString().padStart(2,'0')}:${second.toString().padStart(2,'0')}` });\n\nreturn msg;",
         "outputs": 1,
@@ -235,7 +235,7 @@
     {
         "id": "73a5040da7bbb8d6",
         "type": "debug",
-        "z": "3411ecc52dafa9f6",
+        "z": "f728a58c7cd3f370",
         "name": "Inverter Time Config JSON",
         "active": true,
         "tosidebar": true,
@@ -252,7 +252,7 @@
     {
         "id": "1b41fa115d6ba53c",
         "type": "function",
-        "z": "3411ecc52dafa9f6",
+        "z": "f728a58c7cd3f370",
         "name": "RPC Response",
         "func": "if (!msg.rpcResponseTopic) {\n    return null;\n}\n\nmsg.topic = msg.rpcResponseTopic;\nreturn msg;",
         "outputs": 1,
@@ -272,7 +272,7 @@
     {
         "id": "72aec7bc17763f52",
         "type": "mqtt out",
-        "z": "3411ecc52dafa9f6",
+        "z": "f728a58c7cd3f370",
         "name": "MQTT Response",
         "topic": "",
         "qos": "1",
@@ -290,7 +290,7 @@
     {
         "id": "b903718e8102e72c",
         "type": "function",
-        "z": "3411ecc52dafa9f6",
+        "z": "f728a58c7cd3f370",
         "name": "Prepare Write",
         "func": "const params = msg.rpcParams || {};\nlet time = params.systemTime;\n\n// Store RPC topic\nglobal.set(\"itc_write_rpc_topic\", msg.rpcResponseTopic);\n\n// If no systemTime provided, use current time\nif (!time || Object.keys(time).length === 0) {\n    const now = new Date();\n    time = {\n        year: now.getFullYear() - 2000,  // Convert to 2000-based\n        month: now.getMonth() + 1,       // JavaScript months are 0-based\n        day: now.getDate(),\n        hour: now.getHours(),\n        minute: now.getMinutes(),\n        second: now.getSeconds()\n    };\n}\n\n// Pack bytes into 3 registers\nconst reg162 = ((time.year & 0xFF) << 8) | (time.month & 0xFF);\nconst reg163 = ((time.day & 0xFF) << 8) | (time.hour & 0xFF);\nconst reg164 = ((time.minute & 0xFF) << 8) | (time.second & 0xFF);\n\n// Write all 3 registers at once using FC16\nmsg.payload = {\n    fc: 16,\n    unitid: 1,\n    address: 162,\n    quantity: 3,\n    value: [reg162, reg163, reg164]\n};\n\nmsg.timeToWrite = time;\n\nconst fullYear = 2000 + time.year;\nnode.status({ fill: \"yellow\", shape: \"dot\", text: `Writing: ${fullYear}-${time.month}-${time.day} ${time.hour}:${time.minute}:${time.second}` });\n\nreturn msg;",
         "outputs": 1,
@@ -310,7 +310,7 @@
     {
         "id": "193907d4f328ef56",
         "type": "modbus-flex-write",
-        "z": "3411ecc52dafa9f6",
+        "z": "f728a58c7cd3f370",
         "name": "Write 162-164",
         "showStatusActivities": true,
         "showErrors": true,
@@ -330,7 +330,7 @@
     {
         "id": "a14a0865a1e9c59e",
         "type": "function",
-        "z": "3411ecc52dafa9f6",
+        "z": "f728a58c7cd3f370",
         "name": "Write OK",
         "func": "const time = msg.timeToWrite;\nconst rpcTopic = global.get(\"itc_write_rpc_topic\");\n\nglobal.set(\"itc_write_rpc_topic\", null);\n\nconst fullYear = 2000 + time.year;\nconst timeStr = `${fullYear}-${time.month.toString().padStart(2,'0')}-${time.day.toString().padStart(2,'0')} ${time.hour.toString().padStart(2,'0')}:${time.minute.toString().padStart(2,'0')}:${time.second.toString().padStart(2,'0')}`;\n\nconst finalMsg = {\n    writeResult: {\n        success: true,\n        message: `Successfully set inverter time to ${timeStr}`\n    },\n    rpcResponseTopic: rpcTopic\n};\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `Write OK: ${timeStr}` });\n\n// Trigger read after write\nreturn finalMsg;",
         "outputs": 1,
@@ -350,7 +350,7 @@
     {
         "id": "49edc34f6ab51db5",
         "type": "comment",
-        "z": "3411ecc52dafa9f6",
+        "z": "f728a58c7cd3f370",
         "name": "═══ READ SECTION ═══",
         "info": "",
         "x": 750,
@@ -360,7 +360,7 @@
     {
         "id": "80151ff81c758280",
         "type": "comment",
-        "z": "3411ecc52dafa9f6",
+        "z": "f728a58c7cd3f370",
         "name": "═══ WRITE SECTION ═══",
         "info": "Write all 3 registers (162-164) at once with FC16",
         "x": 610,
@@ -402,7 +402,7 @@
         "type": "mqtt-broker",
         "name": "ThingsBoard Development Env.",
         "broker": "REDACTED_HOST",
-        "port": "31883",
+        "port": "31884",
         "tls": "",
         "clientid": "",
         "autoConnect": true,
