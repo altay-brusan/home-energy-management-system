@@ -18,22 +18,15 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
     private readonly ILogger<DeviceRpcExecutorService> _logger;
     private readonly Random _jitterRandom = new();
 
-    // TODO: REFACTOR - These parameters are temporarily disabled due to RPC execution issues.
-    // The GeneratorAndSmartLoadConfig RPC needs investigation and proper fix.
-    // Remove this skip list and re-enable these parameters once the issue is resolved.
+    // These parameters are hidden duplicates from GeneratorSettings that overlap with
+    // GeneratorCharging settings. They are hidden in the UI (Visible=false) but we still
+    // skip RPC for them as the "real" parameters in GeneratorCharging handle the device updates.
     private static readonly HashSet<string> SkippedParameters = new(StringComparer.OrdinalIgnoreCase)
     {
-        "GeneratorCharge",
-        "GeneratorGridCharge",
-        "GeneratorStartSOC",
-        "GeneratorChargeCurrent",
-        "GeneratorPeakShavingEnabled",
-        "GeneratorPeakShavingLimitPower",
-        "SmartLoadEnabled",
-        "SmartLoadOffSOC",
-        "SmartLoadOnSOC",
-        "SmartLoadPVPowerThreshold",
-        "SmartLoadOpenDelay"
+        "GeneratorCharge",        // Duplicate of GeneratorChargingEnabled
+        "GeneratorGridCharge",    // Duplicate of GridChargingEnabled
+        "GeneratorStartSOC",      // Duplicate of GeneratorChargingStartSOC
+        "GeneratorChargeCurrent"  // Duplicate of GeneratorChargingCurrent
     };
 
     // Error messages that indicate retryable conditions
@@ -429,18 +422,32 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
 
             if (response == null || !response.Success || response.Response == null)
             {
+                _logger.LogWarning(
+                    "📖 GetParameterValueAsync failed for {ParameterName}: Response={ResponseNull}, Success={Success}, ResponseData={ResponseDataNull}",
+                    parameterName,
+                    response == null ? "null" : "not-null",
+                    response?.Success,
+                    response?.Response == null ? "null" : "not-null");
                 return null;
             }
 
             var configJson = JsonSerializer.Serialize(response.Response);
+            _logger.LogInformation(
+                "📖 GetParameterValueAsync RPC response for {ParameterName} ({RpcMethod}): {ConfigJson}",
+                parameterName, config.RpcGetMethod, configJson);
+
             var configDict = JsonSerializer.Deserialize<Dictionary<string, object>>(configJson);
 
             if (configDict == null)
             {
+                _logger.LogWarning("📖 GetParameterValueAsync: configDict is null after deserialization");
                 return null;
             }
 
             var value = GetNestedValue(configDict, config.FieldPath);
+            _logger.LogInformation(
+                "📖 GetParameterValueAsync: FieldPath={FieldPath}, ExtractedValue={Value}",
+                config.FieldPath, value?.ToString() ?? "null");
             return value?.ToString();
         }
         catch
@@ -540,6 +547,8 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
             "InverterAdvancedFunctionConfigState" => new InverterAdvancedFunctionConfigRequest(),
             "ExternalRelayConfigState" => new ExternalRelayConfigRequest(),
             "GeneratorSmartLoadOverride" => new GeneratorSmartLoadOverrideRequest(),
+            "SystemConnectionStructure" => new SystemConnectionStructureRequest(),
+            "BatteryCapacityConfigState" => new BatteryCapacityConfigRequest(),
             _ => throw new NotSupportedException($"Unsupported RPC kind: {rpcKind}")
         };
     }
@@ -579,6 +588,12 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
                 break;
             case GeneratorSmartLoadOverrideRequest generatorSmartLoadOverrideRequest:
                 PopulateGeneratorSmartLoadOverrideField(generatorSmartLoadOverrideRequest, parts, value);
+                break;
+            case SystemConnectionStructureRequest systemConnectionRequest:
+                PopulateSystemConnectionStructureField(systemConnectionRequest, parts, value);
+                break;
+            case BatteryCapacityConfigRequest batteryCapacityRequest:
+                PopulateBatteryCapacityField(batteryCapacityRequest, parts, value);
                 break;
             default:
                 throw new NotSupportedException($"Unsupported request type: {request.GetType().Name}");
@@ -1162,6 +1177,132 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
         }
     }
 
+    /// <summary>
+    /// Populates a field in SystemConnectionStructureRequest
+    /// Handles both top-level fields and nested fields under inverter.acSide
+    /// </summary>
+    /// <summary>
+    /// Populates a field in SystemConnectionStructureRequest
+    /// Supports both flat structure (root-level fields) and nested paths
+    /// </summary>
+    private static void PopulateSystemConnectionStructureField(SystemConnectionStructureRequest request, string[] parts, object value)
+    {
+        if (parts.Length == 0) return;
+
+        var section = parts[0];
+
+        switch (section)
+        {
+            // Root-level fields (flat structure as per RPC spec)
+            case "gridPhaseSequence":
+                request.GridPhaseSequence = value;  // Can be int or string
+                break;
+            case "gridVoltageLevelCode":
+                request.GridVoltageLevelCode = Convert.ToInt32(value);
+                break;
+            case "gridType":
+                request.GridType = Convert.ToInt32(value);
+                break;
+            case "gridStandardRaw":
+                request.GridStandardRaw = Convert.ToInt32(value);
+                break;
+            case "gridFrequencyHz":
+                request.GridFrequencyHz = Convert.ToInt32(value);
+                break;
+            case "batteryControlMode":
+                request.BatteryControlMode = value;  // Can be int or string
+                break;
+            case "exportLimitMode":
+                request.ExportLimitMode = value;  // Can be int or string
+                break;
+            case "itSystemNeutralUngrounded":
+                request.ItSystemNeutralUngrounded = Convert.ToBoolean(value);
+                break;
+
+            // Nested fields under generator
+            case "generator":
+                request.Generator ??= new SystemConnectionGeneratorConfig();
+                if (parts.Length >= 2)
+                {
+                    SetSystemConnectionGeneratorProperty(request.Generator, parts[1], value);
+                }
+                break;
+
+            // Nested fields under acSide (direct child of root)
+            case "acSide":
+                request.AcSide ??= new SystemConnectionAcSideConfig();
+                if (parts.Length >= 2)
+                {
+                    SetSystemConnectionAcSideProperty(request.AcSide, parts[1], value);
+                }
+                break;
+
+            // Nested fields under inverter.acSide (for backwards compatibility)
+            case "inverter":
+                request.Inverter ??= new SystemConnectionInverterConfig();
+                if (parts.Length >= 2 && parts[1] == "acSide")
+                {
+                    request.Inverter.AcSide ??= new SystemConnectionAcSideConfig();
+                    if (parts.Length >= 3)
+                    {
+                        SetSystemConnectionAcSideProperty(request.Inverter.AcSide, parts[2], value);
+                    }
+                }
+                break;
+        }
+    }
+
+    private static void SetSystemConnectionGeneratorProperty(SystemConnectionGeneratorConfig generator, string propertyName, object value)
+    {
+        switch (propertyName)
+        {
+            case "inputMode":
+                generator.InputMode = value;  // Can be int or string
+                break;
+            case "connectedToGridInput":
+                generator.ConnectedToGridInput = Convert.ToBoolean(value);
+                break;
+        }
+    }
+
+    private static void SetSystemConnectionAcSideProperty(SystemConnectionAcSideConfig acSide, string propertyName, object value)
+    {
+        switch (propertyName)
+        {
+            case "itSystemNeutralUngrounded":
+                acSide.ItSystemNeutralUngrounded = Convert.ToBoolean(value);
+                break;
+            case "gridPhaseSequence":
+                acSide.GridPhaseSequence = value;  // Can be int or string
+                break;
+            case "gridVoltageLevelCode":
+                acSide.GridVoltageLevelCode = Convert.ToInt32(value);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Populates a field in BatteryCapacityConfigRequest
+    /// </summary>
+    private static void PopulateBatteryCapacityField(BatteryCapacityConfigRequest request, string[] parts, object value)
+    {
+        if (parts.Length == 0) return;
+
+        var property = parts[0];
+
+        switch (property)
+        {
+            case "batteryCapacityAh":
+                request.BatteryCapacityAh = Convert.ToInt32(value);
+                break;
+            case "maxChargeCurrentA":
+                request.MaxChargeCurrentA = Convert.ToInt32(value);
+                break;
+            case "maxDischargeCurrentA":
+                request.MaxDischargeCurrentA = Convert.ToInt32(value);
+                break;
+        }
+    }
 
     /// <summary>
     /// Serializes a strongly-typed request object to Dictionary<string, object> for RPC calls.
@@ -1545,6 +1686,179 @@ public class DeviceRpcExecutorService : IDeviceRpcExecutorService
         }
 
         return $"Device did not confirm {rpcMethod} update - no specific error provided";
+    }
+
+    #endregion
+
+    #region Fire-and-Forget Methods for Restart-Causing Parameters
+
+    /// <summary>
+    /// Executes a fire-and-forget parameter update for restart-causing parameters.
+    /// Only sends the write RPC without waiting for verification (device will restart).
+    /// This is used for parameters like GridStandard that cause device restart.
+    /// </summary>
+    public async Task<RpcExecutionResult> ExecuteFireAndForgetUpdateAsync(
+        Guid tbDeviceId,
+        string parameterName,
+        string value,
+        CancellationToken cancellationToken = default)
+    {
+        var stopwatch = Stopwatch.StartNew();
+
+        // Get RPC method mapping
+        if (!RpcMethodMapping.TryGetMapping(parameterName, out var config) || config == null)
+        {
+            return new RpcExecutionResult
+            {
+                Success = false,
+                ErrorMessage = $"No RPC mapping found for parameter: {parameterName}",
+                ErrorCategory = RpcErrorCategory.MappingNotFound,
+                RetryAttempts = 0,
+                TotalDurationMs = stopwatch.ElapsedMilliseconds
+            };
+        }
+
+        // Verify this is actually a restart-causing method
+        if (!RpcMethodMapping.IsRestartCausingMethod(config.RpcMethod))
+        {
+            _logger.LogWarning(
+                "ExecuteFireAndForgetUpdateAsync called for non-restart-causing parameter {ParameterName} (RPC: {RpcMethod}). " +
+                "This method should only be used for restart-causing parameters.",
+                parameterName, config.RpcMethod);
+        }
+
+        _logger.LogInformation(
+            "🔄 Fire-and-forget RPC for restart-causing parameter: DeviceId={DeviceId}, Parameter={ParameterName}, " +
+            "RpcMethod={RpcMethod}, Value={Value}",
+            tbDeviceId, parameterName, config.RpcMethod, value);
+
+        // Build request
+        var mappedValue = config.ValueMapper != null ? config.ValueMapper(value) : value;
+        var request = BuildRequestObject(config.RpcKind, config.FieldPath, mappedValue);
+        var requestDict = SerializeToDict(request);
+
+        try
+        {
+            // Send request - device will restart so we only care if the write was sent
+            // Use shorter timeout since we don't expect a full verification cycle
+            var updateResponse = await _tbService.SendTwoWayRpcAsync(
+                deviceId: tbDeviceId,
+                method: config.RpcMethod,
+                parameters: requestDict,
+                timeoutMs: 30000, // 30 seconds - enough to send write, not wait for verify
+                cancellationToken: cancellationToken
+            );
+
+            // For restart-causing parameters, we consider it successful if the RPC was accepted
+            // The device may or may not respond before restarting
+            if (updateResponse != null && updateResponse.Success)
+            {
+                _logger.LogInformation(
+                    "✅ Fire-and-forget RPC sent successfully for {ParameterName}. Device will restart.",
+                    parameterName);
+
+                return new RpcExecutionResult
+                {
+                    Success = true,
+                    RpcMethod = config.RpcMethod,
+                    Response = updateResponse.Response,
+                    ErrorCategory = RpcErrorCategory.None,
+                    RetryAttempts = 0,
+                    TotalDurationMs = stopwatch.ElapsedMilliseconds
+                };
+            }
+
+            // If we got a response but it wasn't successful, check if it's a "soft success" scenario
+            var errorMessage = GetDetailedErrorMessage(updateResponse, config.RpcMethod);
+            var errorCategory = CategorizeError(updateResponse);
+
+            // For fire-and-forget operations, "No response from device" typically means
+            // the device received the command and started restarting before it could respond.
+            // Treat this as a soft success.
+            var lowerError = (updateResponse?.Error ?? errorMessage).ToLowerInvariant();
+            var isNoResponseError = lowerError.Contains("no response") ||
+                                    lowerError.Contains("did not respond") ||
+                                    lowerError.Contains("timeout") ||
+                                    errorCategory == RpcErrorCategory.Timeout ||
+                                    errorCategory == RpcErrorCategory.DeviceOffline;
+
+            if (isNoResponseError)
+            {
+                _logger.LogInformation(
+                    "🔄 Fire-and-forget RPC for {ParameterName} got no response. " +
+                    "Treating as soft success - device likely restarting. Error: {ErrorMessage}",
+                    parameterName, errorMessage);
+
+                return new RpcExecutionResult
+                {
+                    Success = true,
+                    ErrorMessage = $"RPC sent, device did not respond (likely restarting): {errorMessage}",
+                    RpcMethod = config.RpcMethod,
+                    ErrorCategory = errorCategory,
+                    RetryAttempts = 0,
+                    TotalDurationMs = stopwatch.ElapsedMilliseconds
+                };
+            }
+
+            _logger.LogWarning(
+                "⚠️ Fire-and-forget RPC response for {ParameterName}: {ErrorMessage}. " +
+                "Device may still restart if write was partially processed.",
+                parameterName, errorMessage);
+
+            return new RpcExecutionResult
+            {
+                Success = false,
+                ErrorMessage = errorMessage,
+                RpcMethod = config.RpcMethod,
+                ErrorCategory = errorCategory,
+                RetryAttempts = 0,
+                TotalDurationMs = stopwatch.ElapsedMilliseconds
+            };
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // For restart-causing parameters, timeout or connection loss might actually mean
+            // the device is restarting, so we log but return a softer error
+            var errorCategory = CategorizeException(ex);
+
+            // If it's a timeout or network error, the device might have restarted
+            if (errorCategory == RpcErrorCategory.Timeout || errorCategory == RpcErrorCategory.NetworkError)
+            {
+                _logger.LogInformation(
+                    "🔄 Fire-and-forget RPC for {ParameterName} ended with {ErrorCategory}. " +
+                    "This may indicate the device has started restarting.",
+                    parameterName, errorCategory);
+
+                // Consider this a "soft success" - the RPC was likely received before restart
+                return new RpcExecutionResult
+                {
+                    Success = true,
+                    ErrorMessage = $"RPC sent, but device may have started restarting: {ex.Message}",
+                    RpcMethod = config.RpcMethod,
+                    ErrorCategory = errorCategory,
+                    RetryAttempts = 0,
+                    TotalDurationMs = stopwatch.ElapsedMilliseconds
+                };
+            }
+
+            _logger.LogError(ex,
+                "❌ Fire-and-forget RPC failed for {ParameterName}: {ErrorCategory}",
+                parameterName, errorCategory);
+
+            return new RpcExecutionResult
+            {
+                Success = false,
+                ErrorMessage = $"RPC execution failed: {ex.Message}",
+                RpcMethod = config.RpcMethod,
+                ErrorCategory = errorCategory,
+                RetryAttempts = 0,
+                TotalDurationMs = stopwatch.ElapsedMilliseconds
+            };
+        }
     }
 
     #endregion

@@ -11,7 +11,7 @@
     "Hems_Backend.Web": {
       "commandName": "Project",
       "launchBrowser": true,
-      "applicationUrl": "https://localhost:7164;http://localhost:7163",
+      "applicationUrl": "https://localhost:7164;http://0.0.0.0:7163",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }

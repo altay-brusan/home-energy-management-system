@@ -66,6 +66,25 @@ public class ParameterUpdateResult
     /// Total duration of the operation
     /// </summary>
     public TimeSpan Duration { get; set; }
+
+    /// <summary>
+    /// Indicates that the device will restart as a result of this update.
+    /// When true, the device will be temporarily unavailable.
+    /// UI should show restart notification and poll for device online status.
+    /// </summary>
+    public bool DeviceWillRestart { get; set; }
+
+    /// <summary>
+    /// Reason for device restart (e.g., "Grid Standard settings changed").
+    /// Only populated when DeviceWillRestart is true.
+    /// </summary>
+    public string? RestartReason { get; set; }
+
+    /// <summary>
+    /// List of parameter names that caused the restart.
+    /// Only populated when DeviceWillRestart is true.
+    /// </summary>
+    public List<string> RestartCausingParameters { get; set; } = new();
 }
 
 /// <summary>

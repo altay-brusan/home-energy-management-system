@@ -1980,6 +1980,76 @@
         ]
       }
     },
+    "/api/DeviceSettings/device/{deviceId}/grid-config": {
+      "get": {
+        "tags": [
+          "DeviceSettings"
+        ],
+        "operationId": "GetGridConfig",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "DeviceSettings"
+        ],
+        "operationId": "UpdateGridConfig",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateGridConfigRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/DeviceSettings/device/{deviceId}/price": {
       "get": {
         "tags": [
@@ -6518,6 +6588,31 @@
           3,
           99
         ]
+      },
+      "UpdateGridConfigRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GridConfigParameterUpdateRequest"
+            }
+          }
+        }
+      },
+      "GridConfigParameterUpdateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "parameterId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
       },
       "SetEnergyPriceRequest": {
         "type": "object",

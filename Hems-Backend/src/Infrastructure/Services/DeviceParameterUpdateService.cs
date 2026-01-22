@@ -13,6 +13,11 @@ namespace Hems_Backend.Infrastructure.Services;
 /// Synchronous device parameter update service.
 /// Processes parameters sequentially with write-verify-retry pattern.
 /// Replaces the async SignalR-based background service with a simple synchronous approach.
+///
+/// Special handling for restart-causing parameters (Grid Standard settings):
+/// - These parameters are processed LAST to ensure other parameters are applied first
+/// - Uses fire-and-forget pattern (no verification) since device will restart
+/// - Sets DeviceWillRestart flag in result to notify UI
 /// </summary>
 public class DeviceParameterUpdateService : IDeviceParameterUpdateService
 {
@@ -44,6 +49,20 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
     /// </summary>
     private static readonly System.Text.RegularExpressions.Regex TimeSlotEndRegex =
         new(@"^TimeSlot\d+End$", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    /// <summary>
+    /// Hidden duplicate parameters from GeneratorSettings that overlap with GeneratorCharging.
+    /// These are hidden in the UI (Visible=false) and skipped for RPC since the "real"
+    /// parameters in GeneratorCharging handle the device updates.
+    /// Must match the SkippedParameters set in DeviceRpcExecutorService.
+    /// </summary>
+    private static readonly HashSet<string> SkippedParameters = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "GeneratorCharge",        // Duplicate of GeneratorChargingEnabled
+        "GeneratorGridCharge",    // Duplicate of GridChargingEnabled
+        "GeneratorStartSOC",      // Duplicate of GeneratorChargingStartSOC
+        "GeneratorChargeCurrent"  // Duplicate of GeneratorChargingCurrent
+    };
 
     public DeviceParameterUpdateService(
         IDeviceLockService lockService,
@@ -123,11 +142,47 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
                     parameterIds.Contains(sdpv.ParameterId))
                 .ToDictionaryAsync(pv => pv.ParameterId, updateToken);
 
+            // Separate restart-causing parameters from regular parameters
+            // Restart-causing parameters (Grid Standard settings) must be processed LAST
+            // because they cause device restart
+            var regularParameters = new List<ParameterUpdateItem>();
+            var restartCausingParameters = new List<ParameterUpdateItem>();
+
+            foreach (var param in parameters)
+            {
+                if (RpcMethodMapping.IsRestartCausingParameter(param.ParameterName))
+                {
+                    restartCausingParameters.Add(param);
+                    _logger.LogInformation(
+                        "🔄 Parameter {ParameterName} identified as restart-causing - will be processed last with fire-and-forget",
+                        param.ParameterName);
+                }
+                else
+                {
+                    regularParameters.Add(param);
+                }
+            }
+
+            if (restartCausingParameters.Count > 0)
+            {
+                _logger.LogInformation(
+                    "📋 Parameter update contains {RestartCount} restart-causing parameter(s): [{RestartParams}]. " +
+                    "Processing {RegularCount} regular parameter(s) first, then restart-causing parameters.",
+                    restartCausingParameters.Count,
+                    string.Join(", ", restartCausingParameters.Select(p => p.ParameterName)),
+                    regularParameters.Count);
+
+                // Set restart info in result
+                result.DeviceWillRestart = true;
+                result.RestartReason = "Grid Standard settings changed";
+                result.RestartCausingParameters = restartCausingParameters.Select(p => p.ParameterName).ToList();
+            }
+
             var currentIndex = 0;
 
-            // Process each parameter sequentially
+            // PHASE 1: Process regular parameters sequentially with write-verify pattern
             // NOTE: We do NOT check cancellation here - operation must complete to keep DB in sync with device
-            foreach (var param in parameters)
+            foreach (var param in regularParameters)
             {
                 currentIndex++;
 
@@ -147,12 +202,19 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
                     // The device handles end times internally. We only save to our local database for UI display.
                     var isTimeSlotEnd = IsTimeSlotEndParameter(param.ParameterName);
 
-                    if (isTimeSlotEnd)
+                    // Check if this parameter is temporarily disabled (RPC has issues)
+                    var isSkippedParameter = IsSkippedParameter(param.ParameterName);
+
+                    if (isTimeSlotEnd || isSkippedParameter)
                     {
-                        // Skip RPC for time slot end parameters - just update local database
+                        // Skip RPC for these parameters - just update local database
+                        var skipReason = isTimeSlotEnd
+                            ? "time slot end parameter"
+                            : "temporarily disabled (GeneratorAndSmartLoadConfig RPC issue)";
+
                         _logger.LogInformation(
-                            "⏭️ Skipping RPC for time slot end parameter {ParameterName} - saving to local database only",
-                            param.ParameterName);
+                            "⏭️ Skipping RPC for {ParameterName} ({Reason}) - saving to local database only",
+                            param.ParameterName, skipReason);
 
                         // Update database
                         if (paramValue != null)
@@ -174,7 +236,7 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
                             Status = DeviceSettingUpdateStatus.Success,
                             NewValue = param.Value,
                             OldValue = oldValue,
-                            VerifiedValue = null, // No RPC verification for end times
+                            VerifiedValue = null, // No RPC verification for skipped parameters
                             FailedReason = null,
                             RetryAttempts = 0,
                             AttemptedAt = DateTime.UtcNow
@@ -333,6 +395,195 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
                 }
             }
 
+            // PHASE 2: Process restart-causing parameters with fire-and-forget pattern
+            // These are processed LAST because device will restart after receiving them
+            if (restartCausingParameters.Count > 0)
+            {
+                _logger.LogInformation(
+                    "🔄 Starting fire-and-forget processing for {Count} restart-causing parameter(s) on device {DeviceId}",
+                    restartCausingParameters.Count, deviceId);
+
+                foreach (var param in restartCausingParameters)
+                {
+                    currentIndex++;
+
+                    // Capture old value before update
+                    string? oldValue = null;
+                    SetupDeviceParameterValue? paramValue = null;
+                    if (parameterValues.TryGetValue(param.ParameterId, out paramValue))
+                    {
+                        oldValue = paramValue.Value;
+                    }
+
+                    // Mark parameter as in-progress
+                    _operationStateService.UpdateParameterProgress(operationId, param.ParameterId, ParameterUpdateStatus.InProgress, null);
+
+                    try
+                    {
+                        _logger.LogInformation(
+                            "🔄 Fire-and-forget update for restart-causing parameter {ParameterName}={Value}",
+                            param.ParameterName, param.Value);
+
+                        // Execute fire-and-forget RPC (no verification - device will restart)
+                        var fireForgetResult = await rpcExecutor.ExecuteFireAndForgetUpdateAsync(
+                            thingsBoardDeviceId,
+                            param.ParameterName,
+                            param.Value,
+                            updateToken);
+
+                        if (fireForgetResult.Success)
+                        {
+                            // Update database - we trust the write was sent
+                            if (paramValue != null)
+                            {
+                                paramValue.Value = param.Value;
+                                await context.SaveChangesAsync(updateToken);
+                            }
+
+                            result.SuccessCount++;
+                            _operationStateService.UpdateParameterProgress(operationId, param.ParameterId, ParameterUpdateStatus.Success, null);
+
+                            _logger.LogInformation(
+                                "✅ Fire-and-forget RPC sent for {ParameterName} - device will restart",
+                                param.ParameterName);
+
+                            // Record in history (no verification for fire-and-forget)
+                            context.DeviceSettingUpdateHistories.Add(new DeviceSettingUpdateHistory
+                            {
+                                DeviceId = deviceId,
+                                CorrelationId = operationId,
+                                ParameterId = param.ParameterId,
+                                ParameterName = param.ParameterName,
+                                Status = DeviceSettingUpdateStatus.Success,
+                                NewValue = param.Value,
+                                OldValue = oldValue,
+                                VerifiedValue = null, // No verification for restart-causing params
+                                FailedReason = null,
+                                RetryAttempts = 0,
+                                AttemptedAt = DateTime.UtcNow
+                            });
+                        }
+                        else
+                        {
+                            result.FailedCount++;
+                            result.FailedParameters.Add(new FailedParameterDetail
+                            {
+                                ParameterId = param.ParameterId,
+                                ParameterName = param.ParameterName,
+                                ErrorMessage = fireForgetResult.ErrorMessage ?? "Fire-and-forget RPC failed"
+                            });
+                            _operationStateService.UpdateParameterProgress(operationId, param.ParameterId, ParameterUpdateStatus.Failed, fireForgetResult.ErrorMessage);
+
+                            _logger.LogWarning(
+                                "❌ Fire-and-forget RPC failed for {ParameterName}: {Error}",
+                                param.ParameterName, fireForgetResult.ErrorMessage);
+
+                            // Record failed update in history
+                            context.DeviceSettingUpdateHistories.Add(new DeviceSettingUpdateHistory
+                            {
+                                DeviceId = deviceId,
+                                CorrelationId = operationId,
+                                ParameterId = param.ParameterId,
+                                ParameterName = param.ParameterName,
+                                Status = DeviceSettingUpdateStatus.Failed,
+                                NewValue = param.Value,
+                                OldValue = oldValue,
+                                VerifiedValue = null,
+                                FailedReason = fireForgetResult.ErrorMessage,
+                                RetryAttempts = 0,
+                                AttemptedAt = DateTime.UtcNow
+                            });
+
+                            // If fire-and-forget failed, device won't restart for this param
+                            // Remove it from restart-causing list
+                            result.RestartCausingParameters.Remove(param.ParameterName);
+                        }
+
+                        // Save history record
+                        await context.SaveChangesAsync(updateToken);
+
+                        // Send ParameterProgress event
+                        _ = deviceGroup.ParameterProgress(new ParameterProgressEvent(
+                            operationId,
+                            deviceId,
+                            param.ParameterId,
+                            param.ParameterName,
+                            fireForgetResult.Success ? ParameterUpdateStatus.Success : ParameterUpdateStatus.Failed,
+                            fireForgetResult.ErrorMessage,
+                            currentIndex,
+                            parameters.Count,
+                            result.SuccessCount,
+                            result.FailedCount
+                        ));
+                    }
+                    catch (Exception ex)
+                    {
+                        result.FailedCount++;
+                        result.FailedParameters.Add(new FailedParameterDetail
+                        {
+                            ParameterId = param.ParameterId,
+                            ParameterName = param.ParameterName,
+                            ErrorMessage = ex.Message
+                        });
+                        _operationStateService.UpdateParameterProgress(operationId, param.ParameterId, ParameterUpdateStatus.Failed, ex.Message);
+
+                        // Record failed update in history
+                        context.DeviceSettingUpdateHistories.Add(new DeviceSettingUpdateHistory
+                        {
+                            DeviceId = deviceId,
+                            CorrelationId = operationId,
+                            ParameterId = param.ParameterId,
+                            ParameterName = param.ParameterName,
+                            Status = DeviceSettingUpdateStatus.Failed,
+                            NewValue = param.Value,
+                            OldValue = oldValue,
+                            FailedReason = ex.Message,
+                            AttemptedAt = DateTime.UtcNow
+                        });
+                        await context.SaveChangesAsync(updateToken);
+
+                        // Send ParameterProgress event for failure
+                        _ = deviceGroup.ParameterProgress(new ParameterProgressEvent(
+                            operationId,
+                            deviceId,
+                            param.ParameterId,
+                            param.ParameterName,
+                            ParameterUpdateStatus.Failed,
+                            ex.Message,
+                            currentIndex,
+                            parameters.Count,
+                            result.SuccessCount,
+                            result.FailedCount
+                        ));
+
+                        _logger.LogError(ex,
+                            "Exception in fire-and-forget update for {ParameterName} on device {DeviceId}",
+                            param.ParameterName, deviceId);
+
+                        // Remove from restart list since it failed
+                        result.RestartCausingParameters.Remove(param.ParameterName);
+                    }
+                }
+
+                // If no restart-causing params succeeded, clear the restart flag
+                if (result.RestartCausingParameters.Count == 0)
+                {
+                    result.DeviceWillRestart = false;
+                    result.RestartReason = null;
+                    _logger.LogWarning(
+                        "All restart-causing parameters failed - device will NOT restart");
+                }
+                else
+                {
+                    // Mark device as restarting for grace period (2 minutes)
+                    var restartGracePeriod = TimeSpan.FromMinutes(2);
+                    _lockService.MarkDeviceRestarting(deviceId, restartGracePeriod);
+                    _logger.LogInformation(
+                        "🔄 Device {DeviceId} marked as restarting after fire-and-forget parameters. Grace period: {GracePeriod}",
+                        deviceId, restartGracePeriod);
+                }
+            }
+
             // Set device mode to Custom if any parameters were successfully updated
             if (result.SuccessCount > 0)
             {
@@ -341,6 +592,27 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
 
             result.Success = result.FailedCount == 0;
             result.Duration = DateTime.UtcNow - startTime;
+
+            // Record operation in DeviceOperationHistory for audit trail
+            var operationHistory = new DeviceOperationHistory
+            {
+                DeviceId = deviceId,
+                CorrelationId = operationId.ToString(),
+                Status = result.Success ? "completed" : (result.SuccessCount > 0 ? "partial" : "failed"),
+                TotalParameters = result.TotalParameters,
+                SuccessCount = result.SuccessCount,
+                FailedCount = result.FailedCount,
+                SkippedCount = 0,
+                FailedParametersJson = result.FailedParameters.Count > 0
+                    ? System.Text.Json.JsonSerializer.Serialize(result.FailedParameters)
+                    : null,
+                StartedAt = startTime,
+                CompletedAt = DateTime.UtcNow,
+                Duration = result.Duration,
+                WasCancelled = false
+            };
+            context.DeviceOperationHistories.Add(operationHistory);
+            await context.SaveChangesAsync(updateToken);
 
             // Mark operation as completed
             _operationStateService.CompleteOperation(operationId, result.Success);
@@ -382,6 +654,16 @@ public class DeviceParameterUpdateService : IDeviceParameterUpdateService
     private static bool IsTimeSlotEndParameter(string parameterName)
     {
         return TimeSlotEndRegex.IsMatch(parameterName);
+    }
+
+    /// <summary>
+    /// Checks if a parameter is temporarily disabled due to RPC issues.
+    /// These parameters are saved to the local database but not sent via RPC.
+    /// TODO: REFACTOR - Remove this once GeneratorAndSmartLoadConfig RPC is fixed.
+    /// </summary>
+    private static bool IsSkippedParameter(string parameterName)
+    {
+        return SkippedParameters.Contains(parameterName);
     }
 
     /// <summary>

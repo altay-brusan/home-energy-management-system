@@ -8,11 +8,13 @@ namespace Hems_Backend.Infrastructure.Services;
 /// Service for device-level locking to prevent concurrent updates.
 /// Ensures only one settings-related operation (mode change or parameter update)
 /// can run per device at a time.
+/// Also tracks device restart state to prevent operations during restart grace period.
 /// </summary>
 public class DeviceLockService : IDeviceLockService
 {
     private readonly ILogger<DeviceLockService> _logger;
     private readonly ConcurrentDictionary<Guid, SemaphoreSlim> _deviceLocks = new();
+    private readonly ConcurrentDictionary<Guid, RestartState> _restartingDevices = new();
 
     public DeviceLockService(ILogger<DeviceLockService> logger)
     {
@@ -59,6 +61,91 @@ public class DeviceLockService : IDeviceLockService
             return semaphore.CurrentCount == 0;
         }
         return false;
+    }
+
+    /// <summary>
+    /// Marks a device as restarting for the specified duration.
+    /// During this grace period, operations will be blocked with DEVICE_RESTARTING error.
+    /// </summary>
+    public void MarkDeviceRestarting(Guid deviceId, TimeSpan gracePeriod)
+    {
+        var restartState = new RestartState
+        {
+            StartedAt = DateTime.UtcNow,
+            EstimatedAvailableAt = DateTime.UtcNow.Add(gracePeriod)
+        };
+
+        _restartingDevices.AddOrUpdate(deviceId, restartState, (_, _) => restartState);
+
+        _logger.LogInformation(
+            "🔄 Device {DeviceId} marked as restarting. Grace period: {GracePeriod}, Expected available at: {EstimatedAvailableAt}",
+            deviceId, gracePeriod, restartState.EstimatedAvailableAt);
+    }
+
+    /// <summary>
+    /// Checks if a device is currently in restart grace period.
+    /// Automatically clears expired restart states.
+    /// </summary>
+    public bool IsDeviceRestarting(Guid deviceId)
+    {
+        if (_restartingDevices.TryGetValue(deviceId, out var state))
+        {
+            if (DateTime.UtcNow < state.EstimatedAvailableAt)
+            {
+                return true;
+            }
+
+            // Grace period expired, clean up
+            _restartingDevices.TryRemove(deviceId, out _);
+            _logger.LogDebug(
+                "Restart grace period expired for device {DeviceId}, cleared restart state",
+                deviceId);
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Gets restart information for a device.
+    /// </summary>
+    public DeviceRestartInfo? GetRestartInfo(Guid deviceId)
+    {
+        if (_restartingDevices.TryGetValue(deviceId, out var state))
+        {
+            if (DateTime.UtcNow < state.EstimatedAvailableAt)
+            {
+                return new DeviceRestartInfo
+                {
+                    StartedAt = state.StartedAt,
+                    EstimatedAvailableAt = state.EstimatedAvailableAt
+                };
+            }
+
+            // Grace period expired, clean up
+            _restartingDevices.TryRemove(deviceId, out _);
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Clears the restart state for a device (e.g., when device comes back online).
+    /// </summary>
+    public void ClearRestartState(Guid deviceId)
+    {
+        if (_restartingDevices.TryRemove(deviceId, out _))
+        {
+            _logger.LogInformation(
+                "✅ Restart state cleared for device {DeviceId}",
+                deviceId);
+        }
+    }
+
+    /// <summary>
+    /// Internal class to track restart state
+    /// </summary>
+    private class RestartState
+    {
+        public DateTime StartedAt { get; init; }
+        public DateTime EstimatedAvailableAt { get; init; }
     }
 
     /// <summary>
