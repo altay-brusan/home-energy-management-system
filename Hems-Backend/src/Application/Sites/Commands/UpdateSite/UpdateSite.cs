@@ -21,16 +21,21 @@ public record UpdateSiteCommand : IRequest
 public class UpdateSiteCommandHandler : IRequestHandler<UpdateSiteCommand>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IUser _user;
 
-    public UpdateSiteCommandHandler(IApplicationDbContext context)
+    public UpdateSiteCommandHandler(IApplicationDbContext context, IUser user)
     {
         _context = context;
+        _user = user;
     }
 
     public async Task Handle(UpdateSiteCommand request, CancellationToken cancellationToken)
     {
+        var userId = _user.Id ?? throw new UnauthorizedAccessException("User not authenticated");
+
+        // Only the site owner can update the site (not guests)
         var entity = await _context.Sites
-            .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Id == request.Id && x.UserId == userId && !x.IsDeleted, cancellationToken);
 
         if (entity == null)
         {
