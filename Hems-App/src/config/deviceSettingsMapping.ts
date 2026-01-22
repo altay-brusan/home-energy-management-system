@@ -430,11 +430,11 @@ export const GENERATOR_SMART_LOAD_MAPPING: ParameterMapping[] = [
     step: 100,
     roleType: 'User',
   },
-  // SmartLoad
+  // SmartLoad (SmartLoadEnabled is an enum: 0=Generator, 1=SmartLoad, 2=Microinverter)
   {
     apiName: 'SmartLoadEnabled',
     storePath: 'generatorAndSmartLoad.smartLoad.enabled',
-    transformerType: 'boolean',
+    transformerType: 'number',
     roleType: 'User',
   },
   {
@@ -486,6 +486,46 @@ export const GENERATOR_SMART_LOAD_MAPPING: ParameterMapping[] = [
 ];
 
 /**
+ * GridStandard Mappings (User Level)
+ */
+export const GRID_STANDARD_MAPPING: ParameterMapping[] = [
+  {
+    apiName: 'GridStandard',
+    storePath: 'gridStandard.standard',
+    transformerType: 'string',
+    roleType: 'User',
+  },
+  {
+    apiName: 'GridFrequency',
+    storePath: 'gridStandard.frequency',
+    transformerType: 'number',
+    unit: 'Hz',
+    min: 45,
+    max: 65,
+    step: 0.1,
+    roleType: 'User',
+  },
+  {
+    apiName: 'PhaseType',
+    storePath: 'gridStandard.phaseType',
+    transformerType: 'string',
+    roleType: 'User',
+  },
+  {
+    apiName: 'GridLevel',
+    storePath: 'gridStandard.gridLevel',
+    transformerType: 'string',
+    roleType: 'User',
+  },
+  {
+    apiName: 'ITSystemNeutralGrounded',
+    storePath: 'gridStandard.itSystemNeutralGrounded',
+    transformerType: 'boolean',
+    roleType: 'User',
+  },
+];
+
+/**
  * MaintenanceSettings Mappings (Admin Only)
  */
 export const MAINTENANCE_SETTINGS_MAPPING: ParameterMapping[] = [
@@ -507,6 +547,9 @@ export const MAINTENANCE_SETTINGS_MAPPING: ParameterMapping[] = [
     storePath: 'maintenanceSettings.batteryMaintenance.resistance',
     transformerType: 'number',
     unit: 'mO',
+    min: 0,
+    max: 500,
+    step: 1,
     roleType: 'Admin',
   },
   {
@@ -514,33 +557,20 @@ export const MAINTENANCE_SETTINGS_MAPPING: ParameterMapping[] = [
     storePath: 'maintenanceSettings.batteryMaintenance.chargeEfficiency',
     transformerType: 'number',
     unit: '%',
+    min: 80,
+    max: 100,
+    step: 0.1,
     roleType: 'Admin',
   },
-  // GridCodeConfiguration
-  {
-    apiName: 'GridStandard',
-    storePath: 'maintenanceSettings.gridCode.standard',
-    transformerType: 'string',
-    roleType: 'Admin',
-  },
-  {
-    apiName: 'GridFrequency',
-    storePath: 'maintenanceSettings.gridCode.frequency',
-    transformerType: 'number',
-    unit: 'Hz',
-    roleType: 'Admin',
-  },
-  {
-    apiName: 'OutputVoltageLevel',
-    storePath: 'maintenanceSettings.gridCode.outputVoltageLevel',
-    transformerType: 'string',
-    roleType: 'Admin',
-  },
+  // GridCodeConfiguration - Protection Parameters
   {
     apiName: 'GridVoltageHigh',
     storePath: 'maintenanceSettings.gridCode.voltageHigh',
     transformerType: 'number',
     unit: 'V',
+    min: 240,
+    max: 280,
+    step: 1,
     roleType: 'Admin',
   },
   {
@@ -548,6 +578,9 @@ export const MAINTENANCE_SETTINGS_MAPPING: ParameterMapping[] = [
     storePath: 'maintenanceSettings.gridCode.voltageLow',
     transformerType: 'number',
     unit: 'V',
+    min: 180,
+    max: 220,
+    step: 1,
     roleType: 'Admin',
   },
   {
@@ -555,6 +588,9 @@ export const MAINTENANCE_SETTINGS_MAPPING: ParameterMapping[] = [
     storePath: 'maintenanceSettings.gridCode.frequencyHigh',
     transformerType: 'number',
     unit: 'Hz',
+    min: 50,
+    max: 55,
+    step: 0.1,
     roleType: 'Admin',
   },
   {
@@ -562,6 +598,9 @@ export const MAINTENANCE_SETTINGS_MAPPING: ParameterMapping[] = [
     storePath: 'maintenanceSettings.gridCode.frequencyLow',
     transformerType: 'number',
     unit: 'Hz',
+    min: 45,
+    max: 50,
+    step: 0.1,
     roleType: 'Admin',
   },
   {
@@ -569,6 +608,40 @@ export const MAINTENANCE_SETTINGS_MAPPING: ParameterMapping[] = [
     storePath: 'maintenanceSettings.gridCode.reconnectionTime',
     transformerType: 'number',
     unit: 's',
+    min: 0,
+    max: 600,
+    step: 10,
+    roleType: 'Admin',
+  },
+  // Power Factor Settings
+  {
+    apiName: 'PowerFactorTarget',
+    storePath: 'maintenanceSettings.gridCode.powerFactorTarget',
+    transformerType: 'number',
+    unit: '',
+    min: 0.8,
+    max: 1.0,
+    step: 0.01,
+    roleType: 'Admin',
+  },
+  {
+    apiName: 'ActivePowerRegulation',
+    storePath: 'maintenanceSettings.gridCode.activePowerRegulation',
+    transformerType: 'number',
+    unit: '%',
+    min: 0,
+    max: 100,
+    step: 1,
+    roleType: 'Admin',
+  },
+  {
+    apiName: 'ReactivePowerRegulation',
+    storePath: 'maintenanceSettings.gridCode.reactivePowerRegulation',
+    transformerType: 'number',
+    unit: '%',
+    min: 0,
+    max: 100,
+    step: 1,
     roleType: 'Admin',
   },
   // AdvancedFunctions
@@ -585,6 +658,13 @@ export const MAINTENANCE_SETTINGS_MAPPING: ParameterMapping[] = [
     roleType: 'Admin',
   },
   {
+    apiName: 'LithiumBatteryLossFaultEnabled',
+    storePath: 'maintenanceSettings.advanced.lithiumBatteryLossFaultEnabled',
+    transformerType: 'boolean',
+    roleType: 'Admin',
+  },
+  // Parallel Settings
+  {
     apiName: 'ParallelEnabled',
     storePath: 'maintenanceSettings.advanced.parallelEnabled',
     transformerType: 'boolean',
@@ -597,9 +677,64 @@ export const MAINTENANCE_SETTINGS_MAPPING: ParameterMapping[] = [
     roleType: 'Admin',
   },
   {
+    apiName: 'ParallelPhase',
+    storePath: 'maintenanceSettings.advanced.parallelPhase',
+    transformerType: 'string',
+    roleType: 'Admin',
+  },
+  {
+    apiName: 'ModbusAddress',
+    storePath: 'maintenanceSettings.advanced.modbusAddress',
+    transformerType: 'number',
+    unit: '',
+    min: 0,
+    max: 63,
+    step: 1,
+    roleType: 'Admin',
+  },
+  // CT Settings
+  {
     apiName: 'ExternalCTRatio',
     storePath: 'maintenanceSettings.advanced.externalCTRatio',
     transformerType: 'number',
+    unit: '',
+    min: 1,
+    max: 5000,
+    step: 1,
+    roleType: 'Admin',
+  },
+  {
+    apiName: 'ExternalMeterCTRatio',
+    storePath: 'maintenanceSettings.advanced.externalMeterCTRatio',
+    transformerType: 'number',
+    unit: '',
+    min: 1,
+    max: 100,
+    step: 1,
+    roleType: 'Admin',
+  },
+  // External Relay Configuration
+  {
+    apiName: 'ExternalRelayFeatureEnabled',
+    storePath: 'maintenanceSettings.externalRelay.enabled',
+    transformerType: 'boolean',
+    roleType: 'Admin',
+  },
+  {
+    apiName: 'RelayBitmap',
+    storePath: 'maintenanceSettings.externalRelay.bitmap',
+    transformerType: 'number',
+    unit: '',
+    min: 0,
+    max: 65535,
+    step: 1,
+    roleType: 'Admin',
+  },
+  // Generator Override
+  {
+    apiName: 'ForceSmartLoadOn',
+    storePath: 'maintenanceSettings.generatorOverride.forceSmartLoadOn',
+    transformerType: 'boolean',
     roleType: 'Admin',
   },
 ];
@@ -610,6 +745,7 @@ export const MAINTENANCE_SETTINGS_MAPPING: ParameterMapping[] = [
 export const ALL_USER_MAPPINGS: ParameterMapping[] = [
   ...BATTERY_SETTINGS_MAPPING,
   ...SYSTEM_WORK_MODE_MAPPING,
+  ...GRID_STANDARD_MAPPING,
   ...TIME_OF_USE_MAPPING,
   ...TIME_SLOT_MAPPINGS,
   ...GENERATOR_SMART_LOAD_MAPPING,
@@ -653,6 +789,7 @@ export const getMappingsByRole = (role: 'User' | 'Admin'): ParameterMapping[] =>
 export const PARAMETER_GROUPS = {
   BATTERY_SETTINGS: 'BatterySettings',
   SYSTEM_WORK_MODE: 'SystemWorkMode',
+  GRID_STANDARD: 'GridStandard',
   TIME_OF_USE: 'TimeOfUse',
   GENERATOR_SMART_LOAD: 'GeneratorAndSmartLoad',
   MAINTENANCE_SETTINGS: 'MaintenanceSettings',
@@ -664,7 +801,67 @@ export const PARAMETER_GROUPS = {
 export const GROUP_SORT_ORDER: Record<string, number> = {
   [PARAMETER_GROUPS.BATTERY_SETTINGS]: 1,
   [PARAMETER_GROUPS.SYSTEM_WORK_MODE]: 2,
-  [PARAMETER_GROUPS.TIME_OF_USE]: 3,
-  [PARAMETER_GROUPS.GENERATOR_SMART_LOAD]: 4,
-  [PARAMETER_GROUPS.MAINTENANCE_SETTINGS]: 5,
+  [PARAMETER_GROUPS.GRID_STANDARD]: 3,
+  [PARAMETER_GROUPS.TIME_OF_USE]: 4,
+  [PARAMETER_GROUPS.GENERATOR_SMART_LOAD]: 5,
+  [PARAMETER_GROUPS.MAINTENANCE_SETTINGS]: 6,
+};
+
+/**
+ * Grid Config Parameters - These cause device restart when changed
+ * IMPORTANT: Changing any of these parameters will cause the device to restart.
+ * The frontend should warn the user before saving and show a lockout overlay
+ * during the restart period (~2 minutes).
+ */
+export const GRID_CONFIG_PARAMETERS = new Set([
+  // From setGridCodeConfig RPC
+  'GridStandard',
+  'GridFrequency',
+  'GridVoltageHigh',
+  'GridVoltageLow',
+  'GridFrequencyHigh',
+  'GridFrequencyLow',
+  'ReconnectionTime',
+  'PowerFactorTarget',
+  'ActivePowerRegulation',
+  'ReactivePowerRegulation',
+  // From setSystemConnectionStructure RPC
+  'PhaseType',
+  'GridLevel',
+  'ITSystemNeutralGrounded',
+]);
+
+/**
+ * Store paths that correspond to grid config parameters
+ * Used to detect if any dirty fields are grid config related
+ */
+export const GRID_CONFIG_STORE_PATHS = new Set([
+  'gridStandard.standard',
+  'gridStandard.frequency',
+  'gridStandard.phaseType',
+  'gridStandard.gridLevel',
+  'gridStandard.itSystemNeutralGrounded',
+  // Admin-level grid code settings
+  'maintenanceSettings.gridCode.voltageHigh',
+  'maintenanceSettings.gridCode.voltageLow',
+  'maintenanceSettings.gridCode.frequencyHigh',
+  'maintenanceSettings.gridCode.frequencyLow',
+  'maintenanceSettings.gridCode.reconnectionTime',
+  'maintenanceSettings.gridCode.powerFactorTarget',
+  'maintenanceSettings.gridCode.activePowerRegulation',
+  'maintenanceSettings.gridCode.reactivePowerRegulation',
+]);
+
+/**
+ * Check if a parameter API name is a grid config parameter
+ */
+export const isGridConfigParameter = (apiName: string): boolean => {
+  return GRID_CONFIG_PARAMETERS.has(apiName);
+};
+
+/**
+ * Check if a store path corresponds to a grid config parameter
+ */
+export const isGridConfigStorePath = (storePath: string): boolean => {
+  return GRID_CONFIG_STORE_PATHS.has(storePath);
 };

@@ -108,3 +108,73 @@ export interface FailedParameterInfo {
   parameterName: string;
   errorMessage: string;
 }
+
+// ========================================================================
+// Grid Config Types (fire-and-forget operations that cause device restart)
+// ========================================================================
+
+/**
+ * Grid config parameter returned from GET /grid-config
+ */
+export interface GridConfigParameterDto {
+  parameterId: string;
+  parameterName: string;
+  parameterDescription: string;
+  value: string;
+  unit: string;
+  elementType: string;
+  parameterGroupId?: string;
+  parameterGroupName?: string;
+  lastModified?: string;
+}
+
+/**
+ * Response from GET /grid-config
+ */
+export interface GetGridConfigResponse {
+  success: boolean;
+  errorCode?: string;
+  errorMessage?: string;
+  deviceId: string;
+  parameters: GridConfigParameterDto[];
+  estimatedAvailableAt?: string;
+}
+
+/**
+ * Single parameter update for grid config
+ */
+export interface GridConfigParameterUpdate {
+  parameterId: string;
+  value: string;
+}
+
+/**
+ * Command for PUT /grid-config
+ */
+export interface UpdateGridConfigCommand {
+  parameters: GridConfigParameterUpdate[];
+}
+
+/**
+ * Response from PUT /grid-config
+ * Includes restart information since grid config changes cause device restart
+ */
+export interface UpdateGridConfigResponse {
+  success: boolean;
+  errorCode?: string;
+  message?: string;
+  totalParameters: number;
+  successCount: number;
+  failedCount: number;
+  appliedParameters: string[];
+  failedParameters: FailedParameterInfo[];
+  duration: string;
+  /** Indicates that the device will restart */
+  deviceWillRestart: boolean;
+  /** Reason for device restart */
+  restartReason?: string;
+  /** Grace period in seconds during which device is restarting */
+  restartGracePeriodSeconds: number;
+  /** Estimated time when device will be available again */
+  estimatedAvailableAt?: string;
+}

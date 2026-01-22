@@ -25,6 +25,7 @@ import {
   findMappingByApiName,
   ALL_MAPPINGS,
   ParameterMapping,
+  isGridConfigStorePath,
 } from '../config/deviceSettingsMapping';
 import { transformerRegistry } from '../utils/deviceSettingsTransformers';
 
@@ -55,6 +56,15 @@ export interface DeviceBusyInfo {
   busyUntil?: number; // Timestamp when we should re-enable mode buttons
 }
 
+// Device restarting info after grid config change
+export interface DeviceRestartingInfo {
+  isRestarting: boolean;
+  restartReason?: string;
+  restartStartedAt?: number; // Timestamp when restart started
+  restartUntil?: number; // Timestamp when device should be available
+  gracePeriodSeconds?: number;
+}
+
 // Store State
 interface DeviceSettingsState {
   // API tree cache
@@ -78,6 +88,9 @@ interface DeviceSettingsState {
 
   // Device busy state (when another update is in progress)
   deviceBusyInfo: DeviceBusyInfo | null;
+
+  // Device restarting state (after grid config change)
+  deviceRestartingInfo: DeviceRestartingInfo | null;
 
   // Dirty tracking
   isDirty: boolean;
@@ -110,6 +123,26 @@ interface DeviceSettingsState {
 
   // Device busy
   clearDeviceBusy: () => void;
+
+  // Device restarting (after grid config change)
+  setDeviceRestarting: (info: DeviceRestartingInfo) => void;
+  clearDeviceRestarting: () => void;
+  isDeviceRestarting: () => boolean;
+
+  // Grid config specific
+  hasGridConfigChanges: () => boolean;
+  getGridConfigChangesCount: () => number;
+  getChangedGridConfigPaths: () => string[];
+  revertGridConfigChanges: () => void;
+  getGridConfigChanges: () => Array<{ parameterId: string; value: string }>;
+  saveGridConfig: () => Promise<{
+    success: boolean;
+    deviceWillRestart?: boolean;
+    restartGracePeriodSeconds?: number;
+    estimatedAvailableAt?: string;
+    error?: string;
+    errorCode?: string;
+  }>;
 
   // Utility
   clearError: () => void;
@@ -362,6 +395,7 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
       error: null,
       lastFetchedAt: null,
       deviceBusyInfo: null,
+      deviceRestartingInfo: null,
       isDirty: false,
       dirtyFields: new Set<string>(),
       timeOfUseValidationError: null,
@@ -967,6 +1001,227 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
       // Clear device busy state
       clearDeviceBusy: () => set({ deviceBusyInfo: null }),
 
+      // Device restarting state management
+      setDeviceRestarting: (info: DeviceRestartingInfo) => {
+        console.log('[DeviceSettingsStore] Setting device restarting state:', info);
+        set({ deviceRestartingInfo: info });
+      },
+
+      clearDeviceRestarting: () => {
+        console.log('[DeviceSettingsStore] Clearing device restarting state');
+        set({ deviceRestartingInfo: null });
+      },
+
+      isDeviceRestarting: () => {
+        const { deviceRestartingInfo } = get();
+        if (!deviceRestartingInfo?.isRestarting) return false;
+        if (!deviceRestartingInfo.restartUntil) return false;
+        // Check if restart period has expired
+        if (Date.now() >= deviceRestartingInfo.restartUntil) {
+          // Auto-clear expired restart state
+          set({ deviceRestartingInfo: null });
+          return false;
+        }
+        return true;
+      },
+
+      // Grid config specific methods
+      hasGridConfigChanges: () => {
+        const { dirtyFields } = get();
+        for (const storePath of dirtyFields) {
+          if (isGridConfigStorePath(storePath)) {
+            return true;
+          }
+        }
+        return false;
+      },
+
+      getGridConfigChangesCount: () => {
+        const { dirtyFields } = get();
+        let count = 0;
+        for (const storePath of dirtyFields) {
+          if (isGridConfigStorePath(storePath)) {
+            count++;
+          }
+        }
+        return count;
+      },
+
+      getChangedGridConfigPaths: () => {
+        const { dirtyFields } = get();
+        const paths: string[] = [];
+        for (const storePath of dirtyFields) {
+          if (isGridConfigStorePath(storePath)) {
+            paths.push(storePath);
+          }
+        }
+        return paths;
+      },
+
+      revertGridConfigChanges: () => {
+        const { settings, parameterMetadata, dirtyFields } = get();
+        let newSettings = JSON.parse(JSON.stringify(settings));
+        const newDirtyFields = new Set(dirtyFields);
+
+        // Find and revert all grid config changes
+        for (const storePath of dirtyFields) {
+          if (isGridConfigStorePath(storePath)) {
+            const meta = parameterMetadata[storePath];
+            const mapping = ALL_MAPPINGS.find((m) => m.storePath === storePath);
+
+            if (meta && mapping) {
+              // Transform original value back to app format and restore it
+              const transformer =
+                transformerRegistry.toApp[mapping.transformerType as keyof typeof transformerRegistry.toApp];
+              const appValue = transformer ? transformer(meta.originalValue) : meta.originalValue;
+              newSettings = setNestedValue(newSettings, storePath, appValue);
+              // Remove from dirty fields
+              newDirtyFields.delete(storePath);
+            }
+          }
+        }
+
+        // Update state
+        set({
+          settings: newSettings,
+          dirtyFields: newDirtyFields,
+          isDirty: newDirtyFields.size > 0,
+        });
+      },
+
+      getGridConfigChanges: () => {
+        const { settings, parameterMetadata, dirtyFields } = get();
+        const changes: Array<{ parameterId: string; value: string }> = [];
+
+        dirtyFields.forEach((storePath) => {
+          if (!isGridConfigStorePath(storePath)) return;
+
+          const meta = parameterMetadata[storePath];
+          const mapping = ALL_MAPPINGS.find((m) => m.storePath === storePath);
+
+          if (meta && mapping) {
+            const appValue = getNestedValue(settings, storePath);
+            const transformerKey = mapping.transformerType as keyof typeof transformerRegistry.toAPI;
+            const transformer = transformerRegistry.toAPI[transformerKey] as ((v: any) => string) | undefined;
+            const apiValue = transformer ? transformer(appValue) : String(appValue);
+
+            if (apiValue !== meta.originalValue) {
+              changes.push({
+                parameterId: meta.parameterId,
+                value: apiValue,
+              });
+            }
+          }
+        });
+
+        return changes;
+      },
+
+      saveGridConfig: async () => {
+        const { deviceId, getGridConfigChanges, setDeviceRestarting, finalizeSave, dirtyFields, parameterMetadata } = get();
+
+        if (!deviceId) {
+          return { success: false, error: 'No device selected' };
+        }
+
+        const gridConfigChanges = getGridConfigChanges();
+        if (gridConfigChanges.length === 0) {
+          return { success: true };
+        }
+
+        set({ isSaving: true, error: null });
+
+        try {
+          console.log('[DeviceSettingsStore] Saving grid config:', gridConfigChanges);
+
+          const response = await deviceSettingsService.updateGridConfig(deviceId, {
+            parameters: gridConfigChanges,
+          });
+
+          console.log('[DeviceSettingsStore] Grid config response:', response);
+
+          if (response.success || response.successCount > 0) {
+            // Mark device as restarting if it will restart
+            if (response.deviceWillRestart) {
+              const restartUntil = response.estimatedAvailableAt
+                ? new Date(response.estimatedAvailableAt).getTime()
+                : Date.now() + (response.restartGracePeriodSeconds * 1000);
+
+              setDeviceRestarting({
+                isRestarting: true,
+                restartReason: response.restartReason,
+                restartStartedAt: Date.now(),
+                restartUntil,
+                gracePeriodSeconds: response.restartGracePeriodSeconds,
+              });
+            }
+
+            // Get IDs of failed parameters
+            const failedIds = response.failedParameters?.map(p => p.parameterId) ?? [];
+
+            // Finalize save for grid config parameters
+            // Remove successful grid config parameters from dirty fields
+            const newDirtyFields = new Set(dirtyFields);
+            const updatedMeta = { ...parameterMetadata };
+
+            gridConfigChanges.forEach((change) => {
+              if (!failedIds.includes(change.parameterId)) {
+                // Find the store path for this parameter
+                const storePath = Object.entries(parameterMetadata).find(
+                  ([_, meta]) => meta.parameterId === change.parameterId
+                )?.[0];
+
+                if (storePath) {
+                  newDirtyFields.delete(storePath);
+                  // Update metadata with new value
+                  if (updatedMeta[storePath]) {
+                    updatedMeta[storePath] = {
+                      ...updatedMeta[storePath],
+                      originalValue: change.value,
+                      currentValue: change.value,
+                    };
+                  }
+                }
+              }
+            });
+
+            set({
+              isSaving: false,
+              parameterMetadata: updatedMeta,
+              dirtyFields: newDirtyFields,
+              isDirty: newDirtyFields.size > 0,
+            });
+
+            return {
+              success: response.success,
+              deviceWillRestart: response.deviceWillRestart,
+              restartGracePeriodSeconds: response.restartGracePeriodSeconds,
+              estimatedAvailableAt: response.estimatedAvailableAt,
+            };
+          } else {
+            set({ isSaving: false });
+            return {
+              success: false,
+              error: response.message || 'Failed to save grid config',
+              errorCode: response.errorCode,
+            };
+          }
+        } catch (err: any) {
+          console.error('[DeviceSettingsStore] Grid config save error:', err);
+
+          const errorCode = err.errorCode || err.response?.data?.errorCode;
+          const errorMessage = err.message || err.response?.data?.message || 'Failed to save grid config';
+
+          set({ isSaving: false });
+
+          return {
+            success: false,
+            error: errorMessage,
+            errorCode,
+          };
+        }
+      },
+
       // Set device ID
       setDeviceId: (id: string | null) => set({ deviceId: id }),
     }),
@@ -994,6 +1249,8 @@ export const useBatterySettings = () =>
   useDeviceSettingsStore((state) => state.settings.batterySettings);
 export const useSystemWorkModeSettings = () =>
   useDeviceSettingsStore((state) => state.settings.systemWorkMode);
+export const useGridStandardSettings = () =>
+  useDeviceSettingsStore((state) => state.settings.gridStandard);
 export const useTimeOfUseSettings = () =>
   useDeviceSettingsStore((state) => state.settings.timeOfUse);
 export const useGeneratorSmartLoadSettings = () =>
@@ -1016,3 +1273,14 @@ export const useTimeSlotVisibility = () =>
 // Device busy info selector
 export const useDeviceBusyInfo = () =>
   useDeviceSettingsStore((state) => state.deviceBusyInfo);
+
+// Device restarting info selector
+export const useDeviceRestartingInfo = () =>
+  useDeviceSettingsStore((state) => state.deviceRestartingInfo);
+
+// Grid config helpers
+export const useHasGridConfigChanges = () =>
+  useDeviceSettingsStore((state) => state.hasGridConfigChanges());
+
+export const useSaveGridConfig = () =>
+  useDeviceSettingsStore((state) => state.saveGridConfig);

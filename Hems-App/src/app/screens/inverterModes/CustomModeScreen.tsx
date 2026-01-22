@@ -32,8 +32,13 @@ import { UpdateProgressModal } from '../../../components/deviceSettings';
 import {
   BatterySettingsSection,
   SystemWorkModeSection,
+  GridStandardSection,
   GeneratorSmartLoadSection,
 } from '../../../components/inverterModes/sections';
+
+// Grid Config Overlays
+import GridConfigConfirmDialog from '../../../components/inverterModes/overlays/GridConfigConfirmDialog';
+import DeviceRestartingOverlay from '../../../components/inverterModes/overlays/DeviceRestartingOverlay';
 
 const CustomModeScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -60,6 +65,13 @@ const CustomModeScreen: React.FC = () => {
     timeOfUseValidationError,
     isDeviceBusy,
     deviceBusyInfo,
+    // Grid config related
+    hasGridConfigChanges,
+    gridConfigChangesCount,
+    revertGridConfigChanges,
+    saveGridConfig,
+    deviceRestartingInfo,
+    isDeviceRestarting,
   } = useDeviceSettings();
 
   // Update progress store - simplified
@@ -74,6 +86,8 @@ const CustomModeScreen: React.FC = () => {
   const [loadingTimeout, setLoadingTimeout] = useState(false);
   const hasFetchedRef = useRef(false);
   const lastDeviceIdRef = useRef<string | null>(null);
+  const [showGridConfigConfirm, setShowGridConfigConfirm] = useState(false);
+  const [isGridConfigSaving, setIsGridConfigSaving] = useState(false);
 
   // Fetch settings ONCE when screen is first focused for this device
   // This prevents re-fetching when returning from sub-screens (like Time of Use)
@@ -161,11 +175,78 @@ const CustomModeScreen: React.FC = () => {
   }, [clearError, fetchSettings]);
 
   const handleSave = async () => {
+    // Check if multiple grid config items are changed - only one allowed at a time
+    if (gridConfigChangesCount > 1) {
+      Alert.alert(
+        t('inverterModes.gridConfigLimit.title', 'Multiple Grid Settings Changed'),
+        t('inverterModes.gridConfigLimit.message', 'Only one Grid Standard setting can be changed at a time. Your grid setting changes have been reverted. Please change only one setting and try again.'),
+        [
+          {
+            text: t('common.ok', 'OK'),
+            onPress: () => {
+              // Revert all grid config changes
+              revertGridConfigChanges();
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    // Check if there are grid config changes that will cause device restart
+    if (hasGridConfigChanges) {
+      setShowGridConfigConfirm(true);
+      return;
+    }
+
+    // Normal save flow for non-grid-config changes
     const success = await saveSettings();
     if (success) {
       // Optionally navigate back or show success
     }
   };
+
+  // Handle grid config confirmation
+  const handleGridConfigConfirm = async () => {
+    setIsGridConfigSaving(true);
+    try {
+      // Save grid config (fire-and-forget, will trigger device restart)
+      // Note: Other changes will remain dirty and can be saved after device restarts
+      const result = await saveGridConfig();
+      setShowGridConfigConfirm(false);
+
+      if (!result.success) {
+        // Show error if grid config save failed
+        Alert.alert(
+          t('common.error', 'Error'),
+          result.error || t('inverterModes.gridConfigConfirm.saveFailed', 'Failed to save grid configuration'),
+          [{ text: t('common.ok', 'OK') }]
+        );
+      }
+      // Device restarting overlay will be shown automatically via deviceRestartingInfo
+    } catch (error) {
+      console.error('[CustomModeScreen] Grid config save error:', error);
+      setShowGridConfigConfirm(false);
+      Alert.alert(
+        t('common.error', 'Error'),
+        t('inverterModes.gridConfigConfirm.saveFailed', 'Failed to save grid configuration'),
+        [{ text: t('common.ok', 'OK') }]
+      );
+    } finally {
+      setIsGridConfigSaving(false);
+    }
+  };
+
+  const handleGridConfigCancel = () => {
+    setShowGridConfigConfirm(false);
+  };
+
+  // Handle restart complete - refresh settings
+  const handleRestartComplete = useCallback(() => {
+    console.log('[CustomModeScreen] Device restart complete, refreshing settings...');
+    hasFetchedRef.current = false; // Allow re-fetch
+    fetchSettings();
+  }, [fetchSettings]);
 
   const handleReset = () => {
     Alert.alert(
@@ -183,6 +264,16 @@ const CustomModeScreen: React.FC = () => {
   };
 
   const handleBack = () => {
+    // Check if device is restarting
+    if (isDeviceRestarting) {
+      Alert.alert(
+        t('inverterModes.restarting.cannotLeaveTitle', 'Device Restarting'),
+        t('inverterModes.restarting.cannotLeaveMessage', 'Please wait for the device restart to complete.'),
+        [{ text: t('common.ok', 'OK'), style: 'default' }]
+      );
+      return;
+    }
+
     // Check if update is in progress
     if (isUpdateInProgress) {
       Alert.alert(
@@ -244,9 +335,10 @@ const CustomModeScreen: React.FC = () => {
         </Text>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={[styles.retryButton, { backgroundColor: COLORS.accent, marginTop: 16 }]}
+          style={[styles.saveButton, { backgroundColor: COLORS.accent, marginTop: 16 }]}
         >
-          <Text style={styles.retryButtonText}>{t('common.goBack', 'Go Back')}</Text>
+          <ArrowLeft size={20} color="#fff" />
+          <Text style={styles.saveButtonText}>{t('common.goBack', 'Go Back')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -262,9 +354,10 @@ const CustomModeScreen: React.FC = () => {
         </Text>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={[styles.retryButton, { backgroundColor: COLORS.gray200, marginTop: 24 }]}
+          style={[styles.saveButton, { backgroundColor: COLORS.accent, marginTop: 24 }]}
         >
-          <Text style={[styles.retryButtonText, { color: COLORS.text }]}>{t('common.goBack', 'Go Back')}</Text>
+          <ArrowLeft size={20} color="#fff" />
+          <Text style={styles.saveButtonText}>{t('common.goBack', 'Go Back')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -284,16 +377,17 @@ const CustomModeScreen: React.FC = () => {
         <View style={styles.errorButtons}>
           <TouchableOpacity
             onPress={handleRetry}
-            style={[styles.retryButton, { backgroundColor: COLORS.accent }]}
+            style={[styles.saveButton, { backgroundColor: COLORS.accent, flex: 1 }]}
           >
-            <RefreshCw size={16} color="#fff" />
-            <Text style={styles.retryButtonText}>{t('common.retry', 'Retry')}</Text>
+            <RefreshCw size={20} color="#fff" />
+            <Text style={styles.saveButtonText}>{t('common.retry', 'Retry')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
-            style={[styles.retryButton, { backgroundColor: isDark ? COLORS.border : COLORS.gray200 }]}
+            style={[styles.saveButton, { backgroundColor: COLORS.accent, flex: 1 }]}
           >
-            <Text style={styles.retryButtonText}>{t('common.goBack', 'Go Back')}</Text>
+            <ArrowLeft size={20} color="#fff" />
+            <Text style={styles.saveButtonText}>{t('common.goBack', 'Go Back')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -344,7 +438,10 @@ const CustomModeScreen: React.FC = () => {
           {/* sortOrder: 2 - System Work Mode */}
           <SystemWorkModeSection defaultExpanded />
 
-          {/* sortOrder: 3 - Time of Use Button */}
+          {/* sortOrder: 3 - Grid Standard */}
+          <GridStandardSection />
+
+          {/* sortOrder: 4 - Time of Use Button */}
           <TouchableOpacity
             onPress={navigateToTimeOfUse}
             style={[
@@ -387,10 +484,10 @@ const CustomModeScreen: React.FC = () => {
             </View>
           )}
 
-          {/* sortOrder: 4 - Generator & Smart Load */}
+          {/* sortOrder: 5 - Generator & Smart Load */}
           <GeneratorSmartLoadSection />
 
-          {/* sortOrder: 5 - Maintenance Settings (Admin Only) */}
+          {/* sortOrder: 6 - Maintenance Settings (Admin Only) */}
           {isAdmin && (
             <TouchableOpacity
               onPress={navigateToMaintenanceSettings}
@@ -454,6 +551,17 @@ const CustomModeScreen: React.FC = () => {
           visible={isUpdateInProgress || showResultDialog}
           onClose={handleModalClose}
         />
+
+        {/* Grid Config Confirmation Dialog */}
+        <GridConfigConfirmDialog
+          visible={showGridConfigConfirm}
+          onConfirm={handleGridConfigConfirm}
+          onCancel={handleGridConfigCancel}
+          isLoading={isGridConfigSaving}
+        />
+
+        {/* Device Restarting Overlay - shown when device is restarting after grid config change */}
+        <DeviceRestartingOverlay onRestartComplete={handleRestartComplete} />
       </View>
     </GestureHandlerRootView>
   );

@@ -1,12 +1,15 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
 import { SPACING, TYPOGRAPHY } from '../../../../../../theme/constants';
+
+const { width: screenWidth } = Dimensions.get('window');
+const isTablet = screenWidth >= 768;
 
 export const getPowerMetricsChartStyles = (COLORS: Record<string, string>) => {
   return StyleSheet.create({
     container: {
       backgroundColor: COLORS.surface,
       borderRadius: 12,
-      padding: SPACING.md,
+      padding: isTablet ? SPACING.lg : SPACING.md,
       marginBottom: 12,
     },
     header: {
@@ -16,16 +19,17 @@ export const getPowerMetricsChartStyles = (COLORS: Record<string, string>) => {
       marginBottom: SPACING.md,
     },
     title: {
-      fontSize: TYPOGRAPHY.lg,
+      fontSize: isTablet ? TYPOGRAPHY.xl : TYPOGRAPHY.lg,
       fontWeight: '700',
       color: COLORS.textSoft,
     },
     chartContainer: {
-      height: 320, // Reduced from 400
-      minHeight: 280, // Reduced from 350
+      height: isTablet ? 480 : 320,
+      minHeight: isTablet ? 400 : 280,
       width: '100%',
       position: 'relative',
-      marginBottom: -SPACING.md, // Increased negative margin
+      marginBottom: -SPACING.md,
+      alignItems: 'center', // Center chart on tablet
     },
     chartAndHoursWrapper: {
       width: '100%',
@@ -96,13 +100,13 @@ export const getPowerMetricsChartStyles = (COLORS: Record<string, string>) => {
       justifyContent: 'space-between',
       backgroundColor: COLORS.cardBg,
       borderRadius: 8,
-      paddingHorizontal: SPACING.md,
-      paddingVertical: SPACING.sm,
+      paddingHorizontal: isTablet ? SPACING.lg : SPACING.md,
+      paddingVertical: isTablet ? SPACING.md : SPACING.sm,
       flex: 1,
     },
     toggleLabel: {
       color: COLORS.textSoft,
-      fontSize: TYPOGRAPHY.sm,
+      fontSize: isTablet ? TYPOGRAPHY.md : TYPOGRAPHY.sm,
       fontWeight: '500',
     },
     // Loading state

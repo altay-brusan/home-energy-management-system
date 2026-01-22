@@ -5,4 +5,5 @@
 
 export { default as BatterySettingsSection } from './BatterySettingsSection';
 export { default as SystemWorkModeSection } from './SystemWorkModeSection';
+export { default as GridStandardSection } from './GridStandardSection';
 export { default as GeneratorSmartLoadSection } from './GeneratorSmartLoadSection';

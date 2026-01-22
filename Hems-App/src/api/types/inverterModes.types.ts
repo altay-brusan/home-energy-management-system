@@ -67,6 +67,13 @@ export interface InverterMode {
 export type EnergyPatternType = 'batt_first' | 'load_first';
 export type OnOffStatus = 'on' | 'off';
 export type TimeOfUsePeriodId = 'P1' | 'P2' | 'P3' | 'P4' | 'P5' | 'P6';
+/**
+ * SmartLoadMode - The type of device connected to generator port
+ * 0 = Generator Only (default - generator input used for generator)
+ * 1 = Smart Load (generator port used for smart load output)
+ * 2 = Microinverter (generator port used for microinverter input)
+ */
+export type SmartLoadMode = 0 | 1 | 2;
 
 // ============================================
 // API YAPISINA UYUMLU YENİ TİPLER
@@ -168,7 +175,8 @@ export interface TimeOfUseConfig {
  * SmartLoad Settings - YENİ
  */
 export interface SmartLoadSettings {
-  enabled: OnOffStatus;
+  /** Smart Load Mode: 0=Generator Only, 1=Smart Load, 2=Microinverter */
+  enabled: SmartLoadMode;
   offSOC: number;
   onSOC: number;
   pvPowerThreshold: number;
@@ -212,14 +220,41 @@ export interface MaintenanceSettingsConfig {
     frequencyHigh: number;
     frequencyLow: number;
     reconnectionTime: number;
+    // Power Factor Settings
+    powerFactorTarget: number;
+    activePowerRegulation: number;
+    reactivePowerRegulation: number;
   };
   advanced: {
     arcFaultDetection: OnOffStatus;
     islandProtection: OnOffStatus;
+    lithiumBatteryLossFaultEnabled: OnOffStatus;
     parallelEnabled: OnOffStatus;
     parallelRole: string;
+    parallelPhase: string;
+    modbusAddress: number;
     externalCTRatio: number;
+    externalMeterCTRatio: number;
   };
+  externalRelay: {
+    enabled: OnOffStatus;
+    bitmap: number;
+  };
+  generatorOverride: {
+    forceSmartLoadOn: OnOffStatus;
+  };
+}
+
+/**
+ * GridStandard - User level grid configuration (under SystemWorkMode)
+ */
+export interface GridStandardConfig {
+  standard: string;
+  frequency: number;
+  outputVoltageLevel: string;
+  phaseType: string;
+  gridLevel: string;
+  itSystemNeutralGrounded: OnOffStatus;
 }
 
 /**
@@ -228,6 +263,7 @@ export interface MaintenanceSettingsConfig {
 export interface DeviceSettingsConfig {
   batterySettings: BatterySettingsConfig;
   systemWorkMode: SystemWorkModeSettings;
+  gridStandard: GridStandardConfig;
   timeOfUse: TimeOfUseConfig;
   generatorAndSmartLoad: GeneratorSmartLoadConfig;
   maintenanceSettings?: MaintenanceSettingsConfig;
@@ -292,6 +328,14 @@ export const DEFAULT_DEVICE_SETTINGS: DeviceSettingsConfig = {
     gridPeakShavingEnabled: 'off',
     gridPeakShavingLimitPower: 2000,
   },
+  gridStandard: {
+    standard: 'General',
+    frequency: 50,
+    outputVoltageLevel: '230V',
+    phaseType: 'ABC_0_120_240',
+    gridLevel: 'LN:230VAC LL:400VAC',
+    itSystemNeutralGrounded: 'off',
+  },
   timeOfUse: {
     enabled: 'off',
     activeDays: { ...DEFAULT_ACTIVE_DAYS },
@@ -309,7 +353,7 @@ export const DEFAULT_DEVICE_SETTINGS: DeviceSettingsConfig = {
       limitPower: 8000,
     },
     smartLoad: {
-      enabled: 'off',
+      enabled: 0,  // 0=Generator Only, 1=Smart Load, 2=Microinverter
       offSOC: 10,
       onSOC: 90,
       pvPowerThreshold: 0,
@@ -639,6 +683,7 @@ export const BATTERY_TYPE_LABELS: Record<BatteryType, string> = {
 export type SettingCategory =
   | 'batterySettings'
   | 'systemWorkMode'
+  | 'gridStandard'
   | 'timeOfUse'
   | 'generatorAndSmartLoad'
   | 'maintenanceSettings';
@@ -646,7 +691,8 @@ export type SettingCategory =
 export const SETTING_CATEGORIES: { id: SettingCategory; sortOrder: number; adminOnly: boolean }[] = [
   { id: 'batterySettings', sortOrder: 1, adminOnly: false },
   { id: 'systemWorkMode', sortOrder: 2, adminOnly: false },
-  { id: 'timeOfUse', sortOrder: 3, adminOnly: false },
-  { id: 'generatorAndSmartLoad', sortOrder: 4, adminOnly: false },
-  { id: 'maintenanceSettings', sortOrder: 5, adminOnly: true },
+  { id: 'gridStandard', sortOrder: 3, adminOnly: false },
+  { id: 'timeOfUse', sortOrder: 4, adminOnly: false },
+  { id: 'generatorAndSmartLoad', sortOrder: 5, adminOnly: false },
+  { id: 'maintenanceSettings', sortOrder: 6, adminOnly: true },
 ];

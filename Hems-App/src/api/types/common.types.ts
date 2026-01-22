@@ -24,6 +24,9 @@ export interface ApiError {
   instance?: string;
   errors?: Record<string, string[]>;
   url?: string;
+  code?: string; // Error code from backend (e.g., "INVITATION_ONLY_OWNER_CAN_REMOVE")
+  params?: Record<string, any>; // Additional parameters from backend
+  statusCode?: number; // HTTP status code from backend response
 }
 
 export interface HttpValidationProblemDetails extends ApiError {

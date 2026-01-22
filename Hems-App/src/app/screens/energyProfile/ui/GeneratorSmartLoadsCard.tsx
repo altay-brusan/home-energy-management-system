@@ -4,6 +4,16 @@ import FontAwesome from "@react-native-vector-icons/fontawesome";
 import { useI18n } from "../../../../hooks/useI18n";
 import { setupDeviceParameterValuesService } from "../../../../api/services/setupDeviceParameterValuesService";
 
+// Helper function to get Smart Load mode label
+const getSmartLoadModeLabel = (mode: number, t: any): string => {
+  switch (mode) {
+    case 0: return t('smartLoadModes.generator', 'Generator Only');
+    case 1: return t('smartLoadModes.smartLoad', 'Smart Load');
+    case 2: return t('smartLoadModes.microinverter', 'Microinverter');
+    default: return t('smartLoadModes.generator', 'Generator Only');
+  }
+};
+
 export default function GeneratorSmartLoadsCard({ styles, COLORS, setIsLoading, isDark, deviceParams }: any) {
   const { t } = useI18n();
   const [showGeneratorSettings, setShowGeneratorSettings] = useState(false);
@@ -20,8 +30,8 @@ export default function GeneratorSmartLoadsCard({ styles, COLORS, setIsLoading, 
   const [generatorPeakShavingEnabled, setGeneratorPeakShavingEnabled] = useState(false);
   const [generatorPeakShavingLimitPower, setGeneratorPeakShavingLimitPower] = useState<string>("8000");
 
-  // Smart Load
-  const [smartLoadEnabled, setSmartLoadEnabled] = useState(false);
+  // Smart Load (0=Generator, 1=SmartLoad, 2=Microinverter)
+  const [smartLoadEnabled, setSmartLoadEnabled] = useState<number>(0);
   const [smartLoadOffSOC, setSmartLoadOffSOC] = useState<string>("95");
   const [smartLoadOnSOC, setSmartLoadOnSOC] = useState<string>("100");
   const [smartLoadPVPowerThreshold, setSmartLoadPVPowerThreshold] = useState<string>("0");
@@ -105,7 +115,7 @@ export default function GeneratorSmartLoadsCard({ styles, COLORS, setIsLoading, 
       setHasGeneratorPeakShavingLimitPower(true);
     }
 
-    // Smart Load
+    // Smart Load (SmartLoadEnabled is 0=Generator, 1=SmartLoad, 2=Microinverter)
     const smartLoadEnabledFound = deviceParams.findParameterByName("SmartLoadEnabled");
     if (smartLoadEnabledFound?.setupDeviceParameterValue) {
       setSmartLoadEnabledParam({
@@ -113,7 +123,8 @@ export default function GeneratorSmartLoadsCard({ styles, COLORS, setIsLoading, 
         valueId: smartLoadEnabledFound.setupDeviceParameterValue.id,
         modelNumber: smartLoadEnabledFound.setupDeviceParameterValue.modelNumber,
       });
-      setSmartLoadEnabled(smartLoadEnabledFound.setupDeviceParameterValue.value === "true");
+      const modeValue = parseInt(smartLoadEnabledFound.setupDeviceParameterValue.value || "0", 10);
+      setSmartLoadEnabled(isNaN(modeValue) ? 0 : modeValue);
       setHasSmartLoadEnabled(true);
     }
 
@@ -310,15 +321,9 @@ export default function GeneratorSmartLoadsCard({ styles, COLORS, setIsLoading, 
           {showSmartLoad && (
             <View style={styles.subCard}>
               {hasSmartLoadEnabled && (
-                <View style={styles.switchRow}>
-                  <Text style={styles.label}>Smart Load Enabled</Text>
-                  <Switch
-                    value={smartLoadEnabled}
-                    onValueChange={(v) => handleSwitchChange(smartLoadEnabledParam, v, setSmartLoadEnabled)}
-                    thumbColor={smartLoadEnabled ? COLORS.accent : "#ccc"}
-                    trackColor={{ false: "#ccc", true: COLORS.accent + "66" }}
-                  />
-                </View>
+                <Text style={styles.valueText}>
+                  {t('labels.generatorPortMode', 'Generator Port Mode')}: <Text style={styles.valueAccent}>{getSmartLoadModeLabel(smartLoadEnabled, t)}</Text>
+                </Text>
               )}
               {hasSmartLoadOffSOC && (
                 <Text style={styles.valueText}>
