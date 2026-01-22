@@ -39,14 +39,17 @@ public class CreateInvitationCommandHandler : IRequestHandler<CreateInvitationCo
     {
         var currentUserId = _user.Id ?? throw new UnauthorizedAccessException("User not authenticated");
 
-        // Verify site exists and user has access to it
+        // Verify site exists
         var site = await _context.Sites
-            .FirstOrDefaultAsync(s => s.Id == request.SiteId &&
-                                     !s.IsDeleted &&
-                                     (s.UserId == currentUserId ||
-                                      _context.UserSites.Any(us => us.SiteId == s.Id && us.UserId == currentUserId)),
-                                 cancellationToken)
+            .FirstOrDefaultAsync(s => s.Id == request.SiteId && !s.IsDeleted, cancellationToken)
             ?? throw new Common.Exceptions.NotFoundException(nameof(Site), request.SiteId);
+
+        // Only site owner can send invitations
+        if (site.UserId != currentUserId)
+        {
+            throw new Common.Exceptions.ForbiddenAccessException(
+                "Only the site owner can send invitations. You do not have permission to invite others to this site.");
+        }
 
         // Look up user by email
         var invitedUserId = await _identityService.GetUserIdByEmailAsync(request.Email);
@@ -62,6 +65,30 @@ public class CreateInvitationCommandHandler : IRequestHandler<CreateInvitationCo
         if (existingInvitation != null)
         {
             throw new InvalidOperationException("A pending invitation already exists for this user and site.");
+        }
+
+        // Check if user is trying to invite themselves
+        if (!string.IsNullOrEmpty(invitedUserId) && invitedUserId == currentUserId)
+        {
+            throw new InvalidOperationException("You cannot invite yourself.");
+        }
+
+        // Check if user is the site owner (can't invite yourself)
+        if (site.UserId == invitedUserId && !string.IsNullOrEmpty(invitedUserId))
+        {
+            throw new InvalidOperationException("Cannot invite the site owner.");
+        }
+
+        // Check if user is already a member of the site (prevent spam invitations)
+        if (!string.IsNullOrEmpty(invitedUserId))
+        {
+            var existingMembership = await _context.UserSites
+                .AnyAsync(us => us.UserId == invitedUserId && us.SiteId == request.SiteId, cancellationToken);
+
+            if (existingMembership)
+            {
+                throw new InvalidOperationException("This user is already a member of this site.");
+            }
         }
 
         // Generate token (6-digit random number)

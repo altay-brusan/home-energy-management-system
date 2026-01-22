@@ -205,7 +205,8 @@ public class CustomExceptionHandler : IExceptionHandler
         {
             Status = StatusCodes.Status403Forbidden,
             Title = "Forbidden",
-            Type = "https://tools.ietf.org/html/rfc7231#section-6.5.3"
+            Type = "https://tools.ietf.org/html/rfc7231#section-6.5.3",
+            Detail = string.IsNullOrEmpty(ex.Message) ? null : ex.Message
         });
     }
 }

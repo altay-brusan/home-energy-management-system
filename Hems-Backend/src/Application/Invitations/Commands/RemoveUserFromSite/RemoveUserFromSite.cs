@@ -33,13 +33,20 @@ public class RemoveUserFromSiteCommandHandler : IRequestHandler<RemoveUserFromSi
             .FirstOrDefaultAsync(i => i.Id == request.InvitationId, cancellationToken)
             ?? throw new Common.Exceptions.NotFoundException(nameof(Invitation), request.InvitationId);
 
-        // Verify site exists and current user is the owner
+        // Verify site exists
         var site = await _context.Sites
-            .FirstOrDefaultAsync(s => s.Id == invitation.SiteId && 
-                                     !s.IsDeleted && 
-                                     s.UserId == currentUserId, 
-                                 cancellationToken)
+            .FirstOrDefaultAsync(s => s.Id == invitation.SiteId && !s.IsDeleted, cancellationToken)
             ?? throw new Common.Exceptions.NotFoundException(nameof(Site), invitation.SiteId);
+
+        // Check authorization: either site owner OR the invited user themselves (self-removal)
+        var isOwner = site.UserId == currentUserId;
+        var isSelfRemoval = invitation.InvitedUserId == currentUserId;
+
+        if (!isOwner && !isSelfRemoval)
+        {
+            throw new Common.Exceptions.ForbiddenAccessException(
+                "You can only remove yourself from a shared site, or you must be the site owner to remove others.");
+        }
 
         // If InvitedUserId exists, check and delete UserSite record
         if (!string.IsNullOrEmpty(invitation.InvitedUserId))
