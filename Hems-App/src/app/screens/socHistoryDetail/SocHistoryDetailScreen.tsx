@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Modal, PanResponder, useWindowDimensions } from 'react-native';
-import { ArrowLeft, Calendar } from 'lucide-react-native';
+import { ArrowLeft, Calendar, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -99,6 +99,43 @@ export default function SocHistoryDetailScreen() {
     });
     setShowDatePicker(false);
   };
+
+  // Navigate to previous day
+  const goToPreviousDay = () => {
+    const currentDate = new Date(selectedDate);
+    currentDate.setDate(currentDate.getDate() - 1);
+    const newDateString = currentDate.toISOString().split('T')[0];
+    setSelectedDate(newDateString);
+    setMarkedDates({
+      [newDateString]: {
+        selected: true,
+        selectedColor: COLORS.accent,
+        selectedTextColor: COLORS.white,
+      },
+    });
+  };
+
+  // Navigate to next day
+  const goToNextDay = () => {
+    const today = getTodayString();
+    if (selectedDate >= today) {
+      return; // Don't go beyond today
+    }
+    const currentDate = new Date(selectedDate);
+    currentDate.setDate(currentDate.getDate() + 1);
+    const newDateString = currentDate.toISOString().split('T')[0];
+    setSelectedDate(newDateString);
+    setMarkedDates({
+      [newDateString]: {
+        selected: true,
+        selectedColor: COLORS.accent,
+        selectedTextColor: COLORS.white,
+      },
+    });
+  };
+
+  // Check if selected date is today (to disable next button)
+  const isToday = selectedDate >= getTodayString();
 
   // Load data from API
   const loadData = useCallback(async () => {
@@ -378,13 +415,43 @@ export default function SocHistoryDetailScreen() {
 
       {/* Date Selector */}
       <View style={styles.dateContainer}>
-        <TouchableOpacity
-          style={styles.dateButton}
-          onPress={() => setShowDatePicker(true)}
-        >
-          <Calendar size={18} color={COLORS.textSoft} />
-          <Text style={styles.dateButtonText}>{formatDate(selectedDate)}</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, width: '100%' }}>
+          {/* Previous Day Button */}
+          <TouchableOpacity
+            onPress={goToPreviousDay}
+            activeOpacity={0.6}
+            style={{
+              padding: 8,
+              backgroundColor: COLORS.surface,
+              borderRadius: 8,
+            }}
+          >
+            <ChevronLeft size={20} color={COLORS.textSoft} strokeWidth={2.5} />
+          </TouchableOpacity>
+
+          {/* Date Button */}
+          <TouchableOpacity
+            style={[styles.dateButton, { flex: 1 }]}
+            onPress={() => setShowDatePicker(true)}
+          >
+            <Calendar size={18} color={COLORS.textSoft} />
+            <Text style={styles.dateButtonText}>{formatDate(selectedDate)}</Text>
+          </TouchableOpacity>
+
+          {/* Next Day Button */}
+          <TouchableOpacity
+            onPress={goToNextDay}
+            activeOpacity={0.6}
+            style={{
+              padding: 8,
+              backgroundColor: COLORS.surface,
+              borderRadius: 8,
+              opacity: isToday ? 0.4 : 1,
+            }}
+          >
+            <ChevronRight size={20} color={isToday ? COLORS.border : COLORS.textSoft} strokeWidth={2.5} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Content */}
