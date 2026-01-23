@@ -95,6 +95,7 @@ export const ENDPOINTS = {
     GET_WEATHER_FORECAST: '/WeatherForecasts/:siteId',
     ENERGY_REVENUE: '/Dashboard/EnergyRevenue',
     ENERGY_SOURCE_MIX: '/Dashboard/EnergySourceMix',
+    SOC_HISTORY: '/Dashboard/SocHistory',
   },
   ROLES: {
     // Admin endpoints (require AdminOnly authorization)

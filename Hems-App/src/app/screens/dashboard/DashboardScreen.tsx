@@ -1,7 +1,7 @@
 import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 import React, { JSX, useCallback, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Platform, RefreshControl, SafeAreaView, ScrollView, Text, View, TouchableOpacity } from 'react-native';
+import { Platform, RefreshControl, SafeAreaView, ScrollView, Text, View, TouchableOpacity, Clipboard } from 'react-native';
 import Svg, { Path, G } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSitesStore, useNeedsSetup } from '../../../store/sitesStore';
@@ -312,6 +312,33 @@ export default function DashboardScreen (): JSX.Element {
             )}
           </TouchableOpacity>
         </View>
+
+        {/* Temporary Device ID Display - Remove after testing */}
+        {device?.id && (
+          <TouchableOpacity
+            onPress={() => {
+              Clipboard.setString(device.id);
+              // You can add a toast notification here if needed
+            }}
+            style={{
+              backgroundColor: isDark ? COLORS.surface : COLORS.white,
+              padding: 12,
+              borderRadius: 8,
+              marginHorizontal: 16,
+              marginTop: 8,
+              borderWidth: 1,
+              borderColor: COLORS.border,
+            }}
+          >
+            <Text style={{ color: COLORS.textSoft, fontSize: 12, marginBottom: 4 }}>
+              Device ID (tap to copy):
+            </Text>
+            <Text style={{ color: COLORS.accent, fontSize: 14, fontWeight: '600' }} selectable>
+              {device.id}
+            </Text>
+          </TouchableOpacity>
+        )}
+
         <WeatherStatus deviceId={device?.id} />
 
         <PowerFlowDiagram />

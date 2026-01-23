@@ -1813,6 +1813,20 @@
     "cameraLoading": "Camera wordt geladen…",
     "close": "Sluiten"
   },
+  "textScanner": {
+    "title": "Serienummer scannen",
+    "subtitle": "Richt de camera op het serienummerlabel",
+    "permissionRequired": "Cameramachtiging vereist. Geef toestemming in instellingen.",
+    "cameraLoading": "Camera wordt geladen…",
+    "scanButton": "Tekst scannen",
+    "scanning": "Scannen...",
+    "processing": "Afbeelding verwerken...",
+    "detectedText": "Gedetecteerde serienummers",
+    "noTextDetected": "Geen serienummer gedetecteerd. Probeer opnieuw te scannen.",
+    "clear": "Wissen",
+    "close": "Sluiten",
+    "useThis": "Gebruik dit"
+  },
   "globalError": {
     "title": "Fout",
     "code": "Code",

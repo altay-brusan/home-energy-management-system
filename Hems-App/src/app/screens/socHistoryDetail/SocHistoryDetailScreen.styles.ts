@@ -46,23 +46,23 @@ export const createStyles = (COLORS: Record<string, string>, isDark: boolean) =>
     },
     cardsContainer: {
       flexDirection: 'row',
-      gap: SPACING.sm,
+      gap: SPACING.xs,
       marginBottom: SPACING.md,
     },
     card: {
       flex: 1,
       backgroundColor: COLORS.surface,
       borderRadius: 12,
-      padding: SPACING.md,
+      padding: SPACING.sm,
       alignItems: 'center',
       justifyContent: 'center',
-      minHeight: 100,
+      minHeight: 80,
     },
     cardLabel: {
-      fontSize: TYPOGRAPHY.xs,
+      fontSize: 10,
       fontWeight: '600',
       color: COLORS.textSoft,
-      marginBottom: 8,
+      marginBottom: 4,
       textAlign: 'center',
       textTransform: 'uppercase',
     },
@@ -70,7 +70,7 @@ export const createStyles = (COLORS: Record<string, string>, isDark: boolean) =>
       alignItems: 'center',
     },
     cardValue: {
-      fontSize: 32,
+      fontSize: 24,
       fontWeight: '700',
     },
     cardUnit: {
