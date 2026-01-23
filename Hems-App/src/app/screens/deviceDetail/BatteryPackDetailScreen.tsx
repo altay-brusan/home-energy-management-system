@@ -73,6 +73,14 @@ export default function BatteryPackDetailScreen() {
     return { value: item.value, unit: item.unit };
   };
 
+  // Ref to track if we have data (to avoid stale closure in useCallback)
+  const hasDataRef = useRef(false);
+
+  // Update ref when detailsData changes
+  useEffect(() => {
+    hasDataRef.current = !!detailsData;
+  }, [detailsData]);
+
   // Fetch component details from Details API with bmsAddress
   const fetchComponentDetails = useCallback(async (isPolling: boolean = false) => {
     // If componentId is missing, we can't fetch - show error
@@ -95,8 +103,8 @@ export default function BatteryPackDetailScreen() {
     } catch (err: any) {
       console.error('Error fetching component details:', err);
 
-      // Only show error if we have no cached data
-      if (!detailsData) {
+      // Only show error if we have no cached data (use ref to avoid dependency)
+      if (!hasDataRef.current) {
         if (err?.response?.status === 404) {
           setError(t('batteryDetail.notFound'));
         } else if (err?.response?.status === 401) {
@@ -110,7 +118,7 @@ export default function BatteryPackDetailScreen() {
     } finally {
       setLoading(false);
     }
-  }, [componentId, bmsAddress, detailsData, t]);
+  }, [componentId, bmsAddress, t]);
 
   useEffect(() => {
     fetchComponentDetails(false);

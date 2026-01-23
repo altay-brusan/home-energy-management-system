@@ -149,6 +149,31 @@ interface DeviceSettingsState {
   setDeviceId: (id: string | null) => void;
 }
 
+// Helper: Deep merge settings objects, ensuring all default fields exist
+const deepMergeSettings = (defaults: any, persisted: any): any => {
+  if (!persisted || typeof persisted !== 'object') {
+    return defaults;
+  }
+  if (!defaults || typeof defaults !== 'object') {
+    return persisted;
+  }
+  if (Array.isArray(defaults)) {
+    // For arrays (like timeSlots), use persisted if same length, otherwise defaults
+    if (Array.isArray(persisted) && persisted.length === defaults.length) {
+      return persisted.map((item, index) => deepMergeSettings(defaults[index], item));
+    }
+    return defaults;
+  }
+
+  const result = { ...defaults };
+  for (const key of Object.keys(defaults)) {
+    if (key in persisted) {
+      result[key] = deepMergeSettings(defaults[key], persisted[key]);
+    }
+  }
+  return result;
+};
+
 // Helper: Get nested value from object by dot path
 const getNestedValue = (obj: any, path: string): any => {
   return path.split('.').reduce((current, key) => current?.[key], obj);
@@ -1233,6 +1258,25 @@ export const useDeviceSettingsStore = create<DeviceSettingsState>()(
         deviceId: state.deviceId,
         lastFetchedAt: state.lastFetchedAt,
       }),
+      // Deep merge persisted state with defaults to handle schema changes
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<DeviceSettingsState> | undefined;
+        if (!persisted) {
+          return currentState;
+        }
+
+        // Deep merge settings with defaults to ensure all fields exist
+        const mergedSettings = deepMergeSettings(
+          JSON.parse(JSON.stringify(DEFAULT_DEVICE_SETTINGS)),
+          persisted.settings || {}
+        );
+
+        return {
+          ...currentState,
+          ...persisted,
+          settings: mergedSettings,
+        };
+      },
     }
   )
 );

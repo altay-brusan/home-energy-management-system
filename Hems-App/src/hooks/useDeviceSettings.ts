@@ -361,12 +361,12 @@ export const useDeviceSettings = (): UseDeviceSettingsReturn => {
   return {
     // Data
     settings,
-    batterySettings: settings.batterySettings,
-    systemWorkMode: settings.systemWorkMode,
-    gridStandard: settings.gridStandard,
-    timeOfUse: settings.timeOfUse,
-    generatorSmartLoad: settings.generatorAndSmartLoad,
-    maintenanceSettings: settings.maintenanceSettings,
+    batterySettings: settings?.batterySettings,
+    systemWorkMode: settings?.systemWorkMode,
+    gridStandard: settings?.gridStandard,
+    timeOfUse: settings?.timeOfUse,
+    generatorSmartLoad: settings?.generatorAndSmartLoad,
+    maintenanceSettings: settings?.maintenanceSettings,
 
     // Status
     isLoading,
@@ -459,10 +459,10 @@ export const useBatterySettingsSection = () => {
   );
 
   return {
-    batteryConfiguration: batterySettings.batteryConfiguration,
-    gridCharging: batterySettings.gridCharging,
-    generatorCharging: batterySettings.generatorCharging,
-    protectionThresholds: batterySettings.protectionThresholds,
+    batteryConfiguration: batterySettings?.batteryConfiguration,
+    gridCharging: batterySettings?.gridCharging,
+    generatorCharging: batterySettings?.generatorCharging,
+    protectionThresholds: batterySettings?.protectionThresholds,
     updateBatteryConfiguration,
     updateGridCharging,
     updateGeneratorCharging,
@@ -495,20 +495,20 @@ export const useTimeOfUseSection = () => {
   const timeSlotVisibility = useDeviceSettingsStore((state) => state.timeSlotVisibility);
 
   const toggleEnabled = useCallback(() => {
-    updateSetting('timeOfUse.enabled', timeOfUse.enabled === 'on' ? 'off' : 'on');
-  }, [timeOfUse.enabled, updateSetting]);
+    updateSetting('timeOfUse.enabled', timeOfUse?.enabled === 'on' ? 'off' : 'on');
+  }, [timeOfUse?.enabled, updateSetting]);
 
   const toggleDay = useCallback(
-    (day: keyof typeof timeOfUse.activeDays) => {
-      updateSetting(`timeOfUse.activeDays.${day}`, !timeOfUse.activeDays[day]);
+    (day: keyof NonNullable<typeof timeOfUse>['activeDays']) => {
+      updateSetting(`timeOfUse.activeDays.${day}`, !timeOfUse?.activeDays?.[day]);
     },
-    [timeOfUse.activeDays, updateSetting]
+    [timeOfUse?.activeDays, updateSetting]
   );
 
   return {
-    enabled: timeOfUse.enabled,
-    activeDays: timeOfUse.activeDays,
-    timeSlots: timeOfUse.timeSlots,
+    enabled: timeOfUse?.enabled,
+    activeDays: timeOfUse?.activeDays,
+    timeSlots: timeOfUse?.timeSlots,
     timeSlotVisibility,
     toggleEnabled,
     toggleDay,
@@ -550,9 +550,9 @@ export const useGeneratorSmartLoadSection = () => {
   );
 
   return {
-    generatorSettings: generatorSmartLoad.generatorSettings,
-    generatorPeakShaving: generatorSmartLoad.generatorPeakShaving,
-    smartLoad: generatorSmartLoad.smartLoad,
+    generatorSettings: generatorSmartLoad?.generatorSettings,
+    generatorPeakShaving: generatorSmartLoad?.generatorPeakShaving,
+    smartLoad: generatorSmartLoad?.smartLoad,
     updateGeneratorSettings,
     updateGeneratorPeakShaving,
     updateSmartLoad,

@@ -459,7 +459,7 @@ const CustomModeScreen: React.FC = () => {
                 {t('inverterModes.timeOfUse', 'Time of Use')}
               </Text>
               <Text style={[styles.navigationButtonSubtext, { color: COLORS.textSoft }]}>
-                {settings.timeOfUse.enabled === 'on'
+                {settings?.timeOfUse?.enabled === 'on'
                   ? t('inverterModes.enabled', 'Enabled')
                   : t('inverterModes.disabled', 'Disabled')}
               </Text>
