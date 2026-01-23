@@ -2,7 +2,6 @@ import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import FontAwesome from '@react-native-vector-icons/fontawesome';
 import { getDesignTokens } from '../../theme/constants';
 import { useThemeStore } from '../../store/themeStore';
 
@@ -14,7 +13,7 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
 
   return (
     <View style={[styles.container, {
-      paddingBottom: Platform.OS === 'ios' ? insets.bottom : 16,
+      paddingBottom: Platform.OS === 'ios' ? insets.bottom : 12,
       backgroundColor: tokens.surface.base,
     }]}>
       <View style={[styles.tabBar, {
@@ -51,11 +50,15 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
             });
           };
 
+          // Get colors based on focus state
+          const iconColor = isFocused ? tokens.brand.accent : tokens.text.tertiary;
+          const textColor = isFocused ? tokens.brand.accent : tokens.text.tertiary;
+
           // Get icon component
           const iconComponent = options.tabBarIcon?.({
             focused: isFocused,
-            color: isFocused ? tokens.brand.accent : tokens.text.tertiary,
-            size: 24,
+            color: iconColor,
+            size: 22,
           });
 
           return (
@@ -67,30 +70,21 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
               testID={options.tabBarTestID}
               onPress={onPress}
               onLongPress={onLongPress}
-              style={[
-                styles.tabButton,
-                isFocused && {
-                  backgroundColor: tokens.background.selected,
-                  paddingHorizontal: 16,
-                },
-              ]}
+              activeOpacity={0.7}
+              style={styles.tabButton}
             >
               <View style={styles.iconContainer}>
                 {iconComponent}
               </View>
-              {isFocused && (
-                <Text
-                  style={[
-                    styles.label,
-                    {
-                      color: tokens.brand.accent,
-                    },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {label as string}
-                </Text>
-              )}
+              <Text
+                style={[
+                  styles.label,
+                  { color: textColor },
+                ]}
+                numberOfLines={1}
+              >
+                {label as string}
+              </Text>
             </TouchableOpacity>
           );
         })}
@@ -109,29 +103,27 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    gap: 8,
+    justifyContent: 'space-around',
+    paddingTop: 8,
+    paddingHorizontal: 8,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
   },
   tabButton: {
-    flexDirection: 'row',
+    flex: 1,
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    borderRadius: 9999, // Fully rounded
-    gap: 8,
+    paddingVertical: 4,
+    gap: 4,
   },
   iconContainer: {
     justifyContent: 'center',
     alignItems: 'center',
+    height: 24,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    letterSpacing: 0.2,
+    fontSize: 10,
+    fontWeight: '500',
+    textAlign: 'center',
   },
 });

@@ -9,7 +9,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React, { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, View } from 'react-native';
-import { Home, Smartphone, User, Shield, Settings, Bell, Bot } from 'lucide-react-native';
+import { Home, Smartphone, User, Shield, Settings, Bell } from 'lucide-react-native';
+import { AIIcon } from '../../components/icons/AIIcon';
 import { apiClient } from '../../api/client/apiClient';
 import { invitationsService } from '../../api/services/devicesharingService';
 import { versionService } from '../../api/services/versionService';
@@ -56,7 +57,12 @@ import PowerMetricsDetailScreen from '../screens/powerMetricsDetail/PowerMetrics
 import GridPerformanceDetailScreen from '../screens/gridPerformanceDetail/GridPerformanceDetailScreen';
 import EnergyRevenueDetailScreen from '../screens/energyRevenueDetail/EnergyRevenueDetailScreen';
 import SocHistoryDetailScreen from '../screens/socHistoryDetail/SocHistoryDetailScreen';
-import { AIScreen } from '../screens/ai';
+import {
+  AIScreen,
+  SolarForecastScreen,
+  BlackoutScenarioScreen,
+  ConsumptionForecastScreen,
+} from '../screens/ai';
 import DeviceDetail from '../screens/deviceDetail/DeviceDetail';
 import GatewayDetailScreen from '../screens/deviceDetail/GatewayDetailScreen';
 import PVPanelDetailScreen from '../screens/deviceDetail/PVPanelDetailScreen';
@@ -217,7 +223,7 @@ function TabNavigator () {
             options={{
               tabBarLabel: 'AI',
               tabBarIcon: ({ color, size }) => (
-                <Bot color={color} size={size} strokeWidth={2} />
+                <AIIcon color={color} size={size} />
               ),
             }}
           />
@@ -659,6 +665,21 @@ export function RootNavigator () {
             <Stack.Screen
               name="BatteryRecovery"
               component={BatteryRecoveryScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="SolarForecast"
+              component={SolarForecastScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="BlackoutScenario"
+              component={BlackoutScenarioScreen}
+              options={{ animation: 'slide_from_right' }}
+            />
+            <Stack.Screen
+              name="ConsumptionForecast"
+              component={ConsumptionForecastScreen}
               options={{ animation: 'slide_from_right' }}
             />
           </>
