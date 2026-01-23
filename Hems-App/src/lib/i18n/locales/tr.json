@@ -1752,7 +1752,14 @@
   "lastUpdate": "Son Güncelleme",
   "notFound": "Batarya bulunamadı",
   "networkError": "Bağlantı hatası. Lütfen internet bağlantınızı kontrol edin.",
-  "fetchError": "Batarya detayları yüklenemedi. Lütfen tekrar deneyin."
+  "fetchError": "Batarya detayları yüklenemedi. Lütfen tekrar deneyin.",
+  "stateOfHealth": "Sağlık Durumu",
+  "realtimeStatus": "Anlık Durum",
+  "ratedCapacity": "Nominal Kapasite",
+  "remainingCapacity": "Kalan Kapasite",
+  "totalDischarge": "Toplam Deşarj",
+  "cycleCount": "Döngü Sayısı",
+  "usageStatistics": "Kullanım İstatistikleri"
 },
 "inverterDetail": {
   "title": "İnvertör Detayları",

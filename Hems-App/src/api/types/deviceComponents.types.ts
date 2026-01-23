@@ -112,7 +112,14 @@ export interface BatteryPackDto {
   model: string;
   manufacturer: string;
   serialNumber: string;
+  componentId: string;
+  bmsAddress: number;
   stateOfCharge: number | null;
+  stateOfHealth: number | null;
+  voltage: number | null;
+  current: number | null;
+  temperature: number | null;
+  firmwareVersion: string | null;
 }
 
 export interface BatterySummaryDto extends ComponentSummaryBaseDto {

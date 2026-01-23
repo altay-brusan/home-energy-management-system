@@ -1707,7 +1707,14 @@
       "lastUpdate": "Laatst Bijgewerkt",
       "notFound": "Batterij niet gevonden",
       "networkError": "Verbindingsfout. Controleer uw internetverbinding.",
-      "fetchError": "Kan batterijgegevens niet laden. Probeer het opnieuw."
+      "fetchError": "Kan batterijgegevens niet laden. Probeer het opnieuw.",
+      "stateOfHealth": "Gezondheidstoestand",
+      "realtimeStatus": "Realtime Status",
+      "ratedCapacity": "Nominale Capaciteit",
+      "remainingCapacity": "Resterende Capaciteit",
+      "totalDischarge": "Totale Ontlading",
+      "cycleCount": "Cyclustelling",
+      "usageStatistics": "Gebruiksstatistieken"
     },
     "inverterDetail": {
       "title": "Omvormer Details",

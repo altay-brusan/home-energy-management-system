@@ -221,7 +221,7 @@ export default function DeviceDetail() {
     // Start polling
     const interval = setInterval(() => {
       fetchDeviceSummary();
-    }, 5000); // Poll every 5 seconds
+    }, 15000); // Poll every 15 seconds
 
     pollingIntervalRef.current = interval;
 

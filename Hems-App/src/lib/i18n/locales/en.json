@@ -1749,7 +1749,14 @@
     "lastUpdate": "Last Update",
     "notFound": "Battery not found",
     "networkError": "Connection error. Please check your internet connection.",
-    "fetchError": "Failed to load battery details. Please try again."
+    "fetchError": "Failed to load battery details. Please try again.",
+    "stateOfHealth": "State of Health",
+    "realtimeStatus": "Real-time Status",
+    "ratedCapacity": "Rated Capacity",
+    "remainingCapacity": "Remaining Capacity",
+    "totalDischarge": "Total Discharge",
+    "cycleCount": "Cycle Count",
+    "usageStatistics": "Usage Statistics"
   },
   "inverterDetail": {
     "title": "Inverter Details",

@@ -68,9 +68,14 @@ export const deviceComponentsService = {
   },
 
   // Get component details (realtime + parameter data)
-  getComponentDetails: async (componentId: string): Promise<DeviceDetailsResponseDto> => {
+  // For battery components, pass bmsAddress to get specific BMS data
+  getComponentDetails: async (componentId: string, bmsAddress?: number): Promise<DeviceDetailsResponseDto> => {
     const url = ENDPOINTS.DEVICE_COMPONENTS.GET_COMPONENT_DETAILS.replace(':componentId', componentId);
-    const response = await apiClient.get<DeviceDetailsResponseDto>(url);
+    const params: Record<string, any> = {};
+    if (bmsAddress !== undefined) {
+      params.bmsAddress = bmsAddress;
+    }
+    const response = await apiClient.get<DeviceDetailsResponseDto>(url, { params });
     return response.data;
   },
 };
