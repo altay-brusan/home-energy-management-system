@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, Modal, Dimensions, PanResponder } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, Modal, PanResponder, useWindowDimensions } from 'react-native';
 import { ArrowLeft, Calendar } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -57,10 +57,14 @@ export default function SocHistoryDetailScreen() {
   const [touchX, setTouchX] = useState<number | null>(null);
   const [selectedPoint, setSelectedPoint] = useState<SocDataPoint | null>(null);
 
-  const screenWidth = Dimensions.get('window').width;
-  const chartWidth = screenWidth - 32;
-  const chartHeight = 260;
-  const chartPadding = { top: 30, right: 15, bottom: 40, left: 5 };
+  const { width: screenWidth } = useWindowDimensions();
+
+  // Responsive chart dimensions
+  const isTablet = screenWidth >= 768;
+  // Account for: content padding (16*2=32) + chartContainer padding (12*2=24) = 56
+  const chartWidth = isTablet ? Math.min(screenWidth - 64, 700) : screenWidth - 56;
+  const chartHeight = isTablet ? 320 : 260;
+  const chartPadding = { top: 20, right: 0, bottom: 35, left: 0 };
   const innerWidth = chartWidth - chartPadding.left - chartPadding.right;
   const innerHeight = chartHeight - chartPadding.top - chartPadding.bottom;
 
@@ -211,11 +215,8 @@ export default function SocHistoryDetailScreen() {
     // Create path for the gradient fill area
     const areaPath = `${linePath} L ${xScale(socData.length - 1)} ${chartPadding.top + innerHeight} L ${chartPadding.left} ${chartPadding.top + innerHeight} Z`;
 
-    // Calculate step for showing points (show ~6-8 points)
-    const pointStep = Math.max(1, Math.floor(socData.length / 6));
-
-    // Calculate step for X-axis labels (show ~7 labels)
-    const labelStep = Math.max(1, Math.floor(socData.length / 7));
+    // Calculate step for X-axis labels (show ~5 labels)
+    const labelStep = Math.max(1, Math.floor(socData.length / 5));
 
     return (
       <View style={styles.chartContainer}>
@@ -268,30 +269,20 @@ export default function SocHistoryDetailScreen() {
               </LinearGradient>
             </Defs>
 
-            {/* Y-axis grid lines and labels */}
+            {/* Y-axis grid lines only (no labels) */}
             {[0, 25, 50, 75, 100].map((value) => {
               const y = yScale(value);
               return (
-                <G key={`grid-${value}`}>
-                  <Line
-                    x1={chartPadding.left}
-                    y1={y}
-                    x2={chartWidth - chartPadding.right}
-                    y2={y}
-                    stroke={isDark ? '#333' : '#e5e5e5'}
-                    strokeWidth={1}
-                    strokeDasharray={value === 0 ? '0' : '4,4'}
-                  />
-                  <SvgText
-                    x={chartPadding.left + 3}
-                    y={y - 4}
-                    fontSize={9}
-                    fill={isDark ? '#888' : '#999'}
-                    textAnchor="start"
-                  >
-                    {value}%
-                  </SvgText>
-                </G>
+                <Line
+                  key={`grid-${value}`}
+                  x1={chartPadding.left}
+                  y1={y}
+                  x2={chartWidth - chartPadding.right}
+                  y2={y}
+                  stroke={isDark ? '#333' : '#e5e5e5'}
+                  strokeWidth={1}
+                  strokeDasharray={value === 0 ? '0' : '4,4'}
+                />
               );
             })}
 
@@ -341,37 +332,24 @@ export default function SocHistoryDetailScreen() {
               </>
             )}
 
-            {/* Data points - show every pointStep points (only when not touching) */}
-            {touchX === null && socData.map((point, index) => {
-              if (index % pointStep !== 0 && index !== socData.length - 1) return null;
-              const x = xScale(index);
-              const y = yScale(point.soc);
-              return (
-                <G key={`point-${index}`}>
-                  <Circle
-                    cx={x}
-                    cy={y}
-                    r={4}
-                    fill={point.isInterpolated ? COLORS.textSoft : COLORS.accent}
-                    stroke={isDark ? COLORS.surface : '#fff'}
-                    strokeWidth={2}
-                  />
-                </G>
-              );
-            })}
-
             {/* X-axis labels */}
             {socData.map((point, index) => {
               if (index % labelStep !== 0 && index !== socData.length - 1) return null;
-              const x = xScale(index);
+              let x = xScale(index);
+              const isFirst = index === 0;
+              const isLast = index === socData.length - 1;
+              // Adjust x position for first and last labels to stay within bounds
+              if (isFirst) x = 2;
+              if (isLast) x = chartWidth - 2;
+              const textAnchor = isFirst ? 'start' : isLast ? 'end' : 'middle';
               return (
                 <SvgText
                   key={`x-label-${index}`}
                   x={x}
-                  y={chartPadding.top + innerHeight + 18}
-                  fontSize={9}
+                  y={chartPadding.top + innerHeight + 15}
+                  fontSize={10}
                   fill={isDark ? '#888' : '#666'}
-                  textAnchor="middle"
+                  textAnchor={textAnchor}
                 >
                   {point.timestamp}
                 </SvgText>

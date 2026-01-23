@@ -212,7 +212,7 @@ const DemandBreakdownChart: React.FC = () => {
         {/* SVG Chart */}
         <Svg width={chartSize} height={chartSize}>
           <G>
-            {segmentsWithAngles.map((segment) => {
+            {segments.map((segment) => {
               const isSelected = selectedSegment === segment.id;
               const currentStrokeWidth = isSelected ? expandedStrokeWidth : strokeWidth;
               const currentRadius = isSelected ? radius + 4 : radius;
