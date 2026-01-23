@@ -1,11 +1,15 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, Dimensions } from 'react-native';
-import Animated, { FadeInDown, useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import Svg, { G, Path, Circle } from 'react-native-svg';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { View, Text, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import Svg, { G, Path } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../../../../store/themeStore';
 import { getThemeColors } from '../../../../../theme/constants';
 import { createStyles } from './DemandBreakdownChart.styles';
+import { useSelectedSiteDevice } from '../../../../../hooks/useSelectedSiteDevice';
+import { useDashboardRefresh } from '../../../../../hooks/useDashboardRefresh';
+import { dashboardService } from '../../../../../api/services/dashboardService';
+import { LoadEnergySourceDistributionDto } from '../../../../../api/types/dashboard.types';
 
 interface DemandSegment {
   id: string;
@@ -15,14 +19,19 @@ interface DemandSegment {
   color: string;
 }
 
-// Static demo data
-const DEMO_DATA: DemandSegment[] = [
-  { id: 'solar', label: 'Solar', value: 12.47, percentage: 45, color: '#FBBF24' },
-  { id: 'battery', label: 'Battery', value: 6.09, percentage: 22, color: '#34D399' },
-  { id: 'grid', label: 'Grid', value: 9.14, percentage: 33, color: '#60A5FA' },
-];
+// Source colors mapping
+const SOURCE_COLORS: Record<string, string> = {
+  solar: '#FBBF24',
+  battery: '#34D399',
+  grid: '#60A5FA',
+  generator: '#F97316',
+};
 
-const TOTAL_DEMAND = 27.7;
+// Get color for source
+const getSourceColor = (source: string): string => {
+  const normalizedSource = source.toLowerCase();
+  return SOURCE_COLORS[normalizedSource] || '#94A3B8';
+};
 
 // Helper function to create arc path
 const createArcPath = (
@@ -61,6 +70,25 @@ const createArcPath = (
   `;
 };
 
+// Transform API response to component data
+const transformApiData = (apiData: LoadEnergySourceDistributionDto): { segments: DemandSegment[]; totalDemand: number } => {
+  const segments: DemandSegment[] = apiData.sources.map((source) => ({
+    id: source.source.toLowerCase(),
+    label: source.source,
+    value: source.providedEnergyWh / 1000, // Convert Wh to kWh
+    percentage: Math.round(source.contribution), // contribution is already 0-100
+    color: getSourceColor(source.source),
+  }));
+
+  // Filter out segments with 0 contribution
+  const validSegments = segments.filter(s => s.percentage > 0);
+
+  return {
+    segments: validSegments,
+    totalDemand: apiData.loadDemandWh / 1000, // Convert Wh to kWh
+  };
+};
+
 const DemandBreakdownChart: React.FC = () => {
   const { t } = useTranslation();
   const mode = useThemeStore(s => s.mode);
@@ -68,7 +96,13 @@ const DemandBreakdownChart: React.FC = () => {
   const COLORS = getThemeColors(isDark);
   const styles = createStyles(COLORS, isDark);
 
+  const { device, hasDevice } = useSelectedSiteDevice();
+  const { registerRefreshCallback } = useDashboardRefresh();
+
   const [selectedSegment, setSelectedSegment] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [demandData, setDemandData] = useState<{ segments: DemandSegment[]; totalDemand: number } | null>(null);
 
   const screenWidth = Dimensions.get('window').width;
   const chartSize = Math.min(screenWidth - 64, 280);
@@ -78,10 +112,49 @@ const DemandBreakdownChart: React.FC = () => {
   const strokeWidth = 28;
   const expandedStrokeWidth = 36;
 
+  // Fetch demand breakdown data
+  const fetchDemandBreakdown = useCallback(async () => {
+    if (!hasDevice || !device?.id) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Get today's date in YYYY-MM-DD format
+      const today = new Date();
+      const dateString = today.toISOString().split('T')[0];
+
+      const response = await dashboardService.getEnergySourceMix(device.id, dateString);
+      const transformedData = transformApiData(response);
+      setDemandData(transformedData);
+    } catch (err: any) {
+      console.error('Error fetching demand breakdown:', err);
+      setError(err.message || 'Failed to fetch demand breakdown');
+    } finally {
+      setLoading(false);
+    }
+  }, [hasDevice, device?.id]);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchDemandBreakdown();
+  }, [fetchDemandBreakdown]);
+
+  // Register refresh callback
+  useEffect(() => {
+    const unregister = registerRefreshCallback(fetchDemandBreakdown);
+    return () => unregister();
+  }, [registerRefreshCallback, fetchDemandBreakdown]);
+
   // Calculate segment angles
-  const getSegmentAngles = useCallback(() => {
+  const segments = useMemo(() => {
+    if (!demandData || demandData.segments.length === 0) return [];
+
     let currentAngle = 0;
-    return DEMO_DATA.map(segment => {
+    return demandData.segments.map(segment => {
       const startAngle = currentAngle;
       const sweepAngle = (segment.percentage / 100) * 360;
       currentAngle += sweepAngle;
@@ -91,20 +164,44 @@ const DemandBreakdownChart: React.FC = () => {
         endAngle: startAngle + sweepAngle,
       };
     });
-  }, []);
-
-  const segments = getSegmentAngles();
+  }, [demandData]);
 
   const handleSegmentPress = (segmentId: string) => {
     setSelectedSegment(prev => (prev === segmentId ? null : segmentId));
   };
 
   const getSelectedData = () => {
-    if (!selectedSegment) return null;
-    return DEMO_DATA.find(s => s.id === selectedSegment);
+    if (!selectedSegment || !demandData) return null;
+    return demandData.segments.find(s => s.id === selectedSegment);
   };
 
   const selectedData = getSelectedData();
+
+  // Show loading state
+  if (loading) {
+    return (
+      <Animated.View entering={FadeInDown.delay(200).duration(600)} style={styles.container}>
+        <Text style={styles.title}>{t('demandBreakdown.title')}</Text>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
+          <ActivityIndicator size="large" color={COLORS.accent} />
+        </View>
+      </Animated.View>
+    );
+  }
+
+  // Show error or no data state
+  if (error || !demandData || demandData.segments.length === 0) {
+    return (
+      <Animated.View entering={FadeInDown.delay(200).duration(600)} style={styles.container}>
+        <Text style={styles.title}>{t('demandBreakdown.title')}</Text>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
+          <Text style={{ color: COLORS.textSoft, textAlign: 'center' }}>
+            {error || t('demandBreakdown.noData', 'No data available')}
+          </Text>
+        </View>
+      </Animated.View>
+    );
+  }
 
   return (
     <Animated.View entering={FadeInDown.delay(200).duration(600)} style={styles.container}>
@@ -153,7 +250,7 @@ const DemandBreakdownChart: React.FC = () => {
           {selectedData ? (
             <>
               <Text style={[styles.centerLabel, { color: selectedData.color }]}>
-                {t(`demandBreakdown.sources.${selectedData.id}`)}
+                {t(`demandBreakdown.sources.${selectedData.id}`, selectedData.label)}
               </Text>
               <Text style={styles.centerValue}>{selectedData.value.toFixed(1)}</Text>
               <Text style={styles.centerUnit}>kWh</Text>
@@ -164,7 +261,7 @@ const DemandBreakdownChart: React.FC = () => {
           ) : (
             <>
               <Text style={styles.centerLabel}>{t('demandBreakdown.totalDemand')}</Text>
-              <Text style={styles.centerValue}>{TOTAL_DEMAND}</Text>
+              <Text style={styles.centerValue}>{demandData.totalDemand.toFixed(1)}</Text>
               <Text style={styles.centerUnit}>kWh</Text>
             </>
           )}
@@ -173,7 +270,7 @@ const DemandBreakdownChart: React.FC = () => {
 
       {/* Legend */}
       <View style={styles.legend}>
-        {DEMO_DATA.map((segment) => (
+        {demandData.segments.map((segment) => (
           <TouchableOpacity
             key={segment.id}
             style={[
@@ -185,7 +282,7 @@ const DemandBreakdownChart: React.FC = () => {
           >
             <View style={[styles.legendColor, { backgroundColor: segment.color }]} />
             <Text style={styles.legendText}>
-              {t(`demandBreakdown.sources.${segment.id}`)} {segment.percentage}%
+              {t(`demandBreakdown.sources.${segment.id}`, segment.label)} {segment.percentage}%
             </Text>
           </TouchableOpacity>
         ))}
