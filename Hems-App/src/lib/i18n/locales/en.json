@@ -1736,6 +1736,20 @@
     "cameraLoading": "Camera loading…",
     "close": "Close"
   },
+  "textScanner": {
+    "title": "Scan Serial Number",
+    "subtitle": "Point the camera at the serial number label",
+    "permissionRequired": "Camera permission required. Please grant permission in settings.",
+    "cameraLoading": "Camera loading…",
+    "scanButton": "Scan Text",
+    "scanning": "Scanning...",
+    "processing": "Processing image...",
+    "detectedText": "Detected Serial Numbers",
+    "noTextDetected": "No serial number detected. Try scanning again.",
+    "clear": "Clear",
+    "close": "Close",
+    "useThis": "Use This"
+  },
   "globalError": {
     "title": "Error",
     "code": "Code",

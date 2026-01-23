@@ -1739,6 +1739,20 @@
   "cameraLoading": "Kamera yükleniyor…",
   "close": "Kapat"
 },
+"textScanner": {
+  "title": "Seri Numarası Tara",
+  "subtitle": "Kamerayı seri numarası etiketine doğrultun",
+  "permissionRequired": "Kamera izni gerekli. Lütfen ayarlardan izin verin.",
+  "cameraLoading": "Kamera yükleniyor…",
+  "scanButton": "Tara",
+  "scanning": "Taranıyor...",
+  "processing": "Görüntü işleniyor...",
+  "detectedText": "Tespit Edilen Seri Numaraları",
+  "noTextDetected": "Seri numarası tespit edilemedi. Tekrar taramayı deneyin.",
+  "clear": "Temizle",
+  "close": "Kapat",
+  "useThis": "Bunu Kullan"
+},
 "globalError": {
   "title": "Hata",
   "code": "Kod",
