@@ -1,3 +1,5 @@
+using Hems_Backend.Domain.Enums;
+
 namespace Hems_Backend.Application.Common.Interfaces;
 
 /// <summary>
@@ -15,7 +17,13 @@ public interface IDeviceMappingService
     /// Get local DeviceId from ThingsBoardDeviceId
     /// </summary>
     Task<Guid?> GetDeviceIdAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken = default);
-    
+
+    /// <summary>
+    /// Get PhaseType (SinglePhase/ThreePhase) from ThingsBoardDeviceId
+    /// Determines phase type based on device ModelNumber
+    /// </summary>
+    Task<PhaseType> GetPhaseTypeAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Invalidate cache for a specific device
     /// </summary>

@@ -90,6 +90,53 @@
         ]
       }
     },
+    "/api/Dashboard/SocHistory": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "operationId": "SocHistory",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SocHistoryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/Dashboard/TodayEnergySummary": {
       "get": {
         "tags": [
@@ -427,6 +474,53 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PowerAndEnergyMetricsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Dashboard/EnergySourceMix": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "operationId": "EnergySourceMix",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnergySourceMixDto"
                 }
               }
             }
@@ -4847,6 +4941,41 @@
           }
         }
       },
+      "SocHistoryResponseDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "deviceId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SocHistoryDataPoint"
+            }
+          }
+        }
+      },
+      "SocHistoryDataPoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "timestamp": {
+            "type": "string"
+          },
+          "socPercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "isInterpolated": {
+            "type": "boolean"
+          }
+        }
+      },
       "DailyEnergySummaryDto": {
         "type": "object",
         "additionalProperties": false,
@@ -5131,6 +5260,79 @@
           },
           "unit": {
             "type": "string"
+          }
+        }
+      },
+      "EnergySourceMixDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "deviceId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "loadDemandWh": {
+            "type": "number",
+            "format": "double"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EnergySourceContribution"
+            }
+          },
+          "summary": {
+            "$ref": "#/components/schemas/EnergySourceMixSummary"
+          }
+        }
+      },
+      "EnergySourceContribution": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source": {
+            "type": "string"
+          },
+          "providedEnergyWh": {
+            "type": "number",
+            "format": "double"
+          },
+          "contribution": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "EnergySourceMixSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sampleCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "firstSampleTime": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastSampleTime": {
+            "type": "string",
+            "nullable": true
+          },
+          "averageIntervalMinutes": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalTimeSpanMinutes": {
+            "type": "number",
+            "format": "double"
+          },
+          "zeroSupplySamples": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },

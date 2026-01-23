@@ -150,6 +150,9 @@ public class CreateDevicePowerDataCommandHandler : IRequestHandler<CreateDeviceP
             return recentRecord.Id;
         }
 
+        // Get PhaseType from device ModelNumber (cached)
+        var phaseType = await _deviceMapping.GetPhaseTypeAsync(request.DeviceId, cancellationToken);
+
         // No duplicate found - create new record
         var powerData = new DevicePowerData
         {
@@ -157,7 +160,7 @@ public class CreateDevicePowerDataCommandHandler : IRequestHandler<CreateDeviceP
             DeviceLocalTime = localDeviceLocalTime, // Store in device local time
             DataType = request.DataType,
             MessageType = MessageTypes.Telemetry,
-            PhaseType = PhaseTypes.SinglePhase,
+            PhaseType = phaseType.ToString(),
             Version = request.Version,
 
             PvTotalPowerW = request.PvTotalPowerW,
