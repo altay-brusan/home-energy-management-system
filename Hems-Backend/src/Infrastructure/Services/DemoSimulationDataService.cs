@@ -576,13 +576,13 @@ public class DemoSimulationDataService : IDemoSimulationDataService
         details.Add(new DemoDetailItem
         {
             Key = "voltage",
-            Value = Math.Round(voltage, 1),
+            Value = Math.Round(voltage, 2),
             Unit = "V",
             LabelKey = "realtime.voltage"
         });
 
         // Battery current - based on current power flow
-        // Positive = charging, Negative = discharging
+        // Positive = discharging, Negative = charging (matches RPC convention)
         var powerFlow = GetCurrentPowerFlow(Guid.Empty);
         var batteryCurrent = (powerFlow.BatteryPowerKw * 1000) / voltage; // I = P/V
         details.Add(new DemoDetailItem
@@ -604,16 +604,95 @@ public class DemoSimulationDataService : IDemoSimulationDataService
             LabelKey = "realtime.temperature"
         });
 
-        // Cycle count (simulated - ~500 cycles for a 2-year old battery)
+        // BMS Count - simulating 2 battery modules
         details.Add(new DemoDetailItem
         {
-            Key = "cycleCount",
-            Value = 487,
+            Key = "bmsCount",
+            Value = 2,
             Unit = null,
-            LabelKey = "realtime.cycleCount"
+            LabelKey = "realtime.bmsCount"
+        });
+
+        // BMS List - individual module details for 2 simulated BMS modules
+        var bmsList = GenerateDemoBmsList(soc, voltage, batteryCurrent, baseTemp);
+        details.Add(new DemoDetailItem
+        {
+            Key = "bmsList",
+            Value = bmsList,
+            Unit = null,
+            LabelKey = "realtime.bmsList"
         });
 
         return details;
+    }
+
+    /// <summary>
+    /// Generates simulated BMS list with 2 battery modules
+    /// </summary>
+    private List<Dictionary<string, object?>> GenerateDemoBmsList(double soc, double voltage, double totalCurrent, double baseTemp)
+    {
+        var bmsList = new List<Dictionary<string, object?>>();
+
+        // Simulate 2 BMS modules with slightly different values
+        for (int i = 1; i <= 2; i++)
+        {
+            var moduleVariation = (i - 1.5) * 0.02; // Small variation between modules
+            var moduleSoc = Math.Round(soc + moduleVariation * 10, 1);
+            var moduleVoltage = Math.Round(voltage + moduleVariation * 0.5, 2);
+            var moduleCurrent = Math.Round(totalCurrent / 2 + moduleVariation * 0.3, 2);
+            var moduleTemp = Math.Round(baseTemp + (i - 1) * 0.5, 1);
+
+            // Calculate cell voltages based on pack voltage (16 cells in series for 51.2V nominal)
+            var avgCellVoltageMv = (int)Math.Round(moduleVoltage / 16 * 1000);
+            var cellVariation = 3; // ±3mV variation
+            var maxCellVoltageMv = avgCellVoltageMv + cellVariation;
+            var minCellVoltageMv = avgCellVoltageMv - cellVariation;
+
+            // Determine charge/discharge status based on current
+            // 0 = Idle, 1 = Charging, 2 = Discharging
+            int chargeDischargeStatus;
+            string statusText;
+            if (Math.Abs(moduleCurrent) < 0.1)
+            {
+                chargeDischargeStatus = 0;
+                statusText = "Idle";
+            }
+            else if (moduleCurrent < 0)
+            {
+                chargeDischargeStatus = 1;
+                statusText = "Charging";
+            }
+            else
+            {
+                chargeDischargeStatus = 2;
+                statusText = "Discharging";
+            }
+
+            // Remaining capacity based on SOC (100Ah rated capacity)
+            var ratedCapacityAh = 100.0;
+            var remainingCapacityAh = Math.Round(ratedCapacityAh * moduleSoc / 100, 2);
+
+            bmsList.Add(new Dictionary<string, object?>
+            {
+                { "bmsAddress", i },
+                { "chargeDischargeStatus", chargeDischargeStatus },
+                { "chargeDischargeStatusText", statusText },
+                { "currentA", moduleCurrent },
+                { "voltageV", moduleVoltage },
+                { "remainingCapacityAh", remainingCapacityAh },
+                { "maxCellVoltageMv", maxCellVoltageMv },
+                { "minCellVoltageMv", minCellVoltageMv },
+                { "avgCellVoltageMv", avgCellVoltageMv },
+                { "avgCellTempC", moduleTemp },
+                { "ratedCapacityAh", ratedCapacityAh },
+                { "totalDischargeWh", 1264 + (i - 1) * 87 }, // Slightly different discharge history
+                { "cycleCount", 487 + (i - 1) * 12 }, // Slightly different cycle counts
+                { "sohPercent", 98.5 - (i - 1) * 0.3 }, // Slightly different SOH
+                { "socPercent", moduleSoc }
+            });
+        }
+
+        return bmsList;
     }
 
     public List<DemoDetailItem> GetDemoBatteryParameterDetails(string? name, string? manufacturer, string? model, string? serialNumber)

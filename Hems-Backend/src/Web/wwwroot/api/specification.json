@@ -529,6 +529,16 @@
               "format": "guid"
             },
             "x-position": 1
+          },
+          {
+            "name": "bmsAddress",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "nullable": true
+            },
+            "x-position": 2
           }
         ],
         "responses": {
@@ -5287,9 +5297,41 @@
           "serialNumber": {
             "type": "string"
           },
+          "componentId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "bmsAddress": {
+            "type": "integer",
+            "format": "int32"
+          },
           "stateOfCharge": {
             "type": "number",
             "format": "double",
+            "nullable": true
+          },
+          "stateOfHealth": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "voltage": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "current": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "temperature": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "firmwareVersion": {
+            "type": "string",
             "nullable": true
           }
         }

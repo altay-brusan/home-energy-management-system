@@ -63,7 +63,7 @@ public class DeviceComponents : EndpointGroupBase
     /// <summary>
     /// Admin: Create a new device component.
     /// Used for administrative data management without direct database access.
-    /// </summary>
+    //C/ </summary>
     [Authorize(Policies.AdminOnly)]
     public async Task<Guid> CreateDeviceComponent(
         ISender sender,
@@ -116,11 +116,13 @@ public class DeviceComponents : EndpointGroupBase
     [Authorize]
     public async Task<DeviceDetailsResponseDto?> GetDeviceDetails(
         ISender sender,
-        Guid componentId)
+        Guid componentId,
+        [FromQuery] int? bmsAddress = null)
     {
         var query = new GetDeviceDetailsQuery
         {
-            ComponentId = componentId
+            ComponentId = componentId,
+            BmsAddress = bmsAddress
         };
 
         return await sender.Send(query);
