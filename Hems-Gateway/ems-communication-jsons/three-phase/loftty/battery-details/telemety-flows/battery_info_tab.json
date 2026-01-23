@@ -1,29 +1,29 @@
 [
     {
-        "id": "ca6a04bf0ad93382",
+        "id": "896159115cc266e0",
         "type": "tab",
         "label": "Battery Info",
         "disabled": false,
         "info": "BatteryInfoState - Static battery information"
     },
     {
-        "id": "087771af062452d2",
+        "id": "cb2e6f3404e59b3a",
         "type": "socketcan-out",
-        "z": "ca6a04bf0ad93382",
+        "z": "896159115cc266e0",
         "name": "CAN0 Input",
-        "config": "537471527fc35bc4",
+        "config": "741d6a53c563523e",
         "x": 120,
         "y": 140,
         "wires": [
             [
-                "ddaa8cbe42246bcd"
+                "4db1a1f39c419fcf"
             ]
         ]
     },
     {
-        "id": "ddaa8cbe42246bcd",
+        "id": "4db1a1f39c419fcf",
         "type": "function",
-        "z": "ca6a04bf0ad93382",
+        "z": "896159115cc266e0",
         "name": "Parse Battery Info",
         "func": "const frame = msg.payload || msg;\nconst canId = frame.canid;\nconst data = frame.data || [];\n\nlet state = flow.get(\"batteryInfo\") || {\n    kind: \"BatteryInfoState\",\n    version: 1,\n    manufacturerName: null,\n    moduleCount: 0,\n    bmsList: []\n};\n\nfunction u16(buf, offset) {\n    return (buf[offset] & 0xFF) | ((buf[offset + 1] & 0xFF) << 8);\n}\n\nfunction getBms(addr) {\n    var bms = state.bmsList.find(function(b) { return b.bmsAddress === addr; });\n    if (!bms) {\n        bms = { bmsAddress: addr, _sn1: \"\", _sn2: \"\", _sn3: \"\" };\n        state.bmsList.push(bms);\n        state.bmsList.sort(function(a, b) { return a.bmsAddress - b.bmsAddress; });\n    }\n    return bms;\n}\n\nvar processed = false;\n\nif (canId === 0x359) {\n    processed = true;\n    state.moduleCount = data[4];\n}\n\nif (canId === 0x35E) {\n    processed = true;\n    var name = \"\";\n    for (var i = 0; i < 8; i++) {\n        if (data[i] === 0) break;\n        name += String.fromCharCode(data[i]);\n    }\n    state.manufacturerName = name;\n}\n\nif ((canId & 0x1FFFF000) === 0x14F00000) {\n    var msgType = (canId >> 8) & 0x0F;\n    var bmsAddr = canId & 0xFF;\n    \n    if (msgType >= 3 && msgType <= 7) {\n        processed = true;\n        var bms = getBms(bmsAddr);\n        \n        switch (msgType) {\n            case 3:\n                bms.ratedCapacityAh = u16(data, 0) * 0.01;\n                break;\n            case 4:\n                bms.softwareVersionMain = data[0];\n                bms.softwareVersionSub = data[1];\n                break;\n            case 5:\n                bms._sn1 = \"\";\n                for (var j = 0; j < 8; j++) {\n                    if (data[j] === 0) break;\n                    bms._sn1 += String.fromCharCode(data[j]);\n                }\n                bms.serialNumber = bms._sn1 + (bms._sn2 || \"\") + (bms._sn3 || \"\");\n                break;\n            case 6:\n                bms._sn2 = \"\";\n                for (var k = 0; k < 8; k++) {\n                    if (data[k] === 0) break;\n                    bms._sn2 += String.fromCharCode(data[k]);\n                }\n                bms.serialNumber = (bms._sn1 || \"\") + bms._sn2 + (bms._sn3 || \"\");\n                break;\n            case 7:\n                bms._sn3 = \"\";\n                for (var l = 0; l < 8; l++) {\n                    if (data[l] === 0) break;\n                    bms._sn3 += String.fromCharCode(data[l]);\n                }\n                bms.serialNumber = (bms._sn1 || \"\") + (bms._sn2 || \"\") + bms._sn3;\n                break;\n        }\n    }\n}\n\nif (!processed) {\n    return null;\n}\n\nstate.timestampUtc = new Date().toISOString();\nflow.set(\"batteryInfo\", state);\nmsg.payload = state;\nreturn msg;",
         "outputs": 1,
@@ -36,15 +36,15 @@
         "y": 140,
         "wires": [
             [
-                "229a6dba6c6cbdad",
-                "32a7d772cbe1e740"
+                "c2410f603369a296",
+                "85824ab39c731596"
             ]
         ]
     },
     {
-        "id": "229a6dba6c6cbdad",
+        "id": "c2410f603369a296",
         "type": "debug",
-        "z": "ca6a04bf0ad93382",
+        "z": "896159115cc266e0",
         "name": "Battery Info",
         "active": false,
         "tosidebar": true,
@@ -59,9 +59,9 @@
         "wires": []
     },
     {
-        "id": "bcbb8f95950fec52",
+        "id": "8653c4f58dafcf9c",
         "type": "inject",
-        "z": "ca6a04bf0ad93382",
+        "z": "896159115cc266e0",
         "name": "Get Battery Info",
         "props": [],
         "repeat": "",
@@ -73,14 +73,14 @@
         "y": 260,
         "wires": [
             [
-                "7baa3b2c9cbd4480"
+                "9cf69260b403050f"
             ]
         ]
     },
     {
-        "id": "7baa3b2c9cbd4480",
+        "id": "9cf69260b403050f",
         "type": "function",
-        "z": "ca6a04bf0ad93382",
+        "z": "896159115cc266e0",
         "name": "Get State from Context",
         "func": "var state = flow.get(\"batteryInfo\");\nif (state) {\n    var clean = JSON.parse(JSON.stringify(state));\n    clean.bmsList.forEach(function(bms) {\n        delete bms._sn1;\n        delete bms._sn2;\n        delete bms._sn3;\n    });\n    msg.payload = clean;\n    return msg;\n}\nmsg.payload = { error: \"No data yet\" };\nreturn msg;",
         "outputs": 1,
@@ -88,14 +88,14 @@
         "y": 260,
         "wires": [
             [
-                "b625dc2b757bd929"
+                "123740a1d112ce88"
             ]
         ]
     },
     {
-        "id": "b625dc2b757bd929",
+        "id": "123740a1d112ce88",
         "type": "debug",
-        "z": "ca6a04bf0ad93382",
+        "z": "896159115cc266e0",
         "name": "Full Info",
         "active": true,
         "tosidebar": true,
@@ -108,9 +108,9 @@
         "wires": []
     },
     {
-        "id": "32a7d772cbe1e740",
+        "id": "85824ab39c731596",
         "type": "delay",
-        "z": "ca6a04bf0ad93382",
+        "z": "896159115cc266e0",
         "name": "Throttle 5s",
         "pauseType": "rate",
         "timeout": "5",
@@ -128,14 +128,14 @@
         "y": 200,
         "wires": [
             [
-                "ae09b14f7c7d8699"
+                "70d6c77595110a06"
             ]
         ]
     },
     {
-        "id": "ae09b14f7c7d8699",
+        "id": "70d6c77595110a06",
         "type": "mqtt out",
-        "z": "ca6a04bf0ad93382",
+        "z": "896159115cc266e0",
         "name": "ThingsBoard Telemetry",
         "topic": "v1/devices/me/telemetry",
         "qos": "1",
@@ -151,7 +151,7 @@
         "wires": []
     },
     {
-        "id": "537471527fc35bc4",
+        "id": "741d6a53c563523e",
         "type": "socketcan-config",
         "interface": "can0"
     },
@@ -160,7 +160,7 @@
         "type": "mqtt-broker",
         "name": "ThingsBoard Development Env.",
         "broker": "REDACTED_HOST",
-        "port": "31884",
+        "port": "31883",
         "tls": "",
         "clientid": "",
         "autoConnect": true,

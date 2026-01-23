@@ -1161,7 +1161,7 @@
         }
       },
       {
-        "rpcName": "getBatteryInfoState",
+
         "kind": "BatteryInfoState",
         "type": "read",
         "response": {
