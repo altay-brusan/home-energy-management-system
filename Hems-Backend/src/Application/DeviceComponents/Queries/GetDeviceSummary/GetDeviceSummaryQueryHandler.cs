@@ -73,68 +73,178 @@ public class GetDeviceSummaryQueryHandler : IRequestHandler<GetDeviceSummaryQuer
         Guid tbDeviceId,
         CancellationToken cancellationToken)
     {
-        InverterIdentityDto? identity = null;
+        // Step 1: Try to get inverter info from device via RPC
+        var inverterInfo = await GetInverterInfoFromRpcAsync(tbDeviceId, cancellationToken);
 
-        // Try to get identity from component DB first, otherwise call RPC
-        if (component == null || string.IsNullOrEmpty(component.Name) || string.IsNullOrEmpty(component.Manufacturer))
+        // Step 2: If RPC succeeded, update DB with fresh data
+        if (inverterInfo != null)
         {
-            identity = await GetInverterInfoFromRpcAsync(tbDeviceId, cancellationToken);
+            component = await UpdateOrCreateInverterComponentAsync(
+                component,
+                inverterInfo,
+                tbDeviceId,
+                cancellationToken);
+        }
 
-            // If we got identity from RPC and no component exists in DB, create one
-            if (identity != null && component == null)
-            {
-                // Get the device from ThingsBoard mapping to get the actual device ID
-                var device = await _context.Devices
-                    .FirstOrDefaultAsync(d => d.ThingsBoardDeviceId == tbDeviceId, cancellationToken);
-
-                if (device != null)
-                {
-                    component = new Domain.Entities.DeviceComponent
-                    {
-                        Id = Guid.NewGuid(),
-                        DeviceId = device.Id,
-                        DeviceType = DeviceType.Invertor,
-                        Name = identity.Name ?? "Generic Inverter",
-                        Manufacturer = identity.Manufacturer ?? "Ottomotive",
-                        ModelNumber = identity.ModelNumber ?? "Generic",
-                        SerialNumber = identity.SerialNumber ?? "Generic",
-                        Specifications = identity.AdditionalProperties != null && identity.AdditionalProperties.Any()
-                            ? JsonDocument.Parse(JsonSerializer.Serialize(identity.AdditionalProperties))
-                            : JsonDocument.Parse("{}"),
-                        IsDeleted = false
-                    };
-
-                    _context.DeviceComponents.Add(component);
-                    await _context.SaveChangesAsync(cancellationToken);
-
-                    _logger.LogInformation(
-                        "Created generic inverter component {ComponentId} for device {DeviceId} from RPC data",
-                        component.Id, device.Id);
-                }
-            }
+        // Step 3: Build response using component data (either updated or fallback from DB)
+        if (component == null)
+        {
+            _logger.LogWarning("No inverter component found and RPC failed for device {DeviceId}", tbDeviceId);
+            return null;
         }
 
         var inverter = new InverterSummaryDto
         {
-            Id = component?.Id ?? Guid.NewGuid(),
+            Id = component.Id,
             Type = "inverter",
-            Name = component?.Name ?? identity?.Name ?? "Generic",
-            Model = component?.ModelNumber ?? identity?.ModelNumber ?? "Generic",
-            Manufacturer = component?.Manufacturer ?? identity?.Manufacturer ?? "Ottomotive",
-            SerialNumber = component?.SerialNumber ?? identity?.SerialNumber ?? "Generic"
+            Name = component.Name,
+            Model = component.ModelNumber ?? "Generic",
+            Manufacturer = component.Manufacturer ?? "NetZr",
+            SerialNumber = component.SerialNumber ?? "Generic"
         };
 
-        // Always get fresh state data (active power) from RPC
+        // Get realtime active power from RPC
         var state = await GetInverterDeviceStateFromRpcAsync(tbDeviceId, cancellationToken);
         if (state?.GridSideActivePowerW != null)
         {
-            inverter.ActivePowerKw = state.GridSideActivePowerW / 1000.0;
+            inverter.ActivePowerKw = Math.Round(state.GridSideActivePowerW.Value / 1000.0, 2);
         }
 
         return inverter;
     }
 
-    private async Task<InverterIdentityDto?> GetInverterInfoFromRpcAsync(
+    /// <summary>
+    /// Updates existing inverter component or creates new one with data from RPC
+    /// </summary>
+    private async Task<Domain.Entities.DeviceComponent?> UpdateOrCreateInverterComponentAsync(
+        Domain.Entities.DeviceComponent? component,
+        InverterInfoStateDto inverterInfo,
+        Guid tbDeviceId,
+        CancellationToken cancellationToken)
+    {
+        // Build specifications JSON from inverter info
+        var specifications = BuildInverterSpecifications(inverterInfo);
+
+        if (component != null)
+        {
+            // Update existing component
+            var needsUpdate = false;
+
+            // Update serial number if available from RPC
+            if (!string.IsNullOrEmpty(inverterInfo.SerialNumber) && component.SerialNumber != inverterInfo.SerialNumber)
+            {
+                component.SerialNumber = inverterInfo.SerialNumber;
+                needsUpdate = true;
+            }
+
+            // Update model number based on device type
+            var modelNumber = GetInverterModelNumber(inverterInfo);
+            if (!string.IsNullOrEmpty(modelNumber) && component.ModelNumber != modelNumber)
+            {
+                component.ModelNumber = modelNumber;
+                needsUpdate = true;
+            }
+
+            // Always update specifications with latest RPC data
+            component.Specifications = JsonDocument.Parse(specifications);
+            needsUpdate = true;
+
+            if (needsUpdate)
+            {
+                await _context.SaveChangesAsync(cancellationToken);
+                _logger.LogInformation(
+                    "Updated inverter component {ComponentId} with RPC data: SerialNumber={SerialNumber}, Model={Model}",
+                    component.Id, component.SerialNumber, component.ModelNumber);
+            }
+
+            return component;
+        }
+        else
+        {
+            // Create new component
+            var device = await _context.Devices
+                .FirstOrDefaultAsync(d => d.ThingsBoardDeviceId == tbDeviceId, cancellationToken);
+
+            if (device == null)
+            {
+                _logger.LogWarning("Device not found for ThingsBoard ID {TbDeviceId}", tbDeviceId);
+                return null;
+            }
+
+            component = new Domain.Entities.DeviceComponent
+            {
+                Id = Guid.NewGuid(),
+                DeviceId = device.Id,
+                DeviceType = DeviceType.Invertor,
+                Name = inverterInfo.DeviceType ?? "Hybrid Inverter",
+                Manufacturer = "NetZr", // Default manufacturer
+                ModelNumber = GetInverterModelNumber(inverterInfo) ?? "Generic",
+                SerialNumber = inverterInfo.SerialNumber ?? "Generic",
+                Specifications = JsonDocument.Parse(specifications),
+                IsDeleted = false
+            };
+
+            _context.DeviceComponents.Add(component);
+            await _context.SaveChangesAsync(cancellationToken);
+
+            _logger.LogInformation(
+                "Created inverter component {ComponentId} for device {DeviceId} from RPC data",
+                component.Id, device.Id);
+
+            return component;
+        }
+    }
+
+    /// <summary>
+    /// Builds specifications JSON from inverter info RPC response
+    /// </summary>
+    private string BuildInverterSpecifications(InverterInfoStateDto info)
+    {
+        var specs = new Dictionary<string, object?>();
+
+        if (!string.IsNullOrEmpty(info.DeviceType)) specs["deviceType"] = info.DeviceType;
+        if (info.DeviceTypeCode.HasValue) specs["deviceTypeCode"] = info.DeviceTypeCode;
+        if (info.RatedPowerW.HasValue) specs["ratedPowerW"] = info.RatedPowerW;
+        if (info.RatedPowerKw.HasValue) specs["ratedPowerKw"] = info.RatedPowerKw;
+        if (info.MpptCount.HasValue) specs["mpptCount"] = info.MpptCount;
+        if (info.PhaseCount.HasValue) specs["phaseCount"] = info.PhaseCount;
+        if (info.ModbusAddress.HasValue) specs["modbusAddress"] = info.ModbusAddress;
+        if (!string.IsNullOrEmpty(info.ProtocolVersion)) specs["protocolVersion"] = info.ProtocolVersion;
+        if (!string.IsNullOrEmpty(info.GridVoltageRating)) specs["gridVoltageRating"] = info.GridVoltageRating;
+        if (!string.IsNullOrEmpty(info.SafetyType)) specs["safetyType"] = info.SafetyType;
+        if (info.Firmware != null && info.Firmware.Any()) specs["firmware"] = info.Firmware;
+        if (!string.IsNullOrEmpty(info.ControlBoard)) specs["controlBoard"] = info.ControlBoard;
+        if (info.ControlHardware.HasValue) specs["controlHardware"] = info.ControlHardware;
+        if (info.ControlMasterVersion.HasValue) specs["controlMasterVersion"] = info.ControlMasterVersion;
+        if (!string.IsNullOrEmpty(info.CommunicationBoard)) specs["communicationBoard"] = info.CommunicationBoard;
+        if (info.CommMasterVersion.HasValue) specs["commMasterVersion"] = info.CommMasterVersion;
+        if (!string.IsNullOrEmpty(info.ChipType)) specs["chipType"] = info.ChipType;
+        if (!string.IsNullOrEmpty(info.RatedPowerClass)) specs["ratedPowerClass"] = info.RatedPowerClass;
+
+        return JsonSerializer.Serialize(specs);
+    }
+
+    /// <summary>
+    /// Derives model number from inverter info
+    /// </summary>
+    private string? GetInverterModelNumber(InverterInfoStateDto info)
+    {
+        // Use device type as model number if available
+        if (!string.IsNullOrEmpty(info.DeviceType))
+        {
+            return info.DeviceType;
+        }
+
+        // Fallback: construct from rated power
+        if (info.RatedPowerKw.HasValue)
+        {
+            return $"{info.RatedPowerKw}kW Hybrid";
+        }
+
+        return null;
+    }
+
+    private async Task<InverterInfoStateDto?> GetInverterInfoFromRpcAsync(
         Guid tbDeviceId,
         CancellationToken cancellationToken)
     {
@@ -149,13 +259,21 @@ public class GetDeviceSummaryQueryHandler : IRequestHandler<GetDeviceSummaryQuer
 
             if (rpcResponse?.Success == true && rpcResponse.Response != null)
             {
+                // Response may be wrapped: {"success": true, "data": {...}}
+                if (rpcResponse.Response.TryGetValue("data", out var dataObj) && dataObj != null)
+                {
+                    var dataJson = JsonSerializer.Serialize(dataObj);
+                    return JsonSerializer.Deserialize<InverterInfoStateDto>(dataJson);
+                }
+
+                // Fallback: try deserializing the whole response
                 var json = JsonSerializer.Serialize(rpcResponse.Response);
-                return JsonSerializer.Deserialize<InverterIdentityDto>(json);
+                return JsonSerializer.Deserialize<InverterInfoStateDto>(json);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to get inverter identity from RPC for device {DeviceId}", tbDeviceId);
+            _logger.LogWarning(ex, "Failed to get inverter info from RPC for device {DeviceId}", tbDeviceId);
         }
 
         return null;
@@ -212,143 +330,55 @@ public class GetDeviceSummaryQueryHandler : IRequestHandler<GetDeviceSummaryQuer
         Guid tbDeviceId,
         CancellationToken cancellationToken)
     {
-        // Step 1: Check if device has registered battery components in DB
-        bool hasBatteriesInDb = components.Any();
+        // Step 1: Try to get battery info from device via RPC (static info: manufacturer, serial numbers)
+        var batteryInfo = await GetBatteryInfoFromRpcAsync(tbDeviceId, cancellationToken);
 
-        // Step 2: Always get fresh SoC state from device (live data)
-        var socState = await GetBatterySocStateFromRpcAsync(tbDeviceId, cancellationToken);
+        // Step 2: Get fresh energy flow state from device (live data with per-BMS details)
+        var energyFlowState = await GetBatteryEnergyFlowStateFromRpcAsync(tbDeviceId, cancellationToken);
 
-        if (socState == null)
+        // Step 3: If we got battery info from RPC, update DB
+        if (batteryInfo != null)
         {
-            // No battery data available from device
-            return null;
-        }
-
-        // Determine the type of battery data we have
-        var hasDetailedBmsData = socState.BmsSocDetails != null && socState.BmsSocDetails.Any();
-        var hasInverterLevelData = socState.InverterBatChannelSoc != null &&
-                                   socState.InverterBatChannelSoc.Any(c => c.SocPercent.HasValue);
-
-        if (!hasDetailedBmsData && !hasInverterLevelData)
-        {
-            // No battery data from device
-            return null;
-        }
-
-        // Step 3: Handle registered batteries vs creating generic ones
-        if (hasBatteriesInDb)
-        {
-            // Device has registered batteries - use them and match with SoC data
-            return BuildRegisteredBatterySummaryAsync(components, socState, hasDetailedBmsData);
-        }
-        else
-        {
-            // No batteries registered - create generic battery component(s)
-            return await CreateGenericBatterySummaryAsync(
+            components = await UpdateOrCreateBatteryComponentsAsync(
+                components,
+                batteryInfo,
                 tbDeviceId,
-                socState,
-                hasDetailedBmsData,
-                hasInverterLevelData,
                 cancellationToken);
         }
-    }
 
-    /// <summary>
-    /// Builds battery summary using registered components from DB + fresh SoC data
-    /// </summary>
-    private BatterySummaryDto BuildRegisteredBatterySummaryAsync(
-        List<Domain.Entities.DeviceComponent> components,
-        BatterySocStateDto socState,
-        bool hasDetailedBmsData)
-    {
-        var battery = new BatterySummaryDto
+        // Step 4: Build response using component data
+        if (!components.Any())
         {
-            Type = "battery"
-        };
-
-        if (hasDetailedBmsData && socState.BmsSocDetails != null)
-        {
-            // We have detailed BMS data - match with registered components
-            var allSocs = socState.BmsSocDetails
-                .Where(d => d.SocPercent.HasValue)
-                .Select(d => d.SocPercent!.Value)
-                .ToList();
-
-            // Use first registered component for main battery info
-            var mainComponent = components.First();
-            battery.Id = mainComponent.Id;
-            battery.Name = mainComponent.Name;
-            battery.Model = mainComponent.ModelNumber ?? "Generic";
-            battery.Manufacturer = mainComponent.Manufacturer ?? "Ottomotive";
-            battery.SerialNumber = mainComponent.SerialNumber ?? "Generic";
-            battery.StateOfCharge = allSocs.Any() ? allSocs.Average() : null;
-
-            // Match BMS details with registered components
-            foreach (var bmsDetail in socState.BmsSocDetails)
+            // No battery components found and RPC failed - check if we have energy flow data
+            if (energyFlowState == null)
             {
-                // Try to find matching component by serial number or device ID
-                var matchingComponent = components.FirstOrDefault(c =>
-                    c.SerialNumber == bmsDetail.DeviceId ||
-                    c.Name.Contains(bmsDetail.ChannelId.ToString()));
+                return null;
+            }
 
-                battery.Packs.Add(new BatteryPackDto
-                {
-                    Id = matchingComponent?.Id.ToString() ?? bmsDetail.DeviceId ?? $"bms-{bmsDetail.ChannelId}",
-                    Type = "battery",
-                    Name = matchingComponent?.Name ?? $"Battery Pack {bmsDetail.ChannelId}",
-                    Model = matchingComponent?.ModelNumber ?? "Generic",
-                    Manufacturer = matchingComponent?.Manufacturer ?? "Ottomotive",
-                    SerialNumber = matchingComponent?.SerialNumber ?? bmsDetail.DeviceId ?? "Generic",
-                    StateOfCharge = bmsDetail.SocPercent
-                });
+            // Create generic components from energy flow data as fallback
+            components = await CreateBatteryComponentsFromEnergyFlowStateAsync(
+                energyFlowState,
+                tbDeviceId,
+                cancellationToken);
+
+            if (!components.Any())
+            {
+                return null;
             }
         }
-        else
-        {
-            // Generic battery - use inverter-level SoC with first registered component
-            var avgSoc = socState.InverterBatChannelSoc?
-                .Where(c => c.SocPercent.HasValue)
-                .Average(c => c.SocPercent!.Value);
 
-            var mainComponent = components.First();
-            battery.Id = mainComponent.Id;
-            battery.Name = mainComponent.Name;
-            battery.Model = mainComponent.ModelNumber ?? "Generic";
-            battery.Manufacturer = mainComponent.Manufacturer ?? "Ottomotive";
-            battery.SerialNumber = mainComponent.SerialNumber ?? "Generic";
-            battery.StateOfCharge = avgSoc;
-
-            // Add single pack with main component info
-            battery.Packs.Add(new BatteryPackDto
-            {
-                Id = mainComponent.Id.ToString(),
-                Type = "battery",
-                Name = mainComponent.Name,
-                Model = mainComponent.ModelNumber ?? "Generic",
-                Manufacturer = mainComponent.Manufacturer ?? "Ottomotive",
-                SerialNumber = mainComponent.SerialNumber ?? "Generic",
-                StateOfCharge = avgSoc
-            });
-        }
-
-        return battery;
+        return BuildBatterySummaryFromComponents(components, energyFlowState, batteryInfo);
     }
 
     /// <summary>
-    /// Creates generic battery component(s) when not registered in DB
+    /// Updates existing battery components or creates new ones with data from RPC
     /// </summary>
-    private async Task<BatterySummaryDto> CreateGenericBatterySummaryAsync(
+    private async Task<List<Domain.Entities.DeviceComponent>> UpdateOrCreateBatteryComponentsAsync(
+        List<Domain.Entities.DeviceComponent> existingComponents,
+        BatteryInfoStateDto batteryInfo,
         Guid tbDeviceId,
-        BatterySocStateDto socState,
-        bool hasDetailedBmsData,
-        bool hasInverterLevelData,
         CancellationToken cancellationToken)
     {
-        var battery = new BatterySummaryDto
-        {
-            Type = "battery"
-        };
-
         // Get the device from ThingsBoard mapping
         var device = await _context.Devices
             .FirstOrDefaultAsync(d => d.ThingsBoardDeviceId == tbDeviceId, cancellationToken);
@@ -356,110 +386,359 @@ public class GetDeviceSummaryQueryHandler : IRequestHandler<GetDeviceSummaryQuer
         if (device == null)
         {
             _logger.LogWarning("Device not found for ThingsBoard ID {TbDeviceId}", tbDeviceId);
-            return battery;
+            return existingComponents;
         }
 
-        if (hasDetailedBmsData && socState.BmsSocDetails != null && socState.BmsSocDetails.Any())
-        {
-            // Create generic BMS component for detailed battery data
-            var allSocs = socState.BmsSocDetails
-                .Where(d => d.SocPercent.HasValue)
-                .Select(d => d.SocPercent!.Value)
-                .ToList();
+        // Build specifications JSON from battery info
+        var specifications = BuildBatterySpecifications(batteryInfo);
 
-            var mainComponent = new Domain.Entities.DeviceComponent
+        // Get master BMS (first one, bmsAddress = 1) serial number
+        var masterBms = batteryInfo.BmsList?.FirstOrDefault(b => b.BmsAddress == 1)
+                        ?? batteryInfo.BmsList?.FirstOrDefault();
+        var masterSerialNumber = masterBms?.SerialNumber;
+
+        if (existingComponents.Any())
+        {
+            // Update existing component (use first one as the main battery component)
+            var mainComponent = existingComponents.First();
+            var needsUpdate = false;
+
+            // Always update manufacturer if available from RPC
+            if (!string.IsNullOrEmpty(batteryInfo.ManufacturerName) && mainComponent.Manufacturer != batteryInfo.ManufacturerName)
+            {
+                mainComponent.Manufacturer = batteryInfo.ManufacturerName;
+                needsUpdate = true;
+            }
+
+            // Update serial number with master BMS serial number
+            if (!string.IsNullOrEmpty(masterSerialNumber) && mainComponent.SerialNumber != masterSerialNumber)
+            {
+                mainComponent.SerialNumber = masterSerialNumber;
+                needsUpdate = true;
+            }
+
+            // Update model number with calculated value
+            var modelNumber = GetBatteryModelNumber(batteryInfo);
+            if (!string.IsNullOrEmpty(modelNumber) && mainComponent.ModelNumber != modelNumber)
+            {
+                mainComponent.ModelNumber = modelNumber;
+                needsUpdate = true;
+            }
+
+            // Always update specifications with latest RPC data
+            mainComponent.Specifications = JsonDocument.Parse(specifications);
+            needsUpdate = true;
+
+            if (needsUpdate)
+            {
+                await _context.SaveChangesAsync(cancellationToken);
+                _logger.LogInformation(
+                    "Updated battery component {ComponentId} with RPC data: Manufacturer={Manufacturer}, SerialNumber={SerialNumber}, Model={Model}",
+                    mainComponent.Id, mainComponent.Manufacturer, mainComponent.SerialNumber, mainComponent.ModelNumber);
+            }
+
+            return existingComponents;
+        }
+        else
+        {
+            // Create new battery component
+            var component = new Domain.Entities.DeviceComponent
             {
                 Id = Guid.NewGuid(),
                 DeviceId = device.Id,
                 DeviceType = DeviceType.BMS,
                 Name = "Battery Management System",
-                Manufacturer = "Ottomotive",
-                ModelNumber = "Generic",
-                SerialNumber = socState.BmsSocDetails.First().DeviceId ?? "Generic",
-                Specifications = JsonDocument.Parse("{}"),
+                Manufacturer = batteryInfo.ManufacturerName ?? "NetZr",
+                ModelNumber = GetBatteryModelNumber(batteryInfo),
+                SerialNumber = masterSerialNumber ?? "Generic",
+                Specifications = JsonDocument.Parse(specifications),
                 IsDeleted = false
             };
 
-            _context.DeviceComponents.Add(mainComponent);
+            _context.DeviceComponents.Add(component);
             await _context.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation(
-                "Created generic BMS component {ComponentId} for device {DeviceId} from RPC data",
-                mainComponent.Id, device.Id);
+                "Created battery component {ComponentId} for device {DeviceId} from RPC data: Manufacturer={Manufacturer}, SerialNumber={SerialNumber}",
+                component.Id, device.Id, component.Manufacturer, component.SerialNumber);
 
-            battery.Id = mainComponent.Id;
-            battery.Name = mainComponent.Name;
-            battery.Model = mainComponent.ModelNumber ?? "Generic";
-            battery.Manufacturer = mainComponent.Manufacturer ?? "Ottomotive";
-            battery.SerialNumber = mainComponent.SerialNumber ?? "Generic";
-            battery.StateOfCharge = allSocs.Any() ? allSocs.Average() : null;
+            return new List<Domain.Entities.DeviceComponent> { component };
+        }
+    }
 
-            // Add packs based on BMS details
-            foreach (var bmsDetail in socState.BmsSocDetails)
+    /// <summary>
+    /// Creates battery components from energy flow state when getBatteryInfoState fails
+    /// </summary>
+    private async Task<List<Domain.Entities.DeviceComponent>> CreateBatteryComponentsFromEnergyFlowStateAsync(
+        BatteryEnergyFlowStateDto energyFlowState,
+        Guid tbDeviceId,
+        CancellationToken cancellationToken)
+    {
+        var components = new List<Domain.Entities.DeviceComponent>();
+
+        var device = await _context.Devices
+            .FirstOrDefaultAsync(d => d.ThingsBoardDeviceId == tbDeviceId, cancellationToken);
+
+        if (device == null)
+        {
+            return components;
+        }
+
+        var hasBmsData = energyFlowState.BmsList != null && energyFlowState.BmsList.Any();
+        var hasAggregateSoc = energyFlowState.SocPercent.HasValue;
+
+        if (!hasBmsData && !hasAggregateSoc)
+        {
+            return components;
+        }
+
+        var component = new Domain.Entities.DeviceComponent
+        {
+            Id = Guid.NewGuid(),
+            DeviceId = device.Id,
+            DeviceType = DeviceType.BMS,
+            Name = "Battery Management System",
+            Manufacturer = "NetZr",
+            ModelNumber = hasBmsData
+                ? $"{energyFlowState.BmsCount ?? energyFlowState.BmsList!.Count} Battery Modules"
+                : "Generic",
+            SerialNumber = "Generic",
+            Specifications = JsonDocument.Parse("{}"),
+            IsDeleted = false
+        };
+
+        _context.DeviceComponents.Add(component);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation(
+            "Created fallback battery component {ComponentId} for device {DeviceId} from energy flow state",
+            component.Id, device.Id);
+
+        components.Add(component);
+        return components;
+    }
+
+    /// <summary>
+    /// Builds battery summary response from components and optional RPC data
+    /// </summary>
+    private BatterySummaryDto BuildBatterySummaryFromComponents(
+        List<Domain.Entities.DeviceComponent> components,
+        BatteryEnergyFlowStateDto? energyFlowState,
+        BatteryInfoStateDto? batteryInfo)
+    {
+        var battery = new BatterySummaryDto
+        {
+            Type = "battery"
+        };
+
+        var mainComponent = components.First();
+        battery.Id = mainComponent.Id;
+        battery.Name = mainComponent.Name;
+        battery.Model = mainComponent.ModelNumber ?? "Generic";
+        battery.Manufacturer = mainComponent.Manufacturer ?? "NetZr";
+        battery.SerialNumber = mainComponent.SerialNumber ?? "Generic";
+
+        // Build packs list - prefer batteryInfo for static data, energyFlowState for live data
+        if (batteryInfo?.BmsList != null && batteryInfo.BmsList.Any())
+        {
+            _logger.LogDebug("Building battery packs from batteryInfo.BmsList with {Count} items", batteryInfo.BmsList.Count);
+
+            // Use getBatteryInfoState data for packs + merge SOC/SOH from energyFlowState
+            foreach (var bmsInfo in batteryInfo.BmsList)
             {
+                // Find matching live data by BMS address from getBatteryEnergyFlowState
+                var bmsLiveData = energyFlowState?.BmsList?.FirstOrDefault(b => b.BmsAddress == bmsInfo.BmsAddress);
+
+                // Build firmware version string
+                string? firmwareVersion = null;
+                if (bmsInfo.SoftwareVersionMain.HasValue)
+                {
+                    firmwareVersion = bmsInfo.SoftwareVersionSub.HasValue
+                        ? $"{bmsInfo.SoftwareVersionMain}.{bmsInfo.SoftwareVersionSub}"
+                        : bmsInfo.SoftwareVersionMain.ToString();
+                }
+
                 battery.Packs.Add(new BatteryPackDto
                 {
-                    Id = bmsDetail.DeviceId ?? $"bms-{bmsDetail.ChannelId}",
+                    Id = bmsInfo.SerialNumber ?? $"bms-{bmsInfo.BmsAddress}",
                     Type = "battery",
-                    Name = $"Battery Pack {bmsDetail.ChannelId}",
-                    Model = "Generic",
-                    Manufacturer = "Ottomotive",
-                    SerialNumber = bmsDetail.DeviceId ?? "Generic",
-                    StateOfCharge = bmsDetail.SocPercent
+                    Name = $"Battery Pack {bmsInfo.BmsAddress}",
+                    Model = bmsInfo.RatedCapacityAh.HasValue ? $"{bmsInfo.RatedCapacityAh}Ah" : "Generic",
+                    Manufacturer = batteryInfo.ManufacturerName ?? "NetZr",
+                    SerialNumber = bmsInfo.SerialNumber ?? "Generic",
+                    ComponentId = mainComponent.Id,
+                    BmsAddress = bmsInfo.BmsAddress,
+                    StateOfCharge = bmsLiveData?.SocPercent.HasValue == true
+                        ? Math.Round(bmsLiveData.SocPercent!.Value, 1)
+                        : (bmsLiveData?.BatteryRemainingCapacityAh.HasValue == true && bmsInfo.RatedCapacityAh.HasValue && bmsInfo.RatedCapacityAh > 0
+                            ? Math.Round(bmsLiveData.BatteryRemainingCapacityAh!.Value / bmsInfo.RatedCapacityAh.Value * 100, 1)
+                            : null),
+                    StateOfHealth = bmsLiveData?.SohPercent.HasValue == true
+                        ? Math.Round(bmsLiveData.SohPercent!.Value, 1)
+                        : null,
+                    Voltage = bmsLiveData?.BatteryPackVoltageV.HasValue == true
+                        ? Math.Round(bmsLiveData.BatteryPackVoltageV!.Value, 2)
+                        : null,
+                    Current = bmsLiveData?.CurrentA.HasValue == true
+                        ? Math.Round(bmsLiveData.CurrentA!.Value, 2)
+                        : null,
+                    Temperature = bmsLiveData?.AvgCellTempC.HasValue == true
+                        ? Math.Round(bmsLiveData.AvgCellTempC!.Value, 1)
+                        : null,
+                    FirmwareVersion = firmwareVersion
                 });
             }
         }
-        else if (hasInverterLevelData)
+        else if (energyFlowState?.BmsList != null && energyFlowState.BmsList.Any())
         {
-            // Create generic battery component for inverter-level data
-            var avgSoc = socState.InverterBatChannelSoc?
-                .Where(c => c.SocPercent.HasValue)
-                .Average(c => c.SocPercent!.Value);
+            _logger.LogDebug("Building battery packs from energyFlowState.BmsList with {Count} items (fallback)", energyFlowState.BmsList.Count);
 
-            var bmsComponent = new Domain.Entities.DeviceComponent
+            // Fallback: Use energy flow state data for packs (when getBatteryInfoState fails)
+            foreach (var bmsLiveData in energyFlowState.BmsList)
             {
-                Id = Guid.NewGuid(),
-                DeviceId = device.Id,
-                DeviceType = DeviceType.BMS,
-                Name = "Generic Battery",
-                Manufacturer = "Ottomotive",
-                ModelNumber = "Generic",
-                SerialNumber = "Generic",
-                Specifications = JsonDocument.Parse("{}"),
-                IsDeleted = false
-            };
+                battery.Packs.Add(new BatteryPackDto
+                {
+                    Id = $"bms-{bmsLiveData.BmsAddress}",
+                    Type = "battery",
+                    Name = $"Battery Pack {bmsLiveData.BmsAddress}",
+                    Model = bmsLiveData.RatedCapacityAh.HasValue ? $"{bmsLiveData.RatedCapacityAh}Ah" : "Generic",
+                    Manufacturer = mainComponent.Manufacturer ?? "NetZr",
+                    SerialNumber = "Generic",
+                    ComponentId = mainComponent.Id,
+                    BmsAddress = bmsLiveData.BmsAddress,
+                    StateOfCharge = bmsLiveData.SocPercent.HasValue
+                        ? Math.Round(bmsLiveData.SocPercent.Value, 1)
+                        : (bmsLiveData.BatteryRemainingCapacityAh.HasValue && bmsLiveData.RatedCapacityAh.HasValue && bmsLiveData.RatedCapacityAh > 0
+                            ? Math.Round(bmsLiveData.BatteryRemainingCapacityAh.Value / bmsLiveData.RatedCapacityAh.Value * 100, 1)
+                            : null),
+                    StateOfHealth = bmsLiveData.SohPercent.HasValue
+                        ? Math.Round(bmsLiveData.SohPercent.Value, 1)
+                        : null,
+                    Voltage = bmsLiveData.BatteryPackVoltageV.HasValue
+                        ? Math.Round(bmsLiveData.BatteryPackVoltageV.Value, 2)
+                        : null,
+                    Current = bmsLiveData.CurrentA.HasValue
+                        ? Math.Round(bmsLiveData.CurrentA.Value, 2)
+                        : null,
+                    Temperature = bmsLiveData.AvgCellTempC.HasValue
+                        ? Math.Round(bmsLiveData.AvgCellTempC.Value, 1)
+                        : null,
+                    FirmwareVersion = null
+                });
+            }
+        }
+        else
+        {
+            _logger.LogDebug("Building single generic battery pack (no BmsList available)");
 
-            _context.DeviceComponents.Add(bmsComponent);
-            await _context.SaveChangesAsync(cancellationToken);
-
-            _logger.LogInformation(
-                "Created generic battery component {ComponentId} for device {DeviceId} from RPC data",
-                bmsComponent.Id, device.Id);
-
-            battery.Id = bmsComponent.Id;
-            battery.Name = bmsComponent.Name;
-            battery.Model = bmsComponent.ModelNumber ?? "Generic";
-            battery.Manufacturer = bmsComponent.Manufacturer ?? "Ottomotive";
-            battery.SerialNumber = bmsComponent.SerialNumber ?? "Generic";
-            battery.StateOfCharge = avgSoc;
-
-            // Add single pack
+            // Single generic pack using aggregate data
             battery.Packs.Add(new BatteryPackDto
             {
-                Id = bmsComponent.Id.ToString(),
+                Id = mainComponent.Id.ToString(),
                 Type = "battery",
-                Name = bmsComponent.Name,
-                Model = bmsComponent.ModelNumber ?? "Generic",
-                Manufacturer = bmsComponent.Manufacturer ?? "Ottomotive",
-                SerialNumber = bmsComponent.SerialNumber ?? "Generic",
-                StateOfCharge = avgSoc
+                Name = mainComponent.Name,
+                Model = mainComponent.ModelNumber ?? "Generic",
+                Manufacturer = mainComponent.Manufacturer ?? "NetZr",
+                SerialNumber = mainComponent.SerialNumber ?? "Generic",
+                ComponentId = mainComponent.Id,
+                BmsAddress = 1,
+                StateOfCharge = energyFlowState?.SocPercent.HasValue == true
+                    ? Math.Round(energyFlowState.SocPercent!.Value, 1)
+                    : null,
+                StateOfHealth = energyFlowState?.SohPercent.HasValue == true
+                    ? Math.Round(energyFlowState.SohPercent!.Value, 1)
+                    : null,
+                Voltage = energyFlowState?.VoltageV.HasValue == true
+                    ? Math.Round(energyFlowState.VoltageV!.Value, 2)
+                    : null,
+                Current = energyFlowState?.CurrentA.HasValue == true
+                    ? Math.Round(energyFlowState.CurrentA!.Value, 2)
+                    : null,
+                Temperature = energyFlowState?.TemperatureC.HasValue == true
+                    ? Math.Round(energyFlowState.TemperatureC!.Value, 1)
+                    : null,
+                FirmwareVersion = null
             });
+        }
+
+        // Calculate aggregate SOC (average of all packs with SOC data, or use aggregate from energyFlowState)
+        var packsWithSoc = battery.Packs.Where(p => p.StateOfCharge.HasValue).ToList();
+        if (packsWithSoc.Any())
+        {
+            battery.StateOfCharge = Math.Round(packsWithSoc.Average(p => p.StateOfCharge!.Value), 1);
+        }
+        else if (energyFlowState?.SocPercent.HasValue == true)
+        {
+            battery.StateOfCharge = Math.Round(energyFlowState.SocPercent.Value, 1);
         }
 
         return battery;
     }
 
-    private async Task<BatterySocStateDto?> GetBatterySocStateFromRpcAsync(
+    /// <summary>
+    /// Builds specifications JSON from battery info RPC response
+    /// </summary>
+    private string BuildBatterySpecifications(BatteryInfoStateDto info)
+    {
+        var specs = new Dictionary<string, object?>();
+
+        if (!string.IsNullOrEmpty(info.ManufacturerName)) specs["manufacturerName"] = info.ManufacturerName;
+        if (info.ModuleCount.HasValue) specs["moduleCount"] = info.ModuleCount;
+
+        // Add BMS list details
+        if (info.BmsList != null && info.BmsList.Any())
+        {
+            var bmsList = info.BmsList.Select(bms => new Dictionary<string, object?>
+            {
+                { "bmsAddress", bms.BmsAddress },
+                { "serialNumber", bms.SerialNumber },
+                { "ratedCapacityAh", bms.RatedCapacityAh },
+                { "softwareVersionMain", bms.SoftwareVersionMain },
+                { "softwareVersionSub", bms.SoftwareVersionSub }
+            }).ToList();
+
+            specs["bmsList"] = bmsList;
+
+            // Calculate total capacity
+            var totalCapacityAh = info.BmsList
+                .Where(b => b.RatedCapacityAh.HasValue)
+                .Sum(b => b.RatedCapacityAh!.Value);
+            if (totalCapacityAh > 0)
+            {
+                specs["totalCapacityAh"] = totalCapacityAh;
+                // Assume 51.2V nominal voltage for LiFePO4
+                specs["totalCapacityKWh"] = Math.Round(totalCapacityAh * 51.2 / 1000, 2);
+            }
+        }
+
+        return JsonSerializer.Serialize(specs);
+    }
+
+    /// <summary>
+    /// Derives model number from battery info
+    /// </summary>
+    private string GetBatteryModelNumber(BatteryInfoStateDto info)
+    {
+        // Use manufacturer + module count as model
+        if (info.ModuleCount.HasValue && info.ModuleCount > 0)
+        {
+            var totalCapacityAh = info.BmsList?
+                .Where(b => b.RatedCapacityAh.HasValue)
+                .Sum(b => b.RatedCapacityAh!.Value) ?? 0;
+
+            if (totalCapacityAh > 0)
+            {
+                var totalKwh = Math.Round(totalCapacityAh * 51.2 / 1000, 1);
+                return $"{totalKwh}kWh ({info.ModuleCount} modules)";
+            }
+
+            return $"{info.ModuleCount} Battery Modules";
+        }
+
+        return "Generic";
+    }
+
+    private async Task<BatteryInfoStateDto?> GetBatteryInfoFromRpcAsync(
         Guid tbDeviceId,
         CancellationToken cancellationToken)
     {
@@ -467,7 +746,63 @@ public class GetDeviceSummaryQueryHandler : IRequestHandler<GetDeviceSummaryQuer
         {
             var rpcResponse = await _tbService.SendTwoWayRpcAsync(
                 tbDeviceId,
-                "getBatterySocState",
+                "getBatteryInfoState",
+                new Dictionary<string, object>(),
+                timeoutMs: 10000,
+                cancellationToken: cancellationToken);
+
+            if (rpcResponse?.Success == true && rpcResponse.Response != null)
+            {
+                // Log raw response for debugging
+                var rawJson = JsonSerializer.Serialize(rpcResponse.Response);
+                _logger.LogDebug("getBatteryInfoState raw response: {RawJson}", rawJson);
+
+                // Response may be wrapped: {"success": true, "data": {...}} or {"response": {...}}
+                object? dataObj = null;
+                if (rpcResponse.Response.TryGetValue("data", out dataObj) && dataObj != null)
+                {
+                    // Wrapped in "data"
+                }
+                else if (rpcResponse.Response.TryGetValue("response", out dataObj) && dataObj != null)
+                {
+                    // Wrapped in "response"
+                }
+                else
+                {
+                    // Not wrapped, use the whole response
+                    dataObj = rpcResponse.Response;
+                }
+
+                var dataJson = JsonSerializer.Serialize(dataObj);
+                var result = JsonSerializer.Deserialize<BatteryInfoStateDto>(dataJson);
+
+                // Log parsed result for debugging
+                _logger.LogDebug(
+                    "getBatteryInfoState parsed: ManufacturerName={Manufacturer}, ModuleCount={ModuleCount}, BmsListCount={BmsListCount}",
+                    result?.ManufacturerName,
+                    result?.ModuleCount,
+                    result?.BmsList?.Count ?? 0);
+
+                return result;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get battery info from RPC for device {DeviceId}", tbDeviceId);
+        }
+
+        return null;
+    }
+
+    private async Task<BatteryEnergyFlowStateDto?> GetBatteryEnergyFlowStateFromRpcAsync(
+        Guid tbDeviceId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var rpcResponse = await _tbService.SendTwoWayRpcAsync(
+                tbDeviceId,
+                "getBatteryEnergyFlowState",
                 new Dictionary<string, object>(),
                 timeoutMs: 10000,
                 cancellationToken: cancellationToken);
@@ -477,16 +812,45 @@ public class GetDeviceSummaryQueryHandler : IRequestHandler<GetDeviceSummaryQuer
                 // Record device activity - device is online since RPC succeeded
                 await _activityService.RecordActivityAsync(
                     tbDeviceId,
-                    TelemetrySource.BatterySoc,
+                    TelemetrySource.BatteryEnergyFlow,
                     cancellationToken: cancellationToken);
 
-                var json = JsonSerializer.Serialize(rpcResponse.Response);
-                return JsonSerializer.Deserialize<BatterySocStateDto>(json);
+                // Log raw response for debugging
+                var rawJson = JsonSerializer.Serialize(rpcResponse.Response);
+                _logger.LogDebug("getBatteryEnergyFlowState raw response: {RawJson}", rawJson);
+
+                // Response may be wrapped: {"success": true, "data": {...}} or {"response": {...}}
+                object? dataObj = null;
+                if (rpcResponse.Response.TryGetValue("data", out dataObj) && dataObj != null)
+                {
+                    // Wrapped in "data"
+                }
+                else if (rpcResponse.Response.TryGetValue("response", out dataObj) && dataObj != null)
+                {
+                    // Wrapped in "response"
+                }
+                else
+                {
+                    // Not wrapped, use the whole response
+                    dataObj = rpcResponse.Response;
+                }
+
+                var dataJson = JsonSerializer.Serialize(dataObj);
+                var result = JsonSerializer.Deserialize<BatteryEnergyFlowStateDto>(dataJson);
+
+                // Log parsed result for debugging
+                _logger.LogDebug(
+                    "getBatteryEnergyFlowState parsed: BmsCount={BmsCount}, SocPercent={Soc}, BmsListCount={BmsListCount}",
+                    result?.BmsCount,
+                    result?.SocPercent,
+                    result?.BmsList?.Count ?? 0);
+
+                return result;
             }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to get battery SoC state from RPC for device {DeviceId}", tbDeviceId);
+            _logger.LogWarning(ex, "Failed to get battery energy flow state from RPC for device {DeviceId}", tbDeviceId);
         }
 
         return null;

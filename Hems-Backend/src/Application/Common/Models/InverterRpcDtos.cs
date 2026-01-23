@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace Hems_Backend.Application.Common.Models;
 
 /// <summary>
-/// RPC response for getInverterIdentity
+/// RPC response for getInverterIdentity (legacy)
 /// </summary>
 public class InverterIdentityDto
 {
@@ -21,6 +21,93 @@ public class InverterIdentityDto
 
     /// <summary>
     /// Additional properties that will be stored in Specifications
+    /// </summary>
+    [JsonExtensionData]
+    public Dictionary<string, object>? AdditionalProperties { get; set; }
+}
+
+/// <summary>
+/// RPC response for getInverterInfo - detailed inverter information
+/// </summary>
+public class InverterInfoStateDto
+{
+    [JsonPropertyName("kind")]
+    public string? Kind { get; set; }
+
+    [JsonPropertyName("timestampUtc")]
+    public string? TimestampUtc { get; set; }
+
+    [JsonPropertyName("version")]
+    public int? Version { get; set; }
+
+    [JsonPropertyName("deviceType")]
+    public string? DeviceType { get; set; }
+
+    [JsonPropertyName("deviceTypeCode")]
+    public int? DeviceTypeCode { get; set; }
+
+    [JsonPropertyName("modbusAddress")]
+    public int? ModbusAddress { get; set; }
+
+    [JsonPropertyName("protocolVersion")]
+    public string? ProtocolVersion { get; set; }
+
+    [JsonPropertyName("serialNumber")]
+    public string? SerialNumber { get; set; }
+
+    [JsonPropertyName("ratedPowerW")]
+    public int? RatedPowerW { get; set; }
+
+    [JsonPropertyName("ratedPowerKw")]
+    public double? RatedPowerKw { get; set; }
+
+    [JsonPropertyName("mpptCount")]
+    public int? MpptCount { get; set; }
+
+    [JsonPropertyName("phaseCount")]
+    public int? PhaseCount { get; set; }
+
+    [JsonPropertyName("gridVoltageRating")]
+    public string? GridVoltageRating { get; set; }
+
+    [JsonPropertyName("safetyType")]
+    public string? SafetyType { get; set; }
+
+    [JsonPropertyName("firmware")]
+    public Dictionary<string, object>? Firmware { get; set; }
+
+    [JsonPropertyName("controlBoard")]
+    public string? ControlBoard { get; set; }
+
+    [JsonPropertyName("controlBoardAux")]
+    public string? ControlBoardAux { get; set; }
+
+    [JsonPropertyName("controlHardware")]
+    public int? ControlHardware { get; set; }
+
+    [JsonPropertyName("controlMasterVersion")]
+    public int? ControlMasterVersion { get; set; }
+
+    [JsonPropertyName("communicationBoard")]
+    public string? CommunicationBoard { get; set; }
+
+    [JsonPropertyName("commBoardField1")]
+    public int? CommBoardField1 { get; set; }
+
+    [JsonPropertyName("commBoardField2")]
+    public int? CommBoardField2 { get; set; }
+
+    [JsonPropertyName("commMasterVersion")]
+    public int? CommMasterVersion { get; set; }
+
+    [JsonPropertyName("chipType")]
+    public string? ChipType { get; set; }
+
+    [JsonPropertyName("ratedPowerClass")]
+    public string? RatedPowerClass { get; set; }
+
+    /// <summary>
+    /// Additional/extension data for specifications storage
     /// </summary>
     [JsonExtensionData]
     public Dictionary<string, object>? AdditionalProperties { get; set; }
