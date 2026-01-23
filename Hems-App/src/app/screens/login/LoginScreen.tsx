@@ -43,6 +43,7 @@ type RootStackParamList = {
   Onboarding: undefined;
   Home: undefined;
   HomeSetup: undefined;
+  JoinOrCreate: undefined;
 };
 
 // Netzr Logo Component
@@ -131,11 +132,11 @@ export default function LoginScreen (): JSX.Element {
           console.log('🔐 [Login] Sites count:', sites.length, sites);
 
           if (sites.length === 0) {
-            // Hiç site yoksa HomeSetup'a git
-            console.log('🔐 [Login] No sites - navigating to HomeSetup');
+            // Hiç site yoksa JoinOrCreate'e git (kullanıcı ev oluşturabilir veya davet kodu girebilir)
+            console.log('🔐 [Login] No sites - navigating to JoinOrCreate');
             navigation.reset({
               index: 0,
-              routes: [{ name: 'HomeSetup' }],
+              routes: [{ name: 'JoinOrCreate' }],
             });
           } else if (sites.length === 1) {
             // Tek site varsa direkt seç ve Dashboard'a git
@@ -157,10 +158,10 @@ export default function LoginScreen (): JSX.Element {
         }
       } catch (error) {
         console.log('🔐 [Login] Error fetching sites:', error);
-        // Hata durumunda HomeSetup'a git (güvenli taraf)
+        // Hata durumunda JoinOrCreate'e git (güvenli taraf)
         navigation.reset({
           index: 0,
-          routes: [{ name: 'HomeSetup' }],
+          routes: [{ name: 'JoinOrCreate' }],
         });
       }
     };

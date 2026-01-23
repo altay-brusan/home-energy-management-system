@@ -346,6 +346,8 @@ class ApiClient {
         type: responseError.type,
         errors: responseError.errors,
         url: error.config?.url || '',
+        code: responseError.code, // Error code for i18n translation lookup
+        params: responseError.params, // Additional error parameters
       };
     } else if (error.request) {
       apiError = {
@@ -386,19 +388,23 @@ class ApiClient {
       return;
     }
 
-    if (apiError.status === 403) {
-      return;
-    }
-
-    // Skip toast for register endpoint - handled by useRegister hook
-    if (apiError.url?.includes(ENDPOINTS.AUTH.REGISTER)) {
-      return;
-    }
-
     let title = i18n.t('api.error.defaultTitle');
     let message = i18n.t('api.error.defaultMessage');
 
-    if (apiError.detail) {
+    // First, try to use the error code for translation (new structured error format)
+    if (apiError.code) {
+      const translationKey = `errors.codes.${apiError.code}`;
+      const translatedMessage = i18n.t(translationKey);
+      // Check if translation exists (i18n returns the key if not found)
+      if (translatedMessage !== translationKey) {
+        message = translatedMessage;
+        title = i18n.t('common.error');
+      } else if (apiError.message) {
+        // Fallback to message if no translation for code
+        message = apiError.message;
+        title = i18n.t('common.error');
+      }
+    } else if (apiError.detail) {
       message = this.translateBackendMessage(apiError.detail, apiError.url);
       title = this.translateBackendTitle(apiError.title || '', apiError.url) || i18n.t('common.error');
     } else if (apiError.message) {
@@ -418,6 +424,9 @@ class ApiClient {
       } else if (apiError.status === 422) {
         title = i18n.t('api.error.validationError');
         message = i18n.t('api.error.validationErrorMessage');
+      } else if (apiError.status === 403) {
+        title = i18n.t('api.error.forbidden');
+        message = i18n.t('api.error.forbiddenMessage');
       } else if (apiError.status === 500) {
         title = i18n.t('api.error.serverError');
         message = i18n.t('api.error.serverErrorMessage');

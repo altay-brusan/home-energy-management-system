@@ -4,6 +4,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import Svg, { G, Path } from 'react-native-svg';
 import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../../../../store/themeStore';
+import { useSitesStore } from '../../../../../store/sitesStore';
 import { getThemeColors } from '../../../../../theme/constants';
 import { createStyles } from './DemandBreakdownChart.styles';
 import { useSelectedSiteDevice } from '../../../../../hooks/useSelectedSiteDevice';
@@ -14,7 +15,7 @@ import { LoadEnergySourceDistributionDto } from '../../../../../api/types/dashbo
 interface DemandSegment {
   id: string;
   label: string;
-  value: number;
+  value: number; // in kWh
   percentage: number;
   color: string;
 }
@@ -211,7 +212,7 @@ const DemandBreakdownChart: React.FC = () => {
         {/* SVG Chart */}
         <Svg width={chartSize} height={chartSize}>
           <G>
-            {segments.map((segment) => {
+            {segmentsWithAngles.map((segment) => {
               const isSelected = selectedSegment === segment.id;
               const currentStrokeWidth = isSelected ? expandedStrokeWidth : strokeWidth;
               const currentRadius = isSelected ? radius + 4 : radius;

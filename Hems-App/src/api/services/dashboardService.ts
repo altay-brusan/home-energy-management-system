@@ -120,3 +120,9 @@ export const dashboardService = {
 };
 
 
+  async getEnergySourceMix(deviceId: string, date: string): Promise<EnergySourceMixDto> {
+    const url = `${ENDPOINTS.DASHBOARD.ENERGY_SOURCE_MIX}?deviceId=${deviceId}&date=${date}`;
+    const response = await apiClient.get<EnergySourceMixDto>(url);
+    return response.data;
+  },
+};

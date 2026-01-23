@@ -68,3 +68,17 @@ export interface NotificationDto {
 export interface GetInvitationsBySiteParams {
   siteId: string;
 }
+
+export interface PendingInvitationDto {
+  invitationId: string;
+  siteName: string;
+  invitedByEmail: string;
+  token: string;
+  createdAt: string;
+  isExpired: boolean;
+}
+
+export interface PendingInvitationsResult {
+  hasPendingInvitations: boolean;
+  invitations: PendingInvitationDto[];
+}

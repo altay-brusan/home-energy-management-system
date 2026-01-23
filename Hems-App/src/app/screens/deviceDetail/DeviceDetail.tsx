@@ -75,7 +75,7 @@ export default function DeviceDetail() {
     if (isAdminUser) return;
 
     if (needsSetup === 'no_sites') {
-      navigation.reset({ index: 0, routes: [{ name: 'HomeSetup' }] });
+      navigation.reset({ index: 0, routes: [{ name: 'JoinOrCreate' }] });
     } else if (needsSetup === 'no_selected_site') {
       navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
     } else if (needsSetup === 'no_device') {
