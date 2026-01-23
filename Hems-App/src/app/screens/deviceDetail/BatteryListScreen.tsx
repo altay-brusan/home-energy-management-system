@@ -1,8 +1,7 @@
-import { useNavigation, useRoute, useIsFocused } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { ArrowLeft } from 'lucide-react-native';
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   FlatList,
   Pressable,
   RefreshControl,
@@ -28,6 +27,13 @@ interface BatteryPack {
   description: string;
   model: string;
   manufacturer: string;
+  componentId: string;
+  bmsAddress: number;
+  stateOfHealth: number | null;
+  voltage: number | null;
+  current: number | null;
+  temperature: number | null;
+  firmwareVersion: string | null;
 }
 
 export default function BatteryListScreen() {
@@ -44,53 +50,12 @@ export default function BatteryListScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const isFocused = useIsFocused();
 
-  const fetchBatteries = useCallback(async (isPolling: boolean = false) => {
-    if (!deviceId) {
-      setBatteries([]);
-      setLoading(false);
-      return;
-    }
-
-    // Clear error on new fetch attempt
-    if (!isPolling) {
-      setError(null);
-    }
+  // Fallback: fetch from API if cache is not available
+  const fetchBatteriesFromApi = useCallback(async () => {
+    if (!deviceId) return;
 
     try {
-      // PERFORMANCE: Cache'ten instant yükle - summary'den kaydedilen pack'leri kullan
-      if (!isPolling) {
-        try {
-          const cacheKey = `@battery_packs_summary_${deviceId}`;
-          const cachedData = await AsyncStorage.getItem(cacheKey);
-          if (cachedData) {
-            const parsed = JSON.parse(cachedData);
-            const cachedPacks = parsed.packs || [];
-
-            // Cache'deki pack'leri map et
-            const batteryPacks: BatteryPack[] = cachedPacks.map((pack: BatteryPackDto) => ({
-              id: pack.id,
-              name: pack.name,
-              componentData: pack.stateOfCharge || 0,
-              serialNumber: pack.serialNumber || "—",
-              description: '',
-              model: pack.model || "—",
-              manufacturer: pack.manufacturer || "—",
-            }));
-
-            setBatteries(batteryPacks);
-            setLoading(false); // Cache varsa loading kapat
-          } else {
-            setLoading(true); // Cache yoksa skeleton göster
-          }
-        } catch {
-          setLoading(true);
-        }
-      }
-
-      // API call - use new DeviceSummary API
       const summaryData = await deviceComponentsService.getDeviceSummary(deviceId);
 
       // Find battery component
@@ -106,7 +71,8 @@ export default function BatteryListScreen() {
       }
 
       // Map battery packs
-      const batteryPacks: BatteryPack[] = batteryComponent.packs.map((pack: BatteryPackDto) => ({
+      // Use batteryComponent.id as fallback for componentId (for backwards compatibility)
+      const batteryPacks: BatteryPack[] = batteryComponent.packs.map((pack: BatteryPackDto, index: number) => ({
         id: pack.id,
         name: pack.name,
         componentData: pack.stateOfCharge || 0,
@@ -114,24 +80,28 @@ export default function BatteryListScreen() {
         description: '',
         model: pack.model || "—",
         manufacturer: pack.manufacturer || "—",
+        componentId: pack.componentId || batteryComponent.id,
+        bmsAddress: pack.bmsAddress || (index + 1),
+        stateOfHealth: pack.stateOfHealth,
+        voltage: pack.voltage,
+        current: pack.current,
+        temperature: pack.temperature,
+        firmwareVersion: pack.firmwareVersion,
       }));
 
       setBatteries(batteryPacks);
       setError(null);
 
-      // Save to cache (background)
+      // Save to cache (include parent component ID for fallback)
       const cacheKey = `@battery_packs_summary_${deviceId}`;
-      AsyncStorage.setItem(cacheKey, JSON.stringify({
+      await AsyncStorage.setItem(cacheKey, JSON.stringify({
         packs: batteryComponent.packs,
+        parentComponentId: batteryComponent.id,
         timestamp: Date.now(),
-      })).catch((cacheErr) => {
-        console.warn('Cache write failed:', cacheErr);
-      });
-
+      }));
     } catch (err: any) {
       console.error("Error fetching batteries:", err);
 
-      // Only show error if we have no cached data
       if (batteries.length === 0) {
         if (err?.response?.status === 404) {
           setError(t('batteryList.deviceNotFound'));
@@ -148,53 +118,91 @@ export default function BatteryListScreen() {
     }
   }, [deviceId, batteries.length, t]);
 
-  useEffect(() => {
-    fetchBatteries(false);
-  }, []);
-
-  // Polling: Fetch battery data every 5 seconds (only when focused)
-  useEffect(() => {
-    if (!deviceId || !isFocused) {
-      // Clear interval when not focused
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-      }
+  // Load batteries from cache (populated by DeviceDetail screen)
+  const loadBatteriesFromCache = useCallback(async () => {
+    if (!deviceId) {
+      setBatteries([]);
+      setLoading(false);
       return;
     }
 
-    // Fetch immediately when becoming focused
-    fetchBatteries(true);
+    setError(null);
 
-    // Start polling
-    const interval = setInterval(() => {
-      fetchBatteries(true);
-    }, 5000); // Poll every 5 seconds
+    try {
+      const cacheKey = `@battery_packs_summary_${deviceId}`;
+      const cachedData = await AsyncStorage.getItem(cacheKey);
 
-    pollingIntervalRef.current = interval;
+      if (cachedData) {
+        const parsed = JSON.parse(cachedData);
+        const cachedPacks = parsed.packs || [];
+        const parentComponentId = parsed.parentComponentId;
 
-    // Cleanup on unmount or when dependencies change
-    return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
+        // Check if cache is outdated (missing componentId info) - if so, fetch fresh data
+        const firstPack = cachedPacks[0];
+        if (cachedPacks.length > 0 && !firstPack?.componentId && !parentComponentId) {
+          console.log('Cache missing componentId, fetching fresh data');
+          await fetchBatteriesFromApi();
+          return;
+        }
+
+        // Map cached packs to BatteryPack format
+        // Use parentComponentId as fallback for componentId (for backwards compatibility)
+        const batteryPacks: BatteryPack[] = cachedPacks.map((pack: BatteryPackDto, index: number) => ({
+          id: pack.id,
+          name: pack.name,
+          componentData: pack.stateOfCharge || 0,
+          serialNumber: pack.serialNumber || "—",
+          description: '',
+          model: pack.model || "—",
+          manufacturer: pack.manufacturer || "—",
+          componentId: pack.componentId || parentComponentId,
+          bmsAddress: pack.bmsAddress || (index + 1),
+          stateOfHealth: pack.stateOfHealth,
+          voltage: pack.voltage,
+          current: pack.current,
+          temperature: pack.temperature,
+          firmwareVersion: pack.firmwareVersion,
+        }));
+
+        setBatteries(batteryPacks);
+        setLoading(false);
+      } else {
+        // No cache available - fetch from API as fallback
+        await fetchBatteriesFromApi();
       }
-    };
-  }, [deviceId, isFocused, fetchBatteries]);
+    } catch {
+      // Cache read failed - try API
+      await fetchBatteriesFromApi();
+    }
+  }, [deviceId, fetchBatteriesFromApi]);
+
+  // Load from cache on mount (no polling - DeviceDetail handles data refresh)
+  useEffect(() => {
+    loadBatteriesFromCache();
+  }, [loadBatteriesFromCache]);
 
   const onRefresh = async () => {
     setRefreshing(true);
     setError(null);
-    await fetchBatteries(false);
+    await fetchBatteriesFromApi();
     setRefreshing(false);
   };
 
   const handleBatteryPress = (battery: BatteryPack) => {
     navigation.navigate("BatteryPackDetail", {
       deviceId,
-      componentId: battery.id,
+      componentId: battery.componentId,
+      bmsAddress: battery.bmsAddress,
       batteryName: battery.name,
-      componentData: battery.componentData, // SOC değerini gönder
+      componentData: battery.componentData, // SOC
+      serialNumber: battery.serialNumber,
+      manufacturer: battery.manufacturer,
+      model: battery.model,
+      stateOfHealth: battery.stateOfHealth,
+      voltage: battery.voltage,
+      current: battery.current,
+      temperature: battery.temperature,
+      firmwareVersion: battery.firmwareVersion,
     });
   };
 

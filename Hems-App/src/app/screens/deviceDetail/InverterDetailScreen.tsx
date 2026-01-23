@@ -88,7 +88,7 @@ export default function InverterDetailScreen() {
 
     const interval = setInterval(() => {
       fetchComponentDetails();
-    }, 5000);
+    }, 15000); // Poll every 15 seconds
 
     setPollingInterval(interval);
 

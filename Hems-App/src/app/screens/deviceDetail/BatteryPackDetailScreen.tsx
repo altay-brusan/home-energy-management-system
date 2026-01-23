@@ -18,27 +18,6 @@ import { useThemeStore } from "../../../store/themeStore";
 import { getThemeColors, SPACING, TYPOGRAPHY } from "../../../theme/constants";
 import type { DeviceDetailsResponseDto, DeviceDetailItemDto } from "../../../api/types/deviceComponents.types";
 
-const formatDateTime = (isoString: string | null | undefined, locale: string = 'tr-TR'): string => {
-  if (!isoString || isoString === "-") return "-";
-
-  try {
-    const date = new Date(isoString);
-    if (isNaN(date.getTime())) return isoString;
-
-    return date.toLocaleString(locale, {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false
-    });
-  } catch (error) {
-    return isoString;
-  }
-};
-
 export default function BatteryPackDetailScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
@@ -46,9 +25,30 @@ export default function BatteryPackDetailScreen() {
   const COLORS = getThemeColors(isDark);
   const insets = useSafeAreaInsets();
   const { t, language } = useI18n();
-  const locale = language === 'tr' ? 'tr-TR' : 'en-US';
 
-  const { deviceId, componentId, batteryName, componentData } = route.params || {};
+  const {
+    deviceId,
+    componentId,
+    bmsAddress,
+    batteryName,
+    componentData,
+    serialNumber,
+    manufacturer,
+    model,
+    stateOfHealth: paramSoh,
+    voltage: paramVoltage,
+    current: paramCurrent,
+    temperature: paramTemperature,
+    firmwareVersion: paramFirmwareVersion,
+  } = route.params || {};
+
+  // Debug logging
+  useEffect(() => {
+    console.log('BatteryPackDetail params:', {
+      deviceId, componentId, bmsAddress, batteryName,
+      paramSoh, paramVoltage, paramCurrent, paramTemperature
+    });
+  }, [deviceId, componentId, bmsAddress, batteryName, paramSoh, paramVoltage, paramCurrent, paramTemperature]);
 
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -57,15 +57,31 @@ export default function BatteryPackDetailScreen() {
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isFocused = useIsFocused();
 
-  // Helper function to get value from details
+  // Helper function to get value from details (with null safety)
   const getDetailValue = (key: string): any => {
-    const item = detailsData?.details.find(d => d.key === key);
+    if (!detailsData?.details || !Array.isArray(detailsData.details)) {
+      return undefined;
+    }
+    const item = detailsData.details.find(d => d.key === key);
     return item?.value;
   };
 
-  // Fetch component details from Details API
+  // Helper function to get detail with unit
+  const getDetailWithUnit = (key: string): { value: any; unit: string | null } | null => {
+    const item = detailsData?.details.find(d => d.key === key);
+    if (!item) return null;
+    return { value: item.value, unit: item.unit };
+  };
+
+  // Fetch component details from Details API with bmsAddress
   const fetchComponentDetails = useCallback(async (isPolling: boolean = false) => {
-    if (!componentId) return;
+    // If componentId is missing, we can't fetch - show error
+    if (!componentId) {
+      console.warn('BatteryPackDetail: componentId is missing');
+      setError(t('batteryDetail.notFound'));
+      setLoading(false);
+      return;
+    }
 
     // Clear error on new fetch attempt (not during polling)
     if (!isPolling) {
@@ -73,7 +89,7 @@ export default function BatteryPackDetailScreen() {
     }
 
     try {
-      const details = await deviceComponentsService.getComponentDetails(componentId);
+      const details = await deviceComponentsService.getComponentDetails(componentId, bmsAddress);
       setDetailsData(details);
       setError(null);
     } catch (err: any) {
@@ -94,13 +110,13 @@ export default function BatteryPackDetailScreen() {
     } finally {
       setLoading(false);
     }
-  }, [componentId, detailsData, t]);
+  }, [componentId, bmsAddress, detailsData, t]);
 
   useEffect(() => {
     fetchComponentDetails(false);
-  }, []);
+  }, [componentId, bmsAddress]);
 
-  // Polling: Fetch details every 5 seconds (only when focused)
+  // Polling: Fetch details every 15 seconds (only when focused)
   useEffect(() => {
     if (!componentId || !isFocused) {
       // Clear interval when not focused
@@ -117,7 +133,7 @@ export default function BatteryPackDetailScreen() {
     // Start polling
     const interval = setInterval(() => {
       fetchComponentDetails(true);
-    }, 5000);
+    }, 15000); // Poll every 15 seconds
 
     pollingIntervalRef.current = interval;
 
@@ -223,14 +239,57 @@ export default function BatteryPackDetailScreen() {
     );
   }
 
-  // Get values from Details API (only what's actually returned)
-  const soc = getDetailValue('soc') || 0;
-  const name = getDetailValue('name');
-  const manufacturer = getDetailValue('manufacturer');
-  const model = getDetailValue('model');
-  const serialNumber = getDetailValue('serialNumber');
+  // Get values from Details API, with fallback to navigation params
+  const soc = getDetailValue('soc') ?? componentData ?? 0;
+  const soh = getDetailValue('soh') ?? paramSoh;
+  const name = getDetailValue('name') || batteryName;
+  const mfr = getDetailValue('manufacturer') || manufacturer;
+  const mdl = getDetailValue('model') || model;
+  const serial = getDetailValue('serialNumber') || serialNumber;
+  const firmwareVersion = getDetailValue('firmwareVersion') ?? paramFirmwareVersion;
+  const chargeStatus = getDetailValue('chargeDischargeStatus');
+  const voltage = getDetailValue('voltage') ?? paramVoltage;
+  const current = getDetailValue('current') ?? paramCurrent;
+  const temperature = getDetailValue('temperature') ?? paramTemperature;
+  const remainingCapacity = getDetailValue('remainingCapacity');
+  const ratedCapacity = getDetailValue('ratedCapacity');
+  const minCellVoltage = getDetailValue('minCellVoltage');
+  const maxCellVoltage = getDetailValue('maxCellVoltage');
+  const avgCellVoltage = getDetailValue('avgCellVoltage');
+  const totalDischarge = getDetailValue('totalDischarge');
+  const cycleCount = getDetailValue('cycleCount');
 
   const socColor = soc > 70 ? COLORS.success : soc > 30 ? COLORS.warning : COLORS.error;
+
+  // Render a detail row
+  const renderRow = (label: string, value: any, unit?: string | null) => {
+    if (value === undefined || value === null) return null;
+    return (
+      <View style={styles.row}>
+        <Text
+          style={[
+            styles.label,
+            {
+              color: COLORS.textSoft,
+            },
+          ]}
+        >
+          {label}
+        </Text>
+        <Text
+          style={[
+            styles.value,
+            {
+              color: COLORS.text,
+            },
+          ]}
+        >
+          {typeof value === 'number' ? value.toFixed(value % 1 === 0 ? 0 : 1) : value}
+          {unit ? ` ${unit}` : ''}
+        </Text>
+      </View>
+    );
+  };
 
   return (
     <View
@@ -266,7 +325,7 @@ export default function BatteryPackDetailScreen() {
           ]}
           numberOfLines={1}
         >
-          {batteryName || t("batteryDetail.title")}
+          {name || t("batteryDetail.title")}
         </Text>
         <View style={{ width: 40 }} />
       </View>
@@ -288,7 +347,7 @@ export default function BatteryPackDetailScreen() {
           />
         }
       >
-        {/* Hero Card */}
+        {/* Hero Card - SOC */}
         <View
           style={[
             styles.heroCard,
@@ -328,6 +387,13 @@ export default function BatteryPackDetailScreen() {
           >
             {t("batteryDetail.stateOfCharge")}
           </Text>
+          {chargeStatus && (
+            <View style={[styles.statusBadge, { backgroundColor: `${COLORS.accent}15` }]}>
+              <Text style={{ color: COLORS.accent, fontWeight: '600', fontSize: 12 }}>
+                {chargeStatus}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Device Info Section */}
@@ -351,106 +417,96 @@ export default function BatteryPackDetailScreen() {
             {t("batteryDetail.deviceInfo")}
           </Text>
 
-          {name && (
-            <View style={styles.row}>
-              <Text
-                style={[
-                  styles.label,
-                  {
-                    color: COLORS.textSoft,
-                  },
-                ]}
-              >
-                {t("batteryDetail.name")}
-              </Text>
-              <Text
-                style={[
-                  styles.value,
-                  {
-                    color: COLORS.text,
-                  },
-                ]}
-              >
-                {name}
-              </Text>
-            </View>
-          )}
-
-          {manufacturer && (
-            <View style={styles.row}>
-              <Text
-                style={[
-                  styles.label,
-                  {
-                    color: COLORS.textSoft,
-                  },
-                ]}
-              >
-                {t("batteryDetail.manufacturer")}
-              </Text>
-              <Text
-                style={[
-                  styles.value,
-                  {
-                    color: COLORS.text,
-                  },
-                ]}
-              >
-                {manufacturer}
-              </Text>
-            </View>
-          )}
-
-          {model && (
-            <View style={styles.row}>
-              <Text
-                style={[
-                  styles.label,
-                  {
-                    color: COLORS.textSoft,
-                  },
-                ]}
-              >
-                {t("batteryDetail.model")}
-              </Text>
-              <Text
-                style={[
-                  styles.value,
-                  {
-                    color: COLORS.text,
-                  },
-                ]}
-              >
-                {model}
-              </Text>
-            </View>
-          )}
-
-          {serialNumber && (
-            <View style={styles.row}>
-              <Text
-                style={[
-                  styles.label,
-                  {
-                    color: COLORS.textSoft,
-                  },
-                ]}
-              >
-                {t("batteryDetail.serialNumber")}
-              </Text>
-              <Text
-                style={[
-                  styles.value,
-                  {
-                    color: COLORS.text,
-                  },
-                ]}
-              >
-                {serialNumber}
-              </Text>
-            </View>
-          )}
+          {renderRow(t("batteryDetail.name"), name)}
+          {renderRow(t("batteryDetail.manufacturer"), mfr)}
+          {renderRow(t("batteryDetail.model"), mdl)}
+          {renderRow(t("batteryDetail.serialNumber"), serial)}
+          {renderRow(t("batteryDetail.firmwareVersion") || "Firmware", firmwareVersion)}
+          {renderRow(t("batteryDetail.ratedCapacity") || "Rated Capacity", ratedCapacity, "Ah")}
         </View>
+
+        {/* Real-time Status Section */}
+        <View
+          style={[
+            styles.section,
+            {
+              backgroundColor: COLORS.surface,
+              borderColor: COLORS.border,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.sectionTitle,
+              {
+                color: COLORS.text,
+              },
+            ]}
+          >
+            {t("batteryDetail.realtimeStatus") || "Real-time Status"}
+          </Text>
+
+          {renderRow(t("batteryDetail.stateOfHealth") || "State of Health", soh, "%")}
+          {renderRow(t("batteryDetail.voltage") || "Voltage", voltage, "V")}
+          {renderRow(t("batteryDetail.current") || "Current", current, "A")}
+          {renderRow(t("batteryDetail.temperature") || "Temperature", temperature, "°C")}
+          {renderRow(t("batteryDetail.remainingCapacity") || "Remaining Capacity", remainingCapacity, "Ah")}
+        </View>
+
+        {/* Cell Voltage Section */}
+        {(minCellVoltage || maxCellVoltage || avgCellVoltage) && (
+          <View
+            style={[
+              styles.section,
+              {
+                backgroundColor: COLORS.surface,
+                borderColor: COLORS.border,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.sectionTitle,
+                {
+                  color: COLORS.text,
+                },
+              ]}
+            >
+              {t("batteryDetail.cellVoltage") || "Cell Voltage"}
+            </Text>
+
+            {renderRow(t("batteryDetail.minCellVoltage") || "Minimum", minCellVoltage, "mV")}
+            {renderRow(t("batteryDetail.maxCellVoltage") || "Maximum", maxCellVoltage, "mV")}
+            {renderRow(t("batteryDetail.avgCellVoltage") || "Average", avgCellVoltage, "mV")}
+          </View>
+        )}
+
+        {/* Usage Statistics Section */}
+        {(totalDischarge !== undefined || cycleCount !== undefined) && (
+          <View
+            style={[
+              styles.section,
+              {
+                backgroundColor: COLORS.surface,
+                borderColor: COLORS.border,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.sectionTitle,
+                {
+                  color: COLORS.text,
+                },
+              ]}
+            >
+              {t("batteryDetail.usageStatistics") || "Usage Statistics"}
+            </Text>
+
+            {renderRow(t("batteryDetail.totalDischarge") || "Total Discharge", totalDischarge, "kWh")}
+            {renderRow(t("batteryDetail.cycleCount") || "Cycle Count", cycleCount)}
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -501,6 +557,12 @@ const styles = StyleSheet.create({
   socLabel: {
     fontSize: TYPOGRAPHY.sm,
     marginTop: 4,
+  },
+  statusBadge: {
+    marginTop: SPACING.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   section: {
     borderRadius: 14,
