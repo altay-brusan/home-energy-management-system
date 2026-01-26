@@ -51,7 +51,9 @@ public class InvitationEmailService : IInvitationEmailService
         var escapedToken = System.Uri.EscapeDataString(token);
         var baseUrl = string.IsNullOrWhiteSpace(invetationUrl) ? "https://hems-api.n2nenergy.com" : invetationUrl.TrimEnd('/');
         var fallback = $"{baseUrl}/invite?inviteCode={escapedToken}";
-        var intent = $"intent://invite?inviteCode={escapedToken}#Intent;scheme=netzrenergy;package=com.netzrenergy;S.browser_fallback_url={System.Uri.EscapeDataString(fallback)};end";
+        // Note: This intent URL is defined for reference but not currently used in the email.
+        // The email links to /invite which handles the deep link redirect.
+        var intent = $"intent://invite?inviteCode={escapedToken}#Intent;scheme=n2nenergymobile;package=com.n2nenergymobile;S.browser_fallback_url={System.Uri.EscapeDataString(fallback)};end";
 
         return $@"
 <!DOCTYPE html>
