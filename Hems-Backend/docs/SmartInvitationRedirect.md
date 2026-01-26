@@ -198,8 +198,8 @@ Mobile app calls this API to accept the invitation:
 
 | Type | URL Format |
 |------|------------|
-| Custom Scheme | `netzrenergy://invite?inviteCode={code}` |
-| Android Intent | `intent://invite?inviteCode={code}#Intent;scheme=netzrenergy;package=com.netzrenergy;end` |
+| Custom Scheme | `n2nenergymobile://invite?inviteCode={code}` |
+| Android Intent | `intent://invite?inviteCode={code}#Intent;scheme=n2nenergymobile;package=com.n2nenergymobile;end` |
 
 ## Files Summary
 
@@ -272,7 +272,7 @@ The Android app needs:
     <action android:name="android.intent.action.VIEW" />
     <category android:name="android.intent.category.DEFAULT" />
     <category android:name="android.intent.category.BROWSABLE" />
-    <data android:scheme="netzrenergy" />
+    <data android:scheme="n2nenergymobile" android:host="invite" />
 </intent-filter>
 ```
 

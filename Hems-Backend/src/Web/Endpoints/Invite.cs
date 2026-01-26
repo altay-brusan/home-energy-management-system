@@ -22,11 +22,15 @@ public class Invite : EndpointGroupBase
             var platform = platformDetectionService.DetectPlatform(userAgent);
             var isInAppBrowser = platformDetectionService.IsInAppBrowser(userAgent);
 
-            // Deep link URL (custom scheme)
-            var deepLinkUrl = $"netzrenergy://invite?inviteCode={safeCode}";
+            // Deep link URL (custom scheme) - must match AndroidManifest.xml in mobile app
+            var deepLinkUrl = $"n2nenergymobile://invite?inviteCode={safeCode}";
 
-            // Android intent URL for fallback
-            var androidIntentUrl = $"intent://invite?inviteCode={safeCode}#Intent;scheme=netzrenergy;package=com.netzrenergy;end";
+            // Android intent URL with Play Store fallback
+            // Package name must match applicationId in mobile app's build.gradle
+            var playStoreUrl = settings.AndroidPlayStoreUrl;
+            var androidIntentUrl = string.IsNullOrEmpty(playStoreUrl)
+                ? $"intent://invite?inviteCode={safeCode}#Intent;scheme=n2nenergymobile;package=com.n2nenergymobile;end"
+                : $"intent://invite?inviteCode={safeCode}#Intent;scheme=n2nenergymobile;package=com.n2nenergymobile;S.browser_fallback_url={Uri.EscapeDataString(playStoreUrl)};end";
 
             // Build platform-specific HTML
             var html = BuildSmartRedirectHtml(
@@ -254,7 +258,10 @@ public class Invite : EndpointGroupBase
         string androidIntentUrl,
         AppLinksSettings settings)
     {
-        var openInAppButton = $@"<a href=""{deepLinkUrl}"" class=""btn btn-primary mobile-only"" id=""openAppBtn"">Open in App</a>";
+        // For Android, use Intent URL (more reliable, includes fallback to store)
+        // For iOS, use custom scheme
+        var appLinkUrl = platform == DetectedPlatform.Android ? androidIntentUrl : deepLinkUrl;
+        var openInAppButton = $@"<a href=""{appLinkUrl}"" class=""btn btn-primary mobile-only"" id=""openAppBtn"">Open in App</a>";
 
         var androidPlayStoreButton = !string.IsNullOrEmpty(settings.AndroidPlayStoreUrl)
             ? $@"<a href=""{settings.AndroidPlayStoreUrl}"" class=""btn btn-store android-only"" id=""playStoreBtn"">Get it on Google Play</a>"
