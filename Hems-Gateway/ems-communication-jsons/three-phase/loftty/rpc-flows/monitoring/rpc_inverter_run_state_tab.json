@@ -1,6 +1,6 @@
 [
     {
-        "id": "rpc_inverter_run_state_tab",
+        "id": "da842ca6669c4ffe",
         "type": "tab",
         "label": "RPC_InverterRunState",
         "disabled": false,
@@ -9,7 +9,7 @@
     {
         "id": "rpc_irs_mqtt_in",
         "type": "mqtt in",
-        "z": "rpc_inverter_run_state_tab",
+        "z": "da842ca6669c4ffe",
         "name": "RPC Request",
         "topic": "v1/devices/me/rpc/request/+",
         "qos": "2",
@@ -30,7 +30,7 @@
     {
         "id": "rpc_irs_handle",
         "type": "function",
-        "z": "rpc_inverter_run_state_tab",
+        "z": "da842ca6669c4ffe",
         "name": "Handle RPC",
         "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\n\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\n// Only handle getInverterRunState\nif (msg.rpcMethod !== 'getInverterRunState') {\n    return null;\n}\n\nreturn msg;",
         "outputs": 1,
@@ -50,11 +50,11 @@
     {
         "id": "rpc_irs_link_out",
         "type": "link out",
-        "z": "rpc_inverter_run_state_tab",
+        "z": "da842ca6669c4ffe",
         "name": "To InverterRunState",
         "mode": "link",
         "links": [
-            "irs_rpc_link_in"
+            "887fae3319fa5e7d"
         ],
         "x": 515,
         "y": 120,

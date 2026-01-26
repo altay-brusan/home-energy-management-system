@@ -1,6 +1,6 @@
 [
     {
-        "id": "3cc7b5ad84823166",
+        "id": "9d7655fa04382c75",
         "type": "tab",
         "label": "Battery Energy & Info",
         "disabled": false,
@@ -9,7 +9,7 @@
     {
         "id": "d6927b5d65053932",
         "type": "comment",
-        "z": "3cc7b5ad84823166",
+        "z": "9d7655fa04382c75",
         "name": "══════ CAN PARSING (runs continuously) ══════",
         "info": "",
         "x": 230,
@@ -19,7 +19,7 @@
     {
         "id": "6ba964ed46ca3116",
         "type": "socketcan-out",
-        "z": "3cc7b5ad84823166",
+        "z": "9d7655fa04382c75",
         "name": "CAN0 Input",
         "config": "741d6a53c563523e",
         "x": 120,
@@ -34,7 +34,7 @@
     {
         "id": "53f87a53b415c50b",
         "type": "function",
-        "z": "3cc7b5ad84823166",
+        "z": "9d7655fa04382c75",
         "name": "Parse Energy Flow CAN",
         "func": "const frame = msg.payload || msg;\nconst canId = frame.canid;\nconst data = frame.data || [];\n\nlet state = flow.get('batteryEnergyFlow') || {\n    kind: 'BatteryEnergyFlowState',\n    version: 1,\n    bmsCount: 0,\n    socPercent: null,\n    sohPercent: null,\n    voltageV: null,\n    currentA: null,\n    temperatureC: null,\n    bmsList: []\n};\n\nfunction u16(buf, offset) {\n    return (buf[offset] & 0xFF) | ((buf[offset + 1] & 0xFF) << 8);\n}\n\nfunction s16(buf, offset) {\n    var val = u16(buf, offset);\n    return val > 0x7FFF ? val - 0x10000 : val;\n}\n\nfunction getBms(addr) {\n    var bms = state.bmsList.find(function(b) { return b.bmsAddress === addr; });\n    if (!bms) {\n        bms = { bmsAddress: addr };\n        state.bmsList.push(bms);\n        state.bmsList.sort(function(a, b) { return a.bmsAddress - b.bmsAddress; });\n    }\n    return bms;\n}\n\nvar processed = false;\n\nif (canId >= 0x351 && canId <= 0x35E) {\n    processed = true;\n    switch (canId) {\n        case 0x355:\n            state.socPercent = u16(data, 0);\n            state.sohPercent = u16(data, 2);\n            break;\n        case 0x356:\n            state.voltageV = s16(data, 0) * 0.01;\n            state.currentA = s16(data, 2) * 0.1;\n            state.temperatureC = s16(data, 4) * 0.1;\n            break;\n        case 0x359:\n            state.bmsCount = data[4];\n            break;\n    }\n}\n\nif ((canId & 0x1FFFF000) === 0x14F00000) {\n    processed = true;\n    var msgType = (canId >> 8) & 0x0F;\n    var bmsAddr = canId & 0xFF;\n    var bms = getBms(bmsAddr);\n    \n    switch (msgType) {\n        case 1:\n            bms.chargeDischargeStatus = data[0];\n            bms.currentA = s16(data, 2) * 0.1;\n            bms.batteryPackVoltageV = u16(data, 4) * 0.1;\n            bms.batteryRemainingCapacityAh = u16(data, 6) * 0.01;\n            break;\n        case 2:\n            bms.maxCellVoltageMv = u16(data, 0);\n            bms.minCellVoltageMv = u16(data, 2);\n            bms.avgCellVoltageMv = u16(data, 4);\n            bms.avgCellTempC = s16(data, 6) * 0.1;\n            break;\n        case 3:\n            bms.ratedCapacityAh = u16(data, 0) * 0.01;\n            bms.totalDischargeWh = u16(data, 4);\n            bms.cycleCount = u16(data, 6);\n            break;\n        case 4:\n            bms.sohPercent = u16(data, 2);\n            break;\n    }\n}\n\nif (!processed) {\n    return null;\n}\n\nstate.timestampUtc = new Date().toISOString();\nstate.DeviceId = global.get('GATEWAY_ID') || 'EC100';\nflow.set('batteryEnergyFlow', state);\nreturn null;",
         "outputs": 1,
@@ -52,7 +52,7 @@
     {
         "id": "ba199cebd9fa83be",
         "type": "function",
-        "z": "3cc7b5ad84823166",
+        "z": "9d7655fa04382c75",
         "name": "Parse Battery Info CAN",
         "func": "const frame = msg.payload || msg;\nconst canId = frame.canid;\nconst data = frame.data || [];\n\nlet state = flow.get('batteryInfo') || {\n    kind: 'BatteryInfoState',\n    version: 1,\n    manufacturerName: null,\n    moduleCount: 0,\n    bmsList: []\n};\n\nfunction u16(buf, offset) {\n    return (buf[offset] & 0xFF) | ((buf[offset + 1] & 0xFF) << 8);\n}\n\nfunction getBms(addr) {\n    var bms = state.bmsList.find(function(b) { return b.bmsAddress === addr; });\n    if (!bms) {\n        bms = { bmsAddress: addr, _sn1: '', _sn2: '', _sn3: '' };\n        state.bmsList.push(bms);\n        state.bmsList.sort(function(a, b) { return a.bmsAddress - b.bmsAddress; });\n    }\n    return bms;\n}\n\nvar processed = false;\n\nif (canId === 0x359) {\n    processed = true;\n    state.moduleCount = data[4];\n}\n\nif (canId === 0x35E) {\n    processed = true;\n    var name = '';\n    for (var i = 0; i < 8; i++) {\n        if (data[i] === 0) break;\n        name += String.fromCharCode(data[i]);\n    }\n    state.manufacturerName = name;\n}\n\nif ((canId & 0x1FFFF000) === 0x14F00000) {\n    var msgType = (canId >> 8) & 0x0F;\n    var bmsAddr = canId & 0xFF;\n    \n    if (msgType >= 3 && msgType <= 7) {\n        processed = true;\n        var bms = getBms(bmsAddr);\n        \n        switch (msgType) {\n            case 3:\n                bms.ratedCapacityAh = u16(data, 0) * 0.01;\n                break;\n            case 4:\n                bms.softwareVersionMain = data[0];\n                bms.softwareVersionSub = data[1];\n                break;\n            case 5:\n                bms._sn1 = '';\n                for (var j = 0; j < 8; j++) {\n                    if (data[j] === 0) break;\n                    bms._sn1 += String.fromCharCode(data[j]);\n                }\n                bms.serialNumber = bms._sn1 + (bms._sn2 || '') + (bms._sn3 || '');\n                break;\n            case 6:\n                bms._sn2 = '';\n                for (var k = 0; k < 8; k++) {\n                    if (data[k] === 0) break;\n                    bms._sn2 += String.fromCharCode(data[k]);\n                }\n                bms.serialNumber = (bms._sn1 || '') + bms._sn2 + (bms._sn3 || '');\n                break;\n            case 7:\n                bms._sn3 = '';\n                for (var l = 0; l < 8; l++) {\n                    if (data[l] === 0) break;\n                    bms._sn3 += String.fromCharCode(data[l]);\n                }\n                bms.serialNumber = (bms._sn1 || '') + (bms._sn2 || '') + bms._sn3;\n                break;\n        }\n    }\n}\n\nif (!processed) {\n    return null;\n}\n\nstate.timestampUtc = new Date().toISOString();\nstate.DeviceId = global.get('GATEWAY_ID') || 'EC100';\nflow.set('batteryInfo', state);\nreturn null;",
         "outputs": 1,
@@ -70,7 +70,7 @@
     {
         "id": "bef_comment_rpc",
         "type": "comment",
-        "z": "3cc7b5ad84823166",
+        "z": "9d7655fa04382c75",
         "name": "══════ RPC HANDLERS ══════",
         "info": "",
         "x": 180,
@@ -80,10 +80,11 @@
     {
         "id": "bef_link_in_energy",
         "type": "link in",
-        "z": "3cc7b5ad84823166",
+        "z": "9d7655fa04382c75",
         "name": "RPC: BatteryEnergyFlow",
         "links": [
-            "rpc_bef_energy_link_out"
+            "rpc_bef_energy_link_out",
+            "25783b100d2d0db6"
         ],
         "x": 145,
         "y": 260,
@@ -96,7 +97,7 @@
     {
         "id": "bef_get_energy_state",
         "type": "function",
-        "z": "3cc7b5ad84823166",
+        "z": "9d7655fa04382c75",
         "name": "Get BatteryEnergyFlowState",
         "func": "const state = flow.get('batteryEnergyFlow');\n\nif (!state) {\n    msg.payload = {\n        error: 'No battery energy data available yet',\n        kind: 'BatteryEnergyFlowState'\n    };\n    node.status({ fill: 'yellow', shape: 'ring', text: 'No data' });\n} else {\n    msg.payload = state;\n    node.status({ fill: 'green', shape: 'dot', text: `SOC: ${state.socPercent}%` });\n}\n\nreturn msg;",
         "outputs": 1,
@@ -117,10 +118,11 @@
     {
         "id": "bef_link_in_info",
         "type": "link in",
-        "z": "3cc7b5ad84823166",
+        "z": "9d7655fa04382c75",
         "name": "RPC: BatteryInfo",
         "links": [
-            "rpc_bef_info_link_out"
+            "rpc_bef_info_link_out",
+            "98907a3a690106e5"
         ],
         "x": 125,
         "y": 320,
@@ -133,7 +135,7 @@
     {
         "id": "bef_get_info_state",
         "type": "function",
-        "z": "3cc7b5ad84823166",
+        "z": "9d7655fa04382c75",
         "name": "Get BatteryInfoState",
         "func": "const state = flow.get('batteryInfo');\n\nif (!state) {\n    msg.payload = {\n        error: 'No battery info data available yet',\n        kind: 'BatteryInfoState'\n    };\n    node.status({ fill: 'yellow', shape: 'ring', text: 'No data' });\n} else {\n    // Clean response - remove internal _sn fields\n    const clean = JSON.parse(JSON.stringify(state));\n    clean.bmsList.forEach(function(bms) {\n        delete bms._sn1;\n        delete bms._sn2;\n        delete bms._sn3;\n    });\n    msg.payload = clean;\n    node.status({ fill: 'green', shape: 'dot', text: `Modules: ${state.moduleCount}` });\n}\n\nreturn msg;",
         "outputs": 1,
@@ -154,7 +156,7 @@
     {
         "id": "bef_rpc_response",
         "type": "function",
-        "z": "3cc7b5ad84823166",
+        "z": "9d7655fa04382c75",
         "name": "RPC Response",
         "func": "if (!msg.rpcResponseTopic) {\n    return null;\n}\n\nmsg.topic = msg.rpcResponseTopic;\nreturn msg;",
         "outputs": 1,
@@ -174,7 +176,7 @@
     {
         "id": "bef_mqtt_out",
         "type": "mqtt out",
-        "z": "3cc7b5ad84823166",
+        "z": "9d7655fa04382c75",
         "name": "MQTT Response",
         "topic": "",
         "qos": "1",
@@ -192,7 +194,7 @@
     {
         "id": "bef_debug_energy",
         "type": "debug",
-        "z": "3cc7b5ad84823166",
+        "z": "9d7655fa04382c75",
         "name": "Energy Flow State",
         "active": true,
         "tosidebar": true,
@@ -207,7 +209,7 @@
     {
         "id": "bef_debug_info",
         "type": "debug",
-        "z": "3cc7b5ad84823166",
+        "z": "9d7655fa04382c75",
         "name": "Battery Info State",
         "active": true,
         "tosidebar": true,
@@ -222,7 +224,7 @@
     {
         "id": "bef_comment_test",
         "type": "comment",
-        "z": "3cc7b5ad84823166",
+        "z": "9d7655fa04382c75",
         "name": "══════ MANUAL TEST ══════",
         "info": "",
         "x": 180,
@@ -232,7 +234,7 @@
     {
         "id": "bef_inject_energy",
         "type": "inject",
-        "z": "3cc7b5ad84823166",
+        "z": "9d7655fa04382c75",
         "name": "Test: Get Energy Flow",
         "props": [
             {
@@ -257,7 +259,7 @@
     {
         "id": "bef_inject_info",
         "type": "inject",
-        "z": "3cc7b5ad84823166",
+        "z": "9d7655fa04382c75",
         "name": "Test: Get Battery Info",
         "props": [
             {
@@ -280,9 +282,88 @@
         ]
     },
     {
+        "id": "7904c5e533024159",
+        "type": "mqtt in",
+        "z": "9d7655fa04382c75",
+        "name": "RPC Request",
+        "topic": "v1/devices/me/rpc/request/+",
+        "qos": "1",
+        "datatype": "json",
+        "broker": "tb-broker",
+        "nl": false,
+        "rap": false,
+        "inputs": 0,
+        "x": 650,
+        "y": 100,
+        "wires": [
+            [
+                "758fad86e0e88396"
+            ]
+        ]
+    },
+    {
+        "id": "758fad86e0e88396",
+        "type": "function",
+        "z": "9d7655fa04382c75",
+        "name": "Handle RPC",
+        "func": "const method = msg.payload.method;\nconst params = msg.payload.params || {};\n\n// Extract request ID from topic\nconst topicParts = msg.topic.split('/');\nconst requestId = topicParts[topicParts.length - 1];\n\nmsg.rpcMethod = method;\nmsg.rpcParams = params;\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = `v1/devices/me/rpc/response/${requestId}`;\n\n// Route based on method\nif (method === 'getBatteryEnergyFlowState') {\n    return [msg, null];\n} else if (method === 'getBatteryInfoState') {\n    return [null, msg];\n}\n\n// Unknown method\nnode.status({ fill: 'yellow', shape: 'ring', text: 'Unknown: ' + method });\nreturn [null, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 850,
+        "y": 100,
+        "wires": [
+            [
+                "25783b100d2d0db6"
+            ],
+            [
+                "98907a3a690106e5"
+            ]
+        ]
+    },
+    {
+        "id": "25783b100d2d0db6",
+        "type": "link out",
+        "z": "9d7655fa04382c75",
+        "name": "To Energy Flow Tab",
+        "mode": "link",
+        "links": [
+            "bef_link_in_energy"
+        ],
+        "x": 1055,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "98907a3a690106e5",
+        "type": "link out",
+        "z": "9d7655fa04382c75",
+        "name": "To Battery Info Tab",
+        "mode": "link",
+        "links": [
+            "bef_link_in_info"
+        ],
+        "x": 1055,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "e53d25ef60e2023f",
+        "type": "comment",
+        "z": "9d7655fa04382c75",
+        "name": "getBatteryEnergyFlowState / getBatteryInfoState",
+        "info": "RPC methods for Battery CAN data:\n\n1. getBatteryEnergyFlowState\n   - Returns real-time battery energy flow data\n   - SOC, SOH, voltage, current, temperature\n   - Per-BMS details from CAN\n\n2. getBatteryInfoState\n   - Returns battery module info\n   - Manufacturer, module count\n   - Serial numbers, software versions",
+        "x": 750,
+        "y": 160,
+        "wires": []
+    },
+    {
         "id": "741d6a53c563523e",
         "type": "socketcan-config",
-        "z": "3cc7b5ad84823166",
+        "z": "9d7655fa04382c75",
         "interface": "can0"
     },
     {
