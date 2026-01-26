@@ -32,11 +32,11 @@ public class DeclineInvitationCommandHandler : IRequestHandler<DeclineInvitation
     {
         var currentUserId = _user.Id ?? throw new UnauthorizedAccessException("User not authenticated");
         
-        // Kullanıcının email'ini al
+        // Get current user's email
         var currentUserEmail = await _identityService.GetUserEmailAsync(currentUserId)
-            ?? throw new UnauthorizedAccessException("Kullanıcı email adresi bulunamadı");
+            ?? throw new UnauthorizedAccessException("User email address not found");
 
-        // Token ile davetiyeyi bul
+        // Find invitation by token
         var invitation = await _context.Invitations
             .FirstOrDefaultAsync(i => 
                 i.Token == request.Token && 
@@ -45,7 +45,7 @@ public class DeclineInvitationCommandHandler : IRequestHandler<DeclineInvitation
                 cancellationToken)
             ?? throw new Common.Exceptions.NotFoundException(nameof(Invitation), request.Token);
 
-        // Invitation'ı güncelle
+        // Update invitation status
         invitation.Status = InvitationStatus.Declined;
 
         await _context.SaveChangesAsync(cancellationToken);

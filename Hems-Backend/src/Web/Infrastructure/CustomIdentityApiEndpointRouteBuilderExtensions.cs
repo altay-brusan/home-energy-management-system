@@ -268,7 +268,8 @@ public static class IdentityApiEndpointRouteBuilderExtensions
                 return TypedResults.Unauthorized();
             }
 
-            return TypedResults.Text("Thank you for confirming your email.");
+            var successHtml = BuildEmailConfirmationSuccessHtml();
+            return TypedResults.Content(successHtml, "text/html; charset=utf-8");
         })
         .Add(endpointBuilder =>
         {
@@ -356,7 +357,10 @@ public static class IdentityApiEndpointRouteBuilderExtensions
 
         var accountGroup = routeGroup.MapGroup("/manage").RequireAuthorization();
 
-        accountGroup.MapPost("/2fa", async Task<Results<Ok<TwoFactorResponse>, ValidationProblem, NotFound>>
+        // OBSOLETE: This endpoint is not in use by any client application and scheduled for deletion.
+        // Two-factor authentication management endpoint - currently unused
+        #pragma warning disable CS0618 // Type or member is obsolete
+        accountGroup.MapPost("/2fa", [Obsolete("This endpoint is not in use and scheduled for deletion.")] async Task<Results<Ok<TwoFactorResponse>, ValidationProblem, NotFound>>
             (ClaimsPrincipal claimsPrincipal, [FromBody] TwoFactorRequest tfaRequest, [FromServices] IServiceProvider sp) =>
         {
             var signInManager = sp.GetRequiredService<SignInManager<TUser>>();
@@ -431,6 +435,7 @@ public static class IdentityApiEndpointRouteBuilderExtensions
                 IsMachineRemembered = await signInManager.IsTwoFactorClientRememberedAsync(user),
             });
         });
+        #pragma warning restore CS0618 // Type or member is obsolete
 
         accountGroup.MapGet("/info", async Task<Results<Ok<InfoResponse>, ValidationProblem, NotFound>>
             (ClaimsPrincipal claimsPrincipal, [FromServices] IServiceProvider sp) =>
@@ -619,5 +624,122 @@ public static class IdentityApiEndpointRouteBuilderExtensions
     private sealed class FromQueryAttribute : Attribute, IFromQueryMetadata
     {
         public string? Name => null;
+    }
+
+    private static string BuildEmailConfirmationSuccessHtml()
+    {
+        return @"<!DOCTYPE html>
+<html lang=""en"">
+<head>
+  <meta charset=""UTF-8"" />
+  <meta name=""viewport"" content=""width=device-width, initial-scale=1"" />
+  <title>Netzr - Email Confirmed</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      margin: 0;
+      padding: 24px;
+      background: linear-gradient(135deg, #00A270 0%, #007a54 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      max-width: 400px;
+      width: 100%;
+      background: #fff;
+      border-radius: 16px;
+      padding: 32px 24px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      text-align: center;
+    }
+    .logo {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #00A270 0%, #007a54 100%);
+      border-radius: 16px;
+      margin: 0 auto 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .logo svg {
+      width: 36px;
+      height: 36px;
+      fill: white;
+    }
+    .success-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #00A270 0%, #007a54 100%);
+      border-radius: 50%;
+      margin: 0 auto 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .success-icon svg {
+      width: 40px;
+      height: 40px;
+      fill: white;
+    }
+    h1 {
+      font-size: 24px;
+      margin: 0 0 12px;
+      color: #1a1a2e;
+    }
+    .subtitle {
+      color: #666;
+      margin: 0 0 24px;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+    .info-box {
+      background: #e8f5f0;
+      border: 1px solid #00A270;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 24px;
+      text-align: left;
+    }
+    .info-box strong {
+      display: block;
+      margin-bottom: 8px;
+      color: #007a54;
+    }
+    .info-box p {
+      margin: 4px 0;
+      font-size: 13px;
+      color: #007a54;
+    }
+    .footer-text {
+      color: #888;
+      font-size: 12px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class=""container"">
+    <div class=""success-icon"">
+      <svg viewBox=""0 0 24 24"" xmlns=""http://www.w3.org/2000/svg"">
+        <path d=""M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z""/>
+      </svg>
+    </div>
+
+    <h1>Email Confirmed!</h1>
+    <p class=""subtitle"">Your email address has been successfully verified. Your Netzr account is now fully activated.</p>
+
+    <div class=""info-box"">
+      <strong>What's next?</strong>
+      <p>Open the Netzr app on your mobile device and sign in with your credentials to start monitoring your energy system.</p>
+    </div>
+
+    <p class=""footer-text"">You can close this page now.</p>
+  </div>
+</body>
+</html>";
     }
 }

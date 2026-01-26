@@ -83,10 +83,17 @@ public static class DependencyInjection
         // Device Activity Service (centralized telemetry-based activity tracking)
         builder.Services.AddScoped<IDeviceActivityService, DeviceActivityService>();
 
-        // Parameter Update Background Service (SignalR-based async updates)
-        builder.Services.AddSingleton<ParameterUpdateBackgroundService>();
-        builder.Services.AddSingleton<IParameterUpdateQueueService>(sp => sp.GetRequiredService<ParameterUpdateBackgroundService>());
-        builder.Services.AddHostedService(sp => sp.GetRequiredService<ParameterUpdateBackgroundService>());
+        // Alarm Notification Sender (sends SignalR notifications for device alarms)
+        builder.Services.AddScoped<IAlarmNotificationSender, AlarmNotificationSender>();
+
+        // Device Parameter Update Service (synchronous REST-based updates with SignalR progress)
+        builder.Services.AddScoped<IDeviceParameterUpdateService, DeviceParameterUpdateService>();
+
+        // Device Lock Service (prevents concurrent device settings updates)
+        builder.Services.AddSingleton<IDeviceLockService, DeviceLockService>();
+
+        // Operation State Service (tracks parameter update operations for SignalR reconnection)
+        builder.Services.AddSingleton<IOperationStateService, OperationStateService>();
 
         // ThingsBoard Services
         builder.Services.AddHttpClient<IThingsBoardConnectorService, ThingsBoardConnectorService>();
@@ -110,15 +117,22 @@ public static class DependencyInjection
         builder.Services.AddTransient<IEmailSender<ApplicationUser>, EmailSender>();
         builder.Services.AddTransient<IInvitationEmailService, InvitationEmailService>();
 
+        // App Links settings for smart invitation redirect
+        builder.Services.Configure<AppLinksSettings>(builder.Configuration.GetSection("AppLinks"));
+        builder.Services.AddSingleton<IPlatformDetectionService, PlatformDetectionService>();
+
         // Demo Data Service (for app store assessment demo users)
         builder.Services.AddScoped<IDemoDataService, DemoDataService>();
 
         // Demo Simulation Data Service (provides simulated data for demo users)
         builder.Services.AddSingleton<IDemoSimulationDataService, DemoSimulationDataService>();
 
-        // Shared Device Stream Manager (singleton for reference-counted shared streams)
+        // Shared Device PowerFlow Stream Manager (singleton for reference-counted shared streams)
         builder.Services.Configure<SharedStreamOptions>(builder.Configuration.GetSection("SharedStream"));
-        builder.Services.AddSingleton<ISharedDeviceStreamManager, SharedDeviceStreamManager>();
+        builder.Services.AddSingleton<ISharedDevicePowerFlowStreamManager, SharedDevicePowerFlowStreamManager>();
+
+        // Component Details Cache Service (5-second TTL cache for sharing component details across users)
+        builder.Services.AddSingleton<IComponentDetailsCacheService, ComponentDetailsCacheService>();
 
         builder.Services.AddAuthorization(options =>
         {

@@ -1,4 +1,6 @@
+using Hems_Backend.Application.Common.Exceptions;
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -27,20 +29,22 @@ public class DeleteDeviceNotificationCommandHandler : IRequestHandler<DeleteDevi
 
     public async Task Handle(DeleteDeviceNotificationCommand request, CancellationToken cancellationToken)
     {
-        // Notification'ı bul ve kullanıcının erişim yetkisini kontrol et
+        // Find notification and verify user access
         var notification = await _context.DeviceNotifications
             .Include(dn => dn.Site)
             .FirstOrDefaultAsync(dn => dn.Id == request.NotificationId, cancellationToken);
 
         if (notification == null)
         {
-            throw new ArgumentException($"Notification with ID {request.NotificationId} not found.");
+            throw AppException.NotFound(
+                MessageCodes.NOTIFICATION_NOT_FOUND,
+                new Dictionary<string, object> { ["notificationId"] = request.NotificationId });
         }
 
-        // Site erişim yetkisini kontrol et
+        // Validate site access
         await ValidateNotificationAccessAsync(notification.SiteId, cancellationToken);
 
-        // Soft delete - sadece IsDeleted flag'ini true yap
+        // Soft delete
         notification.IsDeleted = true;
 
         await _context.SaveChangesAsync(cancellationToken);
@@ -48,7 +52,7 @@ public class DeleteDeviceNotificationCommandHandler : IRequestHandler<DeleteDevi
 
     private async Task ValidateNotificationAccessAsync(Guid siteId, CancellationToken cancellationToken)
     {
-        // Admin kullanıcılar tüm site'lara erişebilir
+        // Admin users can access all sites
         if (_user.Id != null)
         {
             var isAdmin = await _identityService.IsInRoleAsync(_user.Id, "Administrator");
@@ -58,19 +62,21 @@ public class DeleteDeviceNotificationCommandHandler : IRequestHandler<DeleteDevi
             }
         }
 
-        // Site sahibi kontrolü
+        // Check if user is site owner
         var isOwner = await _context.Sites
             .AnyAsync(s => s.Id == siteId && s.UserId == _user.Id, cancellationToken);
 
         if (isOwner) return;
 
-        // UserSite erişim kontrolü
+        // Check UserSite access
         var hasUserSiteAccess = await _context.UserSites
             .AnyAsync(us => us.SiteId == siteId && us.UserId == _user.Id, cancellationToken);
 
         if (!hasUserSiteAccess)
         {
-            throw new UnauthorizedAccessException("Notification access denied");
+            throw AppException.Forbidden(
+                MessageCodes.NOTIFICATION_ACCESS_DENIED,
+                new Dictionary<string, object> { ["siteId"] = siteId });
         }
     }
 }

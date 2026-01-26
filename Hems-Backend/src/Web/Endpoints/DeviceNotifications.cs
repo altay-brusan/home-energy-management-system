@@ -4,7 +4,7 @@ using Hems_Backend.Application.DeviceNotifications.Commands.CreateDeviceNotifica
 using Hems_Backend.Application.DeviceNotifications.Commands.DeleteDeviceNotification;
 using Hems_Backend.Application.DeviceNotifications.Commands.MarkAllSiteNotificationsAsRead;
 using Hems_Backend.Application.DeviceNotifications.Commands.MarkNotificationAsRead;
-using Hems_Backend.Application.DeviceNotifications.Commands.PermanentDeleteDeviceNotification;
+using Hems_Backend.Application.DeviceNotifications.Commands.PurgeDeviceNotification;
 using Hems_Backend.Application.DeviceNotifications.Commands.ProcessDeviceAlarm;
 using Hems_Backend.Application.DeviceNotifications.Commands.RestoreDeviceNotification;
 using Hems_Backend.Application.DeviceNotifications.Common.Models;
@@ -34,13 +34,17 @@ public class DeviceNotifications : EndpointGroupBase
         app.MapGroup(this)
             .RequireAuthorization()
             .MapGet(GetDeviceNotifications)
-            .MapGet(GetDeviceNotificationTypes, "types")
-            .MapGet(GetDeletedDeviceNotifications, "deleted")
-            .MapPut(MarkDeviceNotificationAsRead, "{id}/mark-read")
-            .MapPut(MarkAllSiteNotificationsAsRead, "mark-all-read/{siteId}")
+            .MapGet(GetDeletedDeviceNotifications, "Deleted")
+            .MapPut(MarkDeviceNotificationAsRead, "{id}/MarkRead")
+            .MapPut(MarkAllSiteNotificationsAsRead, "MarkAllRead/{siteId}")
+            .MapPut(RestoreDeviceNotification, "{id}/Restore")
             .MapDelete(DeleteDeviceNotification, "{id}")
-            .MapPut(RestoreDeviceNotification, "{id}/restore")
-            .MapDelete(PermanentDeleteDeviceNotification, "{id}/permanent");
+            .MapDelete(PurgeDeviceNotification, "{id}/Purge");
+
+        // Admin endpoints (for data management without direct database access)
+        app.MapGroup(this)
+            .RequireAuthorization(Policies.AdminOnly)
+            .MapGet(GetDeviceNotificationTypes, "Admin/Types");
     }
 
     [Authorize(Policies.DeviceOnly)]
@@ -98,11 +102,9 @@ public class DeviceNotifications : EndpointGroupBase
                         Id = dn.DeviceNotificationType.Id,
                         Code = dn.DeviceNotificationType.Code,
                         Message = dn.DeviceNotificationType.Message,
-                        Status = dn.DeviceNotificationType.Status,
                         Description = dn.DeviceNotificationType.Description,
-                        Register = dn.DeviceNotificationType.Register,
-                        Value = dn.DeviceNotificationType.Value,
                         Category = dn.DeviceNotificationType.Category,
+                        Severity = dn.DeviceNotificationType.Severity,
                         Version = dn.DeviceNotificationType.Version,
                         Manufacturer = dn.DeviceNotificationType.Manufacturer,
                         IsActive = dn.DeviceNotificationType.IsActive
@@ -194,11 +196,11 @@ public class DeviceNotifications : EndpointGroupBase
     }
 
     [Authorize]
-    public static async Task<IResult> PermanentDeleteDeviceNotification(
+    public static async Task<IResult> PurgeDeviceNotification(
         Guid id,
         ISender sender)
     {
-        await sender.Send(new PermanentDeleteDeviceNotificationCommand { NotificationId = id });
+        await sender.Send(new PurgeDeviceNotificationCommand { NotificationId = id });
         return TypedResults.NoContent();
     }
 }

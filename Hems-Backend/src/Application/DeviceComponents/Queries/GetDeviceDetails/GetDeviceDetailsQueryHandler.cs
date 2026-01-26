@@ -13,6 +13,8 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
     private readonly IApplicationDbContext _context;
     private readonly IThingsBoardConnectorService _tbService;
     private readonly IDeviceMappingService _deviceMapping;
+    private readonly IDeviceActivityService _activityService;
+    private readonly IComponentDetailsCacheService _cacheService;
     private readonly ILogger<GetDeviceDetailsQueryHandler> _logger;
     private readonly IDemoDataService _demoDataService;
     private readonly IDemoSimulationDataService _demoSimulationService;
@@ -21,6 +23,8 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
         IApplicationDbContext context,
         IThingsBoardConnectorService tbService,
         IDeviceMappingService deviceMapping,
+        IDeviceActivityService activityService,
+        IComponentDetailsCacheService cacheService,
         ILogger<GetDeviceDetailsQueryHandler> logger,
         IDemoDataService demoDataService,
         IDemoSimulationDataService demoSimulationService)
@@ -28,6 +32,8 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
         _context = context;
         _tbService = tbService;
         _deviceMapping = deviceMapping;
+        _activityService = activityService;
+        _cacheService = cacheService;
         _logger = logger;
         _demoDataService = demoDataService;
         _demoSimulationService = demoSimulationService;
@@ -46,14 +52,24 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
             return null;
         }
 
-        // Step 2: Check if this is a demo device - return simulated data
+        // Step 2: Check if this is a demo device - return simulated data (no caching needed)
         var isDemoDevice = await _demoDataService.IsDemoDeviceAsync(component.DeviceId, cancellationToken);
         if (isDemoDevice)
         {
             return BuildDemoDeviceDetails(component);
         }
 
-        // Step 3: Get ThingsBoard Device ID for real devices
+        // Step 3: Check cache for real devices (5-second TTL)
+        // This allows multiple users to get the same data without duplicate RPC calls
+        if (_cacheService.TryGetCachedDetails(request.ComponentId, out var cachedDetails))
+        {
+            _logger.LogDebug(
+                "Returning cached component details for {ComponentId}",
+                request.ComponentId);
+            return cachedDetails;
+        }
+
+        // Step 4: Get ThingsBoard Device ID for real devices
         var tbDeviceId = await _deviceMapping.GetThingsBoardDeviceIdAsync(component.DeviceId, cancellationToken);
         if (tbDeviceId == null)
         {
@@ -61,7 +77,7 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
             return null;
         }
 
-        // Step 4: Call appropriate RPC based on device type
+        // Step 5: Call appropriate RPC based on device type
         var response = new DeviceDetailsResponseDto();
 
         switch (component.DeviceType)
@@ -72,7 +88,7 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
 
             case DeviceType.BMS:
             case DeviceType.Battery:
-                response.Details = await BuildBatteryDetailsAsync(component, tbDeviceId.Value, cancellationToken);
+                response.Details = await BuildBatteryDetailsAsync(component, tbDeviceId.Value, request.BmsAddress, cancellationToken);
                 break;
 
             default:
@@ -81,13 +97,19 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
                 return null;
         }
 
+        // Step 6: Cache the response (include bmsAddress in cache key if specified)
+        var cacheKey = request.BmsAddress.HasValue
+            ? $"{request.ComponentId}_{request.BmsAddress}"
+            : request.ComponentId.ToString();
+        _cacheService.CacheDetails(request.ComponentId, response);
+
         return response;
     }
 
     #region Demo Device Details
 
     /// <summary>
-    /// Build device details for demo devices using simulated data
+    /// Build device details for demo devices using centralized DemoSimulationDataService
     /// </summary>
     private DeviceDetailsResponseDto BuildDemoDeviceDetails(Domain.Entities.DeviceComponent component)
     {
@@ -115,392 +137,65 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
     }
 
     /// <summary>
-    /// Build simulated battery details for demo devices
-    /// Uses GetBatterySoc() from simulation service for consistent SOC with dashboard
+    /// Build simulated battery details for demo devices using centralized service
     /// </summary>
     private List<DeviceDetailItemDto> BuildDemoBatteryDetails(Domain.Entities.DeviceComponent component)
     {
         var details = new List<DeviceDetailItemDto>();
 
-        // Get SOC from simulation service (same as dashboard uses)
-        var soc = _demoSimulationService.GetBatterySoc(DateTime.UtcNow);
-
-        // Realtime data
-        details.Add(new DeviceDetailItemDto
+        // Get realtime data from centralized service
+        var realtimeDetails = _demoSimulationService.GetDemoBatteryRealtimeDetails();
+        details.AddRange(realtimeDetails.Select(d => new DeviceDetailItemDto
         {
-            Key = "soc",
-            Value = Math.Round(soc, 1),
-            Unit = "%",
-            LabelKey = "realtime.soc"
-        });
+            Key = d.Key,
+            Value = d.Value,
+            Unit = d.Unit,
+            LabelKey = d.LabelKey
+        }));
 
-        // State of Health (simulated - batteries typically maintain 95%+ for first few years)
-        details.Add(new DeviceDetailItemDto
+        // Get parameter data from centralized service
+        var parameterDetails = _demoSimulationService.GetDemoBatteryParameterDetails(
+            component.Name, component.Manufacturer, component.ModelNumber, component.SerialNumber);
+        details.AddRange(parameterDetails.Select(d => new DeviceDetailItemDto
         {
-            Key = "soh",
-            Value = 98.5,
-            Unit = "%",
-            LabelKey = "realtime.soh"
-        });
-
-        // Battery voltage - realistic for a 51.2V LiFePO4 battery pack
-        // Voltage varies with SOC: ~48V at 0%, ~54V at 100%
-        var voltage = 48.0 + (soc / 100.0) * 6.0;
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "voltage",
-            Value = Math.Round(voltage, 1),
-            Unit = "V",
-            LabelKey = "realtime.voltage"
-        });
-
-        // Battery current - based on current power flow
-        // Positive = charging, Negative = discharging
-        var powerFlow = _demoSimulationService.GetCurrentPowerFlow(Guid.Empty);
-        var batteryCurrent = (powerFlow.BatteryPowerKw * 1000) / voltage; // I = P/V
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "current",
-            Value = Math.Round(batteryCurrent, 2),
-            Unit = "A",
-            LabelKey = "realtime.current"
-        });
-
-        // Battery temperature (realistic range 20-35°C during operation)
-        var hour = DateTime.UtcNow.Hour;
-        var baseTemp = 25.0 + Math.Sin((hour - 6) * Math.PI / 12) * 5; // Varies with time of day
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "temperature",
-            Value = Math.Round(baseTemp, 1),
-            Unit = "°C",
-            LabelKey = "realtime.temperature"
-        });
-
-        // Cycle count (simulated - ~500 cycles for a 2-year old battery)
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "cycleCount",
-            Value = 487,
-            Unit = null,
-            LabelKey = "realtime.cycleCount"
-        });
-
-        // Parameter data from component
-        AddDemoBatteryParameterDetails(details, component);
+            Key = d.Key,
+            Value = d.Value,
+            Unit = d.Unit,
+            LabelKey = d.LabelKey
+        }));
 
         return details;
     }
 
     /// <summary>
-    /// Add parameter details for demo battery
-    /// </summary>
-    private void AddDemoBatteryParameterDetails(List<DeviceDetailItemDto> details, Domain.Entities.DeviceComponent component)
-    {
-        // Name
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "name",
-            Value = component.Name ?? "Demo Battery",
-            Unit = null,
-            LabelKey = "parameter.name"
-        });
-
-        // Manufacturer
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "manufacturer",
-            Value = component.Manufacturer ?? "Pylontech",
-            Unit = null,
-            LabelKey = "parameter.manufacturer"
-        });
-
-        // Model
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "model",
-            Value = component.ModelNumber ?? "US3000C",
-            Unit = null,
-            LabelKey = "parameter.model"
-        });
-
-        // Serial Number
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "serialNumber",
-            Value = component.SerialNumber ?? "DEMO-BAT-001",
-            Unit = null,
-            LabelKey = "parameter.serialNumber"
-        });
-
-        // Capacity
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "capacity",
-            Value = 3.55,
-            Unit = "kWh",
-            LabelKey = "parameter.capacity"
-        });
-
-        // Rated Voltage
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "ratedVoltage",
-            Value = 51.2,
-            Unit = "V",
-            LabelKey = "parameter.ratedVoltage"
-        });
-
-        // Chemistry
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "chemistry",
-            Value = "LiFePO4",
-            Unit = null,
-            LabelKey = "parameter.chemistry"
-        });
-
-        // Firmware Version
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "firmwareVersion",
-            Value = "V2.8",
-            Unit = null,
-            LabelKey = "parameter.firmwareVersion"
-        });
-    }
-
-    /// <summary>
-    /// Build simulated inverter details for demo devices
+    /// Build simulated inverter details for demo devices using centralized service
     /// </summary>
     private List<DeviceDetailItemDto> BuildDemoInverterDetails(Domain.Entities.DeviceComponent component)
     {
         var details = new List<DeviceDetailItemDto>();
 
-        // Get current power flow for realistic values
-        var powerFlow = _demoSimulationService.GetCurrentPowerFlow(Guid.Empty);
-
-        // Run State
-        var runState = (powerFlow.SolarPowerKw > 0.1) ? "Normal Operation" : "Standby";
-        details.Add(new DeviceDetailItemDto
+        // Get realtime data from centralized service
+        var realtimeDetails = _demoSimulationService.GetDemoInverterRealtimeDetails();
+        details.AddRange(realtimeDetails.Select(d => new DeviceDetailItemDto
         {
-            Key = "runState",
-            Value = runState,
-            Unit = null,
-            LabelKey = "realtime.runState"
-        });
+            Key = d.Key,
+            Value = d.Value,
+            Unit = d.Unit,
+            LabelKey = d.LabelKey
+        }));
 
-        // Output Active Power (total load power in W)
-        details.Add(new DeviceDetailItemDto
+        // Get parameter data from centralized service
+        var parameterDetails = _demoSimulationService.GetDemoInverterParameterDetails(
+            component.Name, component.Manufacturer, component.ModelNumber, component.SerialNumber);
+        details.AddRange(parameterDetails.Select(d => new DeviceDetailItemDto
         {
-            Key = "outputActivePower",
-            Value = Math.Round(powerFlow.LoadPowerKw * 1000, 0),
-            Unit = "W",
-            LabelKey = "realtime.outputActivePower"
-        });
-
-        // Output Apparent Power (slightly higher than active due to power factor)
-        var apparentPower = powerFlow.LoadPowerKw * 1000 * 1.05;
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "outputApparentPower",
-            Value = Math.Round(apparentPower, 0),
-            Unit = "VA",
-            LabelKey = "realtime.outputApparentPower"
-        });
-
-        // Three-phase output data (European standard 230V ± 5% per phase)
-        // Use seeded random for consistent values per call
-        var voltageRandom = new Random(DateTime.UtcNow.Hour * 60 + DateTime.UtcNow.Minute / 5);
-
-        // Calculate phase voltages
-        var phaseAVoltage = 230.0 + (voltageRandom.NextDouble() * 6 - 3);
-        var phaseBVoltage = 230.0 + (voltageRandom.NextDouble() * 6 - 3);
-        var phaseCVoltage = 230.0 + (voltageRandom.NextDouble() * 6 - 3);
-
-        // Calculate phase currents (balanced load distribution across 3 phases)
-        var totalCurrent = (powerFlow.LoadPowerKw * 1000) / 230.0;
-        var phaseACurrent = totalCurrent / 3 * (0.95 + voltageRandom.NextDouble() * 0.1);
-        var phaseBCurrent = totalCurrent / 3 * (0.95 + voltageRandom.NextDouble() * 0.1);
-        var phaseCCurrent = totalCurrent / 3 * (0.95 + voltageRandom.NextDouble() * 0.1);
-
-        // Calculate phase power (P = V * I)
-        var phaseAPower = phaseAVoltage * phaseACurrent;
-        var phaseBPower = phaseBVoltage * phaseBCurrent;
-        var phaseCPower = phaseCVoltage * phaseCCurrent;
-
-        // Return phases as an array (format expected by frontend)
-        var phases = new[]
-        {
-            new Dictionary<string, object>
-            {
-                { "Phase Id", 1 },
-                { "Voltage", Math.Round(phaseAVoltage, 1) },
-                { "Current", Math.Round(phaseACurrent, 2) },
-                { "Power", Math.Round(phaseAPower, 0) }
-            },
-            new Dictionary<string, object>
-            {
-                { "Phase Id", 2 },
-                { "Voltage", Math.Round(phaseBVoltage, 1) },
-                { "Current", Math.Round(phaseBCurrent, 2) },
-                { "Power", Math.Round(phaseBPower, 0) }
-            },
-            new Dictionary<string, object>
-            {
-                { "Phase Id", 3 },
-                { "Voltage", Math.Round(phaseCVoltage, 1) },
-                { "Current", Math.Round(phaseCCurrent, 2) },
-                { "Power", Math.Round(phaseCPower, 0) }
-            }
-        };
-
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "Phases",
-            Value = phases,
-            Unit = null,
-            LabelKey = "realtime.phases"
-        });
-
-        // Output Frequency (European standard 50Hz) - single value shared across all phases
-        var outputFrequency = 50.0 + (voltageRandom.NextDouble() * 0.2 - 0.1);
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "outputFrequency",
-            Value = Math.Round(outputFrequency, 2),
-            Unit = "Hz",
-            LabelKey = "realtime.outputFrequency"
-        });
-
-        // Grid Side Active Power
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "gridSideActivePower",
-            Value = Math.Round(powerFlow.GridPowerKw * 1000, 0),
-            Unit = "W",
-            LabelKey = "realtime.gridSideActivePower"
-        });
-
-        // Inverter Heatsink Temperature (realistic 35-55°C during operation)
-        var heatsinkTemp = 40.0 + Math.Abs(powerFlow.LoadPowerKw) * 3 + (voltageRandom.NextDouble() * 5);
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "inverterHeatsinkTemp",
-            Value = Math.Round(heatsinkTemp, 1),
-            Unit = "°C",
-            LabelKey = "realtime.inverterHeatsinkTemp"
-        });
-
-        // Internal Ambient Temperature
-        var ambientTemp = 28.0 + (voltageRandom.NextDouble() * 4);
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "internalAmbientTemp",
-            Value = Math.Round(ambientTemp, 1),
-            Unit = "°C",
-            LabelKey = "realtime.internalAmbientTemp"
-        });
-
-        // AC Input Status
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "gridSignalPresent",
-            Value = true,
-            Unit = null,
-            LabelKey = "realtime.gridSignalPresent"
-        });
-
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "generatorSignalPresent",
-            Value = false,
-            Unit = null,
-            LabelKey = "realtime.generatorSignalPresent"
-        });
-
-        // Parameter data from component
-        AddDemoInverterParameterDetails(details, component);
+            Key = d.Key,
+            Value = d.Value,
+            Unit = d.Unit,
+            LabelKey = d.LabelKey
+        }));
 
         return details;
-    }
-
-    /// <summary>
-    /// Add parameter details for demo inverter
-    /// </summary>
-    private void AddDemoInverterParameterDetails(List<DeviceDetailItemDto> details, Domain.Entities.DeviceComponent component)
-    {
-        // Name
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "name",
-            Value = component.Name ?? "Demo Inverter",
-            Unit = null,
-            LabelKey = "parameter.name"
-        });
-
-        // Manufacturer
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "manufacturer",
-            Value = component.Manufacturer ?? "Growatt",
-            Unit = null,
-            LabelKey = "parameter.manufacturer"
-        });
-
-        // Model
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "model",
-            Value = component.ModelNumber ?? "SPH5000",
-            Unit = null,
-            LabelKey = "parameter.model"
-        });
-
-        // Serial Number
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "serialNumber",
-            Value = component.SerialNumber ?? "DEMO-INV-001",
-            Unit = null,
-            LabelKey = "parameter.serialNumber"
-        });
-
-        // Rated Power
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "ratedPower",
-            Value = 5000,
-            Unit = "W",
-            LabelKey = "parameter.ratedPower"
-        });
-
-        // Rated Voltage
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "ratedVoltage",
-            Value = 230,
-            Unit = "V",
-            LabelKey = "parameter.ratedVoltage"
-        });
-
-        // Rated Frequency
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "ratedFrequency",
-            Value = 50,
-            Unit = "Hz",
-            LabelKey = "parameter.ratedFrequency"
-        });
-
-        // Firmware Version
-        details.Add(new DeviceDetailItemDto
-        {
-            Key = "firmwareVersion",
-            Value = "V3.2.1",
-            Unit = null,
-            LabelKey = "parameter.firmwareVersion"
-        });
     }
 
     #endregion
@@ -521,6 +216,15 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
         {
             // Add realtime data
             AddInverterRealtimeDetails(details, state);
+        }
+
+        // Get load state from RPC
+        var loadState = await GetLoadDeviceStateFromRpcAsync(tbDeviceId, cancellationToken);
+
+        if (loadState != null)
+        {
+            // Add load realtime data
+            AddLoadRealtimeDetails(details, loadState);
         }
 
         // Add parameter data from database
@@ -841,6 +545,12 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
 
             if (rpcResponse?.Success == true && rpcResponse.Response != null)
             {
+                // Record device activity - device is online since RPC succeeded
+                await _activityService.RecordActivityAsync(
+                    tbDeviceId,
+                    TelemetrySource.PowerFlow,
+                    cancellationToken: cancellationToken);
+
                 // Response is wrapped: {"success": true, "data": {...}}
                 // Extract the "data" property if present
                 if (rpcResponse.Response.TryGetValue("data", out var dataObj) && dataObj != null)
@@ -862,6 +572,183 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
         return null;
     }
 
+    private async Task<LoadDeviceStateDto?> GetLoadDeviceStateFromRpcAsync(
+        Guid tbDeviceId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var rpcResponse = await _tbService.SendTwoWayRpcAsync(
+                tbDeviceId,
+                "getLoadDeviceState",
+                new Dictionary<string, object>(),
+                timeoutMs: 10000,
+                cancellationToken: cancellationToken);
+
+            if (rpcResponse?.Success == true && rpcResponse.Response != null)
+            {
+                // Record device activity - device is online since RPC succeeded
+                await _activityService.RecordActivityAsync(
+                    tbDeviceId,
+                    TelemetrySource.PowerFlow,
+                    cancellationToken: cancellationToken);
+
+                // Response is wrapped: {"success": true, "data": {...}}
+                // Extract the "data" property if present
+                if (rpcResponse.Response.TryGetValue("data", out var dataObj) && dataObj != null)
+                {
+                    var dataJson = JsonSerializer.Serialize(dataObj);
+                    return JsonSerializer.Deserialize<LoadDeviceStateDto>(dataJson);
+                }
+
+                // Fallback: try deserializing the whole response
+                var json = JsonSerializer.Serialize(rpcResponse.Response);
+                return JsonSerializer.Deserialize<LoadDeviceStateDto>(json);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get load device state from RPC for device {DeviceId}", tbDeviceId);
+        }
+
+        return null;
+    }
+
+    private void AddLoadRealtimeDetails(List<DeviceDetailItemDto> details, LoadDeviceStateDto state)
+    {
+        // Load Power - Total
+        if (state.LoadTotalActivePowerW.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "loadTotalActivePower",
+                Value = state.LoadTotalActivePowerW.Value,
+                Unit = "W",
+                LabelKey = "realtime.loadTotalActivePower"
+            });
+        }
+
+        // Load Power - Phase A
+        if (state.LoadPhaseAPowerW.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "loadPhaseAPower",
+                Value = state.LoadPhaseAPowerW.Value,
+                Unit = "W",
+                LabelKey = "realtime.loadPhaseAPower"
+            });
+        }
+
+        // Load Power - Phase B
+        if (state.LoadPhaseBPowerW.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "loadPhaseBPower",
+                Value = state.LoadPhaseBPowerW.Value,
+                Unit = "W",
+                LabelKey = "realtime.loadPhaseBPower"
+            });
+        }
+
+        // Load Power - Phase C
+        if (state.LoadPhaseCPowerW.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "loadPhaseCPower",
+                Value = state.LoadPhaseCPowerW.Value,
+                Unit = "W",
+                LabelKey = "realtime.loadPhaseCPower"
+            });
+        }
+
+        // Load Voltage - Phase A
+        if (state.LoadPhaseAVoltageV.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "loadPhaseAVoltage",
+                Value = state.LoadPhaseAVoltageV.Value,
+                Unit = "V",
+                LabelKey = "realtime.loadPhaseAVoltage"
+            });
+        }
+
+        // Load Voltage - Phase B
+        if (state.LoadPhaseBVoltageV.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "loadPhaseBVoltage",
+                Value = state.LoadPhaseBVoltageV.Value,
+                Unit = "V",
+                LabelKey = "realtime.loadPhaseBVoltage"
+            });
+        }
+
+        // Load Voltage - Phase C
+        if (state.LoadPhaseCVoltageV.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "loadPhaseCVoltage",
+                Value = state.LoadPhaseCVoltageV.Value,
+                Unit = "V",
+                LabelKey = "realtime.loadPhaseCVoltage"
+            });
+        }
+
+        // Load Frequency
+        if (state.FrequencyHz.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "loadFrequency",
+                Value = state.FrequencyHz.Value,
+                Unit = "Hz",
+                LabelKey = "realtime.loadFrequency"
+            });
+        }
+
+        // Load Scope (backup_load or total_load)
+        if (!string.IsNullOrEmpty(state.Scope))
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "loadScope",
+                Value = state.Scope,
+                Unit = null,
+                LabelKey = "realtime.loadScope"
+            });
+        }
+
+        // Today's Energy
+        if (state.TodayEnergyKWh.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "loadTodayEnergy",
+                Value = state.TodayEnergyKWh.Value,
+                Unit = "kWh",
+                LabelKey = "realtime.loadTodayEnergy"
+            });
+        }
+
+        // Total Energy
+        if (state.TotalEnergyKWh.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "loadTotalEnergy",
+                Value = state.TotalEnergyKWh.Value,
+                Unit = "kWh",
+                LabelKey = "realtime.loadTotalEnergy"
+            });
+        }
+    }
+
     #endregion
 
     #region Battery Details
@@ -869,68 +756,466 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
     private async Task<List<DeviceDetailItemDto>> BuildBatteryDetailsAsync(
         Domain.Entities.DeviceComponent component,
         Guid tbDeviceId,
+        int? bmsAddress,
         CancellationToken cancellationToken)
     {
         var details = new List<DeviceDetailItemDto>();
 
-        // Get battery SoC state from RPC
-        var socState = await GetBatterySocStateFromRpcAsync(tbDeviceId, cancellationToken);
+        // Get battery energy flow state from RPC (includes BMS list)
+        var energyFlowState = await GetBatteryEnergyFlowStateFromRpcAsync(tbDeviceId, cancellationToken);
 
-        if (socState != null)
+        // Get battery info state from RPC for static data (serial numbers, firmware)
+        var batteryInfo = await GetBatteryInfoFromRpcAsync(tbDeviceId, cancellationToken);
+
+        if (bmsAddress.HasValue)
         {
-            // Add realtime data (SoC, SoH)
-            AddBatteryRealtimeDetails(details, socState, component.SerialNumber);
+            // Return specific BMS data
+            BuildSpecificBmsDetails(details, energyFlowState, batteryInfo, bmsAddress.Value);
         }
-
-        // Add parameter data from database
-        AddBatteryParameterDetails(details, component);
+        else
+        {
+            // Return aggregate data (legacy behavior)
+            if (energyFlowState != null)
+            {
+                AddBatteryAggregateRealtimeDetails(details, energyFlowState);
+                AddBmsListDetails(details, energyFlowState);
+            }
+            AddBatteryParameterDetails(details, component);
+        }
 
         return details;
     }
 
-    private void AddBatteryRealtimeDetails(List<DeviceDetailItemDto> details, BatterySocStateDto socState, string? componentSerialNumber)
+    /// <summary>
+    /// Builds detailed view for a specific BMS module
+    /// </summary>
+    private void BuildSpecificBmsDetails(
+        List<DeviceDetailItemDto> details,
+        BatteryEnergyFlowStateDto? energyFlowState,
+        BatteryInfoStateDto? batteryInfo,
+        int bmsAddress)
     {
-        // Try to find matching battery data by serial number
-        BmsSocDetailRpcDto? matchingBattery = null;
+        // Get live data for this specific BMS
+        var bmsLiveData = energyFlowState?.BmsList?.FirstOrDefault(b => b.BmsAddress == bmsAddress);
 
-        if (socState.BmsSocDetails != null && !string.IsNullOrEmpty(componentSerialNumber))
-        {
-            matchingBattery = socState.BmsSocDetails
-                .FirstOrDefault(b => b.DeviceId == componentSerialNumber);
-        }
+        // Get static info for this specific BMS
+        var bmsStaticInfo = batteryInfo?.BmsList?.FirstOrDefault(b => b.BmsAddress == bmsAddress);
 
-        // If we found a matching battery, use its data
-        if (matchingBattery != null)
+        // ========== Static/Parameter Info ==========
+        // Name based on BMS address
+        details.Add(new DeviceDetailItemDto
         {
-            if (matchingBattery.SocPercent.HasValue)
+            Key = "name",
+            Value = $"Battery Pack {bmsAddress}",
+            Unit = null,
+            LabelKey = "parameter.name"
+        });
+
+        // Manufacturer
+        if (!string.IsNullOrEmpty(batteryInfo?.ManufacturerName))
+        {
+            details.Add(new DeviceDetailItemDto
             {
-                details.Add(new DeviceDetailItemDto
-                {
-                    Key = "soc",
-                    Value = matchingBattery.SocPercent.Value,
-                    Unit = "%",
-                    LabelKey = "realtime.soc"
-                });
-            }
-
-            // Add SoH if available (you might need to add this to BmsSocDetailRpcDto)
-            // For now, we'll skip it if not available
+                Key = "manufacturer",
+                Value = batteryInfo.ManufacturerName,
+                Unit = null,
+                LabelKey = "parameter.manufacturer"
+            });
         }
-        else if (socState.InverterBatChannelSoc != null && socState.InverterBatChannelSoc.Any())
+
+        // Model (rated capacity)
+        if (bmsStaticInfo?.RatedCapacityAh.HasValue == true)
         {
-            // Fall back to inverter-level battery data (average SoC)
-            var avgSoc = socState.InverterBatChannelSoc
-                .Where(c => c.SocPercent.HasValue)
-                .Average(c => c.SocPercent!.Value);
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "model",
+                Value = $"{bmsStaticInfo.RatedCapacityAh}Ah",
+                Unit = null,
+                LabelKey = "parameter.model"
+            });
+        }
+
+        // Serial Number
+        if (!string.IsNullOrEmpty(bmsStaticInfo?.SerialNumber))
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "serialNumber",
+                Value = bmsStaticInfo.SerialNumber,
+                Unit = null,
+                LabelKey = "parameter.serialNumber"
+            });
+        }
+
+        // Firmware Version
+        if (bmsStaticInfo?.SoftwareVersionMain.HasValue == true)
+        {
+            var firmwareVersion = bmsStaticInfo.SoftwareVersionSub.HasValue
+                ? $"{bmsStaticInfo.SoftwareVersionMain}.{bmsStaticInfo.SoftwareVersionSub}"
+                : bmsStaticInfo.SoftwareVersionMain.ToString();
 
             details.Add(new DeviceDetailItemDto
             {
+                Key = "firmwareVersion",
+                Value = firmwareVersion,
+                Unit = null,
+                LabelKey = "parameter.firmwareVersion"
+            });
+        }
+
+        // Rated Capacity
+        var ratedCapacity = bmsStaticInfo?.RatedCapacityAh ?? bmsLiveData?.RatedCapacityAh;
+        if (ratedCapacity.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "ratedCapacity",
+                Value = ratedCapacity.Value,
+                Unit = "Ah",
+                LabelKey = "parameter.ratedCapacity"
+            });
+        }
+
+        // ========== Real-time Data ==========
+        if (bmsLiveData == null)
+        {
+            return;
+        }
+
+        // State of Charge
+        var soc = bmsLiveData.SocPercent;
+        if (!soc.HasValue && bmsLiveData.BatteryRemainingCapacityAh.HasValue && ratedCapacity.HasValue && ratedCapacity > 0)
+        {
+            soc = bmsLiveData.BatteryRemainingCapacityAh.Value / ratedCapacity.Value * 100;
+        }
+        if (soc.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
                 Key = "soc",
-                Value = Math.Round(avgSoc, 1),
+                Value = Math.Round(soc.Value, 1),
                 Unit = "%",
                 LabelKey = "realtime.soc"
             });
         }
+
+        // State of Health
+        if (bmsLiveData.SohPercent.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "soh",
+                Value = Math.Round(bmsLiveData.SohPercent.Value, 1),
+                Unit = "%",
+                LabelKey = "realtime.soh"
+            });
+        }
+
+        // Charge/Discharge Status
+        if (bmsLiveData.ChargeDischargeStatus.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "chargeDischargeStatus",
+                Value = BmsDetailItemDto.GetStatusText(bmsLiveData.ChargeDischargeStatus),
+                Unit = null,
+                LabelKey = "realtime.chargeDischargeStatus"
+            });
+        }
+
+        // Voltage
+        if (bmsLiveData.BatteryPackVoltageV.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "voltage",
+                Value = Math.Round(bmsLiveData.BatteryPackVoltageV.Value, 2),
+                Unit = "V",
+                LabelKey = "realtime.voltage"
+            });
+        }
+
+        // Current
+        if (bmsLiveData.CurrentA.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "current",
+                Value = Math.Round(bmsLiveData.CurrentA.Value, 2),
+                Unit = "A",
+                LabelKey = "realtime.current"
+            });
+        }
+
+        // Remaining Capacity
+        if (bmsLiveData.BatteryRemainingCapacityAh.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "remainingCapacity",
+                Value = Math.Round(bmsLiveData.BatteryRemainingCapacityAh.Value, 2),
+                Unit = "Ah",
+                LabelKey = "realtime.remainingCapacity"
+            });
+        }
+
+        // Average Cell Temperature
+        if (bmsLiveData.AvgCellTempC.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "temperature",
+                Value = Math.Round(bmsLiveData.AvgCellTempC.Value, 1),
+                Unit = "°C",
+                LabelKey = "realtime.temperature"
+            });
+        }
+
+        // Cell Voltage Info - Min
+        if (bmsLiveData.MinCellVoltageMv.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "minCellVoltage",
+                Value = bmsLiveData.MinCellVoltageMv.Value,
+                Unit = "mV",
+                LabelKey = "realtime.minCellVoltage"
+            });
+        }
+
+        // Cell Voltage Info - Max
+        if (bmsLiveData.MaxCellVoltageMv.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "maxCellVoltage",
+                Value = bmsLiveData.MaxCellVoltageMv.Value,
+                Unit = "mV",
+                LabelKey = "realtime.maxCellVoltage"
+            });
+        }
+
+        // Cell Voltage Info - Average
+        if (bmsLiveData.AvgCellVoltageMv.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "avgCellVoltage",
+                Value = bmsLiveData.AvgCellVoltageMv.Value,
+                Unit = "mV",
+                LabelKey = "realtime.avgCellVoltage"
+            });
+        }
+
+        // Total Discharge Energy
+        if (bmsLiveData.TotalDischargeWh.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "totalDischarge",
+                Value = Math.Round(bmsLiveData.TotalDischargeWh.Value / 1000.0, 2),
+                Unit = "kWh",
+                LabelKey = "realtime.totalDischarge"
+            });
+        }
+
+        // Cycle Count
+        if (bmsLiveData.CycleCount.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "cycleCount",
+                Value = bmsLiveData.CycleCount.Value,
+                Unit = null,
+                LabelKey = "realtime.cycleCount"
+            });
+        }
+    }
+
+    private async Task<BatteryInfoStateDto?> GetBatteryInfoFromRpcAsync(
+        Guid tbDeviceId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var rpcResponse = await _tbService.SendTwoWayRpcAsync(
+                tbDeviceId,
+                "getBatteryInfoState",
+                new Dictionary<string, object>(),
+                timeoutMs: 10000,
+                cancellationToken: cancellationToken);
+
+            if (rpcResponse?.Success == true && rpcResponse.Response != null)
+            {
+                if (rpcResponse.Response.TryGetValue("data", out var dataObj) && dataObj != null)
+                {
+                    var dataJson = JsonSerializer.Serialize(dataObj);
+                    return JsonSerializer.Deserialize<BatteryInfoStateDto>(dataJson);
+                }
+
+                var json = JsonSerializer.Serialize(rpcResponse.Response);
+                return JsonSerializer.Deserialize<BatteryInfoStateDto>(json);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get battery info from RPC for device {DeviceId}", tbDeviceId);
+        }
+
+        return null;
+    }
+
+    private async Task<BatteryEnergyFlowStateDto?> GetBatteryEnergyFlowStateFromRpcAsync(
+        Guid tbDeviceId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var rpcResponse = await _tbService.SendTwoWayRpcAsync(
+                tbDeviceId,
+                "getBatteryEnergyFlowState",
+                new Dictionary<string, object>(),
+                timeoutMs: 10000,
+                cancellationToken: cancellationToken);
+
+            if (rpcResponse?.Success == true && rpcResponse.Response != null)
+            {
+                // Record device activity - device is online since RPC succeeded
+                await _activityService.RecordActivityAsync(
+                    tbDeviceId,
+                    TelemetrySource.BatteryEnergyFlow,
+                    cancellationToken: cancellationToken);
+
+                // Response is wrapped: {"success": true, "data": {...}}
+                // Extract the "data" property if present
+                if (rpcResponse.Response.TryGetValue("data", out var dataObj) && dataObj != null)
+                {
+                    var dataJson = JsonSerializer.Serialize(dataObj);
+                    return JsonSerializer.Deserialize<BatteryEnergyFlowStateDto>(dataJson);
+                }
+
+                // Fallback: try deserializing the whole response
+                var json = JsonSerializer.Serialize(rpcResponse.Response);
+                return JsonSerializer.Deserialize<BatteryEnergyFlowStateDto>(json);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to get battery energy flow state from RPC for device {DeviceId}", tbDeviceId);
+        }
+
+        return null;
+    }
+
+    private void AddBatteryAggregateRealtimeDetails(List<DeviceDetailItemDto> details, BatteryEnergyFlowStateDto state)
+    {
+        // State of Charge
+        if (state.SocPercent.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "soc",
+                Value = Math.Round(state.SocPercent.Value, 1),
+                Unit = "%",
+                LabelKey = "realtime.soc"
+            });
+        }
+
+        // State of Health
+        if (state.SohPercent.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "soh",
+                Value = Math.Round(state.SohPercent.Value, 1),
+                Unit = "%",
+                LabelKey = "realtime.soh"
+            });
+        }
+
+        // Voltage
+        if (state.VoltageV.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "voltage",
+                Value = Math.Round(state.VoltageV.Value, 2),
+                Unit = "V",
+                LabelKey = "realtime.voltage"
+            });
+        }
+
+        // Current
+        if (state.CurrentA.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "current",
+                Value = Math.Round(state.CurrentA.Value, 2),
+                Unit = "A",
+                LabelKey = "realtime.current"
+            });
+        }
+
+        // Temperature
+        if (state.TemperatureC.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "temperature",
+                Value = Math.Round(state.TemperatureC.Value, 1),
+                Unit = "°C",
+                LabelKey = "realtime.temperature"
+            });
+        }
+
+        // BMS Count
+        if (state.BmsCount.HasValue)
+        {
+            details.Add(new DeviceDetailItemDto
+            {
+                Key = "bmsCount",
+                Value = state.BmsCount.Value,
+                Unit = null,
+                LabelKey = "realtime.bmsCount"
+            });
+        }
+    }
+
+    private void AddBmsListDetails(List<DeviceDetailItemDto> details, BatteryEnergyFlowStateDto state)
+    {
+        if (state.BmsList == null || state.BmsList.Count == 0)
+        {
+            return;
+        }
+
+        // Convert BMS list to detailed items with human-readable status text
+        var bmsList = state.BmsList.Select(bms => new BmsDetailItemDto
+        {
+            BmsAddress = bms.BmsAddress,
+            ChargeDischargeStatus = bms.ChargeDischargeStatus,
+            ChargeDischargeStatusText = BmsDetailItemDto.GetStatusText(bms.ChargeDischargeStatus),
+            CurrentA = bms.CurrentA.HasValue ? Math.Round(bms.CurrentA.Value, 2) : null,
+            VoltageV = bms.BatteryPackVoltageV.HasValue ? Math.Round(bms.BatteryPackVoltageV.Value, 2) : null,
+            RemainingCapacityAh = bms.BatteryRemainingCapacityAh.HasValue ? Math.Round(bms.BatteryRemainingCapacityAh.Value, 2) : null,
+            MaxCellVoltageMv = bms.MaxCellVoltageMv,
+            MinCellVoltageMv = bms.MinCellVoltageMv,
+            AvgCellVoltageMv = bms.AvgCellVoltageMv,
+            AvgCellTempC = bms.AvgCellTempC.HasValue ? Math.Round(bms.AvgCellTempC.Value, 1) : null,
+            RatedCapacityAh = bms.RatedCapacityAh,
+            TotalDischargeWh = bms.TotalDischargeWh,
+            CycleCount = bms.CycleCount,
+            SohPercent = bms.SohPercent.HasValue ? Math.Round(bms.SohPercent.Value, 1) : null,
+            SocPercent = bms.SocPercent.HasValue ? Math.Round(bms.SocPercent.Value, 1) : null
+        }).ToList();
+
+        details.Add(new DeviceDetailItemDto
+        {
+            Key = "bmsList",
+            Value = bmsList,
+            Unit = null,
+            LabelKey = "realtime.bmsList"
+        });
     }
 
     private void AddBatteryParameterDetails(List<DeviceDetailItemDto> details, Domain.Entities.DeviceComponent component)
@@ -1030,33 +1315,6 @@ public class GetDeviceDetailsQueryHandler : IRequestHandler<GetDeviceDetailsQuer
                 _logger.LogWarning(ex, "Failed to parse specifications for component {ComponentId}", component.Id);
             }
         }
-    }
-
-    private async Task<BatterySocStateDto?> GetBatterySocStateFromRpcAsync(
-        Guid tbDeviceId,
-        CancellationToken cancellationToken)
-    {
-        try
-        {
-            var rpcResponse = await _tbService.SendTwoWayRpcAsync(
-                tbDeviceId,
-                "getBatterySocState",
-                new Dictionary<string, object>(),
-                timeoutMs: 10000,
-                cancellationToken: cancellationToken);
-
-            if (rpcResponse?.Success == true && rpcResponse.Response != null)
-            {
-                var json = JsonSerializer.Serialize(rpcResponse.Response);
-                return JsonSerializer.Deserialize<BatterySocStateDto>(json);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to get battery SoC state from RPC for device {DeviceId}", tbDeviceId);
-        }
-
-        return null;
     }
 
     #endregion

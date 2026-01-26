@@ -18,17 +18,20 @@ public class GetLifetimeEnergyQueryHandler : IRequestHandler<GetLifetimeEnergyQu
     private readonly ISender _sender;
     private readonly IDeviceMappingService _deviceMapping;
     private readonly IDemoDataService _demoDataService;
+    private readonly IDemoSimulationDataService _demoSimulationService;
 
     public GetLifetimeEnergyQueryHandler(
         IApplicationDbContext context,
         ISender sender,
         IDeviceMappingService deviceMapping,
-        IDemoDataService demoDataService)
+        IDemoDataService demoDataService,
+        IDemoSimulationDataService demoSimulationService)
     {
         _context = context;
         _sender = sender;
         _deviceMapping = deviceMapping;
         _demoDataService = demoDataService;
+        _demoSimulationService = demoSimulationService;
     }
 
     public async Task<LifetimeEnergyDto?> Handle(GetLifetimeEnergyQuery request, CancellationToken cancellationToken)
@@ -40,11 +43,17 @@ public class GetLifetimeEnergyQueryHandler : IRequestHandler<GetLifetimeEnergyQu
             throw new UnauthorizedAccessException("Device access denied");
         }
 
-        // Check if demo device - return simulated lifetime energy
+        // Check if demo device - return simulated lifetime energy from centralized service
         var isDemoDevice = await _demoDataService.IsDemoDeviceAsync(request.DeviceId, cancellationToken);
         if (isDemoDevice)
         {
-            return GetSimulatedLifetimeEnergy();
+            var demoData = _demoSimulationService.GetDemoLifetimeEnergy();
+            return new LifetimeEnergyDto
+            {
+                Timestamp = demoData.Timestamp,
+                GridImport = demoData.GridImport,
+                GridExport = demoData.GridExport
+            };
         }
 
         // Map local DeviceId to ThingsBoardDeviceId
@@ -72,36 +81,6 @@ public class GetLifetimeEnergyQueryHandler : IRequestHandler<GetLifetimeEnergyQu
             Timestamp = lifetimeRecord.DeviceLocalTime,
             GridImport = Math.Round(lifetimeRecord.GridImportEnergyKWh ?? 0, 2),
             GridExport = Math.Round(lifetimeRecord.GridExportEnergyKWh ?? 0, 2)
-        };
-    }
-
-    /// <summary>
-    /// Returns simulated lifetime energy for demo devices
-    /// Simulates a system that has been running for about 2 years
-    /// </summary>
-    private static LifetimeEnergyDto GetSimulatedLifetimeEnergy()
-    {
-        var now = DateTime.UtcNow;
-
-        // Simulate a system installed ~2 years ago
-        // Average daily production: ~25 kWh, consumption: ~18 kWh
-        // Days since "installation": ~730 days (2 years)
-        var daysInstalled = 730 + now.DayOfYear;
-
-        // Total lifetime energy calculations
-        // Grid Import: Energy bought from grid when solar insufficient
-        // Grid Export: Excess solar energy sold to grid
-        var baseGridImport = 3500.0; // kWh over 2 years (low due to good solar)
-        var baseGridExport = 8200.0; // kWh exported over 2 years
-
-        // Add some variation based on current date
-        var dayVariation = now.DayOfYear * 2.5; // ~2.5 kWh variation per day
-
-        return new LifetimeEnergyDto
-        {
-            Timestamp = now,
-            GridImport = Math.Round(baseGridImport + dayVariation * 0.4, 2),
-            GridExport = Math.Round(baseGridExport + dayVariation * 0.8, 2)
         };
     }
 }

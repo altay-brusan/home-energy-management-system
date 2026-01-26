@@ -16,6 +16,15 @@ public interface ITimezoneService
     Task<TimeZoneInfo> GetDeviceTimezoneAsync(Guid deviceId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets the timezone for a site by its ID
+    /// Returns the IANA timezone identifier (e.g., "Europe/Istanbul")
+    /// </summary>
+    /// <param name="siteId">Site ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>TimeZoneInfo for the site's timezone, or UTC if not found</returns>
+    Task<TimeZoneInfo> GetSiteTimezoneAsync(Guid siteId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Converts a UTC DateTime to the device's local timezone
     /// </summary>
     /// <param name="deviceId">Local device ID</param>

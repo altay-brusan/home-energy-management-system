@@ -1,5 +1,5 @@
 using Hems_Backend.Application.Locations.Common.Models;
-using Hems_Backend.Application.Locations.Queries.GetCitiesByCountry;
+using Hems_Backend.Application.Locations.Queries.GetCountryCities;
 using Hems_Backend.Application.Locations.Queries.GetCountries;
 using Hems_Backend.Web.Endpoints;
 using MediatR;
@@ -14,7 +14,7 @@ public class Locations : EndpointGroupBase
         app.MapGroup(this)
             .RequireAuthorization()
             .MapGet(GetCountries)
-            .MapGet(GetCitiesByCountry, "cities/{countryId}");
+            .MapGet(GetCountryCities, "Cities/{countryId}");
     }
 
     [Authorize]
@@ -24,10 +24,10 @@ public class Locations : EndpointGroupBase
     }
 
     [Authorize]
-    public static async Task<List<CityDto>> GetCitiesByCountry(
+    public static async Task<List<CityDto>> GetCountryCities(
         Guid countryId,
         ISender sender)
     {
-        return await sender.Send(new GetCitiesByCountryQuery { CountryId = countryId });
+        return await sender.Send(new GetCountryCitiesQuery { CountryId = countryId });
     }
 }

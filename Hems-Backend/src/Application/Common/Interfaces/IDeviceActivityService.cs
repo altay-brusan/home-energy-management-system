@@ -8,6 +8,7 @@ public enum TelemetrySource
     Heartbeat,
     PowerFlow,
     BatterySoc,
+    BatteryEnergyFlow,
     DailyEnergyFlow,
     TotalEnergyFlow,
     Alarm,

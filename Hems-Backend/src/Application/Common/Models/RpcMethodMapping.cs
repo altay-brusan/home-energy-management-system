@@ -7,6 +7,78 @@ namespace Hems_Backend.Application.Common.Models;
 public static class RpcMethodMapping
 {
     /// <summary>
+    /// RPC methods that cause the device to restart when invoked.
+    /// For these methods, we use fire-and-forget pattern (no verification) since
+    /// the device will restart and won't be able to respond.
+    /// </summary>
+    public static readonly HashSet<string> RestartCausingMethods = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "setGridCodeConfig",
+        "setSystemConnectionStructure"
+    };
+
+    /// <summary>
+    /// Parameters that belong to Grid Configuration.
+    /// These parameters use restart-causing RPC methods and should be updated via
+    /// the dedicated grid-config endpoint with fire-and-forget pattern.
+    /// </summary>
+    public static readonly HashSet<string> GridConfigParameters = new(StringComparer.OrdinalIgnoreCase)
+    {
+        // From setGridCodeConfig
+        "GridStandard",
+        "GridFrequency",
+        "OutputVoltageLevel",
+        "GridVoltageHigh",
+        "GridVoltageLow",
+        "GridFrequencyHigh",
+        "GridFrequencyLow",
+        "ReconnectionTime",
+        "PowerFactorTarget",
+        "ActivePowerRegulation",
+        "ReactivePowerRegulation",
+
+        // From setSystemConnectionStructure
+        "PhaseType",
+        "GridLevel",
+        "ITSystemNeutralGrounded"
+    };
+
+    /// <summary>
+    /// Checks if a parameter is a grid configuration parameter.
+    /// Grid config parameters cause device restart when updated.
+    /// </summary>
+    /// <param name="parameterName">The parameter name</param>
+    /// <returns>True if the parameter is a grid configuration parameter</returns>
+    public static bool IsGridConfigParameter(string parameterName)
+    {
+        return GridConfigParameters.Contains(parameterName);
+    }
+
+    /// <summary>
+    /// Checks if an RPC method causes device restart.
+    /// </summary>
+    /// <param name="rpcMethod">The RPC method name</param>
+    /// <returns>True if the method causes device restart</returns>
+    public static bool IsRestartCausingMethod(string rpcMethod)
+    {
+        return RestartCausingMethods.Contains(rpcMethod);
+    }
+
+    /// <summary>
+    /// Checks if a parameter uses an RPC method that causes device restart.
+    /// </summary>
+    /// <param name="parameterName">The parameter name</param>
+    /// <returns>True if updating this parameter causes device restart</returns>
+    public static bool IsRestartCausingParameter(string parameterName)
+    {
+        if (TryGetMapping(parameterName, out var config) && config != null)
+        {
+            return IsRestartCausingMethod(config.RpcMethod);
+        }
+        return false;
+    }
+
+    /// <summary>
     /// Configuration for a parameter's RPC mapping
     /// </summary>
     public record RpcMethodConfig
@@ -42,6 +114,34 @@ public static class RpcMethodMapping
     /// </summary>
     public static readonly Dictionary<string, RpcMethodConfig> ParameterMappings = new()
     {
+        // ===== BATTERY CAPACITY CONFIGURATION =====
+        // RPC: getBatteryCapacityConfig / setBatteryCapacityConfig
+
+        ["BatteryCapacity"] = new()
+        {
+            RpcMethod = "setBatteryCapacityConfig",
+            RpcGetMethod = "getBatteryCapacityConfig",
+            FieldPath = "batteryCapacityAh",
+            RpcKind = "BatteryCapacityConfigState",
+            ValueMapper = val => int.Parse(val)
+        },
+        ["MaxBatteryChargeCurrent"] = new()
+        {
+            RpcMethod = "setBatteryCapacityConfig",
+            RpcGetMethod = "getBatteryCapacityConfig",
+            FieldPath = "maxChargeCurrentA",
+            RpcKind = "BatteryCapacityConfigState",
+            ValueMapper = val => int.Parse(val)
+        },
+        ["MaxBatteryDischargeCurrent"] = new()
+        {
+            RpcMethod = "setBatteryCapacityConfig",
+            RpcGetMethod = "getBatteryCapacityConfig",
+            FieldPath = "maxDischargeCurrentA",
+            RpcKind = "BatteryCapacityConfigState",
+            ValueMapper = val => int.Parse(val)
+        },
+
         // ===== BATTERY CHARGE SOURCE CONFIGURATION =====
         // RPC: getBatteryChargeSourceConfig / setBatteryChargeSourceConfig
 
@@ -805,6 +905,52 @@ public static class RpcMethodMapping
                 _ => int.Parse(val)
             }
         },
+        // ===== SYSTEM CONNECTION STRUCTURE =====
+        // RPC: getSystemConnectionStructure / setSystemConnectionStructure
+        // Grid Panel 1 parameters (Grid Code Selection)
+
+        ["PhaseType"] = new()
+        {
+            RpcMethod = "setSystemConnectionStructure",
+            RpcGetMethod = "getSystemConnectionStructure",
+            FieldPath = "gridPhaseSequence",
+            RpcKind = "SystemConnectionStructure",
+            ValueMapper = val => val switch
+            {
+                "ABC_0_120_240" => 0,
+                "ACB_0_240_120" => 1,
+                "0" => 0,
+                "1" => 1,
+                _ => val // Pass string value directly if it's already in the right format
+            }
+        },
+        ["GridLevel"] = new()
+        {
+            RpcMethod = "setSystemConnectionStructure",
+            RpcGetMethod = "getSystemConnectionStructure",
+            FieldPath = "gridVoltageLevelCode",
+            RpcKind = "SystemConnectionStructure",
+            ValueMapper = val => val switch
+            {
+                "LN:220VAC LL:380VAC" => 0,
+                "LN:230VAC LL:400VAC" => 1,
+                "LN:240VAC LL:415VAC" => 2,  // Australia/UK variant
+                "LN:240VAC LL:420VAC" => 2,
+                "LN:120VAC LL:208VAC" => 3,
+                "LN:133VAC LL:230VAC" => 4,
+                _ => int.TryParse(val, out var code) ? code : throw new FormatException($"Unknown GridLevel value: '{val}'")
+            }
+        },
+        ["ITSystemNeutralGrounded"] = new()
+        {
+            RpcMethod = "setSystemConnectionStructure",
+            RpcGetMethod = "getSystemConnectionStructure",
+            FieldPath = "inverter.acSide.itSystemNeutralUngrounded",
+            RpcKind = "SystemConnectionStructure",
+            ValueMapper = val => !bool.Parse(val) // Inverted: Grounded = !Ungrounded
+        },
+
+        // ===== GRID CODE CONFIGURATION (continued) =====
         ["GridVoltageHigh"] = new()
         {
             RpcMethod = "setGridCodeConfig",

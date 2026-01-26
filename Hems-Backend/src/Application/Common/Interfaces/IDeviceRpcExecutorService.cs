@@ -62,6 +62,21 @@ public interface IDeviceRpcExecutorService
         Guid tbDeviceId,
         List<string> parameterNames,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Executes a fire-and-forget parameter update for restart-causing parameters.
+    /// Only sends the write RPC without waiting for verification (device will restart).
+    /// </summary>
+    /// <param name="tbDeviceId">ThingsBoard device ID</param>
+    /// <param name="parameterName">Parameter name</param>
+    /// <param name="value">New value</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>RPC response indicating if write was sent successfully (not verified)</returns>
+    Task<RpcExecutionResult> ExecuteFireAndForgetUpdateAsync(
+        Guid tbDeviceId,
+        string parameterName,
+        string value,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>

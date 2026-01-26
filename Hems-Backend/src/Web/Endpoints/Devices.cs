@@ -19,14 +19,14 @@ public class Devices : EndpointGroupBase
         app.MapGroup(this)
             .MapPost("login", DeviceLogin);
 
-        // Admin endpoints (require authorization)
+        // Admin endpoints - for managing data without direct database access
+        // These are NOT used by the frontend mobile app
         app.MapGroup(this)
-            .RequireAuthorization()
-            //.MapGet(GetDevices)
-            .MapGet(GetDevice, "{id}")
-            .MapPost(CreateDevice)
-            .MapPut(UpdateDevice, "{id}")
-            .MapDelete(DeleteDevice, "{id}");
+            .RequireAuthorization(Policies.AdminOnly)
+            .MapGet(GetDevice, "Admin/Device/{id}")
+            .MapPost(CreateDevice, "Admin/Device")
+            .MapPut(UpdateDevice, "Admin/Device/{id}")
+            .MapDelete(DeleteDevice, "Admin/Device/{id}");
     }
 
     public async Task<DeviceLoginResult> DeviceLogin(
@@ -35,14 +35,6 @@ public class Devices : EndpointGroupBase
     {
         return await sender.Send(command);
     }
-
-    //[Authorize(Policies.AdminOnly)]
-    //public async Task<PaginatedList<DeviceDto>> GetDevices(
-    //    ISender sender,
-    //    [AsParameters] GetDevicesQuery query)
-    //{
-    //    return await sender.Send(query);
-    //}
 
     [Authorize(Policies.AdminOnly)]
     public async Task<DeviceDto?> GetDevice(

@@ -1,4 +1,6 @@
+using Hems_Backend.Application.Common.Exceptions;
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,23 +21,33 @@ public class DeleteSiteCommandHandler : IRequestHandler<DeleteSiteCommand>
 
     public async Task Handle(DeleteSiteCommand request, CancellationToken cancellationToken)
     {
-        var userId = _user.Id ?? throw new UnauthorizedAccessException("User not authenticated");
+        var userId = _user.Id
+            ?? throw AppException.Unauthorized(MessageCodes.AUTH_USER_NOT_AUTHENTICATED);
 
+        // Verify site exists
         var entity = await _context.Sites
-            .FirstOrDefaultAsync(x => x.Id == request.Id && x.UserId == userId && !x.IsDeleted, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Id == request.Id && !x.IsDeleted, cancellationToken)
+            ?? throw AppException.NotFound(
+                MessageCodes.SITE_NOT_FOUND,
+                new Dictionary<string, object> { ["siteId"] = request.Id });
 
-        if (entity == null)
+        // Only the site owner can delete the site
+        if (entity.UserId != userId)
         {
-            throw new Hems_Backend.Application.Common.Exceptions.NotFoundException(nameof(Domain.Entities.Site), request.Id);
+            throw AppException.Forbidden(
+                MessageCodes.SITE_ONLY_OWNER_CAN_DELETE,
+                new Dictionary<string, object> { ["siteId"] = request.Id });
         }
 
-        // Site'ın setup'ı var mı kontrol et
+        // Check if site has a setup
         var hasSetup = await _context.Setups
             .AnyAsync(s => s.SiteId == request.Id, cancellationToken);
 
         if (hasSetup)
         {
-            throw new InvalidOperationException("Bu site'ın bir setup'ı var. Önce setup'ı silmeniz gerekiyor.");
+            throw AppException.BadRequest(
+                MessageCodes.SITE_CANNOT_DELETE_WITH_SETUP,
+                new Dictionary<string, object> { ["siteId"] = request.Id });
         }
 
         // Soft delete

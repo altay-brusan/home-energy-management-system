@@ -14,13 +14,16 @@ public class GetCurrentDeviceModeQueryHandler : IRequestHandler<GetCurrentDevice
 {
     private readonly IApplicationDbContext _context;
     private readonly IDemoDataService _demoDataService;
+    private readonly IDemoSimulationDataService _demoSimulationService;
 
     public GetCurrentDeviceModeQueryHandler(
         IApplicationDbContext context,
-        IDemoDataService demoDataService)
+        IDemoDataService demoDataService,
+        IDemoSimulationDataService demoSimulationService)
     {
         _context = context;
         _demoDataService = demoDataService;
+        _demoSimulationService = demoSimulationService;
     }
 
     public async Task<GetCurrentDeviceModeResult> Handle(GetCurrentDeviceModeQuery request, CancellationToken cancellationToken)
@@ -38,11 +41,22 @@ public class GetCurrentDeviceModeQueryHandler : IRequestHandler<GetCurrentDevice
             };
         }
 
-        // Check if demo device - return simulated default mode
+        // Check if demo device - return simulated default mode from centralized service
         var isDemoDevice = await _demoDataService.IsDemoDeviceAsync(request.DeviceId, cancellationToken);
         if (isDemoDevice)
         {
-            return GetSimulatedDeviceMode();
+            var demoData = _demoSimulationService.GetDemoDeviceMode();
+            // Parse the mode string to DeviceMode enum
+            var demoMode = Enum.TryParse<DeviceMode>(demoData.Mode, out var parsedMode)
+                ? parsedMode
+                : DeviceMode.SelfConsumption;
+            return new GetCurrentDeviceModeResult
+            {
+                Success = true,
+                Mode = demoMode,
+                ModeDescription = demoData.ModeDescription,
+                LastModified = demoData.LastModified
+            };
         }
 
         // Get the latest active mode for this device
@@ -72,25 +86,6 @@ public class GetCurrentDeviceModeQueryHandler : IRequestHandler<GetCurrentDevice
             Mode = mode,
             ModeDescription = currentMode.Description ?? modeInfo?.Name,
             LastModified = currentMode.LastModified
-        };
-    }
-
-    /// <summary>
-    /// Returns simulated device mode for demo devices
-    /// Default mode is SelfConsumption (maximize home energy use)
-    /// </summary>
-    private static GetCurrentDeviceModeResult GetSimulatedDeviceMode()
-    {
-        var mode = DeviceMode.SelfConsumption;
-        var modeInfo = DeviceModeConfigurations.GetAllModesWithDescriptions()
-            .GetValueOrDefault(mode);
-
-        return new GetCurrentDeviceModeResult
-        {
-            Success = true,
-            Mode = mode,
-            ModeDescription = modeInfo?.Name ?? "Self Consumption",
-            LastModified = DateTimeOffset.UtcNow.AddDays(-30) // Simulate mode was set 30 days ago
         };
     }
 }

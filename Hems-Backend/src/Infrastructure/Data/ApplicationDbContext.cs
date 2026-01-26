@@ -12,10 +12,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
-    public DbSet<TodoList> TodoLists => Set<TodoList>();
-
-    public DbSet<TodoItem> TodoItems => Set<TodoItem>();
-
     public DbSet<Site> Sites => Set<Site>();
 
     public DbSet<Setup> Setups => Set<Setup>();
@@ -63,6 +59,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<EnergyPriceHistory> EnergyPriceHistory => Set<EnergyPriceHistory>();
 
     public DbSet<DeviceModeHistory> DeviceModeHistory => Set<DeviceModeHistory>();
+
+    public DbSet<DeviceOperationHistory> DeviceOperationHistories => Set<DeviceOperationHistory>();
+
+    public DbSet<DeviceSettingUpdateHistory> DeviceSettingUpdateHistories => Set<DeviceSettingUpdateHistory>();
+
+    public DbSet<MobileAppVersion> MobileAppVersions => Set<MobileAppVersion>();
 
     // Data Protection Keys for multi-pod environments
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();

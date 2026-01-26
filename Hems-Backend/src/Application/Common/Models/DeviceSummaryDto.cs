@@ -31,6 +31,9 @@ public class ComponentSummaryDto
 /// </summary>
 public class InverterSummaryDto : ComponentSummaryDto
 {
+    /// <summary>
+    /// Current active power output in kW (realtime from RPC)
+    /// </summary>
     public double? ActivePowerKw { get; set; }
 }
 
@@ -39,7 +42,14 @@ public class InverterSummaryDto : ComponentSummaryDto
 /// </summary>
 public class BatterySummaryDto : ComponentSummaryDto
 {
+    /// <summary>
+    /// Aggregate state of charge percentage (average of all packs)
+    /// </summary>
     public double? StateOfCharge { get; set; }
+
+    /// <summary>
+    /// Individual battery packs with their own SOC
+    /// </summary>
     public List<BatteryPackDto> Packs { get; set; } = new();
 }
 
@@ -54,5 +64,44 @@ public class BatteryPackDto
     public string Model { get; set; } = string.Empty;
     public string Manufacturer { get; set; } = string.Empty;
     public string SerialNumber { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Parent BMS component ID (GUID) for API calls
+    /// </summary>
+    public Guid ComponentId { get; set; }
+
+    /// <summary>
+    /// BMS address within the battery system (1-based)
+    /// </summary>
+    public int BmsAddress { get; set; }
+
+    /// <summary>
+    /// Individual pack state of charge percentage
+    /// </summary>
     public double? StateOfCharge { get; set; }
+
+    /// <summary>
+    /// Individual pack state of health percentage
+    /// </summary>
+    public double? StateOfHealth { get; set; }
+
+    /// <summary>
+    /// Battery pack voltage in Volts
+    /// </summary>
+    public double? Voltage { get; set; }
+
+    /// <summary>
+    /// Battery current in Amps (positive = discharging, negative = charging)
+    /// </summary>
+    public double? Current { get; set; }
+
+    /// <summary>
+    /// Average cell temperature in Celsius
+    /// </summary>
+    public double? Temperature { get; set; }
+
+    /// <summary>
+    /// Software/firmware version string
+    /// </summary>
+    public string? FirmwareVersion { get; set; }
 }

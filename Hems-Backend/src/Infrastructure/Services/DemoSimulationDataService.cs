@@ -5,6 +5,17 @@ using Microsoft.Extensions.Logging;
 
 namespace Hems_Backend.Infrastructure.Services;
 
+// TODO: This service will be transferred to a separate service Hems.Simulator in the future.
+// Currently, all demo/simulated data generation is centralized here to avoid database storage
+// for demo devices. When migrated to Hems.Simulator, this service will provide data via API
+// rather than in-process generation.
+//
+// Key principle: Demo devices should NEVER store data in the database. All data for demo
+// devices should be generated on-the-fly by this service.
+/// <summary>
+/// Centralized service for generating simulated data for demo devices.
+/// All demo data is generated on-demand - no database storage.
+/// </summary>
 public class DemoSimulationDataService : IDemoSimulationDataService
 {
     private readonly ILogger<DemoSimulationDataService> _logger;
@@ -527,6 +538,646 @@ public class DemoSimulationDataService : IDemoSimulationDataService
             "cloudy" => (0.35, 1.0, 0.2),
             "rainy" => (0.15, 1.5, 0.05),
             _ => (0.7, 0.6, 0.6)
+        };
+    }
+
+    #endregion
+
+    #region Demo Device Details Generation
+
+    public List<DemoDetailItem> GetDemoBatteryRealtimeDetails()
+    {
+        var details = new List<DemoDetailItem>();
+
+        // Get SOC (consistent with dashboard)
+        var soc = GetBatterySoc(DateTime.UtcNow);
+
+        // State of Charge
+        details.Add(new DemoDetailItem
+        {
+            Key = "soc",
+            Value = Math.Round(soc, 1),
+            Unit = "%",
+            LabelKey = "realtime.soc"
+        });
+
+        // State of Health (simulated - batteries typically maintain 95%+ for first few years)
+        details.Add(new DemoDetailItem
+        {
+            Key = "soh",
+            Value = 98.5,
+            Unit = "%",
+            LabelKey = "realtime.soh"
+        });
+
+        // Battery voltage - realistic for a 51.2V LiFePO4 battery pack
+        // Voltage varies with SOC: ~48V at 0%, ~54V at 100%
+        var voltage = 48.0 + (soc / 100.0) * 6.0;
+        details.Add(new DemoDetailItem
+        {
+            Key = "voltage",
+            Value = Math.Round(voltage, 2),
+            Unit = "V",
+            LabelKey = "realtime.voltage"
+        });
+
+        // Battery current - based on current power flow
+        // Positive = discharging, Negative = charging (matches RPC convention)
+        var powerFlow = GetCurrentPowerFlow(Guid.Empty);
+        var batteryCurrent = (powerFlow.BatteryPowerKw * 1000) / voltage; // I = P/V
+        details.Add(new DemoDetailItem
+        {
+            Key = "current",
+            Value = Math.Round(batteryCurrent, 2),
+            Unit = "A",
+            LabelKey = "realtime.current"
+        });
+
+        // Battery temperature (realistic range 20-35°C during operation)
+        var hour = DateTime.UtcNow.Hour;
+        var baseTemp = 25.0 + Math.Sin((hour - 6) * Math.PI / 12) * 5; // Varies with time of day
+        details.Add(new DemoDetailItem
+        {
+            Key = "temperature",
+            Value = Math.Round(baseTemp, 1),
+            Unit = "°C",
+            LabelKey = "realtime.temperature"
+        });
+
+        // BMS Count - simulating 2 battery modules
+        details.Add(new DemoDetailItem
+        {
+            Key = "bmsCount",
+            Value = 2,
+            Unit = null,
+            LabelKey = "realtime.bmsCount"
+        });
+
+        // BMS List - individual module details for 2 simulated BMS modules
+        var bmsList = GenerateDemoBmsList(soc, voltage, batteryCurrent, baseTemp);
+        details.Add(new DemoDetailItem
+        {
+            Key = "bmsList",
+            Value = bmsList,
+            Unit = null,
+            LabelKey = "realtime.bmsList"
+        });
+
+        return details;
+    }
+
+    /// <summary>
+    /// Generates simulated BMS list with 2 battery modules
+    /// </summary>
+    private List<Dictionary<string, object?>> GenerateDemoBmsList(double soc, double voltage, double totalCurrent, double baseTemp)
+    {
+        var bmsList = new List<Dictionary<string, object?>>();
+
+        // Simulate 2 BMS modules with slightly different values
+        for (int i = 1; i <= 2; i++)
+        {
+            var moduleVariation = (i - 1.5) * 0.02; // Small variation between modules
+            var moduleSoc = Math.Round(soc + moduleVariation * 10, 1);
+            var moduleVoltage = Math.Round(voltage + moduleVariation * 0.5, 2);
+            var moduleCurrent = Math.Round(totalCurrent / 2 + moduleVariation * 0.3, 2);
+            var moduleTemp = Math.Round(baseTemp + (i - 1) * 0.5, 1);
+
+            // Calculate cell voltages based on pack voltage (16 cells in series for 51.2V nominal)
+            var avgCellVoltageMv = (int)Math.Round(moduleVoltage / 16 * 1000);
+            var cellVariation = 3; // ±3mV variation
+            var maxCellVoltageMv = avgCellVoltageMv + cellVariation;
+            var minCellVoltageMv = avgCellVoltageMv - cellVariation;
+
+            // Determine charge/discharge status based on current
+            // 0 = Idle, 1 = Charging, 2 = Discharging
+            int chargeDischargeStatus;
+            string statusText;
+            if (Math.Abs(moduleCurrent) < 0.1)
+            {
+                chargeDischargeStatus = 0;
+                statusText = "Idle";
+            }
+            else if (moduleCurrent < 0)
+            {
+                chargeDischargeStatus = 1;
+                statusText = "Charging";
+            }
+            else
+            {
+                chargeDischargeStatus = 2;
+                statusText = "Discharging";
+            }
+
+            // Remaining capacity based on SOC (100Ah rated capacity)
+            var ratedCapacityAh = 100.0;
+            var remainingCapacityAh = Math.Round(ratedCapacityAh * moduleSoc / 100, 2);
+
+            bmsList.Add(new Dictionary<string, object?>
+            {
+                { "bmsAddress", i },
+                { "chargeDischargeStatus", chargeDischargeStatus },
+                { "chargeDischargeStatusText", statusText },
+                { "currentA", moduleCurrent },
+                { "voltageV", moduleVoltage },
+                { "remainingCapacityAh", remainingCapacityAh },
+                { "maxCellVoltageMv", maxCellVoltageMv },
+                { "minCellVoltageMv", minCellVoltageMv },
+                { "avgCellVoltageMv", avgCellVoltageMv },
+                { "avgCellTempC", moduleTemp },
+                { "ratedCapacityAh", ratedCapacityAh },
+                { "totalDischargeWh", 1264 + (i - 1) * 87 }, // Slightly different discharge history
+                { "cycleCount", 487 + (i - 1) * 12 }, // Slightly different cycle counts
+                { "sohPercent", 98.5 - (i - 1) * 0.3 }, // Slightly different SOH
+                { "socPercent", moduleSoc }
+            });
+        }
+
+        return bmsList;
+    }
+
+    public List<DemoDetailItem> GetDemoBatteryParameterDetails(string? name, string? manufacturer, string? model, string? serialNumber)
+    {
+        var details = new List<DemoDetailItem>
+        {
+            new DemoDetailItem
+            {
+                Key = "name",
+                Value = name ?? "Demo Battery",
+                Unit = null,
+                LabelKey = "parameter.name"
+            },
+            new DemoDetailItem
+            {
+                Key = "manufacturer",
+                Value = manufacturer ?? "Pylontech",
+                Unit = null,
+                LabelKey = "parameter.manufacturer"
+            },
+            new DemoDetailItem
+            {
+                Key = "model",
+                Value = model ?? "US3000C",
+                Unit = null,
+                LabelKey = "parameter.model"
+            },
+            new DemoDetailItem
+            {
+                Key = "serialNumber",
+                Value = serialNumber ?? "DEMO-BAT-001",
+                Unit = null,
+                LabelKey = "parameter.serialNumber"
+            },
+            new DemoDetailItem
+            {
+                Key = "capacity",
+                Value = 3.55,
+                Unit = "kWh",
+                LabelKey = "parameter.capacity"
+            },
+            new DemoDetailItem
+            {
+                Key = "ratedVoltage",
+                Value = 51.2,
+                Unit = "V",
+                LabelKey = "parameter.ratedVoltage"
+            },
+            new DemoDetailItem
+            {
+                Key = "chemistry",
+                Value = "LiFePO4",
+                Unit = null,
+                LabelKey = "parameter.chemistry"
+            },
+            new DemoDetailItem
+            {
+                Key = "firmwareVersion",
+                Value = "V2.8",
+                Unit = null,
+                LabelKey = "parameter.firmwareVersion"
+            }
+        };
+
+        return details;
+    }
+
+    public List<DemoDetailItem> GetDemoInverterRealtimeDetails()
+    {
+        var details = new List<DemoDetailItem>();
+
+        // Get current power flow for realistic values
+        var powerFlow = GetCurrentPowerFlow(Guid.Empty);
+
+        // Run State
+        var runState = (powerFlow.SolarPowerKw > 0.1) ? "Normal Operation" : "Standby";
+        details.Add(new DemoDetailItem
+        {
+            Key = "runState",
+            Value = runState,
+            Unit = null,
+            LabelKey = "realtime.runState"
+        });
+
+        // Output Active Power (total load power in W)
+        details.Add(new DemoDetailItem
+        {
+            Key = "outputActivePower",
+            Value = Math.Round(powerFlow.LoadPowerKw * 1000, 0),
+            Unit = "W",
+            LabelKey = "realtime.outputActivePower"
+        });
+
+        // Output Apparent Power (slightly higher than active due to power factor)
+        var apparentPower = powerFlow.LoadPowerKw * 1000 * 1.05;
+        details.Add(new DemoDetailItem
+        {
+            Key = "outputApparentPower",
+            Value = Math.Round(apparentPower, 0),
+            Unit = "VA",
+            LabelKey = "realtime.outputApparentPower"
+        });
+
+        // Three-phase output data (European standard 230V ± 5% per phase)
+        // Use seeded random for consistent values per call
+        var voltageRandom = new Random(DateTime.UtcNow.Hour * 60 + DateTime.UtcNow.Minute / 5);
+
+        // Calculate phase voltages
+        var phaseAVoltage = 230.0 + (voltageRandom.NextDouble() * 6 - 3);
+        var phaseBVoltage = 230.0 + (voltageRandom.NextDouble() * 6 - 3);
+        var phaseCVoltage = 230.0 + (voltageRandom.NextDouble() * 6 - 3);
+
+        // Calculate phase currents (balanced load distribution across 3 phases)
+        var totalCurrent = (powerFlow.LoadPowerKw * 1000) / 230.0;
+        var phaseACurrent = totalCurrent / 3 * (0.95 + voltageRandom.NextDouble() * 0.1);
+        var phaseBCurrent = totalCurrent / 3 * (0.95 + voltageRandom.NextDouble() * 0.1);
+        var phaseCCurrent = totalCurrent / 3 * (0.95 + voltageRandom.NextDouble() * 0.1);
+
+        // Calculate phase power (P = V * I)
+        var phaseAPower = phaseAVoltage * phaseACurrent;
+        var phaseBPower = phaseBVoltage * phaseBCurrent;
+        var phaseCPower = phaseCVoltage * phaseCCurrent;
+
+        // Return phases as an array (format expected by frontend)
+        var phases = new[]
+        {
+            new Dictionary<string, object>
+            {
+                { "Phase Id", 1 },
+                { "Voltage", Math.Round(phaseAVoltage, 1) },
+                { "Current", Math.Round(phaseACurrent, 2) },
+                { "Power", Math.Round(phaseAPower, 0) }
+            },
+            new Dictionary<string, object>
+            {
+                { "Phase Id", 2 },
+                { "Voltage", Math.Round(phaseBVoltage, 1) },
+                { "Current", Math.Round(phaseBCurrent, 2) },
+                { "Power", Math.Round(phaseBPower, 0) }
+            },
+            new Dictionary<string, object>
+            {
+                { "Phase Id", 3 },
+                { "Voltage", Math.Round(phaseCVoltage, 1) },
+                { "Current", Math.Round(phaseCCurrent, 2) },
+                { "Power", Math.Round(phaseCPower, 0) }
+            }
+        };
+
+        details.Add(new DemoDetailItem
+        {
+            Key = "Phases",
+            Value = phases,
+            Unit = null,
+            LabelKey = "realtime.phases"
+        });
+
+        // Output Frequency (European standard 50Hz) - single value shared across all phases
+        var outputFrequency = 50.0 + (voltageRandom.NextDouble() * 0.2 - 0.1);
+        details.Add(new DemoDetailItem
+        {
+            Key = "outputFrequency",
+            Value = Math.Round(outputFrequency, 2),
+            Unit = "Hz",
+            LabelKey = "realtime.outputFrequency"
+        });
+
+        // Grid Side Active Power
+        details.Add(new DemoDetailItem
+        {
+            Key = "gridSideActivePower",
+            Value = Math.Round(powerFlow.GridPowerKw * 1000, 0),
+            Unit = "W",
+            LabelKey = "realtime.gridSideActivePower"
+        });
+
+        // Load data (similar to Grid, using LoadPowerKw)
+        var loadPowerW = powerFlow.LoadPowerKw * 1000;
+
+        // Load Total Active Power
+        details.Add(new DemoDetailItem
+        {
+            Key = "loadTotalActivePower",
+            Value = Math.Round(loadPowerW, 0),
+            Unit = "W",
+            LabelKey = "realtime.loadTotalActivePower"
+        });
+
+        // Load Phase Powers (distributed across 3 phases)
+        var loadPhaseAPower = loadPowerW / 3 * (0.9 + voltageRandom.NextDouble() * 0.2);
+        var loadPhaseBPower = loadPowerW / 3 * (0.9 + voltageRandom.NextDouble() * 0.2);
+        var loadPhaseCPower = loadPowerW - loadPhaseAPower - loadPhaseBPower;
+
+        details.Add(new DemoDetailItem
+        {
+            Key = "loadPhaseAPower",
+            Value = Math.Round(loadPhaseAPower, 0),
+            Unit = "W",
+            LabelKey = "realtime.loadPhaseAPower"
+        });
+
+        details.Add(new DemoDetailItem
+        {
+            Key = "loadPhaseBPower",
+            Value = Math.Round(loadPhaseBPower, 0),
+            Unit = "W",
+            LabelKey = "realtime.loadPhaseBPower"
+        });
+
+        details.Add(new DemoDetailItem
+        {
+            Key = "loadPhaseCPower",
+            Value = Math.Round(loadPhaseCPower, 0),
+            Unit = "W",
+            LabelKey = "realtime.loadPhaseCPower"
+        });
+
+        // Load Phase Voltages (similar to output voltages)
+        details.Add(new DemoDetailItem
+        {
+            Key = "loadPhaseAVoltage",
+            Value = Math.Round(phaseAVoltage, 1),
+            Unit = "V",
+            LabelKey = "realtime.loadPhaseAVoltage"
+        });
+
+        details.Add(new DemoDetailItem
+        {
+            Key = "loadPhaseBVoltage",
+            Value = Math.Round(phaseBVoltage, 1),
+            Unit = "V",
+            LabelKey = "realtime.loadPhaseBVoltage"
+        });
+
+        details.Add(new DemoDetailItem
+        {
+            Key = "loadPhaseCVoltage",
+            Value = Math.Round(phaseCVoltage, 1),
+            Unit = "V",
+            LabelKey = "realtime.loadPhaseCVoltage"
+        });
+
+        // Load Frequency
+        details.Add(new DemoDetailItem
+        {
+            Key = "loadFrequency",
+            Value = Math.Round(outputFrequency, 2),
+            Unit = "Hz",
+            LabelKey = "realtime.loadFrequency"
+        });
+
+        // Load Scope
+        details.Add(new DemoDetailItem
+        {
+            Key = "loadScope",
+            Value = "backup_load",
+            Unit = null,
+            LabelKey = "realtime.loadScope"
+        });
+
+        // Inverter Heatsink Temperature (realistic 35-55°C during operation)
+        var heatsinkTemp = 40.0 + Math.Abs(powerFlow.LoadPowerKw) * 3 + (voltageRandom.NextDouble() * 5);
+        details.Add(new DemoDetailItem
+        {
+            Key = "inverterHeatsinkTemp",
+            Value = Math.Round(heatsinkTemp, 1),
+            Unit = "°C",
+            LabelKey = "realtime.inverterHeatsinkTemp"
+        });
+
+        // Internal Ambient Temperature
+        var ambientTemp = 28.0 + (voltageRandom.NextDouble() * 4);
+        details.Add(new DemoDetailItem
+        {
+            Key = "internalAmbientTemp",
+            Value = Math.Round(ambientTemp, 1),
+            Unit = "°C",
+            LabelKey = "realtime.internalAmbientTemp"
+        });
+
+        // AC Input Status
+        details.Add(new DemoDetailItem
+        {
+            Key = "gridSignalPresent",
+            Value = true,
+            Unit = null,
+            LabelKey = "realtime.gridSignalPresent"
+        });
+
+        details.Add(new DemoDetailItem
+        {
+            Key = "generatorSignalPresent",
+            Value = false,
+            Unit = null,
+            LabelKey = "realtime.generatorSignalPresent"
+        });
+
+        return details;
+    }
+
+    public List<DemoDetailItem> GetDemoInverterParameterDetails(string? name, string? manufacturer, string? model, string? serialNumber)
+    {
+        var details = new List<DemoDetailItem>
+        {
+            new DemoDetailItem
+            {
+                Key = "name",
+                Value = name ?? "Demo Inverter",
+                Unit = null,
+                LabelKey = "parameter.name"
+            },
+            new DemoDetailItem
+            {
+                Key = "manufacturer",
+                Value = manufacturer ?? "Growatt",
+                Unit = null,
+                LabelKey = "parameter.manufacturer"
+            },
+            new DemoDetailItem
+            {
+                Key = "model",
+                Value = model ?? "SPH5000",
+                Unit = null,
+                LabelKey = "parameter.model"
+            },
+            new DemoDetailItem
+            {
+                Key = "serialNumber",
+                Value = serialNumber ?? "DEMO-INV-001",
+                Unit = null,
+                LabelKey = "parameter.serialNumber"
+            },
+            new DemoDetailItem
+            {
+                Key = "ratedPower",
+                Value = 5000,
+                Unit = "W",
+                LabelKey = "parameter.ratedPower"
+            },
+            new DemoDetailItem
+            {
+                Key = "ratedVoltage",
+                Value = 230,
+                Unit = "V",
+                LabelKey = "parameter.ratedVoltage"
+            },
+            new DemoDetailItem
+            {
+                Key = "ratedFrequency",
+                Value = 50,
+                Unit = "Hz",
+                LabelKey = "parameter.ratedFrequency"
+            },
+            new DemoDetailItem
+            {
+                Key = "firmwareVersion",
+                Value = "V3.2.1",
+                Unit = null,
+                LabelKey = "parameter.firmwareVersion"
+            }
+        };
+
+        return details;
+    }
+
+    #endregion
+
+    #region Additional Demo Data Methods
+
+    public DemoDailyEnergySummary GetDemoDailyEnergySummary(Guid deviceId)
+    {
+        var now = DateTime.UtcNow;
+        var hour = now.Hour;
+        var random = new Random(now.DayOfYear); // Consistent for the day
+
+        // Scale factors based on time of day (energy accumulates throughout the day)
+        var dayProgress = hour / 24.0;
+
+        // Base daily values for a 5kW system
+        var dailyProduction = 32.5 * GetSeasonalPvMultiplier(now.Month);
+        var dailyConsumption = 18.0 * GetSeasonalLoadMultiplier(now.Month);
+
+        // Calculate current values based on time of day
+        // Production follows bell curve (peak at midday)
+        var productionProgress = hour < 6 ? 0 :
+            (hour > 20 ? 1.0 : Math.Sin((hour - 6) * Math.PI / 14));
+
+        var currentProduction = dailyProduction * productionProgress * (0.9 + random.NextDouble() * 0.2);
+        var currentConsumption = dailyConsumption * dayProgress * (0.9 + random.NextDouble() * 0.2);
+
+        // Grid import/export based on net energy
+        var netEnergy = currentProduction - currentConsumption;
+        var gridExport = netEnergy > 0 ? netEnergy * 0.6 : 0;
+        var gridImport = netEnergy < 0 ? Math.Abs(netEnergy) * 0.7 : 0;
+
+        return new DemoDailyEnergySummary
+        {
+            DeviceLocalTime = now,
+            Production = Math.Round(currentProduction, 2),
+            Consumption = Math.Round(currentConsumption, 2),
+            GridExport = Math.Round(gridExport, 2),
+            GridImport = Math.Round(gridImport, 2)
+        };
+    }
+
+    public DemoSocResponse GetDemoSocResponse(Guid deviceId)
+    {
+        var hour = DateTime.UtcNow.Hour;
+        var random = new Random(DateTime.UtcNow.Minute); // Slight variation each minute
+
+        // SOC pattern based on time of day
+        double baseSoc = hour switch
+        {
+            >= 0 and < 6 => 45 + random.NextDouble() * 10,    // Night: 45-55%
+            >= 6 and < 9 => 35 + random.NextDouble() * 10,    // Morning: 35-45%
+            >= 9 and < 12 => 55 + random.NextDouble() * 20,   // Late morning: 55-75%
+            >= 12 and < 15 => 80 + random.NextDouble() * 15,  // Midday: 80-95%
+            >= 15 and < 18 => 85 + random.NextDouble() * 15,  // Afternoon: 85-100%
+            >= 18 and < 21 => 60 + random.NextDouble() * 20,  // Evening: 60-80%
+            _ => 50 + random.NextDouble() * 15                 // Late evening: 50-65%
+        };
+
+        return new DemoSocResponse
+        {
+            TimestampUtc = DateTime.UtcNow.ToString("o"),
+            Version = 1,
+            InverterBatChannelSoc = new List<DemoInverterBatChannelSoc>
+            {
+                new DemoInverterBatChannelSoc { ChannelId = 1, SocPercent = Math.Round(baseSoc, 1) }
+            },
+            BmsSocDetails = new List<DemoBmsSocDetail>
+            {
+                new DemoBmsSocDetail
+                {
+                    ChannelId = 1,
+                    DeviceId = "DEMO-BMS-001",
+                    SocPercent = Math.Round(baseSoc, 1)
+                }
+            }
+        };
+    }
+
+    public DemoDeviceModeResult GetDemoDeviceMode()
+    {
+        return new DemoDeviceModeResult
+        {
+            Mode = "SelfConsumption",
+            ModeDescription = "Self Consumption",
+            LastModified = DateTimeOffset.UtcNow.AddDays(-30) // Simulate mode was set 30 days ago
+        };
+    }
+
+    public DemoLifetimeEnergy GetDemoLifetimeEnergy()
+    {
+        var now = DateTime.UtcNow;
+
+        // Simulate a system installed ~2 years ago
+        // Average daily production: ~25 kWh, consumption: ~18 kWh
+        // Days since "installation": ~730 days (2 years)
+        var daysInstalled = 730 + now.DayOfYear;
+
+        // Total lifetime energy calculations
+        // Grid Import: Energy bought from grid when solar insufficient
+        // Grid Export: Excess solar energy sold to grid
+        var baseGridImport = 3500.0; // kWh over 2 years (low due to good solar)
+        var baseGridExport = 8200.0; // kWh exported over 2 years
+
+        // Add some variation based on current date
+        var dayVariation = now.DayOfYear * 2.5; // ~2.5 kWh variation per day
+
+        return new DemoLifetimeEnergy
+        {
+            Timestamp = now,
+            GridImport = Math.Round(baseGridImport + dayVariation * 0.4, 2),
+            GridExport = Math.Round(baseGridExport + dayVariation * 0.8, 2)
+        };
+    }
+
+    public DemoHeartbeatStatus GetDemoHeartbeatStatus(Guid deviceId)
+    {
+        // Demo devices are always online with OK status
+        return new DemoHeartbeatStatus
+        {
+            Status = "OK",
+            Timestamp = DateTime.UtcNow
         };
     }
 

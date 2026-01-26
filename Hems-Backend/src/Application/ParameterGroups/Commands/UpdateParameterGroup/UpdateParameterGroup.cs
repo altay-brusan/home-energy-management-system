@@ -1,5 +1,8 @@
+using Hems_Backend.Application.Common.Exceptions;
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Models;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hems_Backend.Application.ParameterGroups.Commands.UpdateParameterGroup;
 
@@ -33,24 +36,30 @@ public class UpdateParameterGroupCommandHandler : IRequestHandler<UpdateParamete
 
         if (entity == null)
         {
-            throw new ArgumentException("Kayıt bulunamadı.");
+            throw AppException.NotFound(
+                MessageCodes.PARAMETER_GROUP_NOT_FOUND,
+                new Dictionary<string, object> { ["parameterGroupId"] = request.Id });
         }
 
-        // ParentId değişikliği kontrolü - sonsuz döngü engelleme
+        // Prevent circular reference
         if (request.ParentId.HasValue && request.ParentId.Value == request.Id)
         {
-            throw new ArgumentException("Bir grup kendisinin alt grubu olamaz.");
+            throw AppException.BadRequest(
+                MessageCodes.PARAMETER_GROUP_CIRCULAR_REF,
+                new Dictionary<string, object> { ["parameterGroupId"] = request.Id });
         }
 
-        // ParentId doğrulama
+        // Validate ParentId
         if (request.ParentId.HasValue)
         {
             var parentExists = await _context.ParameterGroups
                 .AnyAsync(pg => pg.Id == request.ParentId.Value, cancellationToken);
-            
+
             if (!parentExists)
             {
-                throw new ArgumentException("Üst grup bulunamadı.");
+                throw AppException.NotFound(
+                    MessageCodes.PARAMETER_GROUP_NOT_FOUND,
+                    new Dictionary<string, object> { ["parameterGroupId"] = request.ParentId.Value });
             }
         }
 
