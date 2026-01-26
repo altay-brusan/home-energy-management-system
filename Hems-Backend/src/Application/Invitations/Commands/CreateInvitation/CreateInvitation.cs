@@ -1,5 +1,6 @@
 using Hems_Backend.Application.Common.Exceptions;
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Domain.Entities;
 using Hems_Backend.Domain.Enums;
 using MediatR;
@@ -37,39 +38,76 @@ public class CreateInvitationCommandHandler : IRequestHandler<CreateInvitationCo
 
     public async Task<Guid> Handle(CreateInvitationCommand request, CancellationToken cancellationToken)
     {
-        var currentUserId = _user.Id ?? throw new UnauthorizedAccessException("User not authenticated");
+        var currentUserId = _user.Id
+            ?? throw AppException.Unauthorized(MessageCodes.AUTH_USER_NOT_AUTHENTICATED);
 
-        // Site'ın var olduğunu ve kullanıcıya ait olduğunu kontrol et
+        // Verify site exists
         var site = await _context.Sites
-            .FirstOrDefaultAsync(s => s.Id == request.SiteId && 
-                                     !s.IsDeleted && 
-                                     (s.UserId == currentUserId || 
-                                      _context.UserSites.Any(us => us.SiteId == s.Id && us.UserId == currentUserId)), 
-                                 cancellationToken)
-            ?? throw new Common.Exceptions.NotFoundException(nameof(Site), request.SiteId);
+            .FirstOrDefaultAsync(s => s.Id == request.SiteId && !s.IsDeleted, cancellationToken)
+            ?? throw AppException.NotFound(
+                MessageCodes.SITE_NOT_FOUND,
+                new Dictionary<string, object> { ["siteId"] = request.SiteId });
 
-        // Email ile kullanıcı ara
+        // Only site owner can send invitations
+        if (site.UserId != currentUserId)
+        {
+            throw AppException.Forbidden(
+                MessageCodes.INVITATION_ONLY_OWNER_CAN_INVITE,
+                new Dictionary<string, object> { ["siteId"] = request.SiteId });
+        }
+
+        // Look up user by email
         var invitedUserId = await _identityService.GetUserIdByEmailAsync(request.Email);
 
-        // Daha önce pending davetiye olup olmadığını kontrol et
+        // Check if there's already a pending invitation for this user and site
         var existingInvitation = await _context.Invitations
-            .FirstOrDefaultAsync(i => 
-                i.Email == request.Email && 
-                i.SiteId == request.SiteId && 
-                i.Status == InvitationStatus.Pending, 
+            .FirstOrDefaultAsync(i =>
+                i.Email == request.Email &&
+                i.SiteId == request.SiteId &&
+                i.Status == InvitationStatus.Pending,
                 cancellationToken);
 
         if (existingInvitation != null)
         {
-            throw new InvalidOperationException("Bu kullanıcıya bu ev için zaten bekleyen bir davetiye var.");
+            throw AppException.BadRequest(
+                MessageCodes.INVITATION_ALREADY_EXISTS,
+                new Dictionary<string, object> { ["email"] = request.Email, ["siteId"] = request.SiteId });
         }
 
-        // Token oluştur (6 haneli rastgele sayı)
+        // Check if user is trying to invite themselves
+        if (!string.IsNullOrEmpty(invitedUserId) && invitedUserId == currentUserId)
+        {
+            throw AppException.BadRequest(MessageCodes.INVITATION_CANNOT_INVITE_SELF);
+        }
+
+        // Check if user is the site owner (can't invite yourself)
+        if (site.UserId == invitedUserId && !string.IsNullOrEmpty(invitedUserId))
+        {
+            throw AppException.BadRequest(
+                MessageCodes.INVITATION_CANNOT_INVITE_OWNER,
+                new Dictionary<string, object> { ["email"] = request.Email });
+        }
+
+        // Check if user is already a member of the site (prevent spam invitations)
+        if (!string.IsNullOrEmpty(invitedUserId))
+        {
+            var existingMembership = await _context.UserSites
+                .AnyAsync(us => us.UserId == invitedUserId && us.SiteId == request.SiteId, cancellationToken);
+
+            if (existingMembership)
+            {
+                throw AppException.BadRequest(
+                    MessageCodes.INVITATION_USER_ALREADY_MEMBER,
+                    new Dictionary<string, object> { ["email"] = request.Email, ["siteId"] = request.SiteId });
+            }
+        }
+
+        // Generate token (6-digit random number)
         var token = await GenerateUniqueTokenAsync(cancellationToken);
 
         var utcNow = _timeProvider.GetUtcNow();
 
-        // Invitation kaydı oluştur
+        // Create invitation record
         var invitation = new Invitation
         {
             Id = Guid.NewGuid(),
@@ -84,14 +122,14 @@ public class CreateInvitationCommandHandler : IRequestHandler<CreateInvitationCo
 
         _context.Invitations.Add(invitation);
 
-        // Notification kaydı oluştur
+        // Create notification record
         var notification = new Notification
         {
             Id = Guid.NewGuid(),
             Email = request.Email,
             UserId = invitedUserId,
             InvitationId = invitation.Id,
-            Message = $"Kullanıcı size {site.Name} evini paylaştı.",
+            Message = $"You have been invited to share site '{site.Name}'.",
             IsRead = false,
             Created = utcNow
         };
@@ -100,11 +138,11 @@ public class CreateInvitationCommandHandler : IRequestHandler<CreateInvitationCo
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        // Email gönder
+        // Send invitation email
         var currentUserName = await _identityService.GetUserNameAsync(currentUserId);
         await _emailService.SendInvitationEmailAsync(
             request.Email,
-            currentUserName ?? "Kullanıcı",
+            currentUserName ?? "User",
             site.Name,
             token,
             cancellationToken);
@@ -122,16 +160,15 @@ public class CreateInvitationCommandHandler : IRequestHandler<CreateInvitationCo
 
         do
         {
-            // 6 haneli rastgele sayı
+            // Generate 6-digit random number
             token = random.Next(100000, 999999).ToString();
 
-            // Son 24 saatte bu token kullanılmış mı kontrol et
+            // Check if token was used in the last 24 hours
             isUnique = !await _context.Invitations
                 .AnyAsync(i => i.Token == token && i.Created > twentyFourHoursAgo, cancellationToken);
-                
+
         } while (!isUnique);
 
         return token;
     }
 }
-

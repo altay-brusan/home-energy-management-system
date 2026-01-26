@@ -1,6 +1,9 @@
+using Hems_Backend.Application.Common.Exceptions;
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Domain.Entities;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hems_Backend.Application.Parameters.Commands.CreateParameter;
 
@@ -31,13 +34,15 @@ public class CreateParameterCommandHandler : IRequestHandler<CreateParameterComm
 
     public async Task<Guid> Handle(CreateParameterCommand request, CancellationToken cancellationToken)
     {
-        // ParameterGroupId doğrulama
+        // Validate ParameterGroupId
         var groupExists = await _context.ParameterGroups
             .AnyAsync(pg => pg.Id == request.ParameterGroupId, cancellationToken);
-        
+
         if (!groupExists)
         {
-            throw new ArgumentException("Parametre grubu bulunamadı.");
+            throw AppException.NotFound(
+                MessageCodes.PARAMETER_GROUP_NOT_FOUND,
+                new Dictionary<string, object> { ["parameterGroupId"] = request.ParameterGroupId });
         }
 
         var entity = new Parameter

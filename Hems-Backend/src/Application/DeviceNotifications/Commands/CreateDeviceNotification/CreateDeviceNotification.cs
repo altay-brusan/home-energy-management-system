@@ -1,4 +1,6 @@
+using Hems_Backend.Application.Common.Exceptions;
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Application.DeviceNotifications.Common.Models;
 using Hems_Backend.Domain.Entities;
 using MediatR;
@@ -29,7 +31,7 @@ public class CreateDeviceNotificationCommandHandler : IRequestHandler<CreateDevi
 
     public async Task<DeviceNotificationDto> Handle(CreateDeviceNotificationCommand request, CancellationToken cancellationToken)
     {
-        // Device'ı ve ilişkili bilgileri getir
+        // Get device with related information
         var device = await _context.Devices
             .Include(d => d.SetupDevice!)
             .ThenInclude(sd => sd.Setup!)
@@ -37,17 +39,23 @@ public class CreateDeviceNotificationCommandHandler : IRequestHandler<CreateDevi
             .FirstOrDefaultAsync(d => d.Id == request.DeviceId, cancellationToken);
 
         if (device == null)
-            throw new InvalidOperationException($"Device with ID {request.DeviceId} not found");
+            throw AppException.NotFound(
+                MessageCodes.DEVICE_NOT_FOUND,
+                new Dictionary<string, object> { ["deviceId"] = request.DeviceId });
 
         if (device.SetupDevice?.Setup?.Site == null)
-            throw new InvalidOperationException($"Device {request.DeviceId} is not properly assigned to a setup and site");
+            throw AppException.BadRequest(
+                MessageCodes.NOTIFICATION_DEVICE_NOT_ASSIGNED,
+                new Dictionary<string, object> { ["deviceId"] = request.DeviceId });
 
-        // Notification type'ı getir
+        // Get notification type
         var notificationType = await _context.DeviceNotificationTypes
             .FirstOrDefaultAsync(nt => nt.Code == request.NotificationTypeCode, cancellationToken);
 
         if (notificationType == null)
-            throw new InvalidOperationException($"Notification type with code {request.NotificationTypeCode} not found");
+            throw AppException.NotFound(
+                MessageCodes.NOTIFICATION_TYPE_NOT_FOUND,
+                new Dictionary<string, object> { ["code"] = request.NotificationTypeCode });
 
         // Device notification oluştur
         var deviceNotification = new DeviceNotification
@@ -85,10 +93,7 @@ public class CreateDeviceNotificationCommandHandler : IRequestHandler<CreateDevi
                     Id = dn.DeviceNotificationType.Id,
                     Code = dn.DeviceNotificationType.Code,
                     Message = dn.DeviceNotificationType.Message,
-                    Status = dn.DeviceNotificationType.Status,
                     Description = dn.DeviceNotificationType.Description,
-                    Register = dn.DeviceNotificationType.Register,
-                    Value = dn.DeviceNotificationType.Value,
                     Category = dn.DeviceNotificationType.Category,
                     Severity = dn.DeviceNotificationType.Severity,
                     Version = dn.DeviceNotificationType.Version,

@@ -2,11 +2,9 @@ using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Application.Invitations.Commands.AcceptInvitation;
 using Hems_Backend.Application.Invitations.Commands.CreateInvitation;
 using Hems_Backend.Application.Invitations.Commands.DeclineInvitation;
-using Hems_Backend.Application.Invitations.Commands.MarkNotificationAsRead;
 using Hems_Backend.Application.Invitations.Commands.RemoveUserFromSite;
 using Hems_Backend.Application.Invitations.Queries.GetInvitationsBySite;
-using Hems_Backend.Application.Invitations.Queries.GetUserHomeSites;
-using Hems_Backend.Application.Invitations.Queries.GetUserNotifications;
+using Hems_Backend.Application.Invitations.Queries.GetPendingInvitationsForUser;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Hems_Backend.Web.Endpoints;
@@ -17,26 +15,16 @@ public class Invitations : EndpointGroupBase
     {
         app.MapGroup(this)
             .RequireAuthorization()
-            // Davetiye gönderme
-            .MapPost(CreateInvitation, "create")
-            // Davetiye listeleme (belirli bir site için)
-            .MapGet(GetInvitationsBySite, "by-site/{siteId}")
-            // Davetiye kabul etme
-            .MapPost(AcceptInvitation, "accept")
-            // Davetiye reddetme
-            .MapPost(DeclineInvitation, "decline")
-            // Kullanıcının evlerini listeleme (sahibi olduğu + paylaşılan)
-            .MapGet(GetUserHomeSites, "user-home-sites")
-            // Kullanıcının bildirimlerini getirme
-            .MapGet(GetUserNotifications, "notifications")
-            // Bildirimi okundu olarak işaretleme
-            .MapPut(MarkNotificationAsRead, "notifications/{notificationId}/mark-read")
-            // Paylaşılan siteden kullanıcı kaldırma
-            .MapDelete(RemoveUserFromSite, "remove-user/{invitationId}");
+            .MapPost(CreateInvitation, "Create")
+            .MapGet(GetInvitationsBySite, "BySite/{siteId}")
+            .MapGet(GetPendingInvitationsForUser, "Pending")
+            .MapPost(AcceptInvitation, "Accept")
+            .MapPost(DeclineInvitation, "Decline")
+            .MapDelete(RemoveUserFromSite, "RemoveUser/{invitationId}");
     }
 
     /// <summary>
-    /// AŞAMA 1: Davetiye Gönderimi
+    /// Create a new invitation to share a site with another user.
     /// </summary>
     [Authorize]
     public async Task<Guid> CreateInvitation(
@@ -47,7 +35,7 @@ public class Invitations : EndpointGroupBase
     }
 
     /// <summary>
-    /// AŞAMA 2: Davetiye Listeleme
+    /// Get all invitations for a specific site.
     /// </summary>
     [Authorize]
     public async Task<InvitationsVm> GetInvitationsBySite(
@@ -58,7 +46,18 @@ public class Invitations : EndpointGroupBase
     }
 
     /// <summary>
-    /// AŞAMA 3: Davetiye Kabul Etme
+    /// Get pending invitations for the current user (by email).
+    /// Used to check if a new user has pending invitations before forcing home creation.
+    /// </summary>
+    [Authorize]
+    public async Task<PendingInvitationsResult> GetPendingInvitationsForUser(
+        ISender sender)
+    {
+        return await sender.Send(new GetPendingInvitationsForUserQuery());
+    }
+
+    /// <summary>
+    /// Accept a pending invitation.
     /// </summary>
     [Authorize]
     public async Task<IResult> AcceptInvitation(
@@ -66,11 +65,11 @@ public class Invitations : EndpointGroupBase
         AcceptInvitationCommand command)
     {
         await sender.Send(command);
-        return Results.Ok(new { message = "Davetiye başarıyla kabul edildi." });
+        return Results.Ok(new { message = "Invitation accepted successfully." });
     }
 
     /// <summary>
-    /// AŞAMA 3: Davetiye Reddetme
+    /// Decline a pending invitation.
     /// </summary>
     [Authorize]
     public async Task<IResult> DeclineInvitation(
@@ -78,43 +77,11 @@ public class Invitations : EndpointGroupBase
         DeclineInvitationCommand command)
     {
         await sender.Send(command);
-        return Results.Ok(new { message = "Davetiye reddedildi." });
+        return Results.Ok(new { message = "Invitation declined." });
     }
 
     /// <summary>
-    /// AŞAMA 4: Kullanıcının Evlerini Listeleme
-    /// </summary>
-    [Authorize]
-    public async Task<UserHomeSitesVm> GetUserHomeSites(
-        ISender sender)
-    {
-        return await sender.Send(new GetUserHomeSitesQuery());
-    }
-
-    /// <summary>
-    /// Kullanıcının Bildirimlerini Getirme
-    /// </summary>
-    [Authorize]
-    public async Task<List<NotificationDto>> GetUserNotifications(
-        ISender sender)
-    {
-        return await sender.Send(new GetUserNotificationsQuery());
-    }
-
-    /// <summary>
-    /// Bildirimi Okundu Olarak İşaretleme
-    /// </summary>
-    [Authorize]
-    public async Task<IResult> MarkNotificationAsRead(
-        ISender sender,
-        Guid notificationId)
-    {
-        await sender.Send(new MarkNotificationAsReadCommand { NotificationId = notificationId });
-        return Results.NoContent();
-    }
-
-    /// <summary>
-    /// Paylaşılan Siteden Kullanıcı Kaldırma
+    /// Remove a user from a shared site.
     /// </summary>
     [Authorize]
     public async Task<IResult> RemoveUserFromSite(
@@ -122,7 +89,7 @@ public class Invitations : EndpointGroupBase
         Guid invitationId)
     {
         await sender.Send(new RemoveUserFromSiteCommand { InvitationId = invitationId });
-        return Results.Ok(new { message = "Kullanıcı siteden başarıyla kaldırıldı." });
+        return Results.Ok(new { message = "User removed from site successfully." });
     }
 }
 

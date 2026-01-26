@@ -1,4 +1,5 @@
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
@@ -7,6 +8,7 @@ namespace Hems_Backend.Infrastructure.Services;
 /// <summary>
 /// Device mapping service with in-memory caching
 /// Maps between local DeviceId and ThingsBoardDeviceId
+/// Also caches device PhaseType based on ModelNumber
 /// </summary>
 public class DeviceMappingService : IDeviceMappingService
 {
@@ -14,6 +16,7 @@ public class DeviceMappingService : IDeviceMappingService
     private readonly IMemoryCache _cache;
     private const string CacheKeyPrefix = "DeviceMapping_";
     private const string ReverseCacheKeyPrefix = "DeviceMappingReverse_";
+    private const string PhaseTypeCacheKeyPrefix = "DevicePhaseType_";
     private static readonly TimeSpan CacheExpiration = TimeSpan.FromHours(24);
 
     public DeviceMappingService(IApplicationDbContext context, IMemoryCache cache)
@@ -94,6 +97,42 @@ public class DeviceMappingService : IDeviceMappingService
         _cache.Set(forwardCacheKey, device.ThingsBoardDeviceId, cacheOptions);
 
         return device.Id;
+    }
+
+    public async Task<PhaseType> GetPhaseTypeAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken = default)
+    {
+        var cacheKey = $"{PhaseTypeCacheKeyPrefix}{thingsBoardDeviceId}";
+
+        // Try to get from cache
+        if (_cache.TryGetValue<PhaseType>(cacheKey, out var cachedPhaseType))
+        {
+            return cachedPhaseType;
+        }
+
+        // Query ModelNumber from database
+        var modelNumber = await _context.Devices
+            .Where(d => d.ThingsBoardDeviceId == thingsBoardDeviceId && !d.IsDeleted)
+            .Select(d => d.ModelNumber)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        // Determine PhaseType based on ModelNumber
+        // If ModelNumber contains "three" (case-insensitive), it's ThreePhase
+        // Otherwise, default to SinglePhase
+        var phaseType = !string.IsNullOrEmpty(modelNumber) &&
+                        modelNumber.Contains("three", StringComparison.OrdinalIgnoreCase)
+            ? PhaseType.ThreePhase
+            : PhaseType.SinglePhase;
+
+        // Cache the result
+        var cacheOptions = new MemoryCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = CacheExpiration,
+            SlidingExpiration = TimeSpan.FromHours(6)
+        };
+
+        _cache.Set(cacheKey, phaseType, cacheOptions);
+
+        return phaseType;
     }
 
     public Task InvalidateCacheAsync(Guid deviceId)

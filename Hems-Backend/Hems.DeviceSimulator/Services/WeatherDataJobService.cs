@@ -6,6 +6,12 @@ using Hangfire;
 
 namespace Hems.DeviceSimulator.Services;
 
+// OBSOLETE: This service is deprecated for demo data simulation.
+// Demo data is now generated on-the-fly by DemoSimulationDataService in the Infrastructure layer.
+// No data should be stored in the database for demo devices.
+// See: src/Infrastructure/Services/DemoSimulationDataService.cs
+
+[Obsolete("Use DemoSimulationDataService in Infrastructure for demo devices. This service is only for real device testing.")]
 public interface IWeatherDataJobService
 {
     Task StartWeatherSimulationAsync();
@@ -18,6 +24,7 @@ public interface IWeatherDataJobService
 /// Service for simulating weather data for demo devices.
 /// Sends weather data every 30 minutes directly to the database.
 /// </summary>
+[Obsolete("Use DemoSimulationDataService in Infrastructure for demo devices. This service stores data to database which is not allowed for demo users.")]
 public class WeatherDataJobService : IWeatherDataJobService
 {
     private readonly ILogger<WeatherDataJobService> _logger;

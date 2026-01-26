@@ -7,11 +7,11 @@ public class CreateInvitationCommandValidator : AbstractValidator<CreateInvitati
     public CreateInvitationCommandValidator()
     {
         RuleFor(v => v.Email)
-            .NotEmpty().WithMessage("Email zorunludur.")
-            .EmailAddress().WithMessage("Geçerli bir email adresi giriniz.");
+            .NotEmpty().WithMessage("Email is required.")
+            .EmailAddress().WithMessage("Please enter a valid email address.");
 
         RuleFor(v => v.SiteId)
-            .NotEmpty().WithMessage("Site ID zorunludur.");
+            .NotEmpty().WithMessage("Site ID is required.");
     }
 }
 

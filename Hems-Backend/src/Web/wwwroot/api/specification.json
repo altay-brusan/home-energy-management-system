@@ -16,56 +16,6 @@
         }
       }
     },
-    "/api/Auth/user-status": {
-      "get": {
-        "tags": [
-          "Auth"
-        ],
-        "operationId": "GetUserStatus",
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserStatusDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/Auth/mobile/get-user-status": {
-      "get": {
-        "tags": [
-          "Auth"
-        ],
-        "operationId": "GetUserStatusMobile",
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserStatusDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
     "/api/Dashboard/Soc": {
       "get": {
         "tags": [
@@ -128,6 +78,53 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SohResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Dashboard/SocHistory": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "operationId": "SocHistory",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SocHistoryResponseDto"
                 }
               }
             }
@@ -489,12 +486,59 @@
         ]
       }
     },
-    "/api/Dashboard/device/GetWithData": {
+    "/api/Dashboard/EnergySourceMix": {
       "get": {
         "tags": [
           "Dashboard"
         ],
-        "operationId": "GetDeviceWithData",
+        "operationId": "EnergySourceMix",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnergySourceMixDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Dashboard/DeviceComponentsStatus": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "operationId": "GetDeviceComponentsStatus",
         "parameters": [
           {
             "name": "deviceId",
@@ -526,12 +570,12 @@
         ]
       }
     },
-    "/api/Dashboard/device/component/getComponentLiveData": {
+    "/api/DeviceComponents/DeviceSummary": {
       "get": {
         "tags": [
-          "Dashboard"
+          "DeviceComponents"
         ],
-        "operationId": "GetComponentLiveData",
+        "operationId": "GetDeviceSummary",
         "parameters": [
           {
             "name": "deviceId",
@@ -542,14 +586,51 @@
               "format": "guid"
             },
             "x-position": 1
-          },
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceSummaryResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/DeviceComponents/Details/{componentId}": {
+      "get": {
+        "tags": [
+          "DeviceComponents"
+        ],
+        "operationId": "GetDeviceDetails",
+        "parameters": [
           {
             "name": "componentId",
-            "in": "query",
+            "in": "path",
             "required": true,
             "schema": {
               "type": "string",
               "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "bmsAddress",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "nullable": true
             },
             "x-position": 2
           }
@@ -560,7 +641,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GetComponentLiveDataResponse"
+                  "$ref": "#/components/schemas/DeviceDetailsResponseDto"
                 }
               }
             }
@@ -573,118 +654,7 @@
         ]
       }
     },
-    "/api/Dashboard/graphs/Battery": {
-      "get": {
-        "tags": [
-          "Dashboard"
-        ],
-        "operationId": "Battery",
-        "parameters": [
-          {
-            "name": "deviceId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BatteryResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/Dashboard/graphs/Components/Battery": {
-      "get": {
-        "tags": [
-          "Dashboard"
-        ],
-        "operationId": "BatteryComponent",
-        "parameters": [
-          {
-            "name": "deviceId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BatteryComponentDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/Dashboard/graphs/Components/Inverter": {
-      "get": {
-        "tags": [
-          "Dashboard"
-        ],
-        "operationId": "InverterComponent",
-        "parameters": [
-          {
-            "name": "deviceId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InverterComponentDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/DeviceComponents/Device/{deviceId}": {
+    "/api/DeviceComponents/Admin/DeviceComponents/{deviceId}": {
       "get": {
         "tags": [
           "DeviceComponents"
@@ -733,7 +703,7 @@
         ]
       }
     },
-    "/api/DeviceComponents/{id}": {
+    "/api/DeviceComponents/Admin/Component/{id}": {
       "get": {
         "tags": [
           "DeviceComponents"
@@ -838,81 +808,7 @@
         ]
       }
     },
-    "/api/DeviceComponents/DeviceSummary": {
-      "get": {
-        "tags": [
-          "DeviceComponents"
-        ],
-        "operationId": "GetDeviceSummary",
-        "parameters": [
-          {
-            "name": "deviceId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DeviceSummaryResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/DeviceComponents/Details/{componentId}": {
-      "get": {
-        "tags": [
-          "DeviceComponents"
-        ],
-        "operationId": "GetDeviceDetails",
-        "parameters": [
-          {
-            "name": "componentId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DeviceDetailsResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/DeviceComponents": {
+    "/api/DeviceComponents/Admin/Component": {
       "post": {
         "tags": [
           "DeviceComponents"
@@ -1373,13 +1269,22 @@
             "x-position": 6
           },
           {
+            "name": "Severity",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 7
+          },
+          {
             "name": "IncludeDeleted",
             "in": "query",
             "schema": {
               "type": "boolean",
               "nullable": true
             },
-            "x-position": 7
+            "x-position": 8
           }
         ],
         "responses": {
@@ -1401,35 +1306,7 @@
         ]
       }
     },
-    "/api/DeviceNotifications/types": {
-      "get": {
-        "tags": [
-          "DeviceNotifications"
-        ],
-        "operationId": "GetDeviceNotificationTypes",
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/DeviceNotificationTypeDto"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/DeviceNotifications/deleted": {
+    "/api/DeviceNotifications/Deleted": {
       "get": {
         "tags": [
           "DeviceNotifications"
@@ -1483,6 +1360,15 @@
               "nullable": true
             },
             "x-position": 5
+          },
+          {
+            "name": "Severity",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 6
           }
         ],
         "responses": {
@@ -1504,7 +1390,7 @@
         ]
       }
     },
-    "/api/DeviceNotifications/{id}/mark-read": {
+    "/api/DeviceNotifications/{id}/MarkRead": {
       "put": {
         "tags": [
           "DeviceNotifications"
@@ -1534,7 +1420,7 @@
         ]
       }
     },
-    "/api/DeviceNotifications/mark-all-read/{siteId}": {
+    "/api/DeviceNotifications/MarkAllRead/{siteId}": {
       "put": {
         "tags": [
           "DeviceNotifications"
@@ -1543,6 +1429,36 @@
         "parameters": [
           {
             "name": "siteId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/DeviceNotifications/{id}/Restore": {
+      "put": {
+        "tags": [
+          "DeviceNotifications"
+        ],
+        "operationId": "RestoreDeviceNotification",
+        "parameters": [
+          {
+            "name": "id",
             "in": "path",
             "required": true,
             "schema": {
@@ -1594,12 +1510,12 @@
         ]
       }
     },
-    "/api/DeviceNotifications/{id}/restore": {
-      "put": {
+    "/api/DeviceNotifications/{id}/Purge": {
+      "delete": {
         "tags": [
           "DeviceNotifications"
         ],
-        "operationId": "RestoreDeviceNotification",
+        "operationId": "PurgeDeviceNotification",
         "parameters": [
           {
             "name": "id",
@@ -1624,27 +1540,25 @@
         ]
       }
     },
-    "/api/DeviceNotifications/{id}/permanent": {
-      "delete": {
+    "/api/DeviceNotifications/Admin/Types": {
+      "get": {
         "tags": [
           "DeviceNotifications"
         ],
-        "operationId": "PermanentDeleteDeviceNotification",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
+        "operationId": "GetDeviceNotificationTypes",
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DeviceNotificationTypeDto"
+                  }
+                }
+              }
+            }
           }
         },
         "security": [
@@ -1686,7 +1600,7 @@
         }
       }
     },
-    "/api/Devices/{id}": {
+    "/api/Devices/Admin/Device/{id}": {
       "get": {
         "tags": [
           "Devices"
@@ -1791,7 +1705,7 @@
         ]
       }
     },
-    "/api/Devices": {
+    "/api/Devices/Admin/Device": {
       "post": {
         "tags": [
           "Devices"
@@ -2058,6 +1972,76 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/SetDeviceModeRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/DeviceSettings/device/{deviceId}/grid-config": {
+      "get": {
+        "tags": [
+          "DeviceSettings"
+        ],
+        "operationId": "GetGridConfig",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "DeviceSettings"
+        ],
+        "operationId": "UpdateGridConfig",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateGridConfigRequest"
               }
             }
           },
@@ -2455,7 +2439,7 @@
         ]
       }
     },
-    "/api/Invitations/create": {
+    "/api/Invitations/Create": {
       "post": {
         "tags": [
           "Invitations"
@@ -2493,7 +2477,7 @@
         ]
       }
     },
-    "/api/Invitations/by-site/{siteId}": {
+    "/api/Invitations/BySite/{siteId}": {
       "get": {
         "tags": [
           "Invitations"
@@ -2530,7 +2514,32 @@
         ]
       }
     },
-    "/api/Invitations/accept": {
+    "/api/Invitations/Pending": {
+      "get": {
+        "tags": [
+          "Invitations"
+        ],
+        "operationId": "GetPendingInvitationsForUser",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PendingInvitationsResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Invitations/Accept": {
       "post": {
         "tags": [
           "Invitations"
@@ -2560,7 +2569,7 @@
         ]
       }
     },
-    "/api/Invitations/decline": {
+    "/api/Invitations/Decline": {
       "post": {
         "tags": [
           "Invitations"
@@ -2590,90 +2599,7 @@
         ]
       }
     },
-    "/api/Invitations/user-home-sites": {
-      "get": {
-        "tags": [
-          "Invitations"
-        ],
-        "operationId": "GetUserHomeSites",
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserHomeSitesVm"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/Invitations/notifications": {
-      "get": {
-        "tags": [
-          "Invitations"
-        ],
-        "operationId": "GetUserNotifications",
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/NotificationDto"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/Invitations/notifications/{notificationId}/mark-read": {
-      "put": {
-        "tags": [
-          "Invitations"
-        ],
-        "operationId": "MarkNotificationAsRead",
-        "parameters": [
-          {
-            "name": "notificationId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "guid"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/Invitations/remove-user/{invitationId}": {
+    "/api/Invitations/RemoveUser/{invitationId}": {
       "delete": {
         "tags": [
           "Invitations"
@@ -2731,12 +2657,12 @@
         ]
       }
     },
-    "/api/Locations/cities/{countryId}": {
+    "/api/Locations/Cities/{countryId}": {
       "get": {
         "tags": [
           "Locations"
         ],
-        "operationId": "GetCitiesByCountry",
+        "operationId": "GetCountryCities",
         "parameters": [
           {
             "name": "countryId",
@@ -2771,7 +2697,330 @@
         ]
       }
     },
-    "/api/ParameterSchemas/groups": {
+    "/api/MobileAppVersions/Check": {
+      "get": {
+        "tags": [
+          "MobileAppVersions"
+        ],
+        "operationId": "CheckVersion",
+        "parameters": [
+          {
+            "name": "Platform",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/MobilePlatform"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "Version",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppVersionCheckResultDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/MobileAppVersions/Admin/Versions": {
+      "get": {
+        "tags": [
+          "MobileAppVersions"
+        ],
+        "operationId": "GetVersions",
+        "parameters": [
+          {
+            "name": "Platform",
+            "in": "query",
+            "schema": {
+              "nullable": true,
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/MobilePlatform"
+                }
+              ]
+            },
+            "x-position": 1
+          },
+          {
+            "name": "IsActive",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "nullable": true
+            },
+            "x-position": 2
+          },
+          {
+            "name": "PageNumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 3
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 4
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedListOfMobileAppVersionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "MobileAppVersions"
+        ],
+        "operationId": "CreateVersion",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMobileAppVersionCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "guid"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/MobileAppVersions/Admin/Versions/{id}": {
+      "get": {
+        "tags": [
+          "MobileAppVersions"
+        ],
+        "operationId": "GetVersionById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MobileAppVersionDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "MobileAppVersions"
+        ],
+        "operationId": "UpdateVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMobileAppVersionCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "MobileAppVersions"
+        ],
+        "operationId": "DeleteVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/MobileAppVersions/Admin/Versions/{id}/SetLatest": {
+      "post": {
+        "tags": [
+          "MobileAppVersions"
+        ],
+        "operationId": "SetLatestVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/MobileAppVersions/Admin/Versions/{id}/Revoke": {
+      "post": {
+        "tags": [
+          "MobileAppVersions"
+        ],
+        "operationId": "RevokeVersion",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevokeVersionCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/ParameterSchemas/Admin/Groups": {
       "get": {
         "tags": [
           "ParameterSchemas"
@@ -2832,7 +3081,7 @@
         ]
       }
     },
-    "/api/ParameterSchemas/groups/{id}": {
+    "/api/ParameterSchemas/Admin/Groups/{id}": {
       "get": {
         "tags": [
           "ParameterSchemas"
@@ -2952,7 +3201,7 @@
         ]
       }
     },
-    "/api/ParameterSchemas/parameters": {
+    "/api/ParameterSchemas/Admin/Parameters": {
       "get": {
         "tags": [
           "ParameterSchemas"
@@ -3025,7 +3274,7 @@
         ]
       }
     },
-    "/api/ParameterSchemas/parameters/{id}": {
+    "/api/ParameterSchemas/Admin/Parameters/{id}": {
       "get": {
         "tags": [
           "ParameterSchemas"
@@ -3145,41 +3394,7 @@
         ]
       }
     },
-    "/api/ParameterSchemas/values": {
-      "get": {
-        "tags": [
-          "ParameterSchemas"
-        ],
-        "operationId": "GetParameterValueSettingSchemes",
-        "parameters": [
-          {
-            "name": "modelNumber",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "nullable": true
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ParameterValueSettingSchemesVm"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      },
+    "/api/ParameterSchemas/Admin/Values": {
       "post": {
         "tags": [
           "ParameterSchemas"
@@ -3217,43 +3432,7 @@
         ]
       }
     },
-    "/api/ParameterSchemas/values/tree": {
-      "get": {
-        "tags": [
-          "ParameterSchemas"
-        ],
-        "operationId": "GetParameterValueSettingSchemesTree",
-        "parameters": [
-          {
-            "name": "modelNumber",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "nullable": true
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ParameterValueSettingSchemesTreeVm"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/ParameterSchemas/values/{id}": {
+    "/api/ParameterSchemas/Admin/Values/{id}": {
       "put": {
         "tags": [
           "ParameterSchemas"
@@ -3329,7 +3508,79 @@
         ]
       }
     },
-    "/api/RoleManagement": {
+    "/api/ParameterSchemas/Values": {
+      "get": {
+        "tags": [
+          "ParameterSchemas"
+        ],
+        "operationId": "GetParameterValueSettingSchemes",
+        "parameters": [
+          {
+            "name": "modelNumber",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParameterValueSettingSchemesVm"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/ParameterSchemas/Values/Tree": {
+      "get": {
+        "tags": [
+          "ParameterSchemas"
+        ],
+        "operationId": "GetParameterValueSettingSchemesTree",
+        "parameters": [
+          {
+            "name": "modelNumber",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParameterValueSettingSchemesTreeVm"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/RoleManagement/Admin/Roles": {
       "get": {
         "tags": [
           "RoleManagement"
@@ -3385,7 +3636,7 @@
         ]
       }
     },
-    "/api/RoleManagement/{roleName}": {
+    "/api/RoleManagement/Admin/Roles/{roleName}": {
       "delete": {
         "tags": [
           "RoleManagement"
@@ -3417,7 +3668,7 @@
         ]
       }
     },
-    "/api/RoleManagement/assign": {
+    "/api/RoleManagement/Admin/Assign": {
       "put": {
         "tags": [
           "RoleManagement"
@@ -3450,7 +3701,7 @@
         ]
       }
     },
-    "/api/RoleManagement/user/{userId}": {
+    "/api/RoleManagement/Admin/User/{userId}/Roles": {
       "get": {
         "tags": [
           "RoleManagement"
@@ -3486,7 +3737,7 @@
         ]
       }
     },
-    "/api/Setups": {
+    "/api/Setups/Admin/Setups": {
       "get": {
         "tags": [
           "Setups"
@@ -3543,7 +3794,7 @@
         ]
       }
     },
-    "/api/Setups/{id}": {
+    "/api/Setups/Admin/Setup/{id}": {
       "get": {
         "tags": [
           "Setups"
@@ -3608,7 +3859,7 @@
         ]
       }
     },
-    "/api/Setups/mobile/get-setup-device": {
+    "/api/Setups/SetupDevice": {
       "get": {
         "tags": [
           "Setups"
@@ -3645,7 +3896,7 @@
         ]
       }
     },
-    "/api/Setups/mobile/create-setup": {
+    "/api/Setups/Setup": {
       "post": {
         "tags": [
           "Setups"
@@ -3683,7 +3934,7 @@
         ]
       }
     },
-    "/api/Setups/mobile/update-setup/{id}": {
+    "/api/Setups/Setup/{id}": {
       "put": {
         "tags": [
           "Setups"
@@ -3723,9 +3974,7 @@
             "JWT": []
           }
         ]
-      }
-    },
-    "/api/Setups/mobile/delete-setup/{id}": {
+      },
       "delete": {
         "tags": [
           "Setups"
@@ -3755,7 +4004,7 @@
         ]
       }
     },
-    "/api/Sites": {
+    "/api/Sites/Admin/Sites": {
       "get": {
         "tags": [
           "Sites"
@@ -3874,7 +4123,7 @@
         ]
       }
     },
-    "/api/Sites/{id}": {
+    "/api/Sites/Admin/Site/{id}": {
       "get": {
         "tags": [
           "Sites"
@@ -3939,7 +4188,7 @@
         ]
       }
     },
-    "/api/Sites/mobile/get-sites": {
+    "/api/Sites/UserSites": {
       "get": {
         "tags": [
           "Sites"
@@ -3964,7 +4213,7 @@
         ]
       }
     },
-    "/api/Sites/mobile/create-site": {
+    "/api/Sites/Site": {
       "post": {
         "tags": [
           "Sites"
@@ -4002,7 +4251,7 @@
         ]
       }
     },
-    "/api/Sites/mobile/update-site/{id}": {
+    "/api/Sites/Site/{id}": {
       "put": {
         "tags": [
           "Sites"
@@ -4042,9 +4291,7 @@
             "JWT": []
           }
         ]
-      }
-    },
-    "/api/Sites/mobile/delete-site/{id}": {
+      },
       "delete": {
         "tags": [
           "Sites"
@@ -4072,331 +4319,6 @@
             "JWT": []
           }
         ]
-      }
-    },
-    "/api/TodoItems": {
-      "get": {
-        "tags": [
-          "TodoItems"
-        ],
-        "operationId": "GetTodoItemsWithPagination",
-        "parameters": [
-          {
-            "name": "ListId",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "x-position": 1
-          },
-          {
-            "name": "PageNumber",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "x-position": 2
-          },
-          {
-            "name": "PageSize",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "x-position": 3
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaginatedListOfTodoItemBriefDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      },
-      "post": {
-        "tags": [
-          "TodoItems"
-        ],
-        "operationId": "CreateTodoItem",
-        "requestBody": {
-          "x-name": "command",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateTodoItemCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "integer",
-                  "format": "int32"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/TodoItems/{id}": {
-      "put": {
-        "tags": [
-          "TodoItems"
-        ],
-        "operationId": "UpdateTodoItem",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "x-position": 1
-          }
-        ],
-        "requestBody": {
-          "x-name": "command",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateTodoItemCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 2
-        },
-        "responses": {
-          "204": {
-            "description": ""
-          },
-          "400": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      },
-      "delete": {
-        "tags": [
-          "TodoItems"
-        ],
-        "operationId": "DeleteTodoItem",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/TodoItems/UpdateDetail/{id}": {
-      "put": {
-        "tags": [
-          "TodoItems"
-        ],
-        "operationId": "UpdateTodoItemDetail",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "x-position": 1
-          }
-        ],
-        "requestBody": {
-          "x-name": "command",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateTodoItemDetailCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 2
-        },
-        "responses": {
-          "204": {
-            "description": ""
-          },
-          "400": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "JWT": []
-          }
-        ]
-      }
-    },
-    "/api/TodoLists": {
-      "get": {
-        "tags": [
-          "TodoLists"
-        ],
-        "operationId": "GetTodoLists",
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TodosVm"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "TodoLists"
-        ],
-        "operationId": "CreateTodoList",
-        "requestBody": {
-          "x-name": "command",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateTodoListCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "integer",
-                  "format": "int32"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/TodoLists/{id}": {
-      "put": {
-        "tags": [
-          "TodoLists"
-        ],
-        "operationId": "UpdateTodoList",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "x-position": 1
-          }
-        ],
-        "requestBody": {
-          "x-name": "command",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateTodoListCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 2
-        },
-        "responses": {
-          "204": {
-            "description": ""
-          },
-          "400": {
-            "description": ""
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "TodoLists"
-        ],
-        "operationId": "DeleteTodoList",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": ""
-          }
-        }
       }
     },
     "/api/Users/register": {
@@ -4731,6 +4653,7 @@
             "description": ""
           }
         },
+        "deprecated": true,
         "security": [
           {
             "JWT": []
@@ -4907,78 +4830,6 @@
   },
   "components": {
     "schemas": {
-      "UserStatusDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "status": {
-            "$ref": "#/components/schemas/UserStatusType"
-          },
-          "redirectTo": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
-          },
-          "data": {
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/UserStatusDataDto"
-              }
-            ]
-          }
-        }
-      },
-      "UserStatusType": {
-        "type": "integer",
-        "description": "",
-        "x-enumNames": [
-          "Complete",
-          "NeedsSite",
-          "NeedsSetup",
-          "Error"
-        ],
-        "enum": [
-          1,
-          2,
-          3,
-          4
-        ]
-      },
-      "UserStatusDataDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "siteId": {
-            "type": "string",
-            "format": "guid",
-            "nullable": true
-          },
-          "siteName": {
-            "type": "string",
-            "nullable": true
-          },
-          "setupId": {
-            "type": "string",
-            "format": "guid",
-            "nullable": true
-          },
-          "setupName": {
-            "type": "string",
-            "nullable": true
-          },
-          "deviceId": {
-            "type": "string",
-            "format": "guid",
-            "nullable": true
-          },
-          "deviceName": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
       "SocResponseDto": {
         "type": "object",
         "additionalProperties": false,
@@ -5087,6 +4938,41 @@
           },
           "unit": {
             "type": "string"
+          }
+        }
+      },
+      "SocHistoryResponseDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "deviceId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SocHistoryDataPoint"
+            }
+          }
+        }
+      },
+      "SocHistoryDataPoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "timestamp": {
+            "type": "string"
+          },
+          "socPercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "isInterpolated": {
+            "type": "boolean"
           }
         }
       },
@@ -5377,6 +5263,79 @@
           }
         }
       },
+      "EnergySourceMixDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "deviceId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "loadDemandWh": {
+            "type": "number",
+            "format": "double"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EnergySourceContribution"
+            }
+          },
+          "summary": {
+            "$ref": "#/components/schemas/EnergySourceMixSummary"
+          }
+        }
+      },
+      "EnergySourceContribution": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source": {
+            "type": "string"
+          },
+          "providedEnergyWh": {
+            "type": "number",
+            "format": "double"
+          },
+          "contribution": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "EnergySourceMixSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sampleCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "firstSampleTime": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastSampleTime": {
+            "type": "string",
+            "nullable": true
+          },
+          "averageIntervalMinutes": {
+            "type": "number",
+            "format": "double"
+          },
+          "totalTimeSpanMinutes": {
+            "type": "number",
+            "format": "double"
+          },
+          "zeroSupplySamples": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "DeviceWithDataResponseDto": {
         "type": "object",
         "additionalProperties": false,
@@ -5429,113 +5388,184 @@
           }
         }
       },
-      "GetComponentLiveDataResponse": {
+      "DeviceSummaryResponseDto": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "success": {
-            "type": "boolean"
-          },
-          "message": {
-            "type": "string",
-            "nullable": true
-          },
-          "data": {
-            "nullable": true
-          }
-        }
-      },
-      "BatteryResponseDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "range": {
-            "type": "string"
-          },
-          "data": {
+          "components": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/BatteryDataPoint"
+              "$ref": "#/components/schemas/ComponentSummaryDto"
             }
-          },
-          "statistics": {
-            "$ref": "#/components/schemas/BatteryStatistics"
           }
         }
       },
-      "BatteryDataPoint": {
+      "ComponentSummaryDto": {
         "type": "object",
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "inverter": "#/components/schemas/InverterSummaryDto",
+            "battery": "#/components/schemas/BatterySummaryDto"
+          }
+        },
         "additionalProperties": false,
+        "required": [
+          "type"
+        ],
         "properties": {
-          "timestamp": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "type": {
             "type": "string"
           },
-          "value": {
-            "type": "number",
-            "format": "double"
+          "name": {
+            "type": "string"
           },
-          "unit": {
+          "model": {
+            "type": "string"
+          },
+          "manufacturer": {
+            "type": "string"
+          },
+          "serialNumber": {
             "type": "string"
           }
         }
       },
-      "BatteryStatistics": {
+      "InverterSummaryDto": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ComponentSummaryDto"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "activePowerKw": {
+                "type": "number",
+                "format": "double",
+                "nullable": true
+              }
+            }
+          }
+        ]
+      },
+      "BatterySummaryDto": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ComponentSummaryDto"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "stateOfCharge": {
+                "type": "number",
+                "format": "double",
+                "nullable": true
+              },
+              "packs": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BatteryPackDto"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "BatteryPackDto": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "average": {
-            "type": "number",
-            "format": "double"
+          "id": {
+            "type": "string"
           },
-          "peak": {
+          "type": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "manufacturer": {
+            "type": "string"
+          },
+          "serialNumber": {
+            "type": "string"
+          },
+          "componentId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "bmsAddress": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "stateOfCharge": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "nullable": true
+          },
+          "stateOfHealth": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "voltage": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
           },
           "current": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "nullable": true
+          },
+          "temperature": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "firmwareVersion": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "DeviceDetailsResponseDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "details": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeviceDetailItemDto"
+            }
+          }
+        }
+      },
+      "DeviceDetailItemDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "nullable": true
           },
           "unit": {
+            "type": "string",
+            "nullable": true
+          },
+          "labelKey": {
             "type": "string"
-          }
-        }
-      },
-      "BatteryComponentDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "soc": {
-            "type": "number",
-            "format": "double"
-          },
-          "today": {
-            "type": "number",
-            "format": "double"
-          },
-          "total": {
-            "type": "number",
-            "format": "double"
-          }
-        }
-      },
-      "InverterComponentDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "power": {
-            "type": "number",
-            "format": "double"
-          },
-          "powerUnit": {
-            "type": "string"
-          },
-          "today": {
-            "type": "number",
-            "format": "double"
-          },
-          "total": {
-            "type": "number",
-            "format": "double"
           }
         }
       },
@@ -5654,155 +5684,6 @@
           3
         ]
       },
-      "DeviceSummaryResponseDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "components": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ComponentSummaryDto"
-            }
-          }
-        }
-      },
-      "ComponentSummaryDto": {
-        "type": "object",
-        "discriminator": {
-          "propertyName": "type",
-          "mapping": {
-            "inverter": "#/components/schemas/InverterSummaryDto",
-            "battery": "#/components/schemas/BatterySummaryDto"
-          }
-        },
-        "additionalProperties": false,
-        "required": [
-          "type"
-        ],
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
-          "type": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "model": {
-            "type": "string"
-          },
-          "manufacturer": {
-            "type": "string"
-          },
-          "serialNumber": {
-            "type": "string"
-          }
-        }
-      },
-      "InverterSummaryDto": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/ComponentSummaryDto"
-          },
-          {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "activePowerKw": {
-                "type": "number",
-                "format": "double",
-                "nullable": true
-              }
-            }
-          }
-        ]
-      },
-      "BatterySummaryDto": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/ComponentSummaryDto"
-          },
-          {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "stateOfCharge": {
-                "type": "number",
-                "format": "double",
-                "nullable": true
-              },
-              "packs": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/BatteryPackDto"
-                }
-              }
-            }
-          }
-        ]
-      },
-      "BatteryPackDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "model": {
-            "type": "string"
-          },
-          "manufacturer": {
-            "type": "string"
-          },
-          "serialNumber": {
-            "type": "string"
-          },
-          "stateOfCharge": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          }
-        }
-      },
-      "DeviceDetailsResponseDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "details": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DeviceDetailItemDto"
-            }
-          }
-        }
-      },
-      "DeviceDetailItemDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "key": {
-            "type": "string"
-          },
-          "value": {
-            "nullable": true
-          },
-          "unit": {
-            "type": "string",
-            "nullable": true
-          },
-          "labelKey": {
-            "type": "string"
-          }
-        }
-      },
       "CreateDeviceComponentCommand": {
         "type": "object",
         "additionalProperties": false,
@@ -5906,7 +5787,8 @@
         "additionalProperties": false,
         "properties": {
           "deviceId": {
-            "type": "string"
+            "type": "string",
+            "format": "guid"
           },
           "timestamp": {
             "type": "string",
@@ -5990,6 +5872,20 @@
           "timestamp": {
             "type": "string",
             "format": "date-time"
+          },
+          "lastHeartbeat": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastPowerFlow": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "missedHeartbeats": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -6133,19 +6029,8 @@
           "message": {
             "type": "string"
           },
-          "status": {
-            "type": "string"
-          },
           "description": {
             "type": "string"
-          },
-          "register": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "value": {
-            "type": "integer",
-            "format": "int32"
           },
           "category": {
             "type": "string"
@@ -6581,6 +6466,19 @@
             "items": {
               "$ref": "#/components/schemas/ParameterGroupTreeDto"
             }
+          },
+          "isDeviceBusy": {
+            "type": "boolean"
+          },
+          "estimatedSecondsRemaining": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "progressPercentage": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
           }
         }
       },
@@ -6757,6 +6655,31 @@
           3,
           99
         ]
+      },
+      "UpdateGridConfigRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "parameters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GridConfigParameterUpdateRequest"
+            }
+          }
+        }
+      },
+      "GridConfigParameterUpdateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "parameterId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
       },
       "SetEnergyPriceRequest": {
         "type": "object",
@@ -7056,6 +6979,47 @@
           5
         ]
       },
+      "PendingInvitationsResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "hasPendingInvitations": {
+            "type": "boolean"
+          },
+          "invitations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PendingInvitationDto"
+            }
+          }
+        }
+      },
+      "PendingInvitationDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "invitationId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "siteName": {
+            "type": "string"
+          },
+          "invitedByEmail": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "isExpired": {
+            "type": "boolean"
+          }
+        }
+      },
       "AcceptInvitationCommand": {
         "type": "object",
         "additionalProperties": false,
@@ -7071,83 +7035,6 @@
         "properties": {
           "token": {
             "type": "string"
-          }
-        }
-      },
-      "UserHomeSitesVm": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "myHomes": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/UserSiteDto"
-            }
-          },
-          "sharedHomes": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/UserSiteDto"
-            }
-          }
-        }
-      },
-      "UserSiteDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
-          "userId": {
-            "type": "string"
-          },
-          "siteId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "siteName": {
-            "type": "string"
-          },
-          "role": {
-            "$ref": "#/components/schemas/UserSiteRole"
-          }
-        }
-      },
-      "UserSiteRole": {
-        "type": "integer",
-        "description": "",
-        "x-enumNames": [
-          "Owner",
-          "Guest"
-        ],
-        "enum": [
-          1,
-          2
-        ]
-      },
-      "NotificationDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
-          "message": {
-            "type": "string"
-          },
-          "isRead": {
-            "type": "boolean"
-          },
-          "invitationId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "created": {
-            "type": "string",
-            "format": "date-time"
           }
         }
       },
@@ -7190,6 +7077,233 @@
           },
           "isActive": {
             "type": "boolean"
+          }
+        }
+      },
+      "AppVersionCheckResultDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "isUpdateRequired": {
+            "type": "boolean"
+          },
+          "isUpdateAvailable": {
+            "type": "boolean"
+          },
+          "storeUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "revocationReason": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "MobilePlatform": {
+        "type": "integer",
+        "description": "",
+        "x-enumNames": [
+          "iOS",
+          "Android"
+        ],
+        "enum": [
+          1,
+          2
+        ]
+      },
+      "PaginatedListOfMobileAppVersionDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MobileAppVersionDto"
+            }
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasPreviousPage": {
+            "type": "boolean"
+          },
+          "hasNextPage": {
+            "type": "boolean"
+          }
+        }
+      },
+      "MobileAppVersionDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "platform": {
+            "$ref": "#/components/schemas/MobilePlatform"
+          },
+          "version": {
+            "type": "string"
+          },
+          "versionMajor": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "versionMinor": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "versionPatch": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "buildNumber": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "storeUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "releaseNotes": {
+            "type": "string",
+            "nullable": true
+          },
+          "isMandatory": {
+            "type": "boolean"
+          },
+          "minimumRequiredVersion": {
+            "type": "string",
+            "nullable": true
+          },
+          "isRevoked": {
+            "type": "boolean"
+          },
+          "revocationReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "isLatest": {
+            "type": "boolean"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "releasedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastModified": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreateMobileAppVersionCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "platform": {
+            "$ref": "#/components/schemas/MobilePlatform"
+          },
+          "version": {
+            "type": "string"
+          },
+          "buildNumber": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "storeUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "releaseNotes": {
+            "type": "string",
+            "nullable": true
+          },
+          "isMandatory": {
+            "type": "boolean"
+          },
+          "minimumRequiredVersion": {
+            "type": "string",
+            "nullable": true
+          },
+          "isLatest": {
+            "type": "boolean"
+          },
+          "releasedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "UpdateMobileAppVersionCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "storeUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "releaseNotes": {
+            "type": "string",
+            "nullable": true
+          },
+          "isMandatory": {
+            "type": "boolean"
+          },
+          "minimumRequiredVersion": {
+            "type": "string",
+            "nullable": true
+          },
+          "releasedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "RevokeVersionCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -7500,6 +7614,51 @@
           }
         }
       },
+      "CreateParameterValueSettingSchemeCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "parameterId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "parameterGroupId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "value": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "modelNumber": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateParameterValueSettingSchemeCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "value": {
+            "type": "string"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "modelNumber": {
+            "type": "string"
+          }
+        }
+      },
       "ParameterValueSettingSchemesVm": {
         "type": "object",
         "additionalProperties": false,
@@ -7690,51 +7849,6 @@
           "lastModifiedBy": {
             "type": "string",
             "nullable": true
-          }
-        }
-      },
-      "CreateParameterValueSettingSchemeCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "parameterId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "parameterGroupId": {
-            "type": "string",
-            "format": "guid",
-            "nullable": true
-          },
-          "value": {
-            "type": "string"
-          },
-          "sortOrder": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "modelNumber": {
-            "type": "string"
-          }
-        }
-      },
-      "UpdateParameterValueSettingSchemeCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
-          "value": {
-            "type": "string"
-          },
-          "sortOrder": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "modelNumber": {
-            "type": "string"
           }
         }
       },
@@ -8169,234 +8283,6 @@
           },
           "timezone": {
             "type": "string"
-          }
-        }
-      },
-      "PaginatedListOfTodoItemBriefDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TodoItemBriefDto"
-            }
-          },
-          "pageNumber": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "totalCount": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "hasPreviousPage": {
-            "type": "boolean"
-          },
-          "hasNextPage": {
-            "type": "boolean"
-          }
-        }
-      },
-      "TodoItemBriefDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "listId": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          },
-          "done": {
-            "type": "boolean"
-          }
-        }
-      },
-      "CreateTodoItemCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "listId": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "UpdateTodoItemCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          },
-          "done": {
-            "type": "boolean"
-          }
-        }
-      },
-      "UpdateTodoItemDetailCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "listId": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "priority": {
-            "$ref": "#/components/schemas/PriorityLevel"
-          },
-          "note": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "PriorityLevel": {
-        "type": "integer",
-        "description": "",
-        "x-enumNames": [
-          "None",
-          "Low",
-          "Medium",
-          "High"
-        ],
-        "enum": [
-          0,
-          1,
-          2,
-          3
-        ]
-      },
-      "TodosVm": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "priorityLevels": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/LookupDto"
-            }
-          },
-          "lists": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TodoListDto"
-            }
-          }
-        }
-      },
-      "LookupDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "TodoListDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          },
-          "colour": {
-            "type": "string",
-            "nullable": true
-          },
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TodoItemDto"
-            }
-          }
-        }
-      },
-      "TodoItemDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "listId": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          },
-          "done": {
-            "type": "boolean"
-          },
-          "priority": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "note": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "CreateTodoListCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "title": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "UpdateTodoListCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
           }
         }
       },

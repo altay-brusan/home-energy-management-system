@@ -1,5 +1,6 @@
 using Hems_Backend.Application.Common.Exceptions;
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Domain.Entities;
 using Hems_Backend.Domain.Enums;
 using MediatR;
@@ -33,49 +34,56 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
 
     public async Task<Unit> Handle(AcceptInvitationCommand request, CancellationToken cancellationToken)
     {
-        var currentUserId = _user.Id ?? throw new UnauthorizedAccessException("User not authenticated");
-        
-        // Kullanıcının email'ini al
+        var currentUserId = _user.Id
+            ?? throw AppException.Unauthorized(MessageCodes.AUTH_USER_NOT_AUTHENTICATED);
+
+        // Get current user's email
         var currentUserEmail = await _identityService.GetUserEmailAsync(currentUserId)
-            ?? throw new UnauthorizedAccessException("Kullanıcı email adresi bulunamadı");
+            ?? throw AppException.Unauthorized(MessageCodes.USER_EMAIL_NOT_FOUND);
 
         var utcNow = _timeProvider.GetUtcNow();
         var twentyFourHoursAgo = utcNow.AddHours(-24);
 
-        // Token ile davetiyeyi bul
+        // Find invitation by token
         var invitation = await _context.Invitations
             .FirstOrDefaultAsync(i =>
                 i.Token == request.Token &&
                 i.Status == InvitationStatus.Pending &&
                 (i.Email == currentUserEmail || i.InvitedUserId == currentUserId),
                 cancellationToken)
-            ?? throw new Common.Exceptions.NotFoundException(nameof(Invitation), request.Token);
+            ?? throw AppException.NotFound(
+                MessageCodes.INVITATION_NOT_FOUND,
+                new Dictionary<string, object> { ["token"] = request.Token });
 
         // Check if invitation has expired (24 hours)
         if (invitation.Created < twentyFourHoursAgo)
         {
             invitation.Status = InvitationStatus.Expired;
             await _context.SaveChangesAsync(cancellationToken);
-            throw new InvalidOperationException("This invitation has expired. Please request a new invitation.");
+            throw AppException.BadRequest(
+                MessageCodes.INVITATION_EXPIRED,
+                new Dictionary<string, object> { ["token"] = request.Token });
         }
 
-        // Invitation'ı güncelle
+        // Update invitation
         invitation.Status = InvitationStatus.Accepted;
         invitation.AcceptanceTime = utcNow;
-        
-        // Eğer InvitedUserId boşsa, şimdi güncelle
+
+        // If InvitedUserId is empty, update it now
         if (string.IsNullOrEmpty(invitation.InvitedUserId))
         {
             invitation.InvitedUserId = currentUserId;
         }
 
-        // UserSite kaydı oluştur (önce kontrol et, zaten varsa hata ver)
+        // Create UserSite record (check first, throw error if already exists)
         var existingUserSite = await _context.UserSites
             .FirstOrDefaultAsync(us => us.UserId == currentUserId && us.SiteId == invitation.SiteId, cancellationToken);
 
         if (existingUserSite != null)
         {
-            throw new InvalidOperationException("Bu site zaten sizinle paylaşılmış.");
+            throw AppException.BadRequest(
+                MessageCodes.INVITATION_SITE_ALREADY_SHARED,
+                new Dictionary<string, object> { ["siteId"] = invitation.SiteId });
         }
 
         var userSite = new UserSite
@@ -89,7 +97,7 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
 
         _context.UserSites.Add(userSite);
 
-        // Notification'ı güncelle
+        // Update notification
         var notification = await _context.Notifications
             .FirstOrDefaultAsync(n => n.InvitationId == invitation.Id, cancellationToken);
 
@@ -103,4 +111,3 @@ public class AcceptInvitationCommandHandler : IRequestHandler<AcceptInvitationCo
         return Unit.Value;
     }
 }
-

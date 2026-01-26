@@ -1,5 +1,6 @@
+using Hems_Backend.Application.Common.Exceptions;
 using Hems_Backend.Application.Common.Interfaces;
-using Hems_Backend.Domain.Entities;
+using Hems_Backend.Application.Common.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,24 +21,28 @@ public class DeleteSetupCommandHandler : IRequestHandler<DeleteSetupCommand>
 
     public async Task Handle(DeleteSetupCommand request, CancellationToken cancellationToken)
     {
-        var userId = _user.Id ?? throw new UnauthorizedAccessException("User not authenticated");
+        var userId = _user.Id
+            ?? throw AppException.Unauthorized(MessageCodes.AUTH_USER_NOT_AUTHENTICATED);
 
         var entity = await _context.Setups
             .Include(s => s.Site)
-            .FirstOrDefaultAsync(s => s.Id == request.Id && 
-                                     (s.Site.UserId == userId || 
-                                      _context.UserSites.Any(us => us.SiteId == s.SiteId && us.UserId == userId)), 
-                                 cancellationToken);
+            .FirstOrDefaultAsync(s => s.Id == request.Id &&
+                                     (s.Site.UserId == userId ||
+                                      _context.UserSites.Any(us => us.SiteId == s.SiteId && us.UserId == userId)),
+                                 cancellationToken)
+            ?? throw AppException.NotFound(
+                MessageCodes.SETUP_NOT_FOUND,
+                new Dictionary<string, object> { ["setupId"] = request.Id });
 
-        Guard.Against.NotFound(request.Id, entity);
-
-        // Setup'ın SetupDevice'ı var mı kontrol et
+        // Check if setup has connected devices
         var hasSetupDevice = await _context.SetupDevices
             .AnyAsync(sd => sd.SetupId == request.Id, cancellationToken);
 
         if (hasSetupDevice)
         {
-            throw new InvalidOperationException("Bu setup'ın bağlı device'ları var. Önce device bağlantısını kaldırmanız gerekiyor.");
+            throw AppException.BadRequest(
+                MessageCodes.SETUP_CANNOT_DELETE_WITH_DEVICES,
+                new Dictionary<string, object> { ["setupId"] = request.Id });
         }
 
         _context.Setups.Remove(entity);

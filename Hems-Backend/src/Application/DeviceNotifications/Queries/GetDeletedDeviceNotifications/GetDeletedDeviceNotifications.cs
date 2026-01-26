@@ -15,20 +15,24 @@ public record GetDeletedDeviceNotificationsQuery : IRequest<PaginatedList<Device
     
     // Filter parameters
     public bool? IsToday { get; init; } // Sadece bugünkü silinen bildirimleri getirmek için
-    public string? Category { get; init; } // Notification type'a göre filtreleme (INFO, WARNING, ERROR)
+    public string? Category { get; init; } // Device category filtreleme (inverter, battery, etc.)
+    public string? Severity { get; init; } // Severity filtreleme (WARNING, ERROR, ALARM)
 }
 
 public class GetDeletedDeviceNotificationsQueryHandler : IRequestHandler<GetDeletedDeviceNotificationsQuery, PaginatedList<DeviceNotificationDto>>
 {
     private readonly IApplicationDbContext _context;
     private readonly IUser _user;
+    private readonly ITimezoneService _timezoneService;
 
     public GetDeletedDeviceNotificationsQueryHandler(
         IApplicationDbContext context,
-        IUser user)
+        IUser user,
+        ITimezoneService timezoneService)
     {
         _context = context;
         _user = user;
+        _timezoneService = timezoneService;
     }
 
     public async Task<PaginatedList<DeviceNotificationDto>> Handle(GetDeletedDeviceNotificationsQuery request, CancellationToken cancellationToken)
@@ -42,19 +46,32 @@ public class GetDeletedDeviceNotificationsQueryHandler : IRequestHandler<GetDele
             .Include(dn => dn.Site)
             .Where(dn => dn.SiteId == request.SiteId && dn.IsDeleted == true); // Sadece silinen bildirimler
 
-        // IsToday filtresi - sadece bugünkü silinen bildirimleri getir
+        // IsToday filtresi - sadece bugünkü silinen bildirimleri getir (site timezone'una göre)
         if (request.IsToday == true)
         {
-            var today = DateTime.UtcNow.Date;
-            var todayUtc = DateTime.SpecifyKind(today, DateTimeKind.Utc);
-            var tomorrowUtc = DateTime.SpecifyKind(today.AddDays(1), DateTimeKind.Utc);
-            query = query.Where(dn => dn.Timestamp >= todayUtc && dn.Timestamp < tomorrowUtc);
+            // Get site timezone to determine "today" in user's local time
+            var siteTimezone = await _timezoneService.GetSiteTimezoneAsync(request.SiteId, cancellationToken);
+            var nowInSiteTimezone = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, siteTimezone);
+            var todayStartLocal = nowInSiteTimezone.Date;
+            var tomorrowStartLocal = todayStartLocal.AddDays(1);
+
+            // Convert local time boundaries to UTC for database comparison
+            var todayStartUtc = TimeZoneInfo.ConvertTimeToUtc(todayStartLocal, siteTimezone);
+            var tomorrowStartUtc = TimeZoneInfo.ConvertTimeToUtc(tomorrowStartLocal, siteTimezone);
+
+            query = query.Where(dn => dn.Timestamp >= todayStartUtc && dn.Timestamp < tomorrowStartUtc);
         }
 
-        // Category filtresi - notification type'a göre filtreleme
+        // Category filtresi - device category'ye göre filtreleme (inverter, battery, etc.)
         if (!string.IsNullOrEmpty(request.Category))
         {
             query = query.Where(dn => dn.DeviceNotificationType.Category == request.Category);
+        }
+
+        // Severity filtresi - severity'ye göre filtreleme (WARNING, ERROR, ALARM)
+        if (!string.IsNullOrEmpty(request.Severity))
+        {
+            query = query.Where(dn => dn.DeviceNotificationType.Severity == request.Severity);
         }
 
         var notifications = await query
@@ -76,10 +93,7 @@ public class GetDeletedDeviceNotificationsQueryHandler : IRequestHandler<GetDele
                     Id = dn.DeviceNotificationType.Id,
                     Code = dn.DeviceNotificationType.Code,
                     Message = dn.DeviceNotificationType.Message,
-                    Status = dn.DeviceNotificationType.Status,
                     Description = dn.DeviceNotificationType.Description,
-                    Register = dn.DeviceNotificationType.Register,
-                    Value = dn.DeviceNotificationType.Value,
                     Category = dn.DeviceNotificationType.Category,
                     Severity = dn.DeviceNotificationType.Severity,
                     Version = dn.DeviceNotificationType.Version,

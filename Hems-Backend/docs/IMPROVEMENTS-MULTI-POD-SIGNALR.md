@@ -24,7 +24,7 @@ This document outlines the findings and required improvements for running the HE
 |-----------|----------|-------|
 | SignalR Backplane | CRITICAL | No Redis backplane - messages won't reach clients on other pods |
 | DeviceHeartbeatCache | HIGH | Singleton with in-memory state - each pod has different device status |
-| SharedDeviceStreamManager | HIGH | Each pod runs duplicate polling loops |
+| SharedDevicePowerFlowStreamManager | HIGH | Each pod runs duplicate polling loops |
 | Hub Static Dictionaries | MEDIUM | Connection tracking is pod-local (cleanup issues) |
 | ParameterUpdateBackgroundService | MEDIUM | Device locks are pod-local (race conditions possible) |
 | IMemoryCache | MEDIUM | Cache misses across pods |
@@ -78,7 +78,7 @@ private readonly ConcurrentDictionary<Guid, DeviceMonitoringState> _deviceStates
 - Inconsistent device status across pods
 - Possible duplicate notifications
 
-**SharedDeviceStreamManager** (`src/Infrastructure/Services/SharedDeviceStreamManager.cs`)
+**SharedDevicePowerFlowStreamManager** (`src/Infrastructure/Services/SharedDevicePowerFlowStreamManager.cs`)
 
 ```csharp
 private readonly ConcurrentDictionary<Guid, SharedDeviceStream> _streams = new();
@@ -129,7 +129,7 @@ builder.Services.AddSignalR()
 
 Replace in-memory `ConcurrentDictionary` with Redis-backed storage using `IDistributedCache` or direct Redis operations.
 
-### 3. Coordinate SharedDeviceStreamManager
+### 3. Coordinate SharedDevicePowerFlowStreamManager
 
 Options:
 - Use Redis pub/sub for stream coordination (one pod polls, others receive via pub/sub)
@@ -211,7 +211,7 @@ The system will NOT crash, but will exhibit:
 
 1. **Phase 1 (Critical):** Add Redis SignalR backplane
 2. **Phase 2 (High):** Migrate DeviceHeartbeatCache to Redis
-3. **Phase 3 (Medium):** Coordinate SharedDeviceStreamManager
+3. **Phase 3 (Medium):** Coordinate SharedDevicePowerFlowStreamManager
 4. **Phase 4 (Medium):** Add distributed locks for parameter updates
 5. **Phase 5 (Low):** Migrate IMemoryCache to IDistributedCache
 
@@ -228,5 +228,5 @@ The system will NOT crash, but will exhibit:
   - `/src/Infrastructure/Hubs/DeviceStatusHub.cs`
 - Service Implementations:
   - `/src/Infrastructure/Services/DeviceHeartbeatCache.cs`
-  - `/src/Infrastructure/Services/SharedDeviceStreamManager.cs`
+  - `/src/Infrastructure/Services/SharedDevicePowerFlowStreamManager.cs`
   - `/src/Infrastructure/Services/ParameterUpdateBackgroundService.cs`

@@ -1,5 +1,6 @@
 using Hems_Backend.Application.Common.Exceptions;
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -26,27 +27,40 @@ public class RemoveUserFromSiteCommandHandler : IRequestHandler<RemoveUserFromSi
 
     public async Task<Unit> Handle(RemoveUserFromSiteCommand request, CancellationToken cancellationToken)
     {
-        var currentUserId = _user.Id ?? throw new UnauthorizedAccessException("User not authenticated");
+        var currentUserId = _user.Id
+            ?? throw AppException.Unauthorized(MessageCodes.AUTH_USER_NOT_AUTHENTICATED);
 
-        // Invitation'ı al
+        // Get invitation
         var invitation = await _context.Invitations
             .FirstOrDefaultAsync(i => i.Id == request.InvitationId, cancellationToken)
-            ?? throw new Common.Exceptions.NotFoundException(nameof(Invitation), request.InvitationId);
+            ?? throw AppException.NotFound(
+                MessageCodes.INVITATION_NOT_FOUND,
+                new Dictionary<string, object> { ["invitationId"] = request.InvitationId });
 
-        // Site'ın var olduğunu ve kullanıcının site sahibi olduğunu kontrol et
+        // Verify site exists
         var site = await _context.Sites
-            .FirstOrDefaultAsync(s => s.Id == invitation.SiteId && 
-                                     !s.IsDeleted && 
-                                     s.UserId == currentUserId, 
-                                 cancellationToken)
-            ?? throw new Common.Exceptions.NotFoundException(nameof(Site), invitation.SiteId);
+            .FirstOrDefaultAsync(s => s.Id == invitation.SiteId && !s.IsDeleted, cancellationToken)
+            ?? throw AppException.NotFound(
+                MessageCodes.SITE_NOT_FOUND,
+                new Dictionary<string, object> { ["siteId"] = invitation.SiteId });
 
-        // InvitedUserId varsa UserSite kaydını kontrol et ve sil
+        // Check authorization: either site owner OR the invited user themselves (self-removal)
+        var isOwner = site.UserId == currentUserId;
+        var isSelfRemoval = invitation.InvitedUserId == currentUserId;
+
+        if (!isOwner && !isSelfRemoval)
+        {
+            throw AppException.Forbidden(
+                MessageCodes.INVITATION_ONLY_OWNER_CAN_REMOVE,
+                new Dictionary<string, object> { ["siteId"] = invitation.SiteId });
+        }
+
+        // If InvitedUserId exists, check and delete UserSite record
         if (!string.IsNullOrEmpty(invitation.InvitedUserId))
         {
             var userSite = await _context.UserSites
-                .FirstOrDefaultAsync(us => us.SiteId == invitation.SiteId && 
-                                         us.UserId == invitation.InvitedUserId, 
+                .FirstOrDefaultAsync(us => us.SiteId == invitation.SiteId &&
+                                         us.UserId == invitation.InvitedUserId,
                                      cancellationToken);
 
             if (userSite != null)
@@ -55,7 +69,7 @@ public class RemoveUserFromSiteCommandHandler : IRequestHandler<RemoveUserFromSi
             }
         }
 
-        // Invitation'ı sil
+        // Delete invitation
         _context.Invitations.Remove(invitation);
 
         await _context.SaveChangesAsync(cancellationToken);
@@ -63,4 +77,3 @@ public class RemoveUserFromSiteCommandHandler : IRequestHandler<RemoveUserFromSi
         return Unit.Value;
     }
 }
-

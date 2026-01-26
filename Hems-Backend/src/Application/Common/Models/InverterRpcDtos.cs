@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace Hems_Backend.Application.Common.Models;
 
 /// <summary>
-/// RPC response for getInverterIdentity
+/// RPC response for getInverterIdentity (legacy)
 /// </summary>
 public class InverterIdentityDto
 {
@@ -21,6 +21,93 @@ public class InverterIdentityDto
 
     /// <summary>
     /// Additional properties that will be stored in Specifications
+    /// </summary>
+    [JsonExtensionData]
+    public Dictionary<string, object>? AdditionalProperties { get; set; }
+}
+
+/// <summary>
+/// RPC response for getInverterInfo - detailed inverter information
+/// </summary>
+public class InverterInfoStateDto
+{
+    [JsonPropertyName("kind")]
+    public string? Kind { get; set; }
+
+    [JsonPropertyName("timestampUtc")]
+    public string? TimestampUtc { get; set; }
+
+    [JsonPropertyName("version")]
+    public int? Version { get; set; }
+
+    [JsonPropertyName("deviceType")]
+    public string? DeviceType { get; set; }
+
+    [JsonPropertyName("deviceTypeCode")]
+    public int? DeviceTypeCode { get; set; }
+
+    [JsonPropertyName("modbusAddress")]
+    public int? ModbusAddress { get; set; }
+
+    [JsonPropertyName("protocolVersion")]
+    public string? ProtocolVersion { get; set; }
+
+    [JsonPropertyName("serialNumber")]
+    public string? SerialNumber { get; set; }
+
+    [JsonPropertyName("ratedPowerW")]
+    public int? RatedPowerW { get; set; }
+
+    [JsonPropertyName("ratedPowerKw")]
+    public double? RatedPowerKw { get; set; }
+
+    [JsonPropertyName("mpptCount")]
+    public int? MpptCount { get; set; }
+
+    [JsonPropertyName("phaseCount")]
+    public int? PhaseCount { get; set; }
+
+    [JsonPropertyName("gridVoltageRating")]
+    public string? GridVoltageRating { get; set; }
+
+    [JsonPropertyName("safetyType")]
+    public string? SafetyType { get; set; }
+
+    [JsonPropertyName("firmware")]
+    public Dictionary<string, object>? Firmware { get; set; }
+
+    [JsonPropertyName("controlBoard")]
+    public string? ControlBoard { get; set; }
+
+    [JsonPropertyName("controlBoardAux")]
+    public string? ControlBoardAux { get; set; }
+
+    [JsonPropertyName("controlHardware")]
+    public int? ControlHardware { get; set; }
+
+    [JsonPropertyName("controlMasterVersion")]
+    public int? ControlMasterVersion { get; set; }
+
+    [JsonPropertyName("communicationBoard")]
+    public string? CommunicationBoard { get; set; }
+
+    [JsonPropertyName("commBoardField1")]
+    public int? CommBoardField1 { get; set; }
+
+    [JsonPropertyName("commBoardField2")]
+    public int? CommBoardField2 { get; set; }
+
+    [JsonPropertyName("commMasterVersion")]
+    public int? CommMasterVersion { get; set; }
+
+    [JsonPropertyName("chipType")]
+    public string? ChipType { get; set; }
+
+    [JsonPropertyName("ratedPowerClass")]
+    public string? RatedPowerClass { get; set; }
+
+    /// <summary>
+    /// Additional/extension data for specifications storage
     /// </summary>
     [JsonExtensionData]
     public Dictionary<string, object>? AdditionalProperties { get; set; }
@@ -382,4 +469,94 @@ public class TotalGeneratorEnergyDto
 {
     [JsonPropertyName("totalEnergyKWh")]
     public double? TotalEnergyKWh { get; set; }
+}
+
+/// <summary>
+/// RPC response for getLoadDeviceState
+/// </summary>
+public class LoadDeviceStateDto
+{
+    [JsonPropertyName("kind")]
+    public string? Kind { get; set; }
+
+    [JsonPropertyName("timestampUtc")]
+    public string? TimestampUtc { get; set; }
+
+    [JsonPropertyName("version")]
+    public int? Version { get; set; }
+
+    [JsonPropertyName("DeviceId")]
+    public string? DeviceId { get; set; }
+
+    [JsonPropertyName("scope")]
+    public string? Scope { get; set; } // "backup_load" | "total_load"
+
+    [JsonPropertyName("loadPower")]
+    public LoadPowerDto? LoadPower { get; set; }
+
+    [JsonPropertyName("loadVoltage")]
+    public LoadVoltageDto? LoadVoltage { get; set; }
+
+    [JsonPropertyName("frequencyHz")]
+    public double? FrequencyHz { get; set; }
+
+    [JsonPropertyName("upsLoadPower")]
+    public UpsLoadPowerDto? UpsLoadPower { get; set; }
+
+    [JsonPropertyName("todayEnergyKWh")]
+    public double? TodayEnergyKWh { get; set; }
+
+    [JsonPropertyName("totalEnergyKWh")]
+    public double? TotalEnergyKWh { get; set; }
+
+    // Convenience properties for backward compatibility
+    public int? LoadTotalActivePowerW => LoadPower?.TotalActivePowerW;
+    public int? LoadPhaseAPowerW => LoadPower?.PhaseAPowerW;
+    public int? LoadPhaseBPowerW => LoadPower?.PhaseBPowerW;
+    public int? LoadPhaseCPowerW => LoadPower?.PhaseCPowerW;
+    public double? LoadPhaseAVoltageV => LoadVoltage?.PhaseAVoltageV;
+    public double? LoadPhaseBVoltageV => LoadVoltage?.PhaseBVoltageV;
+    public double? LoadPhaseCVoltageV => LoadVoltage?.PhaseCVoltageV;
+}
+
+public class LoadPowerDto
+{
+    [JsonPropertyName("totalActivePowerW")]
+    public int? TotalActivePowerW { get; set; }
+
+    [JsonPropertyName("phaseAPowerW")]
+    public int? PhaseAPowerW { get; set; }
+
+    [JsonPropertyName("phaseBPowerW")]
+    public int? PhaseBPowerW { get; set; }
+
+    [JsonPropertyName("phaseCPowerW")]
+    public int? PhaseCPowerW { get; set; }
+}
+
+public class LoadVoltageDto
+{
+    [JsonPropertyName("phaseAVoltageV")]
+    public double? PhaseAVoltageV { get; set; }
+
+    [JsonPropertyName("phaseBVoltageV")]
+    public double? PhaseBVoltageV { get; set; }
+
+    [JsonPropertyName("phaseCVoltageV")]
+    public double? PhaseCVoltageV { get; set; }
+}
+
+public class UpsLoadPowerDto
+{
+    [JsonPropertyName("totalPowerW")]
+    public int? TotalPowerW { get; set; }
+
+    [JsonPropertyName("phaseAPowerW")]
+    public int? PhaseAPowerW { get; set; }
+
+    [JsonPropertyName("phaseBPowerW")]
+    public int? PhaseBPowerW { get; set; }
+
+    [JsonPropertyName("phaseCPowerW")]
+    public int? PhaseCPowerW { get; set; }
 }

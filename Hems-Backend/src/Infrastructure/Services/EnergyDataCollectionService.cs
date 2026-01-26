@@ -19,6 +19,7 @@ public class EnergyDataCollectionService : IEnergyDataCollectionService
     private readonly IApplicationDbContext _context;
     private readonly IThingsBoardConnectorService _thingsBoardConnector;
     private readonly ITimezoneService _timezoneService;
+    private readonly IDeviceActivityService _activityService;
     private readonly ILogger<EnergyDataCollectionService> _logger;
     private readonly IMemoryCache _collectionStatusCache;
 
@@ -32,12 +33,14 @@ public class EnergyDataCollectionService : IEnergyDataCollectionService
         IApplicationDbContext context,
         IThingsBoardConnectorService thingsBoardConnector,
         ITimezoneService timezoneService,
+        IDeviceActivityService activityService,
         ILogger<EnergyDataCollectionService> logger,
         IMemoryCache cache)
     {
         _context = context;
         _thingsBoardConnector = thingsBoardConnector;
         _timezoneService = timezoneService;
+        _activityService = activityService;
         _logger = logger;
         _collectionStatusCache = cache;
     }
@@ -291,6 +294,12 @@ public class EnergyDataCollectionService : IEnergyDataCollectionService
                 return null;
             }
 
+            // Record device activity - device is online since RPC succeeded
+            await _activityService.RecordActivityAsync(
+                thingsBoardDeviceId,
+                TelemetrySource.DailyEnergyFlow,
+                cancellationToken: cancellationToken);
+
             return ParseDailyEnergyResponse(response.Response);
         }
         catch (Exception ex)
@@ -323,6 +332,12 @@ public class EnergyDataCollectionService : IEnergyDataCollectionService
                     thingsBoardDeviceId, response?.Error ?? "No response");
                 return null;
             }
+
+            // Record device activity - device is online since RPC succeeded
+            await _activityService.RecordActivityAsync(
+                thingsBoardDeviceId,
+                TelemetrySource.TotalEnergyFlow,
+                cancellationToken: cancellationToken);
 
             return ParseLifetimeEnergyResponse(response.Response);
         }

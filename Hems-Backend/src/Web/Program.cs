@@ -1,5 +1,6 @@
 using Hangfire;
 using Hangfire.Dashboard;
+using Hangfire.Dashboard.BasicAuthorization;
 using Hems_Backend.Infrastructure.Data;
 using Hems_Backend.Infrastructure.Identity;
 using Hems_Backend.Infrastructure.Hubs;
@@ -10,6 +11,13 @@ using Serilog;
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Kestrel for long-running requests (device parameter updates can take 2-3 minutes)
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(5);
+    options.Limits.RequestHeadersTimeout = TimeSpan.FromMinutes(5);
+});
 
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
@@ -48,15 +56,33 @@ else
 
 app.UseHealthChecks("/health");
 
-// Configure Hangfire Dashboard
+// Configure Hangfire Dashboard with Basic Authentication
+var hangfireUsername = builder.Configuration["Hangfire:Dashboard:Username"] ?? "admin";
+var hangfirePassword = builder.Configuration["Hangfire:Dashboard:Password"] ?? "admin";
+
 app.UseHangfireDashboard("/hangfire", new DashboardOptions
 {
     DashboardTitle = "HEMS Energy Collection Jobs",
     DisplayStorageConnectionString = false,
-    // In production, add proper authorization
     Authorization = app.Environment.IsDevelopment()
         ? Array.Empty<IDashboardAuthorizationFilter>()
-        : new[] { new HangfireAuthorizationFilter() }
+        : new IDashboardAuthorizationFilter[]
+        {
+            new BasicAuthAuthorizationFilter(new BasicAuthAuthorizationFilterOptions
+            {
+                RequireSsl = false, // Set to true in production with HTTPS
+                SslRedirect = false,
+                LoginCaseSensitive = true,
+                Users = new[]
+                {
+                    new BasicAuthAuthorizationUser
+                    {
+                        Login = hangfireUsername,
+                        PasswordClear = hangfirePassword
+                    }
+                }
+            })
+        }
 });
 
 // Allow HTTP for ThingsBoard telemetry endpoints, require HTTPS for all other endpoints
@@ -75,10 +101,22 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.UseStaticFiles();
+// Configure static files with proper content type for apple-app-site-association
+app.UseStaticFiles(new StaticFileOptions
+{
+    ServeUnknownFileTypes = true,
+    OnPrepareResponse = ctx =>
+    {
+        // Apple App Site Association file must be served as application/json
+        if (ctx.File.Name == "apple-app-site-association")
+        {
+            ctx.Context.Response.ContentType = "application/json";
+        }
+    }
+});
 
-// Use custom exception handler instead of developer exception page
-app.UseExceptionHandler(options => { });
+// Use custom exception handler to convert exceptions to structured API responses
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 // Extract access_token from query string for SignalR WebSocket connections
 // MUST be before UseAuthentication to inject token into Authorization header
@@ -109,17 +147,3 @@ app.MapHub<DeviceSettingsHub>("/deviceSettingsHub");
 app.Run();
 
 public partial class Program { }
-
-/// <summary>
-/// Hangfire Dashboard authorization filter for production environments.
-/// </summary>
-public class HangfireAuthorizationFilter : IDashboardAuthorizationFilter
-{
-    public bool Authorize(DashboardContext context)
-    {
-        // In production, implement proper authorization
-        // For now, allow authenticated users only
-        var httpContext = context.GetHttpContext();
-        return httpContext.User.Identity?.IsAuthenticated == true;
-    }
-}

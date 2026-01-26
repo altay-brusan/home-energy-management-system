@@ -3,14 +3,11 @@ namespace Hems_Backend.Application.DeviceNotifications.Common.Models;
 public class DeviceNotificationTypeDto
 {
     public Guid Id { get; init; }
-    public string Code { get; init; } = string.Empty;
-    public string Message { get; init; } = string.Empty;
-    public string Status { get; init; } = string.Empty;
-    public string Description { get; init; } = string.Empty;
-    public int Register { get; init; }
-    public int Value { get; init; }
-    public string Category { get; init; } = string.Empty;
-    public string Severity { get; init; } = string.Empty;
+    public string Code { get; init; } = string.Empty; // Vendor code (e.g., W2, F1, F64)
+    public string Message { get; init; } = string.Empty; // Short message from vendor
+    public string Description { get; init; } = string.Empty; // Detailed troubleshooting steps
+    public string Category { get; init; } = string.Empty; // Device type (e.g., Inverter, Battery)
+    public string Severity { get; init; } = string.Empty; // Warning, Error
     public string Version { get; init; } = string.Empty;
     public string Manufacturer { get; init; } = string.Empty;
     public bool IsActive { get; init; }

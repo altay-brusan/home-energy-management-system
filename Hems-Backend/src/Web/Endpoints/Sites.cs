@@ -6,28 +6,41 @@ using Hems_Backend.Application.Sites.Queries.GetSiteById;
 using Hems_Backend.Application.Sites.Queries.GetSites;
 using Hems_Backend.Application.Sites.Queries.GetSitesByUser;
 using Hems_Backend.Domain.Constants;
-using Microsoft.AspNetCore.Authorization;
 
 namespace Hems_Backend.Web.Endpoints;
 
+/// <summary>
+/// Sites API - Manages user sites and locations.
+/// - Admin operations: Full CRUD access to all sites
+/// - User operations: CRUD access to own sites
+/// </summary>
 public class Sites : EndpointGroupBase
 {
     public override void Map(WebApplication app)
     {
+        // ==== ADMIN ONLY - Full access to all sites ====
+        app.MapGroup(this)
+            .RequireAuthorization(Policies.AdminOnly)
+            .MapGet(GetSites, "Admin/Sites")
+            .MapGet(GetSite, "Admin/Site/{id}")
+            .MapDelete(DeleteSiteAdmin, "Admin/Site/{id}");
+
+        // ==== ALL AUTHENTICATED USERS - Own sites ====
         app.MapGroup(this)
             .RequireAuthorization()
-            // Admin endpoints (sadece admin kullanabilir)
-            .MapGet(GetSites)
-            .MapGet(GetSite, "{id}")
-            .MapDelete(DeleteSiteAdmin, "{id}")
-            // Mobile endpoints (normal kullanıcılar için)
-            .MapGet(GetUserSites, "mobile/get-sites")
-            .MapPost(CreateSite, "mobile/create-site")
-            .MapPut(UpdateSite, "mobile/update-site/{id}")
-            .MapDelete(DeleteSiteMobile, "mobile/delete-site/{id}");
+            .MapGet(GetUserSites, "UserSites")
+            .MapPost(CreateSite, "Site")
+            .MapPut(UpdateSite, "Site/{id}")
+            .MapDelete(DeleteSiteMobile, "Site/{id}");
     }
-    // Admin endpoints
-    [Authorize(Policies.AdminOnly)]
+
+    // ========================================================================
+    // ADMIN ENDPOINTS
+    // ========================================================================
+
+    /// <summary>
+    /// Get all sites (paginated). Admin only.
+    /// </summary>
     public async Task<GetSitesResponseDto> GetSites(
         ISender sender,
         [AsParameters] GetSitesQuery query)
@@ -35,7 +48,9 @@ public class Sites : EndpointGroupBase
         return await sender.Send(query);
     }
 
-    [Authorize(Policies.AdminOnly)]
+    /// <summary>
+    /// Get a site by id. Admin only.
+    /// </summary>
     public async Task<SiteDto?> GetSite(
         ISender sender,
         Guid id)
@@ -43,7 +58,9 @@ public class Sites : EndpointGroupBase
         return await sender.Send(new GetSiteByIdQuery(id));
     }
 
-    [Authorize(Policies.AdminOnly)]
+    /// <summary>
+    /// Delete a site by id. Admin only.
+    /// </summary>
     public async Task<IResult> DeleteSiteAdmin(
         ISender sender,
         Guid id)
@@ -52,15 +69,22 @@ public class Sites : EndpointGroupBase
         return Results.NoContent();
     }
 
-    // Mobile endpoints (normal kullanıcılar için)
-    [Authorize]
+    // ========================================================================
+    // USER ENDPOINTS
+    // ========================================================================
+
+    /// <summary>
+    /// Get all sites for the current user.
+    /// </summary>
     public async Task<SitesDashboardDto> GetUserSites(
         ISender sender)
     {
         return await sender.Send(new GetSitesByUserQuery());
     }
 
-    [Authorize]
+    /// <summary>
+    /// Create a new site.
+    /// </summary>
     public async Task<Guid> CreateSite(
         ISender sender,
         CreateSiteCommand command)
@@ -68,7 +92,9 @@ public class Sites : EndpointGroupBase
         return await sender.Send(command);
     }
 
-    [Authorize]
+    /// <summary>
+    /// Update an existing site.
+    /// </summary>
     public async Task<IResult> UpdateSite(
         ISender sender,
         Guid id,
@@ -79,7 +105,9 @@ public class Sites : EndpointGroupBase
         return Results.NoContent();
     }
 
-    [Authorize]
+    /// <summary>
+    /// Delete a site.
+    /// </summary>
     public async Task<IResult> DeleteSiteMobile(
         ISender sender,
         Guid id)
@@ -88,4 +116,3 @@ public class Sites : EndpointGroupBase
         return Results.NoContent();
     }
 }
-

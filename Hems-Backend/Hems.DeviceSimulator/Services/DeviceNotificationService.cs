@@ -10,12 +10,11 @@ public class DeviceNotificationType
 {
     public string Code { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
-    public int Register { get; set; }
-    public int Value { get; set; }
     public string Category { get; set; } = string.Empty;
+    public string Severity { get; set; } = string.Empty;
     public string Version { get; set; } = string.Empty;
+    public string Manufacturer { get; set; } = string.Empty;
 }
 
 public class DeviceNotificationRequest
@@ -70,12 +69,11 @@ public class DeviceNotificationJobService : IDeviceNotificationJobService
                        {
                            Code = nt.Code,
                            Message = nt.Message,
-                           Status = nt.Status,
                            Description = nt.Description,
-                           Register = nt.Register,
-                           Value = nt.Value,
                            Category = nt.Category,
-                           Version = nt.Version
+                           Severity = nt.Severity,
+                           Version = nt.Version,
+                           Manufacturer = nt.Manufacturer
                        })
                        .ToListAsync();
 
@@ -94,24 +92,15 @@ public class DeviceNotificationJobService : IDeviceNotificationJobService
 
     private void InitializeFallbackNotificationTypes()
     {
-        // INVERTER DURUM BİLGİLERİ
+        // Generic fallback notification types
         _notificationTypes.AddRange(new[]
         {
-            new DeviceNotificationType { Code = "INF-INV-0001", Message = "Standby", Status = "Standby", Description = "Inverter hazırda beklemede", Register = 500, Value = 0, Category = "INFO", Version = "1.0" },
-            new DeviceNotificationType { Code = "INF-INV-0002", Message = "Selfcheck", Status = "Selfcheck", Description = "Inverter açılış öncesi iç testleri yapıyor", Register = 500, Value = 1, Category = "INFO", Version = "1.0" },
-            new DeviceNotificationType { Code = "INF-INV-0003", Message = "Normal", Status = "Normal", Description = "İdeal durum. Inverter sorunsuz çalışıyor", Register = 500, Value = 2, Category = "INFO", Version = "1.0" },
-            new DeviceNotificationType { Code = "WAR-INV-0001", Message = "Alarm", Status = "Alarm", Description = "Inverter bir uyarı durumunda", Register = 500, Value = 3, Category = "WARNING", Version = "1.0" },
-            new DeviceNotificationType { Code = "ERR-INV-0001", Message = "Fault", Status = "Fault", Description = "Kritik durum. Bir hata oluştu", Register = 500, Value = 4, Category = "ERROR", Version = "1.0" },
-            new DeviceNotificationType { Code = "INF-INV-0004", Message = "Activating", Status = "Activating", Description = "Inverter açılıyor ve şebekeye senkronize oluyor", Register = 500, Value = 5, Category = "INFO" }
-        });
-
-        // ANAHTAR / ENABLE DURUMLARI
-        _notificationTypes.AddRange(new[]
-        {
-            new DeviceNotificationType { Code = "INF-INV-0005", Message = "Switch On/Off Enable", Status = "Switch On/Off Enable", Description = "Inverter ON komutunda", Register = 080, Value = 1, Category = "INFO" },
-            new DeviceNotificationType { Code = "INF-INV-0006", Message = "Reactive Power Enable", Status = "Reactive Power Enable", Description = "Inverter çalışma modu", Register = 084, Value = 0, Category = "INFO" },
-            new DeviceNotificationType { Code = "INF-INV-0007", Message = "AC Couple Enable", Status = "AC Couple Enable", Description = "AC coupling özelliği aktif", Register = 234, Value = 1, Category = "INFO" },
-            new DeviceNotificationType { Code = "INF-INV-0008", Message = "Energy Management Mode", Status = "Energy Management Mode", Description = "Battery First veya Load First modları", Register = 141, Value = 10, Category = "INFO" }
+            new DeviceNotificationType { Code = "INV-ALM-GENERIC", Message = "Inverter Alarm", Description = "A generic inverter alarm was detected", Category = "Inverter", Severity = "ALARM", Version = "1.0", Manufacturer = "Generic" },
+            new DeviceNotificationType { Code = "INV-WAR-GENERIC", Message = "Inverter Warning", Description = "A generic inverter warning was detected", Category = "Inverter", Severity = "WARNING", Version = "1.0", Manufacturer = "Generic" },
+            new DeviceNotificationType { Code = "INV-ERR-GENERIC", Message = "Inverter Error", Description = "A generic inverter error was detected", Category = "Inverter", Severity = "ERROR", Version = "1.0", Manufacturer = "Generic" },
+            new DeviceNotificationType { Code = "BMS-ALM-GENERIC", Message = "BMS Alarm", Description = "A generic BMS alarm was detected", Category = "Battery", Severity = "ALARM", Version = "1.0", Manufacturer = "Generic" },
+            new DeviceNotificationType { Code = "BMS-WAR-GENERIC", Message = "BMS Warning", Description = "A generic BMS warning was detected", Category = "Battery", Severity = "WARNING", Version = "1.0", Manufacturer = "Generic" },
+            new DeviceNotificationType { Code = "BMS-ERR-GENERIC", Message = "BMS Error", Description = "A generic BMS error was detected", Category = "Battery", Severity = "ERROR", Version = "1.0", Manufacturer = "Generic" }
         });
     }
 

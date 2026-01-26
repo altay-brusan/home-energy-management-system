@@ -1,4 +1,6 @@
+using Hems_Backend.Application.Common.Exceptions;
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Models;
 using MediatR;
 
 namespace Hems_Backend.Application.Parameters.Commands.UpdateParameter;
@@ -35,7 +37,9 @@ public class UpdateParameterCommandHandler : IRequestHandler<UpdateParameterComm
 
         if (entity == null)
         {
-            throw new ArgumentException("Kayıt bulunamadı.");
+            throw AppException.NotFound(
+                MessageCodes.PARAMETER_NOT_FOUND,
+                new Dictionary<string, object> { ["parameterId"] = request.Id });
         }
 
         entity.Name = request.Name;

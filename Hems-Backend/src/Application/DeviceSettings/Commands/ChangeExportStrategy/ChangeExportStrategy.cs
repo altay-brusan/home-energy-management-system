@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Hems_Backend.Application.Common.Enums;
+using Hems_Backend.Application.Common.Exceptions;
 using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Application.Common.Models;
 using MediatR;
@@ -30,9 +31,10 @@ public class ChangeExportStrategyCommandHandler : IRequestHandler<ChangeExportSt
     {
         // Get the device from database
         var device = await _context.Devices
-            .FirstOrDefaultAsync(d => d.Id == request.DeviceId, cancellationToken);
-
-        Guard.Against.NotFound(request.DeviceId, device);
+            .FirstOrDefaultAsync(d => d.Id == request.DeviceId, cancellationToken)
+            ?? throw AppException.NotFound(
+                MessageCodes.DEVICE_NOT_FOUND,
+                new Dictionary<string, object> { ["deviceId"] = request.DeviceId });
 
         // Map enum to device export strategy code
         // Device expects: 0 = selling_first, 1 = zero_export_to_load, 2 = zero_export_to_ct
@@ -41,7 +43,9 @@ public class ChangeExportStrategyCommandHandler : IRequestHandler<ChangeExportSt
             ExportStrategy.SellFirst => 0,
             ExportStrategy.ZeroExportToLoad => 1,
             ExportStrategy.ZeroExportToCt => 2,
-            _ => throw new ArgumentException($"Invalid export strategy: {request.ExportStrategy}")
+            _ => throw AppException.BadRequest(
+                MessageCodes.INVALID_EXPORT_STRATEGY,
+                new Dictionary<string, object> { ["exportStrategy"] = request.ExportStrategy.ToString() })
         };
 
         // Prepare RPC parameters with the export strategy code

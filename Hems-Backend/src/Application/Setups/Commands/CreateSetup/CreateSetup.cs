@@ -1,4 +1,6 @@
+using Hems_Backend.Application.Common.Exceptions;
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -34,12 +36,13 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
 
     public async Task<Guid> Handle(CreateSetupCommand request, CancellationToken cancellationToken)
     {
-        var userId = _user.Id ?? throw new UnauthorizedAccessException("User not authenticated");
+        var userId = _user.Id
+            ?? throw AppException.Unauthorized(MessageCodes.AUTH_USER_NOT_AUTHENTICATED);
 
         // At least one of QRCode or SerialNumber must be provided
         if (string.IsNullOrEmpty(request.DeviceQRCode) && string.IsNullOrEmpty(request.DeviceSerialNumber))
         {
-            throw new ArgumentException("Either DeviceQRCode or DeviceSerialNumber must be provided");
+            throw AppException.BadRequest(MessageCodes.SETUP_MISSING_DEVICE_IDENTIFIER);
         }
 
         // Site authorization check
@@ -52,7 +55,9 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
 
         if (site == null)
         {
-            throw new Hems_Backend.Application.Common.Exceptions.NotFoundException(nameof(Site), request.SiteId);
+            throw AppException.NotFound(
+                MessageCodes.SITE_NOT_FOUND,
+                new Dictionary<string, object> { ["siteId"] = request.SiteId });
         }
 
         // Check if site already has a setup
@@ -61,7 +66,9 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
 
         if (existingSetup != null)
         {
-            throw new System.ComponentModel.DataAnnotations.ValidationException("This site already has a setup. A site can only have one setup.");
+            throw AppException.BadRequest(
+                MessageCodes.SETUP_SITE_ALREADY_HAS_SETUP,
+                new Dictionary<string, object> { ["siteId"] = request.SiteId });
         }
 
         // Find device in ThingsBoard first
@@ -73,10 +80,12 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
         if (tbDevice == null)
         {
             var deviceIdentifier = !string.IsNullOrEmpty(request.DeviceQRCode)
-                ? $"QR Code: {request.DeviceQRCode}"
-                : $"Serial Number: {request.DeviceSerialNumber}";
+                ? request.DeviceQRCode
+                : request.DeviceSerialNumber;
 
-            throw new ArgumentException($"Device not found in ThingsBoard with {deviceIdentifier}");
+            throw AppException.NotFound(
+                MessageCodes.SETUP_DEVICE_NOT_FOUND_THINGSBOARD,
+                new Dictionary<string, object> { ["deviceIdentifier"] = deviceIdentifier! });
         }
 
         // Find device in local database by ThingsBoard ID
@@ -86,16 +95,20 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
         if (device == null)
         {
             var deviceIdentifier = !string.IsNullOrEmpty(request.DeviceQRCode)
-                ? $"QR Code: {request.DeviceQRCode}"
-                : $"Serial Number: {request.DeviceSerialNumber}";
+                ? request.DeviceQRCode
+                : request.DeviceSerialNumber;
 
-            throw new ArgumentException($"Device not found in local database with {deviceIdentifier}");
+            throw AppException.NotFound(
+                MessageCodes.SETUP_DEVICE_NOT_FOUND_LOCAL,
+                new Dictionary<string, object> { ["deviceIdentifier"] = deviceIdentifier! });
         }
 
         // Check if device is already in use
         if (await _context.SetupDevices.AnyAsync(f => f.DeviceId == device.Id, cancellationToken))
         {
-            throw new System.ComponentModel.DataAnnotations.ValidationException("This device is already in use.");
+            throw AppException.BadRequest(
+                MessageCodes.SETUP_DEVICE_ALREADY_IN_USE,
+                new Dictionary<string, object> { ["deviceId"] = device.Id });
         }
 
         // Create setup

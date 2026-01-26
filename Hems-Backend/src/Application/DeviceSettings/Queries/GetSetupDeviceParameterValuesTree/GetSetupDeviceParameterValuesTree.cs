@@ -81,9 +81,10 @@ public class GetSetupDeviceParameterValuesTreeQueryHandler : IRequestHandler<Get
         // 2. Bu parameter'ların ID'lerini al
         var parameterIds = setupDeviceParameterValues.Select(sdpv => sdpv.ParameterId).ToList();
 
-        // 3. Parameter'ları ParameterGroup ile birlikte çek
+        // 3. Parameter'ları ParameterGroup ile birlikte çek (only visible parameters)
         var parameters = await _context.Parameters
             .Where(p => parameterIds.Contains(p.Id))
+            .Where(p => p.Visible) // Filter out hidden parameters
             .Include(p => p.ParameterGroup)
             .ToListAsync(cancellationToken);
 

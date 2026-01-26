@@ -4,14 +4,15 @@ This document describes how to integrate with the real-time device parameter upd
 
 ## Overview
 
-When updating device parameters, the API returns immediately with a `correlationId`. The actual updates happen in the background, and progress is sent via SignalR in real-time.
+The API uses a **synchronous REST + SignalR progress** pattern:
+1. HTTP POST waits for all parameters to complete (synchronous)
+2. SignalR sends real-time progress updates during processing
+3. HTTP response contains the final result
 
-**Flow:**
-1. Call the API to update parameters
-2. Receive `correlationId` in response
-3. Connect to SignalR hub and subscribe with the `correlationId`
-4. Receive real-time updates as each parameter is processed
-5. Receive completion notification when all parameters are done
+**Benefits:**
+- Simple frontend implementation (single HTTP call)
+- Real-time progress feedback via SignalR
+- Final result guaranteed in HTTP response (no polling needed)
 
 ---
 
@@ -20,7 +21,7 @@ When updating device parameters, the API returns immediately with a `correlation
 ### Update Device Parameters
 
 ```
-PUT /api/device-settings/{deviceId}/parameters
+POST /api/DeviceSettings/device/{deviceId}/parameters
 ```
 
 **Request Body:**
@@ -34,13 +35,42 @@ PUT /api/device-settings/{deviceId}/parameters
 }
 ```
 
-**Response (immediate):**
+**Response (waits for completion):**
 ```json
 {
   "success": true,
-  "correlationId": "a1b2c3d4e5f6...",
   "totalParameters": 3,
-  "message": "Parameter update queued. Subscribe to SignalR hub 'deviceSettingsHub' with correlation ID 'a1b2c3d4e5f6...' to receive progress updates."
+  "successCount": 3,
+  "failedCount": 0,
+  "failedParameters": [],
+  "duration": "00:00:05.234"
+}
+```
+
+**Partial Failure Response:**
+```json
+{
+  "success": false,
+  "totalParameters": 3,
+  "successCount": 2,
+  "failedCount": 1,
+  "failedParameters": [
+    {
+      "parameterId": "guid-3",
+      "parameterName": "SolarSell",
+      "errorMessage": "Verification failed: expected 'true', got 'false'"
+    }
+  ],
+  "duration": "00:00:08.456"
+}
+```
+
+**Device Busy Response:**
+```json
+{
+  "success": false,
+  "errorCode": "DEVICE_BUSY",
+  "message": "Another update operation is in progress for this device."
 }
 ```
 
@@ -48,9 +78,9 @@ PUT /api/device-settings/{deviceId}/parameters
 
 ## 2. SignalR Hub Connection
 
-**Hub URL:** `/deviceSettingsHub`
+**Hub URL:** `/hubs/device-settings`
 
-**Authentication:** JWT Bearer token required (same as API)
+**Authentication:** JWT Bearer token via query string
 
 ### Connection Example (TypeScript)
 
@@ -58,8 +88,8 @@ PUT /api/device-settings/{deviceId}/parameters
 import * as signalR from '@microsoft/signalr';
 
 const connection = new signalR.HubConnectionBuilder()
-  .withUrl('https://your-api-url/deviceSettingsHub', {
-    accessTokenFactory: () => getAccessToken() // Your JWT token
+  .withUrl('https://your-api-url/hubs/device-settings', {
+    accessTokenFactory: () => getAccessToken()
   })
   .withAutomaticReconnect()
   .build();
@@ -69,139 +99,114 @@ await connection.start();
 
 ---
 
-## 3. Subscribe to Updates
+## 3. Subscribe to Device Updates
 
-After calling the API and receiving the `correlationId`, subscribe to receive updates:
+Subscribe to receive updates for a specific device:
 
 ```typescript
-// Subscribe to a specific batch operation
-await connection.invoke('SubscribeToBatchOperation', correlationId);
+// Subscribe to device updates
+await connection.invoke('SubscribeToDevice', deviceId);
 
-// OR subscribe to all updates for a device
-await connection.invoke('SubscribeToDeviceSettings', deviceId);
-```
-
-**Unsubscribe when done:**
-```typescript
-await connection.invoke('UnsubscribeFromBatchOperation', correlationId);
-await connection.invoke('UnsubscribeFromDeviceSettings', deviceId);
+// Unsubscribe when done
+await connection.invoke('UnsubscribeFromDevice', deviceId);
 ```
 
 ---
 
 ## 4. SignalR Events
 
-### 4.1 ParameterUpdateStarted
+### 4.1 OperationStarted
 
 Fired when the batch processing begins.
 
 ```typescript
-connection.on('ParameterUpdateStarted', (message) => {
+connection.on('OperationStarted', (message) => {
   console.log('Update started:', message);
-  // Show progress indicator
+  // Show progress modal
 });
 ```
 
 **Message Structure:**
 ```typescript
-interface ParameterUpdateStartedMessage {
-  correlationId: string;
-  deviceId: string;        // GUID
+interface OperationStartedEvent {
+  operationId: string;      // Correlation ID
+  deviceId: string;         // GUID
   totalParameters: number;
-  startedAt: string;       // ISO date
+  startedAt: string;        // ISO date
 }
 ```
 
-### 4.2 ParameterUpdated
+### 4.2 ParameterProgress
 
-Fired for each successfully updated parameter.
+Fired for each parameter as it's processed (success or failure).
 
 ```typescript
-connection.on('ParameterUpdated', (message) => {
-  console.log(`Updated ${message.currentIndex}/${message.totalParameters}: ${message.parameterName} = ${message.newValue}`);
-  // Update progress bar
-  const progress = (message.currentIndex / message.totalParameters) * 100;
+connection.on('ParameterProgress', (message) => {
+  const progress = (message.currentIndex / message.totalCount) * 100;
+  console.log(`Progress: ${progress}% - ${message.parameterName}: ${message.status}`);
 });
 ```
 
 **Message Structure:**
 ```typescript
-interface ParameterUpdatedMessage {
-  correlationId: string;
+interface ParameterProgressEvent {
+  operationId: string;
   deviceId: string;
-  parameterId: string;     // GUID
+  parameterId: string;       // GUID
   parameterName: string;
-  newValue: string;
-  rpcMethod?: string;
-  currentIndex: number;    // 1-based
-  totalParameters: number;
-  updatedAt: string;       // ISO date
+  status: 'Success' | 'Failed' | 'Skipped';
+  errorMessage?: string;     // Only if status is 'Failed'
+  currentIndex: number;      // 1-based
+  totalCount: number;
+  successCount: number;      // Running total
+  failedCount: number;       // Running total
 }
 ```
 
-### 4.3 ParameterUpdateFailed
-
-Fired when a parameter update fails.
-
-```typescript
-connection.on('ParameterUpdateFailed', (message) => {
-  console.error(`Failed ${message.currentIndex}/${message.totalParameters}: ${message.parameterName} - ${message.errorMessage}`);
-  // Show error for this parameter
-});
-```
-
-**Message Structure:**
-```typescript
-interface ParameterUpdateFailedMessage {
-  correlationId: string;
-  deviceId: string;
-  parameterId: string;
-  parameterName: string;
-  errorMessage: string;
-  rpcMethod?: string;
-  currentIndex: number;
-  totalParameters: number;
-  failedAt: string;        // ISO date
-}
-```
-
-### 4.4 ParameterUpdateCompleted
+### 4.3 OperationCompleted
 
 Fired when all parameters have been processed.
 
 ```typescript
-connection.on('ParameterUpdateCompleted', (message) => {
+connection.on('OperationCompleted', (message) => {
   console.log(`Completed: ${message.successCount} succeeded, ${message.failedCount} failed`);
-  // Hide progress, show summary
+  // Hide progress modal, show summary
 });
 ```
 
 **Message Structure:**
 ```typescript
-interface ParameterUpdateCompletedMessage {
-  correlationId: string;
+interface OperationCompletedEvent {
+  operationId: string;
   deviceId: string;
+  success: boolean;
   totalParameters: number;
   successCount: number;
   failedCount: number;
-  completedAt: string;     // ISO date
-  duration: string;        // TimeSpan format: "00:00:05.123"
+  failedParameters: Array<{
+    parameterId: string;
+    parameterName: string;
+    errorMessage: string;
+  }>;
+  duration: string;          // TimeSpan format: "00:00:05.123"
+  completedAt: string;       // ISO date
 }
 ```
 
 ---
 
-## 5. Complete Example
+## 5. Complete Integration Example
 
 ```typescript
 import * as signalR from '@microsoft/signalr';
 
 class DeviceSettingsService {
   private connection: signalR.HubConnection;
+  private currentDeviceId: string | null = null;
 
   constructor(private apiUrl: string, private getToken: () => string) {
     this.connection = new signalR.HubConnectionBuilder()
-      .withUrl(`${apiUrl}/deviceSettingsHub`, {
+      .withUrl(`${apiUrl}/hubs/device-settings`, {
         accessTokenFactory: () => this.getToken()
       })
       .withAutomaticReconnect()
@@ -211,28 +216,23 @@ class DeviceSettingsService {
   }
 
   private setupEventHandlers() {
-    this.connection.on('ParameterUpdateStarted', (msg) => {
-      this.onUpdateStarted?.(msg);
+    this.connection.on('OperationStarted', (msg) => {
+      this.onOperationStarted?.(msg);
     });
 
-    this.connection.on('ParameterUpdated', (msg) => {
-      this.onParameterUpdated?.(msg);
+    this.connection.on('ParameterProgress', (msg) => {
+      this.onParameterProgress?.(msg);
     });
 
-    this.connection.on('ParameterUpdateFailed', (msg) => {
-      this.onParameterFailed?.(msg);
-    });
-
-    this.connection.on('ParameterUpdateCompleted', (msg) => {
-      this.onUpdateCompleted?.(msg);
+    this.connection.on('OperationCompleted', (msg) => {
+      this.onOperationCompleted?.(msg);
     });
   }
 
   // Callbacks - set these from your component
-  onUpdateStarted?: (msg: ParameterUpdateStartedMessage) => void;
-  onParameterUpdated?: (msg: ParameterUpdatedMessage) => void;
-  onParameterFailed?: (msg: ParameterUpdateFailedMessage) => void;
-  onUpdateCompleted?: (msg: ParameterUpdateCompletedMessage) => void;
+  onOperationStarted?: (msg: OperationStartedEvent) => void;
+  onParameterProgress?: (msg: ParameterProgressEvent) => void;
+  onOperationCompleted?: (msg: OperationCompletedEvent) => void;
 
   async connect() {
     await this.connection.start();
@@ -242,14 +242,34 @@ class DeviceSettingsService {
     await this.connection.stop();
   }
 
+  async subscribeToDevice(deviceId: string) {
+    this.currentDeviceId = deviceId;
+    await this.connection.invoke('SubscribeToDevice', deviceId);
+  }
+
+  async unsubscribeFromDevice(deviceId: string) {
+    await this.connection.invoke('UnsubscribeFromDevice', deviceId);
+    this.currentDeviceId = null;
+  }
+
   async updateParameters(
     deviceId: string,
     parameters: Array<{ parameterId: string; value: string }>
-  ): Promise<{ correlationId: string; totalParameters: number }> {
+  ): Promise<UpdateResult> {
 
-    // 1. Call API
-    const response = await fetch(`${this.apiUrl}/api/device-settings/${deviceId}/parameters`, {
-      method: 'PUT',
+    // Ensure SignalR is connected before calling API
+    if (this.connection.state !== signalR.HubConnectionState.Connected) {
+      await this.connect();
+    }
+
+    // Subscribe to device if not already
+    if (this.currentDeviceId !== deviceId) {
+      await this.subscribeToDevice(deviceId);
+    }
+
+    // Call API - this waits for completion
+    const response = await fetch(`${this.apiUrl}/api/DeviceSettings/device/${deviceId}/parameters`, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${this.getToken()}`
@@ -257,62 +277,81 @@ class DeviceSettingsService {
       body: JSON.stringify({ parameters })
     });
 
-    const result = await response.json();
-
-    if (!result.success) {
-      throw new Error(result.errorMessage);
-    }
-
-    // 2. Subscribe to updates
-    await this.connection.invoke('SubscribeToBatchOperation', result.correlationId);
-
-    return {
-      correlationId: result.correlationId,
-      totalParameters: result.totalParameters
-    };
-  }
-
-  async unsubscribe(correlationId: string) {
-    await this.connection.invoke('UnsubscribeFromBatchOperation', correlationId);
+    return await response.json();
   }
 }
 
 // Usage in a React component:
 const service = new DeviceSettingsService('https://api.example.com', () => authToken);
 
-service.onUpdateStarted = (msg) => {
-  setProgress({ current: 0, total: msg.totalParameters, status: 'started' });
+service.onOperationStarted = (msg) => {
+  setShowProgressModal(true);
+  setProgress({ current: 0, total: msg.totalParameters });
 };
 
-service.onParameterUpdated = (msg) => {
-  setProgress(prev => ({ ...prev, current: msg.currentIndex }));
-  addSuccessLog(`${msg.parameterName} = ${msg.newValue}`);
+service.onParameterProgress = (msg) => {
+  setProgress({ current: msg.currentIndex, total: msg.totalCount });
+  if (msg.status === 'Success') {
+    addLog(`✓ ${msg.parameterName}`);
+  } else {
+    addLog(`✗ ${msg.parameterName}: ${msg.errorMessage}`);
+  }
 };
 
-service.onParameterFailed = (msg) => {
-  setProgress(prev => ({ ...prev, current: msg.currentIndex }));
-  addErrorLog(`${msg.parameterName}: ${msg.errorMessage}`);
-};
-
-service.onUpdateCompleted = (msg) => {
-  setProgress(prev => ({ ...prev, status: 'completed' }));
-  showSummary(`${msg.successCount} succeeded, ${msg.failedCount} failed`);
-  service.unsubscribe(msg.correlationId);
+service.onOperationCompleted = (msg) => {
+  setShowProgressModal(false);
+  if (msg.success) {
+    showSuccess(`${msg.successCount} parameters updated successfully`);
+  } else {
+    showWarning(`${msg.successCount} succeeded, ${msg.failedCount} failed`);
+  }
 };
 
 await service.connect();
-const { correlationId } = await service.updateParameters(deviceId, parameterList);
+await service.subscribeToDevice(deviceId);
+
+// This call waits for completion and returns final result
+const result = await service.updateParameters(deviceId, parameterList);
 ```
 
 ---
 
-## 6. Error Handling
+## 6. Backend Processing Details
+
+### Write-Verify-Retry Pattern
+
+For each parameter:
+1. **Write**: Send RPC to device with new value
+2. **Wait**: 150ms for device to process
+3. **Verify**: Read back value from device
+4. **Compare**: Check if written value matches read value
+5. **Retry**: If mismatch, retry once (max 2 attempts total)
+
+### Time Slot End Parameters
+
+Time slot END parameters (`TimeSlot1End`, `TimeSlot2End`, etc.) are:
+- **Skipped for RPC** (device handles internally based on start times)
+- **Saved to database** (for UI display)
+- **Marked as Success** in progress events
+
+### Update History Tracking
+
+Every parameter update attempt is recorded in `DeviceSettingUpdateHistory`:
+- Success/Failure status
+- Old and new values
+- Verified value (read back from device)
+- Error message if failed
+- Retry attempt count
+
+---
+
+## 7. Error Handling
 
 ### Connection Errors
 ```typescript
 connection.onclose((error) => {
   console.error('SignalR connection closed:', error);
-  // Attempt reconnect or notify user
+  // Progress will still be shown via HTTP response
 });
 
 connection.onreconnecting((error) => {
@@ -321,27 +360,26 @@ connection.onreconnecting((error) => {
 
 connection.onreconnected((connectionId) => {
   console.log('SignalR reconnected:', connectionId);
-  // Re-subscribe to active operations
+  // Re-subscribe to device
+  if (currentDeviceId) {
+    connection.invoke('SubscribeToDevice', currentDeviceId);
+  }
 });
 ```
 
-### API Errors
+### HTTP Timeout
 
-The API may return errors before queueing:
-
-```json
-{
-  "success": false,
-  "errorMessage": "Access denied for 2 admin-only parameter(s): MaxPower, SafetyLimit"
-}
-```
+The API is configured with a 5-minute timeout for long parameter updates. For very large batches, consider:
+- Breaking into smaller batches
+- Showing intermediate progress via SignalR
 
 ---
 
-## 7. Notes
+## 8. Notes
 
-- Each parameter is updated sequentially (one at a time) to avoid overwhelming the device
-- The `currentIndex` in events is 1-based (starts at 1, not 0)
-- Duration in `ParameterUpdateCompleted` is in .NET TimeSpan format
-- If you subscribe by device ID, you'll receive updates for ALL parameter operations on that device
-- If you subscribe by correlation ID, you'll only receive updates for that specific batch
+- SignalR is optional - HTTP response always contains the final result
+- SignalR provides real-time progress during the (potentially long) operation
+- Each parameter is processed sequentially (one at a time)
+- The `currentIndex` in progress events is 1-based
+- Device lock prevents concurrent updates to the same device
+- If SignalR disconnects during operation, HTTP will still return the final result

@@ -5,10 +5,6 @@ namespace Hems_Backend.Application.Common.Interfaces;
 
 public interface IApplicationDbContext
 {
-    DbSet<TodoList> TodoLists { get; }
-
-    DbSet<TodoItem> TodoItems { get; }
-
     DbSet<Site> Sites { get; }
 
     DbSet<Setup> Setups { get; }
@@ -56,6 +52,12 @@ public interface IApplicationDbContext
     DbSet<EnergyPriceHistory> EnergyPriceHistory { get; }
 
     DbSet<DeviceModeHistory> DeviceModeHistory { get; }
+
+    DbSet<DeviceOperationHistory> DeviceOperationHistories { get; }
+
+    DbSet<DeviceSettingUpdateHistory> DeviceSettingUpdateHistories { get; }
+
+    DbSet<MobileAppVersion> MobileAppVersions { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

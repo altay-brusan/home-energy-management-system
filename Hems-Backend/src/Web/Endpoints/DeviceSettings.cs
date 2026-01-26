@@ -5,6 +5,7 @@ using Hems_Backend.Application.DeviceSettings.Commands.SetDeviceMode;
 using Hems_Backend.Application.DeviceSettings.Commands.SetEnergyPrice;
 using Hems_Backend.Application.DeviceSettings.Commands.UpdateDeviceParameter;
 using Hems_Backend.Application.DeviceSettings.Commands.UpdateDeviceParameters;
+using Hems_Backend.Application.DeviceSettings.Commands.UpdateGridConfig;
 using Hems_Backend.Application.DeviceSettings.Commands.CreateSetupDeviceParameterValue;
 using Hems_Backend.Application.DeviceSettings.Commands.DeleteSetupDeviceParameterValue;
 using Hems_Backend.Application.DeviceSettings.Commands.UpdateSetupDeviceParameterValue;
@@ -14,6 +15,7 @@ using Hems_Backend.Application.DeviceSettings.Queries.GetCurrentDeviceMode;
 using Hems_Backend.Application.DeviceSettings.Queries.GetDeviceModes;
 using Hems_Backend.Application.DeviceSettings.Queries.GetDeviceParameters;
 using Hems_Backend.Application.DeviceSettings.Queries.GetEnergyPrices;
+using Hems_Backend.Application.DeviceSettings.Queries.GetGridConfig;
 using Hems_Backend.Application.DeviceSettings.Queries.GetSetupDeviceParameterValues;
 using Hems_Backend.Application.DeviceSettings.Queries.GetSetupDeviceParameterValuesTree;
 using Hems_Backend.Application.DeviceSettings.Queries.GetDeviceParameterValuesTree;
@@ -35,7 +37,7 @@ public class DeviceSettings : EndpointGroupBase
     {
         app.MapGroup(this)
             .RequireAuthorization()
-            // ==== RPC-SYNCED OPERATIONS (New - Recommended for users) ====
+            // ==== RPC-SYNCED OPERATIONS (Synchronous - waits for completion) ====
             .MapGet(GetDeviceParameters, "device/{deviceId:guid}/parameters")
             .MapGet(GetDeviceParameterValuesTree, "device/{deviceId:guid}/tree")
             .MapPut(UpdateDeviceParameter, "device/{deviceId:guid}/parameters/{parameterId:guid}")
@@ -43,6 +45,10 @@ public class DeviceSettings : EndpointGroupBase
             .MapGet(GetAvailableModes, "modes")
             .MapGet(GetCurrentDeviceMode, "device/{deviceId:guid}/mode")
             .MapPost(SetDeviceMode, "device/{deviceId:guid}/mode")
+
+            // ==== GRID CONFIG OPERATIONS (Fire-and-forget - causes device restart) ====
+            .MapGet(GetGridConfig, "device/{deviceId:guid}/grid-config")
+            .MapPut(UpdateGridConfig, "device/{deviceId:guid}/grid-config")
 
             // ==== PRICE SETTINGS ====
             .MapGet(GetEnergyPrices, "device/{deviceId:guid}/price")
@@ -63,7 +69,7 @@ public class DeviceSettings : EndpointGroupBase
 
     // ========================================================================
     // RPC-SYNCED OPERATIONS - Updates both device and database
-    // Recommended for all user-facing operations
+    // Now synchronous - waits for completion and returns complete result
     // ========================================================================
 
     /// <summary>
@@ -119,36 +125,127 @@ public class DeviceSettings : EndpointGroupBase
     }
 
     /// <summary>
-    /// Update multiple device parameters in batch
-    /// Groups parameters by RPC method to minimize RPC calls
-    /// Updates the device via RPC first, then updates the database if successful
+    /// Update multiple device parameters in batch (synchronous)
+    /// Waits for all updates to complete and returns the complete result.
+    /// Timeout: 3 minutes (handles up to ~50 parameters safely).
     /// </summary>
+    /// <remarks>
+    /// This endpoint is now synchronous - it waits for all parameter updates to complete
+    /// before returning. The response includes:
+    /// - success: true if all parameters updated successfully
+    /// - totalParameters: number of parameters in the request
+    /// - successCount: number of parameters successfully updated
+    /// - failedCount: number of parameters that failed
+    /// - failedParameters: details of each failed parameter
+    /// - duration: total time taken for the operation
+    ///
+    /// If the device is busy (another update in progress), returns 400 with errorCode "DEVICE_BUSY"
+    /// </remarks>
     [Authorize]
     public async Task<IResult> UpdateDeviceParameters(
         ISender sender,
+        ILogger<DeviceSettings> logger,
         Guid deviceId,
-        UpdateDeviceParametersRequest request)
+        UpdateDeviceParametersRequest request,
+        CancellationToken cancellationToken)
     {
+        // DEBUG: Log incoming request
+        logger.LogInformation(
+            "📥 [Endpoint] UpdateDeviceParameters called: DeviceId={DeviceId}, ParameterCount={Count}, Parameters=[{Params}]",
+            deviceId,
+            request.Parameters.Count,
+            string.Join("; ", request.Parameters.Select(p => $"Id={p.ParameterId}, Value='{p.Value}'")));
+
+        // Create a timeout token (3 minutes) to prevent indefinite hangs
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeoutCts.CancelAfter(TimeSpan.FromMinutes(3));
+
         var command = new UpdateDeviceParametersCommand
         {
             DeviceId = deviceId,
             Parameters = request.Parameters
         };
 
-        var result = await sender.Send(command);
-
-        if (result.Success)
+        try
         {
-            return Results.Ok(result);
+            var result = await sender.Send(command, timeoutCts.Token);
+
+            // DEBUG: Log result
+            logger.LogInformation(
+                "📤 [Endpoint] UpdateDeviceParameters result: Success={Success}, ErrorCode={ErrorCode}, ErrorMessage={ErrorMessage}, " +
+                "TotalParams={Total}, SuccessCount={SuccessCount}, FailedCount={FailedCount}, FailedParams=[{FailedParams}]",
+                result.Success,
+                result.ErrorCode ?? "none",
+                result.ErrorMessage ?? "none",
+                result.TotalParameters,
+                result.SuccessCount,
+                result.FailedCount,
+                string.Join("; ", result.FailedParameters.Select(p => $"{p.ParameterName}: {p.ErrorMessage}")));
+
+            if (result.Success)
+            {
+                return Results.Ok(new
+                {
+                    success = true,
+                    totalParameters = result.TotalParameters,
+                    successCount = result.SuccessCount,
+                    failedCount = result.FailedCount,
+                    failedParameters = result.FailedParameters,
+                    duration = result.Duration.ToString(),
+                    // Restart information for Grid Standard settings
+                    deviceWillRestart = result.DeviceWillRestart,
+                    restartReason = result.RestartReason,
+                    restartCausingParameters = result.RestartCausingParameters
+                });
+            }
+
+            // Handle specific error codes
+            if (result.ErrorCode is "DEVICE_BUSY" or "DEVICE_RESTARTING")
+            {
+                return Results.BadRequest(new
+                {
+                    success = false,
+                    errorCode = result.ErrorCode,
+                    message = result.ErrorMessage
+                });
+            }
+
+            // Partial success (some parameters updated, some failed)
+            if (result.SuccessCount > 0)
+            {
+                return Results.Ok(new
+                {
+                    success = false, // Not fully successful
+                    totalParameters = result.TotalParameters,
+                    successCount = result.SuccessCount,
+                    failedCount = result.FailedCount,
+                    failedParameters = result.FailedParameters,
+                    duration = result.Duration.ToString(),
+                    message = $"{result.SuccessCount} parameters updated, {result.FailedCount} failed",
+                    // Restart information for Grid Standard settings
+                    deviceWillRestart = result.DeviceWillRestart,
+                    restartReason = result.RestartReason,
+                    restartCausingParameters = result.RestartCausingParameters
+                });
+            }
+
+            return Results.BadRequest(new
+            {
+                success = false,
+                errorCode = result.ErrorCode,
+                message = result.ErrorMessage ?? "Failed to update parameters",
+                failedParameters = result.FailedParameters
+            });
         }
-
-        return Results.BadRequest(new
+        catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
         {
-            success = false,
-            message = result.ErrorMessage ?? "Failed to update parameters",
-            successfulUpdates = result.SuccessfulUpdates,
-            failedUpdates = result.FailedUpdates
-        });
+            // Timeout occurred (not client cancellation)
+            logger.LogWarning(
+                "⏱️ [Endpoint] UpdateDeviceParameters timed out after 3 minutes: DeviceId={DeviceId}, ParameterCount={Count}",
+                deviceId, request.Parameters.Count);
+
+            return Results.StatusCode(504); // Gateway Timeout
+        }
     }
 
     /// <summary>
@@ -213,6 +310,172 @@ public class DeviceSettings : EndpointGroupBase
         {
             success = false,
             message = result.ErrorMessage ?? "Failed to set device mode"
+        });
+    }
+
+    // ========================================================================
+    // GRID CONFIG OPERATIONS - Fire-and-forget for restart-causing parameters
+    // ========================================================================
+
+    /// <summary>
+    /// Get grid configuration parameters for a device.
+    /// Returns only grid-related parameters that cause device restart when changed.
+    /// </summary>
+    /// <remarks>
+    /// Grid configuration includes:
+    /// - Grid Standard (General, UL1741, CPUC RULE21, etc.)
+    /// - Grid Frequency and Voltage settings
+    /// - Phase Type and Grid Level
+    /// - Reconnection Time
+    /// - Power Factor settings
+    ///
+    /// These parameters require special handling because changing them causes
+    /// the device to restart.
+    /// </remarks>
+    [Authorize]
+    public async Task<IResult> GetGridConfig(
+        ISender sender,
+        Guid deviceId)
+    {
+        var query = new GetGridConfigQuery { DeviceId = deviceId };
+        var result = await sender.Send(query);
+
+        if (result.Success)
+        {
+            return Results.Ok(new
+            {
+                success = true,
+                deviceId = result.DeviceId,
+                parameters = result.Parameters
+            });
+        }
+
+        // Handle specific error codes
+        if (result.ErrorCode == "DEVICE_RESTARTING")
+        {
+            return Results.BadRequest(new
+            {
+                success = false,
+                errorCode = result.ErrorCode,
+                message = result.ErrorMessage,
+                estimatedAvailableAt = result.EstimatedAvailableAt
+            });
+        }
+
+        return Results.BadRequest(new
+        {
+            success = false,
+            errorCode = result.ErrorCode,
+            message = result.ErrorMessage ?? "Failed to get grid config"
+        });
+    }
+
+    /// <summary>
+    /// Update grid configuration parameters (fire-and-forget, causes device restart).
+    /// </summary>
+    /// <remarks>
+    /// IMPORTANT: This endpoint uses fire-and-forget pattern because grid config
+    /// changes cause the device to restart. The response includes:
+    /// - deviceWillRestart: true (always, if successful)
+    /// - restartGracePeriodSeconds: ~180 seconds
+    /// - estimatedAvailableAt: timestamp when device should be back online
+    ///
+    /// Frontend should:
+    /// 1. Show confirmation dialog warning about restart
+    /// 2. Disable settings UI for the grace period (2-3 minutes)
+    /// 3. After grace period, fetch latest values via GET /grid-config
+    ///
+    /// Error codes:
+    /// - DEVICE_BUSY: Another operation is in progress
+    /// - DEVICE_RESTARTING: Device is currently restarting from previous update
+    /// - INVALID_PARAMETERS: Non-grid parameters were included (use /parameters instead)
+    /// </remarks>
+    [Authorize]
+    public async Task<IResult> UpdateGridConfig(
+        ISender sender,
+        ILogger<DeviceSettings> logger,
+        Guid deviceId,
+        UpdateGridConfigRequest request,
+        CancellationToken cancellationToken)
+    {
+        logger.LogInformation(
+            "📥 [Endpoint] UpdateGridConfig called: DeviceId={DeviceId}, ParameterCount={Count}",
+            deviceId, request.Parameters.Count);
+
+        var command = new UpdateGridConfigCommand
+        {
+            DeviceId = deviceId,
+            Parameters = request.Parameters.Select(p => new GridConfigParameterUpdate
+            {
+                ParameterId = p.ParameterId,
+                Value = p.Value
+            }).ToList()
+        };
+
+        var result = await sender.Send(command, cancellationToken);
+
+        logger.LogInformation(
+            "📤 [Endpoint] UpdateGridConfig result: Success={Success}, ErrorCode={ErrorCode}, " +
+            "SuccessCount={SuccessCount}, FailedCount={FailedCount}, DeviceWillRestart={DeviceWillRestart}",
+            result.Success, result.ErrorCode ?? "none",
+            result.SuccessCount, result.FailedCount, result.DeviceWillRestart);
+
+        if (result.Success)
+        {
+            return Results.Ok(new
+            {
+                success = true,
+                totalParameters = result.TotalParameters,
+                successCount = result.SuccessCount,
+                failedCount = result.FailedCount,
+                appliedParameters = result.AppliedParameters,
+                duration = result.Duration.ToString(),
+                deviceWillRestart = result.DeviceWillRestart,
+                restartReason = result.RestartReason,
+                restartGracePeriodSeconds = result.RestartGracePeriodSeconds,
+                estimatedAvailableAt = result.EstimatedAvailableAt
+            });
+        }
+
+        // Handle specific error codes
+        if (result.ErrorCode is "DEVICE_BUSY" or "DEVICE_RESTARTING")
+        {
+            return Results.BadRequest(new
+            {
+                success = false,
+                errorCode = result.ErrorCode,
+                message = result.ErrorMessage,
+                estimatedAvailableAt = result.EstimatedAvailableAt,
+                restartGracePeriodSeconds = result.RestartGracePeriodSeconds
+            });
+        }
+
+        // Partial success (some parameters applied, some failed)
+        if (result.SuccessCount > 0)
+        {
+            return Results.Ok(new
+            {
+                success = false,
+                totalParameters = result.TotalParameters,
+                successCount = result.SuccessCount,
+                failedCount = result.FailedCount,
+                appliedParameters = result.AppliedParameters,
+                failedParameters = result.FailedParameters,
+                duration = result.Duration.ToString(),
+                message = $"{result.SuccessCount} parameters applied, {result.FailedCount} failed",
+                deviceWillRestart = result.DeviceWillRestart,
+                restartReason = result.RestartReason,
+                restartGracePeriodSeconds = result.RestartGracePeriodSeconds,
+                estimatedAvailableAt = result.EstimatedAvailableAt
+            });
+        }
+
+        return Results.BadRequest(new
+        {
+            success = false,
+            errorCode = result.ErrorCode,
+            message = result.ErrorMessage ?? "Failed to update grid config",
+            failedParameters = result.FailedParameters
         });
     }
 
@@ -524,4 +787,32 @@ public record PriceEntryRequest
     /// End hour of the day when this price is valid (0-24)
     /// </summary>
     public int? EndHour { get; init; }
+}
+
+/// <summary>
+/// Request to update grid configuration parameters.
+/// These parameters cause device restart when changed.
+/// </summary>
+public record UpdateGridConfigRequest
+{
+    /// <summary>
+    /// List of grid config parameters to update
+    /// </summary>
+    public List<GridConfigParameterUpdateRequest> Parameters { get; init; } = new();
+}
+
+/// <summary>
+/// Single grid config parameter update
+/// </summary>
+public record GridConfigParameterUpdateRequest
+{
+    /// <summary>
+    /// Parameter ID
+    /// </summary>
+    public Guid ParameterId { get; init; }
+
+    /// <summary>
+    /// New value for the parameter
+    /// </summary>
+    public string Value { get; init; } = string.Empty;
 }

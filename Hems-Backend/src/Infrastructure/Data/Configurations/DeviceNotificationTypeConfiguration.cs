@@ -16,10 +16,6 @@ public class DeviceNotificationTypeConfiguration : IEntityTypeConfiguration<Devi
             .HasMaxLength(200)
             .IsRequired();
 
-        builder.Property(t => t.Status)
-            .HasMaxLength(100)
-            .IsRequired();
-
         builder.Property(t => t.Description)
             .HasMaxLength(1000)
             .IsRequired();

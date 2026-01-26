@@ -39,6 +39,7 @@ public class DemoDataService : IDemoDataService
 
     public string GetDemoUserEmail() => DemoUserEmail;
     public string GetDemoDeviceSerialNumber() => DemoDeviceSerial;
+    public Guid GetDemoThingsBoardDeviceId() => DemoThingsBoardDeviceId;
 
     public async Task<bool> IsDemoUserAsync(string userId, CancellationToken cancellationToken = default)
     {
@@ -62,6 +63,20 @@ public class DemoDataService : IDemoDataService
         _logger.LogDebug(
             "IsDemoDeviceAsync: DeviceId={DeviceId}, DeviceFound={DeviceFound}, IsDemoDevice={IsDemoDevice}",
             deviceId, device != null, isDemoDevice);
+
+        return isDemoDevice;
+    }
+
+    public async Task<bool> IsDemoDeviceByThingsBoardIdAsync(Guid thingsBoardDeviceId, CancellationToken cancellationToken = default)
+    {
+        var device = await _context.Devices
+            .FirstOrDefaultAsync(d => d.ThingsBoardDeviceId == thingsBoardDeviceId && !d.IsDeleted, cancellationToken);
+
+        var isDemoDevice = device?.IsDemoDevice ?? false;
+
+        _logger.LogDebug(
+            "IsDemoDeviceByThingsBoardIdAsync: ThingsBoardDeviceId={ThingsBoardDeviceId}, DeviceFound={DeviceFound}, IsDemoDevice={IsDemoDevice}",
+            thingsBoardDeviceId, device != null, isDemoDevice);
 
         return isDemoDevice;
     }
@@ -216,29 +231,63 @@ public class DemoDataService : IDemoDataService
                 };
             }
 
-            // Check if demo data already exists
+            // Check if demo data already exists and repair any missing pieces
             var existingSite = await _context.Sites
                 .FirstOrDefaultAsync(s => s.UserId == userId && !s.IsDeleted, cancellationToken);
 
             if (existingSite != null)
             {
-                _logger.LogInformation("Demo data already exists for user {UserId}", userId);
+                _logger.LogInformation("Demo site exists for user {UserId}, checking for missing relationships", userId);
 
+                // Check/create Setup
                 var existingSetup = await _context.Setups
                     .FirstOrDefaultAsync(s => s.SiteId == existingSite.Id, cancellationToken);
 
-                Device? existingDevice = null;
-                if (existingSetup != null)
+                if (existingSetup == null)
                 {
-                    var existingSetupDevice = await _context.SetupDevices
-                        .Include(sd => sd.Device)
-                        .FirstOrDefaultAsync(sd => sd.SetupId == existingSetup.Id, cancellationToken);
+                    _logger.LogWarning("Demo setup missing for site {SiteId}, creating...", existingSite.Id);
+                    existingSetup = new Setup
+                    {
+                        SiteId = existingSite.Id,
+                        Name = "Demo Setup",
+                        CreatedBy = userId
+                    };
+                    _context.Setups.Add(existingSetup);
+                    await _context.SaveChangesAsync(cancellationToken);
+                }
 
-                    existingDevice = existingSetupDevice?.Device;
+                // Check/create Device
+                var existingDevice = await _context.Devices
+                    .FirstOrDefaultAsync(d => d.SerialNumber == DemoDeviceSerial && !d.IsDeleted, cancellationToken);
 
+                if (existingDevice == null)
+                {
+                    _logger.LogWarning("Demo device missing, creating...");
+                    existingDevice = new Device
+                    {
+                        Name = "Demo HEMS Device",
+                        Manufacturer = "Oklidis",
+                        ModelNumber = "HEMS-DEMO-001",
+                        SerialNumber = DemoDeviceSerial,
+                        TypeNumber = "DEMO-TYPE-001",
+                        QRCode = $"DEMO-QR-{Guid.NewGuid():N}",
+                        Specifications = System.Text.Json.JsonDocument.Parse("{\"type\":\"demo\",\"capacity\":\"10kW\"}"),
+                        InstallationDate = DateTime.UtcNow.AddDays(-30),
+                        WarrantyPeriod = 24,
+                        WarrantyUnit = WarrantyUnit.Month,
+                        WarrantyStartDate = DateTime.UtcNow.AddDays(-30),
+                        IsDemoDevice = true,
+                        ThingsBoardDeviceId = DemoThingsBoardDeviceId,
+                        CreatedBy = userId
+                    };
+                    _context.Devices.Add(existingDevice);
+                    await _context.SaveChangesAsync(cancellationToken);
+                }
+                else
+                {
                     // IMPORTANT: Ensure existing demo devices have IsDemoDevice flag set
                     // This handles devices created before the IsDemoDevice column was added
-                    if (existingDevice != null && !existingDevice.IsDemoDevice)
+                    if (!existingDevice.IsDemoDevice)
                     {
                         _logger.LogWarning(
                             "Existing demo device {DeviceId} has IsDemoDevice=false, updating to true",
@@ -254,12 +303,99 @@ public class DemoDataService : IDemoDataService
                     }
                 }
 
+                // Check/create SetupDevice relationship
+                var existingSetupDevice = await _context.SetupDevices
+                    .FirstOrDefaultAsync(sd => sd.SetupId == existingSetup.Id, cancellationToken);
+
+                if (existingSetupDevice == null)
+                {
+                    _logger.LogWarning("SetupDevice relationship missing, creating...");
+                    existingSetupDevice = new SetupDevice
+                    {
+                        SetupId = existingSetup.Id,
+                        DeviceId = existingDevice.Id,
+                        CreatedBy = userId
+                    };
+                    _context.SetupDevices.Add(existingSetupDevice);
+                    await _context.SaveChangesAsync(cancellationToken);
+                }
+
+                // Check/create Device Components
+                var existingComponents = await _context.DeviceComponents
+                    .Where(dc => dc.DeviceId == existingDevice.Id)
+                    .ToListAsync(cancellationToken);
+
+                if (!existingComponents.Any())
+                {
+                    _logger.LogWarning("Demo device components missing, creating...");
+                    var missingComponents = new List<DeviceComponent>
+                    {
+                        new DeviceComponent
+                        {
+                            DeviceId = existingDevice.Id,
+                            DeviceType = DeviceType.Invertor,
+                            Name = "Demo Inverter",
+                            Manufacturer = "Oklidis",
+                            ModelNumber = "INV-DEMO-5000",
+                            SerialNumber = "DEMO-INV-001",
+                            Specifications = System.Text.Json.JsonDocument.Parse("{\"power\":\"5kW\",\"efficiency\":\"98%\"}"),
+                            CreatedBy = userId
+                        },
+                        new DeviceComponent
+                        {
+                            DeviceId = existingDevice.Id,
+                            DeviceType = DeviceType.Battery,
+                            Name = "Demo Battery",
+                            Manufacturer = "Oklidis",
+                            ModelNumber = "BAT-DEMO-10000",
+                            SerialNumber = "DEMO-BAT-001",
+                            Specifications = System.Text.Json.JsonDocument.Parse("{\"capacity\":\"10kWh\",\"type\":\"LiFePO4\"}"),
+                            CreatedBy = userId
+                        },
+                        new DeviceComponent
+                        {
+                            DeviceId = existingDevice.Id,
+                            DeviceType = DeviceType.BMS,
+                            Name = "Demo BMS",
+                            Manufacturer = "Oklidis",
+                            ModelNumber = "BMS-DEMO-001",
+                            SerialNumber = "DEMO-BMS-001",
+                            Specifications = System.Text.Json.JsonDocument.Parse("{\"cells\":\"16\",\"voltage\":\"51.2V\"}"),
+                            CreatedBy = userId
+                        }
+                    };
+                    _context.DeviceComponents.AddRange(missingComponents);
+                    await _context.SaveChangesAsync(cancellationToken);
+                }
+
+                // Check/create Device Mode History
+                var existingModeHistory = await _context.DeviceModeHistory
+                    .FirstOrDefaultAsync(m => m.DeviceId == existingDevice.Id && m.IsActive, cancellationToken);
+
+                if (existingModeHistory == null)
+                {
+                    _logger.LogWarning("Demo device mode history missing, creating...");
+                    var missingModeHistory = new DeviceModeHistory
+                    {
+                        DeviceId = existingDevice.Id,
+                        Mode = (int)Application.DeviceSettings.Models.DeviceMode.SelfConsumption,
+                        Description = "Self Consumption",
+                        IsActive = true
+                    };
+                    _context.DeviceModeHistory.Add(missingModeHistory);
+                    await _context.SaveChangesAsync(cancellationToken);
+                }
+
+                _logger.LogInformation(
+                    "Demo data verification complete for user {UserId}: Site={SiteId}, Setup={SetupId}, Device={DeviceId}",
+                    userId, existingSite.Id, existingSetup.Id, existingDevice.Id);
+
                 return new DemoDataSeedResult
                 {
                     Success = true,
                     SiteId = existingSite.Id,
-                    SetupId = existingSetup?.Id,
-                    DeviceId = existingDevice?.Id
+                    SetupId = existingSetup.Id,
+                    DeviceId = existingDevice.Id
                 };
             }
 

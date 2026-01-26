@@ -51,6 +51,8 @@ public class InvitationEmailService : IInvitationEmailService
         var escapedToken = System.Uri.EscapeDataString(token);
         var baseUrl = string.IsNullOrWhiteSpace(invetationUrl) ? "https://hems-api.n2nenergy.com" : invetationUrl.TrimEnd('/');
         var fallback = $"{baseUrl}/invite?inviteCode={escapedToken}";
+        // Note: This intent URL is defined for reference but not currently used in the email.
+        // The email links to /invite which handles the deep link redirect.
         var intent = $"intent://invite?inviteCode={escapedToken}#Intent;scheme=n2nenergymobile;package=com.n2nenergymobile;S.browser_fallback_url={System.Uri.EscapeDataString(fallback)};end";
 
         return $@"
@@ -69,7 +71,7 @@ public class InvitationEmailService : IInvitationEmailService
                     <!-- Header -->
                     <tr>
                         <td style=""background-color: #00A270; padding: 30px 20px; text-align: center;"">
-                            <h1 style=""margin: 0; color: #ffffff; font-size: 22px; font-weight: 600;"">Green Power Energy</h1>
+                            <h1 style=""margin: 0; color: #ffffff; font-size: 22px; font-weight: 600;"">Netzr</h1>
                         </td>
                     </tr>
                     <!-- Content -->
@@ -122,7 +124,7 @@ public class InvitationEmailService : IInvitationEmailService
                     <tr>
                         <td style=""background-color: #f8f9fa; padding: 20px; text-align: center;"">
                             <p style=""margin: 0 0 10px 0; color: #666666; font-size: 13px;"">If you do not wish to accept this invitation, you can ignore this email.</p>
-                            <p style=""margin: 0; color: #888888; font-size: 12px;"">© 2025 Green Power Energy. All rights reserved.</p>
+                            <p style=""margin: 0; color: #888888; font-size: 12px;"">© 2025 Netzr. All rights reserved.</p>
                         </td>
                     </tr>
                 </table>

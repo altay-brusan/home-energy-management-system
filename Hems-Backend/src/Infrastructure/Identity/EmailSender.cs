@@ -19,18 +19,18 @@ public class EmailSender : IEmailSender<ApplicationUser>
     {
         try
         {
-            _logger.LogInformation("🚀 Starting to send confirmation email to {Email}", email);
-            
-            var subject = "HEMS - Email Doğrulama";
-            var htmlMessage = GenerateConfirmationEmailTemplate(user.FirstName ?? "Kullanıcı", confirmationLink);
-            
+            _logger.LogInformation("Starting to send confirmation email to {Email}", email);
+
+            var subject = "Netzr - Verify Your Email";
+            var htmlMessage = GenerateConfirmationEmailTemplate(user.FirstName ?? "User", confirmationLink);
+
             await _emailSender.SendEmailAsync(email, subject, htmlMessage);
-            
-            _logger.LogInformation("✅ Confirmation email sent successfully to {Email}", email);
+
+            _logger.LogInformation("Confirmation email sent successfully to {Email}", email);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Failed to send confirmation email to {Email}", email);
+            _logger.LogError(ex, "Failed to send confirmation email to {Email}", email);
             throw;
         }
     }
@@ -39,18 +39,18 @@ public class EmailSender : IEmailSender<ApplicationUser>
     {
         try
         {
-            _logger.LogInformation("🚀 Starting to send password reset code to {Email}", email);
-            
-            var subject = "HEMS - Password Reset Code";
+            _logger.LogInformation("Starting to send password reset code to {Email}", email);
+
+            var subject = "Netzr - Password Reset Code";
             var htmlMessage = GeneratePasswordResetCodeTemplate(user.FirstName ?? "User", resetCode);
-            
+
             await _emailSender.SendEmailAsync(email, subject, htmlMessage);
-            
-            _logger.LogInformation("✅ Password reset code sent successfully to {Email}", email);
+
+            _logger.LogInformation("Password reset code sent successfully to {Email}", email);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Failed to send password reset code to {Email}", email);
+            _logger.LogError(ex, "Failed to send password reset code to {Email}", email);
             throw;
         }
     }
@@ -59,18 +59,18 @@ public class EmailSender : IEmailSender<ApplicationUser>
     {
         try
         {
-            _logger.LogInformation("🚀 Starting to send password reset link to {Email}", email);
-            
-            var subject = "HEMS - Password Reset Link";
+            _logger.LogInformation("Starting to send password reset link to {Email}", email);
+
+            var subject = "Netzr - Reset Your Password";
             var htmlMessage = GeneratePasswordResetLinkTemplate(user.FirstName ?? "User", resetLink);
-            
+
             await _emailSender.SendEmailAsync(email, subject, htmlMessage);
-            
-            _logger.LogInformation("✅ Password reset link sent successfully to {Email}", email);
+
+            _logger.LogInformation("Password reset link sent successfully to {Email}", email);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Failed to send password reset link to {Email}", email);
+            _logger.LogError(ex, "Failed to send password reset link to {Email}", email);
             throw;
         }
     }
@@ -79,38 +79,64 @@ public class EmailSender : IEmailSender<ApplicationUser>
     {
         return $@"
 <!DOCTYPE html>
-<html lang=""tr"">
+<html lang=""en"">
 <head>
     <meta charset=""UTF-8"">
     <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
-    <title>Email Doğrulama</title>
-    <style>
-        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
-        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-        .header {{ background-color: #2c3e50; color: white; padding: 20px; text-align: center; }}
-        .content {{ padding: 20px; background-color: #f9f9f9; }}
-        .button {{ display: inline-block; background-color: #3498db; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
-        .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
-    </style>
+    <title>Verify Your Email</title>
 </head>
-<body>
-    <div class=""container"">
-        <div class=""header"">
-            <h1>HEMS - Email Doğrulama</h1>
-        </div>
-        <div class=""content"">
-            <h2>Merhaba {userName},</h2>
-            <p>HEMS sistemine hoş geldiniz! Email adresinizi doğrulamak için aşağıdaki butona tıklayın:</p>
-            <p style=""text-align: center;"">
-                <a href=""{confirmationLink}"" class=""button"">Email Adresimi Doğrula</a>
-            </p>
-            <p>Eğer bu işlemi siz yapmadıysanız, bu emaili görmezden gelebilirsiniz.</p>
-        </div>
-        <div class=""footer"">
-            <p>Bu email otomatik olarak gönderilmiştir. Lütfen yanıtlamayın.</p>
-            <p>© 2024 HEMS - Home Energy Management System</p>
-        </div>
-    </div>
+<body style=""margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f5f5f5;"">
+    <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" style=""width: 100%; background-color: #f5f5f5;"">
+        <tr>
+            <td style=""padding: 20px 10px;"">
+                <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" style=""max-width: 600px; width: 100%; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden;"">
+                    <!-- Header -->
+                    <tr>
+                        <td style=""background-color: #00A270; padding: 30px 20px; text-align: center;"">
+                            <h1 style=""margin: 0; color: #ffffff; font-size: 22px; font-weight: 600;"">Netzr</h1>
+                        </td>
+                    </tr>
+                    <!-- Content -->
+                    <tr>
+                        <td style=""padding: 30px 20px; background-color: #ffffff;"">
+                            <h2 style=""margin: 0 0 20px 0; color: #00A270; font-size: 18px; text-align: center;"">Verify Your Email Address</h2>
+                            <p style=""margin: 0 0 15px 0; color: #333333; font-size: 15px; line-height: 1.6;"">Hello {userName},</p>
+                            <p style=""margin: 0 0 15px 0; color: #333333; font-size: 15px; line-height: 1.6;"">
+                                Welcome to Netzr! Please verify your email address to complete your registration and start monitoring your energy system.
+                            </p>
+                            <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" style=""width: 100%; background-color: #f0faf6; border-left: 4px solid #00A270; margin: 20px 0;"">
+                                <tr>
+                                    <td style=""padding: 15px;"">
+                                        <p style=""margin: 0; color: #333333; font-size: 14px; line-height: 1.5;"">
+                                            Click the button below to verify your email and activate your account.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- CTA Button -->
+                            <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" style=""width: 100%; margin: 25px 0;"">
+                                <tr>
+                                    <td style=""text-align: center;"">
+                                        <a href=""{confirmationLink}"" style=""display: inline-block; background-color: #00A270; color: #ffffff; text-decoration: none; padding: 14px 35px; border-radius: 5px; font-size: 15px; font-weight: 600;"">Verify Email Address</a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style=""margin: 20px 0 0 0; color: #666666; font-size: 13px; line-height: 1.5;"">
+                                If you did not create an account with Netzr, you can safely ignore this email.
+                            </p>
+                        </td>
+                    </tr>
+                    <!-- Footer -->
+                    <tr>
+                        <td style=""background-color: #f8f9fa; padding: 20px; text-align: center;"">
+                            <p style=""margin: 0 0 10px 0; color: #666666; font-size: 13px;"">This email was sent automatically. Please do not reply.</p>
+                            <p style=""margin: 0; color: #888888; font-size: 12px;"">&copy; 2025 Netzr. All rights reserved.</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>";
     }
@@ -123,33 +149,55 @@ public class EmailSender : IEmailSender<ApplicationUser>
 <head>
     <meta charset=""UTF-8"">
     <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
-    <title>Password Reset</title>
-    <style>
-        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
-        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-        .header {{ background-color: #e74c3c; color: white; padding: 20px; text-align: center; }}
-        .content {{ padding: 20px; background-color: #f9f9f9; }}
-        .code {{ background-color: #34495e; color: white; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; margin: 20px 0; border-radius: 5px; }}
-        .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
-    </style>
+    <title>Password Reset Code</title>
 </head>
-<body>
-    <div class=""container"">
-        <div class=""header"">
-            <h1>HEMS - Password Reset</h1>
-        </div>
-        <div class=""content"">
-            <h2>Hello {userName},</h2>
-            <p>You have requested to reset your password. Please use the following code to reset your password:</p>
-            <div class=""code"">{resetCode}</div>
-            <p><strong>This code is valid for 15 minutes.</strong></p>
-            <p>If you did not request this password reset, please ignore this email.</p>
-        </div>
-        <div class=""footer"">
-            <p>This email was sent automatically. Please do not reply.</p>
-            <p>© 2024 HEMS - Home Energy Management System</p>
-        </div>
-    </div>
+<body style=""margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f5f5f5;"">
+    <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" style=""width: 100%; background-color: #f5f5f5;"">
+        <tr>
+            <td style=""padding: 20px 10px;"">
+                <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" style=""max-width: 600px; width: 100%; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden;"">
+                    <!-- Header -->
+                    <tr>
+                        <td style=""background-color: #00A270; padding: 30px 20px; text-align: center;"">
+                            <h1 style=""margin: 0; color: #ffffff; font-size: 22px; font-weight: 600;"">Netzr</h1>
+                        </td>
+                    </tr>
+                    <!-- Content -->
+                    <tr>
+                        <td style=""padding: 30px 20px; background-color: #ffffff;"">
+                            <h2 style=""margin: 0 0 20px 0; color: #00A270; font-size: 18px; text-align: center;"">Password Reset Request</h2>
+                            <p style=""margin: 0 0 15px 0; color: #333333; font-size: 15px; line-height: 1.6;"">Hello {userName},</p>
+                            <p style=""margin: 0 0 15px 0; color: #333333; font-size: 15px; line-height: 1.6;"">
+                                You have requested to reset your password. Use the code below to complete the process:
+                            </p>
+                            <!-- Code Box -->
+                            <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" style=""width: 100%; background-color: #f8f9fa; border: 2px dashed #00A270; border-radius: 8px; margin: 20px 0;"">
+                                <tr>
+                                    <td style=""padding: 25px; text-align: center;"">
+                                        <p style=""margin: 0 0 10px 0; color: #666666; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;"">Reset Code</p>
+                                        <p style=""margin: 0; color: #00A270; font-size: 32px; font-weight: bold; letter-spacing: 6px; font-family: 'Courier New', monospace;"">{resetCode}</p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style=""margin: 20px 0; color: #666666; font-size: 13px; line-height: 1.5;"">
+                                <strong>This code is valid for 15 minutes.</strong>
+                            </p>
+                            <p style=""margin: 0; color: #666666; font-size: 13px; line-height: 1.5;"">
+                                If you did not request a password reset, please ignore this email or contact support if you have concerns.
+                            </p>
+                        </td>
+                    </tr>
+                    <!-- Footer -->
+                    <tr>
+                        <td style=""background-color: #f8f9fa; padding: 20px; text-align: center;"">
+                            <p style=""margin: 0 0 10px 0; color: #666666; font-size: 13px;"">This email was sent automatically. Please do not reply.</p>
+                            <p style=""margin: 0; color: #888888; font-size: 12px;"">&copy; 2025 Netzr. All rights reserved.</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>";
     }
@@ -162,35 +210,60 @@ public class EmailSender : IEmailSender<ApplicationUser>
 <head>
     <meta charset=""UTF-8"">
     <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
-    <title>Password Reset</title>
-    <style>
-        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
-        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-        .header {{ background-color: #e74c3c; color: white; padding: 20px; text-align: center; }}
-        .content {{ padding: 20px; background-color: #f9f9f9; }}
-        .button {{ display: inline-block; background-color: #e74c3c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
-        .footer {{ text-align: center; padding: 20px; color: #666; font-size: 12px; }}
-    </style>
+    <title>Reset Your Password</title>
 </head>
-<body>
-    <div class=""container"">
-        <div class=""header"">
-            <h1>HEMS - Password Reset</h1>
-        </div>
-        <div class=""content"">
-            <h2>Hello {userName},</h2>
-            <p>You have requested to reset your password. Please click the button below to reset your password:</p>
-            <p style=""text-align: center;"">
-                <a href=""{resetLink}"" class=""button"">Reset My Password</a>
-            </p>
-            <p><strong>This link is valid for 15 minutes.</strong></p>
-            <p>If you did not request this password reset, please ignore this email.</p>
-        </div>
-        <div class=""footer"">
-            <p>This email was sent automatically. Please do not reply.</p>
-            <p>© 2024 HEMS - Home Energy Management System</p>
-        </div>
-    </div>
+<body style=""margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f5f5f5;"">
+    <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" style=""width: 100%; background-color: #f5f5f5;"">
+        <tr>
+            <td style=""padding: 20px 10px;"">
+                <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" style=""max-width: 600px; width: 100%; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden;"">
+                    <!-- Header -->
+                    <tr>
+                        <td style=""background-color: #00A270; padding: 30px 20px; text-align: center;"">
+                            <h1 style=""margin: 0; color: #ffffff; font-size: 22px; font-weight: 600;"">Netzr</h1>
+                        </td>
+                    </tr>
+                    <!-- Content -->
+                    <tr>
+                        <td style=""padding: 30px 20px; background-color: #ffffff;"">
+                            <h2 style=""margin: 0 0 20px 0; color: #00A270; font-size: 18px; text-align: center;"">Reset Your Password</h2>
+                            <p style=""margin: 0 0 15px 0; color: #333333; font-size: 15px; line-height: 1.6;"">Hello {userName},</p>
+                            <p style=""margin: 0 0 15px 0; color: #333333; font-size: 15px; line-height: 1.6;"">
+                                You have requested to reset your password. Click the button below to create a new password:
+                            </p>
+                            <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" style=""width: 100%; background-color: #f0faf6; border-left: 4px solid #00A270; margin: 20px 0;"">
+                                <tr>
+                                    <td style=""padding: 15px;"">
+                                        <p style=""margin: 0; color: #333333; font-size: 14px; line-height: 1.5;"">
+                                            <strong>This link is valid for 15 minutes.</strong> After that, you'll need to request a new password reset.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <!-- CTA Button -->
+                            <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" style=""width: 100%; margin: 25px 0;"">
+                                <tr>
+                                    <td style=""text-align: center;"">
+                                        <a href=""{resetLink}"" style=""display: inline-block; background-color: #00A270; color: #ffffff; text-decoration: none; padding: 14px 35px; border-radius: 5px; font-size: 15px; font-weight: 600;"">Reset Password</a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <p style=""margin: 0; color: #666666; font-size: 13px; line-height: 1.5;"">
+                                If you did not request a password reset, please ignore this email or contact support if you have concerns.
+                            </p>
+                        </td>
+                    </tr>
+                    <!-- Footer -->
+                    <tr>
+                        <td style=""background-color: #f8f9fa; padding: 20px; text-align: center;"">
+                            <p style=""margin: 0 0 10px 0; color: #666666; font-size: 13px;"">This email was sent automatically. Please do not reply.</p>
+                            <p style=""margin: 0; color: #888888; font-size: 12px;"">&copy; 2025 Netzr. All rights reserved.</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>";
     }

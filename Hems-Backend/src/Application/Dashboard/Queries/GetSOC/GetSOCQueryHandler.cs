@@ -14,17 +14,20 @@ public class GetSocQueryHandler : IRequestHandler<GetSocQuery, SocResponseDto>
     private readonly ISender _sender;
     private readonly IDeviceMappingService _deviceMapping;
     private readonly IDemoDataService _demoDataService;
+    private readonly IDemoSimulationDataService _demoSimulationService;
 
     public GetSocQueryHandler(
         IApplicationDbContext context,
         ISender sender,
         IDeviceMappingService deviceMapping,
-        IDemoDataService demoDataService)
+        IDemoDataService demoDataService,
+        IDemoSimulationDataService demoSimulationService)
     {
         _context = context;
         _sender = sender;
         _deviceMapping = deviceMapping;
         _demoDataService = demoDataService;
+        _demoSimulationService = demoSimulationService;
     }
 
     public async Task<SocResponseDto> Handle(GetSocQuery request, CancellationToken cancellationToken)
@@ -36,11 +39,28 @@ public class GetSocQueryHandler : IRequestHandler<GetSocQuery, SocResponseDto>
             throw new UnauthorizedAccessException("Device access denied");
         }
 
-        // Check if demo device - return simulated SOC
+        // Check if demo device - return simulated SOC from centralized service
         var isDemoDevice = await _demoDataService.IsDemoDeviceAsync(request.DeviceId, cancellationToken);
         if (isDemoDevice)
         {
-            return GetSimulatedSoc(request.DeviceId);
+            var demoData = _demoSimulationService.GetDemoSocResponse(request.DeviceId);
+            return new SocResponseDto
+            {
+                TimestampUtc = demoData.TimestampUtc,
+                Version = demoData.Version,
+                DeviceId = request.DeviceId,
+                InverterBatChannelSoc = demoData.InverterBatChannelSoc.Select(c => new InverterBatChannelSocDto
+                {
+                    ChannelId = c.ChannelId,
+                    socPercent = c.SocPercent
+                }).ToList(),
+                bmsSocDetails = demoData.BmsSocDetails.Select(b => new BmsSocDetailDto
+                {
+                    ChannelId = b.ChannelId,
+                    DeviceId = b.DeviceId,
+                    socPercent = b.SocPercent
+                }).ToList()
+            };
         }
 
         // Map local DeviceId to ThingsBoardDeviceId for querying telemetry data
@@ -127,48 +147,6 @@ public class GetSocQueryHandler : IRequestHandler<GetSocQuery, SocResponseDto>
             DeviceId = request.DeviceId,
             InverterBatChannelSoc = inverterChannels,
             bmsSocDetails = bmsDetails
-        };
-    }
-
-    /// <summary>
-    /// Returns simulated battery SOC for demo devices
-    /// SOC varies by time of day: low in morning, charges during day, discharges evening
-    /// </summary>
-    private static SocResponseDto GetSimulatedSoc(Guid deviceId)
-    {
-        var hour = DateTime.UtcNow.Hour;
-        var random = new Random(DateTime.UtcNow.Minute); // Slight variation each minute
-
-        // SOC pattern based on time of day
-        double baseSoc = hour switch
-        {
-            >= 0 and < 6 => 45 + random.NextDouble() * 10,    // Night: 45-55%
-            >= 6 and < 9 => 35 + random.NextDouble() * 10,    // Morning: 35-45%
-            >= 9 and < 12 => 55 + random.NextDouble() * 20,   // Late morning: 55-75%
-            >= 12 and < 15 => 80 + random.NextDouble() * 15,  // Midday: 80-95%
-            >= 15 and < 18 => 85 + random.NextDouble() * 15,  // Afternoon: 85-100%
-            >= 18 and < 21 => 60 + random.NextDouble() * 20,  // Evening: 60-80%
-            _ => 50 + random.NextDouble() * 15                 // Late evening: 50-65%
-        };
-
-        return new SocResponseDto
-        {
-            TimestampUtc = DateTime.UtcNow.ToString("o"),
-            Version = 1,
-            DeviceId = deviceId,
-            InverterBatChannelSoc = new List<InverterBatChannelSocDto>
-            {
-                new InverterBatChannelSocDto { ChannelId = 1, socPercent = Math.Round(baseSoc, 1) }
-            },
-            bmsSocDetails = new List<BmsSocDetailDto>
-            {
-                new BmsSocDetailDto
-                {
-                    ChannelId = 1,
-                    DeviceId = "DEMO-BMS-001",
-                    socPercent = Math.Round(baseSoc, 1)
-                }
-            }
         };
     }
 }

@@ -921,8 +921,8 @@ Bu dokümantasyon, HEMS Backend projesinin Application katmanındaki tüm featur
 
 ---
 
-#### GetCitiesByCountry
-**Dosya Yolu:** `Locations/Queries/GetCitiesByCountry/GetCitiesByCountry.cs`
+#### GetCountryCities
+**Dosya Yolu:** `Locations/Queries/GetCountryCities/GetCountryCities.cs`
 
 **Açıklama:** Belirli bir ülkeye ait şehirleri getiren query'dir.
 

@@ -1,10 +1,9 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using AutoMapper;
 using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Application.Common.Models;
-using Hems_Backend.Application.TodoItems.Queries.GetTodoItemsWithPagination;
-using Hems_Backend.Application.TodoLists.Queries.GetTodos;
+using Hems_Backend.Application.ParameterGroups.Queries.GetParameterGroups;
 using Hems_Backend.Domain.Entities;
 using NUnit.Framework;
 
@@ -17,7 +16,7 @@ public class MappingTests
 
     public MappingTests()
     {
-        _configuration = new MapperConfiguration(config => 
+        _configuration = new MapperConfiguration(config =>
             config.AddMaps(Assembly.GetAssembly(typeof(IApplicationDbContext))));
 
         _mapper = _configuration.CreateMapper();
@@ -30,11 +29,11 @@ public class MappingTests
     }
 
     [Test]
-    [TestCase(typeof(TodoList), typeof(TodoListDto))]
-    [TestCase(typeof(TodoItem), typeof(TodoItemDto))]
-    [TestCase(typeof(TodoList), typeof(LookupDto))]
-    [TestCase(typeof(TodoItem), typeof(LookupDto))]
-    [TestCase(typeof(TodoItem), typeof(TodoItemBriefDto))]
+    [TestCase(typeof(Setup), typeof(SetupDto))]
+    [TestCase(typeof(ExternalDevice), typeof(ExternalDeviceDto))]
+    [TestCase(typeof(DeviceComponent), typeof(DeviceComponentDto))]
+    [TestCase(typeof(ParameterGroup), typeof(ParameterGroupDto))]
+    [TestCase(typeof(Parameter), typeof(ParameterDto))]
     public void ShouldSupportMappingFromSourceToDestination(Type source, Type destination)
     {
         var instance = GetInstanceOf(source);

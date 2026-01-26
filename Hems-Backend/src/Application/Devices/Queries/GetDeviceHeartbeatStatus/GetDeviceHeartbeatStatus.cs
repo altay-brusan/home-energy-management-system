@@ -14,17 +14,20 @@ public class GetDeviceHeartbeatStatusQueryHandler : IRequestHandler<GetDeviceHea
     private readonly IDeviceHeartbeatCache _heartbeatCache;
     private readonly IDeviceMappingService _deviceMapping;
     private readonly IDemoDataService _demoDataService;
+    private readonly IDemoSimulationDataService _demoSimulationService;
     private readonly ILogger<GetDeviceHeartbeatStatusQueryHandler> _logger;
 
     public GetDeviceHeartbeatStatusQueryHandler(
         IDeviceHeartbeatCache heartbeatCache,
         IDeviceMappingService deviceMapping,
         IDemoDataService demoDataService,
+        IDemoSimulationDataService demoSimulationService,
         ILogger<GetDeviceHeartbeatStatusQueryHandler> logger)
     {
         _heartbeatCache = heartbeatCache;
         _deviceMapping = deviceMapping;
         _demoDataService = demoDataService;
+        _demoSimulationService = demoSimulationService;
         _logger = logger;
     }
 
@@ -43,13 +46,13 @@ public class GetDeviceHeartbeatStatusQueryHandler : IRequestHandler<GetDeviceHea
                 "GetDeviceHeartbeatStatus: Returning OK for demo device {DeviceId}",
                 request.DeviceId);
 
-            // IMPORTANT: Send "OK" not "ONLINE" - mobile app expects DeviceStatusType enum values
-            // DeviceStatusType = 'OK' | 'PENDING' | 'WAITING' | 'DISCONNECTED' | 'NOT_TRACKED'
+            // Use centralized demo simulation service
+            var demoData = _demoSimulationService.GetDemoHeartbeatStatus(request.DeviceId);
             return new DeviceHeartbeatStatusDto
             {
                 DeviceId = request.DeviceId,
-                Status = "OK",
-                Timestamp = DateTime.UtcNow
+                Status = demoData.Status,
+                Timestamp = demoData.Timestamp
             };
         }
 
@@ -61,14 +64,18 @@ public class GetDeviceHeartbeatStatusQueryHandler : IRequestHandler<GetDeviceHea
             throw new Hems_Backend.Application.Common.Exceptions.NotFoundException("Device", request.DeviceId);
         }
 
-        // Get current status from cache
-        var status = _heartbeatCache.GetDeviceStatus(thingsBoardDeviceId.Value);
+        // Get full state from cache (includes last heartbeat time)
+        var state = _heartbeatCache.GetDeviceState(thingsBoardDeviceId.Value);
+        var status = state?.Status ?? DeviceStatus.NOT_TRACKED;
 
         return new DeviceHeartbeatStatusDto
         {
             DeviceId = request.DeviceId,
             Status = status.ToString(),
-            Timestamp = DateTime.UtcNow
+            Timestamp = DateTime.UtcNow,
+            LastHeartbeat = state?.LastHeartbeat,
+            LastPowerFlow = state?.LastPowerFlow,
+            MissedHeartbeats = state?.MissedHeartbeats ?? 0
         };
     }
 }
@@ -78,4 +85,7 @@ public class DeviceHeartbeatStatusDto
     public Guid DeviceId { get; init; }
     public string Status { get; init; } = string.Empty;
     public DateTime Timestamp { get; init; }
+    public DateTime? LastHeartbeat { get; init; }
+    public DateTime? LastPowerFlow { get; init; }
+    public int MissedHeartbeats { get; init; }
 }

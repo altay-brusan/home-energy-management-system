@@ -1,6 +1,9 @@
+using Hems_Backend.Application.Common.Exceptions;
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Domain.Entities;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hems_Backend.Application.ParameterValueSettingSchemes.Commands.CreateParameterValueSettingScheme;
 
@@ -28,24 +31,28 @@ public class CreateParameterValueSettingSchemeCommandHandler : IRequestHandler<C
 
     public async Task<Guid> Handle(CreateParameterValueSettingSchemeCommand request, CancellationToken cancellationToken)
     {
-        // ParameterId doğrulama
+        // Validate ParameterId
         var parameterExists = await _context.Parameters
             .AnyAsync(p => p.Id == request.ParameterId, cancellationToken);
-        
+
         if (!parameterExists)
         {
-            throw new ArgumentException("Parametre bulunamadı.");
+            throw AppException.NotFound(
+                MessageCodes.PARAMETER_NOT_FOUND,
+                new Dictionary<string, object> { ["parameterId"] = request.ParameterId });
         }
 
-        // ParameterGroupId doğrulama (varsa)
+        // Validate ParameterGroupId if provided
         if (request.ParameterGroupId.HasValue)
         {
             var groupExists = await _context.ParameterGroups
                 .AnyAsync(pg => pg.Id == request.ParameterGroupId.Value, cancellationToken);
-            
+
             if (!groupExists)
             {
-                throw new ArgumentException("Parametre grubu bulunamadı.");
+                throw AppException.NotFound(
+                    MessageCodes.PARAMETER_GROUP_NOT_FOUND,
+                    new Dictionary<string, object> { ["parameterGroupId"] = request.ParameterGroupId.Value });
             }
         }
 
