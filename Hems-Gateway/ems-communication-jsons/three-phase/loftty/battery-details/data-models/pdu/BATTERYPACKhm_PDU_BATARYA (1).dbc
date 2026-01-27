@@ -1,0 +1,348 @@
+VERSION ""
+
+
+NS_ : 
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	CAT_DEF_
+	CAT_
+	FILTER
+	BA_DEF_DEF_
+	EV_DATA_
+	ENVVAR_DATA_
+	SGTYPE_
+	SGTYPE_VAL_
+	BA_DEF_SGTYPE_
+	BA_SGTYPE_
+	SIG_TYPE_REF_
+	VAL_TABLE_
+	SIG_GROUP_
+	SIG_VALTYPE_
+	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_DEF_DEF_REL_
+	BU_SG_REL_
+	BU_EV_REL_
+	BU_BO_REL_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_: HVCU BCU01
+VAL_TABLE_ isolationStatus 3 "isolation FAULT" 2 "isolation WARNING" 1 "isolation not available" 0 "isolation OK" ;
+VAL_TABLE_ inputval 3 "undefined" 2 "notConnected" 1 "inputHigh" 0 "inputLow" ;
+VAL_TABLE_ BatteryControlStates 106 "Shutdown" 105 "Charge" 104 "Discharge" 103 "Precharge" 102 "Startup" 101 "Standby" ;
+VAL_TABLE_ Resistor_Status 1 "Active" 0 "Passive" ;
+VAL_TABLE_ Fuse_Status 3 "N/A" 2 "Fuse Sense Fault" 1 "Fuse is Blown" 0 "Fuse is Intact" ;
+VAL_TABLE_ Contactor_Status 3 "N/A" 2 "Contactor Fault" 1 "Contactor Close" 0 "Contactor Open" ;
+
+
+BO_ 3221225472 VECTOR__INDEPENDENT_SIG_MSG: 0 Vector__XXX
+ SG_ chargeInVoltage : 0|10@1+ (1,0) [0|1023] "V" Vector__XXX
+
+BO_ 2550628416 Chiller_4_Alarm: 8 Vector__XXX
+ SG_ Other_Comp_VFD_Fault_Locks : 27|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Compressor_VFD_Phs_Loss_Lock : 26|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Compressor_VFD_OT_Lock : 25|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Compressor_VFD_UV_Lock : 24|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Compressor_VFD_OV_Lock : 23|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Compressor_VFD_OC_Lock : 22|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ System_Low_Press_Lock : 21|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ System_High_Press_Lock : 20|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Discharge_Temp_too_High_Lock : 19|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Pump_Low_Diff_Press_Alarm : 18|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Other_Comp_VFD_Fault_Alarm : 17|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Compressor_VFD_Phase_Loss_A : 16|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Compressor_VFD_Com_Fault_A : 15|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Compressor_VFD_OT_Alarm : 14|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Compressor_VFD_OC_Alarm : 13|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Compressor_VFD_UV_Alarm : 12|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Compressor_VFD_OV_Alarm : 11|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Low_Suction_Superheat_Degree_A : 10|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Cooling_System_Abnormal : 9|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Suction_Temp_Sensor_Fault : 8|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Can_Communication_Fault_Alarm : 7|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Discharge_Temp_too_High_Alarm : 6|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ System_High_Pressure_Alarm : 5|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ System_Low_Pressure_Alarm : 4|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ O_Coolant_Temp_Sensor_Fault : 3|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Low_Pressure_Sensor_Fault : 2|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ I_Coolant_Pressure_Sensor_Fault : 1|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ O_Coolant_Press_Sensor_Fault : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+
+BO_ 2550562880 Chiller_3_Alarm: 8 Vector__XXX
+ SG_ Pump_Fault_Lock_Summary : 5|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Pump_Fault_Summary : 4|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ System_Coolant_Shortage : 3|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Power_Supply_UV : 2|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Power_Supply_OV : 1|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ O_I_Coolant_Press_Sensor_Fault : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+
+BO_ 2550235200 Chiller_2_Status: 8 Vector__XXX
+ SG_ ON_OFF_Status : 24|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ Pump_Speed : 16|8@1+ (100,0) [0|25500] "" Vector__XXX
+ SG_ Compressor_Speed : 8|8@1+ (100,0) [0|25500] "" Vector__XXX
+ SG_ Fan_Run_Status : 4|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Pump_Status : 3|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Electric_Heater_Status : 2|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Crankcase_Heater_Status : 1|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Compressor_Status : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+
+BO_ 2550169664 Chiller_1: 8 Vector__XXX
+ SG_ TMS_Fault_Level : 62|2@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ TMS_Fault_Code : 56|6@1+ (1,0) [0|63] "" Vector__XXX
+ SG_ Heartbeat : 48|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ Outlet_Coolant_Pressure : 40|8@1- (0.1,0) [-12.8|12.7] "" Vector__XXX
+ SG_ Inlet_Coolant_Pressure : 32|8@1- (0.1,0) [-12.8|12.7] "" Vector__XXX
+ SG_ Ambient_Temp : 24|8@1+ (1,-40) [-40|215] "" Vector__XXX
+ SG_ Inlet_Coolant_Temp : 16|8@1+ (1,-40) [-40|215] "" Vector__XXX
+ SG_ Outlet_Coolant_Temp : 8|8@1+ (1,-40) [-40|215] "" Vector__XXX
+ SG_ TMS_Operating_Mode : 0|3@1+ (1,0) [0|7] "" Vector__XXX
+
+BO_ 2566856734 HVCU_Control_State: 8 HVCU
+ SG_ Pack1_isolation_control : 32|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ BCU_04_Control_State : 24|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ BCU_03_Control_State : 16|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ BCU_02_Control_State : 8|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ BCU_01_Control_State : 0|8@1+ (1,0) [0|255] ""  BCU01
+
+BO_ 2566853104 BCU_01_Cell_Status: 8 BCU01
+ SG_ BCU_Instant_Current : 16|16@1+ (0.1,-1000) [-1000|5553.5] "A" Vector__XXX
+ SG_ BCU_Total_Voltage : 0|16@1+ (0.1,0) [0|6553.5] "V" Vector__XXX
+ SG_ BCU_Cell_Voltage : 40|16@1+ (1,0) [0|65535] "mV"  HVCU
+ SG_ BCU_Selected_Cell_Loc : 36|4@1+ (1,0) [0|15] ""  HVCU
+ SG_ BCU_Selected_BMU_Loc : 32|4@1+ (1,0) [0|15] ""  HVCU
+ SG_ BCU_Cell_Temp : 56|8@1+ (1,-40) [-40|215] "ºC"  HVCU
+
+BO_ 2566853872 BCU_01_Battery_Status: 8 BCU01
+ SG_ BCU_Available_Energy : 48|16@1+ (0.01,0) [0|6553.5] "kWh" Vector__XXX
+ SG_ Duty_Cycle : 16|16@1+ (1,0) [0|65535] "Cycle" Vector__XXX
+ SG_ BCU_Remaining_Energy : 32|16@1+ (0.01,0) [0|6553.5] "kWh"  HVCU
+ SG_ BCU_SoH : 8|8@1+ (1,0) [0|100] "%"  HVCU
+ SG_ BCU_SoC : 0|8@1+ (1,0) [0|100] "%"  HVCU
+
+BO_ 2566854384 BCU_01_Fault_Message: 8 BCU01
+ SG_ Fault_Isolation : 23|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ FaultPackOC : 11|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ WarningPackOC : 10|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Fault_Pack_Precharge : 22|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Fault_Pack_Neg_Contactor : 21|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ FaultModuleTempBalance : 26|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ WarningModuleTempBalance : 25|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Fault_Pack_Emergency : 24|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Fault_Pack_HVIL_2 : 16|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Fault_Fuse : 15|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Fault_Pack_Discharge_Contactor : 13|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Fault_Pack_Charge_Contactor : 14|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Fault_Pack_Danger : 1|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Fault_Pack_Warning : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Fault_Pack_BMU : 20|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Fault_Board_Stack_Error : 58|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Fault_Board_Operation_System : 45|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Fault_Board_Balance : 44|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Fault_Board_Stack_Configuration : 43|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Fault_Board_Measurement : 42|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Fault_Board_Stack_Initialize : 41|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Fault_Board_BMU_No_Response : 40|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Fault_Open_Wire : 37|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Fault_Pack_High_Humidity : 19|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Fault_Pack_Fire_Warning_Sensor : 18|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Fault_Pack_Fuse : 17|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Fault_Board_Under_Voltage : 57|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Fault_Board_Sys : 50|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Fault_Board_Over_Voltage : 56|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Fault_Board_Open_Wire_Detect : 59|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Fault_Board_GPI : 48|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Fault_Board_Comp_Under_Voltage : 53|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Fault_Board_Comp_Over_Voltage : 52|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Fault_Board_Comminication : 51|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Fault_Board_Chip : 49|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Fault_Board_Aux_Under_Voltage : 55|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Fault_Board_Aux_Over_Voltage : 54|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Fault_Voltage_Redundancy : 36|1@1+ (1,0) [0|1] ""  HVCU
+ SG_ Fault_Cell_Under_Temp_Warning : 8|1@1+ (1,0) [0|1] ""  HVCU
+ SG_ Fault_Cell_Under_Voltage_Warning : 4|1@1+ (1,0) [0|1] ""  HVCU
+ SG_ Fault_Pack_Int_Communication : 34|1@1+ (1,0) [0|1] ""  HVCU
+ SG_ Fault_Cell_Over_Voltage_Warning : 2|1@1+ (1,0) [0|1] ""  HVCU
+ SG_ Fault_Internal_Measurement : 35|1@1+ (1,0) [0|1] ""  HVCU
+ SG_ Fault_Cell_Over_Temp_Warning : 6|1@1+ (1,0) [0|1] ""  HVCU
+ SG_ Fault_Dead_Cell : 32|1@1+ (1,0) [0|1] ""  HVCU
+ SG_ Fault_Pack_Current_Sensor : 12|1@1+ (1,0) [0|1] ""  HVCU
+ SG_ Fault_CAN_Communication : 33|1@1+ (1,0) [0|1] ""  HVCU
+ SG_ Fault_Cell_Under_Temp_Danger : 9|1@1+ (1,0) [0|1] ""  HVCU
+ SG_ Fault_Cell_Under_Voltage_Danger : 5|1@1+ (1,0) [0|1] ""  HVCU
+ SG_ Fault_Cell_Over_Temp_Danger : 7|1@1+ (1,0) [0|1] ""  HVCU
+ SG_ Fault_Cell_Over_Voltage_Danger : 3|1@1+ (1,0) [0|1] ""  HVCU
+
+BO_ 2566853616 BCU_01_Status2: 8 BCU01
+ SG_ outVolt_NEG : 48|16@1+ (0.1,0) [0|6553.5] "V" Vector__XXX
+ SG_ outVolt_POS : 32|16@1+ (0.1,0) [0|6553.5] "V" Vector__XXX
+ SG_ BCU_Cell_Temp_Min_Cell_Loc : 8|4@1+ (1,0) [0|15] ""  HVCU
+ SG_ BCU_Cell_Temp_Max_Cell_Loc : 0|4@1+ (1,0) [0|15] ""  HVCU
+ SG_ BCU_Cell_Temp_Min_BMU_Loc : 12|4@1+ (1,0) [0|15] ""  HVCU
+ SG_ BCU_Cell_Temp_Min : 24|8@1+ (1,-40) [-40|215] "ºC"  HVCU
+ SG_ BCU_Cell_Temp_Max_BMU_Loc : 4|4@1+ (1,0) [0|15] ""  HVCU
+ SG_ BCU_Cell_Temp_Max : 16|8@1+ (1,-40) [-40|215] "ºC"  HVCU
+
+BO_ 2566852848 BCU_01_State_Message: 8 BCU01
+ SG_ BCU_DMDC : 48|16@1+ (0.1,0) [0|6553.5] "A" Vector__XXX
+ SG_ BCU_DMCC : 32|16@1+ (0.1,0) [0|6553.5] "A" Vector__XXX
+ SG_ input1Status : 18|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Fuse_FBK : 16|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ BCU_Contact_Status_NEG : 13|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ dischargeComplete : 12|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ chargeComplete : 11|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ isolationStatus : 14|2@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ BCU_Contact_FBK_NEG : 10|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ BCU_Contact_Status_POS : 8|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ BCU_Contact_FBK_POS : 9|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ BCU_Ambient_Temp : 24|8@1+ (1,-40) [-40|210] "ºC"  HVCU
+ SG_ BCU_State : 0|8@1+ (1,0) [0|255] ""  HVCU
+
+BO_ 2566853360 BCU_01_Max_Min_Voltage_Status: 8 BCU01
+ SG_ BCU_Cell_Voltage_Min_Cell_Loc : 8|4@1+ (1,0) [0|15] ""  HVCU
+ SG_ BCU_Cell_Voltage_Max_Cell_Loc : 0|4@1+ (1,0) [0|15] ""  HVCU
+ SG_ BCU_Cell_Voltage_Min : 48|16@1+ (1,0) [0|65535] "mV"  HVCU
+ SG_ BCU_Cell_Voltage_Min_BMU_Loc : 12|4@1+ (1,0) [0|15] ""  HVCU
+ SG_ BCU_Cell_Voltage_Max : 32|16@1+ (1,0) [0|65535] "mV"  HVCU
+ SG_ BCU_Cell_Voltage_Max_BMU_Loc : 4|4@1+ (1,0) [0|15] ""  HVCU
+ SG_ BCU_Cell_Voltage_Average : 16|16@1+ (1,0) [0|65535] "mV"  HVCU
+
+
+
+CM_ BO_ 3221225472 "This is a message for not used signals, created by Vector CANdb++ DBC OLE DB Provider.";
+CM_ SG_ 3221225472 chargeInVoltage "Voltage on charging input connector";
+CM_ SG_ 2566856734 Pack1_isolation_control "IMD is activated if this signal is set.";
+CM_ SG_ 2566853104 BCU_Instant_Current "Instant current value that battery pack draws";
+CM_ SG_ 2566853616 outVolt_POS "Voltage on the output discharge connector";
+CM_ SG_ 2566852848 BCU_DMDC "Dynamic maximum discharge current repsresents the instant current limit for discharge. Determined by the SOC/temperature versus current table configuration.";
+CM_ SG_ 2566852848 BCU_DMCC "Dynamic maximum charge current repsresents the instant current limit for charge. Determined by the SOC/temperature versus current table configuration.";
+CM_ SG_ 2566852848 dischargeComplete "alarm that indicates discharge must be terminated ";
+CM_ SG_ 2566852848 chargeComplete "alarm that indicates charge must be terminated";
+BA_DEF_ BO_  "TpJ1939VarDlc" ENUM  "No","Yes";
+BA_DEF_  "SAE_J1939_71_SpecVersion" STRING ;
+BA_DEF_  "SAE_J1939_73_SpecVersion" STRING ;
+BA_DEF_  "SAE_J1939_21_SpecVersion" STRING ;
+BA_DEF_  "SAE_J1939_75_SpecVersion" STRING ;
+BA_DEF_  "DatabaseVersion" STRING ;
+BA_DEF_  "SAE_J1939_81_SpecVersion" STRING ;
+BA_DEF_  "SAE_J1939_DA_SpecVersion" STRING ;
+BA_DEF_ SG_  "SigType" ENUM  "Default","Range","RangeSigned","ASCII","Discrete","Control","ReferencePGN","DTC","StringDelimiter","StringLength","StringLengthControl","MessageCounter","MessageChecksum";
+BA_DEF_ SG_  "GenSigEVName" STRING ;
+BA_DEF_ SG_  "GenSigILSupport" ENUM  "No","Yes";
+BA_DEF_ SG_  "GenSigSendType" ENUM  "Cyclic","OnWrite","OnWriteWithRepetition","OnChange","OnChangeWithRepetition","IfActive","IfActiveWithRepetition","NoSigSendType";
+BA_DEF_ BO_  "GenMsgFastOnStart" INT 0 100000;
+BA_DEF_ SG_  "GenSigInactiveValue" INT 0 0;
+BA_DEF_ BO_  "GenMsgCycleTimeFast" INT 0 3600000;
+BA_DEF_ BO_  "GenMsgNrOfRepetition" INT 0 1000000;
+BA_DEF_ SG_  "GenSigStartValue" INT 0 10000;
+BA_DEF_ BO_  "GenMsgDelayTime" INT 0 1000;
+BA_DEF_ BO_  "GenMsgILSupport" ENUM  "No","Yes";
+BA_DEF_ BO_  "GenMsgStartDelayTime" INT 0 100000;
+BA_DEF_ BU_  "NodeLayerModules" STRING ;
+BA_DEF_ BU_  "ECU" STRING ;
+BA_DEF_ BU_  "NmJ1939SystemInstance" INT 0 15;
+BA_DEF_ BU_  "NmJ1939System" INT 0 127;
+BA_DEF_ BU_  "NmJ1939ManufacturerCode" INT 0 2047;
+BA_DEF_ BU_  "NmJ1939IndustryGroup" INT 0 7;
+BA_DEF_ BU_  "NmJ1939IdentityNumber" INT 0 2097151;
+BA_DEF_ BU_  "NmJ1939FunctionInstance" INT 0 7;
+BA_DEF_ BU_  "NmJ1939Function" INT 0 255;
+BA_DEF_ BU_  "NmJ1939ECUInstance" INT 0 3;
+BA_DEF_ BU_  "NmJ1939AAC" INT 0 1;
+BA_DEF_ BU_  "NmStationAddress" INT 0 255;
+BA_DEF_ BO_  "GenMsgSendType" ENUM  "cyclic","NotUsed","IfActive","NotUsed","NotUsed","NotUsed","NotUsed","NotUsed","noMsgSendType";
+BA_DEF_ BO_  "GenMsgRequestable" INT 0 1;
+BA_DEF_ BO_  "GenMsgCycleTime" INT 0 3600000;
+BA_DEF_ SG_  "SPN" INT 0 524287;
+BA_DEF_  "DBName" STRING ;
+BA_DEF_  "BusType" STRING ;
+BA_DEF_  "ProtocolType" STRING ;
+BA_DEF_ BO_  "VFrameFormat" ENUM  "StandardCAN","ExtendedCAN","reserved","J1939PG";
+BA_DEF_DEF_  "TpJ1939VarDlc" "No";
+BA_DEF_DEF_  "SAE_J1939_71_SpecVersion" "";
+BA_DEF_DEF_  "SAE_J1939_73_SpecVersion" "";
+BA_DEF_DEF_  "SAE_J1939_21_SpecVersion" "";
+BA_DEF_DEF_  "SAE_J1939_75_SpecVersion" "";
+BA_DEF_DEF_  "DatabaseVersion" "";
+BA_DEF_DEF_  "SAE_J1939_81_SpecVersion" "";
+BA_DEF_DEF_  "SAE_J1939_DA_SpecVersion" "";
+BA_DEF_DEF_  "SigType" "Default";
+BA_DEF_DEF_  "GenSigEVName" "Env@Nodename_@Signame";
+BA_DEF_DEF_  "GenSigILSupport" "Yes";
+BA_DEF_DEF_  "GenSigSendType" "NoSigSendType";
+BA_DEF_DEF_  "GenMsgFastOnStart" 0;
+BA_DEF_DEF_  "GenSigInactiveValue" 0;
+BA_DEF_DEF_  "GenMsgCycleTimeFast" 0;
+BA_DEF_DEF_  "GenMsgNrOfRepetition" 0;
+BA_DEF_DEF_  "GenSigStartValue" 0;
+BA_DEF_DEF_  "GenMsgDelayTime" 0;
+BA_DEF_DEF_  "GenMsgILSupport" "Yes";
+BA_DEF_DEF_  "GenMsgStartDelayTime" 0;
+BA_DEF_DEF_  "NodeLayerModules" "";
+BA_DEF_DEF_  "ECU" "";
+BA_DEF_DEF_  "NmJ1939SystemInstance" 0;
+BA_DEF_DEF_  "NmJ1939System" 0;
+BA_DEF_DEF_  "NmJ1939ManufacturerCode" 0;
+BA_DEF_DEF_  "NmJ1939IndustryGroup" 0;
+BA_DEF_DEF_  "NmJ1939IdentityNumber" 0;
+BA_DEF_DEF_  "NmJ1939FunctionInstance" 0;
+BA_DEF_DEF_  "NmJ1939Function" 0;
+BA_DEF_DEF_  "NmJ1939ECUInstance" 0;
+BA_DEF_DEF_  "NmJ1939AAC" 0;
+BA_DEF_DEF_  "NmStationAddress" 254;
+BA_DEF_DEF_  "GenMsgSendType" "noMsgSendType";
+BA_DEF_DEF_  "GenMsgRequestable" 1;
+BA_DEF_DEF_  "GenMsgCycleTime" 0;
+BA_DEF_DEF_  "SPN" 0;
+BA_DEF_DEF_  "DBName" "";
+BA_DEF_DEF_  "BusType" "CAN";
+BA_DEF_DEF_  "ProtocolType" "J1939";
+BA_DEF_DEF_  "VFrameFormat" "J1939PG";
+BA_ "ProtocolType" "J1939*";
+BA_ "BusType" "CAN";
+BA_ "DBName" "HVCU_BCU";
+BA_ "NmStationAddress" BU_ HVCU 30;
+BA_ "NodeLayerModules" BU_ BCU01 "";
+BA_ "NmStationAddress" BU_ BCU01 240;
+BA_ "VFrameFormat" BO_ 2550628416 1;
+BA_ "VFrameFormat" BO_ 2550562880 1;
+BA_ "VFrameFormat" BO_ 2550235200 1;
+BA_ "VFrameFormat" BO_ 2550169664 1;
+BA_ "VFrameFormat" BO_ 2566856734 1;
+BA_ "GenMsgCycleTime" BO_ 2566856734 20;
+BA_ "VFrameFormat" BO_ 2566853104 1;
+BA_ "VFrameFormat" BO_ 2566853872 1;
+BA_ "VFrameFormat" BO_ 2566854384 1;
+BA_ "VFrameFormat" BO_ 2566853616 1;
+BA_ "VFrameFormat" BO_ 2566852848 1;
+BA_ "VFrameFormat" BO_ 2566853360 1;
+BA_ "GenSigStartValue" SG_ 2550169664 Ambient_Temp 40;
+BA_ "GenSigStartValue" SG_ 2550169664 Inlet_Coolant_Temp 40;
+BA_ "GenSigStartValue" SG_ 2566856734 BCU_04_Control_State 0;
+BA_ "GenSigStartValue" SG_ 2566856734 BCU_03_Control_State 0;
+BA_ "GenSigStartValue" SG_ 2566856734 BCU_02_Control_State 0;
+BA_ "GenSigStartValue" SG_ 2566856734 BCU_01_Control_State 0;
+BA_ "GenSigStartValue" SG_ 2566853104 BCU_Instant_Current 10000;
+BA_ "GenSigStartValue" SG_ 2566853104 BCU_Cell_Voltage 0;
+BA_ "GenSigStartValue" SG_ 2566853104 BCU_Cell_Temp 40;
+BA_ "GenSigStartValue" SG_ 2566853616 BCU_Cell_Temp_Min 40;
+BA_ "GenSigStartValue" SG_ 2566853616 BCU_Cell_Temp_Max 40;
+BA_ "GenSigStartValue" SG_ 2566852848 BCU_Ambient_Temp 40;
+VAL_ 2566856734 BCU_04_Control_State 106 "Shutdown" 105 "Charge" 104 "Discharge" 103 "Precharge" 102 "Startup" 101 "Standby" ;
+VAL_ 2566856734 BCU_03_Control_State 106 "Shutdown" 105 "Charge" 104 "Discharge" 103 "Precharge" 102 "Startup" 101 "Standby" ;
+VAL_ 2566856734 BCU_02_Control_State 106 "Shutdown" 105 "Charge" 104 "Discharge" 103 "Precharge" 102 "Startup" 101 "Standby" ;
+VAL_ 2566856734 BCU_01_Control_State 106 "Shutdown" 105 "Charge" 104 "Discharge" 103 "Precharge" 102 "Startup" 101 "Standby" ;
+VAL_ 2566852848 input1Status 3 "undefined" 2 "notConnected" 1 "inputHigh" 0 "inputLow" ;
+VAL_ 2566852848 Fuse_FBK 3 "undefined" 2 "notConnected" 1 "inputHigh" 0 "inputLow" ;
+VAL_ 2566852848 isolationStatus 3 "isolation FAULT" 2 "isolation WARNING" 1 "isolation not available" 0 "isolation OK" ;
+VAL_ 2566852848 BCU_Contact_FBK_NEG 3 "N/A" 2 "Contactor Fault" 1 "Contactor Close" 0 "Contactor Open" ;
+VAL_ 2566852848 BCU_Contact_Status_POS 3 "N/A" 2 "Contactor Fault" 1 "Contactor Close" 0 "Contactor Open" ;
+VAL_ 2566852848 BCU_Contact_FBK_POS 3 "N/A" 2 "Contactor Fault" 1 "Contactor Close" 0 "Contactor Open" ;
+VAL_ 2566852848 BCU_State 109 "Discharge_Complete" 108 "Charge_Complete" 107 "Fault" 106 "Shutdown" 103 "Precharge" 102 "Startup" 101 "Standby" 105 "Charge" 104 "Discharge" 0 "N/A" ;
+
