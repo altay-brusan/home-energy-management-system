@@ -1,15 +1,15 @@
 [
     {
-        "id": "1d14ee528dbc0377",
+        "id": "b133024996c14f3d",
         "type": "tab",
         "label": "RPC: Grid Connection Status",
         "disabled": false,
         "info": "RPC handler for Grid Connection Status\n\nMethod: getGridConnectionStatusState\n\nRoutes RPC request to telemetry tab for processing."
     },
     {
-        "id": "898f5ef3c78c9bd6",
+        "id": "9f63313609ad1181",
         "type": "mqtt in",
-        "z": "1d14ee528dbc0377",
+        "z": "b133024996c14f3d",
         "name": "RPC Request",
         "topic": "v1/devices/me/rpc/request/+",
         "qos": "1",
@@ -22,14 +22,14 @@
         "y": 100,
         "wires": [
             [
-                "41f420280230d4a7"
+                "f62fa889b26f2d9a"
             ]
         ]
     },
     {
-        "id": "41f420280230d4a7",
+        "id": "f62fa889b26f2d9a",
         "type": "function",
-        "z": "1d14ee528dbc0377",
+        "z": "b133024996c14f3d",
         "name": "Handle RPC",
         "func": "const method = msg.payload.method;\nconst params = msg.payload.params || {};\n\n// Extract request ID from topic\nconst topicParts = msg.topic.split('/');\nconst requestId = topicParts[topicParts.length - 1];\n\nmsg.rpcMethod = method;\nmsg.rpcParams = params;\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = `v1/devices/me/rpc/response/${requestId}`;\n\n// Route based on method\nif (method === 'getGridConnectionStatusState') {\n    node.status({ fill: 'green', shape: 'dot', text: 'getGridConnectionStatusState' });\n    return msg;\n}\n\n// Unknown method - ignore\nnode.status({ fill: 'yellow', shape: 'ring', text: 'Unknown: ' + method });\nreturn null;",
         "outputs": 1,
@@ -42,27 +42,27 @@
         "y": 100,
         "wires": [
             [
-                "ac7cf968101597ba"
+                "cc6354803c9c9672"
             ]
         ]
     },
     {
-        "id": "ac7cf968101597ba",
+        "id": "cc6354803c9c9672",
         "type": "link out",
-        "z": "1d14ee528dbc0377",
+        "z": "b133024996c14f3d",
         "name": "To Grid Connection Status Tab",
         "mode": "link",
         "links": [
-            "24a78ff87659de26"
+            "085028fb73a87bdd"
         ],
         "x": 555,
         "y": 100,
         "wires": []
     },
     {
-        "id": "66d6c8a3d0c97b49",
+        "id": "44d2c1d85c373942",
         "type": "comment",
-        "z": "1d14ee528dbc0377",
+        "z": "b133024996c14f3d",
         "name": "getGridConnectionStatusState",
         "info": "RPC method for Grid Connection Status:\n\n1. getGridConnectionStatusState\n   - Returns current grid connection state\n   - Reads phase voltages from registers 698-700\n   - gridConnected = true if any phase > 150V",
         "x": 210,
@@ -74,7 +74,7 @@
         "type": "mqtt-broker",
         "name": "ThingsBoard Development Env.",
         "broker": "REDACTED_HOST",
-        "port": "31883",
+        "port": "31884",
         "tls": "",
         "clientid": "",
         "autoConnect": true,

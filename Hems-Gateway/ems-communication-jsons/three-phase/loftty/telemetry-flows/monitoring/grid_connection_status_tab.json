@@ -1,15 +1,15 @@
 [
     {
-        "id": "75b040b0afabdd65",
+        "id": "675da65aaebc85c3",
         "type": "tab",
         "label": "Grid Connection Status",
         "disabled": false,
         "info": "GridConnectionStatusState\n\nMonitors grid connection by checking phase voltages.\nGrid is connected if any phase voltage > 150V.\n\nRegisters:\n- 698: Phase A Voltage (0.1V)\n- 699: Phase B Voltage (0.1V)\n- 700: Phase C Voltage (0.1V)\n\nRPC: getGridConnectionStatusState\nCronjob: Every 1 min, sends to ThingsBoard if gridConnected = false"
     },
     {
-        "id": "059524a6b610e000",
+        "id": "86d515daa940b5f9",
         "type": "comment",
-        "z": "75b040b0afabdd65",
+        "z": "675da65aaebc85c3",
         "name": "══════ MODBUS READ ══════",
         "info": "",
         "x": 160,
@@ -17,9 +17,9 @@
         "wires": []
     },
     {
-        "id": "3a776530128cbcd3",
+        "id": "448bda36e0ba5937",
         "type": "modbus-flex-getter",
-        "z": "75b040b0afabdd65",
+        "z": "675da65aaebc85c3",
         "name": "Read Grid Voltages",
         "showStatusActivities": true,
         "showErrors": true,
@@ -34,15 +34,15 @@
         "y": 100,
         "wires": [
             [
-                "6b3bae6663fa1952"
+                "1e6a8b2d4d29b646"
             ],
             []
         ]
     },
     {
-        "id": "9a57e4428bc5d2b6",
+        "id": "8564803a989a01e2",
         "type": "function",
-        "z": "75b040b0afabdd65",
+        "z": "675da65aaebc85c3",
         "name": "Prep Read",
         "func": "msg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 698,\n    quantity: 3\n};\nreturn msg;",
         "outputs": 1,
@@ -55,14 +55,14 @@
         "y": 100,
         "wires": [
             [
-                "3a776530128cbcd3"
+                "448bda36e0ba5937"
             ]
         ]
     },
     {
-        "id": "6b3bae6663fa1952",
+        "id": "1e6a8b2d4d29b646",
         "type": "function",
-        "z": "75b040b0afabdd65",
+        "z": "675da65aaebc85c3",
         "name": "Parse & Store",
         "func": "const data = msg.payload;\n\nif (!data || data.length < 3) {\n    node.status({ fill: 'red', shape: 'ring', text: 'Invalid data' });\n    return null;\n}\n\n// Parse voltages (0.1V scale)\nconst phaseAVoltageV = data[0] * 0.1;\nconst phaseBVoltageV = data[1] * 0.1;\nconst phaseCVoltageV = data[2] * 0.1;\n\n// Grid connected if any phase > 150V\nconst gridConnected = (phaseAVoltageV > 150 || phaseBVoltageV > 150 || phaseCVoltageV > 150);\n\nconst state = {\n    kind: 'GridConnectionStatusState',\n    version: 1,\n    timestampUtc: new Date().toISOString(),\n    gatewayId: global.get('GATEWAY_ID') || 'EC100-GW-001',\n    phaseAVoltageV: phaseAVoltageV,\n    phaseBVoltageV: phaseBVoltageV,\n    phaseCVoltageV: phaseCVoltageV,\n    gridConnected: gridConnected\n};\n\n// Store to flow context\nflow.set('gridConnectionStatus', state);\n\nconst statusText = gridConnected ? 'Grid ON' : 'Grid OFF';\nconst statusColor = gridConnected ? 'green' : 'red';\nnode.status({ fill: statusColor, shape: 'dot', text: `${statusText} (A:${phaseAVoltageV.toFixed(1)}V)` });\n\nmsg.payload = state;\nreturn msg;",
         "outputs": 1,
@@ -75,14 +75,14 @@
         "y": 100,
         "wires": [
             [
-                "b2fa62983ae56209"
+                "16da8e141aba6298"
             ]
         ]
     },
     {
-        "id": "b2fa62983ae56209",
+        "id": "16da8e141aba6298",
         "type": "debug",
-        "z": "75b040b0afabdd65",
+        "z": "675da65aaebc85c3",
         "name": "Grid Status",
         "active": true,
         "tosidebar": true,
@@ -95,9 +95,9 @@
         "wires": []
     },
     {
-        "id": "ef58b5460ecc4b63",
+        "id": "961f860cfa3d0eca",
         "type": "comment",
-        "z": "75b040b0afabdd65",
+        "z": "675da65aaebc85c3",
         "name": "══════ RPC HANDLER ══════",
         "info": "",
         "x": 170,
@@ -105,25 +105,25 @@
         "wires": []
     },
     {
-        "id": "c827e9ca2b5e7810",
+        "id": "085028fb73a87bdd",
         "type": "link in",
-        "z": "75b040b0afabdd65",
+        "z": "675da65aaebc85c3",
         "name": "RPC: GridConnectionStatus",
         "links": [
-            "ac7cf968101597ba"
+            "cc6354803c9c9672"
         ],
         "x": 155,
         "y": 240,
         "wires": [
             [
-                "3c1948675c90e9c8"
+                "c2fa479c19387a07"
             ]
         ]
     },
     {
-        "id": "3c1948675c90e9c8",
+        "id": "c2fa479c19387a07",
         "type": "function",
-        "z": "75b040b0afabdd65",
+        "z": "675da65aaebc85c3",
         "name": "RPC Handler",
         "func": "// First read fresh data from Modbus\nmsg.readAndRespond = true;\nreturn msg;",
         "outputs": 1,
@@ -136,14 +136,14 @@
         "y": 240,
         "wires": [
             [
-                "6126b7cc279a3be9"
+                "a39c33a6a284a1e2"
             ]
         ]
     },
     {
-        "id": "6126b7cc279a3be9",
+        "id": "a39c33a6a284a1e2",
         "type": "function",
-        "z": "75b040b0afabdd65",
+        "z": "675da65aaebc85c3",
         "name": "Prep Read (RPC)",
         "func": "msg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 698,\n    quantity: 3\n};\nreturn msg;",
         "outputs": 1,
@@ -156,14 +156,14 @@
         "y": 240,
         "wires": [
             [
-                "feccc0d95de1e785"
+                "b7a1e3b5cb40ced4"
             ]
         ]
     },
     {
-        "id": "feccc0d95de1e785",
+        "id": "b7a1e3b5cb40ced4",
         "type": "modbus-flex-getter",
-        "z": "75b040b0afabdd65",
+        "z": "675da65aaebc85c3",
         "name": "Read Grid Voltages (RPC)",
         "showStatusActivities": true,
         "showErrors": true,
@@ -178,15 +178,15 @@
         "y": 240,
         "wires": [
             [
-                "7590dc03a07cb012"
+                "3b6390612fa35428"
             ],
             []
         ]
     },
     {
-        "id": "7590dc03a07cb012",
+        "id": "3b6390612fa35428",
         "type": "function",
-        "z": "75b040b0afabdd65",
+        "z": "675da65aaebc85c3",
         "name": "Parse & Respond",
         "func": "const data = msg.payload;\n\nif (!data || data.length < 3) {\n    msg.payload = {\n        error: 'Failed to read grid voltages',\n        kind: 'GridConnectionStatusState'\n    };\n    node.status({ fill: 'red', shape: 'ring', text: 'Read error' });\n} else {\n    // Parse voltages (0.1V scale)\n    const phaseAVoltageV = data[0] * 0.1;\n    const phaseBVoltageV = data[1] * 0.1;\n    const phaseCVoltageV = data[2] * 0.1;\n\n    // Grid connected if any phase > 150V\n    const gridConnected = (phaseAVoltageV > 150 || phaseBVoltageV > 150 || phaseCVoltageV > 150);\n\n    msg.payload = {\n        kind: 'GridConnectionStatusState',\n        version: 1,\n        timestampUtc: new Date().toISOString(),\n        gatewayId: global.get('GATEWAY_ID') || 'EC100-GW-001',\n        phaseAVoltageV: phaseAVoltageV,\n        phaseBVoltageV: phaseBVoltageV,\n        phaseCVoltageV: phaseCVoltageV,\n        gridConnected: gridConnected\n    };\n\n    // Also update flow context\n    flow.set('gridConnectionStatus', msg.payload);\n\n    const statusText = gridConnected ? 'Grid ON' : 'Grid OFF';\n    node.status({ fill: 'green', shape: 'dot', text: `RPC: ${statusText}` });\n}\n\nreturn msg;",
         "outputs": 1,
@@ -199,14 +199,14 @@
         "y": 240,
         "wires": [
             [
-                "36b93c37e258ed87"
+                "48263249c12c94a5"
             ]
         ]
     },
     {
-        "id": "36b93c37e258ed87",
+        "id": "48263249c12c94a5",
         "type": "function",
-        "z": "75b040b0afabdd65",
+        "z": "675da65aaebc85c3",
         "name": "RPC Response",
         "func": "if (!msg.rpcResponseTopic) {\n    return null;\n}\n\nmsg.topic = msg.rpcResponseTopic;\nreturn msg;",
         "outputs": 1,
@@ -219,14 +219,14 @@
         "y": 240,
         "wires": [
             [
-                "8110557a7fc1aaf4"
+                "c41a6f11d381c06a"
             ]
         ]
     },
     {
-        "id": "8110557a7fc1aaf4",
+        "id": "c41a6f11d381c06a",
         "type": "mqtt out",
-        "z": "75b040b0afabdd65",
+        "z": "675da65aaebc85c3",
         "name": "MQTT Response",
         "topic": "",
         "qos": "1",
@@ -242,9 +242,9 @@
         "wires": []
     },
     {
-        "id": "5d3b8a3e8abc412b",
+        "id": "1e23879d81a2edc0",
         "type": "comment",
-        "z": "75b040b0afabdd65",
+        "z": "675da65aaebc85c3",
         "name": "══════ CRONJOB (1 min) - Send if Grid OFF ══════",
         "info": "",
         "x": 250,
@@ -252,9 +252,9 @@
         "wires": []
     },
     {
-        "id": "8560662661ddd4e5",
+        "id": "01e312faaa62398b",
         "type": "inject",
-        "z": "75b040b0afabdd65",
+        "z": "675da65aaebc85c3",
         "name": "Every 1 min",
         "props": [
             {
@@ -272,14 +272,14 @@
         "y": 380,
         "wires": [
             [
-                "2a392bc1b33eef48"
+                "4b97789f88626caf"
             ]
         ]
     },
     {
-        "id": "2a392bc1b33eef48",
+        "id": "4b97789f88626caf",
         "type": "function",
-        "z": "75b040b0afabdd65",
+        "z": "675da65aaebc85c3",
         "name": "Prep Read (Cron)",
         "func": "msg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 698,\n    quantity: 3\n};\nmsg.isCronJob = true;\nreturn msg;",
         "outputs": 1,
@@ -292,14 +292,14 @@
         "y": 380,
         "wires": [
             [
-                "3b13a8ddcddfe855"
+                "8039a0de071665cf"
             ]
         ]
     },
     {
-        "id": "3b13a8ddcddfe855",
+        "id": "8039a0de071665cf",
         "type": "modbus-flex-getter",
-        "z": "75b040b0afabdd65",
+        "z": "675da65aaebc85c3",
         "name": "Read Grid Voltages (Cron)",
         "showStatusActivities": true,
         "showErrors": true,
@@ -314,15 +314,15 @@
         "y": 380,
         "wires": [
             [
-                "9cf40ff7a9dba581"
+                "627db89262bbd239"
             ],
             []
         ]
     },
     {
-        "id": "9cf40ff7a9dba581",
+        "id": "627db89262bbd239",
         "type": "function",
-        "z": "75b040b0afabdd65",
+        "z": "675da65aaebc85c3",
         "name": "Check & Send if Grid OFF",
         "func": "const data = msg.payload;\n\nif (!data || data.length < 3) {\n    node.status({ fill: 'red', shape: 'ring', text: 'Read error' });\n    return null;\n}\n\n// Parse voltages (0.1V scale)\nconst phaseAVoltageV = data[0] * 0.1;\nconst phaseBVoltageV = data[1] * 0.1;\nconst phaseCVoltageV = data[2] * 0.1;\n\n// Grid connected if any phase > 150V\nconst gridConnected = (phaseAVoltageV > 150 || phaseBVoltageV > 150 || phaseCVoltageV > 150);\n\nconst state = {\n    kind: 'GridConnectionStatusState',\n    version: 1,\n    timestampUtc: new Date().toISOString(),\n    gatewayId: global.get('GATEWAY_ID') || 'EC100-GW-001',\n    phaseAVoltageV: phaseAVoltageV,\n    phaseBVoltageV: phaseBVoltageV,\n    phaseCVoltageV: phaseCVoltageV,\n    gridConnected: gridConnected\n};\n\n// Update flow context\nflow.set('gridConnectionStatus', state);\n\n// Only send to ThingsBoard if gridConnected = false\nif (!gridConnected) {\n    node.status({ fill: 'red', shape: 'dot', text: 'Grid OFF - Sending!' });\n    msg.payload = state;\n    msg.topic = 'v1/devices/me/telemetry';\n    return msg;\n} else {\n    node.status({ fill: 'green', shape: 'ring', text: 'Grid ON - Not sending' });\n    return null;\n}",
         "outputs": 1,
@@ -335,15 +335,15 @@
         "y": 380,
         "wires": [
             [
-                "f94389012e6cbecc",
-                "aaf8941275e379c6"
+                "7a024e9a1a202b73",
+                "8da543f29a42d484"
             ]
         ]
     },
     {
-        "id": "f94389012e6cbecc",
+        "id": "7a024e9a1a202b73",
         "type": "mqtt out",
-        "z": "75b040b0afabdd65",
+        "z": "675da65aaebc85c3",
         "name": "ThingsBoard Telemetry",
         "topic": "v1/devices/me/telemetry",
         "qos": "1",
@@ -359,9 +359,9 @@
         "wires": []
     },
     {
-        "id": "aaf8941275e379c6",
+        "id": "8da543f29a42d484",
         "type": "debug",
-        "z": "75b040b0afabdd65",
+        "z": "675da65aaebc85c3",
         "name": "Grid OFF Alert",
         "active": true,
         "tosidebar": true,
@@ -374,9 +374,9 @@
         "wires": []
     },
     {
-        "id": "05bca4c01c774185",
+        "id": "616bb59ab1251f43",
         "type": "comment",
-        "z": "75b040b0afabdd65",
+        "z": "675da65aaebc85c3",
         "name": "══════ MANUAL TEST ══════",
         "info": "",
         "x": 180,
@@ -384,9 +384,9 @@
         "wires": []
     },
     {
-        "id": "f80ee2ec0f05f4a9",
+        "id": "bca1df049f099383",
         "type": "inject",
-        "z": "75b040b0afabdd65",
+        "z": "675da65aaebc85c3",
         "name": "Test: Read Grid Status",
         "props": [
             {
@@ -404,7 +404,7 @@
         "y": 580,
         "wires": [
             [
-                "9a57e4428bc5d2b6"
+                "8564803a989a01e2"
             ]
         ]
     },
@@ -443,7 +443,7 @@
         "type": "mqtt-broker",
         "name": "ThingsBoard Development Env.",
         "broker": "REDACTED_HOST",
-        "port": "31883",
+        "port": "31884",
         "tls": "",
         "clientid": "",
         "autoConnect": true,
