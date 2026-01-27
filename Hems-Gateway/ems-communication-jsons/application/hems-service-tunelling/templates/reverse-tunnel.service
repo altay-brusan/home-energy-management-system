@@ -1,0 +1,13 @@
+[Unit]
+Description=Reverse SSH Tunnel to VPS
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/autossh -M 0 -N -o "ServerAliveInterval=30" -o "ServerAliveCountMax=3" -o "ExitOnForwardFailure=yes" -o "StrictHostKeyChecking=accept-new" -i {key_path} -R {port}:localhost:22 -p {vps_port} {vps_user}@{vps_ip}
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
