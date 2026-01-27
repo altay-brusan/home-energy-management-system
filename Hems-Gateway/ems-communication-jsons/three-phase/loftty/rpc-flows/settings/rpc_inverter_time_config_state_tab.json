@@ -1,6 +1,6 @@
 [
     {
-        "id": "rpc_inverter_time_config_state_tab",
+        "id": "37bdf0658dcbdf1c",
         "type": "tab",
         "label": "RPC_InverterTimeConfigState",
         "disabled": false,
@@ -9,7 +9,7 @@
     {
         "id": "rpc_itc_mqtt_in",
         "type": "mqtt in",
-        "z": "rpc_inverter_time_config_state_tab",
+        "z": "37bdf0658dcbdf1c",
         "name": "RPC Request",
         "topic": "v1/devices/me/rpc/request/+",
         "qos": "2",
@@ -30,7 +30,7 @@
     {
         "id": "rpc_itc_handle",
         "type": "function",
-        "z": "rpc_inverter_time_config_state_tab",
+        "z": "37bdf0658dcbdf1c",
         "name": "Handle RPC",
         "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\n\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\n// Handle both get and set methods\nif (msg.rpcMethod === 'getInverterTimeConfigState') {\n    msg.operationType = 'read';\n    return msg;\n} else if (msg.rpcMethod === 'setInverterTimeConfigState') {\n    msg.operationType = 'write';\n    return msg;\n}\n\nreturn null;",
         "outputs": 1,
@@ -50,11 +50,11 @@
     {
         "id": "rpc_itc_link_out",
         "type": "link out",
-        "z": "rpc_inverter_time_config_state_tab",
+        "z": "37bdf0658dcbdf1c",
         "name": "To InverterTimeConfigState",
         "mode": "link",
         "links": [
-            "itc_link_in_rpc"
+            "c0d241b8874fb31f"
         ],
         "x": 555,
         "y": 120,
@@ -63,7 +63,7 @@
     {
         "id": "rpc_itc_comment",
         "type": "comment",
-        "z": "rpc_inverter_time_config_state_tab",
+        "z": "37bdf0658dcbdf1c",
         "name": "getInverterTimeConfigState / setInverterTimeConfigState - Read/set inverter system time",
         "info": "",
         "x": 360,
@@ -98,6 +98,8 @@
         "willQos": "0",
         "willRetain": "false",
         "willPayload": "",
-        "willMsg": {}
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
     }
 ]

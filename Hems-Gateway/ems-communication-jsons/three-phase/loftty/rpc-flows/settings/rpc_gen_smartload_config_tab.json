@@ -1,6 +1,6 @@
 [
     {
-        "id": "a5e2bfa0a00f4d52",
+        "id": "dba6b1c9bca5415b",
         "type": "tab",
         "label": "RPC_GenSmartLoadConfig",
         "disabled": false,
@@ -9,7 +9,7 @@
     {
         "id": "rpc_gsl_mqtt_in",
         "type": "mqtt in",
-        "z": "a5e2bfa0a00f4d52",
+        "z": "dba6b1c9bca5415b",
         "name": "RPC Request",
         "topic": "v1/devices/me/rpc/request/+",
         "qos": "2",
@@ -30,7 +30,7 @@
     {
         "id": "rpc_gsl_handle",
         "type": "function",
-        "z": "a5e2bfa0a00f4d52",
+        "z": "dba6b1c9bca5415b",
         "name": "Handle RPC (get/set)",
         "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\n\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\nif (msg.rpcMethod === 'getGeneratorAndSmartLoadConfig') {\n    msg.isRpcRequest = true;\n    msg.operationType = 'read';\n    return msg;\n}\nelse if (msg.rpcMethod === 'setGeneratorAndSmartLoadConfig') {\n    msg.isRpcRequest = true;\n    msg.operationType = 'write';\n    return msg;\n}\nelse {\n    return null;\n}",
         "outputs": 1,
@@ -50,7 +50,7 @@
     {
         "id": "rpc_gsl_link_out",
         "type": "link out",
-        "z": "a5e2bfa0a00f4d52",
+        "z": "dba6b1c9bca5415b",
         "name": "To Main Flow",
         "mode": "link",
         "links": [
@@ -63,7 +63,7 @@
     {
         "id": "rpc_gsl_comment",
         "type": "comment",
-        "z": "a5e2bfa0a00f4d52",
+        "z": "dba6b1c9bca5415b",
         "name": "getGeneratorAndSmartLoadConfig / setGeneratorAndSmartLoadConfig",
         "info": "",
         "x": 320,
@@ -75,7 +75,7 @@
         "type": "mqtt-broker",
         "name": "ThingsBoard Development Env.",
         "broker": "REDACTED_HOST",
-        "port": "31884",
+        "port": "31883",
         "tls": "",
         "clientid": "",
         "autoConnect": true,
