@@ -32,6 +32,16 @@
               "format": "guid"
             },
             "x-position": 1
+          },
+          {
+            "name": "modelType",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "power-consumption",
+              "nullable": true
+            },
+            "x-position": 2
           }
         ],
         "responses": {
@@ -46,7 +56,7 @@
         ]
       }
     },
-    "/api/Alm/predictions/{deviceId}": {
+    "/api/Alm/prediction-history/{deviceId}": {
       "get": {
         "tags": [
           "Alm"
@@ -91,7 +101,7 @@
         "tags": [
           "Alm"
         ],
-        "operationId": "GetPredictionJobStatus",
+        "operationId": "GetJobResult",
         "parameters": [
           {
             "name": "jobId",
