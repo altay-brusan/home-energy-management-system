@@ -1,12 +1,13 @@
 using System.Text.Json;
 using Hems_Backend.Application.Alm.Commands.ProcessAlmCallback;
 using Hems_Backend.Application.Alm.Commands.RequestPrediction;
+using Hems_Backend.Application.Alm.Queries.GetJobResult;
 using Hems_Backend.Application.Alm.Queries.GetPredictionHistory;
-using Hems_Backend.Application.Alm.Queries.GetPredictionJobStatus;
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Models;
+using Hems_Backend.Domain.Enums;
 using Hems_Backend.Infrastructure.Hubs;
 using Hems_Backend.Web.Infrastructure;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 
@@ -20,8 +21,8 @@ public class Alm : EndpointGroupBase
         app.MapGroup(this)
             .RequireAuthorization()
             .MapPost(RequestPrediction, "predict/{deviceId:guid}")
-            .MapGet(GetPredictionHistory, "predictions/{deviceId:guid}")
-            .MapGet(GetPredictionJobStatus, "job/{jobId:guid}")
+            .MapGet(GetPredictionHistory, "prediction-history/{deviceId:guid}")
+            .MapGet(GetJobResult, "job/{jobId:guid}")
             .MapGet(GetAlmHealth, "health");
 
         // Callback endpoint (no auth - called by ALM service internally)
@@ -32,30 +33,49 @@ public class Alm : EndpointGroupBase
     /// <summary>
     /// Request a new prediction for a device
     /// </summary>
+    /// <param name="deviceId">The device ID to request prediction for</param>
+    /// <param name="sender">MediatR sender</param>
+    /// <param name="logger">Logger instance</param>
+    /// <param name="modelType">Model type to use (default: power-consumption)</param>
     public async Task<IResult> RequestPrediction(
         Guid deviceId,
         ISender sender,
-        ILogger<Alm> logger)
+        ILogger<Alm> logger,
+        [FromQuery] string? modelType = "power-consumption")
     {
-        logger.LogInformation("Prediction requested for device {DeviceId}", deviceId);
+        logger.LogInformation("Prediction requested for device {DeviceId}, modelType: {ModelType}", deviceId, modelType);
 
-        var result = await sender.Send(new RequestPredictionCommand { DeviceId = deviceId });
+        // Parse model type from query parameter
+        var parsedModelType = AlmModelConfiguration.FromDisplayName(modelType) ?? AlmModelType.PowerConsumption;
+
+        var result = await sender.Send(new RequestPredictionCommand
+        {
+            DeviceId = deviceId,
+            ModelType = parsedModelType
+        });
 
         if (!result.Success)
         {
             return Results.BadRequest(new { error = result.Error });
         }
 
+        // Get display name for the model type used
+        var modelConfig = AlmModelConfiguration.GetConfig(parsedModelType);
+
         return Results.Ok(new
         {
             jobId = result.JobId,
             almJobId = result.AlmJobId,
-            message = "Prediction job submitted successfully"
+            modelType = modelConfig.DisplayName,
+            fromCache = result.FromCache,
+            message = result.FromCache
+                ? "Returning cached prediction from today"
+                : "Prediction job submitted successfully"
         });
     }
 
     /// <summary>
-    /// Get prediction results for a device (most recent or specific job)
+    /// Get prediction history for a device (most recent or specific job)
     /// </summary>
     public async Task<IResult> GetPredictionHistory(
         Guid deviceId,
@@ -77,24 +97,49 @@ public class Alm : EndpointGroupBase
     }
 
     /// <summary>
-    /// Get the status of a specific prediction job
+    /// Get the result of a specific prediction job (fetches from AI container)
     /// </summary>
-    public async Task<IResult> GetPredictionJobStatus(
+    /// <param name="jobId">The job ID to fetch results for</param>
+    /// <param name="sender">MediatR sender</param>
+    /// <param name="modelType">Optional model type (default: uses job's stored model type)</param>
+    public async Task<IResult> GetJobResult(
         Guid jobId,
-        ISender sender)
+        ISender sender,
+        [FromQuery] string? modelType = null)
     {
-        var result = await sender.Send(new GetPredictionJobStatusQuery { JobId = jobId });
+        // Parse model type from query parameter (null means use job's stored model type)
+        var parsedModelType = AlmModelConfiguration.FromDisplayName(modelType);
+
+        var result = await sender.Send(new GetJobResultQuery
+        {
+            JobId = jobId,
+            ModelType = parsedModelType
+        });
 
         if (!result.Success)
         {
             return Results.NotFound(new { error = result.Error });
         }
 
-        return Results.Ok(result);
+        // Get display name for the model type
+        var modelConfig = AlmModelConfiguration.GetConfig(result.ModelType);
+
+        return Results.Ok(new
+        {
+            jobId = result.JobId,
+            deviceId = result.DeviceId,
+            almJobId = result.AlmJobId,
+            status = result.Status,
+            modelType = modelConfig.DisplayName,
+            result = result.Result,
+            error = result.Error,
+            createdAt = result.CreatedAt,
+            completedAt = result.CompletedAt
+        });
     }
 
     /// <summary>
-    /// ALM service callback endpoint - receives prediction results
+    /// ALM service callback endpoint - receives job status updates
     /// </summary>
     public async Task<IResult> HandleCallback(
         [FromBody] JsonElement body,
@@ -111,17 +156,16 @@ public class Alm : EndpointGroupBase
         {
             var groupName = $"AlmDevice_{result.DeviceId.Value}";
 
-            if (result.Success && string.IsNullOrEmpty(result.Error))
+            if (result.Status == "completed")
             {
                 await hubContext.Clients.Group(groupName).PredictionCompleted(new AlmPredictionNotification
                 {
                     JobId = result.JobId.Value,
                     DeviceId = result.DeviceId.Value,
-                    Status = "completed",
-                    PredictionCount = result.PredictionCount
+                    Status = "completed"
                 });
             }
-            else
+            else if (result.Status == "failed" || result.Status == "error")
             {
                 await hubContext.Clients.Group(groupName).PredictionFailed(new AlmPredictionNotification
                 {
@@ -133,7 +177,7 @@ public class Alm : EndpointGroupBase
             }
         }
 
-        return Results.Ok(new { success = result.Success, jobId = result.JobId });
+        return Results.Ok(new { success = result.Success, jobId = result.JobId, status = result.Status });
     }
 
     /// <summary>
