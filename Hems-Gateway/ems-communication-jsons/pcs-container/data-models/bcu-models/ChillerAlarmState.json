@@ -1,0 +1,55 @@
+{
+  "kind": "ChillerAlarmState",
+  "version": 1,
+  "canMessages": {
+    "Chiller_3_Alarm": "0x18068040x",
+    "Chiller_4_Alarm": "0x18078040x"
+  },
+
+  "signals": {
+    "// ========== Chiller_3_Alarm (0x18068040x) ==========": "",
+    
+    "oICoolantPressSensorFault": "boolean",      // Bit 0
+    "powerSupplyOV": "boolean",                  // Bit 1
+    "powerSupplyUV": "boolean",                  // Bit 2
+    "systemCoolantShortage": "boolean",          // Bit 3
+    "pumpFaultSummary": "boolean",               // Bit 4
+    "pumpFaultLockSummary": "boolean",           // Bit 5
+
+    "// ========== Chiller_4_Alarm (0x18078040x) ==========": "",
+    
+    "oCoolantPressSensorFault": "boolean",       // Bit 0
+    "iCoolantPressureSensorFault": "boolean",    // Bit 1
+    "lowPressureSensorFault": "boolean",         // Bit 2
+    "oCoolantTempSensorFault": "boolean",        // Bit 3
+    "systemLowPressureAlarm": "boolean",         // Bit 4
+    "systemHighPressureAlarm": "boolean",        // Bit 5
+    "dischargeTempTooHighAlarm": "boolean",      // Bit 6
+    "canCommunicationFaultAlarm": "boolean",     // Bit 7
+    "suctionTempSensorFault": "boolean",         // Bit 8
+    "coolingSystemAbnormal": "boolean",          // Bit 9
+    "lowSuctionSuperheatDegreeA": "boolean",     // Bit 10
+    "compressorVfdOvAlarm": "boolean",           // Bit 11
+    "compressorVfdUvAlarm": "boolean",           // Bit 12
+    "compressorVfdOcAlarm": "boolean",           // Bit 13
+    "compressorVfdOtAlarm": "boolean",           // Bit 14
+    "compressorVfdComFaultA": "boolean",         // Bit 15
+    "compressorVfdPhaseLossA": "boolean",        // Bit 16
+    "otherCompVfdFaultAlarm": "boolean",         // Bit 17
+    "pumpLowDiffPressAlarm": "boolean",          // Bit 18
+    "dischargeTempTooHighLock": "boolean",       // Bit 19
+    "systemHighPressLock": "boolean",            // Bit 20
+    "systemLowPressLock": "boolean",             // Bit 21
+    "compressorVfdOcLock": "boolean",            // Bit 22
+    "compressorVfdOvLock": "boolean",            // Bit 23
+    "compressorVfdUvLock": "boolean",            // Bit 24
+    "compressorVfdOtLock": "boolean",            // Bit 25
+    "compressorVfdPhsLossLock": "boolean",       // Bit 26
+    "otherCompVfdFaultLocks": "boolean",         // Bit 27
+
+    "// ========== Derived ==========": "",
+    "hasAlarm": "boolean",
+    "activeAlarms": "string[]",
+    "activeAlarmCount": "number"
+  }
+}

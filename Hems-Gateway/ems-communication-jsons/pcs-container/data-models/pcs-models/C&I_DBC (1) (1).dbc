@@ -1,0 +1,323 @@
+VERSION "1.0.0"
+
+
+NS_ : 
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	CAT_DEF_
+	CAT_
+	FILTER
+	BA_DEF_DEF_
+	EV_DATA_
+	ENVVAR_DATA_
+	SGTYPE_
+	SGTYPE_VAL_
+	BA_DEF_SGTYPE_
+	BA_SGTYPE_
+	SIG_TYPE_REF_
+	VAL_TABLE_
+	SIG_GROUP_
+	SIG_VALTYPE_
+	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_DEF_DEF_REL_
+	BU_SG_REL_
+	BU_EV_REL_
+	BU_BO_REL_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_: CABINET_BCU BATTERYPACK HMI
+VAL_TABLE_ pcs_cmd 106 "shutdown" 105 "charge_req" 104 "discharge_req" 101 "stb" ;
+VAL_TABLE_ SOURCE_MOD 1 "AC_SOURCE_ENABLED" 0 "DC_SOURCE_ENABLED" ;
+VAL_TABLE_ WORKING_CONDITION 6 "UNKNOWN" 5 "GRID_CONNECTED" 4 "OFFGRID_ENABLED" 3 "FAULT" 2 "RUN" 1 "STANDBY" 0 "STARTUP" ;
+VAL_TABLE_ PCS_DERATING_MARK 3 "IGBT_AMB_OverTemp_Derating" 2 "AMB_OverTemp_Derating" 1 "IGBT_OverTemp_Derating" 0 "Normal" ;
+VAL_TABLE_ GRID_MODE_ENUM 6 "DEBUGGING" 5 "FAULT" 4 "GRID_CONNECTED_OPT" 3 "OFF_GRID_OPT" 2 "STANDBY" 1 "POWERON" 0 "STOP" ;
+
+
+BO_ 3221225472 VECTOR__INDEPENDENT_SIG_MSG: 0 Vector__XXX
+ SG_ PCS_SET_KW : 0|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ GRID_OVERF_PROT : 0|16@1- (0.1,0) [0|100] "Hz" Vector__XXX
+ SG_ GRID_UNDERF_PROT : 0|16@1- (0.1,0) [0|100] "Hz" Vector__XXX
+ SG_ ISL_OVERF_PROT : 0|16@1- (0.1,0) [0|100] "Hz" Vector__XXX
+ SG_ ISL_UNDERF_PROT : 0|16@1- (0.1,0) [0|100] "Hz" Vector__XXX
+ SG_ BAT_OV_PROT : 0|16@1- (0.1,0) [0|1500] "V" Vector__XXX
+ SG_ BAT_UV_PROT : 0|16@1- (0.1,0) [0|1500] "V" Vector__XXX
+ SG_ BUSBAR_OV_PROT : 0|16@1- (0.1,0) [0|1500] "V" Vector__XXX
+ SG_ BUSBAR_UV_PROT : 0|16@1- (0.1,0) [0|1500] "V" Vector__XXX
+ SG_ DC_OC_PROT : 0|16@1- (0.1,0) [0|5000] "A" Vector__XXX
+ SG_ AC_OV_PROT : 0|16@1- (0.1,0) [0|1000] "V" Vector__XXX
+ SG_ AC_UV_PROT : 0|16@1- (0.1,0) [0|1000] "V" Vector__XXX
+ SG_ AC_OC_PROT : 0|16@1- (0.1,0) [0|5000] "A" Vector__XXX
+ SG_ PWR_ON_OFF_CMD : 0|16@1- (1,0) [0|1] "" Vector__XXX
+ SG_ FAULT_RESET_CMD : 0|16@1+ (1,0) [0|65535] "" Vector__XXX
+ SG_ CURE_PARAM_CMD : 0|16@1+ (1,0) [0|65535] "" Vector__XXX
+ SG_ RE_MB_ADDR : 0|16@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ RE_MB_BAUD : 0|16@1+ (1,0) [0|65535] "" Vector__XXX
+ SG_ HMI_MB_ADDR : 0|16@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ HMI_MB_BAUD : 0|16@1+ (1,0) [0|65535] "" Vector__XXX
+ SG_ EMS_COMM_FAIL_T : 0|16@1+ (1,0) [0|65535] "s" Vector__XXX
+ SG_ CHG_RESET_CMD : 0|16@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SAFETY_ONE_KEY : 0|16@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ YEAR : 0|16@1+ (1,0) [0|65535] "" Vector__XXX
+ SG_ MONTH : 0|16@1+ (1,0) [0|65535] "" Vector__XXX
+ SG_ DAY : 0|16@1+ (1,0) [0|65535] "" Vector__XXX
+ SG_ HOUR : 0|16@1+ (1,0) [0|23] "" Vector__XXX
+ SG_ MINUTE : 0|16@1+ (1,0) [0|59] "" Vector__XXX
+ SG_ SECOND : 0|16@1+ (1,0) [0|59] "" Vector__XXX
+
+BO_ 2147504486 HMI_PCS_CMD: 6 Vector__XXX
+ SG_ PCS_SET_KW : 40|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ PCS_CMD : 32|8@1+ (1,0) [0|255] "" Vector__XXX
+ SG_ dummy : 0|32@1+ (1,0) [0|4294967295] "" Vector__XXX
+
+BO_ 2154215782 PCS_MEAS_1: 8 CABINET_BCU
+ SG_ AB_LINE_V : 0|16@1- (0.1,0) [0|6553.5] "V" Vector__XXX
+ SG_ BC_LINE_V : 16|16@1- (0.1,0) [0|6553.5] "V" Vector__XXX
+ SG_ AC_LINE_V : 32|16@1- (0.1,0) [0|6553.5] "V" Vector__XXX
+ SG_ A_PHASE_V : 48|16@1- (0.1,0) [0|6553.5] "V" Vector__XXX
+
+BO_ 2154215783 PCS_MEAS_2: 8 CABINET_BCU
+ SG_ B_PHASE_V : 0|16@1- (0.1,0) [0|6553.5] "V" Vector__XXX
+ SG_ C_PHASE_V : 16|16@1- (0.1,0) [0|6553.5] "V" Vector__XXX
+ SG_ A_PHASE_CURR : 32|16@1- (0.1,0) [-3276.8|3276.7] "A" Vector__XXX
+ SG_ B_PHASE_CURR : 48|16@1- (0.1,0) [-3276.8|3276.7] "A" Vector__XXX
+
+BO_ 2154215784 PCS_MEAS_3: 8 CABINET_BCU
+ SG_ C_PHASE_CURR : 0|16@1- (0.1,0) [-3276.8|3276.7] "A" Vector__XXX
+ SG_ A_PH_IND_CURR : 16|16@1- (0.1,0) [-3276.8|3276.7] "A" Vector__XXX
+ SG_ B_PH_IND_CURR : 32|16@1- (0.1,0) [-3276.8|3276.7] "A" Vector__XXX
+ SG_ C_PH_IND_CURR : 48|16@1- (0.1,0) [-3276.8|3276.7] "A" Vector__XXX
+
+BO_ 2154215785 PCS_STATUS_MAIN: 8 CABINET_BCU
+ SG_ GRID_FREQ : 0|16@1- (0.01,0) [0|100] "Hz" Vector__XXX
+ SG_ GRID_PHASE_SEQ : 16|8@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ PCS_DERAT_COEFF : 24|8@1+ (0.01,0) [0|1.27] "" Vector__XXX
+ SG_ PCS_DERAT_MARK : 32|8@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ WORKING_CONDITION : 40|8@1+ (1,0) [0|7] "" Vector__XXX
+ SG_ SOURCE_MODE : 48|8@1+ (1,0) [0|3] "" Vector__XXX
+ SG_ GRID_MODE : 56|8@1+ (1,0) [0|15] "" Vector__XXX
+
+BO_ 2154215786 PCS_PWR_ACT: 8 CABINET_BCU
+ SG_ AC_A_ACT_PWR : 0|16@1- (0.1,0) [-3276.8|3276.7] "kW" Vector__XXX
+ SG_ AC_B_ACT_PWR : 16|16@1- (0.1,0) [-3276.8|3276.7] "kW" Vector__XXX
+ SG_ AC_C_ACT_PWR : 32|16@1- (0.1,0) [-3276.8|3276.7] "kW" Vector__XXX
+ SG_ AC_OUT_ACT_PWR : 48|16@1- (0.1,0) [-3276.8|3276.7] "kW" Vector__XXX
+
+BO_ 2154215787 PCS_PWR_REA: 8 CABINET_BCU
+ SG_ AC_A_REA_PWR : 0|16@1- (0.1,0) [-3276.8|3276.7] "kvar" Vector__XXX
+ SG_ AC_B_REA_PWR : 16|16@1- (0.1,0) [-3276.8|3276.7] "kvar" Vector__XXX
+ SG_ AC_C_REA_PWR : 32|16@1- (0.1,0) [-3276.8|3276.7] "kvar" Vector__XXX
+ SG_ AC_OUT_REA_PWR : 48|16@1- (0.1,0) [-3276.8|3276.7] "kvar" Vector__XXX
+
+BO_ 2154215788 PCS_PWR_APP: 8 CABINET_BCU
+ SG_ AC_A_APP_PWR : 0|16@1- (0.1,0) [0|6553.5] "kVA" Vector__XXX
+ SG_ AC_B_APP_PWR : 16|16@1- (0.1,0) [0|6553.5] "kVA" Vector__XXX
+ SG_ AC_C_APP_PWR : 32|16@1- (0.1,0) [0|6553.5] "kVA" Vector__XXX
+ SG_ AC_OUT_APP_PWR : 48|16@1- (0.1,0) [0|6553.5] "kVA" Vector__XXX
+
+BO_ 2154215789 PCS_DC_MEAS: 8 CABINET_BCU
+ SG_ AC_PWR_FACTOR : 0|16@1- (0.01,0) [-327.68|327.67] "" Vector__XXX
+ SG_ TOTAL_BUS_V : 16|16@1- (0.1,0) [0|6553.5] "V" Vector__XXX
+ SG_ POS_BUS_V : 32|16@1- (0.1,0) [0|6553.5] "V" Vector__XXX
+ SG_ NEG_BUS_V : 48|16@1- (0.1,0) [0|6553.5] "V" Vector__XXX
+
+BO_ 2154215790 PCS_DC_MEAS_2: 8 CABINET_BCU
+ SG_ BAT_V : 0|16@1- (0.1,0) [0|6553.5] "V" Vector__XXX
+ SG_ BAT_I : 16|16@1- (0.1,0) [-3276.8|3276.7] "A" Vector__XXX
+ SG_ DC_PWR : 32|16@1- (0.1,0) [-3276.8|3276.7] "kW" Vector__XXX
+ SG_ TOTAL_DC_I : 48|16@1- (0.1,0) [-3276.8|3276.7] "A" Vector__XXX
+
+BO_ 2154215791 PCS_TEMPS: 8 CABINET_BCU
+ SG_ IGBT_TEMP : 0|16@1- (0.1,0) [-100|200] "C" Vector__XXX
+ SG_ AMBIENT_TEMP : 16|16@1- (0.1,0) [-100|200] "C" Vector__XXX
+ SG_ INDUCTANCE_TEMP : 32|16@1- (0.1,-100) [-3376.8|3176.7] "C" Vector__XXX
+
+BO_ 2154215795 PCS_ALGO_PARAMS_1: 8 CABINET_BCU
+ SG_ MOD_OVERT_PROT : 0|16@1- (0.1,0) [0|200] "C" Vector__XXX
+ SG_ CC_CV_RECHG_V : 16|16@1- (0.1,0) [0|1500] "V" Vector__XXX
+ SG_ BAT_CV_CHG_V : 32|16@1- (0.1,0) [0|1500] "V" Vector__XXX
+ SG_ CV_CHG_MAX_TIME : 48|16@1- (1,0) [0|65535] "min" Vector__XXX
+
+BO_ 2154215796 PCS_ALGO_PARAMS_2: 8 CABINET_BCU
+ SG_ CV_TO_FLOAT_I : 0|16@1- (0.1,0) [0|5000] "A" Vector__XXX
+ SG_ FLOAT_CHG_V : 16|16@1- (0.1,0) [0|1500] "V" Vector__XXX
+ SG_ FLOAT_TO_CC_I : 32|16@1- (0.1,0) [0|5000] "A" Vector__XXX
+
+BO_ 2154215800 PCS_FAULT_GRP_1: 8 CABINET_BCU
+ SG_ HW_EPO_FAULT : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ HW_IGBT_OCP_FAULT : 1|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ HW_BUS_OV_FAULT : 2|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ HW_WAVE_LIMIT_FAULT : 3|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ HW_BAL_WAVE_LIMIT_FAULT : 4|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ HW_24V_PWR_FAULT : 5|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ HW_FAN_FAULT : 6|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ HW_CONN_FAULT : 7|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ HW_EXT_DI3_FAULT : 8|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ HW_IND_OVERT_FAULT : 9|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ HW_PWR_MOD_OVERT : 10|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ HW_BAL_OVERT : 11|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ HW_15V_PWR_FAULT : 12|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ HW_FIRE_ALARM_FAULT : 13|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ HW_EXT_DI1_FAULT : 14|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ HW_EXT_DI2_FAULT : 15|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ GRID_A_OV_FAULT : 16|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ GRID_B_OV_FAULT : 17|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ GRID_C_OV_FAULT : 18|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ GRID_A_UV_FAULT : 19|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ GRID_B_UV_FAULT : 20|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ GRID_C_UV_FAULT : 21|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ GRID_OVERF_FAULT : 22|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ GRID_UNDERF_FAULT : 23|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ GRID_PH_SEQ_FAULT : 24|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ GRID_A_OC_FAULT : 25|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ GRID_B_OC_FAULT : 26|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ GRID_C_OC_FAULT : 27|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ GRID_V_UNBAL_FAULT : 28|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ GRID_I_UNBAL_FAULT : 29|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ GRID_PH_LOSS_FAULT : 30|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ GRID_N_OC_FAULT : 31|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ BUS_PRE_OV_FAULT : 32|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ BUS_PRE_UV_FAULT : 33|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ BUS_RUN_OV_FAULT : 34|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ BUS_RUN_UV_FAULT : 35|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ BUS_UNBAL_FAULT : 36|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ BAT_UV_FAULT : 37|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ BAT_OV_FAULT : 38|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ DC_PRE_OC_FAULT : 39|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ DC_OC_FAULT : 40|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ BAL_SW_OC_FAULT : 41|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ BAT_REV_FAULT : 42|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ AC_PRE_TO_FAULT : 43|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ AC_PRE_A_OC_FAULT : 44|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ AC_PRE_B_OC_FAULT : 45|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ AC_PRE_C_OC_FAULT : 46|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ AC_LEAK_OC_FAULT : 47|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ AC_DC_COMP_FAULT : 48|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ AC_PWR_MIS_FAULT : 49|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SYS_RAM_FAULT : 50|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SYS_EEPROM_FAULT : 51|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SYS_AD_DRIFT_FAULT : 52|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SYS_BACK_COM_FAULT : 53|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SYS_CAN_PROT_FAULT : 54|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SYS_CPLD_COM_FAULT : 55|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SYS_DATALOG_FAULT : 56|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SYS_INSUL_FAULT : 57|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SYS_FW_MIS_FAULT : 58|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SYS_BMS_STAT_FAULT : 59|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SYS_STS_COM_FAULT : 60|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SYS_BMS_COM_FAULT : 61|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SYS_PAR_CAN_FAULT : 62|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SYS_EMS_COM_FAULT : 63|1@1+ (1,0) [0|1] "" Vector__XXX
+
+BO_ 2154215801 PCS_FAULT_TIMEOUT_GRP_2: 8 CABINET_BCU
+ SG_ PRE_REL_CLOSE_FAIL : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ PRE_REL_OPEN_FAIL : 1|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ PRE_REL_ST_CLOSE : 2|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ PRE_REL_ST_OPEN : 3|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ MAIN_REL_CLOSE_FAIL : 4|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ MAIN_REL_OPEN_FAIL : 5|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ MAIN_REL_ST_CLOSE : 6|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ MAIN_REL_ST_OPEN : 7|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ AC_MAIN_ADH_FAULT : 8|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ DC_REL_OPEN_FAULT : 9|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ AC_MAIN_OPEN_FAULT : 10|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ INV_A_OV_FAULT : 11|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ INV_B_OV_FAULT : 12|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ INV_C_OV_FAULT : 13|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ GRID_ISLAND_FAULT : 14|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SYS_RESON_FAULT : 15|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SW_OV_OC_FAULT : 16|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ HV_CROSS_TO_FAULT : 17|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ INV_A_UV_FAULT : 18|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ INV_B_UV_FAULT : 19|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ INV_C_UV_FAULT : 20|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ OFF_NO_SYNC_FAULT : 21|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ OFF_SHORT_FAULT : 22|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ LV_CROSS_TO_FAULT : 23|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ PCS_MSG1_TIMEOUT : 24|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ PCS_MSG2_TIMEOUT : 25|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ POWER_TIMEOUT : 26|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ MODULE_OP_MODE_TIMEOUT : 27|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SET_ONGRID_MODE_TIMEOUT : 28|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SET_OFFGRID_FREQ_TOUT : 29|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SET_OFFGRID_VOLT_TOUT : 30|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SET_PCS_TIMEOUT : 31|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SET_PWR_INDEP_TOUT : 32|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SET_MOD_HOST_TOUT : 33|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ MOD_CURR_SRC_PAR_TOUT : 34|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SET_DEHUMID_TOUT : 35|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SET_NUM_PAR_MDL_TOUT : 36|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SET_A_PH_ACT_PWR_TOUT : 37|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SET_A_PH_REA_PWR_TOUT : 38|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SET_B_PH_ACT_PWR_TOUT : 39|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SET_B_PH_REA_PWR_TOUT : 40|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SET_C_PH_ACT_PWR_TOUT : 41|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SET_C_PH_REA_PWR_TOUT : 42|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ YEAR_TOUT : 43|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ MONTH_TOUT : 44|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ DAY_TOUT : 45|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ HOUR_TOUT : 46|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ MINUTE_TOUT : 47|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SECOND_TOUT : 48|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SET_MAX_CHG_PWR_TOUT : 49|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SET_MAX_DCH_PWR_TOUT : 50|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SET_MAX_CHG_CURR_TOUT : 51|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SET_MAX_DCH_CURR_TOUT : 52|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SET_DC_BUS_V_TOUT : 53|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SET_DC_SRC_BUS_V_TOUT : 54|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SET_INSUL_EN_TOUT : 55|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ GRID_OVERF_PROT_TOUT : 56|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ GRID_UNDERF_PROT_TOUT : 57|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ ISL_OVERF_PROT_TOUT : 58|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ ISL_UNDERF_PROT_TOUT : 59|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ BAT_OV_PROT_TOUT : 60|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ BAT_UV_PROT_TOUT : 61|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ BUS_OV_PROT_TOUT : 62|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ BUS_UV_PROT_TOUT : 63|1@1+ (1,0) [0|1] "" Vector__XXX
+
+BO_ 2154215802 PCS_TIMEOUTS_EXT: 4 CABINET_BCU
+ SG_ PCS_MSG1_2_TIMEOUT : 25|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ VAR_POWER_TIMEOUT : 24|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ PCS_RS485_FAULT : 23|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ PCS_FAULT : 22|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SET_PCS_PC_CMD_TIMEOUT : 21|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ DC_OC_PROT_TOUT : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ AC_OV_PROT_TOUT : 1|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ AC_UV_PROT_TOUT : 2|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ AC_OC_PROT_TOUT : 3|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ MOD_OVERT_PROT_TOUT : 4|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ CC_CV_RECHG_V_TOUT : 5|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ BAT_CV_CHG_V_TOUT : 6|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ CV_CHG_MAX_TIME_TOUT : 7|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ CV_TO_FLOAT_CURR_TOUT : 8|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ FLOAT_CHG_V_TOUT : 9|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ FLOAT_TO_CC_CURR_TOUT : 10|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ PWR_ON_OFF_CMD_TOUT : 11|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ FAULT_RESET_CMD_TOUT : 12|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ CURE_PARAM_CMD_TOUT : 13|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ CHG_RESET_CMD_TOUT : 14|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ SAFETY_ONE_KEY_TOUT : 15|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ RE_MB_ADDR_TOUT : 16|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ RE_MB_BAUD_TOUT : 17|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ HMI_MB_ADDR_TOUT : 18|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ HMI_MB_BAUD_TOUT : 19|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ EMS_COMM_FAIL_T_TOUT : 20|1@1+ (1,0) [0|1] "" Vector__XXX
+
+
+
+CM_ BO_ 3221225472 "This is a message for not used signals, created by Vector CANdb++ DBC OLE DB Provider.";
+VAL_ 2147504486 PCS_CMD 106 "shutdown" 105 "charge_req" 104 "discharge_req" 101 "stb" ;
+VAL_ 2154215785 GRID_FREQ 60 "60Hz" 50 "50Hz" ;
+VAL_ 2154215785 GRID_PHASE_SEQ 1 "Negative" 0 "Positive" ;
+VAL_ 2154215785 PCS_DERAT_MARK 3 "IGBT_AMB_OverTemp_Derating" 2 "AMB_OverTemp_Derating" 1 "IGBT_OverTemp_Derating" 0 "Normal" ;
+VAL_ 2154215785 WORKING_CONDITION 6 "UNKNOWN" 5 "GRID_CONNECTED" 4 "OFFGRID_ENABLED" 3 "FAULT" 2 "RUN" 1 "STANDBY" 0 "STARTUP" ;
+VAL_ 2154215785 SOURCE_MODE 1 "AC_SOURCE_ENABLED" 0 "DC_SOURCE_ENABLED" ;
+VAL_ 2154215785 GRID_MODE 6 "DEBUGGING" 5 "FAULT" 4 "GRID_CONNECTED_OPT" 3 "OFF_GRID_OPT" 2 "STANDBY" 1 "POWERON" 0 "STOP" ;
+

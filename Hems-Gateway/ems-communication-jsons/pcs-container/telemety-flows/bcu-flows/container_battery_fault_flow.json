@@ -1,0 +1,195 @@
+[
+    {
+        "id": "container_battery_fault_tab",
+        "type": "tab",
+        "label": "Container Battery Fault",
+        "disabled": false,
+        "info": "ContainerBatteryFaultState - BCU J1939 CAN Protocol\n\nCAN Message:\n- 0x18FF16F0: BCU_01_Fault_Message (59 fault flags)"
+    },
+    {
+        "id": "can0_input_container_fault",
+        "type": "socketcan-out",
+        "z": "container_battery_fault_tab",
+        "name": "CAN0 Input",
+        "config": "537471527fc35bc4",
+        "x": 120,
+        "y": 180,
+        "wires": [
+            [
+                "parse_container_battery_fault"
+            ]
+        ]
+    },
+    {
+        "id": "parse_container_battery_fault",
+        "type": "function",
+        "z": "container_battery_fault_tab",
+        "name": "Parse Container Battery Fault",
+        "func": "const frame = msg.payload || msg;\nlet canId = frame.canid & 0x1FFFFFFF;\nconst data = frame.data || [];\n\n// Only process BCU_01_Fault_Message (0x18FF16F0)\nif (canId !== 0x18FF16F0) {\n    return null;\n}\n\n// Helper function to get bit value\nfunction getBit(buf, bitIndex) {\n    const byteIndex = Math.floor(bitIndex / 8);\n    const bitOffset = bitIndex % 8;\n    return ((buf[byteIndex] >> bitOffset) & 0x01) === 1;\n}\n\nlet state = {\n    kind: \"ContainerBatteryFaultState\",\n    version: 1,\n    timestampUtc: new Date().toISOString(),\n    \n    // ==================== Byte 0 (Bit 0-7) ====================\n    faultPackWarning: getBit(data, 0),\n    faultPackDanger: getBit(data, 1),\n    faultCellOverVoltageWarning: getBit(data, 2),\n    faultCellOverVoltageDanger: getBit(data, 3),\n    faultCellUnderVoltageWarning: getBit(data, 4),\n    faultCellUnderVoltageDanger: getBit(data, 5),\n    faultCellOverTempWarning: getBit(data, 6),\n    faultCellOverTempDanger: getBit(data, 7),\n    \n    // ==================== Byte 1 (Bit 8-15) ====================\n    faultCellUnderTempWarning: getBit(data, 8),\n    faultCellUnderTempDanger: getBit(data, 9),\n    warningPackOC: getBit(data, 10),\n    faultPackOC: getBit(data, 11),\n    faultPackCurrentSensor: getBit(data, 12),\n    faultPackDischargeContactor: getBit(data, 13),\n    faultPackChargeContactor: getBit(data, 14),\n    faultFuse: getBit(data, 15),\n    \n    // ==================== Byte 2 (Bit 16-23) ====================\n    faultPackHVIL2: getBit(data, 16),\n    faultPackFuse: getBit(data, 17),\n    faultPackFireWarningSensor: getBit(data, 18),\n    faultPackHighHumidity: getBit(data, 19),\n    faultPackBMU: getBit(data, 20),\n    faultPackNegContactor: getBit(data, 21),\n    faultPackPrecharge: getBit(data, 22),\n    faultIsolation: getBit(data, 23),\n    \n    // ==================== Byte 3 (Bit 24-31) ====================\n    faultPackEmergency: getBit(data, 24),\n    warningModuleTempBalance: getBit(data, 25),\n    faultModuleTempBalance: getBit(data, 26),\n    \n    // ==================== Byte 4 (Bit 32-39) ====================\n    faultDeadCell: getBit(data, 32),\n    faultCANCommunication: getBit(data, 33),\n    faultPackIntCommunication: getBit(data, 34),\n    faultInternalMeasurement: getBit(data, 35),\n    faultVoltageRedundancy: getBit(data, 36),\n    faultOpenWire: getBit(data, 37),\n    \n    // ==================== Byte 5 (Bit 40-47) ====================\n    faultBoardBMUNoResponse: getBit(data, 40),\n    faultBoardStackInitialize: getBit(data, 41),\n    faultBoardMeasurement: getBit(data, 42),\n    faultBoardStackConfiguration: getBit(data, 43),\n    faultBoardBalance: getBit(data, 44),\n    faultBoardOperationSystem: getBit(data, 45),\n    \n    // ==================== Byte 6 (Bit 48-55) ====================\n    faultBoardGPI: getBit(data, 48),\n    faultBoardChip: getBit(data, 49),\n    faultBoardSys: getBit(data, 50),\n    faultBoardCommunication: getBit(data, 51),\n    faultBoardCompOverVoltage: getBit(data, 52),\n    faultBoardCompUnderVoltage: getBit(data, 53),\n    faultBoardAuxOverVoltage: getBit(data, 54),\n    faultBoardAuxUnderVoltage: getBit(data, 55),\n    \n    // ==================== Byte 7 (Bit 56-63) ====================\n    faultBoardOverVoltage: getBit(data, 56),\n    faultBoardUnderVoltage: getBit(data, 57),\n    faultBoardStackError: getBit(data, 58),\n    faultBoardOpenWireDetect: getBit(data, 59)\n};\n\n// ==================== Derived Fields ====================\n\n// Warning flags list\nconst warningFlags = [\n    'faultPackWarning',\n    'faultCellOverVoltageWarning',\n    'faultCellUnderVoltageWarning',\n    'faultCellOverTempWarning',\n    'faultCellUnderTempWarning',\n    'warningPackOC',\n    'warningModuleTempBalance'\n];\n\n// All fault flags (excluding warnings)\nconst faultFlags = [\n    'faultPackDanger',\n    'faultCellOverVoltageDanger',\n    'faultCellUnderVoltageDanger',\n    'faultCellOverTempDanger',\n    'faultCellUnderTempDanger',\n    'faultPackOC',\n    'faultPackCurrentSensor',\n    'faultPackDischargeContactor',\n    'faultPackChargeContactor',\n    'faultFuse',\n    'faultPackHVIL2',\n    'faultPackFuse',\n    'faultPackFireWarningSensor',\n    'faultPackHighHumidity',\n    'faultPackBMU',\n    'faultPackNegContactor',\n    'faultPackPrecharge',\n    'faultIsolation',\n    'faultPackEmergency',\n    'faultModuleTempBalance',\n    'faultDeadCell',\n    'faultCANCommunication',\n    'faultPackIntCommunication',\n    'faultInternalMeasurement',\n    'faultVoltageRedundancy',\n    'faultOpenWire',\n    'faultBoardBMUNoResponse',\n    'faultBoardStackInitialize',\n    'faultBoardMeasurement',\n    'faultBoardStackConfiguration',\n    'faultBoardBalance',\n    'faultBoardOperationSystem',\n    'faultBoardGPI',\n    'faultBoardChip',\n    'faultBoardSys',\n    'faultBoardCommunication',\n    'faultBoardCompOverVoltage',\n    'faultBoardCompUnderVoltage',\n    'faultBoardAuxOverVoltage',\n    'faultBoardAuxUnderVoltage',\n    'faultBoardOverVoltage',\n    'faultBoardUnderVoltage',\n    'faultBoardStackError',\n    'faultBoardOpenWireDetect'\n];\n\n// Check for any warning\nstate.hasWarning = warningFlags.some(flag => state[flag] === true);\n\n// Check for any fault\nstate.hasFault = faultFlags.some(flag => state[flag] === true);\n\n// Build active faults list\nlet activeFaults = [];\nwarningFlags.forEach(flag => {\n    if (state[flag] === true) activeFaults.push(flag);\n});\nfaultFlags.forEach(flag => {\n    if (state[flag] === true) activeFaults.push(flag);\n});\nstate.activeFaults = activeFaults;\nstate.activeFaultCount = activeFaults.length;\n\n// Store in flow context\nflow.set(\"containerBatteryFaultState\", state);\n\nmsg.payload = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 370,
+        "y": 180,
+        "wires": [
+            [
+                "debug_container_fault",
+                "throttle_container_fault"
+            ]
+        ]
+    },
+    {
+        "id": "debug_container_fault",
+        "type": "debug",
+        "z": "container_battery_fault_tab",
+        "name": "Container Battery Fault",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.activeFaultCount",
+        "statusType": "msg",
+        "x": 650,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "throttle_container_fault",
+        "type": "delay",
+        "z": "container_battery_fault_tab",
+        "name": "Throttle 5s",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "5",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 630,
+        "y": 180,
+        "wires": [
+            [
+                "tb_telemetry_container_fault"
+            ]
+        ]
+    },
+    {
+        "id": "tb_telemetry_container_fault",
+        "type": "mqtt out",
+        "z": "container_battery_fault_tab",
+        "name": "ThingsBoard Telemetry",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 840,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "inject_get_container_fault",
+        "type": "inject",
+        "z": "container_battery_fault_tab",
+        "name": "Get Container Battery Fault",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 180,
+        "y": 300,
+        "wires": [
+            [
+                "get_container_fault"
+            ]
+        ]
+    },
+    {
+        "id": "get_container_fault",
+        "type": "function",
+        "z": "container_battery_fault_tab",
+        "name": "Get State from Context",
+        "func": "var state = flow.get(\"containerBatteryFaultState\");\nif (state) {\n    msg.payload = state;\n    return msg;\n}\nmsg.payload = { error: \"No data yet\" };\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 430,
+        "y": 300,
+        "wires": [
+            [
+                "debug_full_container_fault"
+            ]
+        ]
+    },
+    {
+        "id": "debug_full_container_fault",
+        "type": "debug",
+        "z": "container_battery_fault_tab",
+        "name": "Full State",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 630,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "537471527fc35bc4",
+        "type": "socketcan-config",
+        "interface": "can0"
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

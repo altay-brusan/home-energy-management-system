@@ -1,0 +1,96 @@
+{
+  "kind": "ContainerBatteryFaultState",
+  "version": 1,
+  "description": "BCU Container Battery Fault State - J1939 CAN Protocol",
+  
+  "canMessage": "0x18FF16F0",
+  "dlc": 8,
+
+  "signals": {
+    
+    "// ==================== Byte 0 (Bit 0-7) ====================": "",
+    
+    "faultPackWarning": "boolean",               // Bit 0 - Pack Warning
+    "faultPackDanger": "boolean",                // Bit 1 - Pack Danger
+    "faultCellOverVoltageWarning": "boolean",    // Bit 2 - Cell Over Voltage Warning
+    "faultCellOverVoltageDanger": "boolean",     // Bit 3 - Cell Over Voltage Danger
+    "faultCellUnderVoltageWarning": "boolean",   // Bit 4 - Cell Under Voltage Warning
+    "faultCellUnderVoltageDanger": "boolean",    // Bit 5 - Cell Under Voltage Danger
+    "faultCellOverTempWarning": "boolean",       // Bit 6 - Cell Over Temp Warning
+    "faultCellOverTempDanger": "boolean",        // Bit 7 - Cell Over Temp Danger
+
+    "// ==================== Byte 1 (Bit 8-15) ====================": "",
+    
+    "faultCellUnderTempWarning": "boolean",      // Bit 8 - Cell Under Temp Warning
+    "faultCellUnderTempDanger": "boolean",       // Bit 9 - Cell Under Temp Danger
+    "warningPackOC": "boolean",                  // Bit 10 - Pack Over Current Warning
+    "faultPackOC": "boolean",                    // Bit 11 - Pack Over Current Fault
+    "faultPackCurrentSensor": "boolean",         // Bit 12 - Pack Current Sensor Fault
+    "faultPackDischargeContactor": "boolean",    // Bit 13 - Discharge Contactor Fault
+    "faultPackChargeContactor": "boolean",       // Bit 14 - Charge Contactor Fault
+    "faultFuse": "boolean",                      // Bit 15 - Fuse Fault
+
+    "// ==================== Byte 2 (Bit 16-23) ====================": "",
+    
+    "faultPackHVIL2": "boolean",                 // Bit 16 - HVIL 2 Fault
+    "faultPackFuse": "boolean",                  // Bit 17 - Pack Fuse Fault
+    "faultPackFireWarningSensor": "boolean",     // Bit 18 - Fire Warning Sensor Fault
+    "faultPackHighHumidity": "boolean",          // Bit 19 - High Humidity Fault
+    "faultPackBMU": "boolean",                   // Bit 20 - BMU Fault
+    "faultPackNegContactor": "boolean",          // Bit 21 - Negative Contactor Fault
+    "faultPackPrecharge": "boolean",             // Bit 22 - Precharge Fault
+    "faultIsolation": "boolean",                 // Bit 23 - Isolation Fault
+
+    "// ==================== Byte 3 (Bit 24-31) ====================": "",
+    
+    "faultPackEmergency": "boolean",             // Bit 24 - Emergency Fault
+    "warningModuleTempBalance": "boolean",       // Bit 25 - Module Temp Balance Warning
+    "faultModuleTempBalance": "boolean",         // Bit 26 - Module Temp Balance Fault
+    // Bit 27-31: Reserved
+
+    "// ==================== Byte 4 (Bit 32-39) ====================": "",
+    
+    "faultDeadCell": "boolean",                  // Bit 32 - Dead Cell Fault
+    "faultCANCommunication": "boolean",          // Bit 33 - CAN Communication Fault
+    "faultPackIntCommunication": "boolean",      // Bit 34 - Internal Communication Fault
+    "faultInternalMeasurement": "boolean",       // Bit 35 - Internal Measurement Fault
+    "faultVoltageRedundancy": "boolean",         // Bit 36 - Voltage Redundancy Fault
+    "faultOpenWire": "boolean",                  // Bit 37 - Open Wire Fault
+    // Bit 38-39: Reserved
+
+    "// ==================== Byte 5 (Bit 40-47) ====================": "",
+    
+    "faultBoardBMUNoResponse": "boolean",        // Bit 40 - BMU No Response
+    "faultBoardStackInitialize": "boolean",      // Bit 41 - Stack Initialize Fault
+    "faultBoardMeasurement": "boolean",          // Bit 42 - Board Measurement Fault
+    "faultBoardStackConfiguration": "boolean",   // Bit 43 - Stack Configuration Fault
+    "faultBoardBalance": "boolean",              // Bit 44 - Board Balance Fault
+    "faultBoardOperationSystem": "boolean",      // Bit 45 - Operation System Fault
+    // Bit 46-47: Reserved
+
+    "// ==================== Byte 6 (Bit 48-55) ====================": "",
+    
+    "faultBoardGPI": "boolean",                  // Bit 48 - Board GPI Fault
+    "faultBoardChip": "boolean",                 // Bit 49 - Board Chip Fault
+    "faultBoardSys": "boolean",                  // Bit 50 - Board Sys Fault
+    "faultBoardCommunication": "boolean",        // Bit 51 - Board Communication Fault
+    "faultBoardCompOverVoltage": "boolean",      // Bit 52 - Comp Over Voltage Fault
+    "faultBoardCompUnderVoltage": "boolean",     // Bit 53 - Comp Under Voltage Fault
+    "faultBoardAuxOverVoltage": "boolean",       // Bit 54 - Aux Over Voltage Fault
+    "faultBoardAuxUnderVoltage": "boolean",      // Bit 55 - Aux Under Voltage Fault
+
+    "// ==================== Byte 7 (Bit 56-63) ====================": "",
+    
+    "faultBoardOverVoltage": "boolean",          // Bit 56 - Board Over Voltage Fault
+    "faultBoardUnderVoltage": "boolean",         // Bit 57 - Board Under Voltage Fault
+    "faultBoardStackError": "boolean",           // Bit 58 - Board Stack Error
+    "faultBoardOpenWireDetect": "boolean",       // Bit 59 - Open Wire Detect
+    // Bit 60-63: Reserved
+
+    "// ==================== Derived ====================": "",
+    
+    "hasWarning": "boolean",                     // Any warning flag is true
+    "hasFault": "boolean",                       // Any fault flag is true
+    "activeFaults": "string[]"                   // List of active fault names
+  }
+}

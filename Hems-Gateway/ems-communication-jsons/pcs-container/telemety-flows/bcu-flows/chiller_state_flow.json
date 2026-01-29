@@ -1,0 +1,195 @@
+[
+    {
+        "id": "chiller_state_tab",
+        "type": "tab",
+        "label": "Chiller State",
+        "disabled": false,
+        "info": "ChillerState - Chiller_1 + Chiller_2_Status\n\nCAN Messages:\n- 0x18008040x: Chiller_1 (Temps, Pressures, Heartbeat)\n- 0x18018040x: Chiller_2_Status (Compressor, Pump, Fan)"
+    },
+    {
+        "id": "can0_input_chiller_state",
+        "type": "socketcan-out",
+        "z": "chiller_state_tab",
+        "name": "CAN0 Input",
+        "config": "537471527fc35bc4",
+        "x": 120,
+        "y": 180,
+        "wires": [
+            [
+                "parse_chiller_state"
+            ]
+        ]
+    },
+    {
+        "id": "parse_chiller_state",
+        "type": "function",
+        "z": "chiller_state_tab",
+        "name": "Parse Chiller State",
+        "func": "const frame = msg.payload || msg;\nlet canId = frame.canid & 0x1FFFFFFF;\nconst data = frame.data || [];\n\nlet state = flow.get(\"chillerState\") || {\n    kind: \"ChillerState\",\n    version: 1,\n    // Chiller_1 (0x18008040x)\n    tmsOperatingMode: null,\n    outletCoolantTempC: null,\n    inletCoolantTempC: null,\n    ambientTempC: null,\n    inletCoolantPressure: null,\n    outletCoolantPressure: null,\n    heartbeat: null,\n    tmsFaultCode: null,\n    tmsFaultLevel: null,\n    // Chiller_2_Status (0x18018040x)\n    compressorStatus: null,\n    crankcaseHeaterStatus: null,\n    electricHeaterStatus: null,\n    pumpStatus: null,\n    fanRunStatus: null,\n    compressorSpeed: null,\n    pumpSpeed: null,\n    onOffStatus: null\n};\n\n// Helper functions\nfunction u8(buf, offset) {\n    return buf[offset] & 0xFF;\n}\n\nfunction s8(buf, offset) {\n    let val = buf[offset] & 0xFF;\n    return val > 127 ? val - 256 : val;\n}\n\nfunction getBit(buf, byteOffset, bitOffset) {\n    return ((buf[byteOffset] >> bitOffset) & 0x01) === 1;\n}\n\nfunction getBits(buf, byteOffset, bitOffset, length) {\n    return (buf[byteOffset] >> bitOffset) & ((1 << length) - 1);\n}\n\nvar processed = false;\n\n// ==================== Chiller_1 (0x18008040x) ====================\n// CAN ID pattern: 0x180080400 - 0x18008040F\nif ((canId & 0xFFFFFFF0) === 0x18008040) {\n    processed = true;\n    // Bit 0-2: TMS Operating Mode (3 bit)\n    state.tmsOperatingMode = getBits(data, 0, 0, 3);\n    // Bit 8-15: Outlet Coolant Temp (8 bit, Factor: 1, Offset: -40)\n    state.outletCoolantTempC = u8(data, 1) - 40;\n    // Bit 16-23: Inlet Coolant Temp (8 bit, Factor: 1, Offset: -40)\n    state.inletCoolantTempC = u8(data, 2) - 40;\n    // Bit 24-31: Ambient Temp (8 bit, Factor: 1, Offset: -40)\n    state.ambientTempC = u8(data, 3) - 40;\n    // Bit 32-39: Inlet Coolant Pressure (8 bit, Factor: 0.1, Signed)\n    state.inletCoolantPressure = s8(data, 4) * 0.1;\n    // Bit 40-47: Outlet Coolant Pressure (8 bit, Factor: 0.1, Signed)\n    state.outletCoolantPressure = s8(data, 5) * 0.1;\n    // Bit 48-55: Heartbeat (8 bit)\n    state.heartbeat = u8(data, 6);\n    // Bit 56-61: TMS Fault Code (6 bit)\n    state.tmsFaultCode = getBits(data, 7, 0, 6);\n    // Bit 62-63: TMS Fault Level (2 bit)\n    state.tmsFaultLevel = getBits(data, 7, 6, 2);\n}\n\n// ==================== Chiller_2_Status (0x18018040x) ====================\n// CAN ID pattern: 0x180180400 - 0x18018040F\nif ((canId & 0xFFFFFFF0) === 0x18018040) {\n    processed = true;\n    // Bit 0: Compressor Status\n    state.compressorStatus = getBit(data, 0, 0);\n    // Bit 1: Crankcase Heater Status\n    state.crankcaseHeaterStatus = getBit(data, 0, 1);\n    // Bit 2: Electric Heater Status\n    state.electricHeaterStatus = getBit(data, 0, 2);\n    // Bit 3: Pump Status\n    state.pumpStatus = getBit(data, 0, 3);\n    // Bit 4: Fan Run Status\n    state.fanRunStatus = getBit(data, 0, 4);\n    // Bit 8-15: Compressor Speed (8 bit, Factor: 100)\n    state.compressorSpeed = u8(data, 1) * 100;\n    // Bit 16-23: Pump Speed (8 bit, Factor: 100)\n    state.pumpSpeed = u8(data, 2) * 100;\n    // Bit 24-31: ON/OFF Status (8 bit)\n    state.onOffStatus = u8(data, 3);\n}\n\nif (!processed) {\n    return null;\n}\n\nstate.timestampUtc = new Date().toISOString();\nflow.set(\"chillerState\", state);\nmsg.payload = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 330,
+        "y": 180,
+        "wires": [
+            [
+                "debug_chiller_state",
+                "throttle_chiller_state"
+            ]
+        ]
+    },
+    {
+        "id": "debug_chiller_state",
+        "type": "debug",
+        "z": "chiller_state_tab",
+        "name": "Chiller State",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.inletCoolantTempC",
+        "statusType": "msg",
+        "x": 570,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "throttle_chiller_state",
+        "type": "delay",
+        "z": "chiller_state_tab",
+        "name": "Throttle 5s",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "5",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 570,
+        "y": 180,
+        "wires": [
+            [
+                "tb_telemetry_chiller_state"
+            ]
+        ]
+    },
+    {
+        "id": "tb_telemetry_chiller_state",
+        "type": "mqtt out",
+        "z": "chiller_state_tab",
+        "name": "ThingsBoard Telemetry",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 780,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "inject_get_chiller_state",
+        "type": "inject",
+        "z": "chiller_state_tab",
+        "name": "Get Chiller State",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 160,
+        "y": 300,
+        "wires": [
+            [
+                "get_chiller_state"
+            ]
+        ]
+    },
+    {
+        "id": "get_chiller_state",
+        "type": "function",
+        "z": "chiller_state_tab",
+        "name": "Get State from Context",
+        "func": "var state = flow.get(\"chillerState\");\nif (state) {\n    msg.payload = state;\n    return msg;\n}\nmsg.payload = { error: \"No data yet\" };\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 390,
+        "y": 300,
+        "wires": [
+            [
+                "debug_full_chiller_state"
+            ]
+        ]
+    },
+    {
+        "id": "debug_full_chiller_state",
+        "type": "debug",
+        "z": "chiller_state_tab",
+        "name": "Full State",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 590,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "537471527fc35bc4",
+        "type": "socketcan-config",
+        "interface": "can0"
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

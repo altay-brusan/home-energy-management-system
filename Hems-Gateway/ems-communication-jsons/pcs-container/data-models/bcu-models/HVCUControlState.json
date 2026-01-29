@@ -1,0 +1,21 @@
+{
+  "kind": "HVCUControlState",
+  "version": 1,
+  "canMessage": "0x18FF201Ex",
+
+  "signals": {
+    "bcu01ControlState": "number",               // Bit 0-7 (8 bit) - BCU 01 Control State
+                                                 //   Factor: 1, Offset: 0
+                                                 //   Values: 101=Standby, 102=Startup, 103=Precharge,
+                                                 //           104=Discharge, 105=Charge, 106=Shutdown
+
+    "bcu02ControlState": "number",               // Bit 8-15 (8 bit) - BCU 02 Control State
+
+    "bcu03ControlState": "number",               // Bit 16-23 (8 bit) - BCU 03 Control State
+
+    "bcu04ControlState": "number",               // Bit 24-31 (8 bit) - BCU 04 Control State
+
+    "pack1IsolationControl": "boolean"           // Bit 32 (1 bit) - Pack 1 Isolation Control
+                                                 //   IMD is activated if set
+  }
+}
