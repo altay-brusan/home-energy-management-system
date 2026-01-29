@@ -23,6 +23,113 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.AlmPredictionHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AlmPredictionJobId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("DeviceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("FeatureName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<int>("ModelType")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("PredictedTime")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<double>("PredictedValue")
+                        .HasColumnType("double precision");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AlmPredictionJobId");
+
+                    b.HasIndex("DeviceId");
+
+                    b.ToTable("AlmPredictionHistories");
+                });
+
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.AlmPredictionJob", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AlmJobId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("DataEndTime")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int>("DataPointCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("DataStartTime")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<Guid>("DeviceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("LastModified")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastModifiedBy")
+                        .HasColumnType("text");
+
+                    b.Property<int>("ModelType")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("RequestedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("character varying(450)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("ThingsBoardDeviceId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeviceId");
+
+                    b.ToTable("AlmPredictionJobs");
+                });
+
             modelBuilder.Entity("Hems_Backend.Domain.Entities.City", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1884,6 +1991,36 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.AlmPredictionHistory", b =>
+                {
+                    b.HasOne("Hems_Backend.Domain.Entities.AlmPredictionJob", "PredictionJob")
+                        .WithMany("PredictionResults")
+                        .HasForeignKey("AlmPredictionJobId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Hems_Backend.Domain.Entities.Device", "Device")
+                        .WithMany()
+                        .HasForeignKey("DeviceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Device");
+
+                    b.Navigation("PredictionJob");
+                });
+
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.AlmPredictionJob", b =>
+                {
+                    b.HasOne("Hems_Backend.Domain.Entities.Device", "Device")
+                        .WithMany()
+                        .HasForeignKey("DeviceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Device");
+                });
+
             modelBuilder.Entity("Hems_Backend.Domain.Entities.City", b =>
                 {
                     b.HasOne("Hems_Backend.Domain.Entities.Country", "Country")
@@ -2221,6 +2358,11 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Hems_Backend.Domain.Entities.AlmPredictionJob", b =>
+                {
+                    b.Navigation("PredictionResults");
                 });
 
             modelBuilder.Entity("Hems_Backend.Domain.Entities.Country", b =>

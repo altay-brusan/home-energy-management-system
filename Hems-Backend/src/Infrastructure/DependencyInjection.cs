@@ -121,6 +121,10 @@ public static class DependencyInjection
         builder.Services.Configure<AppLinksSettings>(builder.Configuration.GetSection("AppLinks"));
         builder.Services.AddSingleton<IPlatformDetectionService, PlatformDetectionService>();
 
+        // ALM (AI Learning Module) Service
+        builder.Services.AddHttpClient<IAlmService, AlmService>();
+        builder.Services.AddHostedService<AlmHealthCheckService>();
+
         // Demo Data Service (for app store assessment demo users)
         builder.Services.AddScoped<IDemoDataService, DemoDataService>();
 
