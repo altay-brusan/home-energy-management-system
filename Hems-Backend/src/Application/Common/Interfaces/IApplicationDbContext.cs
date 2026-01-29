@@ -59,5 +59,9 @@ public interface IApplicationDbContext
 
     DbSet<MobileAppVersion> MobileAppVersions { get; }
 
+    DbSet<AlmPredictionJob> AlmPredictionJobs { get; }
+
+    DbSet<AlmPredictionHistory> AlmPredictionHistories { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }
