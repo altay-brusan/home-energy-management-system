@@ -36,6 +36,7 @@ public class AlmService : IAlmService
         string csvData,
         AlmSchema schema,
         string callbackUrl,
+        string moduleEndpoint,
         CancellationToken cancellationToken = default)
     {
         try
@@ -60,10 +61,10 @@ public class AlmService : IAlmService
             var json = JsonSerializer.Serialize(payload, _jsonOptions);
             using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            _logger.LogInformation("Submitting ALM job to /module-tsf-pc, callback: {Callback}, deviceId: {DeviceId}",
-                callbackUrl, schema.Id);
+            _logger.LogInformation("Submitting ALM job to {Endpoint}, callback: {Callback}, deviceId: {DeviceId}",
+                moduleEndpoint, callbackUrl, schema.Id);
 
-            var response = await _httpClient.PostAsync("/module-tsf-pc", content, cancellationToken);
+            var response = await _httpClient.PostAsync(moduleEndpoint, content, cancellationToken);
             var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (!response.IsSuccessStatusCode)
@@ -103,24 +104,125 @@ public class AlmService : IAlmService
         }
     }
 
-    public async Task<AlmJobStatusResponse?> GetJobStatusAsync(string jobId, CancellationToken cancellationToken = default)
+    public async Task<AlmJobResultResponse?> GetJobResultAsync(
+        string moduleEndpoint,
+        string jobId,
+        CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _httpClient.GetAsync($"/module-tsf-pc/jobs/{jobId}", cancellationToken);
+            var requestPath = $"{moduleEndpoint.TrimEnd('/')}/jobs/{jobId}";
+            _logger.LogDebug("Fetching ALM job result from {Path}", requestPath);
+
+            var response = await _httpClient.GetAsync(requestPath, cancellationToken);
             var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogWarning("ALM job status query returned {StatusCode}: {Body}", response.StatusCode, responseBody);
+                _logger.LogWarning("ALM job result query returned {StatusCode}: {Body}", response.StatusCode, responseBody);
                 return null;
             }
 
-            return JsonSerializer.Deserialize<AlmJobStatusResponse>(responseBody, _jsonOptions);
+            // Parse the response from AI container
+            var apiResponse = JsonSerializer.Deserialize<AlmJobApiResultResponse>(responseBody, _jsonOptions);
+            if (apiResponse == null)
+            {
+                _logger.LogWarning("Failed to parse ALM job result response");
+                return null;
+            }
+
+            var result = new AlmJobResultResponse
+            {
+                JobId = apiResponse.JobId ?? jobId,
+                Status = apiResponse.Status ?? "unknown",
+                Error = apiResponse.Error,
+                CreatedAt = apiResponse.CreatedAt,
+                CompletedAt = apiResponse.CompletedAt
+            };
+
+            // Parse the result if available
+            if (apiResponse.Result.HasValue)
+            {
+                result.Result = ParseForecastResult(apiResponse.Result.Value);
+            }
+
+            return result;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error querying ALM job status for {JobId}", jobId);
+            _logger.LogError(ex, "Error querying ALM job result for {JobId}", jobId);
+            return null;
+        }
+    }
+
+    private AlmForecastResult? ParseForecastResult(JsonElement resultElement)
+    {
+        try
+        {
+            var forecastResult = new AlmForecastResult();
+
+            // Parse forecast array
+            if (resultElement.TryGetProperty("forecast", out var forecastProp) && forecastProp.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var point in forecastProp.EnumerateArray())
+                {
+                    var forecastPoint = new AlmForecastPoint();
+
+                    // Parse timestamp
+                    if (point.TryGetProperty("timestamp", out var tsProp))
+                    {
+                        if (tsProp.ValueKind == JsonValueKind.String && DateTime.TryParse(tsProp.GetString(), out var ts))
+                        {
+                            forecastPoint.Timestamp = ts;
+                        }
+                    }
+
+                    // Parse value
+                    if (point.TryGetProperty("value", out var valueProp))
+                    {
+                        forecastPoint.Value = valueProp.GetDouble();
+                    }
+
+                    // Parse step
+                    if (point.TryGetProperty("step", out var stepProp))
+                    {
+                        forecastPoint.Step = stepProp.GetInt32();
+                    }
+
+                    forecastResult.Forecast.Add(forecastPoint);
+                }
+            }
+
+            // Parse metadata
+            if (resultElement.TryGetProperty("metadata", out var metadataProp))
+            {
+                forecastResult.Metadata = new AlmForecastMetadata();
+
+                if (metadataProp.TryGetProperty("feature", out var featureProp))
+                    forecastResult.Metadata.Feature = featureProp.GetString() ?? string.Empty;
+
+                if (metadataProp.TryGetProperty("interval_seconds", out var intervalProp))
+                    forecastResult.Metadata.IntervalSeconds = intervalProp.GetInt32();
+
+                if (metadataProp.TryGetProperty("horizon", out var horizonProp))
+                    forecastResult.Metadata.Horizon = horizonProp.GetInt32();
+
+                if (metadataProp.TryGetProperty("unit", out var unitProp))
+                    forecastResult.Metadata.Unit = unitProp.GetString() ?? string.Empty;
+            }
+
+            // Parse status_code and message if present
+            if (resultElement.TryGetProperty("status_code", out var statusCodeProp))
+                forecastResult.StatusCode = statusCodeProp.GetString();
+
+            if (resultElement.TryGetProperty("message", out var messageProp))
+                forecastResult.Message = messageProp.GetString();
+
+            return forecastResult;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to parse forecast result");
             return null;
         }
     }
@@ -145,5 +247,15 @@ public class AlmService : IAlmService
         public string? Status { get; set; }
         public int Position { get; set; }
         public string? Message { get; set; }
+    }
+
+    private class AlmJobApiResultResponse
+    {
+        public string? JobId { get; set; }
+        public string? Status { get; set; }
+        public JsonElement? Result { get; set; }
+        public string? Error { get; set; }
+        public DateTimeOffset? CreatedAt { get; set; }
+        public DateTimeOffset? CompletedAt { get; set; }
     }
 }
