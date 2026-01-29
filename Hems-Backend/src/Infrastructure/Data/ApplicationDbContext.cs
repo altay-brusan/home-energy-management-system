@@ -66,6 +66,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
 
     public DbSet<MobileAppVersion> MobileAppVersions => Set<MobileAppVersion>();
 
+    public DbSet<AlmPredictionJob> AlmPredictionJobs => Set<AlmPredictionJob>();
+
+    public DbSet<AlmPredictionHistory> AlmPredictionHistories => Set<AlmPredictionHistory>();
+
     // Data Protection Keys for multi-pod environments
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
 
