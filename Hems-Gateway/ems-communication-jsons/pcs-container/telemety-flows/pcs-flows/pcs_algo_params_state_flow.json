@@ -1,0 +1,195 @@
+[
+    {
+        "id": "pcs_algo_params_state_tab",
+        "type": "tab",
+        "label": "PCS Algo Params State",
+        "disabled": false,
+        "info": "PcsAlgoParamsState - PCS Algorithm Parameters\n\nCAN Messages:\n- 0x66B973x: PCS_ALGO_PARAMS_1\n- 0x66B974x: PCS_ALGO_PARAMS_2"
+    },
+    {
+        "id": "can0_input_pcs_algo_params",
+        "type": "socketcan-out",
+        "z": "pcs_algo_params_state_tab",
+        "name": "CAN0 Input",
+        "config": "537471527fc35bc4",
+        "x": 120,
+        "y": 180,
+        "wires": [
+            [
+                "parse_pcs_algo_params"
+            ]
+        ]
+    },
+    {
+        "id": "parse_pcs_algo_params",
+        "type": "function",
+        "z": "pcs_algo_params_state_tab",
+        "name": "Parse PCS Algo Params State",
+        "func": "const frame = msg.payload || msg;\nlet canId = frame.canid & 0x1FFFFFFF;\nconst data = frame.data || [];\n\nlet state = flow.get(\"pcsAlgoParamsState\") || {\n    kind: \"PcsAlgoParamsState\",\n    version: 1,\n    // PCS_ALGO_PARAMS_1 (0x66B973x)\n    pcs_modOvertProtC: null,\n    pcs_ccCvRechgV: null,\n    pcs_batCvChgV: null,\n    pcs_cvChgMaxTimeMin: null,\n    // PCS_ALGO_PARAMS_2 (0x66B974x)\n    pcs_cvToFloatI: null,\n    pcs_floatChgV: null,\n    pcs_floatToCcI: null\n};\n\n// Helper function\nfunction s16(buf, offset) {\n    let val = (buf[offset] & 0xFF) | ((buf[offset + 1] & 0xFF) << 8);\n    return val > 32767 ? val - 65536 : val;\n}\n\nvar processed = false;\n\n// ==================== PCS_ALGO_PARAMS_1 (0x66B973x) ====================\nif ((canId & 0xFFFFFFF0) === 0x66B9730) {\n    processed = true;\n    // Bit 0-15: Module Over Temperature Protection (16 bit, Signed, Factor: 0.1, Unit: °C)\n    // Min: 0, Max: 200\n    state.pcs_modOvertProtC = s16(data, 0) * 0.1;\n    \n    // Bit 16-31: CC/CV Recharge Voltage (16 bit, Signed, Factor: 0.1, Unit: V)\n    // Min: 0, Max: 1500\n    state.pcs_ccCvRechgV = s16(data, 2) * 0.1;\n    \n    // Bit 32-47: Battery CV Charge Voltage (16 bit, Signed, Factor: 0.1, Unit: V)\n    // Min: 0, Max: 1500\n    state.pcs_batCvChgV = s16(data, 4) * 0.1;\n    \n    // Bit 48-63: CV Charge Max Time (16 bit, Signed, Factor: 1, Unit: min)\n    // Min: 0, Max: 65535\n    state.pcs_cvChgMaxTimeMin = s16(data, 6);\n}\n\n// ==================== PCS_ALGO_PARAMS_2 (0x66B974x) ====================\nif ((canId & 0xFFFFFFF0) === 0x66B9740) {\n    processed = true;\n    // Bit 0-15: CV to Float Current (16 bit, Signed, Factor: 0.1, Unit: A)\n    // Min: 0, Max: 5000\n    state.pcs_cvToFloatI = s16(data, 0) * 0.1;\n    \n    // Bit 16-31: Float Charge Voltage (16 bit, Signed, Factor: 0.1, Unit: V)\n    // Min: 0, Max: 1500\n    state.pcs_floatChgV = s16(data, 2) * 0.1;\n    \n    // Bit 32-47: Float to CC Current (16 bit, Signed, Factor: 0.1, Unit: A)\n    // Min: 0, Max: 5000\n    state.pcs_floatToCcI = s16(data, 4) * 0.1;\n}\n\nif (!processed) {\n    return null;\n}\n\nstate.timestampUtc = new Date().toISOString();\nflow.set(\"pcsAlgoParamsState\", state);\nmsg.payload = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 370,
+        "y": 180,
+        "wires": [
+            [
+                "debug_pcs_algo_params",
+                "throttle_pcs_algo_params"
+            ]
+        ]
+    },
+    {
+        "id": "debug_pcs_algo_params",
+        "type": "debug",
+        "z": "pcs_algo_params_state_tab",
+        "name": "PCS Algo Params State",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.pcs_batCvChgV",
+        "statusType": "msg",
+        "x": 620,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "throttle_pcs_algo_params",
+        "type": "delay",
+        "z": "pcs_algo_params_state_tab",
+        "name": "Throttle 5s",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "5",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 610,
+        "y": 180,
+        "wires": [
+            [
+                "tb_telemetry_pcs_algo_params"
+            ]
+        ]
+    },
+    {
+        "id": "tb_telemetry_pcs_algo_params",
+        "type": "mqtt out",
+        "z": "pcs_algo_params_state_tab",
+        "name": "ThingsBoard Telemetry",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 820,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "inject_get_pcs_algo_params",
+        "type": "inject",
+        "z": "pcs_algo_params_state_tab",
+        "name": "Get PCS Algo Params State",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 190,
+        "y": 300,
+        "wires": [
+            [
+                "get_pcs_algo_params"
+            ]
+        ]
+    },
+    {
+        "id": "get_pcs_algo_params",
+        "type": "function",
+        "z": "pcs_algo_params_state_tab",
+        "name": "Get State from Context",
+        "func": "var state = flow.get(\"pcsAlgoParamsState\");\nif (state) {\n    msg.payload = state;\n    return msg;\n}\nmsg.payload = { error: \"No data yet\" };\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 410,
+        "y": 300,
+        "wires": [
+            [
+                "debug_full_pcs_algo_params"
+            ]
+        ]
+    },
+    {
+        "id": "debug_full_pcs_algo_params",
+        "type": "debug",
+        "z": "pcs_algo_params_state_tab",
+        "name": "Full State",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 610,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "537471527fc35bc4",
+        "type": "socketcan-config",
+        "interface": "can0"
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

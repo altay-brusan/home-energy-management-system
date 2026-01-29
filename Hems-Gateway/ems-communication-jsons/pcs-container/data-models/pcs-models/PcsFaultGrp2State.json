@@ -1,0 +1,105 @@
+{
+  "kind": "PcsFaultGrp2State",
+  "version": 1,
+  "description": "PCS Fault Group 2 - Relay/Inverter/Timeout Faults",
+  
+  "canMessage": "0x66B979x",
+  "dlc": 8,
+
+  "signals": {
+    
+    "// ==================== Byte 0 (Bit 0-7) ====================": "",
+    
+    "pcs_preRelCloseFail": "boolean",            // Bit 0 - Pre Relay Close Fail
+    "pcs_preRelOpenFail": "boolean",             // Bit 1 - Pre Relay Open Fail
+    "pcs_preRelStClose": "boolean",              // Bit 2 - Pre Relay Stuck Close
+    "pcs_preRelStOpen": "boolean",               // Bit 3 - Pre Relay Stuck Open
+    "pcs_mainRelCloseFail": "boolean",           // Bit 4 - Main Relay Close Fail
+    "pcs_mainRelOpenFail": "boolean",            // Bit 5 - Main Relay Open Fail
+    "pcs_mainRelStClose": "boolean",             // Bit 6 - Main Relay Stuck Close
+    "pcs_mainRelNum": "boolean",                 // Bit 7 - Main Relay Number
+
+    "// ==================== Byte 1 (Bit 8-15) ====================": "",
+    
+    "pcs_acMainAdhFault": "boolean",             // Bit 8 - AC Main Adhesion Fault
+    "pcs_dcRelOpenFault": "boolean",             // Bit 9 - DC Relay Open Fault
+    "pcs_acMainOpenFault": "boolean",            // Bit 10 - AC Main Open Fault
+    "pcs_invAOvFault": "boolean",                // Bit 11 - Inverter A Over Voltage Fault
+    "pcs_invBOvFault": "boolean",                // Bit 12 - Inverter B Over Voltage Fault
+    "pcs_invCOvFault": "boolean",                // Bit 13 - Inverter C Over Voltage Fault
+    "pcs_gridIslandFault": "boolean",            // Bit 14 - Grid Island Fault
+    "pcs_sysResonFault": "boolean",              // Bit 15 - System Resonance Fault
+
+    "// ==================== Byte 2 (Bit 16-23) ====================": "",
+    
+    "pcs_swOvOcFault": "boolean",                // Bit 16 - SW Over/Over Current Fault
+    "pcs_hvCrossToFault": "boolean",             // Bit 17 - HV Cross Timeout Fault
+    "pcs_invAUvFault": "boolean",                // Bit 18 - Inverter A Under Voltage Fault
+    "pcs_invBUvFault": "boolean",                // Bit 19 - Inverter B Under Voltage Fault
+    "pcs_invCUvFault": "boolean",                // Bit 20 - Inverter C Under Voltage Fault
+    "pcs_offNoSyncFault": "boolean",             // Bit 21 - Off No Sync Fault
+    "pcs_offShortFault": "boolean",              // Bit 22 - Off Short Fault
+    "pcs_lvCrossToFault": "boolean",             // Bit 23 - LV Cross Timeout Fault
+
+    "// ==================== Byte 3 (Bit 24-31) ====================": "",
+    
+    "pcs_msg1Timeout": "boolean",                // Bit 24 - PCS MSG1 Timeout
+    "pcs_msg2Timeout": "boolean",                // Bit 25 - PCS MSG2 Timeout
+    "pcs_powerTimeout": "boolean",               // Bit 26 - Power Timeout
+    "pcs_moduleOpModeTout": "boolean",           // Bit 27 - Module Operation Mode Timeout
+    "pcs_setOngridModeTout": "boolean",          // Bit 28 - Set On-Grid Mode Timeout
+    "pcs_setOffgridFreqTout": "boolean",         // Bit 29 - Set Off-Grid Frequency Timeout
+    "pcs_setOffgridVoltTout": "boolean",         // Bit 30 - Set Off-Grid Voltage Timeout
+    "pcs_setPcsTout": "boolean",                 // Bit 31 - Set PCS Timeout
+
+    "// ==================== Byte 4 (Bit 32-39) ====================": "",
+    
+    "pcs_setPwrIndepTout": "boolean",            // Bit 32 - Set Power Independent Timeout
+    "pcs_setModHostTout": "boolean",             // Bit 33 - Set Module Host Timeout
+    "pcs_modCurrSrcParTout": "boolean",          // Bit 34 - Module Current Source Par Timeout
+    "pcs_setDehumidTout": "boolean",             // Bit 35 - Set Dehumidify Timeout
+    "pcs_setNumParMdiTout": "boolean",           // Bit 36 - Set Number Par MDI Timeout
+    "pcs_setAPhActPwrTout": "boolean",           // Bit 37 - Set A Phase Active Power Timeout
+    "pcs_setAPhReaPwrTout": "boolean",           // Bit 38 - Set A Phase Reactive Power Timeout
+    "pcs_setBPhActPwrTout": "boolean",           // Bit 39 - Set B Phase Active Power Timeout
+
+    "// ==================== Byte 5 (Bit 40-47) ====================": "",
+    
+    "pcs_setBPhReaPwrTout": "boolean",           // Bit 40 - Set B Phase Reactive Power Timeout
+    "pcs_setCPhActPwrTout": "boolean",           // Bit 41 - Set C Phase Active Power Timeout
+    "pcs_setCPhReaPwrTout": "boolean",           // Bit 42 - Set C Phase Reactive Power Timeout
+    "pcs_yearTout": "boolean",                   // Bit 43 - Year Timeout
+    "pcs_monthTout": "boolean",                  // Bit 44 - Month Timeout
+    "pcs_dayTout": "boolean",                    // Bit 45 - Day Timeout
+    "pcs_hourTout": "boolean",                   // Bit 46 - Hour Timeout
+    "pcs_minuteTout": "boolean",                 // Bit 47 - Minute Timeout
+
+    "// ==================== Byte 6 (Bit 48-55) ====================": "",
+    
+    "pcs_secondTout": "boolean",                 // Bit 48 - Second Timeout
+    "pcs_setMaxChgPwrTout": "boolean",           // Bit 49 - Set Max Charge Power Timeout
+    "pcs_setMaxDchPwrTout": "boolean",           // Bit 50 - Set Max Discharge Power Timeout
+    "pcs_setMaxChgCurrTout": "boolean",          // Bit 51 - Set Max Charge Current Timeout
+    "pcs_setMaxDchCurrTout": "boolean",          // Bit 52 - Set Max Discharge Current Timeout
+    "pcs_setDcBusVTout": "boolean",              // Bit 53 - Set DC Bus Voltage Timeout
+    "pcs_setDcSrcBusVTout": "boolean",           // Bit 54 - Set DC Source Bus Voltage Timeout
+    "pcs_setInsulEnTout": "boolean",             // Bit 55 - Set Insulation Enable Timeout
+
+    "// ==================== Byte 7 (Bit 56-63) ====================": "",
+    
+    "pcs_gridOverfProtTout": "boolean",          // Bit 56 - Grid Over Frequency Protection Timeout
+    "pcs_gridUnderfProtTout": "boolean",         // Bit 57 - Grid Under Frequency Protection Timeout
+    "pcs_islOverfProtTout": "boolean",           // Bit 58 - Island Over Frequency Protection Timeout
+    "pcs_islUnderfProtTout": "boolean",          // Bit 59 - Island Under Frequency Protection Timeout
+    "pcs_batOvProtTout": "boolean",              // Bit 60 - Battery Over Voltage Protection Timeout
+    "pcs_batUvProtTout": "boolean",              // Bit 61 - Battery Under Voltage Protection Timeout
+    "pcs_busOvProtTout": "boolean",              // Bit 62 - Bus Over Voltage Protection Timeout
+    "pcs_busUvProtTout": "boolean",              // Bit 63 - Bus Under Voltage Protection Timeout
+
+    "// ==================== Derived ====================": "",
+    
+    "pcs_hasFaultGrp2": "boolean",               // Any fault flag is true
+    "pcs_activeFaultsGrp2": "string[]",          // List of active fault names
+    "pcs_activeFaultCountGrp2": "number"         // Count of active faults
+  }
+}

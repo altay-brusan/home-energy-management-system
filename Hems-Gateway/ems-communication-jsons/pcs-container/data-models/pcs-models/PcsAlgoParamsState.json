@@ -1,0 +1,43 @@
+{
+  "kind": "PcsAlgoParamsState",
+  "version": 1,
+  "canMessages": {
+    "PCS_ALGO_PARAMS_1": "0x66B973x",
+    "PCS_ALGO_PARAMS_2": "0x66B974x"
+  },
+
+  "signals": {
+    
+    "// ========== PCS_ALGO_PARAMS_1 (0x66B973x) ==========": "",
+    
+    "pcs_modOvertProtC": "number",               // Bit 0-15 (16 bit) - Module Over Temperature Protection
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: °C
+                                                 //   Min: 0, Max: 200
+
+    "pcs_ccCvRechgV": "number",                  // Bit 16-31 (16 bit) - CC/CV Recharge Voltage
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: V
+                                                 //   Min: 0, Max: 1500
+
+    "pcs_batCvChgV": "number",                   // Bit 32-47 (16 bit) - Battery CV Charge Voltage
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: V
+                                                 //   Min: 0, Max: 1500
+
+    "pcs_cvChgMaxTimeMin": "number",             // Bit 48-63 (16 bit) - CV Charge Max Time
+                                                 //   Signed, Factor: 1, Offset: 0, Unit: min
+                                                 //   Min: 0, Max: 65535
+
+    "// ========== PCS_ALGO_PARAMS_2 (0x66B974x) ==========": "",
+    
+    "pcs_cvToFloatI": "number",                  // Bit 0-15 (16 bit) - CV to Float Current
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: A
+                                                 //   Min: 0, Max: 5000
+
+    "pcs_floatChgV": "number",                   // Bit 16-31 (16 bit) - Float Charge Voltage
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: V
+                                                 //   Min: 0, Max: 1500
+
+    "pcs_floatToCcI": "number"                   // Bit 32-47 (16 bit) - Float to CC Current
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: A
+                                                 //   Min: 0, Max: 5000
+  }
+}

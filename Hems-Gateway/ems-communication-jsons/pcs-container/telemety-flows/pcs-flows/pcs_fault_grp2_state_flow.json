@@ -1,0 +1,195 @@
+[
+    {
+        "id": "pcs_fault_grp2_state_tab",
+        "type": "tab",
+        "label": "PCS Fault Grp2 State",
+        "disabled": false,
+        "info": "PcsFaultGrp2State - Relay/Inverter/Timeout Faults\n\nCAN Message:\n- 0x66B979x: PCS_FAULT_TIMEOUT_GRP_2 (64 fault flags)\n\nThrottle: 500ms"
+    },
+    {
+        "id": "can0_input_pcs_fault_grp2",
+        "type": "socketcan-out",
+        "z": "pcs_fault_grp2_state_tab",
+        "name": "CAN0 Input",
+        "config": "537471527fc35bc4",
+        "x": 120,
+        "y": 180,
+        "wires": [
+            [
+                "parse_pcs_fault_grp2"
+            ]
+        ]
+    },
+    {
+        "id": "parse_pcs_fault_grp2",
+        "type": "function",
+        "z": "pcs_fault_grp2_state_tab",
+        "name": "Parse PCS Fault Grp2 State",
+        "func": "const frame = msg.payload || msg;\nlet canId = frame.canid & 0x1FFFFFFF;\nconst data = frame.data || [];\n\n// Only process PCS_FAULT_TIMEOUT_GRP_2 (0x66B979x)\nif ((canId & 0xFFFFFFF0) !== 0x66B9790) {\n    return null;\n}\n\n// Helper function to get bit value\nfunction getBit(buf, bitIndex) {\n    const byteIndex = Math.floor(bitIndex / 8);\n    const bitOffset = bitIndex % 8;\n    if (byteIndex >= buf.length) return false;\n    return ((buf[byteIndex] >> bitOffset) & 0x01) === 1;\n}\n\nlet state = {\n    kind: \"PcsFaultGrp2State\",\n    version: 1,\n    timestampUtc: new Date().toISOString(),\n    \n    // ==================== Byte 0 (Bit 0-7) ====================\n    pcs_preRelCloseFail: getBit(data, 0),        // Bit 0 - Pre Relay Close Fail\n    pcs_preRelOpenFail: getBit(data, 1),         // Bit 1 - Pre Relay Open Fail\n    pcs_preRelStClose: getBit(data, 2),          // Bit 2 - Pre Relay Stuck Close\n    pcs_preRelStOpen: getBit(data, 3),           // Bit 3 - Pre Relay Stuck Open\n    pcs_mainRelCloseFail: getBit(data, 4),       // Bit 4 - Main Relay Close Fail\n    pcs_mainRelOpenFail: getBit(data, 5),        // Bit 5 - Main Relay Open Fail\n    pcs_mainRelStClose: getBit(data, 6),         // Bit 6 - Main Relay Stuck Close\n    pcs_mainRelNum: getBit(data, 7),             // Bit 7 - Main Relay Number\n    \n    // ==================== Byte 1 (Bit 8-15) ====================\n    pcs_acMainAdhFault: getBit(data, 8),         // Bit 8 - AC Main Adhesion Fault\n    pcs_dcRelOpenFault: getBit(data, 9),         // Bit 9 - DC Relay Open Fault\n    pcs_acMainOpenFault: getBit(data, 10),       // Bit 10 - AC Main Open Fault\n    pcs_invAOvFault: getBit(data, 11),           // Bit 11 - Inverter A Over Voltage Fault\n    pcs_invBOvFault: getBit(data, 12),           // Bit 12 - Inverter B Over Voltage Fault\n    pcs_invCOvFault: getBit(data, 13),           // Bit 13 - Inverter C Over Voltage Fault\n    pcs_gridIslandFault: getBit(data, 14),       // Bit 14 - Grid Island Fault\n    pcs_sysResonFault: getBit(data, 15),         // Bit 15 - System Resonance Fault\n    \n    // ==================== Byte 2 (Bit 16-23) ====================\n    pcs_swOvOcFault: getBit(data, 16),           // Bit 16 - SW Over/Over Current Fault\n    pcs_hvCrossToFault: getBit(data, 17),        // Bit 17 - HV Cross Timeout Fault\n    pcs_invAUvFault: getBit(data, 18),           // Bit 18 - Inverter A Under Voltage Fault\n    pcs_invBUvFault: getBit(data, 19),           // Bit 19 - Inverter B Under Voltage Fault\n    pcs_invCUvFault: getBit(data, 20),           // Bit 20 - Inverter C Under Voltage Fault\n    pcs_offNoSyncFault: getBit(data, 21),        // Bit 21 - Off No Sync Fault\n    pcs_offShortFault: getBit(data, 22),         // Bit 22 - Off Short Fault\n    pcs_lvCrossToFault: getBit(data, 23),        // Bit 23 - LV Cross Timeout Fault\n    \n    // ==================== Byte 3 (Bit 24-31) ====================\n    pcs_msg1Timeout: getBit(data, 24),           // Bit 24 - PCS MSG1 Timeout\n    pcs_msg2Timeout: getBit(data, 25),           // Bit 25 - PCS MSG2 Timeout\n    pcs_powerTimeout: getBit(data, 26),          // Bit 26 - Power Timeout\n    pcs_moduleOpModeTout: getBit(data, 27),      // Bit 27 - Module Operation Mode Timeout\n    pcs_setOngridModeTout: getBit(data, 28),     // Bit 28 - Set On-Grid Mode Timeout\n    pcs_setOffgridFreqTout: getBit(data, 29),    // Bit 29 - Set Off-Grid Frequency Timeout\n    pcs_setOffgridVoltTout: getBit(data, 30),    // Bit 30 - Set Off-Grid Voltage Timeout\n    pcs_setPcsTout: getBit(data, 31),            // Bit 31 - Set PCS Timeout\n    \n    // ==================== Byte 4 (Bit 32-39) ====================\n    pcs_setPwrIndepTout: getBit(data, 32),       // Bit 32 - Set Power Independent Timeout\n    pcs_setModHostTout: getBit(data, 33),        // Bit 33 - Set Module Host Timeout\n    pcs_modCurrSrcParTout: getBit(data, 34),     // Bit 34 - Module Current Source Par Timeout\n    pcs_setDehumidTout: getBit(data, 35),        // Bit 35 - Set Dehumidify Timeout\n    pcs_setNumParMdiTout: getBit(data, 36),      // Bit 36 - Set Number Par MDI Timeout\n    pcs_setAPhActPwrTout: getBit(data, 37),      // Bit 37 - Set A Phase Active Power Timeout\n    pcs_setAPhReaPwrTout: getBit(data, 38),      // Bit 38 - Set A Phase Reactive Power Timeout\n    pcs_setBPhActPwrTout: getBit(data, 39),      // Bit 39 - Set B Phase Active Power Timeout\n    \n    // ==================== Byte 5 (Bit 40-47) ====================\n    pcs_setBPhReaPwrTout: getBit(data, 40),      // Bit 40 - Set B Phase Reactive Power Timeout\n    pcs_setCPhActPwrTout: getBit(data, 41),      // Bit 41 - Set C Phase Active Power Timeout\n    pcs_setCPhReaPwrTout: getBit(data, 42),      // Bit 42 - Set C Phase Reactive Power Timeout\n    pcs_yearTout: getBit(data, 43),              // Bit 43 - Year Timeout\n    pcs_monthTout: getBit(data, 44),             // Bit 44 - Month Timeout\n    pcs_dayTout: getBit(data, 45),               // Bit 45 - Day Timeout\n    pcs_hourTout: getBit(data, 46),              // Bit 46 - Hour Timeout\n    pcs_minuteTout: getBit(data, 47),            // Bit 47 - Minute Timeout\n    \n    // ==================== Byte 6 (Bit 48-55) ====================\n    pcs_secondTout: getBit(data, 48),            // Bit 48 - Second Timeout\n    pcs_setMaxChgPwrTout: getBit(data, 49),      // Bit 49 - Set Max Charge Power Timeout\n    pcs_setMaxDchPwrTout: getBit(data, 50),      // Bit 50 - Set Max Discharge Power Timeout\n    pcs_setMaxChgCurrTout: getBit(data, 51),     // Bit 51 - Set Max Charge Current Timeout\n    pcs_setMaxDchCurrTout: getBit(data, 52),     // Bit 52 - Set Max Discharge Current Timeout\n    pcs_setDcBusVTout: getBit(data, 53),         // Bit 53 - Set DC Bus Voltage Timeout\n    pcs_setDcSrcBusVTout: getBit(data, 54),      // Bit 54 - Set DC Source Bus Voltage Timeout\n    pcs_setInsulEnTout: getBit(data, 55),        // Bit 55 - Set Insulation Enable Timeout\n    \n    // ==================== Byte 7 (Bit 56-63) ====================\n    pcs_gridOverfProtTout: getBit(data, 56),     // Bit 56 - Grid Over Frequency Protection Timeout\n    pcs_gridUnderfProtTout: getBit(data, 57),    // Bit 57 - Grid Under Frequency Protection Timeout\n    pcs_islOverfProtTout: getBit(data, 58),      // Bit 58 - Island Over Frequency Protection Timeout\n    pcs_islUnderfProtTout: getBit(data, 59),     // Bit 59 - Island Under Frequency Protection Timeout\n    pcs_batOvProtTout: getBit(data, 60),         // Bit 60 - Battery Over Voltage Protection Timeout\n    pcs_batUvProtTout: getBit(data, 61),         // Bit 61 - Battery Under Voltage Protection Timeout\n    pcs_busOvProtTout: getBit(data, 62),         // Bit 62 - Bus Over Voltage Protection Timeout\n    pcs_busUvProtTout: getBit(data, 63)          // Bit 63 - Bus Under Voltage Protection Timeout\n};\n\n// ==================== Derived Fields ====================\nconst allFaultFlags = [\n    'pcs_preRelCloseFail', 'pcs_preRelOpenFail', 'pcs_preRelStClose', 'pcs_preRelStOpen',\n    'pcs_mainRelCloseFail', 'pcs_mainRelOpenFail', 'pcs_mainRelStClose', 'pcs_mainRelNum',\n    'pcs_acMainAdhFault', 'pcs_dcRelOpenFault', 'pcs_acMainOpenFault', 'pcs_invAOvFault',\n    'pcs_invBOvFault', 'pcs_invCOvFault', 'pcs_gridIslandFault', 'pcs_sysResonFault',\n    'pcs_swOvOcFault', 'pcs_hvCrossToFault', 'pcs_invAUvFault', 'pcs_invBUvFault',\n    'pcs_invCUvFault', 'pcs_offNoSyncFault', 'pcs_offShortFault', 'pcs_lvCrossToFault',\n    'pcs_msg1Timeout', 'pcs_msg2Timeout', 'pcs_powerTimeout', 'pcs_moduleOpModeTout',\n    'pcs_setOngridModeTout', 'pcs_setOffgridFreqTout', 'pcs_setOffgridVoltTout', 'pcs_setPcsTout',\n    'pcs_setPwrIndepTout', 'pcs_setModHostTout', 'pcs_modCurrSrcParTout', 'pcs_setDehumidTout',\n    'pcs_setNumParMdiTout', 'pcs_setAPhActPwrTout', 'pcs_setAPhReaPwrTout', 'pcs_setBPhActPwrTout',\n    'pcs_setBPhReaPwrTout', 'pcs_setCPhActPwrTout', 'pcs_setCPhReaPwrTout', 'pcs_yearTout',\n    'pcs_monthTout', 'pcs_dayTout', 'pcs_hourTout', 'pcs_minuteTout',\n    'pcs_secondTout', 'pcs_setMaxChgPwrTout', 'pcs_setMaxDchPwrTout', 'pcs_setMaxChgCurrTout',\n    'pcs_setMaxDchCurrTout', 'pcs_setDcBusVTout', 'pcs_setDcSrcBusVTout', 'pcs_setInsulEnTout',\n    'pcs_gridOverfProtTout', 'pcs_gridUnderfProtTout', 'pcs_islOverfProtTout', 'pcs_islUnderfProtTout',\n    'pcs_batOvProtTout', 'pcs_batUvProtTout', 'pcs_busOvProtTout', 'pcs_busUvProtTout'\n];\n\nlet activeFaults = [];\nallFaultFlags.forEach(flag => {\n    if (state[flag] === true) activeFaults.push(flag);\n});\n\nstate.pcs_hasFaultGrp2 = activeFaults.length > 0;\nstate.pcs_activeFaultsGrp2 = activeFaults;\nstate.pcs_activeFaultCountGrp2 = activeFaults.length;\n\nflow.set(\"pcsFaultGrp2State\", state);\nmsg.payload = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 370,
+        "y": 180,
+        "wires": [
+            [
+                "debug_pcs_fault_grp2",
+                "throttle_pcs_fault_grp2"
+            ]
+        ]
+    },
+    {
+        "id": "debug_pcs_fault_grp2",
+        "type": "debug",
+        "z": "pcs_fault_grp2_state_tab",
+        "name": "PCS Fault Grp2 State",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.pcs_activeFaultCountGrp2",
+        "statusType": "msg",
+        "x": 620,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "throttle_pcs_fault_grp2",
+        "type": "delay",
+        "z": "pcs_fault_grp2_state_tab",
+        "name": "Throttle 500ms",
+        "pauseType": "rate",
+        "timeout": "500",
+        "timeoutUnits": "milliseconds",
+        "rate": "2",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 600,
+        "y": 180,
+        "wires": [
+            [
+                "tb_telemetry_pcs_fault_grp2"
+            ]
+        ]
+    },
+    {
+        "id": "tb_telemetry_pcs_fault_grp2",
+        "type": "mqtt out",
+        "z": "pcs_fault_grp2_state_tab",
+        "name": "ThingsBoard Telemetry",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 820,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "inject_get_pcs_fault_grp2",
+        "type": "inject",
+        "z": "pcs_fault_grp2_state_tab",
+        "name": "Get PCS Fault Grp2 State",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 190,
+        "y": 300,
+        "wires": [
+            [
+                "get_pcs_fault_grp2"
+            ]
+        ]
+    },
+    {
+        "id": "get_pcs_fault_grp2",
+        "type": "function",
+        "z": "pcs_fault_grp2_state_tab",
+        "name": "Get State from Context",
+        "func": "var state = flow.get(\"pcsFaultGrp2State\");\nif (state) {\n    msg.payload = state;\n    return msg;\n}\nmsg.payload = { error: \"No data yet\" };\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 410,
+        "y": 300,
+        "wires": [
+            [
+                "debug_full_pcs_fault_grp2"
+            ]
+        ]
+    },
+    {
+        "id": "debug_full_pcs_fault_grp2",
+        "type": "debug",
+        "z": "pcs_fault_grp2_state_tab",
+        "name": "Full State",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 610,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "537471527fc35bc4",
+        "type": "socketcan-config",
+        "interface": "can0"
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

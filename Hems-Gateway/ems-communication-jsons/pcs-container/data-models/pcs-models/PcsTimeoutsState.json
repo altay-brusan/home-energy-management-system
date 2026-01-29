@@ -1,0 +1,39 @@
+{
+  "kind": "PcsTimeoutsState",
+  "version": 1,
+  "canMessage": "0x66B97Ax",
+
+  "signals": {
+    "pcs_dcOcProtTout": "boolean",               // Bit 0 - DC Over Current Protection Timeout
+    "pcs_acOvProtTout": "boolean",               // Bit 1 - AC Over Voltage Protection Timeout
+    "pcs_acUvProtTout": "boolean",               // Bit 2 - AC Under Voltage Protection Timeout
+    "pcs_acOcProtTout": "boolean",               // Bit 3 - AC Over Current Protection Timeout
+    "pcs_modOvertProtTout": "boolean",           // Bit 4 - Module Over Temperature Protection Timeout
+    "pcs_ccCvRechgVTout": "boolean",             // Bit 5 - CC/CV Recharge Voltage Timeout
+    "pcs_batCvChgVTout": "boolean",              // Bit 6 - Battery CV Charge Voltage Timeout
+    "pcs_cvChgMaxTimeTout": "boolean",           // Bit 7 - CV Charge Max Time Timeout
+    "pcs_cvToFloatCurrTout": "boolean",          // Bit 8 - CV to Float Current Timeout
+    "pcs_floatChgVTout": "boolean",              // Bit 9 - Float Charge Voltage Timeout
+    "pcs_floatToCcCurrTout": "boolean",          // Bit 10 - Float to CC Current Timeout
+    "pcs_pwrOnOffCmdTout": "boolean",            // Bit 11 - Power ON/OFF Command Timeout
+    "pcs_faultResetCmdTout": "boolean",          // Bit 12 - Fault Reset Command Timeout
+    "pcs_cureParamCmdTout": "boolean",           // Bit 13 - Cure Param Command Timeout
+    "pcs_chgResetCmdTout": "boolean",            // Bit 14 - Charge Reset Command Timeout
+    "pcs_safetyOneKeyTout": "boolean",           // Bit 15 - Safety One Key Timeout
+    "pcs_reMbAddrTout": "boolean",               // Bit 16 - RE Modbus Address Timeout
+    "pcs_reMbBaudTout": "boolean",               // Bit 17 - RE Modbus Baud Timeout
+    "pcs_hmiMbAddrTout": "boolean",              // Bit 18 - HMI Modbus Address Timeout
+    "pcs_hmiMbBaudTout": "boolean",              // Bit 19 - HMI Modbus Baud Timeout
+    "pcs_emsCommFailTout": "boolean",            // Bit 20 - EMS Communication Fail Timeout
+    "pcs_setPcsPcCmdTimeTout": "boolean",        // Bit 21 - Set PCS PC Command Time Timeout
+    "pcs_fault": "boolean",                      // Bit 22 - PCS Fault
+    "pcs_rs485Fault": "boolean",                 // Bit 23 - PCS RS485 Fault
+    "pcs_varPowerTimeout": "boolean",            // Bit 24 - VAR Power Timeout
+    "pcs_msg1_2Timeout": "boolean",              // Bit 25 - PCS MSG1_2 Timeout
+
+    "// ========== Derived ==========": "",
+    "pcs_hasTimeout": "boolean",                 // Any timeout flag is true
+    "pcs_activeTimeouts": "string[]",            // List of active timeout names
+    "pcs_activeTimeoutCount": "number"           // Count of active timeouts
+  }
+}

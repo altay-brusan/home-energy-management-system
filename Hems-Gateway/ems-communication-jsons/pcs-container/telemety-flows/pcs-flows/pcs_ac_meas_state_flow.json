@@ -1,0 +1,195 @@
+[
+    {
+        "id": "pcs_ac_meas_state_tab",
+        "type": "tab",
+        "label": "PCS AC Meas State",
+        "disabled": false,
+        "info": "PcsAcMeasState - PCS AC Measurements\n\nCAN Messages:\n- 0x66B966x: PCS_MEAS_1\n- 0x66B967x: PCS_MEAS_2\n- 0x66B968x: PCS_MEAS_3\n\nThrottle: 5s"
+    },
+    {
+        "id": "can0_input_pcs_ac_meas",
+        "type": "socketcan-out",
+        "z": "pcs_ac_meas_state_tab",
+        "name": "CAN0 Input",
+        "config": "537471527fc35bc4",
+        "x": 120,
+        "y": 180,
+        "wires": [
+            [
+                "parse_pcs_ac_meas"
+            ]
+        ]
+    },
+    {
+        "id": "parse_pcs_ac_meas",
+        "type": "function",
+        "z": "pcs_ac_meas_state_tab",
+        "name": "Parse PCS AC Meas State",
+        "func": "const frame = msg.payload || msg;\nlet canId = frame.canid & 0x1FFFFFFF;\nconst data = frame.data || [];\n\nlet state = flow.get(\"pcsAcMeasState\") || {\n    kind: \"PcsAcMeasState\",\n    version: 1,\n    // PCS_MEAS_1 (0x66B966x)\n    pcs_abLineV: null,\n    pcs_bcLineV: null,\n    pcs_acLineV: null,\n    pcs_aPhaseV: null,\n    // PCS_MEAS_2 (0x66B967x)\n    pcs_bPhaseV: null,\n    pcs_cPhaseV: null,\n    pcs_aPhaseCurrA: null,\n    pcs_bPhaseCurrA: null,\n    // PCS_MEAS_3 (0x66B968x)\n    pcs_cPhaseCurrA: null,\n    pcs_aPhIndCurrA: null,\n    pcs_bPhIndCurrA: null,\n    pcs_cPhIndCurrA: null\n};\n\n// Helper function\nfunction s16(buf, offset) {\n    let val = (buf[offset] & 0xFF) | ((buf[offset + 1] & 0xFF) << 8);\n    return val > 32767 ? val - 65536 : val;\n}\n\nvar processed = false;\n\n// ==================== PCS_MEAS_1 (0x66B966x) ====================\nif ((canId & 0xFFFFFFF0) === 0x66B9660) {\n    processed = true;\n    \n    // Bit 0-15: AB Line Voltage\n    // 16 bit, Signed, Factor: 0.1, Offset: 0, Unit: V\n    // Min: 0, Max: 6553.5\n    state.pcs_abLineV = s16(data, 0) * 0.1;\n    \n    // Bit 16-31: BC Line Voltage\n    // 16 bit, Signed, Factor: 0.1, Offset: 0, Unit: V\n    // Min: 0, Max: 6553.5\n    state.pcs_bcLineV = s16(data, 2) * 0.1;\n    \n    // Bit 32-47: AC Line Voltage\n    // 16 bit, Signed, Factor: 0.1, Offset: 0, Unit: V\n    // Min: 0, Max: 6553.5\n    state.pcs_acLineV = s16(data, 4) * 0.1;\n    \n    // Bit 48-63: A Phase Voltage\n    // 16 bit, Signed, Factor: 0.1, Offset: 0, Unit: V\n    // Min: 0, Max: 6553.5\n    state.pcs_aPhaseV = s16(data, 6) * 0.1;\n}\n\n// ==================== PCS_MEAS_2 (0x66B967x) ====================\nif ((canId & 0xFFFFFFF0) === 0x66B9670) {\n    processed = true;\n    \n    // Bit 0-15: B Phase Voltage\n    // 16 bit, Signed, Factor: 0.1, Offset: 0, Unit: V\n    // Min: 0, Max: 6553.5\n    state.pcs_bPhaseV = s16(data, 0) * 0.1;\n    \n    // Bit 16-31: C Phase Voltage\n    // 16 bit, Signed, Factor: 0.1, Offset: 0, Unit: V\n    // Min: 0, Max: 6553.5\n    state.pcs_cPhaseV = s16(data, 2) * 0.1;\n    \n    // Bit 32-47: A Phase Current\n    // 16 bit, Signed, Factor: 0.1, Offset: 0, Unit: A\n    // Min: -3276.8, Max: 3276.7\n    state.pcs_aPhaseCurrA = s16(data, 4) * 0.1;\n    \n    // Bit 48-63: B Phase Current\n    // 16 bit, Signed, Factor: 0.1, Offset: 0, Unit: A\n    // Min: -3276.8, Max: 3276.7\n    state.pcs_bPhaseCurrA = s16(data, 6) * 0.1;\n}\n\n// ==================== PCS_MEAS_3 (0x66B968x) ====================\nif ((canId & 0xFFFFFFF0) === 0x66B9680) {\n    processed = true;\n    \n    // Bit 0-15: C Phase Current\n    // 16 bit, Signed, Factor: 0.1, Offset: 0, Unit: A\n    // Min: -3276.8, Max: 3276.7\n    state.pcs_cPhaseCurrA = s16(data, 0) * 0.1;\n    \n    // Bit 16-31: A Phase Inductor Current\n    // 16 bit, Signed, Factor: 0.1, Offset: 0, Unit: A\n    // Min: -3276.8, Max: 3276.7\n    state.pcs_aPhIndCurrA = s16(data, 2) * 0.1;\n    \n    // Bit 32-47: B Phase Inductor Current\n    // 16 bit, Signed, Factor: 0.1, Offset: 0, Unit: A\n    // Min: -3276.8, Max: 3276.7\n    state.pcs_bPhIndCurrA = s16(data, 4) * 0.1;\n    \n    // Bit 48-63: C Phase Inductor Current\n    // 16 bit, Signed, Factor: 0.1, Offset: 0, Unit: A\n    // Min: -3276.8, Max: 3276.7\n    state.pcs_cPhIndCurrA = s16(data, 6) * 0.1;\n}\n\nif (!processed) {\n    return null;\n}\n\nstate.timestampUtc = new Date().toISOString();\nflow.set(\"pcsAcMeasState\", state);\nmsg.payload = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 180,
+        "wires": [
+            [
+                "debug_pcs_ac_meas",
+                "throttle_pcs_ac_meas"
+            ]
+        ]
+    },
+    {
+        "id": "debug_pcs_ac_meas",
+        "type": "debug",
+        "z": "pcs_ac_meas_state_tab",
+        "name": "PCS AC Meas State",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.pcs_abLineV",
+        "statusType": "msg",
+        "x": 610,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "throttle_pcs_ac_meas",
+        "type": "delay",
+        "z": "pcs_ac_meas_state_tab",
+        "name": "Throttle 5s",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "5",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 590,
+        "y": 180,
+        "wires": [
+            [
+                "tb_telemetry_pcs_ac_meas"
+            ]
+        ]
+    },
+    {
+        "id": "tb_telemetry_pcs_ac_meas",
+        "type": "mqtt out",
+        "z": "pcs_ac_meas_state_tab",
+        "name": "ThingsBoard Telemetry",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 800,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "inject_get_pcs_ac_meas",
+        "type": "inject",
+        "z": "pcs_ac_meas_state_tab",
+        "name": "Get PCS AC Meas State",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 180,
+        "y": 300,
+        "wires": [
+            [
+                "get_pcs_ac_meas"
+            ]
+        ]
+    },
+    {
+        "id": "get_pcs_ac_meas",
+        "type": "function",
+        "z": "pcs_ac_meas_state_tab",
+        "name": "Get State from Context",
+        "func": "var state = flow.get(\"pcsAcMeasState\");\nif (state) {\n    msg.payload = state;\n    return msg;\n}\nmsg.payload = { error: \"No data yet\" };\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 390,
+        "y": 300,
+        "wires": [
+            [
+                "debug_full_pcs_ac_meas"
+            ]
+        ]
+    },
+    {
+        "id": "debug_full_pcs_ac_meas",
+        "type": "debug",
+        "z": "pcs_ac_meas_state_tab",
+        "name": "Full State",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 590,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "537471527fc35bc4",
+        "type": "socketcan-config",
+        "interface": "can0"
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]
