@@ -35,11 +35,13 @@ public class Alm : EndpointGroupBase
     /// </summary>
     /// <param name="deviceId">The device ID to request prediction for</param>
     /// <param name="sender">MediatR sender</param>
+    /// <param name="hubContext">SignalR hub context for notifications</param>
     /// <param name="logger">Logger instance</param>
     /// <param name="modelType">Model type to use (default: power-consumption)</param>
     public async Task<IResult> RequestPrediction(
         Guid deviceId,
         ISender sender,
+        IHubContext<AlmNotificationHub, IAlmNotificationHubClient> hubContext,
         ILogger<Alm> logger,
         [FromQuery] string? modelType = "power-consumption")
     {
@@ -61,6 +63,21 @@ public class Alm : EndpointGroupBase
 
         // Get display name for the model type used
         var modelConfig = AlmModelConfiguration.GetConfig(parsedModelType);
+
+        // Notify frontend via SignalR that prediction has started (or returned from cache)
+        if (result.JobId.HasValue)
+        {
+            var groupName = $"AlmDevice_{deviceId}";
+            await hubContext.Clients.Group(groupName).PredictionStarted(new AlmPredictionNotification
+            {
+                JobId = result.JobId.Value,
+                DeviceId = deviceId,
+                AlmJobId = result.AlmJobId,
+                Status = result.FromCache ? "cached" : "started",
+                ModelType = modelConfig.DisplayName,
+                FromCache = result.FromCache
+            });
+        }
 
         return Results.Ok(new
         {
@@ -156,13 +173,20 @@ public class Alm : EndpointGroupBase
         {
             var groupName = $"AlmDevice_{result.DeviceId.Value}";
 
+            // Get display name for the model type
+            var modelTypeDisplayName = result.ModelType.HasValue
+                ? AlmModelConfiguration.GetConfig(result.ModelType.Value).DisplayName
+                : "power-consumption";
+
             if (result.Status == "completed")
             {
                 await hubContext.Clients.Group(groupName).PredictionCompleted(new AlmPredictionNotification
                 {
                     JobId = result.JobId.Value,
                     DeviceId = result.DeviceId.Value,
-                    Status = "completed"
+                    AlmJobId = result.AlmJobId,
+                    Status = "completed",
+                    ModelType = modelTypeDisplayName
                 });
             }
             else if (result.Status == "failed" || result.Status == "error")
@@ -171,7 +195,9 @@ public class Alm : EndpointGroupBase
                 {
                     JobId = result.JobId.Value,
                     DeviceId = result.DeviceId.Value,
+                    AlmJobId = result.AlmJobId,
                     Status = "failed",
+                    ModelType = modelTypeDisplayName,
                     Error = result.Error
                 });
             }

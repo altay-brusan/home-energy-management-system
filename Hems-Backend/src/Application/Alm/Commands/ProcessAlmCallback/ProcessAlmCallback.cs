@@ -16,6 +16,8 @@ public class ProcessAlmCallbackResult
     public bool Success { get; set; }
     public Guid? JobId { get; set; }
     public Guid? DeviceId { get; set; }
+    public string? AlmJobId { get; set; }
+    public AlmModelType? ModelType { get; set; }
     public string? Status { get; set; }
     public string? Error { get; set; }
 }
@@ -108,6 +110,8 @@ internal sealed class ProcessAlmCallbackCommandHandler : IRequestHandler<Process
                 Success = true,
                 JobId = job.Id,
                 DeviceId = job.DeviceId,
+                AlmJobId = job.AlmJobId,
+                ModelType = job.ModelType,
                 Status = status,
                 Error = errorMsg
             };
