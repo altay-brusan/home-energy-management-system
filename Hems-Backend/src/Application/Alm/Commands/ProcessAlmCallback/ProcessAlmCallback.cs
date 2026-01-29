@@ -1,7 +1,5 @@
 using System.Text.Json;
 using Hems_Backend.Application.Common.Interfaces;
-using Hems_Backend.Domain.Constants;
-using Hems_Backend.Domain.Entities;
 using Hems_Backend.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -18,7 +16,9 @@ public class ProcessAlmCallbackResult
     public bool Success { get; set; }
     public Guid? JobId { get; set; }
     public Guid? DeviceId { get; set; }
-    public int PredictionCount { get; set; }
+    public string? AlmJobId { get; set; }
+    public AlmModelType? ModelType { get; set; }
+    public string? Status { get; set; }
     public string? Error { get; set; }
 }
 
@@ -42,9 +42,6 @@ internal sealed class ProcessAlmCallbackCommandHandler : IRequestHandler<Process
             var rawJson = request.RawBody.GetRawText();
             _logger.LogInformation("ALM callback received: {Body}", rawJson);
 
-            // Parse callback payload
-            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-
             // Extract job_id from the callback
             string? almJobId = null;
             if (request.RawBody.TryGetProperty("job_id", out var jobIdProp))
@@ -66,113 +63,57 @@ internal sealed class ProcessAlmCallbackCommandHandler : IRequestHandler<Process
                 return new ProcessAlmCallbackResult { Success = false, Error = $"Unknown job: {almJobId}" };
             }
 
-            // Check status from callback
+            // Extract status from callback
             string? status = null;
             if (request.RawBody.TryGetProperty("status", out var statusProp))
                 status = statusProp.GetString();
 
-            if (status == "failed" || status == "error")
-            {
-                string? errorMsg = null;
-                if (request.RawBody.TryGetProperty("error", out var errorProp))
-                    errorMsg = errorProp.GetString();
+            // Extract error message if present
+            string? errorMsg = null;
+            if (request.RawBody.TryGetProperty("error", out var errorProp))
+                errorMsg = errorProp.GetString();
 
+            // Update job status based on callback
+            // Note: Forecast data is NOT parsed here - it's fetched via GET /api/Alm/job/{jobId}
+            if (status == "completed")
+            {
+                job.Status = AlmJobStatus.Completed;
+                job.CompletedAt = DateTimeOffset.UtcNow;
+
+                _logger.LogInformation(
+                    "ALM job {AlmJobId} completed. JobId: {JobId}, DeviceId: {DeviceId}",
+                    almJobId, job.Id, job.DeviceId);
+            }
+            else if (status == "failed" || status == "error")
+            {
                 job.Status = AlmJobStatus.Failed;
                 job.ErrorMessage = errorMsg ?? "ALM job failed";
                 job.CompletedAt = DateTimeOffset.UtcNow;
-                await _context.SaveChangesAsync(cancellationToken);
 
-                _logger.LogWarning("ALM job {AlmJobId} failed: {Error}", almJobId, errorMsg);
-                return new ProcessAlmCallbackResult { Success = true, JobId = job.Id, DeviceId = job.DeviceId, Error = errorMsg };
+                _logger.LogWarning(
+                    "ALM job {AlmJobId} failed. JobId: {JobId}, DeviceId: {DeviceId}, Error: {Error}",
+                    almJobId, job.Id, job.DeviceId, errorMsg);
             }
-
-            // Parse prediction results
-            var predictionResults = new List<AlmPredictionHistory>();
-
-            if (request.RawBody.TryGetProperty("result", out var resultProp))
+            else if (status == "processing")
             {
-                // Result could be an object with predictions array or direct array
-                JsonElement predictionsArray;
-                if (resultProp.ValueKind == JsonValueKind.Object && resultProp.TryGetProperty("predictions", out var predsProp))
-                {
-                    predictionsArray = predsProp;
-                }
-                else if (resultProp.ValueKind == JsonValueKind.Array)
-                {
-                    predictionsArray = resultProp;
-                }
-                else
-                {
-                    _logger.LogWarning("ALM callback result has unexpected format for job {AlmJobId}", almJobId);
-                    job.Status = AlmJobStatus.Completed;
-                    job.CompletedAt = DateTimeOffset.UtcNow;
-                    await _context.SaveChangesAsync(cancellationToken);
-                    return new ProcessAlmCallbackResult { Success = true, JobId = job.Id, DeviceId = job.DeviceId };
-                }
+                job.Status = AlmJobStatus.Processing;
 
-                foreach (var prediction in predictionsArray.EnumerateArray())
-                {
-                    DateTime predictedTime = default;
-                    double predictedValue = 0;
-
-                    // Parse timestamp
-                    if (prediction.TryGetProperty("timestamp", out var tsProp))
-                    {
-                        if (tsProp.ValueKind == JsonValueKind.String)
-                            DateTime.TryParse(tsProp.GetString(), out predictedTime);
-                    }
-                    else if (prediction.TryGetProperty("ds", out var dsProp))
-                    {
-                        if (dsProp.ValueKind == JsonValueKind.String)
-                            DateTime.TryParse(dsProp.GetString(), out predictedTime);
-                    }
-
-                    // Parse value
-                    if (prediction.TryGetProperty("value", out var valueProp))
-                    {
-                        predictedValue = valueProp.GetDouble();
-                    }
-                    else if (prediction.TryGetProperty("yhat", out var yhatProp))
-                    {
-                        predictedValue = yhatProp.GetDouble();
-                    }
-                    else if (prediction.TryGetProperty(AlmFeatures.LoadTotalPowerW, out var loadProp))
-                    {
-                        predictedValue = loadProp.GetDouble();
-                    }
-
-                    predictionResults.Add(new AlmPredictionHistory
-                    {
-                        AlmPredictionJobId = job.Id,
-                        DeviceId = job.DeviceId,
-                        ModelType = job.ModelType,
-                        PredictedTime = predictedTime,
-                        PredictedValue = predictedValue,
-                        FeatureName = AlmFeatures.LoadTotalPowerW
-                    });
-                }
+                _logger.LogInformation(
+                    "ALM job {AlmJobId} processing. JobId: {JobId}, DeviceId: {DeviceId}",
+                    almJobId, job.Id, job.DeviceId);
             }
 
-            // Save predictions
-            if (predictionResults.Count > 0)
-            {
-                _context.AlmPredictionHistories.AddRange(predictionResults);
-            }
-
-            job.Status = AlmJobStatus.Completed;
-            job.CompletedAt = DateTimeOffset.UtcNow;
             await _context.SaveChangesAsync(cancellationToken);
-
-            _logger.LogInformation(
-                "ALM callback processed. JobId: {JobId}, AlmJobId: {AlmJobId}, DeviceId: {DeviceId}, Predictions: {Count}",
-                job.Id, almJobId, job.DeviceId, predictionResults.Count);
 
             return new ProcessAlmCallbackResult
             {
                 Success = true,
                 JobId = job.Id,
                 DeviceId = job.DeviceId,
-                PredictionCount = predictionResults.Count
+                AlmJobId = job.AlmJobId,
+                ModelType = job.ModelType,
+                Status = status,
+                Error = errorMsg
             };
         }
         catch (Exception ex)

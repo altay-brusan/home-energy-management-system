@@ -150,8 +150,24 @@ public class AlmNotificationHub : Hub<IAlmNotificationHubClient>
 
 public interface IAlmNotificationHubClient
 {
+    /// <summary>
+    /// Notifies when a prediction job has been submitted/started
+    /// </summary>
+    Task PredictionStarted(AlmPredictionNotification notification);
+
+    /// <summary>
+    /// Notifies when a prediction job has completed successfully
+    /// </summary>
     Task PredictionCompleted(AlmPredictionNotification notification);
+
+    /// <summary>
+    /// Notifies when a prediction job has failed
+    /// </summary>
     Task PredictionFailed(AlmPredictionNotification notification);
+
+    /// <summary>
+    /// Notifies about ALM service health status changes
+    /// </summary>
     Task AlmHealthStatus(AlmHealthStatusNotification notification);
 }
 
@@ -160,6 +176,9 @@ public class AlmPredictionNotification
     public Guid JobId { get; set; }
     public Guid DeviceId { get; set; }
     public string Status { get; set; } = string.Empty;
+    public string ModelType { get; set; } = string.Empty;
+    public string? AlmJobId { get; set; }
+    public bool FromCache { get; set; }
     public int PredictionCount { get; set; }
     public string? Error { get; set; }
     public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.UtcNow;

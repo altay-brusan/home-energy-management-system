@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 using Hems_Backend.Application.Common.Interfaces;
-using Hems_Backend.Domain.Constants;
+using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Domain.Entities;
 using Hems_Backend.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -21,6 +21,7 @@ public class RequestPredictionResult
     public bool Success { get; set; }
     public Guid? JobId { get; set; }
     public string? AlmJobId { get; set; }
+    public bool FromCache { get; set; }
     public string? Error { get; set; }
 }
 
@@ -56,14 +57,50 @@ internal sealed class RequestPredictionCommandHandler : IRequestHandler<RequestP
 
     public async Task<RequestPredictionResult> Handle(RequestPredictionCommand request, CancellationToken cancellationToken)
     {
-        // 1. Map DeviceId to ThingsBoardDeviceId
+        // 0. Get model configuration
+        var modelConfig = AlmModelConfiguration.GetConfig(request.ModelType);
+
+        // 1. Check for today's cache - return existing completed job if prediction data actually exists
+        var todayUtc = DateTime.UtcNow.Date;
+
+        // Find a completed job for today that has actual prediction history data
+        var cachedJobWithData = await _context.AlmPredictionJobs
+            .Where(j => j.DeviceId == request.DeviceId
+                && j.ModelType == request.ModelType
+                && j.Status == AlmJobStatus.Completed
+                && j.Created >= todayUtc)
+            .OrderByDescending(j => j.Created)
+            .Select(j => new
+            {
+                Job = j,
+                HasPredictionData = _context.AlmPredictionHistories
+                    .Any(h => h.AlmPredictionJobId == j.Id)
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (cachedJobWithData != null && cachedJobWithData.HasPredictionData)
+        {
+            _logger.LogInformation(
+                "Returning cached prediction job for device {DeviceId}, model {ModelType}. JobId: {JobId}",
+                request.DeviceId, request.ModelType, cachedJobWithData.Job.Id);
+
+            return new RequestPredictionResult
+            {
+                Success = true,
+                JobId = cachedJobWithData.Job.Id,
+                AlmJobId = cachedJobWithData.Job.AlmJobId,
+                FromCache = true
+            };
+        }
+
+        // 2. Map DeviceId to ThingsBoardDeviceId
         var thingsBoardDeviceId = await _deviceMapping.GetThingsBoardDeviceIdAsync(request.DeviceId, cancellationToken);
         if (thingsBoardDeviceId == null)
         {
             return new RequestPredictionResult { Success = false, Error = $"Device not found: {request.DeviceId}" };
         }
 
-        // 2. Get Site info for latitude/longitude
+        // 3. Get Site info for latitude/longitude
         var siteInfo = await _context.SetupDevices
             .Where(sd => sd.DeviceId == request.DeviceId)
             .Select(sd => new { sd.Setup.Site.Latitude, sd.Setup.Site.Longitude })
@@ -74,12 +111,12 @@ internal sealed class RequestPredictionCommandHandler : IRequestHandler<RequestP
             return new RequestPredictionResult { Success = false, Error = "Site location (latitude/longitude) not configured for this device" };
         }
 
-        // 3. Get device timezone for timestamp conversion
+        // 4. Get device timezone for timestamp conversion
         var deviceTimezone = await _timezoneService.GetDeviceTimezoneAsync(request.DeviceId, cancellationToken);
         var deviceNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, deviceTimezone);
         var dataStartTime = deviceNow.AddDays(-DefaultDataWindowDays);
 
-        // 4. Query DevicePowerData for the last N days (all columns)
+        // 5. Query DevicePowerData for the last N days (all columns)
         var powerData = await _context.DevicePowerData
             .Where(p => p.ThingsBoardDeviceId == thingsBoardDeviceId.Value
                         && p.DeviceLocalTime >= dataStartTime
@@ -93,10 +130,10 @@ internal sealed class RequestPredictionCommandHandler : IRequestHandler<RequestP
             return new RequestPredictionResult { Success = false, Error = "No power data available for prediction" };
         }
 
-        // 5. Build CSV data with all columns
+        // 6. Build CSV data with all columns
         var csvData = BuildCsvData(powerData);
 
-        // 6. Build schema
+        // 7. Build schema using model configuration
         var schema = new AlmSchema
         {
             Id = request.DeviceId.ToString(),
@@ -104,17 +141,20 @@ internal sealed class RequestPredictionCommandHandler : IRequestHandler<RequestP
             TimestampFormat = "%Y-%m-%d %H:%M:%S.%f",
             Latitude = (double)siteInfo.Latitude.Value,
             Longitude = (double)siteInfo.Longitude.Value,
-            Features = GetFeaturesForModelType(request.ModelType),
-            FeatureMapping = GetFeatureMappingForModelType(request.ModelType)
+            Features = new List<string> { modelConfig.DatabaseColumn },
+            FeatureMapping = new Dictionary<string, string>
+            {
+                { modelConfig.FeatureName, modelConfig.DatabaseColumn }
+            }
         };
 
-        // 7. Build callback URL
+        // 8. Build callback URL
         var baseUrl = _configuration["Alm:CallbackBaseUrl"]
                       ?? _configuration["Application:BaseUrl"]
                       ?? "https://hems-api-dev.oklidis.com.tr";
         var callbackUrl = $"{baseUrl.TrimEnd('/')}/api/Alm/callback";
 
-        // 8. Create prediction job record
+        // 9. Create prediction job record
         var job = new AlmPredictionJob
         {
             DeviceId = request.DeviceId,
@@ -129,11 +169,11 @@ internal sealed class RequestPredictionCommandHandler : IRequestHandler<RequestP
         _context.AlmPredictionJobs.Add(job);
         await _context.SaveChangesAsync(cancellationToken);
 
-        // 9. Submit to ALM service
+        // 10. Submit to ALM service with the model-specific endpoint
         try
         {
             var almResponse = await _almService.SubmitPredictionJobAsync(
-                csvData, schema, callbackUrl, cancellationToken);
+                csvData, schema, callbackUrl, modelConfig.ModuleEndpoint, cancellationToken);
 
             if (!almResponse.Success)
             {
@@ -148,14 +188,15 @@ internal sealed class RequestPredictionCommandHandler : IRequestHandler<RequestP
             await _context.SaveChangesAsync(cancellationToken);
 
             _logger.LogInformation(
-                "ALM prediction job submitted. JobId: {JobId}, AlmJobId: {AlmJobId}, DeviceId: {DeviceId}, DataPoints: {Count}",
-                job.Id, almResponse.JobId, request.DeviceId, powerData.Count);
+                "ALM prediction job submitted. JobId: {JobId}, AlmJobId: {AlmJobId}, DeviceId: {DeviceId}, ModelType: {ModelType}, DataPoints: {Count}",
+                job.Id, almResponse.JobId, request.DeviceId, request.ModelType, powerData.Count);
 
             return new RequestPredictionResult
             {
                 Success = true,
                 JobId = job.Id,
-                AlmJobId = almResponse.JobId
+                AlmJobId = almResponse.JobId,
+                FromCache = false
             };
         }
         catch (Exception ex)
@@ -192,30 +233,5 @@ internal sealed class RequestPredictionCommandHandler : IRequestHandler<RequestP
     private static string FormatDouble(double? value)
     {
         return value.HasValue ? value.Value.ToString("F1", CultureInfo.InvariantCulture) : "";
-    }
-
-    private static List<string> GetFeaturesForModelType(AlmModelType modelType)
-    {
-        return modelType switch
-        {
-            AlmModelType.PowerConsumption => new List<string> { AlmFeatures.LoadTotalPowerW },
-            _ => new List<string> { AlmFeatures.LoadTotalPowerW }
-        };
-    }
-
-    private static Dictionary<string, string> GetFeatureMappingForModelType(AlmModelType modelType)
-    {
-        // Maps ALM model's internal field name to our data column name
-        return modelType switch
-        {
-            AlmModelType.PowerConsumption => new Dictionary<string, string>
-            {
-                { "global_active_power", AlmFeatures.LoadTotalPowerW }
-            },
-            _ => new Dictionary<string, string>
-            {
-                { "global_active_power", AlmFeatures.LoadTotalPowerW }
-            }
-        };
     }
 }
