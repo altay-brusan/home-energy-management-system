@@ -16,6 +16,147 @@
         }
       }
     },
+    "/api/Alm/predict/{deviceId}": {
+      "post": {
+        "tags": [
+          "Alm"
+        ],
+        "operationId": "RequestPrediction",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Alm/predictions/{deviceId}": {
+      "get": {
+        "tags": [
+          "Alm"
+        ],
+        "operationId": "GetPredictionHistory",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "jobId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "guid",
+              "nullable": true
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Alm/job/{jobId}": {
+      "get": {
+        "tags": [
+          "Alm"
+        ],
+        "operationId": "GetPredictionJobStatus",
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Alm/health": {
+      "get": {
+        "tags": [
+          "Alm"
+        ],
+        "operationId": "GetAlmHealth",
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Alm/callback": {
+      "post": {
+        "tags": [
+          "Alm"
+        ],
+        "operationId": "HandleCallback",
+        "requestBody": {
+          "x-name": "body",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/Dashboard/Soc": {
       "get": {
         "tags": [
