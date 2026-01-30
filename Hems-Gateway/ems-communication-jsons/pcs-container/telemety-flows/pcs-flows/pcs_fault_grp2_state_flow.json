@@ -11,7 +11,7 @@
         "type": "socketcan-out",
         "z": "pcs_fault_grp2_state_tab",
         "name": "CAN0 Input",
-        "config": "537471527fc35bc4",
+        "config": "can0_pcs_fault2",
         "x": 120,
         "y": 180,
         "wires": [
@@ -156,7 +156,7 @@
         "wires": []
     },
     {
-        "id": "537471527fc35bc4",
+        "id": "can0_pcs_fault2",
         "type": "socketcan-config",
         "z": "pcs_fault_grp2_state_tab",
         "interface": "can0"

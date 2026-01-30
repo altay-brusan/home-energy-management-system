@@ -21,7 +21,7 @@
         "type": "socketcan-out",
         "z": "9d7655fa04382c75",
         "name": "CAN0 Input",
-        "config": "741d6a53c563523e",
+        "config": "can0_bat_combined",
         "x": 120,
         "y": 100,
         "wires": [
@@ -361,7 +361,7 @@
         "wires": []
     },
     {
-        "id": "741d6a53c563523e",
+        "id": "can0_bat_combined",
         "type": "socketcan-config",
         "z": "9d7655fa04382c75",
         "interface": "can0"

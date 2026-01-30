@@ -1,0 +1,1304 @@
+[
+    {
+        "id": "pcs_combined_tab",
+        "type": "tab",
+        "label": "PCS Combined",
+        "disabled": false,
+        "info": "PCS Combined Flow - All PCS CAN parsers in one flow\n\nIncludes:\n- PCS Status (0x66B969x)\n- PCS DC Meas (0x66B96Dx, 0x66B96Ex)\n- PCS AC Meas (0x66B966x, 0x66B967x, 0x66B968x)\n- PCS Power (0x66B96Ax, 0x66B96Bx, 0x66B96Cx)\n- PCS Temps (0x66B96Fx)\n- PCS Algo Params (0x66B973x, 0x66B974x)\n- PCS Timeouts (0x66B97Ax)\n- PCS Fault Grp1 (0x66B978x)\n- PCS Fault Grp2 (0x66B979x)"
+    },
+    {
+        "id": "pcs_comment_can_parsing",
+        "type": "comment",
+        "z": "pcs_combined_tab",
+        "name": "========== CAN PARSING (runs continuously) ==========",
+        "info": "",
+        "x": 260,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "pcs_can0_input",
+        "type": "socketcan-out",
+        "z": "pcs_combined_tab",
+        "name": "CAN0 Input",
+        "config": "can0_pcs_combined",
+        "x": 120,
+        "y": 300,
+        "wires": [
+            [
+                "pcs_parse_status",
+                "pcs_parse_dc_meas",
+                "pcs_parse_ac_meas",
+                "pcs_parse_power",
+                "pcs_parse_temps",
+                "pcs_parse_algo",
+                "pcs_parse_timeouts",
+                "pcs_parse_fault_grp1",
+                "pcs_parse_fault_grp2"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_parse_status",
+        "type": "function",
+        "z": "pcs_combined_tab",
+        "name": "Parse PCS Status",
+        "func": "const frame = msg.payload || msg;\nlet canId = frame.canid & 0x1FFFFFFF;\nconst data = frame.data || [];\n\nif ((canId & 0xFFFFFFF0) !== 0x66B9690) {\n    return null;\n}\n\nfunction u8(buf, offset) {\n    return buf[offset] & 0xFF;\n}\n\nfunction s16(buf, offset) {\n    let val = (buf[offset] & 0xFF) | ((buf[offset + 1] & 0xFF) << 8);\n    return val > 32767 ? val - 65536 : val;\n}\n\nlet state = {\n    kind: \"PcsStatusState\",\n    version: 1,\n    timestampUtc: new Date().toISOString(),\n    pcs_gridFreqHz: s16(data, 0) * 0.01,\n    pcs_gridPhaseSeq: u8(data, 2),\n    pcs_deratCoeff: u8(data, 3) * 0.01,\n    pcs_deratMark: u8(data, 4),\n    pcs_workingCondition: u8(data, 5),\n    pcs_sourceMode: u8(data, 6),\n    pcs_gridMode: u8(data, 7)\n};\n\nflow.set(\"pcsStatusState\", state);\nmsg.payload = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 330,
+        "y": 80,
+        "wires": [
+            [
+                "pcs_debug_status",
+                "pcs_throttle_status"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_debug_status",
+        "type": "debug",
+        "z": "pcs_combined_tab",
+        "name": "PCS Status",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.pcs_gridFreqHz",
+        "statusType": "msg",
+        "x": 530,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "pcs_throttle_status",
+        "type": "delay",
+        "z": "pcs_combined_tab",
+        "name": "Throttle 5s",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "5",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 690,
+        "y": 80,
+        "wires": [
+            [
+                "pcs_mqtt_status"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_mqtt_status",
+        "type": "mqtt out",
+        "z": "pcs_combined_tab",
+        "name": "MQTT",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 850,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "pcs_parse_dc_meas",
+        "type": "function",
+        "z": "pcs_combined_tab",
+        "name": "Parse PCS DC Meas",
+        "func": "const frame = msg.payload || msg;\nlet canId = frame.canid & 0x1FFFFFFF;\nconst data = frame.data || [];\n\nlet state = flow.get(\"pcsDcMeasState\") || {\n    kind: \"PcsDcMeasState\",\n    version: 1,\n    pcs_acPwrFactor: null,\n    pcs_totalBusV: null,\n    pcs_posBusV: null,\n    pcs_negBusV: null,\n    pcs_batV: null,\n    pcs_batI: null,\n    pcs_dcPwrKw: null,\n    pcs_totalDcI: null\n};\n\nfunction s16(buf, offset) {\n    let val = (buf[offset] & 0xFF) | ((buf[offset + 1] & 0xFF) << 8);\n    return val > 32767 ? val - 65536 : val;\n}\n\nvar processed = false;\n\nif ((canId & 0xFFFFFFF0) === 0x66B96D0) {\n    processed = true;\n    state.pcs_acPwrFactor = s16(data, 0) * 0.01;\n    state.pcs_totalBusV = s16(data, 2) * 0.1;\n    state.pcs_posBusV = s16(data, 4) * 0.1;\n    state.pcs_negBusV = s16(data, 6) * 0.1;\n}\n\nif ((canId & 0xFFFFFFF0) === 0x66B96E0) {\n    processed = true;\n    state.pcs_batV = s16(data, 0) * 0.1;\n    state.pcs_batI = s16(data, 2) * 0.1;\n    state.pcs_dcPwrKw = s16(data, 4) * 0.1;\n    state.pcs_totalDcI = s16(data, 6) * 0.1;\n}\n\nif (!processed) {\n    return null;\n}\n\nstate.timestampUtc = new Date().toISOString();\nflow.set(\"pcsDcMeasState\", state);\nmsg.payload = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 340,
+        "y": 130,
+        "wires": [
+            [
+                "pcs_debug_dc_meas",
+                "pcs_throttle_dc_meas"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_debug_dc_meas",
+        "type": "debug",
+        "z": "pcs_combined_tab",
+        "name": "DC Meas",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.pcs_batV",
+        "statusType": "msg",
+        "x": 520,
+        "y": 130,
+        "wires": []
+    },
+    {
+        "id": "pcs_throttle_dc_meas",
+        "type": "delay",
+        "z": "pcs_combined_tab",
+        "name": "Throttle 5s",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "5",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 690,
+        "y": 130,
+        "wires": [
+            [
+                "pcs_mqtt_dc_meas"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_mqtt_dc_meas",
+        "type": "mqtt out",
+        "z": "pcs_combined_tab",
+        "name": "MQTT",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 850,
+        "y": 130,
+        "wires": []
+    },
+    {
+        "id": "pcs_parse_ac_meas",
+        "type": "function",
+        "z": "pcs_combined_tab",
+        "name": "Parse PCS AC Meas",
+        "func": "const frame = msg.payload || msg;\nlet canId = frame.canid & 0x1FFFFFFF;\nconst data = frame.data || [];\n\nlet state = flow.get(\"pcsAcMeasState\") || {\n    kind: \"PcsAcMeasState\",\n    version: 1,\n    pcs_abLineV: null,\n    pcs_bcLineV: null,\n    pcs_acLineV: null,\n    pcs_aPhaseV: null,\n    pcs_bPhaseV: null,\n    pcs_cPhaseV: null,\n    pcs_aPhaseCurrA: null,\n    pcs_bPhaseCurrA: null,\n    pcs_cPhaseCurrA: null,\n    pcs_aPhIndCurrA: null,\n    pcs_bPhIndCurrA: null,\n    pcs_cPhIndCurrA: null\n};\n\nfunction s16(buf, offset) {\n    let val = (buf[offset] & 0xFF) | ((buf[offset + 1] & 0xFF) << 8);\n    return val > 32767 ? val - 65536 : val;\n}\n\nvar processed = false;\n\nif ((canId & 0xFFFFFFF0) === 0x66B9660) {\n    processed = true;\n    state.pcs_abLineV = s16(data, 0) * 0.1;\n    state.pcs_bcLineV = s16(data, 2) * 0.1;\n    state.pcs_acLineV = s16(data, 4) * 0.1;\n    state.pcs_aPhaseV = s16(data, 6) * 0.1;\n}\n\nif ((canId & 0xFFFFFFF0) === 0x66B9670) {\n    processed = true;\n    state.pcs_bPhaseV = s16(data, 0) * 0.1;\n    state.pcs_cPhaseV = s16(data, 2) * 0.1;\n    state.pcs_aPhaseCurrA = s16(data, 4) * 0.1;\n    state.pcs_bPhaseCurrA = s16(data, 6) * 0.1;\n}\n\nif ((canId & 0xFFFFFFF0) === 0x66B9680) {\n    processed = true;\n    state.pcs_cPhaseCurrA = s16(data, 0) * 0.1;\n    state.pcs_aPhIndCurrA = s16(data, 2) * 0.1;\n    state.pcs_bPhIndCurrA = s16(data, 4) * 0.1;\n    state.pcs_cPhIndCurrA = s16(data, 6) * 0.1;\n}\n\nif (!processed) {\n    return null;\n}\n\nstate.timestampUtc = new Date().toISOString();\nflow.set(\"pcsAcMeasState\", state);\nmsg.payload = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 340,
+        "y": 180,
+        "wires": [
+            [
+                "pcs_debug_ac_meas",
+                "pcs_throttle_ac_meas"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_debug_ac_meas",
+        "type": "debug",
+        "z": "pcs_combined_tab",
+        "name": "AC Meas",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.pcs_abLineV",
+        "statusType": "msg",
+        "x": 520,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "pcs_throttle_ac_meas",
+        "type": "delay",
+        "z": "pcs_combined_tab",
+        "name": "Throttle 5s",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "5",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 690,
+        "y": 180,
+        "wires": [
+            [
+                "pcs_mqtt_ac_meas"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_mqtt_ac_meas",
+        "type": "mqtt out",
+        "z": "pcs_combined_tab",
+        "name": "MQTT",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 850,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "pcs_parse_power",
+        "type": "function",
+        "z": "pcs_combined_tab",
+        "name": "Parse PCS Power",
+        "func": "const frame = msg.payload || msg;\nlet canId = frame.canid & 0x1FFFFFFF;\nconst data = frame.data || [];\n\nlet state = flow.get(\"pcsPowerState\") || {\n    kind: \"PcsPowerState\",\n    version: 1,\n    pcs_aActPwrKw: null,\n    pcs_bActPwrKw: null,\n    pcs_cActPwrKw: null,\n    pcs_outActPwrKw: null,\n    pcs_aAppPwrKva: null,\n    pcs_bAppPwrKva: null,\n    pcs_cAppPwrKva: null,\n    pcs_outAppPwrKva: null,\n    pcs_aReaPwrKvar: null,\n    pcs_bReaPwrKvar: null,\n    pcs_cReaPwrKvar: null,\n    pcs_outReaPwrKvar: null\n};\n\nfunction s16(buf, offset) {\n    let val = (buf[offset] & 0xFF) | ((buf[offset + 1] & 0xFF) << 8);\n    return val > 32767 ? val - 65536 : val;\n}\n\nvar processed = false;\n\nif ((canId & 0xFFFFFFF0) === 0x66B96A0) {\n    processed = true;\n    state.pcs_aActPwrKw = s16(data, 0) * 0.1;\n    state.pcs_bActPwrKw = s16(data, 2) * 0.1;\n    state.pcs_cActPwrKw = s16(data, 4) * 0.1;\n    state.pcs_outActPwrKw = s16(data, 6) * 0.1;\n}\n\nif ((canId & 0xFFFFFFF0) === 0x66B96B0) {\n    processed = true;\n    state.pcs_aReaPwrKvar = s16(data, 0) * 0.1;\n    state.pcs_bReaPwrKvar = s16(data, 2) * 0.1;\n    state.pcs_cReaPwrKvar = s16(data, 4) * 0.1;\n    state.pcs_outReaPwrKvar = s16(data, 6) * 0.1;\n}\n\nif ((canId & 0xFFFFFFF0) === 0x66B96C0) {\n    processed = true;\n    state.pcs_aAppPwrKva = s16(data, 0) * 0.1;\n    state.pcs_bAppPwrKva = s16(data, 2) * 0.1;\n    state.pcs_cAppPwrKva = s16(data, 4) * 0.1;\n    state.pcs_outAppPwrKva = s16(data, 6) * 0.1;\n}\n\nif (!processed) {\n    return null;\n}\n\nstate.timestampUtc = new Date().toISOString();\nflow.set(\"pcsPowerState\", state);\nmsg.payload = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 330,
+        "y": 230,
+        "wires": [
+            [
+                "pcs_debug_power",
+                "pcs_throttle_power"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_debug_power",
+        "type": "debug",
+        "z": "pcs_combined_tab",
+        "name": "Power",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.pcs_outActPwrKw",
+        "statusType": "msg",
+        "x": 510,
+        "y": 230,
+        "wires": []
+    },
+    {
+        "id": "pcs_throttle_power",
+        "type": "delay",
+        "z": "pcs_combined_tab",
+        "name": "Throttle 5s",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "5",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 690,
+        "y": 230,
+        "wires": [
+            [
+                "pcs_mqtt_power"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_mqtt_power",
+        "type": "mqtt out",
+        "z": "pcs_combined_tab",
+        "name": "MQTT",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 850,
+        "y": 230,
+        "wires": []
+    },
+    {
+        "id": "pcs_parse_temps",
+        "type": "function",
+        "z": "pcs_combined_tab",
+        "name": "Parse PCS Temps",
+        "func": "const frame = msg.payload || msg;\nlet canId = frame.canid & 0x1FFFFFFF;\nconst data = frame.data || [];\n\nif ((canId & 0xFFFFFFF0) !== 0x66B96F0) {\n    return null;\n}\n\nfunction s16(buf, offset) {\n    let val = (buf[offset] & 0xFF) | ((buf[offset + 1] & 0xFF) << 8);\n    return val > 32767 ? val - 65536 : val;\n}\n\nlet state = {\n    kind: \"PcsTempsState\",\n    version: 1,\n    timestampUtc: new Date().toISOString(),\n    pcs_igbtTempC: s16(data, 0) * 0.1,\n    pcs_ambientTempC: s16(data, 2) * 0.1,\n    pcs_inductanceTempC: s16(data, 4) * 0.1\n};\n\nflow.set(\"pcsTempsState\", state);\nmsg.payload = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 330,
+        "y": 280,
+        "wires": [
+            [
+                "pcs_debug_temps",
+                "pcs_throttle_temps"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_debug_temps",
+        "type": "debug",
+        "z": "pcs_combined_tab",
+        "name": "Temps",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.pcs_igbtTempC",
+        "statusType": "msg",
+        "x": 510,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "pcs_throttle_temps",
+        "type": "delay",
+        "z": "pcs_combined_tab",
+        "name": "Throttle 5s",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "5",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 690,
+        "y": 280,
+        "wires": [
+            [
+                "pcs_mqtt_temps"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_mqtt_temps",
+        "type": "mqtt out",
+        "z": "pcs_combined_tab",
+        "name": "MQTT",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 850,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "pcs_parse_algo",
+        "type": "function",
+        "z": "pcs_combined_tab",
+        "name": "Parse PCS Algo Params",
+        "func": "const frame = msg.payload || msg;\nlet canId = frame.canid & 0x1FFFFFFF;\nconst data = frame.data || [];\n\nlet state = flow.get(\"pcsAlgoParamsState\") || {\n    kind: \"PcsAlgoParamsState\",\n    version: 1,\n    pcs_modOvertProtC: null,\n    pcs_ccCvRechgV: null,\n    pcs_batCvChgV: null,\n    pcs_cvChgMaxTimeMin: null,\n    pcs_cvToFloatI: null,\n    pcs_floatChgV: null,\n    pcs_floatToCcI: null\n};\n\nfunction s16(buf, offset) {\n    let val = (buf[offset] & 0xFF) | ((buf[offset + 1] & 0xFF) << 8);\n    return val > 32767 ? val - 65536 : val;\n}\n\nvar processed = false;\n\nif ((canId & 0xFFFFFFF0) === 0x66B9730) {\n    processed = true;\n    state.pcs_modOvertProtC = s16(data, 0) * 0.1;\n    state.pcs_ccCvRechgV = s16(data, 2) * 0.1;\n    state.pcs_batCvChgV = s16(data, 4) * 0.1;\n    state.pcs_cvChgMaxTimeMin = s16(data, 6);\n}\n\nif ((canId & 0xFFFFFFF0) === 0x66B9740) {\n    processed = true;\n    state.pcs_cvToFloatI = s16(data, 0) * 0.1;\n    state.pcs_floatChgV = s16(data, 2) * 0.1;\n    state.pcs_floatToCcI = s16(data, 4) * 0.1;\n}\n\nif (!processed) {\n    return null;\n}\n\nstate.timestampUtc = new Date().toISOString();\nflow.set(\"pcsAlgoParamsState\", state);\nmsg.payload = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 350,
+        "y": 330,
+        "wires": [
+            [
+                "pcs_debug_algo",
+                "pcs_throttle_algo"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_debug_algo",
+        "type": "debug",
+        "z": "pcs_combined_tab",
+        "name": "Algo",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.pcs_batCvChgV",
+        "statusType": "msg",
+        "x": 510,
+        "y": 330,
+        "wires": []
+    },
+    {
+        "id": "pcs_throttle_algo",
+        "type": "delay",
+        "z": "pcs_combined_tab",
+        "name": "Throttle 5s",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "5",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 690,
+        "y": 330,
+        "wires": [
+            [
+                "pcs_mqtt_algo"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_mqtt_algo",
+        "type": "mqtt out",
+        "z": "pcs_combined_tab",
+        "name": "MQTT",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 850,
+        "y": 330,
+        "wires": []
+    },
+    {
+        "id": "pcs_parse_timeouts",
+        "type": "function",
+        "z": "pcs_combined_tab",
+        "name": "Parse PCS Timeouts",
+        "func": "const frame = msg.payload || msg;\nlet canId = frame.canid & 0x1FFFFFFF;\nconst data = frame.data || [];\n\nif ((canId & 0xFFFFFFF0) !== 0x66B97A0) {\n    return null;\n}\n\nfunction getBit(buf, bitIndex) {\n    const byteIndex = Math.floor(bitIndex / 8);\n    const bitOffset = bitIndex % 8;\n    if (byteIndex >= buf.length) return false;\n    return ((buf[byteIndex] >> bitOffset) & 0x01) === 1;\n}\n\nlet state = {\n    kind: \"PcsTimeoutsState\",\n    version: 1,\n    timestampUtc: new Date().toISOString(),\n    pcs_dcOcProtTout: getBit(data, 0),\n    pcs_acOvProtTout: getBit(data, 1),\n    pcs_acUvProtTout: getBit(data, 2),\n    pcs_acOcProtTout: getBit(data, 3),\n    pcs_modOvertProtTout: getBit(data, 4),\n    pcs_ccCvRechgVTout: getBit(data, 5),\n    pcs_batCvChgVTout: getBit(data, 6),\n    pcs_cvChgMaxTimeTout: getBit(data, 7),\n    pcs_cvToFloatCurrTout: getBit(data, 8),\n    pcs_floatChgVTout: getBit(data, 9),\n    pcs_floatToCcCurrTout: getBit(data, 10),\n    pcs_pwrOnOffCmdTout: getBit(data, 11),\n    pcs_faultResetCmdTout: getBit(data, 12),\n    pcs_cureParamCmdTout: getBit(data, 13),\n    pcs_chgResetCmdTout: getBit(data, 14),\n    pcs_safetyOneKeyTout: getBit(data, 15),\n    pcs_reMbAddrTout: getBit(data, 16),\n    pcs_reMbBaudTout: getBit(data, 17),\n    pcs_hmiMbAddrTout: getBit(data, 18),\n    pcs_hmiMbBaudTout: getBit(data, 19),\n    pcs_emsCommFailTout: getBit(data, 20),\n    pcs_setPcsPcCmdTimeTout: getBit(data, 21),\n    pcs_fault: getBit(data, 22),\n    pcs_rs485Fault: getBit(data, 23),\n    pcs_varPowerTimeout: getBit(data, 24),\n    pcs_msg1_2Timeout: getBit(data, 25)\n};\n\nconst allTimeoutFlags = [\n    'pcs_dcOcProtTout', 'pcs_acOvProtTout', 'pcs_acUvProtTout', 'pcs_acOcProtTout',\n    'pcs_modOvertProtTout', 'pcs_ccCvRechgVTout', 'pcs_batCvChgVTout', 'pcs_cvChgMaxTimeTout',\n    'pcs_cvToFloatCurrTout', 'pcs_floatChgVTout', 'pcs_floatToCcCurrTout', 'pcs_pwrOnOffCmdTout',\n    'pcs_faultResetCmdTout', 'pcs_cureParamCmdTout', 'pcs_chgResetCmdTout', 'pcs_safetyOneKeyTout',\n    'pcs_reMbAddrTout', 'pcs_reMbBaudTout', 'pcs_hmiMbAddrTout', 'pcs_hmiMbBaudTout',\n    'pcs_emsCommFailTout', 'pcs_setPcsPcCmdTimeTout', 'pcs_fault', 'pcs_rs485Fault',\n    'pcs_varPowerTimeout', 'pcs_msg1_2Timeout'\n];\n\nlet activeTimeouts = [];\nallTimeoutFlags.forEach(flag => {\n    if (state[flag] === true) activeTimeouts.push(flag);\n});\n\nstate.pcs_hasTimeout = activeTimeouts.length > 0;\nstate.pcs_activeTimeouts = activeTimeouts;\nstate.pcs_activeTimeoutCount = activeTimeouts.length;\n\nflow.set(\"pcsTimeoutsState\", state);\nmsg.payload = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 340,
+        "y": 380,
+        "wires": [
+            [
+                "pcs_debug_timeouts",
+                "pcs_throttle_timeouts"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_debug_timeouts",
+        "type": "debug",
+        "z": "pcs_combined_tab",
+        "name": "Timeouts",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.pcs_activeTimeoutCount",
+        "statusType": "msg",
+        "x": 520,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "pcs_throttle_timeouts",
+        "type": "delay",
+        "z": "pcs_combined_tab",
+        "name": "Throttle 500ms",
+        "pauseType": "rate",
+        "timeout": "500",
+        "timeoutUnits": "milliseconds",
+        "rate": "2",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 700,
+        "y": 380,
+        "wires": [
+            [
+                "pcs_mqtt_timeouts"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_mqtt_timeouts",
+        "type": "mqtt out",
+        "z": "pcs_combined_tab",
+        "name": "MQTT",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 850,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "pcs_parse_fault_grp1",
+        "type": "function",
+        "z": "pcs_combined_tab",
+        "name": "Parse PCS Fault Grp1",
+        "func": "const frame = msg.payload || msg;\nlet canId = frame.canid & 0x1FFFFFFF;\nconst data = frame.data || [];\n\nif ((canId & 0xFFFFFFF0) !== 0x66B9780) {\n    return null;\n}\n\nfunction getBit(buf, bitIndex) {\n    const byteIndex = Math.floor(bitIndex / 8);\n    const bitOffset = bitIndex % 8;\n    if (byteIndex >= buf.length) return false;\n    return ((buf[byteIndex] >> bitOffset) & 0x01) === 1;\n}\n\nlet state = {\n    kind: \"PcsFaultGrp1State\",\n    version: 1,\n    timestampUtc: new Date().toISOString(),\n    pcs_hwEpoFault: getBit(data, 0),\n    pcs_hwIgbtOcpFault: getBit(data, 1),\n    pcs_hwBusOvFault: getBit(data, 2),\n    pcs_hwWaveLimitFault: getBit(data, 3),\n    pcs_hwBalWaveLimitFault: getBit(data, 4),\n    pcs_hw24vPwrFault: getBit(data, 5),\n    pcs_hwFanFault: getBit(data, 6),\n    pcs_hwConnFault: getBit(data, 7),\n    pcs_hwExtDi3Fault: getBit(data, 8),\n    pcs_hwIndOvertFault: getBit(data, 9),\n    pcs_hwPwrModOvert: getBit(data, 10),\n    pcs_hwBalOvert: getBit(data, 11),\n    pcs_hw15vPwrFault: getBit(data, 12),\n    pcs_hwFireAlarmFault: getBit(data, 13),\n    pcs_hwExtDi1Fault: getBit(data, 14),\n    pcs_hwExtDi2Fault: getBit(data, 15),\n    pcs_gridAOvFault: getBit(data, 16),\n    pcs_gridBOvFault: getBit(data, 17),\n    pcs_gridCOvFault: getBit(data, 18),\n    pcs_gridAUvFault: getBit(data, 19),\n    pcs_gridBUvFault: getBit(data, 20),\n    pcs_gridCUvFault: getBit(data, 21),\n    pcs_gridOverfFault: getBit(data, 22),\n    pcs_gridUnderfFault: getBit(data, 23),\n    pcs_gridPhSeqFault: getBit(data, 24),\n    pcs_gridAOcFault: getBit(data, 25),\n    pcs_gridBOcFault: getBit(data, 26),\n    pcs_gridCOcFault: getBit(data, 27),\n    pcs_gridVUnbalFault: getBit(data, 28),\n    pcs_gridIUnbalFault: getBit(data, 29),\n    pcs_gridPhLossFault: getBit(data, 30),\n    pcs_gridNOcFault: getBit(data, 31),\n    pcs_busPreOvFault: getBit(data, 32),\n    pcs_busPreUvFault: getBit(data, 33),\n    pcs_busRunOvFault: getBit(data, 34),\n    pcs_busRunUvFault: getBit(data, 35),\n    pcs_busUnbalFault: getBit(data, 36),\n    pcs_batUvFault: getBit(data, 37),\n    pcs_batOvFault: getBit(data, 38),\n    pcs_dcPreOcFault: getBit(data, 39),\n    pcs_dcOcFault: getBit(data, 40),\n    pcs_balSwOcFault: getBit(data, 41),\n    pcs_batRevFault: getBit(data, 42),\n    pcs_acPreToFault: getBit(data, 43),\n    pcs_acPreAOcFault: getBit(data, 44),\n    pcs_acPreBOcFault: getBit(data, 45),\n    pcs_acPreCOcFault: getBit(data, 46),\n    pcs_acLeakOcFault: getBit(data, 47),\n    pcs_acDcCompFault: getBit(data, 48),\n    pcs_acPwrMisFault: getBit(data, 49),\n    pcs_sysRamFault: getBit(data, 50),\n    pcs_sysEepromFault: getBit(data, 51),\n    pcs_sysAdDriftFault: getBit(data, 52),\n    pcs_sysBackComFault: getBit(data, 53),\n    pcs_sysCanProtFault: getBit(data, 54),\n    pcs_sysCpldComFault: getBit(data, 55),\n    pcs_sysDatalogFault: getBit(data, 56),\n    pcs_sysInsulFault: getBit(data, 57),\n    pcs_sysFwMisFault: getBit(data, 58),\n    pcs_sysBmsStatFault: getBit(data, 59),\n    pcs_sysStsComFault: getBit(data, 60),\n    pcs_sysBmsComFault: getBit(data, 61),\n    pcs_sysParCanFault: getBit(data, 62),\n    pcs_sysEmsComFault: getBit(data, 63)\n};\n\nconst allFaultFlags = [\n    'pcs_hwEpoFault', 'pcs_hwIgbtOcpFault', 'pcs_hwBusOvFault', 'pcs_hwWaveLimitFault',\n    'pcs_hwBalWaveLimitFault', 'pcs_hw24vPwrFault', 'pcs_hwFanFault', 'pcs_hwConnFault',\n    'pcs_hwExtDi3Fault', 'pcs_hwIndOvertFault', 'pcs_hwPwrModOvert', 'pcs_hwBalOvert',\n    'pcs_hw15vPwrFault', 'pcs_hwFireAlarmFault', 'pcs_hwExtDi1Fault', 'pcs_hwExtDi2Fault',\n    'pcs_gridAOvFault', 'pcs_gridBOvFault', 'pcs_gridCOvFault', 'pcs_gridAUvFault',\n    'pcs_gridBUvFault', 'pcs_gridCUvFault', 'pcs_gridOverfFault', 'pcs_gridUnderfFault',\n    'pcs_gridPhSeqFault', 'pcs_gridAOcFault', 'pcs_gridBOcFault', 'pcs_gridCOcFault',\n    'pcs_gridVUnbalFault', 'pcs_gridIUnbalFault', 'pcs_gridPhLossFault', 'pcs_gridNOcFault',\n    'pcs_busPreOvFault', 'pcs_busPreUvFault', 'pcs_busRunOvFault', 'pcs_busRunUvFault',\n    'pcs_busUnbalFault', 'pcs_batUvFault', 'pcs_batOvFault', 'pcs_dcPreOcFault',\n    'pcs_dcOcFault', 'pcs_balSwOcFault', 'pcs_batRevFault', 'pcs_acPreToFault',\n    'pcs_acPreAOcFault', 'pcs_acPreBOcFault', 'pcs_acPreCOcFault', 'pcs_acLeakOcFault',\n    'pcs_acDcCompFault', 'pcs_acPwrMisFault', 'pcs_sysRamFault', 'pcs_sysEepromFault',\n    'pcs_sysAdDriftFault', 'pcs_sysBackComFault', 'pcs_sysCanProtFault', 'pcs_sysCpldComFault',\n    'pcs_sysDatalogFault', 'pcs_sysInsulFault', 'pcs_sysFwMisFault', 'pcs_sysBmsStatFault',\n    'pcs_sysStsComFault', 'pcs_sysBmsComFault', 'pcs_sysParCanFault', 'pcs_sysEmsComFault'\n];\n\nlet activeFaults = [];\nallFaultFlags.forEach(flag => {\n    if (state[flag] === true) activeFaults.push(flag);\n});\n\nstate.pcs_hasFaultGrp1 = activeFaults.length > 0;\nstate.pcs_activeFaultsGrp1 = activeFaults;\nstate.pcs_activeFaultCountGrp1 = activeFaults.length;\n\nflow.set(\"pcsFaultGrp1State\", state);\nmsg.payload = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 350,
+        "y": 430,
+        "wires": [
+            [
+                "pcs_debug_fault_grp1",
+                "pcs_throttle_fault_grp1"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_debug_fault_grp1",
+        "type": "debug",
+        "z": "pcs_combined_tab",
+        "name": "Fault Grp1",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.pcs_activeFaultCountGrp1",
+        "statusType": "msg",
+        "x": 530,
+        "y": 430,
+        "wires": []
+    },
+    {
+        "id": "pcs_throttle_fault_grp1",
+        "type": "delay",
+        "z": "pcs_combined_tab",
+        "name": "Throttle 500ms",
+        "pauseType": "rate",
+        "timeout": "500",
+        "timeoutUnits": "milliseconds",
+        "rate": "2",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 700,
+        "y": 430,
+        "wires": [
+            [
+                "pcs_mqtt_fault_grp1"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_mqtt_fault_grp1",
+        "type": "mqtt out",
+        "z": "pcs_combined_tab",
+        "name": "MQTT",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 850,
+        "y": 430,
+        "wires": []
+    },
+    {
+        "id": "pcs_parse_fault_grp2",
+        "type": "function",
+        "z": "pcs_combined_tab",
+        "name": "Parse PCS Fault Grp2",
+        "func": "const frame = msg.payload || msg;\nlet canId = frame.canid & 0x1FFFFFFF;\nconst data = frame.data || [];\n\nif ((canId & 0xFFFFFFF0) !== 0x66B9790) {\n    return null;\n}\n\nfunction getBit(buf, bitIndex) {\n    const byteIndex = Math.floor(bitIndex / 8);\n    const bitOffset = bitIndex % 8;\n    if (byteIndex >= buf.length) return false;\n    return ((buf[byteIndex] >> bitOffset) & 0x01) === 1;\n}\n\nlet state = {\n    kind: \"PcsFaultGrp2State\",\n    version: 1,\n    timestampUtc: new Date().toISOString(),\n    pcs_preRelCloseFail: getBit(data, 0),\n    pcs_preRelOpenFail: getBit(data, 1),\n    pcs_preRelStClose: getBit(data, 2),\n    pcs_preRelStOpen: getBit(data, 3),\n    pcs_mainRelCloseFail: getBit(data, 4),\n    pcs_mainRelOpenFail: getBit(data, 5),\n    pcs_mainRelStClose: getBit(data, 6),\n    pcs_mainRelNum: getBit(data, 7),\n    pcs_acMainAdhFault: getBit(data, 8),\n    pcs_dcRelOpenFault: getBit(data, 9),\n    pcs_acMainOpenFault: getBit(data, 10),\n    pcs_invAOvFault: getBit(data, 11),\n    pcs_invBOvFault: getBit(data, 12),\n    pcs_invCOvFault: getBit(data, 13),\n    pcs_gridIslandFault: getBit(data, 14),\n    pcs_sysResonFault: getBit(data, 15),\n    pcs_swOvOcFault: getBit(data, 16),\n    pcs_hvCrossToFault: getBit(data, 17),\n    pcs_invAUvFault: getBit(data, 18),\n    pcs_invBUvFault: getBit(data, 19),\n    pcs_invCUvFault: getBit(data, 20),\n    pcs_offNoSyncFault: getBit(data, 21),\n    pcs_offShortFault: getBit(data, 22),\n    pcs_lvCrossToFault: getBit(data, 23),\n    pcs_msg1Timeout: getBit(data, 24),\n    pcs_msg2Timeout: getBit(data, 25),\n    pcs_powerTimeout: getBit(data, 26),\n    pcs_moduleOpModeTout: getBit(data, 27),\n    pcs_setOngridModeTout: getBit(data, 28),\n    pcs_setOffgridFreqTout: getBit(data, 29),\n    pcs_setOffgridVoltTout: getBit(data, 30),\n    pcs_setPcsTout: getBit(data, 31),\n    pcs_setPwrIndepTout: getBit(data, 32),\n    pcs_setModHostTout: getBit(data, 33),\n    pcs_modCurrSrcParTout: getBit(data, 34),\n    pcs_setDehumidTout: getBit(data, 35),\n    pcs_setNumParMdiTout: getBit(data, 36),\n    pcs_setAPhActPwrTout: getBit(data, 37),\n    pcs_setAPhReaPwrTout: getBit(data, 38),\n    pcs_setBPhActPwrTout: getBit(data, 39),\n    pcs_setBPhReaPwrTout: getBit(data, 40),\n    pcs_setCPhActPwrTout: getBit(data, 41),\n    pcs_setCPhReaPwrTout: getBit(data, 42),\n    pcs_yearTout: getBit(data, 43),\n    pcs_monthTout: getBit(data, 44),\n    pcs_dayTout: getBit(data, 45),\n    pcs_hourTout: getBit(data, 46),\n    pcs_minuteTout: getBit(data, 47),\n    pcs_secondTout: getBit(data, 48),\n    pcs_setMaxChgPwrTout: getBit(data, 49),\n    pcs_setMaxDchPwrTout: getBit(data, 50),\n    pcs_setMaxChgCurrTout: getBit(data, 51),\n    pcs_setMaxDchCurrTout: getBit(data, 52),\n    pcs_setDcBusVTout: getBit(data, 53),\n    pcs_setDcSrcBusVTout: getBit(data, 54),\n    pcs_setInsulEnTout: getBit(data, 55),\n    pcs_gridOverfProtTout: getBit(data, 56),\n    pcs_gridUnderfProtTout: getBit(data, 57),\n    pcs_islOverfProtTout: getBit(data, 58),\n    pcs_islUnderfProtTout: getBit(data, 59),\n    pcs_batOvProtTout: getBit(data, 60),\n    pcs_batUvProtTout: getBit(data, 61),\n    pcs_busOvProtTout: getBit(data, 62),\n    pcs_busUvProtTout: getBit(data, 63)\n};\n\nconst allFaultFlags = [\n    'pcs_preRelCloseFail', 'pcs_preRelOpenFail', 'pcs_preRelStClose', 'pcs_preRelStOpen',\n    'pcs_mainRelCloseFail', 'pcs_mainRelOpenFail', 'pcs_mainRelStClose', 'pcs_mainRelNum',\n    'pcs_acMainAdhFault', 'pcs_dcRelOpenFault', 'pcs_acMainOpenFault', 'pcs_invAOvFault',\n    'pcs_invBOvFault', 'pcs_invCOvFault', 'pcs_gridIslandFault', 'pcs_sysResonFault',\n    'pcs_swOvOcFault', 'pcs_hvCrossToFault', 'pcs_invAUvFault', 'pcs_invBUvFault',\n    'pcs_invCUvFault', 'pcs_offNoSyncFault', 'pcs_offShortFault', 'pcs_lvCrossToFault',\n    'pcs_msg1Timeout', 'pcs_msg2Timeout', 'pcs_powerTimeout', 'pcs_moduleOpModeTout',\n    'pcs_setOngridModeTout', 'pcs_setOffgridFreqTout', 'pcs_setOffgridVoltTout', 'pcs_setPcsTout',\n    'pcs_setPwrIndepTout', 'pcs_setModHostTout', 'pcs_modCurrSrcParTout', 'pcs_setDehumidTout',\n    'pcs_setNumParMdiTout', 'pcs_setAPhActPwrTout', 'pcs_setAPhReaPwrTout', 'pcs_setBPhActPwrTout',\n    'pcs_setBPhReaPwrTout', 'pcs_setCPhActPwrTout', 'pcs_setCPhReaPwrTout', 'pcs_yearTout',\n    'pcs_monthTout', 'pcs_dayTout', 'pcs_hourTout', 'pcs_minuteTout',\n    'pcs_secondTout', 'pcs_setMaxChgPwrTout', 'pcs_setMaxDchPwrTout', 'pcs_setMaxChgCurrTout',\n    'pcs_setMaxDchCurrTout', 'pcs_setDcBusVTout', 'pcs_setDcSrcBusVTout', 'pcs_setInsulEnTout',\n    'pcs_gridOverfProtTout', 'pcs_gridUnderfProtTout', 'pcs_islOverfProtTout', 'pcs_islUnderfProtTout',\n    'pcs_batOvProtTout', 'pcs_batUvProtTout', 'pcs_busOvProtTout', 'pcs_busUvProtTout'\n];\n\nlet activeFaults = [];\nallFaultFlags.forEach(flag => {\n    if (state[flag] === true) activeFaults.push(flag);\n});\n\nstate.pcs_hasFaultGrp2 = activeFaults.length > 0;\nstate.pcs_activeFaultsGrp2 = activeFaults;\nstate.pcs_activeFaultCountGrp2 = activeFaults.length;\n\nflow.set(\"pcsFaultGrp2State\", state);\nmsg.payload = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 350,
+        "y": 480,
+        "wires": [
+            [
+                "pcs_debug_fault_grp2",
+                "pcs_throttle_fault_grp2"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_debug_fault_grp2",
+        "type": "debug",
+        "z": "pcs_combined_tab",
+        "name": "Fault Grp2",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.pcs_activeFaultCountGrp2",
+        "statusType": "msg",
+        "x": 530,
+        "y": 480,
+        "wires": []
+    },
+    {
+        "id": "pcs_throttle_fault_grp2",
+        "type": "delay",
+        "z": "pcs_combined_tab",
+        "name": "Throttle 500ms",
+        "pauseType": "rate",
+        "timeout": "500",
+        "timeoutUnits": "milliseconds",
+        "rate": "2",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 700,
+        "y": 480,
+        "wires": [
+            [
+                "pcs_mqtt_fault_grp2"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_mqtt_fault_grp2",
+        "type": "mqtt out",
+        "z": "pcs_combined_tab",
+        "name": "MQTT",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 850,
+        "y": 480,
+        "wires": []
+    },
+    {
+        "id": "pcs_comment_manual_test",
+        "type": "comment",
+        "z": "pcs_combined_tab",
+        "name": "========== MANUAL TEST ==========",
+        "info": "",
+        "x": 200,
+        "y": 560,
+        "wires": []
+    },
+    {
+        "id": "pcs_inject_status",
+        "type": "inject",
+        "z": "pcs_combined_tab",
+        "name": "Test: Get PCS Status",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 170,
+        "y": 600,
+        "wires": [
+            [
+                "pcs_get_status"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_get_status",
+        "type": "function",
+        "z": "pcs_combined_tab",
+        "name": "Get PCS Status",
+        "func": "var state = flow.get(\"pcsStatusState\");\nif (state) {\n    msg.payload = state;\n    return msg;\n}\nmsg.payload = { error: \"No data yet\" };\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 600,
+        "wires": [
+            [
+                "pcs_test_debug_status"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_test_debug_status",
+        "type": "debug",
+        "z": "pcs_combined_tab",
+        "name": "PCS Status",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 570,
+        "y": 600,
+        "wires": []
+    },
+    {
+        "id": "pcs_inject_dc_meas",
+        "type": "inject",
+        "z": "pcs_combined_tab",
+        "name": "Test: Get DC Meas",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 160,
+        "y": 640,
+        "wires": [
+            [
+                "pcs_get_dc_meas"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_get_dc_meas",
+        "type": "function",
+        "z": "pcs_combined_tab",
+        "name": "Get DC Meas",
+        "func": "var state = flow.get(\"pcsDcMeasState\");\nif (state) {\n    msg.payload = state;\n    return msg;\n}\nmsg.payload = { error: \"No data yet\" };\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 640,
+        "wires": [
+            [
+                "pcs_test_debug_dc_meas"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_test_debug_dc_meas",
+        "type": "debug",
+        "z": "pcs_combined_tab",
+        "name": "DC Meas",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 560,
+        "y": 640,
+        "wires": []
+    },
+    {
+        "id": "pcs_inject_ac_meas",
+        "type": "inject",
+        "z": "pcs_combined_tab",
+        "name": "Test: Get AC Meas",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 160,
+        "y": 680,
+        "wires": [
+            [
+                "pcs_get_ac_meas"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_get_ac_meas",
+        "type": "function",
+        "z": "pcs_combined_tab",
+        "name": "Get AC Meas",
+        "func": "var state = flow.get(\"pcsAcMeasState\");\nif (state) {\n    msg.payload = state;\n    return msg;\n}\nmsg.payload = { error: \"No data yet\" };\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 680,
+        "wires": [
+            [
+                "pcs_test_debug_ac_meas"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_test_debug_ac_meas",
+        "type": "debug",
+        "z": "pcs_combined_tab",
+        "name": "AC Meas",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 560,
+        "y": 680,
+        "wires": []
+    },
+    {
+        "id": "pcs_inject_power",
+        "type": "inject",
+        "z": "pcs_combined_tab",
+        "name": "Test: Get Power",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 150,
+        "y": 720,
+        "wires": [
+            [
+                "pcs_get_power"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_get_power",
+        "type": "function",
+        "z": "pcs_combined_tab",
+        "name": "Get Power",
+        "func": "var state = flow.get(\"pcsPowerState\");\nif (state) {\n    msg.payload = state;\n    return msg;\n}\nmsg.payload = { error: \"No data yet\" };\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 370,
+        "y": 720,
+        "wires": [
+            [
+                "pcs_test_debug_power"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_test_debug_power",
+        "type": "debug",
+        "z": "pcs_combined_tab",
+        "name": "Power",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 550,
+        "y": 720,
+        "wires": []
+    },
+    {
+        "id": "pcs_inject_temps",
+        "type": "inject",
+        "z": "pcs_combined_tab",
+        "name": "Test: Get Temps",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 150,
+        "y": 760,
+        "wires": [
+            [
+                "pcs_get_temps"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_get_temps",
+        "type": "function",
+        "z": "pcs_combined_tab",
+        "name": "Get Temps",
+        "func": "var state = flow.get(\"pcsTempsState\");\nif (state) {\n    msg.payload = state;\n    return msg;\n}\nmsg.payload = { error: \"No data yet\" };\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 370,
+        "y": 760,
+        "wires": [
+            [
+                "pcs_test_debug_temps"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_test_debug_temps",
+        "type": "debug",
+        "z": "pcs_combined_tab",
+        "name": "Temps",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 550,
+        "y": 760,
+        "wires": []
+    },
+    {
+        "id": "pcs_inject_algo",
+        "type": "inject",
+        "z": "pcs_combined_tab",
+        "name": "Test: Get Algo Params",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 170,
+        "y": 800,
+        "wires": [
+            [
+                "pcs_get_algo"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_get_algo",
+        "type": "function",
+        "z": "pcs_combined_tab",
+        "name": "Get Algo Params",
+        "func": "var state = flow.get(\"pcsAlgoParamsState\");\nif (state) {\n    msg.payload = state;\n    return msg;\n}\nmsg.payload = { error: \"No data yet\" };\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 390,
+        "y": 800,
+        "wires": [
+            [
+                "pcs_test_debug_algo"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_test_debug_algo",
+        "type": "debug",
+        "z": "pcs_combined_tab",
+        "name": "Algo Params",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 570,
+        "y": 800,
+        "wires": []
+    },
+    {
+        "id": "pcs_inject_timeouts",
+        "type": "inject",
+        "z": "pcs_combined_tab",
+        "name": "Test: Get Timeouts",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 160,
+        "y": 840,
+        "wires": [
+            [
+                "pcs_get_timeouts"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_get_timeouts",
+        "type": "function",
+        "z": "pcs_combined_tab",
+        "name": "Get Timeouts",
+        "func": "var state = flow.get(\"pcsTimeoutsState\");\nif (state) {\n    msg.payload = state;\n    return msg;\n}\nmsg.payload = { error: \"No data yet\" };\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 840,
+        "wires": [
+            [
+                "pcs_test_debug_timeouts"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_test_debug_timeouts",
+        "type": "debug",
+        "z": "pcs_combined_tab",
+        "name": "Timeouts",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 560,
+        "y": 840,
+        "wires": []
+    },
+    {
+        "id": "pcs_inject_fault_grp1",
+        "type": "inject",
+        "z": "pcs_combined_tab",
+        "name": "Test: Get Fault Grp1",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 170,
+        "y": 880,
+        "wires": [
+            [
+                "pcs_get_fault_grp1"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_get_fault_grp1",
+        "type": "function",
+        "z": "pcs_combined_tab",
+        "name": "Get Fault Grp1",
+        "func": "var state = flow.get(\"pcsFaultGrp1State\");\nif (state) {\n    msg.payload = state;\n    return msg;\n}\nmsg.payload = { error: \"No data yet\" };\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 880,
+        "wires": [
+            [
+                "pcs_test_debug_fault_grp1"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_test_debug_fault_grp1",
+        "type": "debug",
+        "z": "pcs_combined_tab",
+        "name": "Fault Grp1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 570,
+        "y": 880,
+        "wires": []
+    },
+    {
+        "id": "pcs_inject_fault_grp2",
+        "type": "inject",
+        "z": "pcs_combined_tab",
+        "name": "Test: Get Fault Grp2",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 170,
+        "y": 920,
+        "wires": [
+            [
+                "pcs_get_fault_grp2"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_get_fault_grp2",
+        "type": "function",
+        "z": "pcs_combined_tab",
+        "name": "Get Fault Grp2",
+        "func": "var state = flow.get(\"pcsFaultGrp2State\");\nif (state) {\n    msg.payload = state;\n    return msg;\n}\nmsg.payload = { error: \"No data yet\" };\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 920,
+        "wires": [
+            [
+                "pcs_test_debug_fault_grp2"
+            ]
+        ]
+    },
+    {
+        "id": "pcs_test_debug_fault_grp2",
+        "type": "debug",
+        "z": "pcs_combined_tab",
+        "name": "Fault Grp2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 570,
+        "y": 920,
+        "wires": []
+    },
+    {
+        "id": "can0_pcs_combined",
+        "type": "socketcan-config",
+        "z": "pcs_combined_tab",
+        "interface": "can0"
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

@@ -11,7 +11,7 @@
         "type": "socketcan-out",
         "z": "container_battery_fault_tab",
         "name": "CAN0 Input",
-        "config": "537471527fc35bc4",
+        "config": "can0_container_fault",
         "x": 120,
         "y": 180,
         "wires": [
@@ -62,12 +62,12 @@
         "id": "throttle_container_fault",
         "type": "delay",
         "z": "container_battery_fault_tab",
-        "name": "Throttle 5s",
+        "name": "Throttle 500ms",
         "pauseType": "rate",
         "timeout": "5",
         "timeoutUnits": "seconds",
-        "rate": "1",
-        "nbRateUnits": "5",
+        "rate": "2",
+        "nbRateUnits": "1",
         "rateUnits": "second",
         "randomFirst": "1",
         "randomLast": "5",
@@ -156,7 +156,7 @@
         "wires": []
     },
     {
-        "id": "537471527fc35bc4",
+        "id": "can0_container_fault",
         "type": "socketcan-config",
         "z": "container_battery_fault_tab",
         "interface": "can0"

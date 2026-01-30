@@ -226,13 +226,23 @@ class ThingsBoardClient:
 
             tab_node = tab_nodes[0]
 
-            # Filter out tab and global config nodes (broker, client, config)
+            # Filter out tab and GLOBAL config nodes (broker, client, config without "z")
+            # Flow-scoped configs (with "z" parameter) should be included
+            def is_global_config(node):
+                node_type = node.get('type', '')
+                has_z = 'z' in node  # Flow-scoped if has "z"
+                is_config_type = (
+                    node_type.endswith('-broker') or
+                    node_type.endswith('-client') or
+                    node_type.endswith('-config')
+                )
+                # Filter only if it's a config type AND it's global (no "z")
+                return is_config_type and not has_z
+
             other_nodes = [
                 n for n in flow_json
                 if n.get('type') != 'tab'
-                and not n.get('type', '').endswith('-broker')
-                and not n.get('type', '').endswith('-client')
-                and not n.get('type', '').endswith('-config')
+                and not is_global_config(n)
             ]
 
             # Format for API
