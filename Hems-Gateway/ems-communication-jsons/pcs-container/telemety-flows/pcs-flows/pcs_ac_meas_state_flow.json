@@ -158,6 +158,7 @@
     {
         "id": "537471527fc35bc4",
         "type": "socketcan-config",
+        "z": "pcs_ac_meas_state_tab",
         "interface": "can0"
     },
     {

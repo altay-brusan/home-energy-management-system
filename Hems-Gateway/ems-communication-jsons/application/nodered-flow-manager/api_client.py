@@ -226,12 +226,13 @@ class ThingsBoardClient:
 
             tab_node = tab_nodes[0]
 
-            # Filter out tab and broker/client nodes
+            # Filter out tab and global config nodes (broker, client, config)
             other_nodes = [
                 n for n in flow_json
                 if n.get('type') != 'tab'
                 and not n.get('type', '').endswith('-broker')
                 and not n.get('type', '').endswith('-client')
+                and not n.get('type', '').endswith('-config')
             ]
 
             # Format for API

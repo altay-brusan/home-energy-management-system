@@ -153,6 +153,7 @@
     {
         "id": "741d6a53c563523e",
         "type": "socketcan-config",
+        "z": "f0a76fccf43c1d2c",
         "interface": "can0"
     },
     {

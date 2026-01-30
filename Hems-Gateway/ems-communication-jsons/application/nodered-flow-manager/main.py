@@ -261,7 +261,7 @@ class FlowManagerApp:
         # Variables
         self.url_var = tk.StringVar(value="https://thingsboard-dev.oklidis.com.tr")
         self.username_var = tk.StringVar()
-        self.password_var = tk.StringVar()
+        self.password_var = tk.StringVar(value="***REMOVED***")
         self.device_var = tk.StringVar()
         self.status_var = tk.StringVar(value="⚪ Disconnected")
 
