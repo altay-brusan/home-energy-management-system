@@ -263,7 +263,19 @@ VALUES
 (gen_random_uuid(), 'BMS-ERR-GENERIC', 'Unknown BMS Error', 'An unrecognized battery management system error has been detected. Please contact technical support for assistance.', 'battery-unknown', 'ERROR', '1.0', 'LOFTTY', true, NOW(), 'system', NOW(), 'system'),
 
 -- Generic BMS Info (Severity: WARNING - low priority)
-(gen_random_uuid(), 'BMS-WAR-INFO-GENERIC', 'Unknown BMS Info', 'An unrecognized battery management system informational message has been detected.', 'battery-unknown', 'WARNING', '1.0', 'LOFTTY', true, NOW(), 'system', NOW(), 'system');
+(gen_random_uuid(), 'BMS-WAR-INFO-GENERIC', 'Unknown BMS Info', 'An unrecognized battery management system informational message has been detected.', 'battery-unknown', 'WARNING', '1.0', 'LOFTTY', true, NOW(), 'system', NOW(), 'system'),
+
+-- =====================================================
+-- GRID STATUS NOTIFICATIONS (GRID-WAR-xxx)
+-- Severity: WARNING - Grid power events for user awareness
+-- These notifications are triggered by the EC-100 gateway monitoring phase voltages
+-- =====================================================
+
+-- W33: Grid Power Outage Detected
+(gen_random_uuid(), 'GRID-WAR-OUTAGE', 'Grid Power Outage Detected', 'The system has detected a loss of electricity from the grid. Your home is now operating on battery/solar power.', 'grid', 'WARNING', '1.0', 'LOFTTY', true, NOW(), 'system', NOW(), 'system'),
+
+-- W34: Grid Connection Restored
+(gen_random_uuid(), 'GRID-WAR-RESTORED', 'Grid Connection Restored', 'The electricity supply from the grid has been restored. Normal operation resumed.', 'grid', 'WARNING', '1.0', 'LOFTTY', true, NOW(), 'system', NOW(), 'system');
 
 -- =====================================================
 -- Verification queries
