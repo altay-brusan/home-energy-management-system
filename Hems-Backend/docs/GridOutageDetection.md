@@ -19,8 +19,8 @@ This document provides comprehensive documentation for the Grid Outage Detection
 
 The Grid Outage Detection system monitors the electrical grid connection status for each device and notifies users when:
 
-1. **Grid power is lost** (outage detected) - W33 notification
-2. **Grid power is restored** - W34 notification
+1. **Grid power is lost** (outage detected) - GRD-WAR-W33 notification
+2. **Grid power is restored** - GRD-WAR-W34 notification
 
 ### Key Features
 
@@ -160,16 +160,16 @@ public class GridStatusUpdateResult
     |          | ------------------------------>  |            |
     +----------+         First message            +------------+
          |               gridConnected=false           |    ^
-         |               (send W33)                    |    |
+         |               (send GRD-WAR-W33)            |    |
          |                                             |    |
          |                    +-------------+          |    |
          +------------------> |             | <--------+    |
            First message      | Disconnected|  gridConnected=false
-           gridConnected=false|             |  (send W33)
-           (send W33)         +-------------+
+           gridConnected=false|             |  (send GRD-WAR-W33)
+           (send GRD-WAR-W33) +-------------+
                                     |
                                     | gridConnected=true
-                                    | (send W34)
+                                    | (send GRD-WAR-W34)
                                     v
                               +------------+
                               | Connected  |
@@ -180,11 +180,11 @@ public class GridStatusUpdateResult
 
 | Previous State | Grid Connected | New State | Notification |
 |----------------|----------------|-----------|--------------|
-| Unknown | `false` | Disconnected | W33 (Outage) |
+| Unknown | `false` | Disconnected | GRD-WAR-W33 (Outage) |
 | Unknown | `true` | Connected | None |
-| Connected | `false` | Disconnected | W33 (Outage) |
+| Connected | `false` | Disconnected | GRD-WAR-W33 (Outage) |
 | Connected | `true` | Connected | None |
-| Disconnected | `true` | Connected | W34 (Restored) |
+| Disconnected | `true` | Connected | GRD-WAR-W34 (Restored) |
 | Disconnected | `false` | Disconnected | None |
 
 ### Key Design Decisions
@@ -417,7 +417,7 @@ curl -X POST http://localhost:5000/api/DeviceData/GridStatus \
   }'
 ```
 
-**Expected:** W33 notification created and sent via SignalR.
+**Expected:** GRD-WAR-W33 notification created and sent via SignalR.
 
 #### Test 2: No Duplicate Notification
 
@@ -441,7 +441,7 @@ curl -X POST http://localhost:5000/api/DeviceData/GridStatus \
   }'
 ```
 
-**Expected:** W34 notification created with outage duration in AdditionalData.
+**Expected:** GRD-WAR-W34 notification created with outage duration in AdditionalData.
 
 #### Test 4: First Message Connected
 
