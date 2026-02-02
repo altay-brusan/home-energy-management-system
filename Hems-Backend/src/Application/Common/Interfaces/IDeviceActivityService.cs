@@ -12,6 +12,7 @@ public enum TelemetrySource
     DailyEnergyFlow,
     TotalEnergyFlow,
     Alarm,
+    GridStatus,
     Unknown
 }
 

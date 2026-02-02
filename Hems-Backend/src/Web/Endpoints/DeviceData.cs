@@ -7,6 +7,7 @@ using Hems_Backend.Application.DeviceData.Commands.CreateDeviceEnergyData;
 using Hems_Backend.Application.DeviceData.Commands.ProcessAlarmTelemetry;
 using Hems_Backend.Application.DeviceData.Commands.ProcessEnergyFlowTelemetry;
 using Hems_Backend.Application.DeviceData.Commands.ProcessGenericTelemetry;
+using Hems_Backend.Application.DeviceData.Commands.ProcessGridStatusTelemetry;
 using Hems_Backend.Application.DeviceData.Commands.ProcessPowerFlowTelemetry;
 using Hems_Backend.Application.DeviceData.Common.Models;
 using Hems_Backend.Application.DeviceData.Queries.GetDeviceData;
@@ -32,7 +33,8 @@ public class DeviceData : EndpointGroupBase
             .MapPost(ReceiveDailyEnergyFlowTelemetry, "DailyEnergyFlow")
             .MapPost(ReceiveTotalEnergyFlowTelemetry, "TotalEnergyFlow")
             .MapPost(ReceiveHeartbeat, "Heartbeat")
-            .MapPost(ReceiveAlarmTelemetry, "Alarm");
+            .MapPost(ReceiveAlarmTelemetry, "Alarm")
+            .MapPost(ReceiveGridStatusTelemetry, "GridStatus");
 
         // User endpoints (require user authorization)
         app.MapGroup(this)
@@ -209,6 +211,30 @@ public class DeviceData : EndpointGroupBase
             createdCount = result.CreatedCount,
             notifications = result.Notifications,
             errors = result.Errors
+        });
+    }
+
+    /// <summary>
+    /// Receives grid status telemetry from device (phase voltages and grid connected state)
+    /// </summary>
+    public async Task<IResult> ReceiveGridStatusTelemetry(
+        [FromBody] JsonElement body,
+        ISender sender)
+    {
+        var result = await sender.Send(new ProcessGridStatusTelemetryCommand { RawBody = body });
+
+        if (!result.Success)
+        {
+            return Results.Problem(result.Error, statusCode: 400);
+        }
+
+        return Results.Ok(new
+        {
+            message = result.Message,
+            deviceId = result.DeviceId,
+            gridConnected = result.GridConnected,
+            statusChanged = result.StatusChanged,
+            notificationSent = result.NotificationSent
         });
     }
 
