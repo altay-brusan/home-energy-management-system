@@ -140,7 +140,7 @@ public class GridStatusUpdateResult
     public GridConnectionStatus CurrentStatus { get; set; }
     public bool StatusChanged { get; set; }
     public bool ShouldSendNotification { get; set; }
-    public string? NotificationCode { get; set; }  // "GRD-ALM-W33" or "GRD-ALM-W34"
+    public string? NotificationCode { get; set; }  // "GRD-WAR-W33" or "GRD-WAR-W34"
     public TimeSpan? OutageDuration { get; set; }  // Set when grid is restored
 }
 ```
@@ -284,7 +284,7 @@ Grid status notifications are sent via the existing `DeviceNotificationHub` to:
   "created": "2024-01-15T10:30:00Z",
   "deviceNotificationType": {
     "id": "type-uuid",
-    "code": "GRD-ALM-W33",
+    "code": "GRD-WAR-W33",
     "message": "Grid Power Outage Detected",
     "description": "The system has detected a loss of electricity from the grid...",
     "category": "grid",
@@ -293,7 +293,7 @@ Grid status notifications are sent via the existing `DeviceNotificationHub` to:
     "manufacturer": "LOFTTY",
     "isActive": true
   },
-  "key": "GRD-ALM-W33",
+  "key": "GRD-WAR-W33",
   "displayMessage": "Grid Power Outage Detected",
   "severity": "WARNING",
   "detailedDescription": "The system has detected a loss of electricity from the grid..."
@@ -334,7 +334,7 @@ Grid status notifications are sent via the existing `DeviceNotificationHub` to:
 
 | Property | Value |
 |----------|-------|
-| Code | `GRD-ALM-W33` |
+| Code | `GRD-WAR-W33` |
 | Message | Grid Power Outage Detected |
 | Description | The system has detected a loss of electricity from the grid. Your home is now operating on battery/solar power. |
 | Category | grid |
@@ -347,7 +347,7 @@ Grid status notifications are sent via the existing `DeviceNotificationHub` to:
 
 | Property | Value |
 |----------|-------|
-| Code | `GRD-ALM-W34` |
+| Code | `GRD-WAR-W34` |
 | Message | Grid Connection Restored |
 | Description | The electricity supply from the grid has been restored. Normal operation resumed. |
 | Category | grid |
