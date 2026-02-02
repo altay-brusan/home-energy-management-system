@@ -112,6 +112,15 @@
               "format": "guid"
             },
             "x-position": 1
+          },
+          {
+            "name": "modelType",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 2
           }
         ],
         "responses": {
