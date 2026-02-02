@@ -15,14 +15,14 @@ public class GridStatusTrackingService : IGridStatusTrackingService
     private readonly ConcurrentDictionary<Guid, GridStatusState> _deviceStates;
 
     /// <summary>
-    /// Notification code for grid power outage detected
+    /// Notification code for grid power outage detected (W33)
     /// </summary>
-    public const string NotificationCodeOutage = "GRID-WAR-OUTAGE";
+    public const string NotificationCodeOutage = "W33";
 
     /// <summary>
-    /// Notification code for grid connection restored
+    /// Notification code for grid connection restored (W34)
     /// </summary>
-    public const string NotificationCodeRestored = "GRID-WAR-RESTORED";
+    public const string NotificationCodeRestored = "W34";
 
     public GridStatusTrackingService(ILogger<GridStatusTrackingService> logger)
     {

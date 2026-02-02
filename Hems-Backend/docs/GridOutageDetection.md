@@ -140,7 +140,7 @@ public class GridStatusUpdateResult
     public GridConnectionStatus CurrentStatus { get; set; }
     public bool StatusChanged { get; set; }
     public bool ShouldSendNotification { get; set; }
-    public string? NotificationCode { get; set; }  // "GRID-WAR-OUTAGE" or "GRID-WAR-RESTORED"
+    public string? NotificationCode { get; set; }  // "W33" or "W34"
     public TimeSpan? OutageDuration { get; set; }  // Set when grid is restored
 }
 ```
@@ -284,7 +284,7 @@ Grid status notifications are sent via the existing `DeviceNotificationHub` to:
   "created": "2024-01-15T10:30:00Z",
   "deviceNotificationType": {
     "id": "type-uuid",
-    "code": "GRID-WAR-OUTAGE",
+    "code": "W33",
     "message": "Grid Power Outage Detected",
     "description": "The system has detected a loss of electricity from the grid...",
     "category": "grid",
@@ -293,7 +293,7 @@ Grid status notifications are sent via the existing `DeviceNotificationHub` to:
     "manufacturer": "LOFTTY",
     "isActive": true
   },
-  "key": "GRID-WAR-OUTAGE",
+  "key": "W33",
   "displayMessage": "Grid Power Outage Detected",
   "severity": "WARNING",
   "detailedDescription": "The system has detected a loss of electricity from the grid..."
@@ -330,11 +330,11 @@ Grid status notifications are sent via the existing `DeviceNotificationHub` to:
 
 ## Notification Types
 
-### W33: Grid Power Outage Detected (GRID-WAR-OUTAGE)
+### W33: Grid Power Outage Detected
 
 | Property | Value |
 |----------|-------|
-| Code | `GRID-WAR-OUTAGE` |
+| Code | `W33` |
 | Message | Grid Power Outage Detected |
 | Description | The system has detected a loss of electricity from the grid. Your home is now operating on battery/solar power. |
 | Category | grid |
@@ -343,11 +343,11 @@ Grid status notifications are sent via the existing `DeviceNotificationHub` to:
 
 **Triggered when:** Grid connection status changes from Connected to Disconnected, OR first message shows Disconnected.
 
-### W34: Grid Connection Restored (GRID-WAR-RESTORED)
+### W34: Grid Connection Restored
 
 | Property | Value |
 |----------|-------|
-| Code | `GRID-WAR-RESTORED` |
+| Code | `W34` |
 | Message | Grid Connection Restored |
 | Description | The electricity supply from the grid has been restored. Normal operation resumed. |
 | Category | grid |
