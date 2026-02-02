@@ -99,7 +99,7 @@ public class GridStatusUpdateResult
 
     /// <summary>
     /// Notification code to use if ShouldSendNotification is true
-    /// W33 for outage, W34 for restoration
+    /// GRD-ALM-W33 for outage, GRD-ALM-W34 for restoration
     /// </summary>
     public string? NotificationCode { get; set; }
 
