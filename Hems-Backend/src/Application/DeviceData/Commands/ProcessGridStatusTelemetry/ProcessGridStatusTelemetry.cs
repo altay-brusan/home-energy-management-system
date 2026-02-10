@@ -156,9 +156,17 @@ public class ProcessGridStatusTelemetryCommandHandler : IRequestHandler<ProcessG
             phaseCVoltageV = phaseC;
         }
 
-        if (dataElement.TryGetProperty("gridConnected", out var gridConnectedEl))
+        if (TryGetGridConnectedValue(dataElement, out var parsedGridConnected))
         {
-            gridConnected = gridConnectedEl.GetBoolean();
+            gridConnected = parsedGridConnected;
+        }
+        else
+        {
+            _logger.LogWarning(
+                "Could not find or parse 'gridConnected' in grid status telemetry for device {DeviceId}. " +
+                "Defaulting to connected. Available data keys: [{DataKeys}]",
+                thingsBoardDeviceId,
+                string.Join(", ", dataElement.EnumerateObject().Select(p => p.Name)));
         }
 
         // 7) Update grid status tracking
@@ -303,6 +311,72 @@ public class ProcessGridStatusTelemetryCommandHandler : IRequestHandler<ProcessG
         {
             _logger.LogError(ex, "Error creating grid status notification for device {DeviceId}", thingsBoardDeviceId);
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Attempts to parse the gridConnected value from the data element.
+    /// Handles multiple property name casings and value types (boolean, integer 0/1, string "true"/"false").
+    /// </summary>
+    public static bool TryGetGridConnectedValue(JsonElement dataElement, out bool gridConnected)
+    {
+        gridConnected = true;
+
+        // Try common property name variations (case-sensitive JSON property lookup)
+        JsonElement gridConnectedEl = default;
+        bool found = dataElement.TryGetProperty("gridConnected", out gridConnectedEl)
+                  || dataElement.TryGetProperty("grid_connected", out gridConnectedEl)
+                  || dataElement.TryGetProperty("GridConnected", out gridConnectedEl)
+                  || dataElement.TryGetProperty("GRID_CONNECTED", out gridConnectedEl);
+
+        if (!found)
+        {
+            // Fallback: case-insensitive search through all properties
+            foreach (var prop in dataElement.EnumerateObject())
+            {
+                if (prop.Name.Equals("gridConnected", StringComparison.OrdinalIgnoreCase) ||
+                    prop.Name.Equals("grid_connected", StringComparison.OrdinalIgnoreCase))
+                {
+                    gridConnectedEl = prop.Value;
+                    found = true;
+                    break;
+                }
+            }
+        }
+
+        if (!found)
+            return false;
+
+        // Parse the value based on its JSON type
+        switch (gridConnectedEl.ValueKind)
+        {
+            case JsonValueKind.True:
+                gridConnected = true;
+                return true;
+
+            case JsonValueKind.False:
+                gridConnected = false;
+                return true;
+
+            case JsonValueKind.Number:
+                // 0 = disconnected, any non-zero = connected
+                gridConnected = gridConnectedEl.TryGetInt32(out var intVal) ? intVal != 0 : gridConnectedEl.GetDouble() != 0;
+                return true;
+
+            case JsonValueKind.String:
+                var strVal = gridConnectedEl.GetString();
+                if (bool.TryParse(strVal, out var boolVal))
+                {
+                    gridConnected = boolVal;
+                    return true;
+                }
+                // Handle "0"/"1" as string
+                if (strVal == "0") { gridConnected = false; return true; }
+                if (strVal == "1") { gridConnected = true; return true; }
+                return false;
+
+            default:
+                return false;
         }
     }
 
