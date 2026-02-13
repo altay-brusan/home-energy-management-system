@@ -17,12 +17,12 @@ public class GridStatusTrackingService : IGridStatusTrackingService
     /// <summary>
     /// Notification code for grid power outage detected (W33)
     /// </summary>
-    public const string NotificationCodeOutage = "GRD-WAR-W33";
+    public const string NotificationCodeOutage = "GRID-WAR-W33";
 
     /// <summary>
     /// Notification code for grid connection restored (W34)
     /// </summary>
-    public const string NotificationCodeRestored = "GRD-WAR-W34";
+    public const string NotificationCodeRestored = "GRID-WAR-W34";
 
     public GridStatusTrackingService(ILogger<GridStatusTrackingService> logger)
     {
