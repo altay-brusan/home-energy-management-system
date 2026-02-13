@@ -54,7 +54,7 @@ public class GridStatusTrackingServiceTests
         Assert.That(result.CurrentStatus, Is.EqualTo(GridConnectionStatus.Disconnected));
         Assert.That(result.StatusChanged, Is.True);
         Assert.That(result.ShouldSendNotification, Is.True, "First message with grid disconnected SHOULD send notification");
-        Assert.That(result.NotificationCode, Is.EqualTo("GRD-WAR-W33"));
+        Assert.That(result.NotificationCode, Is.EqualTo("GRID-WAR-W33"));
     }
 
     #endregion
@@ -76,7 +76,7 @@ public class GridStatusTrackingServiceTests
         Assert.That(result.CurrentStatus, Is.EqualTo(GridConnectionStatus.Disconnected));
         Assert.That(result.StatusChanged, Is.True);
         Assert.That(result.ShouldSendNotification, Is.True);
-        Assert.That(result.NotificationCode, Is.EqualTo("GRD-WAR-W33"));
+        Assert.That(result.NotificationCode, Is.EqualTo("GRID-WAR-W33"));
     }
 
     [Test]
@@ -96,7 +96,7 @@ public class GridStatusTrackingServiceTests
         Assert.That(result.CurrentStatus, Is.EqualTo(GridConnectionStatus.Connected));
         Assert.That(result.StatusChanged, Is.True);
         Assert.That(result.ShouldSendNotification, Is.True);
-        Assert.That(result.NotificationCode, Is.EqualTo("GRD-WAR-W34"));
+        Assert.That(result.NotificationCode, Is.EqualTo("GRID-WAR-W34"));
         Assert.That(result.OutageDuration, Is.Not.Null);
         Assert.That(result.OutageDuration!.Value.TotalMinutes, Is.GreaterThan(4).And.LessThan(6));
     }
@@ -238,7 +238,7 @@ public class GridStatusTrackingServiceTests
             phaseAVoltageV: 0, phaseBVoltageV: 0, phaseCVoltageV: 0,
             timestampUtc: baseTime.AddMinutes(1));
         Assert.That(result2.ShouldSendNotification, Is.True, "First blackout: should notify");
-        Assert.That(result2.NotificationCode, Is.EqualTo("GRD-WAR-W33"));
+        Assert.That(result2.NotificationCode, Is.EqualTo("GRID-WAR-W33"));
 
         // Step 3: Repeated blackout messages every minute - should NOT re-notify
         for (int i = 2; i <= 5; i++)
@@ -256,7 +256,7 @@ public class GridStatusTrackingServiceTests
             phaseAVoltageV: 230, phaseBVoltageV: 229, phaseCVoltageV: 231,
             timestampUtc: baseTime.AddMinutes(6));
         Assert.That(resultRestore.ShouldSendNotification, Is.True, "Power restored: should notify");
-        Assert.That(resultRestore.NotificationCode, Is.EqualTo("GRD-WAR-W34"));
+        Assert.That(resultRestore.NotificationCode, Is.EqualTo("GRID-WAR-W34"));
         Assert.That(resultRestore.OutageDuration, Is.Not.Null);
         Assert.That(resultRestore.OutageDuration!.Value, Is.EqualTo(TimeSpan.FromMinutes(5)));
 
