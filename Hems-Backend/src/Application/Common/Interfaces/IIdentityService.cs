@@ -28,4 +28,8 @@ public interface IIdentityService
     
     // User update methods
     Task<Result> UpdateUserAsync(string userId, string? firstName, string? surname, string? email, string? phoneNumber, CancellationToken cancellationToken = default);
+
+    // Soft delete methods
+    Task<Result> SoftDeleteUserAsync(string userId, CancellationToken cancellationToken = default);
+    Task<bool> IsUserDemoAsync(string userId, CancellationToken cancellationToken = default);
 }
