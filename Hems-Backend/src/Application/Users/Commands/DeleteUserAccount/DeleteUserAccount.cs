@@ -1,6 +1,7 @@
 using Hems_Backend.Application.Common.Exceptions;
 using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Application.Common.Models;
+using Hems_Backend.Domain.Constants;
 using Hems_Backend.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -29,6 +30,13 @@ public class DeleteUserAccountCommandHandler : IRequestHandler<DeleteUserAccount
     {
         var userId = _user.Id
             ?? throw AppException.Unauthorized(MessageCodes.AUTH_USER_NOT_AUTHENTICATED);
+
+        // Block administrator users from deleting their account
+        var isAdmin = await _identityService.IsInRoleAsync(userId, Roles.Administrator);
+        if (isAdmin)
+        {
+            throw AppException.BadRequest(MessageCodes.USER_ADMIN_CANNOT_DELETE);
+        }
 
         // Block demo users from deleting their account
         var isDemo = await _identityService.IsUserDemoAsync(userId, cancellationToken);

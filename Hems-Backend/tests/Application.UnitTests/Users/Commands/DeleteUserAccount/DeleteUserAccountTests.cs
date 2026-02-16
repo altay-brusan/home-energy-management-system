@@ -2,6 +2,7 @@ using Hems_Backend.Application.Common.Exceptions;
 using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Application.Common.Models;
 using Hems_Backend.Application.Users.Commands.DeleteUserAccount;
+using Hems_Backend.Domain.Constants;
 using Hems_Backend.Domain.Entities;
 using Hems_Backend.Domain.Enums;
 using MockQueryable.Moq;
@@ -28,6 +29,8 @@ public class DeleteUserAccountTests
         _identityService = new Mock<IIdentityService>();
 
         _user.Setup(x => x.Id).Returns(TestUserId);
+        _identityService.Setup(x => x.IsInRoleAsync(It.IsAny<string>(), Roles.Administrator))
+            .ReturnsAsync(false);
         _identityService.Setup(x => x.IsUserDemoAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
         _identityService.Setup(x => x.SoftDeleteUserAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -72,6 +75,21 @@ public class DeleteUserAccountTests
             () => _handler.Handle(new DeleteUserAccountCommand(), CancellationToken.None));
 
         Assert.That(ex!.Code, Is.EqualTo(MessageCodes.AUTH_USER_NOT_AUTHENTICATED));
+    }
+
+    [Test]
+    public void Handle_AdminUser_ShouldThrowAdminCannotDelete()
+    {
+        // Arrange
+        _identityService.Setup(x => x.IsInRoleAsync(TestUserId, Roles.Administrator))
+            .ReturnsAsync(true);
+        SetupDbSets();
+
+        // Act & Assert
+        var ex = Assert.ThrowsAsync<AppException>(
+            () => _handler.Handle(new DeleteUserAccountCommand(), CancellationToken.None));
+
+        Assert.That(ex!.Code, Is.EqualTo(MessageCodes.USER_ADMIN_CANNOT_DELETE));
     }
 
     [Test]
