@@ -144,6 +144,11 @@ public static class IdentityApiEndpointRouteBuilderExtensions
                 return TypedResults.Problem("Email not confirmed. Please check your email and confirm your account.", statusCode: StatusCodes.Status401Unauthorized);
             }
 
+            if (user is ApplicationUser appUserLogin && appUserLogin.IsDeleted)
+            {
+                return TypedResults.Problem("This account has been deleted.", statusCode: StatusCodes.Status401Unauthorized);
+            }
+
             var useCookieScheme = (useCookies == true) || (useSessionCookies == true);
             var isPersistent = (useCookies == true) && (useSessionCookies != true);
             signInManager.AuthenticationScheme = useCookieScheme ? IdentityConstants.ApplicationScheme : IdentityConstants.BearerScheme;

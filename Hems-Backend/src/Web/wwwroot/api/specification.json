@@ -4960,6 +4960,24 @@
         ]
       }
     },
+    "/api/Users/delete-account": {
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "DeleteAccount",
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/WeatherForecasts/{siteId}": {
       "get": {
         "tags": [
