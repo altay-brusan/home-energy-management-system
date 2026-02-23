@@ -93,18 +93,19 @@ public class DeleteUserAccountTests
     }
 
     [Test]
-    public void Handle_DemoUser_ShouldThrowDemoCannotDelete()
+    public async Task Handle_DemoUser_ShouldDeleteSuccessfully()
     {
-        // Arrange
+        // Arrange - demo users are allowed to delete their account
         _identityService.Setup(x => x.IsUserDemoAsync(TestUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         SetupDbSets();
 
-        // Act & Assert
-        var ex = Assert.ThrowsAsync<AppException>(
-            () => _handler.Handle(new DeleteUserAccountCommand(), CancellationToken.None));
+        // Act
+        await _handler.Handle(new DeleteUserAccountCommand(), CancellationToken.None);
 
-        Assert.That(ex!.Code, Is.EqualTo(MessageCodes.USER_DEMO_CANNOT_DELETE));
+        // Assert
+        _identityService.Verify(x => x.SoftDeleteUserAsync(TestUserId, It.IsAny<CancellationToken>()), Times.Once);
+        _context.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Test]
