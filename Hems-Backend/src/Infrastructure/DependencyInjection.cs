@@ -80,6 +80,10 @@ public static class DependencyInjection
         builder.Services.AddSingleton<IDeviceHeartbeatCache, DeviceHeartbeatCache>();
         builder.Services.AddHostedService<DeviceHeartbeatMonitorService>();
 
+        // Grid Status Tracking Services (monitors grid connection status per device)
+        builder.Services.AddSingleton<IGridStatusTrackingService, GridStatusTrackingService>();
+        builder.Services.AddHostedService<GridStatusMonitorService>();
+
         // Device Activity Service (centralized telemetry-based activity tracking)
         builder.Services.AddScoped<IDeviceActivityService, DeviceActivityService>();
 

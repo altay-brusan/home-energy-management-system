@@ -1146,6 +1146,29 @@
         }
       }
     },
+    "/api/DeviceData/GridStatus": {
+      "post": {
+        "tags": [
+          "DeviceData"
+        ],
+        "operationId": "ReceiveGridStatusTelemetry",
+        "requestBody": {
+          "x-name": "body",
+          "content": {
+            "application/json": {
+              "schema": {}
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/DeviceData": {
       "get": {
         "tags": [
@@ -4925,6 +4948,24 @@
           "required": true,
           "x-position": 1
         },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Users/delete-account": {
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "operationId": "DeleteAccount",
         "responses": {
           "200": {
             "description": ""
