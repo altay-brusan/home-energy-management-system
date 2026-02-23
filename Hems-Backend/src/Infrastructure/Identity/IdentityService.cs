@@ -166,17 +166,52 @@ public class IdentityService : IIdentityService
         // Update properties only if they are provided
         if (firstName != null)
             user.FirstName = firstName;
-        
+
         if (surname != null)
             user.Surname = surname;
-        
+
         if (email != null)
             user.Email = email;
-        
+
         if (phoneNumber != null)
             user.PhoneNumber = phoneNumber;
 
         var result = await _userManager.UpdateAsync(user);
         return result.ToApplicationResult();
+    }
+
+    public async Task<Result> SoftDeleteUserAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            return Result.Failure(new[] { "User not found." });
+        }
+
+        user.IsDeleted = true;
+        user.DeletedAt = DateTimeOffset.UtcNow;
+
+        // Anonymize PII for GDPR compliance (Right to Erasure)
+        // Keep the user record for audit trail FK references (CreatedBy/LastModifiedBy store user IDs)
+        user.FirstName = null;
+        user.Surname = null;
+        user.Email = $"deleted-{userId}@deleted.local";
+        user.NormalizedEmail = $"DELETED-{userId}@DELETED.LOCAL";
+        user.UserName = $"deleted-{userId}";
+        user.NormalizedUserName = $"DELETED-{userId}";
+        user.PhoneNumber = null;
+        user.PasswordHash = null;
+
+        // Invalidate all existing tokens by updating the security stamp
+        await _userManager.UpdateSecurityStampAsync(user);
+
+        var result = await _userManager.UpdateAsync(user);
+        return result.ToApplicationResult();
+    }
+
+    public async Task<bool> IsUserDemoAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        return user?.IsDemo ?? false;
     }
 }

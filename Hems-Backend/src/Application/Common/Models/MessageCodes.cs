@@ -156,6 +156,10 @@ public static class MessageCodes
 
     public const string USER_NOT_FOUND = "USER_NOT_FOUND";
     public const string USER_EMAIL_NOT_FOUND = "USER_EMAIL_NOT_FOUND";
+    public const string USER_CANNOT_DELETE_WITH_ACTIVE_SHARES = "USER_CANNOT_DELETE_WITH_ACTIVE_SHARES";
+    public const string USER_ACCOUNT_DELETED = "USER_ACCOUNT_DELETED";
+    public const string USER_DEMO_CANNOT_DELETE = "USER_DEMO_CANNOT_DELETE";
+    public const string USER_ADMIN_CANNOT_DELETE = "USER_ADMIN_CANNOT_DELETE";
 
     #endregion
 
@@ -282,6 +286,10 @@ public static class MessageDefaults
         // Users
         [MessageCodes.USER_NOT_FOUND] = "User not found",
         [MessageCodes.USER_EMAIL_NOT_FOUND] = "User email not found",
+        [MessageCodes.USER_CANNOT_DELETE_WITH_ACTIVE_SHARES] = "Cannot delete account while sites are shared with other users. Please remove all shared users first.",
+        [MessageCodes.USER_ACCOUNT_DELETED] = "Account deleted successfully",
+        [MessageCodes.USER_DEMO_CANNOT_DELETE] = "Demo accounts cannot be deleted",
+        [MessageCodes.USER_ADMIN_CANNOT_DELETE] = "Administrator accounts cannot be deleted",
 
         // Generic
         [MessageCodes.RECORD_NOT_FOUND] = "Record not found",

@@ -12,4 +12,14 @@ public class ApplicationUser : IdentityUser
     /// Demo users get simulated data instead of real ThingsBoard data.
     /// </summary>
     public bool IsDemo { get; set; } = false;
+
+    /// <summary>
+    /// Indicates if this user account has been soft-deleted.
+    /// </summary>
+    public bool IsDeleted { get; set; } = false;
+
+    /// <summary>
+    /// The date and time when the user account was soft-deleted.
+    /// </summary>
+    public DateTimeOffset? DeletedAt { get; set; }
 }

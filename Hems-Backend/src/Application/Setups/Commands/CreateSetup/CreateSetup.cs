@@ -144,6 +144,9 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
             device.Id,
             cancellationToken: cancellationToken);
 
+        // Grid status tracking starts in Unknown state and will be updated
+        // when the first GridStatus telemetry message is received from the device
+
         await _context.SaveChangesAsync(cancellationToken);
 
         return setup.Id;
