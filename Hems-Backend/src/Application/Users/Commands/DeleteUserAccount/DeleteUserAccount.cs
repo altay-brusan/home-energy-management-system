@@ -38,13 +38,6 @@ public class DeleteUserAccountCommandHandler : IRequestHandler<DeleteUserAccount
             throw AppException.BadRequest(MessageCodes.USER_ADMIN_CANNOT_DELETE);
         }
 
-        // Block demo users from deleting their account
-        var isDemo = await _identityService.IsUserDemoAsync(userId, cancellationToken);
-        if (isDemo)
-        {
-            throw AppException.BadRequest(MessageCodes.USER_DEMO_CANNOT_DELETE);
-        }
-
         // Load all owned non-deleted sites
         var ownedSites = await _context.Sites
             .Where(s => s.UserId == userId && !s.IsDeleted)

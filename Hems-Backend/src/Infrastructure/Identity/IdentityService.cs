@@ -191,6 +191,17 @@ public class IdentityService : IIdentityService
         user.IsDeleted = true;
         user.DeletedAt = DateTimeOffset.UtcNow;
 
+        // Anonymize PII for GDPR compliance (Right to Erasure)
+        // Keep the user record for audit trail FK references (CreatedBy/LastModifiedBy store user IDs)
+        user.FirstName = null;
+        user.Surname = null;
+        user.Email = $"deleted-{userId}@deleted.local";
+        user.NormalizedEmail = $"DELETED-{userId}@DELETED.LOCAL";
+        user.UserName = $"deleted-{userId}";
+        user.NormalizedUserName = $"DELETED-{userId}";
+        user.PhoneNumber = null;
+        user.PasswordHash = null;
+
         // Invalidate all existing tokens by updating the security stamp
         await _userManager.UpdateSecurityStampAsync(user);
 
