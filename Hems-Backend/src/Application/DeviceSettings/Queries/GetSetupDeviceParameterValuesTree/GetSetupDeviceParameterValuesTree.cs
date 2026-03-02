@@ -1,5 +1,7 @@
 using Hems_Backend.Application.Common.Interfaces;
 using Hems_Backend.Application.Common.Mappings;
+using Hems_Backend.Application.Common.Models;
+using Hems_Backend.Domain.Constants;
 using Hems_Backend.Domain.Entities;
 using MediatR;
 
@@ -14,11 +16,19 @@ public class GetSetupDeviceParameterValuesTreeQueryHandler : IRequestHandler<Get
 {
     private readonly IApplicationDbContext _context;
     private readonly IMapper _mapper;
+    private readonly IUser _currentUser;
+    private readonly IIdentityService _identityService;
 
-    public GetSetupDeviceParameterValuesTreeQueryHandler(IApplicationDbContext context, IMapper mapper)
+    public GetSetupDeviceParameterValuesTreeQueryHandler(
+        IApplicationDbContext context,
+        IMapper mapper,
+        IUser currentUser,
+        IIdentityService identityService)
     {
         _context = context;
         _mapper = mapper;
+        _currentUser = currentUser;
+        _identityService = identityService;
     }
 
     public async Task<SetupDeviceParameterValuesTreeVm> Handle(GetSetupDeviceParameterValuesTreeQuery request, CancellationToken cancellationToken)
@@ -88,6 +98,20 @@ public class GetSetupDeviceParameterValuesTreeQueryHandler : IRequestHandler<Get
             .Include(p => p.ParameterGroup)
             .ToListAsync(cancellationToken);
 
+        // 3.5. Filter out grid config parameters for non-admin users
+        var isAdmin = false;
+        if (_currentUser.Id != null)
+        {
+            isAdmin = await _identityService.IsInRoleAsync(_currentUser.Id, Roles.Administrator);
+        }
+
+        if (!isAdmin)
+        {
+            parameters = parameters
+                .Where(p => !RpcMethodMapping.IsGridConfigParameter(p.Name))
+                .ToList();
+        }
+
         // 4. Bu parameter'ların ParameterGroup ID'lerini al
         var parameterGroupIds = parameters
             .Where(p => p.ParameterGroup != null)
@@ -100,6 +124,12 @@ public class GetSetupDeviceParameterValuesTreeQueryHandler : IRequestHandler<Get
 
         // 6. Hierarchical yapı oluştur
         var tree = BuildHierarchicalTree(setupDeviceParameterValues, parameters, allParameterGroups);
+
+        // 7. Prune empty groups for non-admin users (groups that only had grid config parameters)
+        if (!isAdmin)
+        {
+            tree = PruneEmptyGroups(tree);
+        }
 
         return new SetupDeviceParameterValuesTreeVm
         {
@@ -239,5 +269,26 @@ public class GetSetupDeviceParameterValuesTreeQueryHandler : IRequestHandler<Get
             group.Parameters = group.Parameters.OrderBy(p => p.SortOrder).ThenBy(p => p.Name).ToList();
             SortTree(group.Children);
         }
+    }
+
+    /// <summary>
+    /// Removes groups that have no parameters and no children (after filtering).
+    /// This prevents empty "Grid Standard" groups from appearing for non-admin users.
+    /// </summary>
+    internal static List<ParameterGroupTreeDto> PruneEmptyGroups(List<ParameterGroupTreeDto> groups)
+    {
+        var result = new List<ParameterGroupTreeDto>();
+
+        foreach (var group in groups)
+        {
+            group.Children = PruneEmptyGroups(group.Children);
+
+            if (group.Parameters.Count > 0 || group.Children.Count > 0)
+            {
+                result.Add(group);
+            }
+        }
+
+        return result;
     }
 }

@@ -332,7 +332,7 @@ public class DeviceSettings : EndpointGroupBase
     /// These parameters require special handling because changing them causes
     /// the device to restart.
     /// </remarks>
-    [Authorize]
+    [Authorize(Policies.AdminOnly)]
     public async Task<IResult> GetGridConfig(
         ISender sender,
         Guid deviceId)
@@ -390,7 +390,7 @@ public class DeviceSettings : EndpointGroupBase
     /// - DEVICE_RESTARTING: Device is currently restarting from previous update
     /// - INVALID_PARAMETERS: Non-grid parameters were included (use /parameters instead)
     /// </remarks>
-    [Authorize]
+    [Authorize(Policies.AdminOnly)]
     public async Task<IResult> UpdateGridConfig(
         ISender sender,
         ILogger<DeviceSettings> logger,
