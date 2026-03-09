@@ -145,6 +145,10 @@ public class CreateDeviceCommandHandler : IRequestHandler<CreateDeviceCommand, C
         // Fetch device credentials (access token) from ThingsBoard
         var credentials = await _tbConnector.GetDeviceCredentialsAsync(tbResult.DeviceId, cancellationToken);
 
+        // Save access token to database
+        entity.ThingsBoardAccessToken = credentials?.AccessToken;
+        await _context.SaveChangesAsync(cancellationToken);
+
         return new CreateDeviceResult
         {
             DeviceId = entity.Id,

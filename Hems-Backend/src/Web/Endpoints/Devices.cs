@@ -4,6 +4,7 @@ using Hems_Backend.Application.Devices.Commands.DeleteDevice;
 using Hems_Backend.Application.Devices.Commands.RegisterDevice;
 using Hems_Backend.Application.Devices.Commands.UpdateDevice;
 using Hems_Backend.Application.Devices.Queries.GetDeviceById;
+using Hems_Backend.Application.Devices.Queries.GetDeviceBySerialNumber;
 //using Hems_Backend.Application.Devices.Queries.GetDevices;
 using Hems_Backend.Domain.Constants;
 using Hems_Backend.Web.Infrastructure;
@@ -26,7 +27,8 @@ public class Devices : EndpointGroupBase
             .MapGet(GetDevice, "Admin/Device/{id}")
             .MapPost(CreateDevice, "Admin/Device")
             .MapPut(UpdateDevice, "Admin/Device/{id}")
-            .MapDelete(DeleteDevice, "Admin/Device/{id}");
+            .MapDelete(DeleteDevice, "Admin/Device/{id}")
+            .MapGet(GetDeviceBySerialNumber, "installer/{serialNumber}");
     }
 
     public async Task<DeviceLoginResult> DeviceLogin(
@@ -70,6 +72,15 @@ public class Devices : EndpointGroupBase
     {
         await sender.Send(new DeleteDeviceCommand(id));
         return Results.NoContent();
+    }
+
+    [Authorize(Policies.DeviceManagement)]
+    public async Task<IResult> GetDeviceBySerialNumber(
+        ISender sender,
+        string serialNumber)
+    {
+        var result = await sender.Send(new GetDeviceBySerialNumberQuery(serialNumber));
+        return result is not null ? Results.Ok(result) : Results.NotFound();
     }
 }
 

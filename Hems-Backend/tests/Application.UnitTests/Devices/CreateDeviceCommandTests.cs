@@ -73,7 +73,7 @@ public class CreateDeviceCommandTests
         Assert.That(result.TypeNumber, Is.EqualTo("TYPE-001"));
         Assert.That(result.ThingsBoardAccessToken, Is.EqualTo("test-access-token"));
         _dbSet.Verify(x => x.Add(It.IsAny<Device>()), Times.Once);
-        _context.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _context.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
         mockTbConnector.Verify(x => x.CreateDeviceAsync(It.IsAny<TbDeviceCreateRequest>(), It.IsAny<CancellationToken>()), Times.Once);
         mockTbConnector.Verify(x => x.GetDeviceCredentialsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Once);
         mockHeartbeatCache.Verify(x => x.AddDeviceToCacheAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Once);
