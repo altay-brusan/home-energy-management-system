@@ -260,6 +260,9 @@ namespace Hems_Backend.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("jsonb");
 
+                    b.Property<string>("ThingsBoardAccessToken")
+                        .HasColumnType("text");
+
                     b.Property<Guid>("ThingsBoardDeviceId")
                         .HasColumnType("uuid");
 

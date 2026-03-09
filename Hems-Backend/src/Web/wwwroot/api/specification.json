@@ -1925,6 +1925,35 @@
         ]
       }
     },
+    "/api/Devices/installer/{serialNumber}": {
+      "get": {
+        "tags": [
+          "Devices"
+        ],
+        "operationId": "GetDeviceBySerialNumber",
+        "parameters": [
+          {
+            "name": "serialNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
     "/api/DeviceSettings/device/{deviceId}/parameters": {
       "get": {
         "tags": [
