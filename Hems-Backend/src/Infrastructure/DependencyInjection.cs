@@ -153,9 +153,9 @@ public static class DependencyInjection
             options.AddPolicy(Policies.AdminOnly, policy => policy.RequireRole(Roles.Administrator));
             options.AddPolicy(Policies.UserManagement, policy => policy.RequireRole(Roles.Administrator));
             
-            // Device Management - Admin, MobilUser, TechnicalServiceUser
-            options.AddPolicy(Policies.DeviceManagement, policy => 
-                policy.RequireRole(Roles.Administrator, Roles.MobilUser, Roles.TechnicalServiceUser));
+            // Device Management - Admin, MobilUser, TechnicalServiceUser, Installer
+            options.AddPolicy(Policies.DeviceManagement, policy =>
+                policy.RequireRole(Roles.Administrator, Roles.MobilUser, Roles.TechnicalServiceUser, Roles.Installer));
             
             // Device Read Only - Tüm roller
             options.AddPolicy(Policies.DeviceReadOnly, policy => 

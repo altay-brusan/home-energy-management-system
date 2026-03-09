@@ -46,6 +46,13 @@ public interface IThingsBoardConnectorService
         Guid deviceId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Gets device credentials (access token) from ThingsBoard
+    /// </summary>
+    Task<TbDeviceCredentials?> GetDeviceCredentialsAsync(
+        Guid deviceId,
+        CancellationToken cancellationToken = default);
+
     // ============ ATTRIBUTES OPERATIONS ============
 
     /// <summary>
@@ -165,6 +172,12 @@ public sealed record TbTelemetryValue
 {
     public long Ts { get; init; } // Timestamp in milliseconds
     public object Value { get; init; } = null!;
+}
+
+public sealed record TbDeviceCredentials
+{
+    public string AccessToken { get; init; } = string.Empty;
+    public string CredentialsType { get; init; } = string.Empty;
 }
 
 public sealed record TbRpcResponse
