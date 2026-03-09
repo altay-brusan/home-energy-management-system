@@ -1912,8 +1912,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "string",
-                  "format": "guid"
+                  "$ref": "#/components/schemas/CreateDeviceResult"
                 }
               }
             }
@@ -6476,6 +6475,27 @@
           "lastModifiedBy": {
             "type": "string",
             "nullable": true
+          }
+        }
+      },
+      "CreateDeviceResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "serialNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "typeNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "thingsBoardAccessToken": {
+            "type": "string"
           }
         }
       },

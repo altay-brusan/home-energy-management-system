@@ -308,6 +308,43 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
         }
     }
 
+    public async Task<TbDeviceCredentials?> GetDeviceCredentialsAsync(
+        Guid deviceId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await EnsureAuthenticatedAsync(cancellationToken);
+
+            var url = $"/api/device/{deviceId}/credentials";
+            var response = await _httpClient.GetAsync(url, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning(
+                    "Failed to get device credentials from ThingsBoard. DeviceId: {DeviceId}, StatusCode: {StatusCode}",
+                    deviceId, response.StatusCode);
+                return null;
+            }
+
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            var credentials = JsonSerializer.Deserialize<TbDeviceCredentialsResponse>(json, _jsonOptions);
+
+            if (credentials == null) return null;
+
+            return new TbDeviceCredentials
+            {
+                AccessToken = credentials.CredentialsId ?? string.Empty,
+                CredentialsType = credentials.CredentialsType ?? string.Empty
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting device credentials from ThingsBoard: {DeviceId}", deviceId);
+            return null;
+        }
+    }
+
     // ============ ATTRIBUTES OPERATIONS ============
 
     public async Task<bool> SaveDeviceAttributesAsync(
@@ -715,6 +752,15 @@ public sealed class ThingsBoardConnectorService : IThingsBoardConnectorService
         
         [JsonPropertyName("entityType")]
         public string? EntityType { get; set; }
+    }
+
+    private sealed class TbDeviceCredentialsResponse
+    {
+        [JsonPropertyName("credentialsId")]
+        public string? CredentialsId { get; set; }
+
+        [JsonPropertyName("credentialsType")]
+        public string? CredentialsType { get; set; }
     }
 
     private sealed class TbAttributeResponse

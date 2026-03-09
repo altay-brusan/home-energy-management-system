@@ -19,10 +19,10 @@ public class Devices : EndpointGroupBase
         app.MapGroup(this)
             .MapPost("login", DeviceLogin);
 
-        // Admin endpoints - for managing data without direct database access
+        // Device management endpoints - Admin and Installer roles
         // These are NOT used by the frontend mobile app
         app.MapGroup(this)
-            .RequireAuthorization(Policies.AdminOnly)
+            .RequireAuthorization(Policies.DeviceManagement)
             .MapGet(GetDevice, "Admin/Device/{id}")
             .MapPost(CreateDevice, "Admin/Device")
             .MapPut(UpdateDevice, "Admin/Device/{id}")
@@ -36,7 +36,7 @@ public class Devices : EndpointGroupBase
         return await sender.Send(command);
     }
 
-    [Authorize(Policies.AdminOnly)]
+    [Authorize(Policies.DeviceManagement)]
     public async Task<DeviceDto?> GetDevice(
         ISender sender,
         Guid id)
@@ -44,15 +44,15 @@ public class Devices : EndpointGroupBase
         return await sender.Send(new GetDeviceByIdQuery(id));
     }
 
-    [Authorize(Policies.AdminOnly)]
-    public async Task<Guid> CreateDevice(
+    [Authorize(Policies.DeviceManagement)]
+    public async Task<CreateDeviceResult> CreateDevice(
         ISender sender,
         CreateDeviceCommand command)
     {
         return await sender.Send(command);
     }
 
-    [Authorize(Policies.AdminOnly)]
+    [Authorize(Policies.DeviceManagement)]
     public async Task<IResult> UpdateDevice(
         ISender sender,
         Guid id,
@@ -63,7 +63,7 @@ public class Devices : EndpointGroupBase
         return Results.NoContent();
     }
 
-    [Authorize(Policies.AdminOnly)]
+    [Authorize(Policies.DeviceManagement)]
     public async Task<IResult> DeleteDevice(
         ISender sender,
         Guid id)
