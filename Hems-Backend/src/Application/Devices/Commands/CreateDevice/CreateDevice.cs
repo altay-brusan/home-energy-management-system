@@ -6,7 +6,15 @@ using System.Text.Json;
 
 namespace Hems_Backend.Application.Devices.Commands.CreateDevice;
 
-public record CreateDeviceCommand : IRequest<Guid>
+public record CreateDeviceResult
+{
+    public Guid DeviceId { get; init; }
+    public string? SerialNumber { get; init; }
+    public string? TypeNumber { get; init; }
+    public string ThingsBoardAccessToken { get; init; } = string.Empty;
+}
+
+public record CreateDeviceCommand : IRequest<CreateDeviceResult>
 {
     public string Manufacturer { get; init; } = string.Empty;
     public string ModelNumber { get; init; } = string.Empty;
@@ -36,7 +44,7 @@ public record CreateDeviceComponentCommand
     public DateTime? WarrantyStartDate { get; init; }
 }
 
-public class CreateDeviceCommandHandler : IRequestHandler<CreateDeviceCommand, Guid>
+public class CreateDeviceCommandHandler : IRequestHandler<CreateDeviceCommand, CreateDeviceResult>
 {
     private readonly IApplicationDbContext _context;
     private readonly IUser _user;
@@ -45,8 +53,8 @@ public class CreateDeviceCommandHandler : IRequestHandler<CreateDeviceCommand, G
     private readonly IDeviceHeartbeatCache _heartbeatCache;
 
     public CreateDeviceCommandHandler(
-        IApplicationDbContext context, 
-        IUser user, 
+        IApplicationDbContext context,
+        IUser user,
         TimeProvider timeProvider,
         IThingsBoardConnectorService tbConnector,
         IDeviceHeartbeatCache heartbeatCache)
@@ -58,7 +66,7 @@ public class CreateDeviceCommandHandler : IRequestHandler<CreateDeviceCommand, G
         _heartbeatCache = heartbeatCache;
     }
 
-    public async Task<Guid> Handle(CreateDeviceCommand request, CancellationToken cancellationToken)
+    public async Task<CreateDeviceResult> Handle(CreateDeviceCommand request, CancellationToken cancellationToken)
     {
         var utcNow = _timeProvider.GetUtcNow();
         
@@ -134,7 +142,20 @@ public class CreateDeviceCommandHandler : IRequestHandler<CreateDeviceCommand, G
         // Add the newly created device to the heartbeat cache
         await _heartbeatCache.AddDeviceToCacheAsync(entity.ThingsBoardDeviceId, cancellationToken);
 
-        return entity.Id;
+        // Fetch device credentials (access token) from ThingsBoard
+        var credentials = await _tbConnector.GetDeviceCredentialsAsync(tbResult.DeviceId, cancellationToken);
+
+        // Save access token to database
+        entity.ThingsBoardAccessToken = credentials?.AccessToken;
+        await _context.SaveChangesAsync(cancellationToken);
+
+        return new CreateDeviceResult
+        {
+            DeviceId = entity.Id,
+            SerialNumber = entity.SerialNumber,
+            TypeNumber = entity.TypeNumber,
+            ThingsBoardAccessToken = credentials?.AccessToken ?? string.Empty
+        };
     }
 }
 

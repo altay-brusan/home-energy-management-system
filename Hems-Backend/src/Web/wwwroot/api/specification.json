@@ -1912,11 +1912,39 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "string",
-                  "format": "guid"
+                  "$ref": "#/components/schemas/CreateDeviceResult"
                 }
               }
             }
+          }
+        },
+        "security": [
+          {
+            "JWT": []
+          }
+        ]
+      }
+    },
+    "/api/Devices/installer/{serialNumber}": {
+      "get": {
+        "tags": [
+          "Devices"
+        ],
+        "operationId": "GetDeviceBySerialNumber",
+        "parameters": [
+          {
+            "name": "serialNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
           }
         },
         "security": [
@@ -6476,6 +6504,27 @@
           "lastModifiedBy": {
             "type": "string",
             "nullable": true
+          }
+        }
+      },
+      "CreateDeviceResult": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "serialNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "typeNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "thingsBoardAccessToken": {
+            "type": "string"
           }
         }
       },

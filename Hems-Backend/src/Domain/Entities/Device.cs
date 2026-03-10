@@ -28,6 +28,8 @@ public class Device : BaseGuidAuditableEntity
     /// </summary>
     public bool IsDemoDevice { get; set; } = false;
 
+    public string? ThingsBoardAccessToken { get; set; }
+
     // Navigation properties
     public ICollection<DeviceComponent> DeviceComponents { get; set; } = new List<DeviceComponent>();
     public SetupDevice? SetupDevice { get; set; } // Bir Device sadece bir Setup'a ait olabilir
