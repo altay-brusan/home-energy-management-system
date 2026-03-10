@@ -1,6 +1,8 @@
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Models;
+using Hems_Backend.Domain.Constants;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,24 +18,37 @@ public class GetDeviceParametersQueryHandler : IRequestHandler<GetDeviceParamete
     private readonly IApplicationDbContext _context;
     private readonly IMapper _mapper;
     private readonly IDemoDataService _demoDataService;
+    private readonly IUser _currentUser;
+    private readonly IIdentityService _identityService;
 
     public GetDeviceParametersQueryHandler(
         IApplicationDbContext context,
         IMapper mapper,
-        IDemoDataService demoDataService)
+        IDemoDataService demoDataService,
+        IUser currentUser,
+        IIdentityService identityService)
     {
         _context = context;
         _mapper = mapper;
         _demoDataService = demoDataService;
+        _currentUser = currentUser;
+        _identityService = identityService;
     }
 
     public async Task<DeviceParametersVm> Handle(GetDeviceParametersQuery request, CancellationToken cancellationToken)
     {
+        // Determine if current user is admin
+        var isAdmin = false;
+        if (_currentUser.Id != null)
+        {
+            isAdmin = await _identityService.IsInRoleAsync(_currentUser.Id, Roles.Administrator);
+        }
+
         // Check if demo device - return simulated parameters
         var isDemoDevice = await _demoDataService.IsDemoDeviceAsync(request.DeviceId, cancellationToken);
         if (isDemoDevice)
         {
-            return GetSimulatedDeviceParameters(request.DeviceId);
+            return GetSimulatedDeviceParameters(request.DeviceId, isAdmin);
         }
 
         // Find SetupDevice by DeviceId
@@ -57,6 +72,14 @@ public class GetDeviceParametersQueryHandler : IRequestHandler<GetDeviceParamete
             .ProjectTo<DeviceParameterDto>(_mapper.ConfigurationProvider)
             .ToListAsync(cancellationToken);
 
+        // Filter out grid config parameters for non-admin users
+        if (!isAdmin)
+        {
+            parameters = parameters
+                .Where(p => !RpcMethodMapping.IsGridConfigParameter(p.ParameterName))
+                .ToList();
+        }
+
         return new DeviceParametersVm
         {
             DeviceId = request.DeviceId,
@@ -68,7 +91,7 @@ public class GetDeviceParametersQueryHandler : IRequestHandler<GetDeviceParamete
     /// Returns simulated device parameters for demo devices
     /// Represents typical hybrid inverter system configuration
     /// </summary>
-    private static DeviceParametersVm GetSimulatedDeviceParameters(Guid deviceId)
+    private static DeviceParametersVm GetSimulatedDeviceParameters(Guid deviceId, bool isAdmin)
     {
         var now = DateTimeOffset.UtcNow;
         var setupDeviceId = Guid.NewGuid();
@@ -210,6 +233,14 @@ public class GetDeviceParametersQueryHandler : IRequestHandler<GetDeviceParamete
                 LastModified = now.AddDays(-30)
             }
         };
+
+        // Filter out grid config parameters for non-admin users
+        if (!isAdmin)
+        {
+            parameters = parameters
+                .Where(p => !RpcMethodMapping.IsGridConfigParameter(p.ParameterName))
+                .ToList();
+        }
 
         return new DeviceParametersVm
         {

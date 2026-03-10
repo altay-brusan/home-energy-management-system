@@ -51,6 +51,13 @@ public class CreateDeviceCommandTests
                 Label = "OTTOMOTIVE MODEL-001"
             });
 
+        mockTbConnector.Setup(x => x.GetDeviceCredentialsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new TbDeviceCredentials
+            {
+                AccessToken = "test-access-token",
+                CredentialsType = "ACCESS_TOKEN"
+            });
+
         var mockHeartbeatCache = new Mock<IDeviceHeartbeatCache>();
         mockHeartbeatCache.Setup(x => x.AddDeviceToCacheAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
@@ -61,10 +68,14 @@ public class CreateDeviceCommandTests
         var result = await handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.That(result, Is.Not.EqualTo(Guid.Empty));
+        Assert.That(result.DeviceId, Is.Not.EqualTo(Guid.Empty));
+        Assert.That(result.SerialNumber, Is.EqualTo("SN123456"));
+        Assert.That(result.TypeNumber, Is.EqualTo("TYPE-001"));
+        Assert.That(result.ThingsBoardAccessToken, Is.EqualTo("test-access-token"));
         _dbSet.Verify(x => x.Add(It.IsAny<Device>()), Times.Once);
-        _context.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _context.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
         mockTbConnector.Verify(x => x.CreateDeviceAsync(It.IsAny<TbDeviceCreateRequest>(), It.IsAny<CancellationToken>()), Times.Once);
+        mockTbConnector.Verify(x => x.GetDeviceCredentialsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Once);
         mockHeartbeatCache.Verify(x => x.AddDeviceToCacheAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 }

@@ -95,6 +95,13 @@ public class ApplicationDbContextInitialiser
             await _roleManager.CreateAsync(mobilUserRole);
         }
 
+        // Seed Installer role for device installation technicians
+        var installerRole = new IdentityRole(Roles.Installer);
+        if (_roleManager.Roles.All(r => r.Name != installerRole.Name))
+        {
+            await _roleManager.CreateAsync(installerRole);
+        }
+
         // Demo user for app store assessment (Google Play Store / iOS App Store)
         var demoUser = new ApplicationUser
         {
