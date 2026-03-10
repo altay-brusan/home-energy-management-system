@@ -81,10 +81,17 @@ public class ApplicationDbContextInitialiser
 
         if (_userManager.Users.All(u => u.UserName != administrator.UserName))
         {
-            await _userManager.CreateAsync(administrator, "***REMOVED***");
-            if (!string.IsNullOrWhiteSpace(administratorRole.Name))
+            var createResult = await _userManager.CreateAsync(administrator, "***REMOVED***");
+            if (createResult.Succeeded)
             {
-                await _userManager.AddToRolesAsync(administrator, new [] { administratorRole.Name });
+                if (!string.IsNullOrWhiteSpace(administratorRole.Name))
+                {
+                    await _userManager.AddToRolesAsync(administrator, new [] { administratorRole.Name });
+                }
+            }
+            else
+            {
+                _logger.LogWarning("Failed to create administrator user: {Errors}", string.Join(", ", createResult.Errors.Select(e => e.Description)));
             }
         }
 
