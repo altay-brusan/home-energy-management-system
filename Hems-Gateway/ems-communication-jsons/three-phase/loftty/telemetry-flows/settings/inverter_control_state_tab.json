@@ -1,0 +1,691 @@
+[
+    {
+        "id": "3afae91305af8e57",
+        "type": "tab",
+        "label": "InverterControlState",
+        "disabled": false,
+        "info": "Inverter Control State - Read & Write\n\n4 Registers:\n- 160: Remote Lock (0x0000=unlocked, 0x0002=locked)\n- 180: Power Switch (0=off, 1=on, 2=off)\n- 181: Factory Reset (0=disabled, 1=enabled)\n- 183: Island Protection (0=disabled, 1=enabled)\n\nAll R/W"
+    },
+    {
+        "id": "f17c2455a23d658e",
+        "type": "link in",
+        "z": "3afae91305af8e57",
+        "name": "RPC Request",
+        "links": [
+            "9402d64edb8f5c90"
+        ],
+        "x": 135,
+        "y": 180,
+        "wires": [
+            [
+                "e8b4cacdf3c8c5e7"
+            ]
+        ]
+    },
+    {
+        "id": "669fbe5c5f6682a2",
+        "type": "inject",
+        "z": "3afae91305af8e57",
+        "name": "Manual Read",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operationType",
+                "v": "read",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 260,
+        "wires": [
+            [
+                "e8b4cacdf3c8c5e7"
+            ]
+        ]
+    },
+    {
+        "id": "1109dff0bd64b7b6",
+        "type": "inject",
+        "z": "3afae91305af8e57",
+        "name": "Write: Unlock",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operationType",
+                "v": "write",
+                "vt": "str"
+            },
+            {
+                "p": "rpcParams",
+                "v": "{\"remoteLock\":\"unlocked\"}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 320,
+        "wires": [
+            [
+                "e8b4cacdf3c8c5e7"
+            ]
+        ]
+    },
+    {
+        "id": "bb0e0dee89bfdb87",
+        "type": "inject",
+        "z": "3afae91305af8e57",
+        "name": "Write: Lock",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operationType",
+                "v": "write",
+                "vt": "str"
+            },
+            {
+                "p": "rpcParams",
+                "v": "{\"remoteLock\":\"locked\"}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 380,
+        "wires": [
+            [
+                "e8b4cacdf3c8c5e7"
+            ]
+        ]
+    },
+    {
+        "id": "1f2094b7a1fba921",
+        "type": "inject",
+        "z": "3afae91305af8e57",
+        "name": "Write: Power ON",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operationType",
+                "v": "write",
+                "vt": "str"
+            },
+            {
+                "p": "rpcParams",
+                "v": "{\"powerSwitch\":1}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 160,
+        "y": 440,
+        "wires": [
+            [
+                "e8b4cacdf3c8c5e7"
+            ]
+        ]
+    },
+    {
+        "id": "b9f0dc6bc498d1c9",
+        "type": "inject",
+        "z": "3afae91305af8e57",
+        "name": "Write: Island Protection ON",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operationType",
+                "v": "write",
+                "vt": "str"
+            },
+            {
+                "p": "rpcParams",
+                "v": "{\"islandProtectionEnabled\":true}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 200,
+        "y": 500,
+        "wires": [
+            [
+                "e8b4cacdf3c8c5e7"
+            ]
+        ]
+    },
+    {
+        "id": "e8b4cacdf3c8c5e7",
+        "type": "function",
+        "z": "3afae91305af8e57",
+        "name": "Route: Read or Write?",
+        "func": "const opType = msg.operationType || 'read';\n\nif (opType === 'write') {\n    return [null, msg];\n} else {\n    return [msg, null];\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 280,
+        "wires": [
+            [
+                "b0cb6db0190461dc"
+            ],
+            [
+                "91dbcc76e12879bd"
+            ]
+        ]
+    },
+    {
+        "id": "b0cb6db0190461dc",
+        "type": "function",
+        "z": "3afae91305af8e57",
+        "name": "Start Read",
+        "func": "flow.set(\"ics_rpc_response_topic\", msg.rpcResponseTopic);\nflow.set(\"ics_write_result\", msg.writeResult || null);\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 630,
+        "y": 180,
+        "wires": [
+            [
+                "4f0b6a69731c7ee3"
+            ]
+        ]
+    },
+    {
+        "id": "4f0b6a69731c7ee3",
+        "type": "function",
+        "z": "3afae91305af8e57",
+        "name": "Read 160",
+        "func": "msg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 160,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 920,
+        "y": 100,
+        "wires": [
+            [
+                "77fe0d0cd1d95f66"
+            ]
+        ]
+    },
+    {
+        "id": "77fe0d0cd1d95f66",
+        "type": "modbus-flex-getter",
+        "z": "3afae91305af8e57",
+        "name": "Read 160",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1080,
+        "y": 100,
+        "wires": [
+            [
+                "cff9ea0d480e2dda"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "cff9ea0d480e2dda",
+        "type": "function",
+        "z": "3afae91305af8e57",
+        "name": "Read 180",
+        "func": "// Store 160 data\nlet data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\nflow.set('ics_reg160', data[0]);\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 180,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 920,
+        "y": 160,
+        "wires": [
+            [
+                "5a28bf887c4fb5b0"
+            ]
+        ]
+    },
+    {
+        "id": "5a28bf887c4fb5b0",
+        "type": "modbus-flex-getter",
+        "z": "3afae91305af8e57",
+        "name": "Read 180",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1080,
+        "y": 160,
+        "wires": [
+            [
+                "593ea885de7e1e9c"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "593ea885de7e1e9c",
+        "type": "function",
+        "z": "3afae91305af8e57",
+        "name": "Read 181",
+        "func": "// Store 180 data\nlet data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\nflow.set('ics_reg180', data[0]);\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 181,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 920,
+        "y": 220,
+        "wires": [
+            [
+                "56c676464e2b3c2e"
+            ]
+        ]
+    },
+    {
+        "id": "56c676464e2b3c2e",
+        "type": "modbus-flex-getter",
+        "z": "3afae91305af8e57",
+        "name": "Read 181",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1080,
+        "y": 220,
+        "wires": [
+            [
+                "bd52735da5436e4c"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "bd52735da5436e4c",
+        "type": "function",
+        "z": "3afae91305af8e57",
+        "name": "Read 183",
+        "func": "// Store 181 data\nlet data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\nflow.set('ics_reg181', data[0]);\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 183,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 920,
+        "y": 280,
+        "wires": [
+            [
+                "41a31fddd9148bf5"
+            ]
+        ]
+    },
+    {
+        "id": "41a31fddd9148bf5",
+        "type": "modbus-flex-getter",
+        "z": "3afae91305af8e57",
+        "name": "Read 183",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1080,
+        "y": 280,
+        "wires": [
+            [
+                "aa32be3df34b5676"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "aa32be3df34b5676",
+        "type": "function",
+        "z": "3afae91305af8e57",
+        "name": "Build JSON State",
+        "func": "// Store 183 data\nlet data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\nconst reg183 = data[0];\n\n// Get all stored registers\nconst reg160 = flow.get('ics_reg160');\nconst reg180 = flow.get('ics_reg180');\nconst reg181 = flow.get('ics_reg181');\n\n// Clear flow context\nflow.set('ics_reg160', null);\nflow.set('ics_reg180', null);\nflow.set('ics_reg181', null);\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\n\nconst state = {\n    kind: \"InverterControlState\",\n    timestampUtc: new Date().toISOString(),\n    gatewayId: gatewayId,\n    version: 1,\n    \n    remoteLock: reg160 === 0x0002 ? \"locked\" : \"unlocked\",\n    powerSwitch: reg180 || 0,\n    factoryResetEnabled: reg181 === 1,\n    islandProtectionEnabled: reg183 === 1\n};\n\nconst writeResult = flow.get(\"ics_write_result\");\nconst rpcResponseTopic = flow.get(\"ics_rpc_response_topic\");\n\nflow.set(\"ics_write_result\", null);\nflow.set(\"ics_rpc_response_topic\", null);\n\nif (writeResult) {\n    msg.payload = {\n        success: writeResult.success,\n        message: writeResult.message,\n        writes: writeResult.writes,\n        state: state\n    };\n} else {\n    msg.payload = state;\n}\n\nmsg.state = state;\nmsg.rpcResponseTopic = rpcResponseTopic;\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `Lock: ${state.remoteLock}, Power: ${state.powerSwitch}` });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1270,
+        "y": 280,
+        "wires": [
+            [
+                "eafb4423c007eb6c",
+                "2096e3fa0e685625"
+            ]
+        ]
+    },
+    {
+        "id": "eafb4423c007eb6c",
+        "type": "debug",
+        "z": "3afae91305af8e57",
+        "name": "Inverter Control State JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1510,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "2096e3fa0e685625",
+        "type": "function",
+        "z": "3afae91305af8e57",
+        "name": "RPC Response",
+        "func": "if (!msg.rpcResponseTopic) {\n    return null;\n}\n\nmsg.topic = msg.rpcResponseTopic;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1480,
+        "y": 280,
+        "wires": [
+            [
+                "4042ffe33fd0048b"
+            ]
+        ]
+    },
+    {
+        "id": "4042ffe33fd0048b",
+        "type": "mqtt out",
+        "z": "3afae91305af8e57",
+        "name": "MQTT Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1680,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "91dbcc76e12879bd",
+        "type": "function",
+        "z": "3afae91305af8e57",
+        "name": "Queue Writes",
+        "func": "// Parse RPC params and build write queue\nconst params = msg.rpcParams || {};\n\nconst writes = [];\n\n// Register 160: remoteLock\nif (params.remoteLock !== undefined) {\n    const val = params.remoteLock === \"locked\" ? 0x0002 : 0x0000;\n    writes.push({ register: 160, value: val, name: \"Remote Lock\" });\n}\n\n// Register 180: powerSwitch\nif (params.powerSwitch !== undefined) {\n    writes.push({ register: 180, value: params.powerSwitch, name: \"Power Switch\" });\n}\n\n// Register 181: factoryResetEnabled\nif (params.factoryResetEnabled !== undefined) {\n    const val = params.factoryResetEnabled ? 1 : 0;\n    writes.push({ register: 181, value: val, name: \"Factory Reset\" });\n}\n\n// Register 183: islandProtectionEnabled\nif (params.islandProtectionEnabled !== undefined) {\n    const val = params.islandProtectionEnabled ? 1 : 0;\n    writes.push({ register: 183, value: val, name: \"Island Protection\" });\n}\n\nif (writes.length === 0) {\n    msg.operationType = 'read';\n    return [null, msg];\n}\n\n// Store to GLOBAL context\nglobal.set(\"ics_write_queue\", writes);\nglobal.set(\"ics_write_index\", 0);\nglobal.set(\"ics_write_results\", []);\nglobal.set(\"ics_write_rpc_topic\", msg.rpcResponseTopic);\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: `${writes.length} writes queued` });\n\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 630,
+        "y": 480,
+        "wires": [
+            [
+                "f7bfc13e51fde18a"
+            ],
+            [
+                "b0cb6db0190461dc"
+            ]
+        ]
+    },
+    {
+        "id": "f7bfc13e51fde18a",
+        "type": "function",
+        "z": "3afae91305af8e57",
+        "name": "Prepare Write",
+        "func": "const writes = global.get(\"ics_write_queue\") || [];\nconst index = global.get(\"ics_write_index\") || 0;\n\nif (index >= writes.length) {\n    return null;\n}\n\nconst current = writes[index];\n\nconst newMsg = {\n    payload: {\n        fc: 16,\n        unitid: 1,\n        address: current.register,\n        quantity: 1,\n        value: [current.value]\n    },\n    currentWrite: current,\n    writeIndex: index\n};\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: `[${index+1}/${writes.length}] ${current.name}` });\n\nreturn newMsg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 810,
+        "y": 480,
+        "wires": [
+            [
+                "65a1df6950635dca"
+            ]
+        ]
+    },
+    {
+        "id": "65a1df6950635dca",
+        "type": "modbus-flex-write",
+        "z": "3afae91305af8e57",
+        "name": "Write Register",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "server": "e4e4f3e2a4f4e004",
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "x": 990,
+        "y": 480,
+        "wires": [
+            [
+                "ccebe1eecb4f732a"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "ccebe1eecb4f732a",
+        "type": "function",
+        "z": "3afae91305af8e57",
+        "name": "Write OK",
+        "func": "const writes = global.get(\"ics_write_queue\") || [];\nlet index = global.get(\"ics_write_index\") || 0;\nconst results = global.get(\"ics_write_results\") || [];\n\n// Record success\nconst current = writes[index];\nif (current) {\n    results.push({ \n        register: current.register, \n        name: current.name, \n        value: current.value, \n        success: true \n    });\n    global.set(\"ics_write_results\", results);\n}\n\n// Move to next\nindex++;\nglobal.set(\"ics_write_index\", index);\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `${current.name} OK` });\n\n// More writes?\nif (index < writes.length) {\n    return [{ doNext: true }, null];\n}\n\n// All done - go to read\nconst rpcTopic = global.get(\"ics_write_rpc_topic\");\n\nglobal.set(\"ics_write_queue\", null);\nglobal.set(\"ics_write_index\", null);\nglobal.set(\"ics_write_rpc_topic\", null);\n\nconst finalMsg = {\n    writeResult: {\n        success: true,\n        message: `Successfully wrote ${results.length} register(s)`,\n        writes: results\n    },\n    rpcResponseTopic: rpcTopic\n};\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `All ${results.length} writes OK!` });\n\nreturn [null, finalMsg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1150,
+        "y": 480,
+        "wires": [
+            [
+                "b29a2f5be9ee9ba3"
+            ],
+            [
+                "b0cb6db0190461dc"
+            ]
+        ]
+    },
+    {
+        "id": "b29a2f5be9ee9ba3",
+        "type": "delay",
+        "z": "3afae91305af8e57",
+        "name": "500ms",
+        "pauseType": "delay",
+        "timeout": "500",
+        "timeoutUnits": "milliseconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 1280,
+        "y": 480,
+        "wires": [
+            [
+                "f7bfc13e51fde18a"
+            ]
+        ]
+    },
+    {
+        "id": "aa59616ba8b8ec5d",
+        "type": "comment",
+        "z": "3afae91305af8e57",
+        "name": "═══ READ SECTION (4 registers sequentially) ═══",
+        "info": "",
+        "x": 1000,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "c0eae4a2b1ca8a3c",
+        "type": "comment",
+        "z": "3afae91305af8e57",
+        "name": "═══ WRITE SECTION (Sequential write with 500ms delay) ═══",
+        "info": "",
+        "x": 700,
+        "y": 440,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

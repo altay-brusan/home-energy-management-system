@@ -1,0 +1,16 @@
+ExportStrategyState
+{
+  "kind": "ExportStrategyState",
+  "version": 1,
+
+  "exportStrategy": "string",                // Derived from exportStrategyCode:
+                                             //   0x00 → "selling_first"
+                                             //   0x01 → "zero_export_to_load"
+                                             //   0x02 → "zero_export_to_ct"
+                                             //   else → "unknown"
+
+  "exportStrategyCode": "number"             // 242 - limit控制功能
+                                             //   0x00 = sell electricity enabled (使能卖电)
+                                             //   0x01 = built-in CT enabled (使能内置)
+                                             //   0x02 = external CT enabled (使能外置)
+}

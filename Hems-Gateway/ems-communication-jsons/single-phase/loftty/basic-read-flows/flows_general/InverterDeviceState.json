@@ -1,0 +1,609 @@
+[
+    {
+        "id": "inv_device_state_tab",
+        "type": "tab",
+        "label": "Inverter Device State",
+        "disabled": false,
+        "info": "Reads Inverter Device State from registers:\n- 59: Run State\n- 84-85: Output Apparent Power\n- 90-91: Temperatures\n- 154: Output Voltage\n- 164: Output Current\n- 167-169: Grid Side Power\n- 175: Output Active Power\n- 193: Output Frequency\n- 194-195: Relay Status"
+    },
+    {
+        "id": "inv_poll_inject",
+        "type": "inject",
+        "z": "inv_device_state_tab",
+        "name": "Poll Inverter (5 min)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "300",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 160,
+        "y": 240,
+        "wires": [
+            [
+                "inv_prepare_runstate",
+                "inv_prepare_apparent",
+                "inv_prepare_temps",
+                "inv_prepare_voltage",
+                "inv_prepare_current",
+                "inv_prepare_grid_power",
+                "inv_prepare_output_power",
+                "inv_prepare_freq",
+                "inv_prepare_relay"
+            ]
+        ]
+    },
+    {
+        "id": "inv_prepare_runstate",
+        "type": "function",
+        "z": "inv_device_state_tab",
+        "name": "Prepare read (RunState 59)",
+        "func": "// Inverter run state\n// 59: run state\n// 0x0000 = standby\n// 0x0001 = selfcheck\n// 0x0002 = normal\n// 0x0003 = alarm\n// 0x0004 = fault\n\nmsg.baseAddr = 59;\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 59,\n    quantity: 1\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 470,
+        "y": 60,
+        "wires": [
+            [
+                "inv_read_runstate"
+            ]
+        ]
+    },
+    {
+        "id": "inv_prepare_apparent",
+        "type": "function",
+        "z": "inv_device_state_tab",
+        "name": "Prepare read (Apparent 84-85)",
+        "func": "// Output apparent power\n// 84: output apparent power low word (0.1VA)\n// 85: output apparent power high word (0.1VA)\n\nmsg.baseAddr = 84;\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 84,\n    quantity: 2\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 480,
+        "y": 120,
+        "wires": [
+            [
+                "inv_read_apparent"
+            ]
+        ]
+    },
+    {
+        "id": "inv_prepare_temps",
+        "type": "function",
+        "z": "inv_device_state_tab",
+        "name": "Prepare read (Temps 90-91)",
+        "func": "// Temperatures\n// 90: Radiator/DC Transformer temp (0.1℃)\n// 91: IGBT/AC Radiator temp (0.1℃)\n// Note: offset +1000 for display\n// -56.2℃ = 438, 0℃ = 1000, 50.5℃ = 1505\n\nmsg.baseAddr = 90;\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 90,\n    quantity: 2\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 480,
+        "y": 180,
+        "wires": [
+            [
+                "inv_read_temps"
+            ]
+        ]
+    },
+    {
+        "id": "inv_prepare_voltage",
+        "type": "function",
+        "z": "inv_device_state_tab",
+        "name": "Prepare read (Voltage 154)",
+        "func": "// Inverter output voltage L1-N\n// 154: inverter output voltage L1-N (0.1V)\n\nmsg.baseAddr = 154;\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 154,\n    quantity: 1\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 470,
+        "y": 240,
+        "wires": [
+            [
+                "inv_read_voltage"
+            ]
+        ]
+    },
+    {
+        "id": "inv_prepare_current",
+        "type": "function",
+        "z": "inv_device_state_tab",
+        "name": "Prepare read (Current 164)",
+        "func": "// Inverter output current L1\n// 164: Inverter output current L1 (0.01A, signed)\n\nmsg.baseAddr = 164;\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 164,\n    quantity: 1\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 470,
+        "y": 300,
+        "wires": [
+            [
+                "inv_read_current"
+            ]
+        ]
+    },
+    {
+        "id": "inv_prepare_grid_power",
+        "type": "function",
+        "z": "inv_device_state_tab",
+        "name": "Prepare read (GridPower 167-169)",
+        "func": "// Grid side power\n// 167: Grid side L1 power (1W, signed)\n// 168: Grid side L2 power (1W, signed)\n// 169: Grid total power (1W, signed)\n// >0 = buy from grid, <0 = sell to grid\n\nmsg.baseAddr = 167;\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 167,\n    quantity: 3\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 490,
+        "y": 360,
+        "wires": [
+            [
+                "inv_read_grid_power"
+            ]
+        ]
+    },
+    {
+        "id": "inv_prepare_output_power",
+        "type": "function",
+        "z": "inv_device_state_tab",
+        "name": "Prepare read (OutputPower 175)",
+        "func": "// Inverter output total power\n// 175: inverter output Total power (1W, signed)\n\nmsg.baseAddr = 175;\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 175,\n    quantity: 1\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 490,
+        "y": 420,
+        "wires": [
+            [
+                "inv_read_output_power"
+            ]
+        ]
+    },
+    {
+        "id": "inv_prepare_freq",
+        "type": "function",
+        "z": "inv_device_state_tab",
+        "name": "Prepare read (Freq 193)",
+        "func": "// Inverter output frequency\n// 193: Inverter output frequency (0.01Hz)\n\nmsg.baseAddr = 193;\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 193,\n    quantity: 1\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 480,
+        "wires": [
+            [
+                "inv_read_freq"
+            ]
+        ]
+    },
+    {
+        "id": "inv_prepare_relay",
+        "type": "function",
+        "z": "inv_device_state_tab",
+        "name": "Prepare read (Relay 194-195)",
+        "func": "// Relay status\n// 194: Grid side relay status (0=disconnect, 1=closed)\n// 195: Generator side relay status (bit0-3)\n\nmsg.baseAddr = 194;\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 194,\n    quantity: 2\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 480,
+        "y": 540,
+        "wires": [
+            [
+                "inv_read_relay"
+            ]
+        ]
+    },
+    {
+        "id": "inv_read_runstate",
+        "type": "modbus-flex-getter",
+        "z": "inv_device_state_tab",
+        "name": "Read RunState (59)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 730,
+        "y": 60,
+        "wires": [
+            [
+                "inv_build_json"
+            ],
+            [
+                "inv_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "inv_read_apparent",
+        "type": "modbus-flex-getter",
+        "z": "inv_device_state_tab",
+        "name": "Read Apparent (84-85)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 740,
+        "y": 120,
+        "wires": [
+            [
+                "inv_build_json"
+            ],
+            [
+                "inv_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "inv_read_temps",
+        "type": "modbus-flex-getter",
+        "z": "inv_device_state_tab",
+        "name": "Read Temps (90-91)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 730,
+        "y": 180,
+        "wires": [
+            [
+                "inv_build_json"
+            ],
+            [
+                "inv_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "inv_read_voltage",
+        "type": "modbus-flex-getter",
+        "z": "inv_device_state_tab",
+        "name": "Read Voltage (154)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 730,
+        "y": 240,
+        "wires": [
+            [
+                "inv_build_json"
+            ],
+            [
+                "inv_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "inv_read_current",
+        "type": "modbus-flex-getter",
+        "z": "inv_device_state_tab",
+        "name": "Read Current (164)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 730,
+        "y": 300,
+        "wires": [
+            [
+                "inv_build_json"
+            ],
+            [
+                "inv_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "inv_read_grid_power",
+        "type": "modbus-flex-getter",
+        "z": "inv_device_state_tab",
+        "name": "Read GridPower (167-169)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 750,
+        "y": 360,
+        "wires": [
+            [
+                "inv_build_json"
+            ],
+            [
+                "inv_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "inv_read_output_power",
+        "type": "modbus-flex-getter",
+        "z": "inv_device_state_tab",
+        "name": "Read OutputPower (175)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 750,
+        "y": 420,
+        "wires": [
+            [
+                "inv_build_json"
+            ],
+            [
+                "inv_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "inv_read_freq",
+        "type": "modbus-flex-getter",
+        "z": "inv_device_state_tab",
+        "name": "Read Freq (193)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 720,
+        "y": 480,
+        "wires": [
+            [
+                "inv_build_json"
+            ],
+            [
+                "inv_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "inv_read_relay",
+        "type": "modbus-flex-getter",
+        "z": "inv_device_state_tab",
+        "name": "Read Relay (194-195)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 740,
+        "y": 540,
+        "wires": [
+            [
+                "inv_build_json"
+            ],
+            [
+                "inv_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "inv_build_json",
+        "type": "function",
+        "z": "inv_device_state_tab",
+        "name": "Build InverterDeviceState JSON",
+        "func": "// Build InverterDeviceState from multiple Modbus reads.\n//\n// Registers:\n// 59      : Run state (0=standby, 1=selfcheck, 2=normal, 3=alarm, 4=fault)\n// 84-85   : Output apparent power low+high (0.1VA)\n// 90      : Heatsink temp (0.1℃, offset +1000)\n// 91      : IGBT temp (0.1℃, offset +1000)\n// 154     : Output voltage L1-N (0.1V)\n// 164     : Output current L1 (0.01A, signed)\n// 167     : Grid side L1 power (1W, signed)\n// 168     : Grid side L2 power (1W, signed)\n// 169     : Grid total power (1W, signed)\n// 175     : Output active power (1W, signed)\n// 193     : Output frequency (0.01Hz)\n// 194     : Grid relay status (0=disconnect, 1=closed)\n// 195     : Generator relay status (bit0-3)\n\nlet raw = msg.payload;\n\n// node-red-contrib-modbus often sends { data: [...], buffer: ... }\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\n// Skip string errors\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\n// Determine which block we just read\nlet baseAddr = msg.baseAddr;\nif (typeof baseAddr !== \"number\") {\n    baseAddr = (msg.modbusRequest && msg.modbusRequest.address);\n}\nif (typeof baseAddr !== \"number\") {\n    node.warn(\"InverterDeviceState: missing base address on msg\");\n    return null;\n}\n\n// Helper: signed 16-bit\nfunction s16(v) {\n    if (!Number.isFinite(v)) return null;\n    return (v & 0x8000) ? v - 0x10000 : v;\n}\n\n// Helper: combine two 16-bit words to 32-bit unsigned\nfunction u32(low, high) {\n    if (!Number.isFinite(low) || !Number.isFinite(high)) return null;\n    return ((high & 0xFFFF) << 16) | (low & 0xFFFF);\n}\n\n// Helper: map run state code to string\nfunction mapRunState(code) {\n    const states = {\n        0: \"standby\",\n        1: \"selfcheck\",\n        2: \"normal\",\n        3: \"alarm\",\n        4: \"fault\"\n    };\n    return states[code] || \"unknown\";\n}\n\n// ---- Store partials in flow context ----\n\n// Run state 59\nif (baseAddr === 59) {\n    const stateCode = data[0] || 0;\n    flow.set(\"inv_part_runstate\", {\n        runState: mapRunState(stateCode)\n    });\n}\n\n// Apparent power 84-85\nelse if (baseAddr === 84) {\n    const low = data[0] || 0;\n    const high = data[1] || 0;\n    const apparent = u32(low, high) * 0.1;  // Convert to VA\n    flow.set(\"inv_part_apparent\", {\n        outputApparentPowerVA: Math.round(apparent * 10) / 10\n    });\n}\n\n// Temperatures 90-91\nelse if (baseAddr === 90) {\n    // Values have offset +1000 (1000 = 0°C)\n    const heatsinkRaw = data[0] || 1000;\n    const igbtRaw = data[1] || 1000;\n    \n    const heatsinkTemp = (heatsinkRaw - 1000) * 0.1;  // Convert to °C\n    const igbtTemp = (igbtRaw - 1000) * 0.1;\n    \n    flow.set(\"inv_part_temps\", {\n        inverterHeatsinkTempC: Math.round(heatsinkTemp * 10) / 10,\n        internalAmbientTempC: Math.round(igbtTemp * 10) / 10\n    });\n}\n\n// Voltage 154\nelse if (baseAddr === 154) {\n    const voltageRaw = data[0] || 0;  // 0.1V\n    const voltage = voltageRaw * 0.1;\n    flow.set(\"inv_part_voltage\", {\n        outputVoltageV: Math.round(voltage * 10) / 10\n    });\n}\n\n// Current 164\nelse if (baseAddr === 164) {\n    const currentRaw = s16(data[0]);  // 0.01A, signed\n    const current = currentRaw * 0.01;\n    flow.set(\"inv_part_current\", {\n        outputCurrentA: Math.round(current * 100) / 100\n    });\n}\n\n// Grid power 167-169\nelse if (baseAddr === 167) {\n    const l1Power = s16(data[0]);   // 1W, signed\n    const l2Power = s16(data[1]);   // 1W, signed\n    const totalPower = s16(data[2]); // 1W, signed\n    \n    flow.set(\"inv_part_grid_power\", {\n        gridSidePhaseAPowerW: l1Power,\n        gridSidePhaseBPowerW: l2Power,\n        gridSidePhaseCPowerW: null,  // Not available for single-phase\n        gridSideActivePowerW: totalPower\n    });\n}\n\n// Output power 175\nelse if (baseAddr === 175) {\n    const power = s16(data[0]);  // 1W, signed\n    flow.set(\"inv_part_output_power\", {\n        outputActivePowerW: power\n    });\n}\n\n// Frequency 193\nelse if (baseAddr === 193) {\n    const freqRaw = data[0] || 0;  // 0.01Hz\n    const freq = freqRaw * 0.01;\n    flow.set(\"inv_part_freq\", {\n        outputFrequencyHz: Math.round(freq * 100) / 100\n    });\n}\n\n// Relay status 194-195\nelse if (baseAddr === 194) {\n    const gridRelay = data[0] || 0;   // 0=disconnect, 1=closed\n    const genRelay = data[1] || 0;    // bit0-3 = generator relay status\n    \n    flow.set(\"inv_part_relay\", {\n        acInputStatus: {\n            genGridSignalRaw: (gridRelay << 16) | genRelay,\n            gridSignalPresent: gridRelay === 1,\n            generatorSignalPresent: (genRelay & 0x0F) > 0\n        }\n    });\n}\nelse {\n    return null;\n}\n\n// ---- Try to assemble full state ----\n\nconst runstatePart = flow.get(\"inv_part_runstate\");\nconst apparentPart = flow.get(\"inv_part_apparent\");\nconst tempsPart = flow.get(\"inv_part_temps\");\nconst voltagePart = flow.get(\"inv_part_voltage\");\nconst currentPart = flow.get(\"inv_part_current\");\nconst gridPowerPart = flow.get(\"inv_part_grid_power\");\nconst outputPowerPart = flow.get(\"inv_part_output_power\");\nconst freqPart = flow.get(\"inv_part_freq\");\nconst relayPart = flow.get(\"inv_part_relay\");\n\n// Require all parts\nif (!runstatePart || !apparentPart || !tempsPart || !voltagePart || \n    !currentPart || !gridPowerPart || !outputPowerPart || !freqPart || !relayPart) {\n    return null;\n}\n\n// Resolve DeviceId\nconst deviceId = msg.deviceId\n    || global.get(\"DEVICE_ID\")\n    || env.get(\"DEVICE_ID\")\n    || \"EC100-DEV-001\";\n\nconst state = {\n    kind: \"InverterDeviceState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    DeviceId: deviceId,\n    \n    runState: runstatePart.runState,\n    \n    // Output to AC bus\n    outputActivePowerW: outputPowerPart.outputActivePowerW,\n    outputApparentPowerVA: apparentPart.outputApparentPowerVA,\n    outputVoltageV: voltagePart.outputVoltageV,\n    outputCurrentA: currentPart.outputCurrentA,\n    outputFrequencyHz: freqPart.outputFrequencyHz,\n    \n    // Grid-side view\n    gridSideActivePowerW: gridPowerPart.gridSideActivePowerW,\n    gridSidePhaseAPowerW: gridPowerPart.gridSidePhaseAPowerW,\n    gridSidePhaseBPowerW: gridPowerPart.gridSidePhaseBPowerW,\n    gridSidePhaseCPowerW: gridPowerPart.gridSidePhaseCPowerW,\n    \n    // Temperatures\n    inverterHeatsinkTempC: tempsPart.inverterHeatsinkTempC,\n    internalAmbientTempC: tempsPart.internalAmbientTempC,\n    \n    // AC Input Status\n    acInputStatus: relayPart.acInputStatus\n};\n\n// Clear partials for next cycle\nflow.set(\"inv_part_runstate\", null);\nflow.set(\"inv_part_apparent\", null);\nflow.set(\"inv_part_temps\", null);\nflow.set(\"inv_part_voltage\", null);\nflow.set(\"inv_part_current\", null);\nflow.set(\"inv_part_grid_power\", null);\nflow.set(\"inv_part_output_power\", null);\nflow.set(\"inv_part_freq\", null);\nflow.set(\"inv_part_relay\", null);\n\n// Keep snapshot in flow\nflow.set(\"inverterDeviceSnapshot\", state);\n\n// Put result on msg\nmsg.payload = state;\nmsg.state = state;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1030,
+        "y": 300,
+        "wires": [
+            [
+                "inv_debug_json",
+                "inv_mqtt_telemetry"
+            ]
+        ]
+    },
+    {
+        "id": "inv_debug_json",
+        "type": "debug",
+        "z": "inv_device_state_tab",
+        "name": "InverterDeviceState JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1310,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "inv_error_debug",
+        "type": "debug",
+        "z": "inv_device_state_tab",
+        "name": "Inverter CRC/Error debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1010,
+        "y": 600,
+        "wires": []
+    },
+    {
+        "id": "inv_mqtt_telemetry",
+        "type": "mqtt out",
+        "z": "inv_device_state_tab",
+        "name": "Send to ThingsBoard",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1320,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

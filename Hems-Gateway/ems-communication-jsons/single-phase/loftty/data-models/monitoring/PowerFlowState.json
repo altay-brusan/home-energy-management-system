@@ -1,0 +1,35 @@
+PowerFlowState 
+{
+   "timestampUtc": string,
+   "version": number,
+   "DeviceId": string,
+  
+  "pv": {
+    "totalPowerW": number,                  // sum of MPPT 1–4 (186+187+188+189)
+
+    "mppt": [
+      { "id": 1, "powerW": number },        // 186  PV1 input power (1W)
+      { "id": 2, "powerW": number },        // 187  PV2 input power (1W)
+      { "id": 3, "powerW": number },        // 188  PV3 input power (1W)
+      { "id": 4, "powerW": number }         // 189  PV4 input power (1W)
+    ]
+  },
+
+  "grid": {
+    "totalPowerW": number                   // 169 (grid total power 1W, signed int)
+                                            // + = import from grid, - = export to grid
+  },
+
+  "load": {
+    "totalPowerW": number                   // 178 (load side Total power 1W, signed int)
+  },
+
+  "battery": {
+    "powerW": number                        // 190 (battery output power 1W, signed int)
+                                            // + = discharge, - = charge
+  },
+
+  "generator": {
+    "totalPowerW": number                   // 166 (Gen input power 1W, signed int)
+  }
+}

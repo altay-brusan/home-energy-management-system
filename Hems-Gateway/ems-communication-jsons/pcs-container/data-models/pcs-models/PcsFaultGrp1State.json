@@ -1,0 +1,105 @@
+{
+  "kind": "PcsFaultGrp1State",
+  "version": 1,
+  "description": "PCS Fault Group 1 - Hardware/System Faults",
+  
+  "canMessage": "0x66B978x",
+  "dlc": 8,
+
+  "signals": {
+    
+    "// ==================== Byte 0 (Bit 0-7) ====================": "",
+    
+    "pcs_hwEpoFault": "boolean",                 // Bit 0 - HW EPO Fault
+    "pcs_hwIgbtOcpFault": "boolean",             // Bit 1 - HW IGBT OCP Fault
+    "pcs_hwBusOvFault": "boolean",               // Bit 2 - HW Bus Over Voltage Fault
+    "pcs_hwWaveLimitFault": "boolean",           // Bit 3 - HW Wave Limit Fault
+    "pcs_hwBalWaveLimitFault": "boolean",        // Bit 4 - HW Balance Wave Limit Fault
+    "pcs_hw24vPwrFault": "boolean",              // Bit 5 - HW 24V Power Fault
+    "pcs_hwFanFault": "boolean",                 // Bit 6 - HW Fan Fault
+    "pcs_hwConnFault": "boolean",                // Bit 7 - HW Connection Fault
+
+    "// ==================== Byte 1 (Bit 8-15) ====================": "",
+    
+    "pcs_hwExtDi3Fault": "boolean",              // Bit 8 - HW External DI3 Fault
+    "pcs_hwIndOvertFault": "boolean",            // Bit 9 - HW Inductance Over Temperature Fault
+    "pcs_hwPwrModOvert": "boolean",              // Bit 10 - HW Power Module Over Temperature
+    "pcs_hwBalOvert": "boolean",                 // Bit 11 - HW Balance Over Temperature
+    "pcs_hw15vPwrFault": "boolean",              // Bit 12 - HW 15V Power Fault
+    "pcs_hwFireAlarmFault": "boolean",           // Bit 13 - HW Fire Alarm Fault
+    "pcs_hwExtDi1Fault": "boolean",              // Bit 14 - HW External DI1 Fault
+    "pcs_hwExtDi2Fault": "boolean",              // Bit 15 - HW External DI2 Fault
+
+    "// ==================== Byte 2 (Bit 16-23) ====================": "",
+    
+    "pcs_gridAOvFault": "boolean",               // Bit 16 - Grid A Over Voltage Fault
+    "pcs_gridBOvFault": "boolean",               // Bit 17 - Grid B Over Voltage Fault
+    "pcs_gridCOvFault": "boolean",               // Bit 18 - Grid C Over Voltage Fault
+    "pcs_gridAUvFault": "boolean",               // Bit 19 - Grid A Under Voltage Fault
+    "pcs_gridBUvFault": "boolean",               // Bit 20 - Grid B Under Voltage Fault
+    "pcs_gridCUvFault": "boolean",               // Bit 21 - Grid C Under Voltage Fault
+    "pcs_gridOverfFault": "boolean",             // Bit 22 - Grid Over Frequency Fault
+    "pcs_gridUnderfFault": "boolean",            // Bit 23 - Grid Under Frequency Fault
+
+    "// ==================== Byte 3 (Bit 24-31) ====================": "",
+    
+    "pcs_gridPhSeqFault": "boolean",             // Bit 24 - Grid Phase Sequence Fault
+    "pcs_gridAOcFault": "boolean",               // Bit 25 - Grid A Over Current Fault
+    "pcs_gridBOcFault": "boolean",               // Bit 26 - Grid B Over Current Fault
+    "pcs_gridCOcFault": "boolean",               // Bit 27 - Grid C Over Current Fault
+    "pcs_gridVUnbalFault": "boolean",            // Bit 28 - Grid Voltage Unbalance Fault
+    "pcs_gridIUnbalFault": "boolean",            // Bit 29 - Grid Current Unbalance Fault
+    "pcs_gridPhLossFault": "boolean",            // Bit 30 - Grid Phase Loss Fault
+    "pcs_gridNOcFault": "boolean",               // Bit 31 - Grid N Over Current Fault
+
+    "// ==================== Byte 4 (Bit 32-39) ====================": "",
+    
+    "pcs_busPreOvFault": "boolean",              // Bit 32 - Bus Pre Over Voltage Fault
+    "pcs_busPreUvFault": "boolean",              // Bit 33 - Bus Pre Under Voltage Fault
+    "pcs_busRunOvFault": "boolean",              // Bit 34 - Bus Run Over Voltage Fault
+    "pcs_busRunUvFault": "boolean",              // Bit 35 - Bus Run Under Voltage Fault
+    "pcs_busUnbalFault": "boolean",              // Bit 36 - Bus Unbalance Fault
+    "pcs_batUvFault": "boolean",                 // Bit 37 - Battery Under Voltage Fault
+    "pcs_batOvFault": "boolean",                 // Bit 38 - Battery Over Voltage Fault
+    "pcs_dcPreOcFault": "boolean",               // Bit 39 - DC Pre Over Current Fault
+
+    "// ==================== Byte 5 (Bit 40-47) ====================": "",
+    
+    "pcs_dcOcFault": "boolean",                  // Bit 40 - DC Over Current Fault
+    "pcs_balSwOcFault": "boolean",               // Bit 41 - Balance Switch Over Current Fault
+    "pcs_batRevFault": "boolean",                // Bit 42 - Battery Reverse Fault
+    "pcs_acPreToFault": "boolean",               // Bit 43 - AC Pre Timeout Fault
+    "pcs_acPreAOcFault": "boolean",              // Bit 44 - AC Pre A Over Current Fault
+    "pcs_acPreBOcFault": "boolean",              // Bit 45 - AC Pre B Over Current Fault
+    "pcs_acPreCOcFault": "boolean",              // Bit 46 - AC Pre C Over Current Fault
+    "pcs_acLeakOcFault": "boolean",              // Bit 47 - AC Leak Over Current Fault
+
+    "// ==================== Byte 6 (Bit 48-55) ====================": "",
+    
+    "pcs_acDcCompFault": "boolean",              // Bit 48 - AC DC Component Fault
+    "pcs_acPwrMisFault": "boolean",              // Bit 49 - AC Power Mismatch Fault
+    "pcs_sysRamFault": "boolean",                // Bit 50 - System RAM Fault
+    "pcs_sysEepromFault": "boolean",             // Bit 51 - System EEPROM Fault
+    "pcs_sysAdDriftFault": "boolean",            // Bit 52 - System AD Drift Fault
+    "pcs_sysBackComFault": "boolean",            // Bit 53 - System Back Communication Fault
+    "pcs_sysCanProtFault": "boolean",            // Bit 54 - System CAN Protocol Fault
+    "pcs_sysCpldComFault": "boolean",            // Bit 55 - System CPLD Communication Fault
+
+    "// ==================== Byte 7 (Bit 56-63) ====================": "",
+    
+    "pcs_sysDatalogFault": "boolean",            // Bit 56 - System Datalog Fault
+    "pcs_sysInsulFault": "boolean",              // Bit 57 - System Insulation Fault
+    "pcs_sysFwMisFault": "boolean",              // Bit 58 - System Firmware Mismatch Fault
+    "pcs_sysBmsStatFault": "boolean",            // Bit 59 - System BMS Status Fault
+    "pcs_sysStsComFault": "boolean",             // Bit 60 - System STS Communication Fault
+    "pcs_sysBmsComFault": "boolean",             // Bit 61 - System BMS Communication Fault
+    "pcs_sysParCanFault": "boolean",             // Bit 62 - System Parallel CAN Fault
+    "pcs_sysEmsComFault": "boolean",             // Bit 63 - System EMS Communication Fault
+
+    "// ==================== Derived ====================": "",
+    
+    "pcs_hasFaultGrp1": "boolean",               // Any fault flag is true
+    "pcs_activeFaultsGrp1": "string[]",          // List of active fault names
+    "pcs_activeFaultCountGrp1": "number"         // Count of active faults
+  }
+}

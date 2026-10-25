@@ -1,0 +1,120 @@
+[
+    {
+        "id": "rpc_bef_tab",
+        "type": "tab",
+        "label": "RPC: Battery CAN",
+        "disabled": false,
+        "info": "RPC handler for Battery CAN data\n\nMethods:\n- getBatteryEnergyFlowState\n- getBatteryInfoState"
+    },
+    {
+        "id": "rpc_bef_mqtt_in",
+        "type": "mqtt in",
+        "z": "rpc_bef_tab",
+        "name": "RPC Request",
+        "topic": "v1/devices/me/rpc/request/+",
+        "qos": "1",
+        "datatype": "json",
+        "broker": "tb-broker",
+        "nl": false,
+        "rap": false,
+        "inputs": 0,
+        "x": 150,
+        "y": 100,
+        "wires": [
+            [
+                "rpc_bef_handle"
+            ]
+        ]
+    },
+    {
+        "id": "rpc_bef_handle",
+        "type": "function",
+        "z": "rpc_bef_tab",
+        "name": "Handle RPC",
+        "func": "const method = msg.payload.method;\nconst params = msg.payload.params || {};\n\n// Extract request ID from topic\nconst topicParts = msg.topic.split('/');\nconst requestId = topicParts[topicParts.length - 1];\n\nmsg.rpcMethod = method;\nmsg.rpcParams = params;\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = `v1/devices/me/rpc/response/${requestId}`;\n\n// Route based on method\nif (method === 'getBatteryEnergyFlowState') {\n    return [msg, null];\n} else if (method === 'getBatteryInfoState') {\n    return [null, msg];\n}\n\n// Unknown method\nnode.status({ fill: 'yellow', shape: 'ring', text: 'Unknown: ' + method });\nreturn [null, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 350,
+        "y": 100,
+        "wires": [
+            [
+                "rpc_bef_energy_link_out"
+            ],
+            [
+                "rpc_bef_info_link_out"
+            ]
+        ]
+    },
+    {
+        "id": "rpc_bef_energy_link_out",
+        "type": "link out",
+        "z": "rpc_bef_tab",
+        "name": "To Energy Flow Tab",
+        "mode": "link",
+        "links": [
+            "bef_link_in_energy"
+        ],
+        "x": 555,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "rpc_bef_info_link_out",
+        "type": "link out",
+        "z": "rpc_bef_tab",
+        "name": "To Battery Info Tab",
+        "mode": "link",
+        "links": [
+            "bef_link_in_info"
+        ],
+        "x": 555,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "rpc_bef_comment",
+        "type": "comment",
+        "z": "rpc_bef_tab",
+        "name": "getBatteryEnergyFlowState / getBatteryInfoState",
+        "info": "RPC methods for Battery CAN data:\n\n1. getBatteryEnergyFlowState\n   - Returns real-time battery energy flow data\n   - SOC, SOH, voltage, current, temperature\n   - Per-BMS details from CAN\n\n2. getBatteryInfoState\n   - Returns battery module info\n   - Manufacturer, module count\n   - Serial numbers, software versions",
+        "x": 250,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

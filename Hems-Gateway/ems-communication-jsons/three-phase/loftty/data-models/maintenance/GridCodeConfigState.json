@@ -1,0 +1,47 @@
+GridCodeConfigState
+{
+  "version": 1,
+
+  "gridModeRaw": "number",                   // 282 - 并网标准 Grid Mode
+                                             //   0 = General standard
+                                             //   1 = UL1741 & IEEE1547
+                                             //   2 = CPUC RULE21
+                                             //   3 = SRD-UL1741
+                                             //   4 = CEI 0-21
+
+  "gridFrequencyHz": "number",               // 283 - 电网频率设置 Grid Frequency
+                                             //   0x00 = 50Hz
+                                             //   0x01 = 60Hz
+
+  "outputVoltageLevelCode": "number",        // 238 - 输出电压等级设定 Output voltage level
+                                             //   0 = LN:220VAC LL:380VAC
+                                             //   1 = LN:230VAC LL:400VAC
+                                             //   2 = LN:240VAC LL:420VAC
+                                             //   3 = LN:120VAC LL:208VAC
+                                             //   4 = LN:133VAC LL:230VAC
+
+  "gridPowerRiseRateSeconds": "number",      // 515 - 并网功率上升速率 Grid power rise rate (R/W)
+
+  "normalConnect": {
+    "voltageHighV": "number",                // 285 - 电网高压保护点 Grid Vol High (0.1V) [1800,2700]
+    "voltageLowV": "number",                 // 286 - 电网低压保护点 Grid Vol Low (0.1V) [1800,2700]
+    "frequencyHighHz": "number",             // 287 - 电网频率高保护点 Grid Hz High (0.01Hz) [4500,6500]
+    "frequencyLowHz": "number"               // 288 - 电网频率低保护点 Grid Hz Low (0.01Hz) [4500,6500]
+  },
+
+  "reconnectAfterTrip": {
+    "faultRecoveryRiseRateSeconds": "number", // 516 - 故障恢复上升速率 Fault recovery rate of rise (W)
+    "voltageHighV": "number",                // 450 - 重连电网过压保护点 Reconnect overvoltage (W)
+    "voltageLowV": "number",                 // 451 - 重连电网欠压保护点 Reconnect undervoltage (W)
+    "frequencyHighHz": "number",             // 452 - 重连电网过频保护点 Reconnect overfrequency (W)
+    "frequencyLowHz": "number"               // 453 - 重连电网欠频保护点 Reconnect underfrequency (W)
+  },
+
+  "reconnectionTimeSeconds": "number",       // 280 - 恢复并网时间 Restore connection time [10,300]
+
+  "powerFactorTarget": "number",             // 293 - 输出PF值设定 Output PF value (800=80%, 1000=100%, 1200=120%)
+
+  "activePowerRegulationPercent": "number",  // 177 - 有功功率调节 Active power regulation [0,1200] (0.1%)
+
+  "reactivePowerRegulationPercent": "number" // 178 - 无功功率调节 Reactive power regulation [0,1200] (0.1%)
+}

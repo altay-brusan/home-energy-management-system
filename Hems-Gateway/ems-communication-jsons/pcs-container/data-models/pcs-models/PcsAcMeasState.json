@@ -1,0 +1,66 @@
+{
+  "kind": "PcsAcMeasState",
+  "version": 1,
+  "canMessages": {
+    "PCS_MEAS_1": "0x66B966x",
+    "PCS_MEAS_2": "0x66B967x",
+    "PCS_MEAS_3": "0x66B968x"
+  },
+
+  "signals": {
+    
+    "// ========== PCS_MEAS_1 (0x66B966x) - Line & Phase A Voltage ==========": "",
+    
+    "pcs_abLineV": "number",                     // Bit 0-15 (16 bit) - AB Line Voltage
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: V
+                                                 //   Min: 0, Max: 6553.5
+
+    "pcs_bcLineV": "number",                     // Bit 16-31 (16 bit) - BC Line Voltage
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: V
+                                                 //   Min: 0, Max: 6553.5
+
+    "pcs_acLineV": "number",                     // Bit 32-47 (16 bit) - AC Line Voltage
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: V
+                                                 //   Min: 0, Max: 6553.5
+
+    "pcs_aPhaseV": "number",                     // Bit 48-63 (16 bit) - A Phase Voltage
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: V
+                                                 //   Min: 0, Max: 6553.5
+
+    "// ========== PCS_MEAS_2 (0x66B967x) - Phase B/C Voltage & A/B Current ==========": "",
+    
+    "pcs_bPhaseV": "number",                     // Bit 0-15 (16 bit) - B Phase Voltage
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: V
+                                                 //   Min: 0, Max: 6553.5
+
+    "pcs_cPhaseV": "number",                     // Bit 16-31 (16 bit) - C Phase Voltage
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: V
+                                                 //   Min: 0, Max: 6553.5
+
+    "pcs_aPhaseCurrA": "number",                 // Bit 32-47 (16 bit) - A Phase Current
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: A
+                                                 //   Min: -3276.8, Max: 3276.7
+
+    "pcs_bPhaseCurrA": "number",                 // Bit 48-63 (16 bit) - B Phase Current
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: A
+                                                 //   Min: -3276.8, Max: 3276.7
+
+    "// ========== PCS_MEAS_3 (0x66B968x) - Phase C Current & Inductor Currents ==========": "",
+    
+    "pcs_cPhaseCurrA": "number",                 // Bit 0-15 (16 bit) - C Phase Current
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: A
+                                                 //   Min: -3276.8, Max: 3276.7
+
+    "pcs_aPhIndCurrA": "number",                 // Bit 16-31 (16 bit) - A Phase Inductor Current
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: A
+                                                 //   Min: -3276.8, Max: 3276.7
+
+    "pcs_bPhIndCurrA": "number",                 // Bit 32-47 (16 bit) - B Phase Inductor Current
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: A
+                                                 //   Min: -3276.8, Max: 3276.7
+
+    "pcs_cPhIndCurrA": "number"                  // Bit 48-63 (16 bit) - C Phase Inductor Current
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: A
+                                                 //   Min: -3276.8, Max: 3276.7
+  }
+}

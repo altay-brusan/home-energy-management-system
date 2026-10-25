@@ -1,0 +1,641 @@
+[
+    {
+        "id": "e06e9ef7e85e5c21",
+        "type": "tab",
+        "label": "PowerFlowState",
+        "disabled": false,
+        "info": "Reads Power Flow State from registers:\n- 690: Battery power (S16, 1W)\n- 725+790: Grid total power (S32, 1W)\n- 753+759: Load total power (S32, 1W)\n- 767+771: Generator total power (S32, 1W)\n- 772-775: PV1-4 input power (1W)\n\nTriggers:\n1. Periodic: Every 5 minutes\n2. RPC: getPowerFlowState"
+    },
+    {
+        "id": "a9022b146db7f361",
+        "type": "inject",
+        "z": "e06e9ef7e85e5c21",
+        "name": "Poll PowerFlowState (5 min)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "300",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 170,
+        "y": 500,
+        "wires": [
+            [
+                "834a1b291675686b",
+                "5d9abe2c2386d642",
+                "a2ac0fb4a82c3043",
+                "73b9ec5aaaf06f91",
+                "04c7bdadcf8dfc81",
+                "104f12f23bbe3604",
+                "a1560158dae1a063",
+                "f0063afdf5f1ba8c"
+            ]
+        ]
+    },
+    {
+        "id": "0407e73ca301d7af",
+        "type": "link in",
+        "z": "e06e9ef7e85e5c21",
+        "name": "RPC getPowerFlowState",
+        "links": [
+            "rpc_pfs_link_out"
+        ],
+        "x": 155,
+        "y": 160,
+        "wires": [
+            [
+                "f0063afdf5f1ba8c",
+                "a1560158dae1a063",
+                "104f12f23bbe3604",
+                "04c7bdadcf8dfc81",
+                "73b9ec5aaaf06f91",
+                "a2ac0fb4a82c3043",
+                "5d9abe2c2386d642",
+                "834a1b291675686b"
+            ]
+        ]
+    },
+    {
+        "id": "fad264d49228bb45",
+        "type": "inject",
+        "z": "e06e9ef7e85e5c21",
+        "name": "Manual Trigger",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 320,
+        "wires": [
+            [
+                "f0063afdf5f1ba8c",
+                "a1560158dae1a063",
+                "104f12f23bbe3604",
+                "04c7bdadcf8dfc81",
+                "73b9ec5aaaf06f91",
+                "a2ac0fb4a82c3043",
+                "5d9abe2c2386d642",
+                "834a1b291675686b"
+            ]
+        ]
+    },
+    {
+        "id": "f0063afdf5f1ba8c",
+        "type": "function",
+        "z": "e06e9ef7e85e5c21",
+        "name": "Prepare read (PV 772-775)",
+        "func": "// PV1-4 power\nmsg.baseAddr = 772;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 772,\n    quantity: 4\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 680,
+        "y": 80,
+        "wires": [
+            [
+                "6e49f3eac49f1439"
+            ]
+        ]
+    },
+    {
+        "id": "a1560158dae1a063",
+        "type": "function",
+        "z": "e06e9ef7e85e5c21",
+        "name": "Prepare read (Battery 690)",
+        "func": "// Battery power (S16)\nmsg.baseAddr = 690;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 690,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 690,
+        "y": 140,
+        "wires": [
+            [
+                "6af9882696390e2e"
+            ]
+        ]
+    },
+    {
+        "id": "104f12f23bbe3604",
+        "type": "function",
+        "z": "e06e9ef7e85e5c21",
+        "name": "Prepare read (Grid Low 725)",
+        "func": "// Grid power low word\nmsg.baseAddr = 725;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 725,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 690,
+        "y": 200,
+        "wires": [
+            [
+                "e740e544ce08f8a6"
+            ]
+        ]
+    },
+    {
+        "id": "04c7bdadcf8dfc81",
+        "type": "function",
+        "z": "e06e9ef7e85e5c21",
+        "name": "Prepare read (Grid High 790)",
+        "func": "// Grid power high word\nmsg.baseAddr = 790;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 790,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 690,
+        "y": 260,
+        "wires": [
+            [
+                "a448e695282ab863"
+            ]
+        ]
+    },
+    {
+        "id": "73b9ec5aaaf06f91",
+        "type": "function",
+        "z": "e06e9ef7e85e5c21",
+        "name": "Prepare read (Load Low 753)",
+        "func": "// Load power low word\nmsg.baseAddr = 753;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 753,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 690,
+        "y": 320,
+        "wires": [
+            [
+                "04635995109573e1"
+            ]
+        ]
+    },
+    {
+        "id": "a2ac0fb4a82c3043",
+        "type": "function",
+        "z": "e06e9ef7e85e5c21",
+        "name": "Prepare read (Load High 759)",
+        "func": "// Load power high word\nmsg.baseAddr = 759;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 759,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 690,
+        "y": 380,
+        "wires": [
+            [
+                "92aeba1d624b1028"
+            ]
+        ]
+    },
+    {
+        "id": "5d9abe2c2386d642",
+        "type": "function",
+        "z": "e06e9ef7e85e5c21",
+        "name": "Prepare read (Gen Low 767)",
+        "func": "// Generator power low word\nmsg.baseAddr = 767;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 767,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 690,
+        "y": 440,
+        "wires": [
+            [
+                "642a75ed18c1cffd"
+            ]
+        ]
+    },
+    {
+        "id": "834a1b291675686b",
+        "type": "function",
+        "z": "e06e9ef7e85e5c21",
+        "name": "Prepare read (Gen High 771)",
+        "func": "// Generator power high word\nmsg.baseAddr = 771;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 771,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 690,
+        "y": 500,
+        "wires": [
+            [
+                "54b013f25285b7cf"
+            ]
+        ]
+    },
+    {
+        "id": "6e49f3eac49f1439",
+        "type": "modbus-flex-getter",
+        "z": "e06e9ef7e85e5c21",
+        "name": "Read PV (772-775)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 930,
+        "y": 80,
+        "wires": [
+            [
+                "25376e41f4d9ca36"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "6af9882696390e2e",
+        "type": "modbus-flex-getter",
+        "z": "e06e9ef7e85e5c21",
+        "name": "Read Battery (690)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 940,
+        "y": 140,
+        "wires": [
+            [
+                "25376e41f4d9ca36"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "e740e544ce08f8a6",
+        "type": "modbus-flex-getter",
+        "z": "e06e9ef7e85e5c21",
+        "name": "Read Grid Low (725)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 940,
+        "y": 200,
+        "wires": [
+            [
+                "25376e41f4d9ca36"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "a448e695282ab863",
+        "type": "modbus-flex-getter",
+        "z": "e06e9ef7e85e5c21",
+        "name": "Read Grid High (790)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 940,
+        "y": 260,
+        "wires": [
+            [
+                "25376e41f4d9ca36"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "04635995109573e1",
+        "type": "modbus-flex-getter",
+        "z": "e06e9ef7e85e5c21",
+        "name": "Read Load Low (753)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 940,
+        "y": 320,
+        "wires": [
+            [
+                "25376e41f4d9ca36"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "92aeba1d624b1028",
+        "type": "modbus-flex-getter",
+        "z": "e06e9ef7e85e5c21",
+        "name": "Read Load High (759)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 940,
+        "y": 380,
+        "wires": [
+            [
+                "25376e41f4d9ca36"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "642a75ed18c1cffd",
+        "type": "modbus-flex-getter",
+        "z": "e06e9ef7e85e5c21",
+        "name": "Read Gen Low (767)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 940,
+        "y": 440,
+        "wires": [
+            [
+                "25376e41f4d9ca36"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "54b013f25285b7cf",
+        "type": "modbus-flex-getter",
+        "z": "e06e9ef7e85e5c21",
+        "name": "Read Gen High (771)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 940,
+        "y": 500,
+        "wires": [
+            [
+                "25376e41f4d9ca36"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "25376e41f4d9ca36",
+        "type": "function",
+        "z": "e06e9ef7e85e5c21",
+        "name": "Build PowerFlowState JSON",
+        "func": "// Build PowerFlowState from 8 parallel Modbus reads.\n\nlet raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nlet baseAddr = msg.baseAddr;\nif (typeof baseAddr !== \"number\") {\n    baseAddr = (msg.modbusRequest && msg.modbusRequest.address);\n}\nif (typeof baseAddr !== \"number\") {\n    node.warn(\"PowerFlowState: missing base address\");\n    return null;\n}\n\n// Helper: convert unsigned 16-bit to signed\nfunction toSigned16(val) {\n    if (val > 32767) {\n        return val - 65536;\n    }\n    return val;\n}\n\n// Helper: combine two 16-bit words to 32-bit signed\nfunction s32(low, high) {\n    const combined = (high << 16) | low;\n    return combined > 0x7FFFFFFF ? combined - 0x100000000 : combined;\n}\n\n// ---- Store partials based on baseAddr ----\n\nif (baseAddr === 772) {\n    // PV powers\n    flow.set(\"pfs_pv_powers\", {\n        pv1: data[0] || 0,\n        pv2: data[1] || 0,\n        pv3: data[2] || 0,\n        pv4: data[3] || 0\n    });\n} else if (baseAddr === 690) {\n    // Battery (S16)\n    flow.set(\"pfs_battery\", toSigned16(data[0] || 0));\n} else if (baseAddr === 725) {\n    // Grid low\n    flow.set(\"pfs_grid_low\", data[0] || 0);\n} else if (baseAddr === 790) {\n    // Grid high\n    flow.set(\"pfs_grid_high\", data[0] || 0);\n} else if (baseAddr === 753) {\n    // Load low\n    flow.set(\"pfs_load_low\", data[0] || 0);\n} else if (baseAddr === 759) {\n    // Load high\n    flow.set(\"pfs_load_high\", data[0] || 0);\n} else if (baseAddr === 767) {\n    // Gen low\n    flow.set(\"pfs_gen_low\", data[0] || 0);\n} else if (baseAddr === 771) {\n    // Gen high\n    flow.set(\"pfs_gen_high\", data[0] || 0);\n} else {\n    return null;\n}\n\n// ---- Try to assemble ----\n\nconst pvPowers = flow.get(\"pfs_pv_powers\");\nconst battery = flow.get(\"pfs_battery\");\nconst gridLow = flow.get(\"pfs_grid_low\");\nconst gridHigh = flow.get(\"pfs_grid_high\");\nconst loadLow = flow.get(\"pfs_load_low\");\nconst loadHigh = flow.get(\"pfs_load_high\");\nconst genLow = flow.get(\"pfs_gen_low\");\nconst genHigh = flow.get(\"pfs_gen_high\");\n\nif (!pvPowers || battery === undefined || \n    gridLow === undefined || gridHigh === undefined ||\n    loadLow === undefined || loadHigh === undefined ||\n    genLow === undefined || genHigh === undefined) {\n    return null;\n}\n\n// Combine S32 values\nconst gridPower = s32(gridLow, gridHigh);\nconst loadPower = s32(loadLow, loadHigh);\nconst genPower = s32(genLow, genHigh);\nconst pvTotal = (pvPowers.pv1 || 0) + (pvPowers.pv2 || 0) + \n                (pvPowers.pv3 || 0) + (pvPowers.pv4 || 0);\n\nconst deviceId = msg.deviceId\n    || global.get(\"DEVICE_ID\")\n    || env.get(\"DEVICE_ID\")\n    || \"EC100\";\n\nconst state = {\n    kind: \"PowerFlowState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    DeviceId: deviceId,\n    \n    pv: {\n        totalPowerW: pvTotal,\n        mppt: [\n            { id: 1, powerW: pvPowers.pv1 || 0 },\n            { id: 2, powerW: pvPowers.pv2 || 0 },\n            { id: 3, powerW: pvPowers.pv3 || 0 },\n            { id: 4, powerW: pvPowers.pv4 || 0 },\n            { id: 5, powerW: null },\n            { id: 6, powerW: null },\n            { id: 7, powerW: null },\n            { id: 8, powerW: null }\n        ]\n    },\n    \n    grid: {\n        totalPowerW: gridPower\n    },\n    \n    load: {\n        totalPowerW: loadPower\n    },\n    \n    battery: {\n        powerW: battery\n    },\n    \n    generator: {\n        totalPowerW: genPower\n    }\n};\n\n// Clear partials\nflow.set(\"pfs_pv_powers\", null);\nflow.set(\"pfs_battery\", null);\nflow.set(\"pfs_grid_low\", null);\nflow.set(\"pfs_grid_high\", null);\nflow.set(\"pfs_load_low\", null);\nflow.set(\"pfs_load_high\", null);\nflow.set(\"pfs_gen_low\", null);\nflow.set(\"pfs_gen_high\", null);\n\nflow.set(\"powerFlowStateSnapshot\", state);\n\nmsg.payload = state;\nmsg.state = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1270,
+        "y": 230,
+        "wires": [
+            [
+                "77f0e3e2cc059a9e",
+                "93885163c22aa5a6",
+                "be7de087f76c7952"
+            ]
+        ]
+    },
+    {
+        "id": "77f0e3e2cc059a9e",
+        "type": "debug",
+        "z": "e06e9ef7e85e5c21",
+        "name": "PowerFlowState JSON",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1540,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "93885163c22aa5a6",
+        "type": "mqtt out",
+        "z": "e06e9ef7e85e5c21",
+        "name": "Send to ThingsBoard",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1560,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "be7de087f76c7952",
+        "type": "function",
+        "z": "e06e9ef7e85e5c21",
+        "name": "Prepare RPC Response",
+        "func": "// Only handle messages that came from RPC\nif (!msg.rpcResponseTopic) {\n    return null;\n}\n\nconst state = msg.state || msg.payload;\n\nmsg.payload = state;\nmsg.topic = msg.rpcResponseTopic;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1570,
+        "y": 320,
+        "wires": [
+            [
+                "61da238c408dafb0"
+            ]
+        ]
+    },
+    {
+        "id": "61da238c408dafb0",
+        "type": "mqtt out",
+        "z": "e06e9ef7e85e5c21",
+        "name": "RPC Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1800,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "7b93fa129ebad0c3",
+        "type": "comment",
+        "z": "e06e9ef7e85e5c21",
+        "name": "Periodic polling (5 min)",
+        "info": "",
+        "x": 170,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "2b3ecda64a33ae01",
+        "type": "comment",
+        "z": "e06e9ef7e85e5c21",
+        "name": "RPC Trigger (getPowerFlowState)",
+        "info": "",
+        "x": 210,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

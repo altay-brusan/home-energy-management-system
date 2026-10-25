@@ -1,0 +1,817 @@
+{
+  "rpcDefinitions": {
+    "inverterType": "Single-phase Loftty",
+    "version": "1.0",
+    "generatedAt": "2025-12-04T12:30:00.000Z",
+    "totalRpcCount": 17,
+    "rpcs": [
+      {
+        "rpcName": "getPowerFlow",
+        "kind": "PowerFlowState",
+        "type": "read",
+        "response": {
+          "kind": "PowerFlowState",
+          "timestampUtc": "2025-12-04T11:48:27.164Z",
+          "version": 1,
+          "DeviceId": "EC100-DEV-001",
+          "pv": {
+            "totalPowerW": 0,
+            "mppt": [
+              { "id": 1, "powerW": 0 },
+              { "id": 2, "powerW": 0 },
+              { "id": 3, "powerW": 0 },
+              { "id": 4, "powerW": 0 }
+            ]
+          },
+          "grid": { "totalPowerW": 0 },
+          "load": { "totalPowerW": 26 },
+          "battery": { "powerW": 187 },
+          "generator": { "totalPowerW": 0 }
+        }
+      },
+      {
+        "rpcName": "getInverterDeviceState",
+        "kind": "InverterDeviceState",
+        "type": "read",
+        "response": {
+          "kind": "InverterDeviceState",
+          "timestampUtc": "2025-12-04T12:05:55.455Z",
+          "version": 1,
+          "DeviceId": "EC100-DEV-001",
+          "runState": "normal",
+          "outputActivePowerW": 26,
+          "outputVoltageV": 230,
+          "outputCurrentA": 0.6,
+          "outputFrequencyHz": 50,
+          "gridSideActivePowerW": 0,
+          "gridSidePhaseAPowerW": 0,
+          "gridSidePhaseBPowerW": 0,
+          "gridSidePhaseCPowerW": null,
+          "inverterHeatsinkTempC": 144.8,
+          "internalAmbientTempC": 149.9,
+          "acInputStatus": {
+            "genGridSignalRaw": 16,
+            "gridSignalPresent": false,
+            "generatorSignalPresent": false
+          }
+        }
+      },
+      {
+        "rpcName": "getLoadDeviceState",
+        "kind": "LoadDeviceState",
+        "type": "read",
+        "response": {
+          "kind": "LoadDeviceState",
+          "timestampUtc": "2025-12-04T12:06:38.082Z",
+          "version": 1,
+          "DeviceId": "EC100-DEV-001",
+          "scope": "backup_load",
+          "activePowerW": 26,
+          "apparentPowerVA": null,
+          "voltageV": 227.9,
+          "frequencyHz": 50,
+          "todayEnergyKWh": 0,
+          "totalEnergyKWh": 0
+        }
+      },
+      {
+        "rpcName": "getDailyEnergyFlowState",
+        "kind": "DailyEnergyFlowState",
+        "type": "read",
+        "description": "Reads daily cumulative energy flow data (resets at midnight)",
+        "registers": "62, 70-71, 76-77, 84, 108",
+        "triggers": [
+          "RPC: getDailyEnergyFlowState",
+          "Cron: Daily at 23:59",
+          "Manual"
+        ],
+        "response": {
+          "kind": "DailyEnergyFlowState",
+          "timestampUtc": "2025-12-09T06:14:44.415Z",
+          "version": 1,
+          "DeviceId": "EC100-DEV-001",
+          "loadEnergyKWh": 0.2,
+          "grid": {
+            "importEnergyKWh": 0.3,
+            "exportEnergyKWh": 0
+          },
+          "pv": {
+            "totalEnergyKWh": 0,
+            "mppt": [
+              { "id": 1, "energyKWh": null },
+              { "id": 2, "energyKWh": null },
+              { "id": 3, "energyKWh": null },
+              { "id": 4, "energyKWh": null }
+            ]
+          },
+          "battery": {
+            "chargeEnergyKWh": 0.2,
+            "dischargeEnergyKWh": 0.7
+          },
+          "generator": {
+            "energyKWh": 0
+          }
+        },
+        "fieldDescriptions": {
+          "loadEnergyKWh": "Total energy consumed by load today (kWh) - Reg 84",
+          "grid.importEnergyKWh": "Energy bought from grid today (kWh) - Reg 76",
+          "grid.exportEnergyKWh": "Energy sold to grid today (kWh) - Reg 77",
+          "pv.totalEnergyKWh": "Total PV generation today (kWh) - Reg 108",
+          "pv.mppt[].energyKWh": "Per-MPPT daily energy (not available on this model)",
+          "battery.chargeEnergyKWh": "Energy charged to battery today (kWh) - Reg 70",
+          "battery.dischargeEnergyKWh": "Energy discharged from battery today (kWh) - Reg 71",
+          "generator.energyKWh": "Generator energy produced today (kWh) - Reg 62"
+        }
+      },
+      {
+        "rpcName": "getPvDeviceState",
+        "kind": "PvDeviceState",
+        "type": "read",
+        "response": {
+          "kind": "PvDeviceState",
+          "timestampUtc": "2025-12-04T12:07:17.937Z",
+          "version": 1,
+          "DeviceId": "EC100-DEV-001",
+          "totalPvPowerW": 0,
+          "todayPvEnergyKWh": 0,
+          "totalPvEnergyKWh": 0,
+          "mppt": [
+            { "pvChannelId": 1, "isActive": true, "dcVoltageV": 2.8, "dcCurrentA": 0, "inputPowerW": 0, "todayEnergyKWh": null, "totalEnergyKWh": null },
+            { "pvChannelId": 2, "isActive": true, "dcVoltageV": 2.2, "dcCurrentA": 0, "inputPowerW": 0, "todayEnergyKWh": null, "totalEnergyKWh": null },
+            { "pvChannelId": 3, "isActive": true, "dcVoltageV": 2.3, "dcCurrentA": 0, "inputPowerW": 0, "todayEnergyKWh": null, "totalEnergyKWh": null },
+            { "pvChannelId": 4, "isActive": false, "dcVoltageV": 0, "dcCurrentA": 0, "inputPowerW": 0, "todayEnergyKWh": null, "totalEnergyKWh": null }
+          ]
+        }
+      },
+      {
+        "rpcName": "getGeneratorDeviceState",
+        "kind": "GeneratorDeviceState",
+        "type": "read",
+        "response": {
+          "kind": "GeneratorDeviceState",
+          "timestampUtc": "2025-12-04T12:08:19.145Z",
+          "version": 1,
+          "DeviceId": "EC100-DEV-001",
+          "genVoltageV": 5.1,
+          "genFrequencyHz": 0,
+          "genActivePowerW": 0,
+          "smartLoadActivePowerW": 0,
+          "todayGenEnergyKWh": 0,
+          "totalGenEnergyKWh": 0,
+          "accumulatedRunTimeHours": 0
+        }
+      },
+      {
+        "rpcName": "getBatteryChargeSourceConfig",
+        "kind": "BatteryChargeSourceConfigState",
+        "type": "read",
+        "pairedWith": "setBatteryChargeSourceConfig",
+        "response": {
+          "kind": "BatteryChargeSourceConfigState",
+          "timestampUtc": "2025-12-04T12:09:42.750Z",
+          "gatewayId": "EC100-GW-001",
+          "inverterSerialNumber": "Unknown",
+          "generator": {
+            "enabled": false,
+            "startSocPercent": 30,
+            "chargeCurrentA": 40,
+            "maxRunTimeHours": 24,
+            "coolingTimeHours": 0
+          },
+          "grid": {
+            "enabled": true,
+            "startSocPercent": 30,
+            "chargeCurrentA": 40
+          }
+        }
+      },
+      {
+        "rpcName": "setBatteryChargeSourceConfig",
+        "kind": "BatteryChargeSourceConfigState",
+        "type": "write",
+        "pairedWith": "getBatteryChargeSourceConfig",
+        "request": {
+          "generator": {
+            "enabled": false,
+            "startSocPercent": 30,
+            "chargeCurrentA": 35
+          },
+          "grid": {
+            "enabled": false,
+            "startSocPercent": 25,
+            "chargeCurrentA": 30
+          }
+        }
+      },
+      {
+        "rpcName": "getBatteryThresholdConfig",
+        "kind": "BatteryThresholdConfigState",
+        "type": "read",
+        "pairedWith": "setBatteryThresholdConfig",
+        "response": {
+          "kind": "BatteryThresholdConfigState",
+          "timestampUtc": "2025-12-04T12:10:27.690Z",
+          "gatewayId": "EC100-GW-001",
+          "inverterSerialNumber": "Unknown",
+          "shutdownCapacityPercent": 20,
+          "restartCapacityPercent": 50,
+          "lowBatteryCapacityPercent": 35
+        }
+      },
+      {
+        "rpcName": "setBatteryThresholdConfig",
+        "kind": "BatteryThresholdConfigState",
+        "type": "write",
+        "pairedWith": "getBatteryThresholdConfig",
+        "request": {
+          "shutdownCapacityPercent": 10,
+          "restartCapacityPercent": 15,
+          "lowBatteryCapacityPercent": 20
+        }
+      },
+      {
+        "rpcName": "getGeneratorAndSmartLoadConfig",
+        "kind": "GeneratorAndSmartLoadConfigState",
+        "type": "read",
+        "pairedWith": "setGeneratorAndSmartLoadConfig",
+        "response": {
+          "kind": "GeneratorAndSmartLoadConfigState",
+          "timestampUtc": "2025-12-04T12:12:04.477Z",
+          "gatewayId": "EC100-GW-001",
+          "inverterSerialNumber": "Unknown",
+          "generatorChargeEnabled": false,
+          "gridChargeEnabled": true,
+          "maxRunTimeHours": 24,
+          "coolingTimeHours": 0,
+          "startSocPercent": 30,
+          "chargeCurrentA": 40,
+          "generatorPeakShaving": {
+            "enabled": false,
+            "limitPowerW": 8000
+          },
+          "smartLoad": {
+            "enabled": 0,
+            "offSocPercent": 95,
+            "onSocPercent": 100,
+            "pvPowerThresholdW": 0,
+            "openDelayMinutes": 100,
+            "onGridAlwaysOn": false
+          }
+        }
+      },
+      {
+        "rpcName": "setGeneratorAndSmartLoadConfig",
+        "kind": "GeneratorAndSmartLoadConfigState",
+        "type": "write",
+        "pairedWith": "getGeneratorAndSmartLoadConfig",
+        "request": {
+          "generatorChargeEnabled": false,
+          "gridChargeEnabled": false,
+          "startSocPercent": 20,
+          "chargeCurrentA": 30,
+          "generatorPeakShaving": {
+            "enabled": true,
+            "limitPowerW": 8000
+          },
+          "smartLoad": {
+            "enabled": 0,
+            "offSocPercent": 95,
+            "onSocPercent": 100,
+            "pvPowerThresholdW": 500,
+            "openDelayMinutes": 100,
+            "onGridAlwaysOn": false
+          }
+        }
+      },
+      {
+        "rpcName": "getSystemWorkModeConfig",
+        "kind": "SystemWorkModeConfigState",
+        "type": "read",
+        "pairedWith": "setSystemWorkModeConfig",
+        "response": {
+          "kind": "SystemWorkModeConfigState",
+          "timestampUtc": "2025-12-04T12:13:34.039Z",
+          "gatewayId": "EC100-GW-001",
+          "inverterSerialNumber": "Unknown",
+          "inverterMode": {
+            "workModeCode": 0,
+            "solarSellEnabled": false,
+            "maxSellPowerW": 12000,
+            "zeroExportLimitPowerW": 2,
+            "forceOffGrid": false
+          },
+          "energyPriority": {
+            "pattern": "battery_first"
+          },
+          "gridPeakShaving": {
+            "enabled": false,
+            "limitPowerW": 8000
+          },
+          "timeOfUse": {
+            "enabled": false,
+            "daysActive": {
+              "monday": true,
+              "tuesday": true,
+              "wednesday": true,
+              "thursday": true,
+              "friday": true,
+              "saturday": true,
+              "sunday": true
+            },
+            "slots": [
+              { "slotIndex": 1, "startTimeLocal": "00:64", "endTimeLocal": "05:00", "allowGridCharge": false, "allowGeneratorCharge": false, "maxBatteryDischargePowerW": 12000, "batteryThresholdSocPercent": 80, "batteryThresholdVoltageV": 49 },
+              { "slotIndex": 2, "startTimeLocal": "05:00", "endTimeLocal": "09:00", "allowGridCharge": false, "allowGeneratorCharge": false, "maxBatteryDischargePowerW": 12000, "batteryThresholdSocPercent": 80, "batteryThresholdVoltageV": 49 },
+              { "slotIndex": 3, "startTimeLocal": "09:00", "endTimeLocal": "13:00", "allowGridCharge": false, "allowGeneratorCharge": false, "maxBatteryDischargePowerW": 12000, "batteryThresholdSocPercent": 80, "batteryThresholdVoltageV": 49 },
+              { "slotIndex": 4, "startTimeLocal": "13:00", "endTimeLocal": "17:00", "allowGridCharge": false, "allowGeneratorCharge": false, "maxBatteryDischargePowerW": 12000, "batteryThresholdSocPercent": 80, "batteryThresholdVoltageV": 49 },
+              { "slotIndex": 5, "startTimeLocal": "17:00", "endTimeLocal": "21:00", "allowGridCharge": false, "allowGeneratorCharge": false, "maxBatteryDischargePowerW": 12000, "batteryThresholdSocPercent": 80, "batteryThresholdVoltageV": 49 },
+              { "slotIndex": 6, "startTimeLocal": "21:00", "endTimeLocal": "00:00", "allowGridCharge": false, "allowGeneratorCharge": false, "maxBatteryDischargePowerW": 12000, "batteryThresholdSocPercent": 80, "batteryThresholdVoltageV": 49 }
+            ]
+          }
+        }
+      },
+      {
+        "rpcName": "setSystemWorkModeConfig",
+        "kind": "SystemWorkModeConfigState",
+        "type": "write",
+        "pairedWith": "getSystemWorkModeConfig",
+        "request": {
+          "inverterMode": {
+            "workModeCode": 1,
+            "exportStrategy": "selling_first",
+            "solarSellEnabled": false,
+            "maxSellPowerW": 8000,
+            "forceOffGrid": false
+          },
+          "energyPriority": {
+            "pattern": "load_first"
+          },
+          "gridPeakShaving": {
+            "enabled": false,
+            "limitPowerW": 4000
+          },
+          "timeOfUse": {
+            "enabled": true,
+            "daysActive": {
+              "monday": true,
+              "tuesday": true,
+              "wednesday": true,
+              "thursday": true,
+              "friday": true,
+              "saturday": true,
+              "sunday": true
+            },
+            "slots": [
+              { "slotIndex": 1, "startTimeLocal": "00:00", "maxBatteryDischargePowerW": 3000, "batteryThresholdSocPercent": 30, "batteryThresholdVoltageV": 48, "allowGridCharge": true, "allowGeneratorCharge": false },
+              { "slotIndex": 2, "startTimeLocal": "06:00", "maxBatteryDischargePowerW": 6000, "batteryThresholdSocPercent": 20, "batteryThresholdVoltageV": 47.5, "allowGridCharge": false, "allowGeneratorCharge": false },
+              { "slotIndex": 3, "startTimeLocal": "10:00", "maxBatteryDischargePowerW": 10000, "batteryThresholdSocPercent": 15, "batteryThresholdVoltageV": 47, "allowGridCharge": false, "allowGeneratorCharge": false },
+              { "slotIndex": 4, "startTimeLocal": "14:00", "maxBatteryDischargePowerW": 10000, "batteryThresholdSocPercent": 15, "batteryThresholdVoltageV": 47, "allowGridCharge": false, "allowGeneratorCharge": false },
+              { "slotIndex": 5, "startTimeLocal": "18:00", "maxBatteryDischargePowerW": 8000, "batteryThresholdSocPercent": 25, "batteryThresholdVoltageV": 48, "allowGridCharge": false, "allowGeneratorCharge": true },
+              { "slotIndex": 6, "startTimeLocal": "22:00", "maxBatteryDischargePowerW": 4000, "batteryThresholdSocPercent": 40, "batteryThresholdVoltageV": 49, "allowGridCharge": true, "allowGeneratorCharge": false }
+            ]
+          }
+        }
+      },
+      {
+        "rpcName": "getExportStrategy",
+        "kind": "ExportStrategyState",
+        "type": "read",
+        "pairedWith": "setExportStrategy",
+        "description": "Reads the current export/grid strategy mode from inverter register 244",
+        "register": 244,
+        "response": {
+          "kind": "ExportStrategyState",
+          "timestampUtc": "2025-12-08T07:05:26.398Z",
+          "version": 1,
+          "gatewayId": "EC100-GW-001",
+          "exportStrategy": "zero_export_to_ct",
+          "exportStrategyCode": 2
+        },
+        "exportStrategyValues": {
+          "selling_first": {
+            "code": 0,
+            "description": "Allow selling excess solar to grid"
+          },
+          "zero_export_to_load": {
+            "code": 1,
+            "description": "Zero export using internal load sensing"
+          },
+          "zero_export_to_ct": {
+            "code": 2,
+            "description": "Zero export using external CT clamp"
+          }
+        }
+      },
+      {
+        "rpcName": "setExportStrategy",
+        "kind": "ExportStrategyState",
+        "type": "write",
+        "pairedWith": "getExportStrategy",
+        "description": "Sets the export/grid strategy mode on inverter register 244",
+        "register": 244,
+        "request": {
+          "exportStrategy": "selling_first"
+        },
+        "alternativeRequest": {
+          "exportStrategyCode": 0
+        },
+        "response": {
+          "kind": "ExportStrategyState",
+          "timestampUtc": "2025-12-08T07:10:00.000Z",
+          "version": 1,
+          "gatewayId": "EC100-GW-001",
+          "success": true,
+          "message": "Export strategy updated",
+          "exportStrategy": "selling_first",
+          "exportStrategyCode": 0
+        },
+        "validValues": [
+          { "exportStrategy": "selling_first", "exportStrategyCode": 0 },
+          { "exportStrategy": "zero_export_to_load", "exportStrategyCode": 1 },
+          { "exportStrategy": "zero_export_to_ct", "exportStrategyCode": 2 }
+        ]
+      },
+      {
+        "rpcName": "getInverterInfo",
+        "kind": "InverterInfoState",
+        "type": "read",
+        "response": {
+          "kind": "InverterInfoState",
+          "timestampUtc": "2025-12-04T12:17:42.825Z",
+          "gatewayId": "EC100-GW-001",
+          "deviceType": "Unknown (0x3)",
+          "deviceTypeCode": 3,
+          "modbusAddress": 1,
+          "protocolVersion": "1.0",
+          "serialNumber": "2409090047",
+          "ratedPowerW": 12000,
+          "ratedPowerKw": 12,
+          "mpptCount": 3,
+          "phaseCount": 1,
+          "gridVoltageRating": "127/220V",
+          "safetyType": "48V Battery",
+          "firmware": {
+            "controlBoard": 0,
+            "controlBoardAux": 1,
+            "communicationBoard": 1,
+            "commBoardField1": 12,
+            "commBoardField2": 0,
+            "chipType": 0,
+            "ratedPowerClass": 0
+          },
+          "rawRegisters": [3, 1, 256, 12852, 12345, 12345, 12336, 13367, 0, 0, 12, 0, 1, 0, 1, 2, 54464, 1, 769, 0]
+        }
+      },
+      {
+        "rpcName": "getBatteryMaintenanceConfig",
+        "kind": "BatteryMaintenanceConfigState",
+        "type": "read",
+        "pairedWith": "setBatteryMaintenanceConfig",
+        "response": {
+          "kind": "BatteryMaintenanceConfigState",
+          "timestampUtc": "2025-12-04T12:18:44.103Z",
+          "gatewayId": "EC100-GW-001",
+          "inverterSerialNumber": "2409090047",
+          "version": "1.0",
+          "batteryControlMode": "capacity",
+          "wakeUp": {
+            "channel1Enabled": false,
+            "channel2Enabled": null
+          },
+          "batteryResistanceMilliOhm": 8,
+          "chargeEfficiencyPercent": 99
+        }
+      },
+      {
+        "rpcName": "setBatteryMaintenanceConfig",
+        "kind": "BatteryMaintenanceConfigState",
+        "type": "write",
+        "pairedWith": "getBatteryMaintenanceConfig",
+        "request": {
+          "batteryControlMode": "capacity",
+          "wakeUp": {
+            "channel1Enabled": false
+          },
+          "batteryResistanceMilliOhm": 8,
+          "chargeEfficiencyPercent": 99
+        }
+      },
+      {
+        "rpcName": "getExternalRelayConfig",
+        "kind": "ExternalRelayConfigState",
+        "type": "read",
+        "pairedWith": "setExternalRelayConfig",
+        "response": {
+          "kind": "ExternalRelayConfigState",
+          "timestampUtc": "2025-12-04T12:19:45.118Z",
+          "gatewayId": "EC100-GW-001",
+          "inverterSerialNumber": "2409090047",
+          "version": "1.0",
+          "externalRelayFeatureEnabled": false,
+          "relayBitmapRaw": 255,
+          "relays": [
+            { "relayId": 1, "logicalRole": "generator_start", "normallyOpen": true, "description": "Generator Start Signal" },
+            { "relayId": 2, "logicalRole": "alarm", "normallyOpen": true, "description": "Alarm Output" },
+            { "relayId": 3, "logicalRole": "dry_contact", "normallyOpen": true, "description": "Dry Contact Output" },
+            { "relayId": 4, "logicalRole": "spare", "normallyOpen": true, "description": "Spare Relay 4" },
+            { "relayId": 5, "logicalRole": "spare", "normallyOpen": true, "description": "Spare Relay 5" },
+            { "relayId": 6, "logicalRole": "spare", "normallyOpen": true, "description": "Spare Relay 6" },
+            { "relayId": 7, "logicalRole": "spare", "normallyOpen": true, "description": "Spare Relay 7" },
+            { "relayId": 8, "logicalRole": "spare", "normallyOpen": true, "description": "Spare Relay 8" }
+          ]
+        }
+      },
+      {
+        "rpcName": "setExternalRelayConfig",
+        "kind": "ExternalRelayConfigState",
+        "type": "write",
+        "pairedWith": "getExternalRelayConfig",
+        "request": {
+          "externalRelayFeatureEnabled": true,
+          "relayBitmapRaw": 255
+        }
+      },
+      {
+        "rpcName": "getGeneratorSmartLoadOverride",
+        "kind": "GeneratorSmartLoadOverride",
+        "type": "read",
+        "pairedWith": "setGeneratorSmartLoadOverride",
+        "response": {
+          "kind": "GeneratorSmartLoadOverride",
+          "timestampUtc": "2025-12-04T12:20:57.123Z",
+          "gatewayId": "EC100-GW-001",
+          "inverterSerialNumber": "2409090047",
+          "version": "1.0",
+          "forceSmartLoadOn": false,
+          "generatorAsLoadEnabled": false,
+          "canForce": false
+        }
+      },
+      {
+        "rpcName": "setGeneratorSmartLoadOverride",
+        "kind": "GeneratorSmartLoadOverride",
+        "type": "write",
+        "pairedWith": "getGeneratorSmartLoadOverride",
+        "request": {
+          "forceSmartLoadOn": true
+        }
+      },
+      {
+        "rpcName": "getGridCodeConfig",
+        "kind": "GridCodeConfigState",
+        "type": "read",
+        "pairedWith": "setGridCodeConfig",
+        "response": {
+          "kind": "GridCodeConfigState",
+          "timestampUtc": "2025-12-04T12:22:19.539Z",
+          "gatewayId": "EC100-GW-001",
+          "inverterSerialNumber": "2409090047",
+          "version": "1.0",
+          "gridModeRaw": 0,
+          "gridFrequencyHz": 50,
+          "gridVoltageLevelCode": 0,
+          "normalConnect": {
+            "voltageLowV": 185,
+            "voltageHighV": 265,
+            "frequencyLowHz": 48,
+            "frequencyHighHz": 51.5
+          },
+          "reconnectionTimeSeconds": 60,
+          "powerFactorTarget": 1000,
+          "activePowerRegulationPercentPerStep": 0,
+          "reactivePowerRegulationPercentPerStep": 0,
+          "rawRegisters": {
+            "reg39": 1000,
+            "reg40": 0,
+            "reg41": 0,
+            "reg282": 60,
+            "reg284": 0,
+            "reg285": 0,
+            "reg286": 0,
+            "reg287": 2650,
+            "reg288": 1850,
+            "reg289": 5150,
+            "reg290": 4800
+          }
+        }
+      },
+      {
+        "rpcName": "setGridCodeConfig",
+        "kind": "GridCodeConfigState",
+        "type": "write",
+        "pairedWith": "getGridCodeConfig",
+        "request": {
+          "reconnectionTimeSeconds": 60,
+          "powerFactorTarget": 1000,
+          "normalConnect": {
+            "voltageHighV": 265,
+            "frequencyHighHz": 51.5
+          }
+        }
+      },
+      {
+        "rpcName": "getInverterAdvancedFunctionConfig",
+        "kind": "InverterAdvancedFunctionConfigState",
+        "type": "read",
+        "pairedWith": "setInverterAdvancedFunctionConfig",
+        "response": {
+          "kind": "InverterAdvancedFunctionConfigState",
+          "timestampUtc": "2025-12-04T12:23:12.102Z",
+          "gatewayId": "EC100-GW-001",
+          "inverterSerialNumber": "2409090047",
+          "version": "1.0",
+          "advancedFunctionWordRaw": 0,
+          "arcFault": {
+            "enabled": false,
+            "clearRequested": false
+          },
+          "systemSelfCheckEnabled": true,
+          "selfCheckTimeSeconds": 1,
+          "generatorPeakShavingEnabled": false,
+          "gridPeakShavingEnabled": false,
+          "smartLoadOnGridAlwaysOn": false,
+          "externalRelayEnabled": false,
+          "islandModeSignalEnabled": null,
+          "externalMeter": {
+            "ctRatio": 2000,
+            "phase": null
+          },
+          "bmsErrorStopEnabled": false,
+          "drmEnabled": false,
+          "parallel": {
+            "enabled": false,
+            "role": "standalone",
+            "modbusAddress": 1
+          },
+          "rawRegisters": {
+            "reg45": 1,
+            "reg280": 0,
+            "reg283": 0,
+            "reg326": 0,
+            "reg327": 2000,
+            "reg417": 1024
+          }
+        }
+      },
+      {
+        "rpcName": "setInverterAdvancedFunctionConfig",
+        "kind": "InverterAdvancedFunctionConfigState",
+        "type": "write",
+        "pairedWith": "getInverterAdvancedFunctionConfig",
+        "request": {
+          "selfCheckTimeSeconds": 1,
+          "arcFault": { "enabled": false },
+          "generatorPeakShavingEnabled": false,
+          "gridPeakShavingEnabled": false,
+          "smartLoadOnGridAlwaysOn": false,
+          "externalRelayEnabled": true,
+          "bmsErrorStopEnabled": false,
+          "drmEnabled": false,
+          "externalMeter": { "ctRatio": 2000 },
+          "parallel": { "enabled": false, "role": "slave", "modbusAddress": 0 },
+          "advancedFunctionWordRaw": 8192
+        }
+      },
+      {
+        "rpcName": "getSystemConnectionStructure",
+        "kind": "SystemConnectionStructure",
+        "type": "read",
+        "pairedWith": "setSystemConnectionStructure",
+        "response": {
+          "kind": "SystemConnectionStructure",
+          "timestampUtc": "2025-12-04T12:24:55.552Z",
+          "version": "1.0",
+          "schemaVersion": 1,
+          "deviceId": "INVERTER-001",
+          "inverter": {
+            "deviceType": "Single-phase Storage Inverter",
+            "deviceTypeRaw": 3,
+            "inverterModel": null,
+            "serialNumber": "2409090047",
+            "firmware": {
+              "protocolVersion": "1.0",
+              "protocolVersionRaw": 256,
+              "mcuBoardRaw": 12,
+              "controlMainRaw": 0,
+              "commMainRaw": 1
+            },
+            "ratedPowerW": 12000
+          },
+          "acSide": {
+            "mpptAndPhasesRaw": 769,
+            "batteryInputCount": null,
+            "outputTopology": null,
+            "gridType": "single_phase_240V",
+            "gridTypeRaw": 0,
+            "regionVariant": null,
+            "safetyType": "48V_battery",
+            "safetyTypeRaw": 2,
+            "gridPhaseCount": 1,
+            "gridStandard": "INMETRO",
+            "gridStandardRaw": 1,
+            "gridFrequencyHz": 50,
+            "gridFrequencyRaw": 0,
+            "gridVoltageLevelCode": 0,
+            "gridVoltageLevel": "127V/220V",
+            "gridPhaseSequence": null,
+            "itSystemNeutralUngrounded": null
+          },
+          "battery": {
+            "batteryControlMode": "capacity",
+            "batteryControlModeRaw": 1,
+            "batteryChannels": [
+              {
+                "channelId": 1,
+                "ratedCapacityAh": 200,
+                "nominalVoltageV": null,
+                "batterySn": null,
+                "batteryPhysicalAddress": null,
+                "batterySoftwareVersion": null,
+                "lithiumBatteryType": "PYLON_SOLAX_CAN",
+                "lithiumBatteryTypeRaw": 0
+              }
+            ]
+          },
+          "generator": {
+            "inputMode": "generator_input_only",
+            "inputModeRaw": 0,
+            "connectedToGridInput": false,
+            "connectedToGridInputRaw": 0
+          },
+          "pv": {
+            "mpptCount": 3,
+            "mppt": [
+              { "pvChannelId": 1, "supportsInput": true, "stringMaxCurrentA": null, "stringMaxVoltageV": null, "recommendedVocAtStcV": null },
+              { "pvChannelId": 2, "supportsInput": true, "stringMaxCurrentA": null, "stringMaxVoltageV": null, "recommendedVocAtStcV": null },
+              { "pvChannelId": 3, "supportsInput": true, "stringMaxCurrentA": null, "stringMaxVoltageV": null, "recommendedVocAtStcV": null },
+              { "pvChannelId": 4, "supportsInput": false, "stringMaxCurrentA": null, "stringMaxVoltageV": null, "recommendedVocAtStcV": null }
+            ]
+          },
+          "loadAndGrid": {
+            "homeLoadConnectionPoint": null,
+            "exportLimitMode": "external_meter",
+            "exportLimitModeRaw": 2,
+            "currentTransformerOnGridSide": null,
+            "supportsBackupLoad": null,
+            "supportsZeroExport": null,
+            "supportsExternalMeter": null
+          }
+        }
+      },
+      {
+        "rpcName": "setSystemConnectionStructure",
+        "kind": "SystemConnectionStructure",
+        "type": "write",
+        "pairedWith": "getSystemConnectionStructure",
+        "request": {
+          "ratedCapacityAh": 200
+        }
+      },
+      {
+        "rpcName": "getHeartbeat",
+        "kind": "Heartbeat",
+        "type": "read",
+        "response": {
+          "kind": "Heartbeat",
+          "timestampUtc": "2025-12-04T12:26:44.258Z",
+          "DeviceId": "EC100-DEV-001",
+          "status": "ok"
+        }
+      },
+      {
+         "rpcName": "getBatterySocState",
+         "kind": "BatterySocState",
+         "type": "read",
+         "response": {
+          "kind": "BatterySocState",
+         "timestampUtc": "2025-12-04T12:48:31.904Z",
+         "version": 1,
+          "DeviceId": "EC100-DEV-001",
+          "inverterBatChannelSoc": [
+              { "channelId": 1, "socPercent": 36 },
+              { "channelId": 2, "socPercent": null }
+         ],
+          "bmsSocDetails": [
+              { "channelId": 1, "deviceId": "CH1-BMS1", "socPercent": 36 }
+          ]
+         }
+      }
+    ]
+  },
+  "summary": {
+    "readOnlyRpcs": ["getPowerFlow", "getInverterDeviceState", "getLoadDeviceState", "getPvDeviceState", "getGeneratorDeviceState", "getInverterInfo", "getHeartbeat"],
+    "readWritePairs": [
+      { "get": "getBatteryChargeSourceConfig", "set": "setBatteryChargeSourceConfig", "kind": "BatteryChargeSourceConfigState" },
+      { "get": "getBatteryThresholdConfig", "set": "setBatteryThresholdConfig", "kind": "BatteryThresholdConfigState" },
+      { "get": "getGeneratorAndSmartLoadConfig", "set": "setGeneratorAndSmartLoadConfig", "kind": "GeneratorAndSmartLoadConfigState" },
+      { "get": "getSystemWorkModeConfig", "set": "setSystemWorkModeConfig", "kind": "SystemWorkModeConfigState" },
+      { "get": "getBatteryMaintenanceConfig", "set": "setBatteryMaintenanceConfig", "kind": "BatteryMaintenanceConfigState" },
+      { "get": "getExternalRelayConfig", "set": "setExternalRelayConfig", "kind": "ExternalRelayConfigState" },
+      { "get": "getGeneratorSmartLoadOverride", "set": "setGeneratorSmartLoadOverride", "kind": "GeneratorSmartLoadOverride" },
+      { "get": "getGridCodeConfig", "set": "setGridCodeConfig", "kind": "GridCodeConfigState" },
+      { "get": "getInverterAdvancedFunctionConfig", "set": "setInverterAdvancedFunctionConfig", "kind": "InverterAdvancedFunctionConfigState" },
+      { "get": "getSystemConnectionStructure", "set": "setSystemConnectionStructure", "kind": "SystemConnectionStructure" }
+    ],
+    "totalMethods": 27,
+    "uniqueKinds": 17
+  }
+}

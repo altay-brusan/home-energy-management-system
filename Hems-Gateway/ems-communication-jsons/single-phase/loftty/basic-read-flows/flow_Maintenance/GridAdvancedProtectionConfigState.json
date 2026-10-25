@@ -1,0 +1,413 @@
+[
+    {
+        "id": "grid_adv_prot_config_tab",
+        "type": "tab",
+        "label": "Grid Advanced Protection Config",
+        "disabled": false,
+        "info": "Reads Grid Advanced Protection Config from registers:\n- 27-30: IP Protection limits\n- 35: Over frequency derating\n- 331-341: LVRT/HVRT settings\n- 351-359: V(Q) curve\n- 360-365: F(W) and V(W) curves"
+    },
+    {
+        "id": "gapc_poll_inject",
+        "type": "inject",
+        "z": "grid_adv_prot_config_tab",
+        "name": "Poll Grid Adv Protection (5 min)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "300",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 190,
+        "y": 180,
+        "wires": [
+            [
+                "gapc_prepare_ip_limits",
+                "gapc_prepare_freq_derate",
+                "gapc_prepare_lvrt",
+                "gapc_prepare_qv",
+                "gapc_prepare_fw_vw"
+            ]
+        ]
+    },
+    {
+        "id": "gapc_prepare_ip_limits",
+        "type": "function",
+        "z": "grid_adv_prot_config_tab",
+        "name": "Prepare read (IP Limits 27-30)",
+        "func": "// IP Protection limits\n// 27: Grid voltage Upper limit (0.1V)\n// 28: Grid voltage Lower limit (0.1V)\n// 29: Grid frequency upper limit (0.01Hz)\n// 30: Grid frequency lower limit (0.01Hz)\n\nmsg.baseAddr = 27;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 27,\n    quantity: 4\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 60,
+        "wires": [
+            [
+                "gapc_read_ip_limits"
+            ]
+        ]
+    },
+    {
+        "id": "gapc_prepare_freq_derate",
+        "type": "function",
+        "z": "grid_adv_prot_config_tab",
+        "name": "Prepare read (FreqDerate 35)",
+        "func": "// Over frequency derating\n// 35: OverFrq_De_rate (0-100%)\n\nmsg.baseAddr = 35;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 35,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 490,
+        "y": 120,
+        "wires": [
+            [
+                "gapc_read_freq_derate"
+            ]
+        ]
+    },
+    {
+        "id": "gapc_prepare_lvrt",
+        "type": "function",
+        "z": "grid_adv_prot_config_tab",
+        "name": "Prepare read (LVRT 331-341)",
+        "func": "// LVRT/HVRT settings (California LHVRT)\n// 331: CA_LHVRT enable\n// 332: CA_HV2, 333: CA_HV1\n// 334: CA_LV1, 335: CA_LV2, 336: CA_LV3\n// 337: CA_HV2_Time, 338: CA_HV1_Time\n// 339: CA_LV1_Time, 340: CA_LV2_Time, 341: CA_LV3_Time\n\nmsg.baseAddr = 331;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 331,\n    quantity: 11\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 490,
+        "y": 180,
+        "wires": [
+            [
+                "gapc_read_lvrt"
+            ]
+        ]
+    },
+    {
+        "id": "gapc_prepare_qv",
+        "type": "function",
+        "z": "grid_adv_prot_config_tab",
+        "name": "Prepare read (QV 351-359)",
+        "func": "// V(Q) curve (California QV)\n// 351: CA_QV enable\n// 352-355: CA_QV_V1 to V4\n// 356-359: CA_QV_Q1 to Q4\n\nmsg.baseAddr = 351;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 351,\n    quantity: 9\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 480,
+        "y": 240,
+        "wires": [
+            [
+                "gapc_read_qv"
+            ]
+        ]
+    },
+    {
+        "id": "gapc_prepare_fw_vw",
+        "type": "function",
+        "z": "grid_adv_prot_config_tab",
+        "name": "Prepare read (FW/VW 360-365)",
+        "func": "// F(W) and V(W) curves\n// 360: CA_FW enable\n// 361: CA_Fstart\n// 362: CA_Fstop\n// 363: CA_VW enable\n// 364: CA_Vstart\n// 365: CA_Vstop\n\nmsg.baseAddr = 360;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 360,\n    quantity: 6\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 490,
+        "y": 300,
+        "wires": [
+            [
+                "gapc_read_fw_vw"
+            ]
+        ]
+    },
+    {
+        "id": "gapc_read_ip_limits",
+        "type": "modbus-flex-getter",
+        "z": "grid_adv_prot_config_tab",
+        "name": "Read IP Limits (27-30)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 760,
+        "y": 60,
+        "wires": [
+            [
+                "gapc_build_json"
+            ],
+            [
+                "gapc_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "gapc_read_freq_derate",
+        "type": "modbus-flex-getter",
+        "z": "grid_adv_prot_config_tab",
+        "name": "Read FreqDerate (35)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 760,
+        "y": 120,
+        "wires": [
+            [
+                "gapc_build_json"
+            ],
+            [
+                "gapc_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "gapc_read_lvrt",
+        "type": "modbus-flex-getter",
+        "z": "grid_adv_prot_config_tab",
+        "name": "Read LVRT (331-341)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 760,
+        "y": 180,
+        "wires": [
+            [
+                "gapc_build_json"
+            ],
+            [
+                "gapc_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "gapc_read_qv",
+        "type": "modbus-flex-getter",
+        "z": "grid_adv_prot_config_tab",
+        "name": "Read QV (351-359)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 750,
+        "y": 240,
+        "wires": [
+            [
+                "gapc_build_json"
+            ],
+            [
+                "gapc_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "gapc_read_fw_vw",
+        "type": "modbus-flex-getter",
+        "z": "grid_adv_prot_config_tab",
+        "name": "Read FW/VW (360-365)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 760,
+        "y": 300,
+        "wires": [
+            [
+                "gapc_build_json"
+            ],
+            [
+                "gapc_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "gapc_build_json",
+        "type": "function",
+        "z": "grid_adv_prot_config_tab",
+        "name": "Build GridAdvancedProtectionConfigState JSON",
+        "func": "// Build GridAdvancedProtectionConfigState from multiple Modbus reads.\n\nlet raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nlet baseAddr = msg.baseAddr;\nif (typeof baseAddr !== \"number\") {\n    baseAddr = (msg.modbusRequest && msg.modbusRequest.address);\n}\nif (typeof baseAddr !== \"number\") {\n    node.warn(\"GridAdvancedProtectionConfigState: missing base address\");\n    return null;\n}\n\n// ---- Store partials ----\n\n// IP Limits 27-30\nif (baseAddr === 27) {\n    flow.set(\"gapc_part_ip_limits\", {\n        hv1OverVoltageV: Math.round((data[0] || 0) * 0.1 * 10) / 10,   // 27\n        lv1UnderVoltageV: Math.round((data[1] || 0) * 0.1 * 10) / 10,  // 28\n        hf1OverFrequencyHz: Math.round((data[2] || 0) * 0.01 * 100) / 100,  // 29\n        lf1UnderFrequencyHz: Math.round((data[3] || 0) * 0.01 * 100) / 100  // 30\n    });\n}\n\n// Freq Derate 35\nelse if (baseAddr === 35) {\n    flow.set(\"gapc_part_freq_derate\", {\n        overFrqDeRate: data[0] || 0  // 0-100%\n    });\n}\n\n// LVRT 331-341\nelse if (baseAddr === 331) {\n    flow.set(\"gapc_part_lvrt\", {\n        lvrtEnabled: (data[0] || 0) === 1,         // 331\n        hv2Voltage: data[1] || 0,                  // 332\n        hv1Voltage: data[2] || 0,                  // 333\n        lv1Voltage: data[3] || 0,                  // 334\n        lv2Voltage: data[4] || 0,                  // 335\n        lv3Voltage: data[5] || 0,                  // 336\n        hv2Time: data[6] || 0,                     // 337\n        hv1Time: data[7] || 0,                     // 338\n        lv1Time: data[8] || 0,                     // 339\n        lv2Time: data[9] || 0,                     // 340\n        lv3Time: data[10] || 0                     // 341\n    });\n}\n\n// QV 351-359\nelse if (baseAddr === 351) {\n    flow.set(\"gapc_part_qv\", {\n        qvEnabled: (data[0] || 0) === 1,           // 351\n        v1: data[1] || 0,                          // 352\n        v2: data[2] || 0,                          // 353\n        v3: data[3] || 0,                          // 354\n        v4: data[4] || 0,                          // 355\n        q1: data[5] || 0,                          // 356\n        q2: data[6] || 0,                          // 357\n        q3: data[7] || 0,                          // 358\n        q4: data[8] || 0                           // 359\n    });\n}\n\n// FW/VW 360-365\nelse if (baseAddr === 360) {\n    flow.set(\"gapc_part_fw_vw\", {\n        fwEnabled: (data[0] || 0) === 1,           // 360\n        fStart: Math.round((data[1] || 0) * 0.01 * 100) / 100,  // 361\n        fStop: Math.round((data[2] || 0) * 0.01 * 100) / 100,   // 362\n        vwEnabled: (data[3] || 0) === 1,           // 363\n        vStart: Math.round((data[4] || 0) * 0.1 * 10) / 10,     // 364\n        vStop: Math.round((data[5] || 0) * 0.1 * 10) / 10       // 365\n    });\n}\nelse {\n    return null;\n}\n\n// ---- Try to assemble ----\n\nconst ipLimitsPart = flow.get(\"gapc_part_ip_limits\");\nconst freqDeratePart = flow.get(\"gapc_part_freq_derate\");\nconst lvrtPart = flow.get(\"gapc_part_lvrt\");\nconst qvPart = flow.get(\"gapc_part_qv\");\nconst fwVwPart = flow.get(\"gapc_part_fw_vw\");\n\nif (!ipLimitsPart || !freqDeratePart || !lvrtPart || !qvPart || !fwVwPart) {\n    return null;\n}\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\nconst inverterSN = global.get(\"INVERTER_SN\") || env.get(\"INVERTER_SN\") || \"Unknown\";\n\nconst state = {\n    kind: \"GridAdvancedProtectionConfigState\",\n    timestampUtc: new Date().toISOString(),\n    gatewayId: gatewayId,\n    inverterSerialNumber: inverterSN,\n    version: \"1\",\n    \n    ipProtection: {\n        hv1OverVoltageV: ipLimitsPart.hv1OverVoltageV,\n        hv1TripTimeSeconds: null,  // Not available\n        hv2OverVoltageV: null,\n        hv2TripTimeSeconds: null,\n        hv3OverVoltageV: null,\n        hv3TripTimeSeconds: null,\n        \n        lv1UnderVoltageV: ipLimitsPart.lv1UnderVoltageV,\n        lv1TripTimeSeconds: null,\n        lv2UnderVoltageV: null,\n        lv2TripTimeSeconds: null,\n        lv3UnderVoltageV: null,\n        lv3TripTimeSeconds: null,\n        \n        hf1OverFrequencyHz: ipLimitsPart.hf1OverFrequencyHz,\n        hf1TripTimeSeconds: null,\n        hf2OverFrequencyHz: null,\n        hf2TripTimeSeconds: null,\n        hf3OverFrequencyHz: null,\n        hf3TripTimeSeconds: null,\n        \n        lf1UnderFrequencyHz: ipLimitsPart.lf1UnderFrequencyHz,\n        lf1TripTimeSeconds: null,\n        lf2UnderFrequencyHz: null,\n        lf2TripTimeSeconds: null,\n        lf3UnderFrequencyHz: null,\n        lf3TripTimeSeconds: null,\n        \n        tenMinuteOverVoltageV: null\n    },\n    \n    frequencyPowerDroop: {\n        enabled: fwVwPart.fwEnabled,\n        overFrequency: {\n            startFreqHz: fwVwPart.fStart,\n            stopFreqHz: fwVwPart.fStop,\n            droopPercentPerHz: freqDeratePart.overFrqDeRate,\n            startDelaySeconds: null,\n            stopDelaySeconds: null\n        },\n        underFrequency: {\n            startFreqHz: null,\n            stopFreqHz: null,\n            droopPercentPerHz: null,\n            startDelaySeconds: null,\n            stopDelaySeconds: null\n        }\n    },\n    \n    voltageActivePowerCurve: {\n        enabled: fwVwPart.vwEnabled,\n        lockInPnPercent: null,\n        lockOutPnPercent: null,\n        points: [\n            { voltagePercent: fwVwPart.vStart, powerPercent: null },\n            { voltagePercent: fwVwPart.vStop, powerPercent: null },\n            { voltagePercent: null, powerPercent: null },\n            { voltagePercent: null, powerPercent: null }\n        ]\n    },\n    \n    voltageReactivePowerCurve: {\n        enabled: qvPart.qvEnabled,\n        lockInPnPercent: null,\n        lockOutPnPercent: null,\n        points: [\n            { voltagePercent: qvPart.v1, reactivePercent: qvPart.q1 },\n            { voltagePercent: qvPart.v2, reactivePercent: qvPart.q2 },\n            { voltagePercent: qvPart.v3, reactivePercent: qvPart.q3 },\n            { voltagePercent: qvPart.v4, reactivePercent: qvPart.q4 }\n        ]\n    },\n    \n    activeVsReactiveCurve: {\n        enabled: null,\n        points: [\n            { activePowerPercent: null, reactivePercent: null },\n            { activePowerPercent: null, reactivePercent: null },\n            { activePowerPercent: null, reactivePercent: null },\n            { activePowerPercent: null, reactivePercent: null }\n        ]\n    },\n    \n    activeVsPowerFactorCurve: {\n        enabled: null,\n        lockInPnPercent: null,\n        lockOutPnPercent: null,\n        pfPoints: [\n            { activePowerPercent: null, powerFactor: null },\n            { activePowerPercent: null, powerFactor: null },\n            { activePowerPercent: null, powerFactor: null },\n            { activePowerPercent: null, powerFactor: null }\n        ]\n    },\n    \n    voltageRideThrough: {\n        enabled: lvrtPart.lvrtEnabled,\n        hvLevels: [\n            { voltagePercent: lvrtPart.hv2Voltage, timeSeconds: lvrtPart.hv2Time },\n            { voltagePercent: lvrtPart.hv1Voltage, timeSeconds: lvrtPart.hv1Time },\n            { voltagePercent: null, timeSeconds: null }\n        ],\n        lvLevels: [\n            { voltagePercent: lvrtPart.lv1Voltage, timeSeconds: lvrtPart.lv1Time },\n            { voltagePercent: lvrtPart.lv2Voltage, timeSeconds: lvrtPart.lv2Time },\n            { voltagePercent: lvrtPart.lv3Voltage, timeSeconds: lvrtPart.lv3Time }\n        ]\n    }\n};\n\n// Clear partials\nflow.set(\"gapc_part_ip_limits\", null);\nflow.set(\"gapc_part_freq_derate\", null);\nflow.set(\"gapc_part_lvrt\", null);\nflow.set(\"gapc_part_qv\", null);\nflow.set(\"gapc_part_fw_vw\", null);\n\nflow.set(\"gridAdvancedProtectionConfigSnapshot\", state);\n\nmsg.payload = state;\nmsg.state = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1080,
+        "y": 180,
+        "wires": [
+            [
+                "gapc_debug_json",
+                "gapc_mqtt_telemetry"
+            ]
+        ]
+    },
+    {
+        "id": "gapc_debug_json",
+        "type": "debug",
+        "z": "grid_adv_prot_config_tab",
+        "name": "GridAdvancedProtectionConfigState JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1420,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "gapc_error_debug",
+        "type": "debug",
+        "z": "grid_adv_prot_config_tab",
+        "name": "GridAdvProt CRC/Error debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1020,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "gapc_mqtt_telemetry",
+        "type": "mqtt out",
+        "z": "grid_adv_prot_config_tab",
+        "name": "Send to ThingsBoard",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1380,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

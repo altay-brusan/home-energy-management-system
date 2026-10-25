@@ -1,0 +1,33 @@
+{
+  "kind": "ChillerState",
+  "version": 1,
+  "canMessages": {
+    "Chiller_1": "0x18008040x",
+    "Chiller_2_Status": "0x18018040x"
+  },
+
+  "signals": {
+    "// ========== Chiller_1 (0x18008040x) ==========": "",
+    
+    "tmsOperatingMode": "number",                // Bit 0-2 (3 bit)
+    "outletCoolantTempC": "number",              // Bit 8-15, Factor: 1, Offset: -40
+    "inletCoolantTempC": "number",               // Bit 16-23, Factor: 1, Offset: -40
+    "ambientTempC": "number",                    // Bit 24-31, Factor: 1, Offset: -40
+    "inletCoolantPressure": "number",            // Bit 32-39, Factor: 0.1, Signed
+    "outletCoolantPressure": "number",           // Bit 40-47, Factor: 0.1, Signed
+    "heartbeat": "number",                       // Bit 48-55
+    "tmsFaultCode": "number",                    // Bit 56-61 (6 bit)
+    "tmsFaultLevel": "number",                   // Bit 62-63 (2 bit)
+
+    "// ========== Chiller_2_Status (0x18018040x) ==========": "",
+    
+    "compressorStatus": "boolean",               // Bit 0
+    "crankcaseHeaterStatus": "boolean",          // Bit 1
+    "electricHeaterStatus": "boolean",           // Bit 2
+    "pumpStatus": "boolean",                     // Bit 3
+    "fanRunStatus": "boolean",                   // Bit 4
+    "compressorSpeed": "number",                 // Bit 8-15, Factor: 100
+    "pumpSpeed": "number",                       // Bit 16-23, Factor: 100
+    "onOffStatus": "number"                      // Bit 24-31
+  }
+}

@@ -1,0 +1,129 @@
+SystemConnectionStructure {
+   
+   "timestampUtc": string,
+   "version": number,
+   "DeviceId": string,
+
+//  Structural (slow-changing):
+//    Inverter model, rated power
+//    Phase count (1φ / 3φ / split)
+//    Number of MPPTs, battery channels
+//    Wiring choices (home load on load_side vs grid_side, CT present)
+//    BMS types, capacities, serials
+//    → This should go in SystemConnectionStructure.
+  // Schema / protocol version for this JSON
+  "schemaVersion": number,
+
+  "inverter": {
+    "deviceType": string,                 // 0: Device type (0x0300=single-phase storage)
+
+    "inverterModel": string,             // from config / datasheet
+    "serialNumber": string,              // 3–7: SN byte 01-10 (ASCII)
+
+    "firmware": {
+      "protocolVersion": string,         // 2: Communication protocol version
+      "mcuBoardRaw": number,             // 10: 通讯板固件版本字段2
+      "controlMainRaw": number,          // 13: 控制板固件版本 (Firmware version of control board)
+      "commMainRaw": number              // 14: 通讯板固件版本 (Firmware version of communication board)
+    },
+
+    "ratedPowerW": number,               // 16 (Low) + 17 (High): Rated power (0.1W)
+
+    "acSide": {
+      // Still raw, but "structural"
+      "mpptAndPhasesRaw": number,        // 18: MPPT路数及相数 (MPPT number and phases)
+      "batteryInputCount": number,       // 24 (1 or 2) - not found in this protocol
+      "outputTopology": string,          // 25: not found  "three_phase" | "split_phase" | "single_phase" | "special" - not found
+
+      // didnt found in this doc. meaningful when outputTopology == "split_phase"
+      "gridType": "single_phase" | "split_phase" | null,   // 286: Grid Type (0=single 240V, 1=split 120/240V, 2=three-phase 208V, 3=120V single)
+
+      // 26 – regional variant of this inverter
+      "regionVariant": "eu" | "ul" | "jp",                 // 26 - not found in this protocol
+
+      // 19 – raw safety / compliance code (for debug / audits)
+      "safetyTypeRaw": number,                             // 15: Safety type
+
+      // Derived structural info you can compute once and store:
+      "gridPhaseCount": number,          // 1 or 3 (derived from mpptAndPhasesRaw / outputTopology)
+      "gridStandardRaw": number,         // 51: GridStandard (1=INMETRO, 2=EN50549, 3=EN50438, etc.)
+      "gridFrequencyHz": number,         // 285: Grid Frequency (0=50Hz, 1=60Hz)
+      "gridVoltageLevelCode": number,    // 19: 并网电压等级/Rated Grid Voltage (0=127/220V, 1=220/380V)
+      "gridPhaseSequence": string | null, // not found old is147: "ABC_120_240" | "ACB_240_120", null for single-phase - not found
+                                         // value mapping is done in your gateway from raw reg 147
+    
+      "itSystemNeutralUngrounded": bool  // from installer_config (checkbox in HMI, no direct Modbus reg)
+
+    }
+  },
+
+  "battery": {
+  // Global battery control mode for this inverter
+  "batteryControlMode": "capacity",   // 213: "voltage" | "capacity" | "no_battery"
+
+  "batteryChannels": [
+    {
+      "channelId": number,
+
+      // Structural capacity for battery bank on this channel
+      "ratedCapacityAh": number,         // 204: Batt Capacity (1Ah)
+      "nominalVoltageV": number,         // from datasheet / config 
+
+      // From your own BMS chain (slow-changing identities)
+      "batterySn": string,
+      "batteryPhysicalAddress": string,  // modbus addr / CAN ID, etc.
+      "batterySoftwareVersion": string,
+
+      // Brand / type as seen by inverter (BMS protocol)
+      "lithiumBatteryType": string       // 325: Lithium battery type (0=PYLON/SOLAX CAN, 1=Tianbonda RS485, etc.)
+    }
+  ]
+}
+
+
+  "generator": {
+    // Structural use of GEN terminal
+    "inputMode": string,                 // 235: generator input as load output enable (0=gen input only, 1=smart load, 2=inverter input)
+    "connectedToGridInput": bool        // 291: Generator connected to grid input (0=disable, 1=enabled)
+    
+  },
+  //
+  //
+  //     INVERTER  [GEN-PORT]  <---- GENERATOR
+  //               [GRID-PORT] <---- GRID
+  //     OR    
+  // 
+  //     INVERTER  [GRID-PORT]  <---- ATS ---  GRID
+  //                                      └--- GENERATOR
+  //     
+
+  "pv": {
+    "mpptCount": number,                 // from 18: MPPT number and phases
+
+    // Structural description of each PV input (not live values)
+    "mppt": [
+      {
+        "pvChannelId": number,
+        "supportsInput": bool,           // true if MPPT available for this model
+        "stringMaxCurrentA": number,     // from datasheet/config
+        "stringMaxVoltageV": number,     // from datasheet/config
+        "recommendedVocAtStcV": number   // useful for design validation (optional)
+      }
+      // up to 4 entries
+    ]
+  },
+
+  "loadAndGrid": {
+    // Wiring choice – not from Modbus, set during commissioning
+    "homeLoadConnectionPoint": string,   // "load_side" | "grid_side"
+
+    // Export limit strategy / hardware presence
+    "exportLimitMode": string,           // 244: limit control function (0x00=sell enabled, 0x01=built-in, 0x02=external)
+    "currentTransformerOnGridSide": bool,// derived from exportLimitMode + wiring
+
+    // Structural capabilities
+    "supportsBackupLoad": bool,          // is there a dedicated backup/load output?
+    "supportsZeroExport": bool,          // based on model + 244 support
+    "supportsExternalMeter": bool        // if HM/CT supported by this model
+  }
+}

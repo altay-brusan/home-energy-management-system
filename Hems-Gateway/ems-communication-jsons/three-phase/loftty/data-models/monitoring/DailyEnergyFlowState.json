@@ -1,0 +1,31 @@
+{
+   "timestampUtc": "string",
+   "version": 1,
+   "DeviceId": "string",
+
+  "loadEnergyKWh": "number",                  // 626 - Day_Load_Power (0.1kWh)
+
+  "grid": {
+    "importEnergyKWh": "number",              // 620 - Day_GridBuy_Power (0.1kWh)
+    "exportEnergyKWh": "number"               // 621 - Day_GridSell_Power (0.1kWh)
+  },
+
+  "pv": {
+    "totalEnergyKWh": "number",               // 629 - Day_PV_Power (0.1kWh)
+    "mppt": [
+      { "id": 1, "energyKWh": null },         // Bu datasheet'te MPPT bazında daily energy yok
+      { "id": 2, "energyKWh": null },         // Bu datasheet'te MPPT bazında daily energy yok
+      { "id": 3, "energyKWh": null },         // Bu datasheet'te MPPT bazında daily energy yok
+      { "id": 4, "energyKWh": null }          // Bu datasheet'te MPPT bazında daily energy yok
+    ]
+  },
+
+  "battery": {
+    "chargeEnergyKWh": "number",              // 614 - Today charge (0.1kWh)
+    "dischargeEnergyKWh": "number"            // 615 - Today discharge (0.1kWh)
+  },
+
+  "generator": {
+    "energyKWh": "number"                     // 636 - Generator daily (0.1kWh)
+  }
+}

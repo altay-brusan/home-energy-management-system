@@ -1,0 +1,105 @@
+[
+    {
+        "id": "8e7d951ff2a48574",
+        "type": "tab",
+        "label": "RPC_BatteryCapacityConfig",
+        "disabled": false,
+        "info": "RPC Handler for BatteryCapacityConfigState\nMethods:\n- getBatteryCapacityConfig (read)\n- setBatteryCapacityConfig (write + auto read)"
+    },
+    {
+        "id": "c4480cc2caf3c771",
+        "type": "mqtt in",
+        "z": "8e7d951ff2a48574",
+        "name": "RPC Request",
+        "topic": "v1/devices/me/rpc/request/+",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "tb-broker",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 140,
+        "y": 160,
+        "wires": [
+            [
+                "6f1e4ee267989275"
+            ]
+        ]
+    },
+    {
+        "id": "6f1e4ee267989275",
+        "type": "function",
+        "z": "8e7d951ff2a48574",
+        "name": "Handle RPC (get/set)",
+        "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\n\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\n// Route to main flow with operation type\nif (msg.rpcMethod === 'getBatteryCapacityConfig') {\n    msg.isRpcRequest = true;\n    msg.operationType = 'read';\n    return msg;\n}\nelse if (msg.rpcMethod === 'setBatteryCapacityConfig') {\n    msg.isRpcRequest = true;\n    msg.operationType = 'write';\n    return msg;\n}\nelse {\n    return null;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 350,
+        "y": 160,
+        "wires": [
+            [
+                "9220c1719d56b88c"
+            ]
+        ]
+    },
+    {
+        "id": "9220c1719d56b88c",
+        "type": "link out",
+        "z": "8e7d951ff2a48574",
+        "name": "To Main Flow",
+        "mode": "link",
+        "links": [
+            "d9f81b6f32b21004"
+        ],
+        "x": 535,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "b81a54ca577d3c62",
+        "type": "comment",
+        "z": "8e7d951ff2a48574",
+        "name": "getBatteryCapacityConfig / setBatteryCapacityConfig",
+        "info": "## RPC Methods\n\n### getBatteryCapacityConfig\nReads current battery capacity configuration.\n\n**Request:**\n```json\n{\n  \"method\": \"getBatteryCapacityConfig\",\n  \"params\": {}\n}\n```\n\n**Response:**\n```json\n{\n  \"kind\": \"BatteryCapacityConfigState\",\n  \"timestampUtc\": \"2024-01-15T10:30:00.000Z\",\n  \"batteryCapacityAh\": 200,\n  \"maxChargeCurrentA\": 100,\n  \"maxDischargeCurrentA\": 100\n}\n```\n\n### setBatteryCapacityConfig\nWrites battery capacity configuration and returns updated state.\n\n**Request:**\n```json\n{\n  \"method\": \"setBatteryCapacityConfig\",\n  \"params\": {\n    \"batteryCapacityAh\": 200,\n    \"maxChargeCurrentA\": 100,\n    \"maxDischargeCurrentA\": 100\n  }\n}\n```\n\n**Response:**\n```json\n{\n  \"success\": true,\n  \"message\": \"Successfully wrote 3 register(s)\",\n  \"writes\": [\n    { \"register\": 202, \"name\": \"Battery Capacity\", \"value\": 200, \"success\": true },\n    { \"register\": 208, \"name\": \"Max Charge Current\", \"value\": 100, \"success\": true },\n    { \"register\": 209, \"name\": \"Max Discharge Current\", \"value\": 100, \"success\": true }\n  ],\n  \"state\": {\n    \"kind\": \"BatteryCapacityConfigState\",\n    \"batteryCapacityAh\": 200,\n    \"maxChargeCurrentA\": 100,\n    \"maxDischargeCurrentA\": 100\n  }\n}\n```",
+        "x": 280,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

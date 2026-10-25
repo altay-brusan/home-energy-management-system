@@ -1,0 +1,6 @@
+@Hems.DeviceSimulator_HostAddress = http://localhost:5103
+
+GET {{Hems.DeviceSimulator_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

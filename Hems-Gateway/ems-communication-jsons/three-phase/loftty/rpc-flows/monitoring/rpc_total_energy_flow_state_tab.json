@@ -1,0 +1,95 @@
+[
+    {
+        "id": "rpc_total_energy_flow_state_tab",
+        "type": "tab",
+        "label": "RPC_TotalEnergyFlowState",
+        "disabled": false,
+        "info": "RPC Handler for TotalEnergyFlowState\nMethod: getTotalEnergyFlowState"
+    },
+    {
+        "id": "rpc_tefs_mqtt_in",
+        "type": "mqtt in",
+        "z": "rpc_total_energy_flow_state_tab",
+        "name": "RPC Request",
+        "topic": "v1/devices/me/rpc/request/+",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "tb-broker",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 140,
+        "y": 120,
+        "wires": [
+            [
+                "rpc_tefs_handle"
+            ]
+        ]
+    },
+    {
+        "id": "rpc_tefs_handle",
+        "type": "function",
+        "z": "rpc_total_energy_flow_state_tab",
+        "name": "Handle RPC",
+        "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\n\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\n// Only handle getTotalEnergyFlowState\nif (msg.rpcMethod !== 'getTotalEnergyFlowState') {\n    return null;\n}\n\nmsg.isRpcRequest = true;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 330,
+        "y": 120,
+        "wires": [
+            [
+                "rpc_tefs_link_out"
+            ]
+        ]
+    },
+    {
+        "id": "rpc_tefs_link_out",
+        "type": "link out",
+        "z": "rpc_total_energy_flow_state_tab",
+        "name": "To TotalEnergyFlowState",
+        "mode": "link",
+        "links": [
+            "tefs_link_in_rpc"
+        ],
+        "x": 535,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

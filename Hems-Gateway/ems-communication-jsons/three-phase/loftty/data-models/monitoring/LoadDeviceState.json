@@ -1,0 +1,32 @@
+{
+  "timestampUtc": "string",
+  "version": 1,
+  "DeviceId": "string",
+
+  "scope": "string",                         // "backup_load" | "home_load" | "total_site"
+
+  "loadPower": {
+    "totalActivePowerW": "number",           // 753 (low) + 759 (high) - Load total power (1W, S32)
+    "phaseAPowerW": "number",                // 750 (low) + 756 (high) - Load phase A power (1W, S32)
+    "phaseBPowerW": "number",                // 751 (low) + 757 (high) - Load phase B power (1W, S32)
+    "phaseCPowerW": "number"                 // 752 (low) + 758 (high) - Load phase C power (1W, S32)
+  },
+
+  "loadVoltage": {
+    "phaseAVoltageV": "number",              // 744 - Load phase voltage A (0.1V)
+    "phaseBVoltageV": "number",              // 745 - Load phase voltage B (0.1V)
+    "phaseCVoltageV": "number"               // 746 - Load phase voltage C (0.1V)
+  },
+
+  "frequencyHz": "number",                   // 755 - Load frequency (0.01Hz)
+
+  "upsLoadPower": {
+    "totalPowerW": "number",                 // 743 (low) + 799 (high) - UPS load total (1W, U32)
+    "phaseAPowerW": "number",                // 740 (low) + 796 (high) - UPS load phase A (1W, U32)
+    "phaseBPowerW": "number",                // 741 (low) + 797 (high) - UPS load phase B (1W, U32)
+    "phaseCPowerW": "number"                 // 742 (low) + 798 (high) - UPS load phase C (1W, U32)
+  },
+
+  "todayEnergyKWh": "number",                // 626 - Day load energy (0.1kWh)
+  "totalEnergyKWh": "number"                 // 627 (low) + 628 (high) - Total load energy (0.1kWh)
+}

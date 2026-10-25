@@ -1,0 +1,11 @@
+GeneratorSmartLoadOverride
+{
+  "version": 1,
+
+  "forceSmartLoadOn": "boolean"              // 232 - 强制开启发电机作为负载功能
+                                             //   0 = do not force (不强制)
+                                             //   1 = force enable (强制)
+                                             //
+                                             // Prerequisite: 233 = 1 (Smart Load mode)
+                                             // GEN port must already be set to smart load mode
+}

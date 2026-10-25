@@ -1,0 +1,181 @@
+HEMS Backend - Exception Handling Guide
+==========================================
+
+Bu dosya HEMS Backend sisteminde CustomExceptionHandler tarafından handle edilen 
+tüm exception türleri ve döndürdükleri response formatlarını içerir.
+
+==========================================
+TÜM EXCEPTION TÜRLERİ VE RESPONSE FORMATLARI
+==========================================
+
+1. FluentValidation.ValidationException
+----------------------------------------
+HTTP Status: 400 Bad Request
+Response Format:
+{
+  "status": 400,
+  "type": "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+  "errors": {
+    "propertyName": ["error message 1", "error message 2"]
+  }
+}
+
+2. Hems_Backend.Application.Common.Exceptions.ValidationException
+----------------------------------------------------------------
+HTTP Status: 400 Bad Request
+Response Format:
+{
+  "statusCode": 400,
+  "message": "Validation failed",
+  "type": "ValidationError",
+  "timestamp": "2025-10-24T11:18:02.4342234Z",
+  "errors": [
+    {
+      "propertyName": "fieldName",
+      "errorMessages": ["error message"]
+    }
+  ]
+}
+
+3. System.ComponentModel.DataAnnotations.ValidationException
+-----------------------------------------------------------
+HTTP Status: 400 Bad Request
+Response Format:
+{
+  "statusCode": 400,
+  "message": "Validation error message",
+  "type": "ValidationError",
+  "timestamp": "2025-10-24T11:18:02.4342234Z",
+  "errors": []
+}
+
+4. Hems_Backend.Application.Common.Exceptions.NotFoundException
+---------------------------------------------------------------
+HTTP Status: 404 Not Found
+Response Format:
+{
+  "status": 404,
+  "type": "https://tools.ietf.org/html/rfc7231#section-6.5.4",
+  "title": "The specified resource was not found.",
+  "detail": "Entity \"Site\" (30745101-afa3-4875-968f-f39f42ce4cdd) was not found."
+}
+
+5. UnauthorizedAccessException
+------------------------------
+HTTP Status: 401 Unauthorized
+Response Format:
+{
+  "status": 401,
+  "title": "Unauthorized",
+  "type": "https://tools.ietf.org/html/rfc7235#section-3.1"
+}
+
+6. ForbiddenAccessException
+---------------------------
+HTTP Status: 403 Forbidden
+Response Format:
+{
+  "status": 403,
+  "title": "Forbidden",
+  "type": "https://tools.ietf.org/html/rfc7231#section-6.5.3"
+}
+
+7. ArgumentException
+--------------------
+HTTP Status: 400 Bad Request
+Response Format:
+{
+  "statusCode": 400,
+  "message": "Invalid argument error message",
+  "type": "BadRequest",
+  "timestamp": "2025-10-24T11:18:02.4342234Z"
+}
+
+8. InvalidOperationException
+----------------------------
+HTTP Status: 400 Bad Request
+Response Format:
+{
+  "statusCode": 400,
+  "message": "Bu kullanıcıya bu ev için zaten bekleyen bir davetiye var.",
+  "type": "InvalidOperation",
+  "timestamp": "2025-10-24T11:18:02.4342234Z"
+}
+
+9. NotSupportedException
+-------------------------
+HTTP Status: 501 Not Implemented
+Response Format:
+{
+  "statusCode": 501,
+  "message": "This operation is not supported",
+  "type": "NotSupported",
+  "timestamp": "2025-10-24T11:18:02.4342234Z"
+}
+
+==========================================
+EXCEPTION TÜRLERİ VE HTTP STATUS CODE'LARI
+==========================================
+
+| Exception Type | HTTP Status | Type Field | Response Format |
+|---|---|---|---|
+| FluentValidation.ValidationException | 400 | ValidationProblemDetails | Standard ASP.NET Core |
+| Hems_Backend.Application.Common.Exceptions.ValidationException | 400 | ValidationError | Custom JSON |
+| System.ComponentModel.DataAnnotations.ValidationException | 400 | ValidationError | Custom JSON |
+| Hems_Backend.Application.Common.Exceptions.NotFoundException | 404 | ProblemDetails | Standard ASP.NET Core |
+| UnauthorizedAccessException | 401 | ProblemDetails | Standard ASP.NET Core |
+| ForbiddenAccessException | 403 | ProblemDetails | Standard ASP.NET Core |
+| ArgumentException | 400 | BadRequest | Custom JSON |
+| InvalidOperationException | 400 | InvalidOperation | Custom JSON |
+| NotSupportedException | 501 | NotSupported | Custom JSON |
+
+==========================================
+EN ÇOK KULLANILAN EXCEPTION'LAR
+==========================================
+
+1. InvalidOperationException - Business logic hataları
+   Örnek: "Bu kullanıcıya bu ev için zaten bekleyen bir davetiye var."
+
+2. ArgumentException - Invalid input hataları
+   Örnek: "Kayıt bulunamadı."
+
+3. UnauthorizedAccessException - Authentication/Authorization hataları
+   Örnek: "User not authenticated"
+
+4. NotFoundException - Entity bulunamadı hataları
+   Örnek: "Entity \"Site\" (id) was not found."
+
+5. System.ComponentModel.DataAnnotations.ValidationException - Validation hataları
+   Örnek: "Bu site'ın zaten bir setup'ı var."
+
+==========================================
+TEST EDİLEBİLİR ENDPOINT'LER
+==========================================
+
+InvalidOperationException Test:
+- POST /api/setup-device-parameter-values (duplicate kayıt)
+- POST /api/invitations (duplicate davetiye)
+- DELETE /api/setups/{id} (bağlı device'ları olan setup)
+
+ArgumentException Test:
+- DELETE /api/parameters/{id} (kullanımda olan parametre)
+- GET /api/devices/{id} (bulunamayan device)
+
+NotFoundException Test:
+- GET /api/sites/{id} (bulunamayan site)
+- PUT /api/setups/{id} (bulunamayan setup)
+
+UnauthorizedAccessException Test:
+- Herhangi bir endpoint'e token olmadan istek
+
+==========================================
+NOTLAR
+==========================================
+
+- Tüm exception'lar CustomExceptionHandler tarafından handle edilir
+- 500 Internal Server Error artık dönmez
+- Tutarlı JSON response formatları
+- Anlamlı HTTP status code'ları
+- Timestamp bilgisi custom JSON formatlarında mevcut
+
+Bu liste sisteminizde alınabilecek tüm hata türlerini kapsar.

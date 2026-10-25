@@ -1,0 +1,127 @@
+[
+    {
+        "id": "capacity_test_tab",
+        "type": "tab",
+        "label": "Capacity Test",
+        "disabled": false
+    },
+    {
+        "id": "cap_inject",
+        "type": "inject",
+        "z": "capacity_test_tab",
+        "name": "Read Capacities",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 140,
+        "y": 100,
+        "wires": [
+            ["cap_read_inv"]
+        ]
+    },
+    {
+        "id": "cap_read_inv",
+        "type": "function",
+        "z": "capacity_test_tab",
+        "name": "Prep Inverter Power",
+        "func": "msg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 120,\n    quantity: 2\n};\nmsg.readType = \"inverterPower\";\nreturn msg;",
+        "outputs": 1,
+        "x": 340,
+        "y": 100,
+        "wires": [
+            ["cap_modbus_inv"]
+        ]
+    },
+    {
+        "id": "cap_modbus_inv",
+        "type": "modbus-flex-getter",
+        "z": "capacity_test_tab",
+        "name": "Read 120-121",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 540,
+        "y": 100,
+        "wires": [
+            ["cap_read_batt"],
+            []
+        ]
+    },
+    {
+        "id": "cap_read_batt",
+        "type": "function",
+        "z": "capacity_test_tab",
+        "name": "Store & Prep Battery",
+        "func": "var data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\nflow.set(\"inverterPowerRaw\", data);\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 202,\n    quantity: 1\n};\nmsg.readType = \"batteryCapacity\";\nreturn msg;",
+        "outputs": 1,
+        "x": 760,
+        "y": 100,
+        "wires": [
+            ["cap_modbus_batt"]
+        ]
+    },
+    {
+        "id": "cap_modbus_batt",
+        "type": "modbus-flex-getter",
+        "z": "capacity_test_tab",
+        "name": "Read 202",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 530,
+        "y": 180,
+        "wires": [
+            ["cap_build_result"],
+            []
+        ]
+    },
+    {
+        "id": "cap_build_result",
+        "type": "function",
+        "z": "capacity_test_tab",
+        "name": "Build Result",
+        "func": "var battData = msg.payload;\nif (battData && Array.isArray(battData.data)) {\n    battData = battData.data;\n}\n\nvar invData = flow.get(\"inverterPowerRaw\") || [0, 0];\n\nvar ratedPowerRaw = invData[0] | (invData[1] << 16);\nvar ratedPowerW = ratedPowerRaw * 0.1;\nvar ratedPowerKw = ratedPowerW / 1000;\n\nvar batteryCapacityAh = battData[0] || 0;\nvar nominalVoltage = 48;\nvar batteryCapacityKwh = (batteryCapacityAh * nominalVoltage) / 1000;\n\nmsg.payload = {\n    kind: \"SystemCapacity\",\n    timestampUtc: new Date().toISOString(),\n    inverter: {\n        ratedPowerRaw: ratedPowerRaw,\n        ratedPowerW: ratedPowerW,\n        ratedPowerKw: ratedPowerKw\n    },\n    battery: {\n        capacityAh: batteryCapacityAh,\n        nominalVoltageV: nominalVoltage,\n        capacityKwh: batteryCapacityKwh\n    },\n    rawRegisters: {\n        reg120: invData[0],\n        reg121: invData[1],\n        reg202: battData[0]\n    }\n};\n\nreturn msg;",
+        "outputs": 1,
+        "x": 730,
+        "y": 180,
+        "wires": [
+            ["cap_debug"]
+        ]
+    },
+    {
+        "id": "cap_debug",
+        "type": "debug",
+        "z": "capacity_test_tab",
+        "name": "System Capacity",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 930,
+        "y": 180,
+        "wires": []
+    }
+]

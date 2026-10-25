@@ -1,0 +1,18 @@
+{
+   "timestampUtc": "string",
+   "version": 1,
+   "DeviceId": "string",
+
+  "inverterBatChannelSoc": [
+    { 
+      "channelId": 1, 
+      "socPercent": "number"               // 688 - battery capacity (1%)
+    }, 
+    { 
+      "channelId": 2,
+      "socPercent": null                   // Bu datasheet'te 2. kanal SoC yok
+    }
+  ],
+
+  "bmsSocDetails": null                    // Bu datasheet'te BMS detayları yok - ayrı BMS protokolü gerekir
+}

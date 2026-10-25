@@ -1,0 +1,19 @@
+{
+  "kind": "PcsTempsState",
+  "version": 1,
+  "canMessage": "0x66B96Fx",
+
+  "signals": {
+    "pcs_igbtTempC": "number",                   // Bit 0-15 (16 bit) - IGBT Temperature
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: °C
+                                                 //   Min: -100, Max: 200
+
+    "pcs_ambientTempC": "number",                // Bit 16-31 (16 bit) - Ambient Temperature
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: °C
+                                                 //   Min: -100, Max: 200
+
+    "pcs_inductanceTempC": "number"              // Bit 32-47 (16 bit) - Inductance Temperature
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: °C
+                                                 //   Min: -100, Max: 3176.7
+  }
+}

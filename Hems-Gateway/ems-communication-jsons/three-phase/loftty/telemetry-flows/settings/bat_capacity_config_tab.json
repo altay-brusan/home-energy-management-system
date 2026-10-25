@@ -1,0 +1,495 @@
+[
+    {
+        "id": "4751ae267dd01e44",
+        "type": "tab",
+        "label": "BatteryCapacityConfig",
+        "disabled": false,
+        "info": "Battery Capacity Config - Read & Write\n\nRegisters:\n- 202: Battery Capacity (Ah) [0-2000]\n- 208: Max Charge Current (A) [0-185]\n- 209: Max Discharge Current (A) [0-185]\n\nAll R/W"
+    },
+    {
+        "id": "d9f81b6f32b21004",
+        "type": "link in",
+        "z": "4751ae267dd01e44",
+        "name": "RPC Request",
+        "links": [
+            "9220c1719d56b88c"
+        ],
+        "x": 135,
+        "y": 180,
+        "wires": [
+            [
+                "905e4f52ef6798a5"
+            ]
+        ]
+    },
+    {
+        "id": "7bf956ee234c8825",
+        "type": "inject",
+        "z": "4751ae267dd01e44",
+        "name": "Manual Read",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operationType",
+                "v": "read",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 260,
+        "wires": [
+            [
+                "905e4f52ef6798a5"
+            ]
+        ]
+    },
+    {
+        "id": "03d4d0b280a24fa2",
+        "type": "inject",
+        "z": "4751ae267dd01e44",
+        "name": "Test Write",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operationType",
+                "v": "write",
+                "vt": "str"
+            },
+            {
+                "p": "rpcParams",
+                "v": "{\"batteryCapacityAh\":100,\"maxChargeCurrentA\":50,\"maxDischargeCurrentA\":100}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 320,
+        "wires": [
+            [
+                "905e4f52ef6798a5"
+            ]
+        ]
+    },
+    {
+        "id": "905e4f52ef6798a5",
+        "type": "function",
+        "z": "4751ae267dd01e44",
+        "name": "Route: Read or Write?",
+        "func": "const opType = msg.operationType || 'read';\n\nif (opType === 'write') {\n    return [null, msg];\n} else {\n    return [msg, null];\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 180,
+        "wires": [
+            [
+                "1bd67c4938ab4603"
+            ],
+            [
+                "f602008bf759d6ce"
+            ]
+        ]
+    },
+    {
+        "id": "61c7e40c43a3d945",
+        "type": "comment",
+        "z": "4751ae267dd01e44",
+        "name": "═══ READ SECTION ═══",
+        "info": "",
+        "x": 710,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "1bd67c4938ab4603",
+        "type": "function",
+        "z": "4751ae267dd01e44",
+        "name": "Start Read",
+        "func": "flow.set(\"bcc_rpc_response_topic\", msg.rpcResponseTopic);\nflow.set(\"bcc_write_result\", msg.writeResult || null);\n\n// Clear partial data\nflow.set(\"bcc_part_capacity\", null);\nflow.set(\"bcc_part_current\", null);\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 550,
+        "y": 120,
+        "wires": [
+            [
+                "b3728d652680f7b0",
+                "7506096f11430290"
+            ]
+        ]
+    },
+    {
+        "id": "b3728d652680f7b0",
+        "type": "function",
+        "z": "4751ae267dd01e44",
+        "name": "Prepare (202)",
+        "func": "msg.baseAddr = 202;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 202,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 730,
+        "y": 100,
+        "wires": [
+            [
+                "13f0902d461502d6"
+            ]
+        ]
+    },
+    {
+        "id": "7506096f11430290",
+        "type": "function",
+        "z": "4751ae267dd01e44",
+        "name": "Prepare (208-209)",
+        "func": "msg.baseAddr = 208;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 208,\n    quantity: 2\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 750,
+        "y": 160,
+        "wires": [
+            [
+                "25cab1210f4e28a4"
+            ]
+        ]
+    },
+    {
+        "id": "13f0902d461502d6",
+        "type": "modbus-flex-getter",
+        "z": "4751ae267dd01e44",
+        "name": "Read 202",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 900,
+        "y": 100,
+        "wires": [
+            [
+                "a9a15d5c440b33f3"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "25cab1210f4e28a4",
+        "type": "modbus-flex-getter",
+        "z": "4751ae267dd01e44",
+        "name": "Read 208-209",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 920,
+        "y": 160,
+        "wires": [
+            [
+                "a9a15d5c440b33f3"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "a9a15d5c440b33f3",
+        "type": "function",
+        "z": "4751ae267dd01e44",
+        "name": "Build JSON State",
+        "func": "let raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    node.error(\"Invalid modbus response\");\n    return null;\n}\n\nlet baseAddr = msg.baseAddr;\nif (typeof baseAddr !== \"number\") {\n    baseAddr = (msg.modbusRequest && msg.modbusRequest.address);\n}\nif (typeof baseAddr !== \"number\") {\n    return null;\n}\n\n// Store partial data based on baseAddr\nif (baseAddr === 202) {\n    flow.set(\"bcc_part_capacity\", {\n        batteryCapacityAh: data[0] || 0\n    });\n}\nelse if (baseAddr === 208) {\n    flow.set(\"bcc_part_current\", {\n        maxChargeCurrentA: data[0] || 0,\n        maxDischargeCurrentA: data[1] || 0\n    });\n}\nelse {\n    return null;\n}\n\n// Check if all parts are ready\nconst capacityPart = flow.get(\"bcc_part_capacity\");\nconst currentPart = flow.get(\"bcc_part_current\");\n\nif (!capacityPart || !currentPart) {\n    return null; // Wait for all parts\n}\n\n// Build final state\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\nconst inverterSN = global.get(\"INVERTER_SN\") || env.get(\"INVERTER_SN\") || \"Unknown\";\n\nconst state = {\n    kind: \"BatteryCapacityConfigState\",\n    timestampUtc: new Date().toISOString(),\n    gatewayId: gatewayId,\n    inverterSerialNumber: inverterSN,\n    \n    batteryCapacityAh: capacityPart.batteryCapacityAh,\n    maxChargeCurrentA: currentPart.maxChargeCurrentA,\n    maxDischargeCurrentA: currentPart.maxDischargeCurrentA\n};\n\n// Clear partials\nflow.set(\"bcc_part_capacity\", null);\nflow.set(\"bcc_part_current\", null);\n\n// Get write result and rpc topic\nconst writeResult = flow.get(\"bcc_write_result\");\nconst rpcResponseTopic = flow.get(\"bcc_rpc_response_topic\");\n\nflow.set(\"bcc_write_result\", null);\nflow.set(\"bcc_rpc_response_topic\", null);\n\nif (writeResult) {\n    msg.payload = {\n        success: writeResult.success,\n        message: writeResult.message,\n        writes: writeResult.writes,\n        state: state\n    };\n} else {\n    msg.payload = state;\n}\n\nmsg.state = state;\nmsg.rpcResponseTopic = rpcResponseTopic;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1110,
+        "y": 120,
+        "wires": [
+            [
+                "19b009a828d3037a",
+                "1d86a082d5fa1fbf"
+            ]
+        ]
+    },
+    {
+        "id": "19b009a828d3037a",
+        "type": "debug",
+        "z": "4751ae267dd01e44",
+        "name": "BatteryCapacityConfig JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1340,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "1d86a082d5fa1fbf",
+        "type": "function",
+        "z": "4751ae267dd01e44",
+        "name": "RPC Response",
+        "func": "if (!msg.rpcResponseTopic) {\n    return null;\n}\n\nmsg.topic = msg.rpcResponseTopic;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1320,
+        "y": 120,
+        "wires": [
+            [
+                "ec15531002a2c8e9"
+            ]
+        ]
+    },
+    {
+        "id": "ec15531002a2c8e9",
+        "type": "mqtt out",
+        "z": "4751ae267dd01e44",
+        "name": "MQTT Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1520,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "ddc08eb067972bb1",
+        "type": "comment",
+        "z": "4751ae267dd01e44",
+        "name": "═══ WRITE SECTION ═══",
+        "info": "Sequential write with 500ms delay between each.",
+        "x": 550,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "f602008bf759d6ce",
+        "type": "function",
+        "z": "4751ae267dd01e44",
+        "name": "Queue Writes",
+        "func": "// Parse RPC params and build write queue\nconst params = msg.rpcParams || {};\n\nconst writes = [];\n\n// Register 202: Battery Capacity (Ah) [0-2000]\nif (params.batteryCapacityAh !== undefined) {\n    const val = params.batteryCapacityAh;\n    if (val < 0 || val > 2000) {\n        node.error(\"batteryCapacityAh must be 0-2000\");\n    } else {\n        writes.push({ register: 202, value: val, name: \"Battery Capacity\" });\n    }\n}\n\n// Register 208: Max Charge Current (A) [0-185]\nif (params.maxChargeCurrentA !== undefined) {\n    const val = params.maxChargeCurrentA;\n    if (val < 0 || val > 185) {\n        node.error(\"maxChargeCurrentA must be 0-185\");\n    } else {\n        writes.push({ register: 208, value: val, name: \"Max Charge Current\" });\n    }\n}\n\n// Register 209: Max Discharge Current (A) [0-185]\nif (params.maxDischargeCurrentA !== undefined) {\n    const val = params.maxDischargeCurrentA;\n    if (val < 0 || val > 185) {\n        node.error(\"maxDischargeCurrentA must be 0-185\");\n    } else {\n        writes.push({ register: 209, value: val, name: \"Max Discharge Current\" });\n    }\n}\n\n// No writes? Just do read\nif (writes.length === 0) {\n    msg.operationType = 'read';\n    return [null, msg];\n}\n\n// Store to GLOBAL context\nglobal.set(\"bcc_write_queue\", writes);\nglobal.set(\"bcc_write_index\", 0);\nglobal.set(\"bcc_write_results\", []);\nglobal.set(\"bcc_write_rpc_topic\", msg.rpcResponseTopic);\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: `${writes.length} writes queued` });\n\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 530,
+        "y": 320,
+        "wires": [
+            [
+                "dd458762f9268935"
+            ],
+            [
+                "1bd67c4938ab4603"
+            ]
+        ]
+    },
+    {
+        "id": "dd458762f9268935",
+        "type": "function",
+        "z": "4751ae267dd01e44",
+        "name": "Prepare Write",
+        "func": "const writes = global.get(\"bcc_write_queue\") || [];\nconst index = global.get(\"bcc_write_index\") || 0;\n\nif (index >= writes.length) {\n    return null;\n}\n\nconst current = writes[index];\n\nconst newMsg = {\n    payload: {\n        fc: 16,\n        unitid: 1,\n        address: current.register,\n        quantity: 1,\n        value: [current.value]\n    },\n    currentWrite: current,\n    writeIndex: index\n};\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: `[${index+1}/${writes.length}] ${current.name}` });\n\nreturn newMsg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 780,
+        "y": 320,
+        "wires": [
+            [
+                "78680fef4de325de"
+            ]
+        ]
+    },
+    {
+        "id": "78680fef4de325de",
+        "type": "modbus-flex-write",
+        "z": "4751ae267dd01e44",
+        "name": "Write Register",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "server": "e4e4f3e2a4f4e004",
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "x": 960,
+        "y": 320,
+        "wires": [
+            [
+                "f4832596e9282674"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "f4832596e9282674",
+        "type": "function",
+        "z": "4751ae267dd01e44",
+        "name": "Write OK",
+        "func": "const writes = global.get(\"bcc_write_queue\") || [];\nlet index = global.get(\"bcc_write_index\") || 0;\nconst results = global.get(\"bcc_write_results\") || [];\n\n// Record success\nconst current = writes[index];\nif (current) {\n    results.push({ \n        register: current.register, \n        name: current.name, \n        value: current.value, \n        success: true \n    });\n    global.set(\"bcc_write_results\", results);\n}\n\n// Move to next\nindex++;\nglobal.set(\"bcc_write_index\", index);\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `${current.name} OK` });\n\n// More writes?\nif (index < writes.length) {\n    return [{ doNext: true }, null];\n}\n\n// All done - go to read\nconst rpcTopic = global.get(\"bcc_write_rpc_topic\");\n\nglobal.set(\"bcc_write_queue\", null);\nglobal.set(\"bcc_write_index\", null);\nglobal.set(\"bcc_write_rpc_topic\", null);\n\nconst finalMsg = {\n    writeResult: {\n        success: true,\n        message: `Successfully wrote ${results.length} register(s)`,\n        writes: results\n    },\n    rpcResponseTopic: rpcTopic\n};\n\nglobal.set(\"bcc_write_results\", null);\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `All ${results.length} writes OK!` });\n\nreturn [null, finalMsg];",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1120,
+        "y": 320,
+        "wires": [
+            [
+                "c5ac838f2be0555e"
+            ],
+            [
+                "1bd67c4938ab4603"
+            ]
+        ]
+    },
+    {
+        "id": "c5ac838f2be0555e",
+        "type": "delay",
+        "z": "4751ae267dd01e44",
+        "name": "500ms",
+        "pauseType": "delay",
+        "timeout": "500",
+        "timeoutUnits": "milliseconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 1250,
+        "y": 320,
+        "wires": [
+            [
+                "dd458762f9268935"
+            ]
+        ]
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

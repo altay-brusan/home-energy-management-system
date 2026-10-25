@@ -1,0 +1,179 @@
+{
+  "kind": "ContainerBatteryState",
+  "version": 1,
+  "description": "BCU Container Battery State - J1939 CAN Protocol",
+  
+  "canMessages": {
+    "BCU_01_Battery_Status": "0x18FF14F0",
+    "BCU_01_Cell_Status": "0x18FF11F0", 
+    "BCU_01_Max_Min_Voltage_Status": "0x18FF12F0",
+    "BCU_01_State_Message": "0x18FF10F0",
+    "BCU_01_Status2": "0x18FF13F0"
+  },
+
+  "signals": {
+    
+    "// ==================== BCU_01_Battery_Status (0x18FF14F0) ====================": "",
+    
+    "socPercent": "number",                      // Bit 0-7 (8 bit) - State of Charge
+                                                 //   Factor: 1, Offset: 0, Unit: %
+                                                 //   Range: 0-100
+    
+    "sohPercent": "number",                      // Bit 8-15 (8 bit) - State of Health
+                                                 //   Factor: 1, Offset: 0, Unit: %
+                                                 //   Range: 0-100
+    
+    "cycleCount": "number",                      // Bit 16-31 (16 bit) - Duty Cycle
+                                                 //   Factor: 1, Offset: 0, Unit: Cycle
+                                                 //   Range: 0-65535
+    
+    "remainingEnergyKwh": "number",              // Bit 32-47 (16 bit) - Remaining Energy
+                                                 //   Factor: 0.01, Offset: 0, Unit: kWh
+                                                 //   Range: 0-655.35
+    
+    "availableEnergyKwh": "number",              // Bit 48-63 (16 bit) - Available Energy
+                                                 //   Factor: 0.01, Offset: 0, Unit: kWh
+                                                 //   Range: 0-655.35
+
+    "// ==================== BCU_01_Cell_Status (0x18FF11F0) ====================": "",
+    
+    "totalVoltageV": "number",                   // Bit 0-15 (16 bit) - Total Voltage
+                                                 //   Factor: 0.1, Offset: 0, Unit: V
+                                                 //   Range: 0-6553.5
+    
+    "currentA": "number",                        // Bit 16-31 (16 bit) - Instant Current
+                                                 //   Factor: 0.1, Offset: -1000, Unit: A
+                                                 //   Range: -1000 to 5553.5
+                                                 //   Formula: (raw * 0.1) - 1000
+    
+    "selectedBmuLoc": "number",                  // Bit 32-35 (4 bit) - Selected BMU Location
+                                                 //   Factor: 1, Offset: 0
+                                                 //   Range: 0-15
+    
+    "selectedCellLoc": "number",                 // Bit 36-39 (4 bit) - Selected Cell Location
+                                                 //   Factor: 1, Offset: 0
+                                                 //   Range: 0-15
+    
+    "cellVoltageMv": "number",                   // Bit 40-55 (16 bit) - Cell Voltage
+                                                 //   Factor: 1, Offset: 0, Unit: mV
+                                                 //   Range: 0-65535
+    
+    "cellTempC": "number",                       // Bit 56-63 (8 bit) - Cell Temperature
+                                                 //   Factor: 1, Offset: -40, Unit: °C
+                                                 //   Range: -40 to 215
+                                                 //   Formula: raw - 40
+
+    "// ==================== BCU_01_Max_Min_Voltage_Status (0x18FF12F0) ====================": "",
+    
+    "maxCellVoltageCellLoc": "number",           // Bit 0-3 (4 bit) - Max Voltage Cell Location
+                                                 //   Factor: 1, Offset: 0
+                                                 //   Range: 0-15
+    
+    "maxCellVoltageBmuLoc": "number",            // Bit 4-7 (4 bit) - Max Voltage BMU Location
+                                                 //   Factor: 1, Offset: 0
+                                                 //   Range: 0-15
+    
+    "minCellVoltageCellLoc": "number",           // Bit 8-11 (4 bit) - Min Voltage Cell Location
+                                                 //   Factor: 1, Offset: 0
+                                                 //   Range: 0-15
+    
+    "minCellVoltageBmuLoc": "number",            // Bit 12-15 (4 bit) - Min Voltage BMU Location
+                                                 //   Factor: 1, Offset: 0
+                                                 //   Range: 0-15
+    
+    "avgCellVoltageMv": "number",                // Bit 16-31 (16 bit) - Average Cell Voltage
+                                                 //   Factor: 1, Offset: 0, Unit: mV
+                                                 //   Range: 0-65535
+    
+    "maxCellVoltageMv": "number",                // Bit 32-47 (16 bit) - Max Cell Voltage
+                                                 //   Factor: 1, Offset: 0, Unit: mV
+                                                 //   Range: 0-65535
+    
+    "minCellVoltageMv": "number",                // Bit 48-63 (16 bit) - Min Cell Voltage
+                                                 //   Factor: 1, Offset: 0, Unit: mV
+                                                 //   Range: 0-65535
+
+    "// ==================== BCU_01_State_Message (0x18FF10F0) ====================": "",
+    
+    "stateCode": "number",                       // Bit 0-7 (8 bit) - BCU State Code
+                                                 //   Factor: 1, Offset: 0
+                                                 //   Values: 0=N/A, 101=Standby, 102=Startup,
+                                                 //           103=Precharge, 104=Discharge, 105=Charge,
+                                                 //           106=Shutdown, 107=Fault,
+                                                 //           108=Charge_Complete, 109=Discharge_Complete
+    
+    "state": "string",                           // Derived from stateCode
+                                                 //   Mapped string value
+    
+    "contactStatusPos": "number",                // Bit 8 (1 bit) - Positive Contactor Status
+                                                 //   0=Open, 1=Close
+    
+    "contactFbkPos": "number",                   // Bit 9 (1 bit) - Positive Contactor Feedback
+    
+    "contactFbkNeg": "number",                   // Bit 10 (1 bit) - Negative Contactor Feedback
+    
+    "chargeComplete": "boolean",                 // Bit 11 (1 bit) - Charge Complete Flag
+                                                 //   0=Not Complete, 1=Complete
+    
+    "dischargeComplete": "boolean",              // Bit 12 (1 bit) - Discharge Complete Flag
+                                                 //   0=Not Complete, 1=Complete
+    
+    "contactStatusNeg": "number",                // Bit 13 (1 bit) - Negative Contactor Status
+    
+    "isolationStatus": "number",                 // Bit 14-15 (2 bit) - Isolation Status
+                                                 //   0=OK, 1=Not Available, 2=Warning, 3=Fault
+    
+    "fuseFbk": "number",                         // Bit 16-17 (2 bit) - Fuse Feedback
+    
+    "input1Status": "number",                    // Bit 18-19 (2 bit) - Input 1 Status
+    
+    "ambientTempC": "number",                    // Bit 24-31 (8 bit) - Ambient Temperature
+                                                 //   Factor: 1, Offset: -40, Unit: °C
+                                                 //   Range: -40 to 210
+                                                 //   Formula: raw - 40
+    
+    "dmccA": "number",                           // Bit 32-47 (16 bit) - Dynamic Max Charge Current
+                                                 //   Factor: 0.1, Offset: 0, Unit: A
+                                                 //   Range: 0-6553.5
+    
+    "dmdcA": "number",                           // Bit 48-63 (16 bit) - Dynamic Max Discharge Current
+                                                 //   Factor: 0.1, Offset: 0, Unit: A
+                                                 //   Range: 0-6553.5
+
+    "// ==================== BCU_01_Status2 (0x18FF13F0) ====================": "",
+    
+    "maxCellTempCellLoc": "number",              // Bit 0-3 (4 bit) - Max Temp Cell Location
+                                                 //   Factor: 1, Offset: 0
+                                                 //   Range: 0-15
+    
+    "maxCellTempBmuLoc": "number",               // Bit 4-7 (4 bit) - Max Temp BMU Location
+                                                 //   Factor: 1, Offset: 0
+                                                 //   Range: 0-15
+    
+    "minCellTempCellLoc": "number",              // Bit 8-11 (4 bit) - Min Temp Cell Location
+                                                 //   Factor: 1, Offset: 0
+                                                 //   Range: 0-15
+    
+    "minCellTempBmuLoc": "number",               // Bit 12-15 (4 bit) - Min Temp BMU Location
+                                                 //   Factor: 1, Offset: 0
+                                                 //   Range: 0-15
+    
+    "maxCellTempC": "number",                    // Bit 16-23 (8 bit) - Max Cell Temperature
+                                                 //   Factor: 1, Offset: -40, Unit: °C
+                                                 //   Range: -40 to 215
+                                                 //   Formula: raw - 40
+    
+    "minCellTempC": "number",                    // Bit 24-31 (8 bit) - Min Cell Temperature
+                                                 //   Factor: 1, Offset: -40, Unit: °C
+                                                 //   Range: -40 to 215
+                                                 //   Formula: raw - 40
+    
+    "outVoltPosV": "number",                     // Bit 32-47 (16 bit) - Output Voltage Positive
+                                                 //   Factor: 0.1, Offset: 0, Unit: V
+                                                 //   Range: 0-6553.5
+    
+    "outVoltNegV": "number"                      // Bit 48-63 (16 bit) - Output Voltage Negative
+                                                 //   Factor: 0.1, Offset: 0, Unit: V
+                                                 //   Range: 0-6553.5
+  }
+}

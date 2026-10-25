@@ -1,0 +1,355 @@
+[
+    {
+        "id": "ips_tab_001",
+        "type": "tab",
+        "label": "InverterPhaseState",
+        "disabled": false,
+        "info": "Reads Inverter Grid Side Phase State from registers:\n- 698-700: Grid phase voltages A/B/C (0.1V)\n- 722-725 (low) + 787-790 (high): Grid side phase powers A/B/C + total (1W, S32)\n\nTriggers:\n1. RPC: getInverterPhaseState\n2. Manual inject"
+    },
+    {
+        "id": "ips_rpc_link_in",
+        "type": "link in",
+        "z": "ips_tab_001",
+        "name": "RPC getInverterPhaseState",
+        "links": [
+            "rpc_ips_link_out"
+        ],
+        "x": 175,
+        "y": 80,
+        "wires": [
+            [
+                "ips_prepare_voltage",
+                "ips_prepare_power_low",
+                "ips_prepare_power_high"
+            ]
+        ]
+    },
+    {
+        "id": "ips_comment_rpc",
+        "type": "comment",
+        "z": "ips_tab_001",
+        "name": "RPC Trigger (getInverterPhaseState)",
+        "info": "",
+        "x": 220,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "ips_manual_trigger",
+        "type": "inject",
+        "z": "ips_tab_001",
+        "name": "Manual Trigger",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 140,
+        "wires": [
+            [
+                "ips_prepare_voltage",
+                "ips_prepare_power_low",
+                "ips_prepare_power_high"
+            ]
+        ]
+    },
+    {
+        "id": "ips_prepare_voltage",
+        "type": "function",
+        "z": "ips_tab_001",
+        "name": "Prepare read (Grid Voltage 698-700)",
+        "func": "// Store RPC response topic if present\nif (msg.rpcResponseTopic) {\n    flow.set(\"ips_rpc_response_topic\", msg.rpcResponseTopic);\n}\n\n// Grid phase voltages\n// 698: Grid phase voltage A (0.1V)\n// 699: Grid phase voltage B (0.1V)\n// 700: Grid phase voltage C (0.1V)\n\nmsg.baseAddr = 698;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 698,\n    quantity: 3\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 80,
+        "wires": [
+            [
+                "ips_modbus_voltage"
+            ]
+        ]
+    },
+    {
+        "id": "ips_prepare_power_low",
+        "type": "function",
+        "z": "ips_tab_001",
+        "name": "Prepare read (Grid Power Low 722-725)",
+        "func": "// Grid side phase powers - LOW words\n// 722: Grid A-phase power LOW (1W, S32)\n// 723: Grid B-phase power LOW (1W, S32)\n// 724: Grid C-phase power LOW (1W, S32)\n// 725: Grid total active power LOW (1W, S32)\n\nmsg.baseAddr = 722;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 722,\n    quantity: 4\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 510,
+        "y": 140,
+        "wires": [
+            [
+                "ips_modbus_power_low"
+            ]
+        ]
+    },
+    {
+        "id": "ips_prepare_power_high",
+        "type": "function",
+        "z": "ips_tab_001",
+        "name": "Prepare read (Grid Power High 787-790)",
+        "func": "// Grid side phase powers - HIGH words\n// 787: Grid A-phase power HIGH (1W, S32)\n// 788: Grid B-phase power HIGH (1W, S32)\n// 789: Grid C-phase power HIGH (1W, S32)\n// 790: Grid total active power HIGH (1W, S32)\n\nmsg.baseAddr = 787;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 787,\n    quantity: 4\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 510,
+        "y": 200,
+        "wires": [
+            [
+                "ips_modbus_power_high"
+            ]
+        ]
+    },
+    {
+        "id": "ips_modbus_voltage",
+        "type": "modbus-flex-getter",
+        "z": "ips_tab_001",
+        "name": "Read Grid Voltage (698-700)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 800,
+        "y": 80,
+        "wires": [
+            [
+                "ips_build_json"
+            ],
+            [
+                "ips_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "ips_modbus_power_low",
+        "type": "modbus-flex-getter",
+        "z": "ips_tab_001",
+        "name": "Read Grid Power Low (722-725)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 810,
+        "y": 140,
+        "wires": [
+            [
+                "ips_build_json"
+            ],
+            [
+                "ips_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "ips_modbus_power_high",
+        "type": "modbus-flex-getter",
+        "z": "ips_tab_001",
+        "name": "Read Grid Power High (787-790)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 820,
+        "y": 200,
+        "wires": [
+            [
+                "ips_build_json"
+            ],
+            [
+                "ips_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "ips_build_json",
+        "type": "function",
+        "z": "ips_tab_001",
+        "name": "Build InverterPhaseState JSON",
+        "func": "// Build InverterPhaseState from multiple Modbus reads.\n\nlet raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nlet baseAddr = msg.baseAddr;\nif (typeof baseAddr !== \"number\") {\n    baseAddr = (msg.modbusRequest && msg.modbusRequest.address);\n}\nif (typeof baseAddr !== \"number\") {\n    node.warn(\"InverterPhaseState: missing base address\");\n    return null;\n}\n\n// Helper: combine two 16-bit words to signed 32-bit\nfunction s32(low, high) {\n    const u = ((high & 0xFFFF) << 16) | (low & 0xFFFF);\n    return (u & 0x80000000) ? u - 0x100000000 : u;\n}\n\n// ---- Store partials ----\n\n// Grid Voltage 698-700\nif (baseAddr === 698) {\n    flow.set(\"ips_part_voltage\", {\n        phaseAVoltageV: Math.round((data[0] || 0) * 0.1 * 10) / 10,  // 698\n        phaseBVoltageV: Math.round((data[1] || 0) * 0.1 * 10) / 10,  // 699\n        phaseCVoltageV: Math.round((data[2] || 0) * 0.1 * 10) / 10   // 700\n    });\n}\n\n// Grid Power Low 722-725\nelse if (baseAddr === 722) {\n    flow.set(\"ips_part_power_low\", {\n        phaseA: data[0] || 0,  // 722\n        phaseB: data[1] || 0,  // 723\n        phaseC: data[2] || 0,  // 724\n        total: data[3] || 0    // 725\n    });\n}\n\n// Grid Power High 787-790 - Combine with low to form S32\nelse if (baseAddr === 787) {\n    const low = flow.get(\"ips_part_power_low\");\n    if (low) {\n        flow.set(\"ips_part_power\", {\n            phaseAPowerW: s32(low.phaseA, data[0] || 0),  // 722 + 787\n            phaseBPowerW: s32(low.phaseB, data[1] || 0),  // 723 + 788\n            phaseCPowerW: s32(low.phaseC, data[2] || 0),  // 724 + 789\n            totalActivePowerW: s32(low.total, data[3] || 0)  // 725 + 790\n        });\n    }\n}\nelse {\n    return null;\n}\n\n// ---- Try to assemble ----\n\nconst voltagePart = flow.get(\"ips_part_voltage\");\nconst powerPart = flow.get(\"ips_part_power\");\n\nif (!voltagePart || !powerPart) {\n    return null;\n}\n\nconst deviceId = msg.deviceId\n    || global.get(\"DEVICE_ID\")\n    || env.get(\"DEVICE_ID\")\n    || \"EC100\";\n\nconst state = {\n    kind: \"InverterPhaseState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    deviceId: deviceId,\n    \n    gridSide: {\n        phaseA: {\n            voltageV: voltagePart.phaseAVoltageV,\n            powerW: powerPart.phaseAPowerW\n        },\n        phaseB: {\n            voltageV: voltagePart.phaseBVoltageV,\n            powerW: powerPart.phaseBPowerW\n        },\n        phaseC: {\n            voltageV: voltagePart.phaseCVoltageV,\n            powerW: powerPart.phaseCPowerW\n        },\n        totalActivePowerW: powerPart.totalActivePowerW\n    }\n};\n\n// Clear partials\nflow.set(\"ips_part_voltage\", null);\nflow.set(\"ips_part_power_low\", null);\nflow.set(\"ips_part_power\", null);\n\nflow.set(\"inverterPhaseStateSnapshot\", state);\n\n// Check if this is an RPC request\nconst rpcTopic = flow.get(\"ips_rpc_response_topic\");\nif (rpcTopic) {\n    // Send RPC response\n    msg.payload = { success: true, data: state };\n    msg.topic = rpcTopic;\n    flow.set(\"ips_rpc_response_topic\", null);\n    return [msg, null];\n} else {\n    // Send telemetry / debug\n    msg.payload = state;\n    msg.state = state;\n    return [null, msg];\n}",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1100,
+        "y": 140,
+        "wires": [
+            [
+                "ips_rpc_response"
+            ],
+            [
+                "ips_debug"
+            ]
+        ]
+    },
+    {
+        "id": "ips_rpc_response",
+        "type": "mqtt out",
+        "z": "ips_tab_001",
+        "name": "RPC Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1350,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "ips_debug",
+        "type": "debug",
+        "z": "ips_tab_001",
+        "name": "InverterPhaseState JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1370,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "ips_error_debug",
+        "type": "debug",
+        "z": "ips_tab_001",
+        "name": "InverterPhaseState Error",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1110,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "ips_comment_main",
+        "type": "comment",
+        "z": "ips_tab_001",
+        "name": "THREE-PHASE: RPC getInverterPhaseState - Grid side phase voltages and powers",
+        "info": "",
+        "x": 350,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

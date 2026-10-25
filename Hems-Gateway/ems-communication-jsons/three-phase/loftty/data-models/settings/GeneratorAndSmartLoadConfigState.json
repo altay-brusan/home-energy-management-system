@@ -1,0 +1,30 @@
+{
+  "timestampUtc": "string",
+  "gatewayId": "string",
+  "inverterSerialNumber": "string",
+  "version": "string",
+
+  "generatorChargeEnabled": "boolean",       // 229 - Generator charge enable (1 = enabled)
+  "gridChargeEnabled": "boolean",            // 230 - Grid charge enable (1 = enabled)
+
+  "autoStartEnabled": "boolean",             // derived: generatorChargeEnabled && startSocPercent > 0
+
+  "maxRunTimeHours": "number",               // 221 - Max run time (0.1h units)
+  "coolingTimeHours": "number",              // 222 - Cooling time (0.1h units)
+  "startSocPercent": "number",               // 224 - Start when SOC < this (1%)
+  "chargeCurrentA": "number",                // 225 - Charge current (1A)
+
+  "generatorPeakShaving": {
+    "enabled": "boolean",                    // 278 Bit2-3: 10=disable, 11=enable
+    "limitPowerW": "number"                  // 290 - GEN peak shaving Power (1W)
+  },
+
+  "smartLoad": {
+    "enabled": "boolean",                    // 233: 0=Gen only, 1=SmartLoad, 2=Microinverter
+    "offSocPercent": "number",               // 235 - SmartLoad OFF batt (1%)
+    "onSocPercent": "number",                // 237 - SmartLoad ON batt (1%)
+    "pvPowerThresholdW": "number",           // 239 - Minimum solar power required (1W)
+    "openDelayMinutes": "number",            // 292 - Smart Load Open Delay (1 Minute)
+    "onGridAlwaysOn": "boolean"              // 278 Bit6-7: 10=disable, 11=enable
+  }
+}

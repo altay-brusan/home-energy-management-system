@@ -1,0 +1,105 @@
+[
+    {
+        "id": "37afb06248526c1b",
+        "type": "tab",
+        "label": "RPC_ExternalRelay",
+        "disabled": false,
+        "info": "RPC Handler for ExternalRelayConfigState\nMethods:\n- getExternalRelayConfig (read)\n- setExternalRelayConfig (write + read)"
+    },
+    {
+        "id": "rpc_extrelay_mqtt_in",
+        "type": "mqtt in",
+        "z": "37afb06248526c1b",
+        "name": "RPC Request",
+        "topic": "v1/devices/me/rpc/request/+",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "tb-broker",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 140,
+        "y": 160,
+        "wires": [
+            [
+                "rpc_extrelay_handle"
+            ]
+        ]
+    },
+    {
+        "id": "rpc_extrelay_handle",
+        "type": "function",
+        "z": "37afb06248526c1b",
+        "name": "Handle RPC",
+        "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\n\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\nif (msg.rpcMethod === 'getExternalRelayConfig') {\n    msg.operationType = 'read';\n    return msg;\n}\nelse if (msg.rpcMethod === 'setExternalRelayConfig') {\n    msg.operationType = 'write';\n    return msg;\n}\nelse {\n    return null;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 330,
+        "y": 160,
+        "wires": [
+            [
+                "rpc_extrelay_link_out"
+            ]
+        ]
+    },
+    {
+        "id": "rpc_extrelay_link_out",
+        "type": "link out",
+        "z": "37afb06248526c1b",
+        "name": "To Main Flow",
+        "mode": "link",
+        "links": [
+            "daeda110ae7dae45"
+        ],
+        "x": 495,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "rpc_extrelay_comment",
+        "type": "comment",
+        "z": "37afb06248526c1b",
+        "name": "getExternalRelayConfig / setExternalRelayConfig",
+        "info": "Read/Write external relay config:\n- externalRelayFeatureEnabled: bool (Reg280 Bit13)\n- relayBitmapRaw: number (Reg296 Bit0-7)\n- relays: array of relay objects",
+        "x": 260,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

@@ -1,0 +1,151 @@
+SystemConnectionStructure
+{
+  "timestampUtc": "string",
+  "version": 1,
+  "DeviceId": "string",
+  "schemaVersion": 1,
+
+  "inverter": {
+    "deviceType": "number",                  // 100 - 设备类型 Device type
+                                             //   0x03 = Single-phase LV hybrid
+                                             //   0x05 = Three-phase LV hybrid
+                                             //   0x06 = Three-phase HV hybrid
+
+    "inverterModel": "string",               // Derived from deviceType + config
+
+    "serialNumber": "string",                // 103-107 - SN byte 01-10 (ASCII)
+                                             //   Her register 2 byte = 2 karakter
+                                             //   Toplam 10 ASCII karakter
+
+    "firmware": {
+      "protocolVersion": null,               // Bu datasheet'te yok
+      "mcuBoardRaw": null,                   // Bu datasheet'te yok
+      "controlHardwareRaw": "number",        // 114 - 控制板固件版本-字段2 (hardware version)
+      "controlMainRaw": "number",            // 115 - 控制板固件版本-主版本
+      "commField1Raw": "number",             // 116 - 通讯板固件版本-字段1
+      "commField2Raw": "number",             // 117 - 通讯板固件版本-字段2
+      "commMainRaw": "number"                // 118 - 通讯板固件版本-主版本
+    },
+
+    "ratedPowerW": "number",                 // 120 (low) + 121 (high) - 额定功率 Rated power (0.1W)
+
+    "acSide": {
+      "mpptAndPhasesRaw": null,              // Bu datasheet'te yok
+      "batteryInputCount": null,             // Bu datasheet'te yok
+      "outputTopology": null,                // Bu datasheet'te yok - deviceType'tan derive edilebilir
+
+  "gridType": "number",                      // 284 - 电网类型设置 Grid Type (R/W)
+                                           //   0x00 = Single-phase (220V/230V/240V)
+                                           //   0x01 = Two-phase (120V/240V)
+                                           //   0x02 = Three-phase (208V 120°)
+                                           //   0x03 = 120V Single Phase
+                                           //   Not: Three-phase cihazlarda bu değer sabit olabilir
+
+      "regionVariant": null,                 // Bu datasheet'te yok
+
+      "safetyTypeRaw": null,                 // Bu datasheet'te yok
+
+      "gridPhaseCount": 3,                   // Derived: deviceType == 0x05 || 0x06 → 3
+
+      "gridStandardRaw": "number",           // 282 - 并网标准 Grid Mode (R/W)
+                                             //   0 = General standard
+                                             //   1 = UL1741 & IEEE1547
+                                             //   2 = CPUC RULE21
+                                             //   3 = SRD-UL1741
+                                             //   4 = CEI 0-21
+
+      "gridFrequencyHz": "number",           // 283 - 电网频率设置 Grid Frequency (R/W)
+                                             //   0x00 = 50Hz
+                                             //   0x01 = 60Hz
+
+      "gridVoltageLevelCode": "number",      // 238 - 输出电压等级设定 Output voltage level (R/W)
+                                             //   0 = 220V, 1 = 230V, 2 = 240V, 3 = 120V, 4 = 133VAC
+
+      "gridPhaseSequence": "string",         // 247 - 三相ABC电网相序设定 Grid Phase (R/W)
+                                             //   0 = "ABC_0_120_240"
+                                             //   1 = "ACB_0_240_120"
+
+      "itSystemNeutralUngrounded": null      // Bu datasheet'te yok - installer config'den
+    }
+  },
+
+  "battery": {
+    "batteryControlMode": "string",          // 211 - 电池工作根据电压还是容量 (R/W)
+                                             //   0 = "voltage"
+                                             //   1 = "capacity"
+                                             //   2 = "no_battery"
+
+    "batteryChannels": [
+      {
+        "channelId": 1,
+        "ratedCapacityAh": "number",         // 202 - 电池容量 Batt Capacity [0,2000] (1Ah)
+        "nominalVoltageV": null,             // Bu datasheet'te yok - config'den
+        "batterySn": null,                   // Bu datasheet'te yok - BMS'ten
+        "batteryPhysicalAddress": null,      // Bu datasheet'te yok - BMS'ten
+        "batterySoftwareVersion": null,      // Bu datasheet'te yok - BMS'ten
+        "lithiumBatteryType": null           // Bu datasheet'te yok
+      }
+    ]
+  },
+
+  "generator": {
+    "inputMode": "string",                   // 233 - 发电机输入作为负载输出使能 (R/W)
+                                             //   0 = "generator_input" (只作为发电机输入)
+                                             //   1 = "smart_load" (智能负载输出)
+                                             //   2 = "micro_inverter_input" (逆变器输入)
+
+    "connectedToGridInput": "boolean"        // 289 - 发电机连接到电网输入端 (R/W)
+                                             //   0 = disable
+                                             //   1 = enabled
+  },
+
+  "pv": {
+    "mpptCount": null,                       // Bu datasheet'te yok - deviceType'tan derive edilebilir (genelde 4)
+
+    "mppt": [
+      {
+        "pvChannelId": 1,
+        "supportsInput": true,               // Derived from model
+        "stringMaxCurrentA": null,           // Bu datasheet'te yok - config/datasheet'ten
+        "stringMaxVoltageV": null,           // Bu datasheet'te yok - config/datasheet'ten
+        "recommendedVocAtStcV": null         // Bu datasheet'te yok - config/datasheet'ten
+      },
+      {
+        "pvChannelId": 2,
+        "supportsInput": true,
+        "stringMaxCurrentA": null,
+        "stringMaxVoltageV": null,
+        "recommendedVocAtStcV": null
+      },
+      {
+        "pvChannelId": 3,
+        "supportsInput": true,
+        "stringMaxCurrentA": null,
+        "stringMaxVoltageV": null,
+        "recommendedVocAtStcV": null
+      },
+      {
+        "pvChannelId": 4,
+        "supportsInput": true,
+        "stringMaxCurrentA": null,
+        "stringMaxVoltageV": null,
+        "recommendedVocAtStcV": null
+      }
+    ]
+  },
+
+  "loadAndGrid": {
+    "homeLoadConnectionPoint": null,         // Bu datasheet'te yok - commissioning config
+
+    "exportLimitMode": "string",             // 242 - limit控制功能 (R/W)
+                                             //   0x00 = "sell_enabled" (使能卖电)
+                                             //   0x01 = "internal_meter" (使能内置)
+                                             //   0x02 = "external_ct" (使能外置)
+
+    "currentTransformerOnGridSide": null,    // Derived from exportLimitMode + wiring
+
+    "supportsBackupLoad": null,              // Bu datasheet'te yok - model'den
+    "supportsZeroExport": null,              // Bu datasheet'te yok - model'den
+    "supportsExternalMeter": null            // Bu datasheet'te yok - model'den
+  }
+}

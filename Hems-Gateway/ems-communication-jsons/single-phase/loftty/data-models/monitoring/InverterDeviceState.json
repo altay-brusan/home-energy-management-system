@@ -1,0 +1,31 @@
+InverterDeviceState {
+   "timestampUtc": string,
+   "version": number,
+   "DeviceId": string,
+
+  "runState": string,              // "standby" | "selfcheck" | "normal" | "alarm" | "fault" | "activating" // 59 (run state)
+
+  // --- Output to AC bus ---
+  "outputActivePowerW": number,    // inverter output total active power // 175 (inverter output Total power) 1W signed int
+
+  "outputVoltageV": number,        // inverter output voltage L1-N // 154 (inverter output voltage L1-N) 0.1V
+  "outputCurrentA": number,        // inverter output current L1 // 164 (Inverter output current L1) 0.01A signed int
+  "outputFrequencyHz": number,     // inverter output frequency // 193 (Inverter output frequency) 0.01Hz
+
+  // --- Grid-side view (import/export) ---
+  "gridSideActivePowerW": number,  // grid side total power // 169 (grid total power) 1W signed int
+  "gridSidePhaseAPowerW": number,  // grid side L1 power // 167 (Grid side L1 power) 1W signed int
+  "gridSidePhaseBPowerW": number | null, // grid side L2 power // 168 (Grid side L2 power) 1W signed int
+  "gridSidePhaseCPowerW": number | null, // not available for single-phase storage inverter
+
+  // --- Temperatures (if you want to show health) ---
+  "inverterHeatsinkTempC": number | null, // 90 (Radiator temperature / DC Transformer temperature) 0.1℃
+  "internalAmbientTempC": number | null   // 91 (IGBT temperature / AC Radiator temperature) 0.1℃
+
+  "acInputStatus": {
+    "genGridSignalRaw": number,    // 194 + 195 (relay status)
+
+    "gridSignalPresent": bool,     // 194 (Grid side relay status) 0=disconnect, 1=closed
+    "generatorSignalPresent": bool // 195 (Generator side relay status) bit0-3
+  }
+}

@@ -1,0 +1,27 @@
+InverterTimeConfigState
+{
+  "version": 1,
+
+  "systemTime": {
+    "year": "number",                        // 162 high byte - 系统时间第1字节
+                                             //   [0-255] 2000 yılı baz (25 = 2025)
+
+    "month": "number",                       // 162 low byte - 系统时间第2字节
+                                             //   [1-12]
+
+    "day": "number",                         // 163 high byte - 系统时间第3字节
+                                             //   [1-31]
+
+    "hour": "number",                        // 163 low byte - 系统时间第4字节
+                                             //   [0-23]
+
+    "minute": "number",                      // 164 high byte - 系统时间第5字节
+                                             //   [0-59]
+
+    "second": "number"                       // 164 low byte - 系统时间第6字节
+                                             //   [0-59]
+  },
+
+  "localtimestamp": "string"                   // Derived - yukarıdaki değerlerden hesaplanır
+                                             //   Örnek: "2025-12-22T14:30:45Z"
+}

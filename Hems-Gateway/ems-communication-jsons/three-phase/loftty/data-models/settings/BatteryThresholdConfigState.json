@@ -1,0 +1,9 @@
+{
+  "timestampUtc": "string",
+  "gatewayId": "string",
+  "inverterSerialNumber": "string",
+
+  "shutdownCapacityPercent": "number",       // 215 - Low capacity cutoff point (1%)
+  "restartCapacityPercent": "number",        // 216 - Protection recovery point (1%)
+  "lowBatteryCapacityPercent": "number"      // 217 - Low battery capacity (1%)
+}

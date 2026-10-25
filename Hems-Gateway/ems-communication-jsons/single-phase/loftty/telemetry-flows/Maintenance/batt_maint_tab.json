@@ -1,0 +1,512 @@
+[
+    {
+        "id": "batt_maint_tab",
+        "type": "tab",
+        "label": "BatteryMaintenanceConfig",
+        "disabled": false,
+        "info": "Battery Maintenance Config State - Read/Write\n\nRegisters:\n- 003-007: Serial Number (Read Only)\n- 213: Battery control mode (R/W) 0=voltage, 1=capacity, 2=no battery\n- 214: Lithium battery wake up (R/W) 0=enabled, 1=disabled\n- 215: Battery resistance mΩ (R/W)\n- 216: Charge efficiency 0.1% (R/W)"
+    },
+    {
+        "id": "battmaint_link_in_rpc",
+        "type": "link in",
+        "z": "batt_maint_tab",
+        "name": "RPC Request",
+        "links": [
+            "rpc_battmaint_link_out"
+        ],
+        "x": 135,
+        "y": 140,
+        "wires": [
+            [
+                "battmaint_route"
+            ]
+        ]
+    },
+    {
+        "id": "battmaint_manual_read",
+        "type": "inject",
+        "z": "batt_maint_tab",
+        "name": "Manual Read",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operation",
+                "v": "read",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 200,
+        "wires": [
+            [
+                "battmaint_route"
+            ]
+        ]
+    },
+    {
+        "id": "battmaint_test_write",
+        "type": "inject",
+        "z": "batt_maint_tab",
+        "name": "Test Write",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operation",
+                "v": "write",
+                "vt": "str"
+            },
+            {
+                "p": "rpcParams",
+                "v": "{\"batteryControlMode\":\"capacity\",\"wakeUp\":{\"channel1Enabled\":true},\"batteryResistanceMilliOhm\":10,\"chargeEfficiencyPercent\":98.5}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 140,
+        "y": 260,
+        "wires": [
+            [
+                "battmaint_route"
+            ]
+        ]
+    },
+    {
+        "id": "battmaint_route",
+        "type": "function",
+        "z": "batt_maint_tab",
+        "name": "Route: Read or Write?",
+        "func": "flow.set(\"battmaint_rpc_response_topic\", msg.rpcResponseTopic);\n\n// Determine operation\nlet operation = msg.operation || 'read';\nconst params = msg.rpcParams || {};\n\n// If params has any writable field, it's a write\nif (params.batteryControlMode !== undefined ||\n    params.wakeUp !== undefined ||\n    params.batteryResistanceMilliOhm !== undefined ||\n    params.chargeEfficiencyPercent !== undefined) {\n    operation = 'write';\n}\n\nmsg.operation = operation;\n\nif (operation === 'write') {\n    return [null, msg];\n} else {\n    return [msg, null];\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 200,
+        "wires": [
+            [
+                "battmaint_start_read"
+            ],
+            [
+                "battmaint_queue_writes"
+            ]
+        ]
+    },
+    {
+        "id": "battmaint_comment_read",
+        "type": "comment",
+        "z": "batt_maint_tab",
+        "name": "═══ READ SECTION ═══",
+        "info": "",
+        "x": 590,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "battmaint_start_read",
+        "type": "function",
+        "z": "batt_maint_tab",
+        "name": "Start Read",
+        "func": "flow.set(\"battmaint_part_sn\", null);\nflow.set(\"battmaint_part_config\", null);\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 590,
+        "y": 140,
+        "wires": [
+            [
+                "battmaint_prep_sn",
+                "battmaint_prep_config"
+            ]
+        ]
+    },
+    {
+        "id": "battmaint_prep_sn",
+        "type": "function",
+        "z": "batt_maint_tab",
+        "name": "Prep SN (003-007)",
+        "func": "msg.readGroup = \"sn\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 3,\n    quantity: 5\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 800,
+        "y": 100,
+        "wires": [
+            [
+                "battmaint_read_sn"
+            ]
+        ]
+    },
+    {
+        "id": "battmaint_prep_config",
+        "type": "function",
+        "z": "batt_maint_tab",
+        "name": "Prep Config (213-216)",
+        "func": "msg.readGroup = \"config\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 213,\n    quantity: 4\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 810,
+        "y": 180,
+        "wires": [
+            [
+                "battmaint_read_config"
+            ]
+        ]
+    },
+    {
+        "id": "battmaint_read_sn",
+        "type": "modbus-flex-getter",
+        "z": "batt_maint_tab",
+        "name": "Read SN",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1000,
+        "y": 100,
+        "wires": [
+            [
+                "battmaint_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "battmaint_read_config",
+        "type": "modbus-flex-getter",
+        "z": "batt_maint_tab",
+        "name": "Read Config",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1010,
+        "y": 180,
+        "wires": [
+            [
+                "battmaint_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "battmaint_collect",
+        "type": "function",
+        "z": "batt_maint_tab",
+        "name": "Collect Parts",
+        "func": "let data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data)) {\n    node.error(\"Invalid response for \" + msg.readGroup);\n    return null;\n}\n\nconst group = msg.readGroup;\n\nif (group === \"sn\") {\n    flow.set(\"battmaint_part_sn\", data);\n} else if (group === \"config\") {\n    flow.set(\"battmaint_part_config\", data);\n}\n\n// Check if all parts received\nconst partSn = flow.get(\"battmaint_part_sn\");\nconst partConfig = flow.get(\"battmaint_part_config\");\n\nif (!partSn || !partConfig) {\n    return null;\n}\n\nmsg.snData = partSn;\nmsg.configData = partConfig;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1190,
+        "y": 140,
+        "wires": [
+            [
+                "battmaint_build_json"
+            ]
+        ]
+    },
+    {
+        "id": "battmaint_build_json",
+        "type": "function",
+        "z": "batt_maint_tab",
+        "name": "Build JSON State",
+        "func": "const snData = msg.snData;\nconst configData = msg.configData;\n\n// Clear flow context\nflow.set(\"battmaint_part_sn\", null);\nflow.set(\"battmaint_part_config\", null);\n\n// Helper: Parse ASCII from packed register\nfunction parseAsciiChar(val, high) {\n    const byte = high ? ((val >> 8) & 0xFF) : (val & 0xFF);\n    if (byte >= 0x20 && byte <= 0x7E) {\n        return String.fromCharCode(byte);\n    }\n    return '';\n}\n\n// Helper: Parse Serial Number\nfunction parseSerialNumber(regs) {\n    let sn = '';\n    for (let i = 0; i < 5; i++) {\n        sn += parseAsciiChar(regs[i], true);\n        sn += parseAsciiChar(regs[i], false);\n    }\n    return sn.trim();\n}\n\n// Helper: Parse battery control mode\nfunction parseBatteryControlMode(val) {\n    switch(val) {\n        case 0: return \"voltage\";\n        case 1: return \"capacity\";\n        case 2: return null;\n        default: return null;\n    }\n}\n\nconst serialNumber = parseSerialNumber(snData);\n\nconst reg213 = configData[0];\nconst reg214 = configData[1];\nconst reg215 = configData[2];\nconst reg216 = configData[3];\n\nconst batteryControlMode = parseBatteryControlMode(reg213);\nconst channel1Enabled = reg214 === 0;\nconst batteryResistanceMilliOhm = reg215;\nconst chargeEfficiencyPercent = reg216 * 0.1;\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\n\nconst state = {\n    kind: \"BatteryMaintenanceConfigState\",\n    timestampUtc: new Date().toISOString(),\n    gatewayId: gatewayId,\n    inverterSerialNumber: serialNumber,\n    version: \"1.0\",\n    \n    batteryControlMode: batteryControlMode,\n    \n    wakeUp: {\n        channel1Enabled: channel1Enabled,\n        channel2Enabled: null\n    },\n    \n    batteryResistanceMilliOhm: batteryResistanceMilliOhm,\n    chargeEfficiencyPercent: Math.round(chargeEfficiencyPercent * 10) / 10\n};\n\n// Check if this is after a write\nconst writeResult = flow.get(\"battmaint_write_result\");\nflow.set(\"battmaint_write_result\", null);\n\nconst rpcResponseTopic = flow.get(\"battmaint_rpc_response_topic\");\nflow.set(\"battmaint_rpc_response_topic\", null);\n\nif (writeResult) {\n    msg.payload = {\n        success: true,\n        message: `Successfully wrote ${writeResult.count} register(s)`,\n        writes: writeResult.writes,\n        state: state\n    };\n} else {\n    msg.payload = state;\n}\n\nmsg.rpcResponseTopic = rpcResponseTopic;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1390,
+        "y": 140,
+        "wires": [
+            [
+                "battmaint_debug",
+                "battmaint_rpc_response"
+            ]
+        ]
+    },
+    {
+        "id": "battmaint_debug",
+        "type": "debug",
+        "z": "batt_maint_tab",
+        "name": "BattMaint JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1600,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "battmaint_rpc_response",
+        "type": "function",
+        "z": "batt_maint_tab",
+        "name": "RPC Response",
+        "func": "if (!msg.rpcResponseTopic) {\n    return null;\n}\n\nmsg.topic = msg.rpcResponseTopic;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1600,
+        "y": 160,
+        "wires": [
+            [
+                "battmaint_mqtt_response"
+            ]
+        ]
+    },
+    {
+        "id": "battmaint_mqtt_response",
+        "type": "mqtt out",
+        "z": "batt_maint_tab",
+        "name": "MQTT Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1800,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "battmaint_comment_write",
+        "type": "comment",
+        "z": "batt_maint_tab",
+        "name": "═══ WRITE SECTION ═══",
+        "info": "",
+        "x": 600,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "battmaint_queue_writes",
+        "type": "function",
+        "z": "batt_maint_tab",
+        "name": "Queue Writes",
+        "func": "const params = msg.rpcParams || {};\nconst writes = [];\n\n// 213: batteryControlMode\nif (params.batteryControlMode !== undefined) {\n    let val = 1; // default capacity\n    if (params.batteryControlMode === \"voltage\") val = 0;\n    else if (params.batteryControlMode === \"capacity\") val = 1;\n    else if (params.batteryControlMode === null) val = 2;\n    writes.push({ register: 213, value: val, name: \"Battery Control Mode\" });\n}\n\n// 214: wakeUp.channel1Enabled\nif (params.wakeUp && params.wakeUp.channel1Enabled !== undefined) {\n    // 0=enabled, 1=disabled (inverted!)\n    const val = params.wakeUp.channel1Enabled ? 0 : 1;\n    writes.push({ register: 214, value: val, name: \"Wake Up Channel 1\" });\n}\n\n// 215: batteryResistanceMilliOhm\nif (params.batteryResistanceMilliOhm !== undefined) {\n    const val = Math.max(0, Math.min(6000, params.batteryResistanceMilliOhm));\n    writes.push({ register: 215, value: val, name: \"Battery Resistance\" });\n}\n\n// 216: chargeEfficiencyPercent (0.1% scale)\nif (params.chargeEfficiencyPercent !== undefined) {\n    // Input is percentage, register is 0.1% scale\n    // e.g., 98.5% -> 985\n    const val = Math.round(params.chargeEfficiencyPercent * 10);\n    const clampedVal = Math.max(0, Math.min(1000, val));\n    writes.push({ register: 216, value: clampedVal, name: \"Charge Efficiency\" });\n}\n\nif (writes.length === 0) {\n    node.warn(\"No valid parameters to write\");\n    return null;\n}\n\nglobal.set(\"battmaint_write_queue\", writes);\nglobal.set(\"battmaint_write_index\", 0);\nglobal.set(\"battmaint_write_results\", []);\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: writes.length + \" writes queued\" });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 590,
+        "y": 340,
+        "wires": [
+            [
+                "battmaint_prepare_write"
+            ]
+        ]
+    },
+    {
+        "id": "battmaint_prepare_write",
+        "type": "function",
+        "z": "batt_maint_tab",
+        "name": "Prepare Write",
+        "func": "const writes = global.get(\"battmaint_write_queue\") || [];\nconst index = global.get(\"battmaint_write_index\") || 0;\n\nif (index >= writes.length) {\n    return null;\n}\n\nconst current = writes[index];\n\nmsg.payload = {\n    fc: 16,\n    unitid: 1,\n    address: current.register,\n    quantity: 1,\n    value: [current.value]\n};\nmsg.currentWrite = current;\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: `[${index+1}/${writes.length}] ${current.name}` });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 800,
+        "y": 340,
+        "wires": [
+            [
+                "battmaint_write_register"
+            ]
+        ]
+    },
+    {
+        "id": "battmaint_write_register",
+        "type": "modbus-flex-write",
+        "z": "batt_maint_tab",
+        "name": "Write Register",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "server": "e4e4f3e2a4f4e004",
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "x": 1000,
+        "y": 340,
+        "wires": [
+            [
+                "battmaint_write_ok"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "battmaint_write_ok",
+        "type": "function",
+        "z": "batt_maint_tab",
+        "name": "Write OK",
+        "func": "const writes = global.get(\"battmaint_write_queue\") || [];\nlet index = global.get(\"battmaint_write_index\") || 0;\nconst results = global.get(\"battmaint_write_results\") || [];\n\nconst current = msg.currentWrite;\nif (current) {\n    results.push({\n        register: current.register,\n        name: current.name,\n        value: current.value,\n        success: true\n    });\n    global.set(\"battmaint_write_results\", results);\n}\n\nindex++;\nglobal.set(\"battmaint_write_index\", index);\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `${current.name} OK` });\n\nif (index < writes.length) {\n    return [msg, null];\n}\n\n// All writes done - save results and trigger read\nflow.set(\"battmaint_write_result\", {\n    count: results.length,\n    writes: results\n});\n\nglobal.set(\"battmaint_write_queue\", null);\nglobal.set(\"battmaint_write_index\", null);\nglobal.set(\"battmaint_write_results\", null);\n\nreturn [null, msg];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1180,
+        "y": 340,
+        "wires": [
+            [
+                "battmaint_write_delay"
+            ],
+            [
+                "battmaint_start_read"
+            ]
+        ]
+    },
+    {
+        "id": "battmaint_write_delay",
+        "type": "delay",
+        "z": "batt_maint_tab",
+        "name": "500ms",
+        "pauseType": "delay",
+        "timeout": "500",
+        "timeoutUnits": "milliseconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 1330,
+        "y": 340,
+        "wires": [
+            [
+                "battmaint_prepare_write"
+            ]
+        ]
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

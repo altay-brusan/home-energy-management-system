@@ -1,0 +1,92 @@
+InverterAdvancedFunctionConfigState
+{
+  "version": 1,
+
+  // Raw 16-bit advanced-function words
+  "advancedFunctionWord1Raw": "number",          // 278 - 控制板特殊功能位1
+  "advancedFunctionWord2Raw": "number",          // 279 - 控制板特殊功能位2
+
+  // ─────────────────────────────────────
+  // 1) Arc-fault & self-check
+  // ─────────────────────────────────────
+
+  "arcFault": {
+    "mode": "number",                            // 281 - Solar Arc Fault Mode
+                                                 //   0x00 = Off (关闭)
+                                                 //   0x01 = On (开启)
+                                                 //   0x02 = Clear fault (拉弧故障清零)
+    "enabled": "boolean"                         // Derived: mode == 0x01
+  },
+
+  "systemSelfCheckEnabled": null,                // Bu datasheet'te yok
+
+  // ─────────────────────────────────────
+  // 2) Peak-shaving
+  // ─────────────────────────────────────
+
+  "generatorPeakShavingEnabled": "boolean",      // 278 Bit2-3 - Gen peak-shaving
+                                                 //   10 = disable
+                                                 //   11 = enable
+
+  "gridPeakShavingEnabled": "boolean",           // 278 Bit4-5 - Grid peak-shaving
+                                                 //   10 = disable
+                                                 //   11 = enable
+
+  // ─────────────────────────────────────
+  // 3) Smart-load / island-mode relay
+  // ─────────────────────────────────────
+
+  "smartLoadOnGridAlwaysOn": "boolean",          // 278 Bit6-7 - On Grid always on
+                                                 //   10 = disable (off grid immediately off)
+                                                 //   11 = enable (on grid always on)
+
+  "externalRelayEnabled": "boolean",             // 278 Bit8-9 - External relay enable
+                                                 //   10 = disable
+                                                 //   11 = enable
+
+  "islandProtectionEnabled": "boolean",          // 183 - 孤岛保护使能 Island protection enable
+                                                 //   0 = disable
+                                                 //   1 = enable
+
+  // CT ratio and external meter (from "Advanced Function → CT Ratio / Ex_Meter For CT")
+  "externalMeter": {
+    "ctRatio": "number",                         // 447 - 外置CT变比 CT ratio (e.g. 30 = 30:1)
+    "meterCtRatio": "number",                    // 448 - 外置Meter CT变比 Meter CT ratio
+    "phase": null                                // Bu datasheet'te yok
+  },
+
+  // ─────────────────────────────────────
+  // 4) BMS / DRM behaviour
+  // ─────────────────────────────────────
+
+  "lithiumBatteryLossFaultEnabled": "boolean",   // 278 Bit10-11 - 锂电池丢失报故障
+                                                 //   10 = disable
+                                                 //   11 = enable
+
+  "drmEnabled": null,                            // Bu datasheet'te yok
+
+  // ─────────────────────────────────────
+  // 5) Parallel settings (screen: Advanced Function / Parallel)
+  // ─────────────────────────────────────
+
+  "parallel": {
+    "enabled": "boolean",                        // 436 Bit0 - Parallel Enable
+                                                 //   0 = disable
+                                                 //   1 = enable
+
+    "role": "string",                            // 436 Bit1 - Master/Slave
+                                                 //   0 = "slave"
+                                                 //   1 = "master"
+                                                 //   (Bit0=0 ise "standalone")
+
+    "phase": "string",                           // 436 Bit8-9 - Phase
+                                                 //   00 = "A"
+                                                 //   01 = "B"
+                                                 //   10 = "C"
+                                                 //   11 = "void"
+
+    "modbusAddress": "number"                    // 436 Bit10-15 - Modbus SN (0-63)
+  }
+
+  // You can extend later if firmware adds more bits
+}

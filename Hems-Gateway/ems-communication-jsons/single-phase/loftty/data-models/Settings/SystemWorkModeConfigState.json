@@ -1,0 +1,59 @@
+SystemWorkModeConfigState {
+  "timestampUtc": string,
+  "gatewayId": string,
+  "inverterSerialNumber": string,
+  "version": number,
+
+  "userModeProfile": "self_consumption" 
+  | "backup" 
+  | "time_of_use" 
+  | "eco" 
+  | "custom",
+
+  "inverterMode": {
+    "workModeCode": number,           // 243: Energy management model (0=battery priority, 1=load priority)
+    "exportStrategy": "selling_first" 
+    | "zero_export_to_load"           // 244 Selling First zero_export_to_load zero_export_to_ct
+    | "zero_export_to_ct",
+    "solarSellEnabled": bool,         // 247: Solar sell (0x00=don't sell, 0x01=sell)
+    "maxSellPowerW": number | null,   // 245: Limit max grid export power (1W)
+    "defaultMaxSellPowerW": number | null,  // not available
+    "zeroExportLimitPowerW": number | null, // 244: limit control function (bit flags)
+    "forceOffGrid": bool              // 416: 强制离网运行位 (Force off-grid operation)
+  },
+
+  "energyPriority": {
+    "pattern": "battery_first" | "load_first"  // 243: Energy management model (0=battery_first, 1=load_first)
+  },
+
+  "gridPeakShaving": {
+    "enabled": bool,                   // 280 Bit8-11: Grid peak-shaving (0=disable, 1=enable)
+    "limitPowerW": number | null       // 293: GRID peak shaving Power (1W)
+  },
+
+  "timeOfUse": {
+    "enabled": bool,                   // 248.bit0: Time of Use Selling enabled
+    "daysActive": {
+      "monday":    bool,               // 248.bit1
+      "tuesday":   bool,               // 248.bit2
+      "wednesday": bool,               // 248.bit3
+      "thursday":  bool,               // 248.bit4
+      "friday":    bool,               // 248.bit5
+      "saturday":  bool,               // 248.bit6
+      "sunday":    bool                // 248.bit7
+    },
+    "slots": [
+      {
+        "slotIndex": number,
+        "startTimeLocal": string,      // from 250–255: Sell mode time point 1-6 (HHMM format)
+        "endTimeLocal": string,        // from 250–255: Sell mode time point 1-6
+        "allowGridCharge": bool,       // 274–279.bit0: Time point 1-6 charge enable (grid)
+        "allowGeneratorCharge": bool,  // 274–279.bit1: Time point 1-6 charge enable (generator)
+        "sellEnabledInThisSlot": bool, // derived from time slot config
+        "maxBatteryDischargePowerW": number,   // 256–261: Sell mode time point 1-6 power (1W)
+        "batteryThresholdSocPercent": number | null, // 268–273: Capacity 1-6 (1% SOC)
+        "batteryThresholdVoltageV": number | null    // 262–267: Sell mode time point 1-6 voltage (0.01V)
+      }
+    ]
+  }
+}

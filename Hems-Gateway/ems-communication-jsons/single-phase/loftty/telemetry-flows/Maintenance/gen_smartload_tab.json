@@ -1,0 +1,499 @@
+[
+    {
+        "id": "gen_smartload_tab",
+        "type": "tab",
+        "label": "GeneratorSmartLoadOverride",
+        "disabled": false,
+        "info": "Generator Smart Load Override - Read/Write\n\nRegisters:\n- 003-007: Serial Number (Read Only)\n- 234: Force smart load on (R/W) 0=do not force, 1=force\n- 235: Generator as load enabled (Read Only - prerequisite)"
+    },
+    {
+        "id": "gensmartload_link_in_rpc",
+        "type": "link in",
+        "z": "gen_smartload_tab",
+        "name": "RPC Request",
+        "links": [
+            "rpc_gensmartload_link_out"
+        ],
+        "x": 135,
+        "y": 140,
+        "wires": [
+            [
+                "gensmartload_route"
+            ]
+        ]
+    },
+    {
+        "id": "gensmartload_manual_read",
+        "type": "inject",
+        "z": "gen_smartload_tab",
+        "name": "Manual Read",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operation",
+                "v": "read",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 200,
+        "wires": [
+            [
+                "gensmartload_route"
+            ]
+        ]
+    },
+    {
+        "id": "gensmartload_test_write",
+        "type": "inject",
+        "z": "gen_smartload_tab",
+        "name": "Test Write: Force ON",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operation",
+                "v": "write",
+                "vt": "str"
+            },
+            {
+                "p": "rpcParams",
+                "v": "{\"forceSmartLoadOn\":true}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 170,
+        "y": 260,
+        "wires": [
+            [
+                "gensmartload_route"
+            ]
+        ]
+    },
+    {
+        "id": "gensmartload_test_write_off",
+        "type": "inject",
+        "z": "gen_smartload_tab",
+        "name": "Test Write: Force OFF",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operation",
+                "v": "write",
+                "vt": "str"
+            },
+            {
+                "p": "rpcParams",
+                "v": "{\"forceSmartLoadOn\":false}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 170,
+        "y": 320,
+        "wires": [
+            [
+                "gensmartload_route"
+            ]
+        ]
+    },
+    {
+        "id": "gensmartload_route",
+        "type": "function",
+        "z": "gen_smartload_tab",
+        "name": "Route: Read or Write?",
+        "func": "flow.set(\"gensmartload_rpc_response_topic\", msg.rpcResponseTopic);\n\nlet operation = msg.operation || 'read';\nconst params = msg.rpcParams || {};\n\nif (params.forceSmartLoadOn !== undefined) {\n    operation = 'write';\n}\n\nmsg.operation = operation;\n\nif (operation === 'write') {\n    return [null, msg];\n} else {\n    return [msg, null];\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 200,
+        "wires": [
+            [
+                "gensmartload_start_read"
+            ],
+            [
+                "gensmartload_prepare_write"
+            ]
+        ]
+    },
+    {
+        "id": "gensmartload_comment_read",
+        "type": "comment",
+        "z": "gen_smartload_tab",
+        "name": "═══ READ SECTION ═══",
+        "info": "",
+        "x": 630,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "gensmartload_start_read",
+        "type": "function",
+        "z": "gen_smartload_tab",
+        "name": "Start Read",
+        "func": "flow.set(\"gensmartload_part_sn\", null);\nflow.set(\"gensmartload_part_234\", null);\nflow.set(\"gensmartload_part_235\", null);\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 630,
+        "y": 140,
+        "wires": [
+            [
+                "gensmartload_prep_sn",
+                "gensmartload_prep_234_235"
+            ]
+        ]
+    },
+    {
+        "id": "gensmartload_prep_sn",
+        "type": "function",
+        "z": "gen_smartload_tab",
+        "name": "Prep SN (003-007)",
+        "func": "msg.readGroup = \"sn\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 3,\n    quantity: 5\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 840,
+        "y": 100,
+        "wires": [
+            [
+                "gensmartload_read_sn"
+            ]
+        ]
+    },
+    {
+        "id": "gensmartload_prep_234_235",
+        "type": "function",
+        "z": "gen_smartload_tab",
+        "name": "Prep 234-235",
+        "func": "msg.readGroup = \"regs\";\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 234,\n    quantity: 2\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 830,
+        "y": 180,
+        "wires": [
+            [
+                "gensmartload_read_234_235"
+            ]
+        ]
+    },
+    {
+        "id": "gensmartload_read_sn",
+        "type": "modbus-flex-getter",
+        "z": "gen_smartload_tab",
+        "name": "Read SN",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1040,
+        "y": 100,
+        "wires": [
+            [
+                "gensmartload_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "gensmartload_read_234_235",
+        "type": "modbus-flex-getter",
+        "z": "gen_smartload_tab",
+        "name": "Read 234-235",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1040,
+        "y": 180,
+        "wires": [
+            [
+                "gensmartload_collect"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "gensmartload_collect",
+        "type": "function",
+        "z": "gen_smartload_tab",
+        "name": "Collect Parts",
+        "func": "let data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data)) {\n    node.error(\"Invalid response for \" + msg.readGroup);\n    return null;\n}\n\nconst group = msg.readGroup;\n\nif (group === \"sn\") {\n    flow.set(\"gensmartload_part_sn\", data);\n} else if (group === \"regs\") {\n    flow.set(\"gensmartload_part_234\", data[0]);\n    flow.set(\"gensmartload_part_235\", data[1]);\n}\n\nconst partSn = flow.get(\"gensmartload_part_sn\");\nconst part234 = flow.get(\"gensmartload_part_234\");\nconst part235 = flow.get(\"gensmartload_part_235\");\n\nif (!partSn || part234 === null || part234 === undefined ||\n    part235 === null || part235 === undefined) {\n    return null;\n}\n\nmsg.snData = partSn;\nmsg.reg234 = part234;\nmsg.reg235 = part235;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1230,
+        "y": 140,
+        "wires": [
+            [
+                "gensmartload_build_json"
+            ]
+        ]
+    },
+    {
+        "id": "gensmartload_build_json",
+        "type": "function",
+        "z": "gen_smartload_tab",
+        "name": "Build JSON State",
+        "func": "const snData = msg.snData;\nconst reg234 = msg.reg234;\nconst reg235 = msg.reg235;\n\nflow.set(\"gensmartload_part_sn\", null);\nflow.set(\"gensmartload_part_234\", null);\nflow.set(\"gensmartload_part_235\", null);\n\nfunction parseAsciiChar(val, high) {\n    const byte = high ? ((val >> 8) & 0xFF) : (val & 0xFF);\n    if (byte >= 0x20 && byte <= 0x7E) {\n        return String.fromCharCode(byte);\n    }\n    return '';\n}\n\nfunction parseSerialNumber(regs) {\n    let sn = '';\n    for (let i = 0; i < 5; i++) {\n        sn += parseAsciiChar(regs[i], true);\n        sn += parseAsciiChar(regs[i], false);\n    }\n    return sn.trim();\n}\n\nconst serialNumber = parseSerialNumber(snData);\nconst forceSmartLoadOn = reg234 === 1;\nconst generatorAsLoadEnabled = reg235 === 1;\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\n\nconst state = {\n    kind: \"GeneratorSmartLoadOverride\",\n    timestampUtc: new Date().toISOString(),\n    gatewayId: gatewayId,\n    inverterSerialNumber: serialNumber,\n    version: \"1.0\",\n    \n    forceSmartLoadOn: forceSmartLoadOn,\n    generatorAsLoadEnabled: generatorAsLoadEnabled,\n    canForce: generatorAsLoadEnabled\n};\n\nconst writeResult = flow.get(\"gensmartload_write_result\");\nflow.set(\"gensmartload_write_result\", null);\n\nconst rpcResponseTopic = flow.get(\"gensmartload_rpc_response_topic\");\nflow.set(\"gensmartload_rpc_response_topic\", null);\n\nif (writeResult) {\n    msg.payload = {\n        success: true,\n        message: writeResult.message,\n        state: state\n    };\n} else {\n    msg.payload = state;\n}\n\nmsg.rpcResponseTopic = rpcResponseTopic;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1430,
+        "y": 140,
+        "wires": [
+            [
+                "gensmartload_debug",
+                "gensmartload_rpc_response"
+            ]
+        ]
+    },
+    {
+        "id": "gensmartload_debug",
+        "type": "debug",
+        "z": "gen_smartload_tab",
+        "name": "GenSmartLoad JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1660,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "gensmartload_rpc_response",
+        "type": "function",
+        "z": "gen_smartload_tab",
+        "name": "RPC Response",
+        "func": "if (!msg.rpcResponseTopic) {\n    return null;\n}\n\nmsg.topic = msg.rpcResponseTopic;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1660,
+        "y": 160,
+        "wires": [
+            [
+                "gensmartload_mqtt_response"
+            ]
+        ]
+    },
+    {
+        "id": "gensmartload_mqtt_response",
+        "type": "mqtt out",
+        "z": "gen_smartload_tab",
+        "name": "MQTT Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1860,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "gensmartload_comment_write",
+        "type": "comment",
+        "z": "gen_smartload_tab",
+        "name": "═══ WRITE SECTION ═══",
+        "info": "",
+        "x": 640,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "gensmartload_prepare_write",
+        "type": "function",
+        "z": "gen_smartload_tab",
+        "name": "Prepare Write",
+        "func": "const params = msg.rpcParams || {};\n\nif (params.forceSmartLoadOn === undefined) {\n    node.warn(\"No forceSmartLoadOn parameter\");\n    return null;\n}\n\nconst val = params.forceSmartLoadOn ? 1 : 0;\n\nmsg.payload = {\n    fc: 16,\n    unitid: 1,\n    address: 234,\n    quantity: 1,\n    value: [val]\n};\nmsg.writeValue = val;\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: \"Writing reg234=\" + val });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 640,
+        "y": 340,
+        "wires": [
+            [
+                "gensmartload_write_register"
+            ]
+        ]
+    },
+    {
+        "id": "gensmartload_write_register",
+        "type": "modbus-flex-write",
+        "z": "gen_smartload_tab",
+        "name": "Write Register",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "server": "e4e4f3e2a4f4e004",
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "x": 840,
+        "y": 340,
+        "wires": [
+            [
+                "gensmartload_write_ok"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "gensmartload_write_ok",
+        "type": "function",
+        "z": "gen_smartload_tab",
+        "name": "Write OK",
+        "func": "const val = msg.writeValue;\n\nflow.set(\"gensmartload_write_result\", {\n    message: `Successfully wrote register 234 = ${val} (forceSmartLoadOn = ${val === 1})`\n});\n\nnode.status({ fill: \"green\", shape: \"dot\", text: \"Write OK\" });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1020,
+        "y": 340,
+        "wires": [
+            [
+                "gensmartload_start_read"
+            ]
+        ]
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

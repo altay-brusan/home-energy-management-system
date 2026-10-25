@@ -1,0 +1,5 @@
+GeneratorSmartLoadOverride {
+  "forceSmartLoadOn": bool  // 234: Force on generator as load function (强制开启发电机作为负载功能)
+                            // prerequisite: reg 235 = 1 (generator input as load output enabled)
+                            // 0 = do not force, 1 = force
+}

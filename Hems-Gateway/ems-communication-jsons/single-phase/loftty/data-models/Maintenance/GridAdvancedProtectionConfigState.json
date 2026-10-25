@@ -1,0 +1,162 @@
+GridAdvancedProtectionConfigState {
+  "timestampUtc": "string",
+  "gatewayId": "string",
+  "inverterSerialNumber": "string",
+  "version": "string",
+
+  // ─────────────────────────────────────
+  // 1) Instantaneous IP protection levels
+  //    (screen: Grid Setting / IP Protection)
+  // ─────────────────────────────────────
+  //
+  // NOTE: register addresses for HVx/LVx/HFx/LFx vary by
+  // firmware / grid code set. Keep this block as
+  // "maintenance-only" and only wire it if a client
+  // explicitly needs it.
+
+  "ipProtection": {
+    "hv1OverVoltageV": "number",       // 27: Grid voltage Upper limit (0.1V)
+    "hv1TripTimeSeconds": "number",    
+
+    "hv2OverVoltageV": "number",       
+    "hv2TripTimeSeconds": "number",    
+
+    "hv3OverVoltageV": "number",       
+    "hv3TripTimeSeconds": "number",    
+
+    "lv1UnderVoltageV": "number",      // 28: Grid voltage Lower limit (0.1V)
+    "lv1TripTimeSeconds": "number",    
+
+    "lv2UnderVoltageV": "number",      
+    "lv2TripTimeSeconds": "number",    
+
+    "lv3UnderVoltageV": "number",      
+    "lv3TripTimeSeconds": "number",    
+
+    "hf1OverFrequencyHz": "number",    // 29: Grid frequency upper limit (0.01Hz)
+    "hf1TripTimeSeconds": "number",   
+
+    "hf2OverFrequencyHz": "number",    
+    "hf2TripTimeSeconds": "number",    
+
+    "hf3OverFrequencyHz": "number",    
+    "hf3TripTimeSeconds": "number",    
+
+    "lf1UnderFrequencyHz": "number",   // 30: Grid frequency lower limit (0.01Hz)
+    "lf1TripTimeSeconds": "number",    
+
+    "lf2UnderFrequencyHz": "number",   
+    "lf2TripTimeSeconds": "number",    
+
+    "lf3UnderFrequencyHz": "number",   
+    "lf3TripTimeSeconds": "number",    
+
+    "tenMinuteOverVoltageV": "number"  // not available in this protocol
+  },
+
+  // ─────────────────────────────────────
+  // 2) F(W) frequency–power droop
+  //    (screen: Grid Setting / F(W))  
+  // I couldn't find the exact equivalent.
+  // That's why I went with the California example in the document.
+  // ─────────────────────────────────────
+
+  "frequencyPowerDroop": {
+    "enabled": "bool",                 // 360: CA_FW enable (California FW)
+
+    "overFrequency": {
+      "startFreqHz": "number",         // 361: CA_Fstart
+      "stopFreqHz": "number",          // 362: CA_Fstop
+      "droopPercentPerHz": "number",   // 35: OverFrq_De_rate (0-100%)
+      "startDelaySeconds": "number",   // from grid code settings
+      "stopDelaySeconds": "number"     // from grid code settings
+    },
+
+    "underFrequency": {
+      "startFreqHz": "number",         // derived from grid code
+      "stopFreqHz": "number",          // derived from grid code
+      "droopPercentPerHz": "number",   // derived
+      "startDelaySeconds": "number",
+      "stopDelaySeconds": "number"
+    }
+  },
+
+  // ─────────────────────────────────────
+  // 3) V(W) active-power vs voltage
+  //    and V(Q) reactive-power vs voltage
+  // ─────────────────────────────────────
+
+  "voltageActivePowerCurve": {
+    "enabled": "bool",                 // 363: CA_VW enable (California VW)
+    "lockInPnPercent": "number",
+    "lockOutPnPercent": "number",
+
+    "points": [
+      { "voltagePercent": "number", "powerPercent": "number" },  // 364: CA_Vstart
+      { "voltagePercent": "number", "powerPercent": "number" },  // 365: CA_Vstop
+      { "voltagePercent": "number", "powerPercent": "number" },
+      { "voltagePercent": "number", "powerPercent": "number" }
+    ]
+  },
+
+  "voltageReactivePowerCurve": {
+    "enabled": "bool",                 // 351: CA_QV enable (California QV)
+    "lockInPnPercent": "number",
+    "lockOutPnPercent": "number",
+
+    "points": [
+      { "voltagePercent": "number", "reactivePercent": "number" },  // 352: CA_QV_V1, 356: CA_QV_Q1
+      { "voltagePercent": "number", "reactivePercent": "number" },  // 353: CA_QV_V2, 357: CA_QV_Q2
+      { "voltagePercent": "number", "reactivePercent": "number" },  // 354: CA_QV_V3, 358: CA_QV_Q3
+      { "voltagePercent": "number", "reactivePercent": "number" }   // 355: CA_QV_V4, 359: CA_QV_Q4
+    ]
+  },,
+
+  // ─────────────────────────────────────
+  // 4) P(Q) and P(PF) curves
+  //    (screen: Grid Setting / P(Q) P(F))
+  // ─────────────────────────────────────
+
+  "activeVsReactiveCurve": {
+    "enabled": "bool",                 // not directly available - derived
+    "points": [
+      { "activePowerPercent": "number", "reactivePercent": "number" },
+      { "activePowerPercent": "number", "reactivePercent": "number" },
+      { "activePowerPercent": "number", "reactivePercent": "number" },
+      { "activePowerPercent": "number", "reactivePercent": "number" }
+    ]
+  },
+
+  "activeVsPowerFactorCurve": {
+    "enabled": "bool",                 // not directly available - derived
+    "lockInPnPercent": "number",
+    "lockOutPnPercent": "number",
+    "pfPoints": [
+      { "activePowerPercent": "number", "powerFactor": "number" },
+      { "activePowerPercent": "number", "powerFactor": "number" },
+      { "activePowerPercent": "number", "powerFactor": "number" },
+      { "activePowerPercent": "number", "powerFactor": "number" }
+    ]
+  },
+
+  // ─────────────────────────────────────
+  // 5) LVRT / HVRT (low/high voltage ride-through)
+  //    (screen: Grid Setting / LVRT)
+  // ─────────────────────────────────────
+
+  "voltageRideThrough": {
+    "enabled": "bool",                 // 331: CA_LHVRT enable (California LVRT/HVRT)
+
+    "hvLevels": [
+      { "voltagePercent": "number", "timeSeconds": "number" }, // 332: CA_HV2, 337: CA_HV2_Time
+      { "voltagePercent": "number", "timeSeconds": "number" }, // 333: CA_HV1, 338: CA_HV1_Time
+      { "voltagePercent": "number", "timeSeconds": "number" }
+    ],
+
+    "lvLevels": [
+      { "voltagePercent": "number", "timeSeconds": "number" }, // 334: CA_LV1, 339: CA_LV1_Time
+      { "voltagePercent": "number", "timeSeconds": "number" }, // 335: CA_LV2, 340: CA_LV2_Time
+      { "voltagePercent": "number", "timeSeconds": "number" }  // 336: CA_LV3, 341: CA_LV3_Time
+    ]
+  }
+}

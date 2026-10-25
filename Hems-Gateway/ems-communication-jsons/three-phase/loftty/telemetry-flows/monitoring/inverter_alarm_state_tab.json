@@ -1,0 +1,466 @@
+[
+    {
+        "id": "588a3b4b07c48998",
+        "type": "tab",
+        "label": "InverterAlarmState",
+        "disabled": false,
+        "info": "THREE-PHASE Polls 1 min (only sends if alarm/warning present or state change) - Includes phase imbalance warnings"
+    },
+    {
+        "id": "b64e52a28175a3a8",
+        "type": "inject",
+        "z": "588a3b4b07c48998",
+        "name": "Poll Alarms (1 min)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "60",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 80,
+        "wires": [
+            [
+                "c1972c6bc1d43d20"
+            ]
+        ]
+    },
+    {
+        "id": "8f6c99bd73281a50",
+        "type": "inject",
+        "z": "588a3b4b07c48998",
+        "name": "Manual Trigger",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 140,
+        "wires": [
+            [
+                "c1972c6bc1d43d20"
+            ]
+        ]
+    },
+    {
+        "id": "c1972c6bc1d43d20",
+        "type": "function",
+        "z": "588a3b4b07c48998",
+        "name": "Prep Parallel Reads",
+        "func": "// Prepare all 9 register reads in parallel\nconst reads = [\n    { name: 'runState', address: 600, quantity: 1 },\n    { name: 'commBoard', address: 648, quantity: 1 },\n    { name: 'warning1', address: 653, quantity: 1 },\n    { name: 'warning2', address: 654, quantity: 1 },\n    { name: 'fault1', address: 655, quantity: 1 },\n    { name: 'fault2', address: 656, quantity: 1 },\n    { name: 'fault3', address: 657, quantity: 1 },\n    { name: 'fault4', address: 658, quantity: 1 },\n    { name: 'workFlag', address: 659, quantity: 1 }\n];\n\nconst messages = reads.map(r => ({\n    payload: {\n        fc: 3,\n        unitid: 1,\n        address: r.address,\n        quantity: r.quantity\n    },\n    readName: r.name,\n    registerAddress: r.address\n}));\n\nreturn [messages];",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 390,
+        "y": 110,
+        "wires": [
+            [
+                "160add011dbd6b02"
+            ]
+        ]
+    },
+    {
+        "id": "160add011dbd6b02",
+        "type": "modbus-flex-getter",
+        "z": "588a3b4b07c48998",
+        "name": "Read Alarm Registers",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "enableDeformedMessages": false,
+        "startDelayTime": "",
+        "x": 640,
+        "y": 110,
+        "wires": [
+            [
+                "e7ad4edfa99f30b0"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "e7ad4edfa99f30b0",
+        "type": "function",
+        "z": "588a3b4b07c48998",
+        "name": "Collect All Reads",
+        "func": "const flowKey = 'alarm_state_reads';\nlet collected = flow.get(flowKey) || {};\nconst expectedCount = 9;\n\nlet data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data) || data.length < 1) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Read failed: \" + msg.readName });\n    return null;\n}\n\nconst value = data[0] || 0;\n\n// Store by register address for clarity\nswitch(msg.readName) {\n    case 'runState':\n        collected.runStateRaw = value;\n        break;\n    case 'commBoard':\n        collected.commBoardFaultRaw = value;\n        break;\n    case 'warning1':\n        collected.warningWord1Raw = value;\n        break;\n    case 'warning2':\n        collected.warningWord2Raw = value;\n        break;\n    case 'fault1':\n        collected.faultWord1Raw = value;\n        break;\n    case 'fault2':\n        collected.faultWord2Raw = value;\n        break;\n    case 'fault3':\n        collected.faultWord3Raw = value;\n        break;\n    case 'fault4':\n        collected.faultWord4Raw = value;\n        break;\n    case 'workFlag':\n        collected.workFlagTripData = value;\n        break;\n}\n\nflow.set(flowKey, collected);\n\nconst collectedCount = Object.keys(collected).length;\nnode.status({ fill: \"blue\", shape: \"dot\", text: `Collected ${collectedCount}/${expectedCount}` });\n\nif (collectedCount >= expectedCount) {\n    flow.set(flowKey, null);\n    msg.collectedData = collected;\n    msg.payload = collected;\n    return msg;\n}\n\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 110,
+        "wires": [
+            [
+                "dfa0f02dfc85bac3"
+            ]
+        ]
+    },
+    {
+        "id": "dfa0f02dfc85bac3",
+        "type": "function",
+        "z": "588a3b4b07c48998",
+        "name": "Build InverterAlarmState JSON",
+        "func": "const data = msg.collectedData;\n\nif (!data) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"No data\" });\n    return null;\n}\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\nconst inverterSN = global.get(\"INVERTER_SN\") || env.get(\"INVERTER_SN\") || \"Unknown\";\nconst now = new Date().toISOString();\n\nconst activeAlarms = [];\n\n// Helper function to add alarm\nfunction addAlarm(code, vendorCode, severity, category) {\n    if (vendorCode > 0) {\n        activeAlarms.push({\n            code: code,\n            vendorCode: vendorCode,\n            severity: severity,\n            sourceDevice: \"inverter\",\n            category: category,\n            messageKey: `${category}_${code}`,\n            messageParams: null,\n            firstOccurredUtc: now,\n            lastOccurredUtc: now,\n            occurrenceCount: 1\n        });\n    }\n}\n\n// Check warnings (653-654)\naddAlarm(653, data.warningWord1Raw, \"WARNING\", \"warning\");\naddAlarm(654, data.warningWord2Raw, \"WARNING\", \"warning\");\n\n// Check faults (655-658)\naddAlarm(655, data.faultWord1Raw, \"ERROR\", \"fault\");\naddAlarm(656, data.faultWord2Raw, \"ERROR\", \"fault\");\naddAlarm(657, data.faultWord3Raw, \"ERROR\", \"fault\");\naddAlarm(658, data.faultWord4Raw, \"ERROR\", \"fault\");\n\n// Check comm board fault (648)\naddAlarm(648, data.commBoardFaultRaw, \"ALARM\", \"comm_fault\");\n\nconst state = {\n    kind: \"InverterAlarmState\",\n    timestampUtc: now,\n    version: 1,\n    gatewayId: gatewayId,\n    inverterSerialNumber: inverterSN,\n    \n    runStateRaw: data.runStateRaw,\n    commBoardFaultRaw: data.commBoardFaultRaw,\n    \n    warningWord1Raw: data.warningWord1Raw,\n    warningWord2Raw: data.warningWord2Raw,\n    \n    faultWord1Raw: data.faultWord1Raw,\n    faultWord2Raw: data.faultWord2Raw,\n    faultWord3Raw: data.faultWord3Raw,\n    faultWord4Raw: data.faultWord4Raw,\n    \n    workFlagTripData: data.workFlagTripData,\n    \n    activeAlarms: activeAlarms\n};\n\nmsg.payload = state;\nmsg.state = state;\nmsg.hasAlarms = activeAlarms.length > 0;\n\nnode.status({ \n    fill: activeAlarms.length > 0 ? \"red\" : \"green\", \n    shape: \"dot\", \n    text: `${activeAlarms.length} alarm(s)` \n});\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1180,
+        "y": 110,
+        "wires": [
+            [
+                "5252ba6195c39f1e",
+                "4fe9efdc0706e12d"
+            ]
+        ]
+    },
+    {
+        "id": "5252ba6195c39f1e",
+        "type": "function",
+        "z": "588a3b4b07c48998",
+        "name": "Check if should send",
+        "func": "// Only send to ThingsBoard if there are active alarms\nif (msg.hasAlarms) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Sending alarms\" });\n    return msg;\n}\n\nnode.status({ fill: \"green\", shape: \"dot\", text: \"No alarms - skipped\" });\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1460,
+        "y": 80,
+        "wires": [
+            [
+                "1a9e3d8ff4461bad"
+            ]
+        ]
+    },
+    {
+        "id": "1a9e3d8ff4461bad",
+        "type": "mqtt out",
+        "z": "588a3b4b07c48998",
+        "name": "Send to ThingsBoard",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1800,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "4fe9efdc0706e12d",
+        "type": "debug",
+        "z": "588a3b4b07c48998",
+        "name": "InverterAlarmState Error",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1470,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "lowsoc_comment",
+        "type": "comment",
+        "z": "588a3b4b07c48998",
+        "name": "=== Battery Low SOC Alarm (W11) ===",
+        "info": "Polls every 5 min, compares SOC with threshold, sends alarm on 5% step drops",
+        "x": 230,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "lowsoc_poll_5min",
+        "type": "inject",
+        "z": "588a3b4b07c48998",
+        "name": "Poll LowSOC (5 min)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "300",
+        "crontab": "",
+        "once": false,
+        "onceDelay": "10",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 210,
+        "y": 380,
+        "wires": [
+            [
+                "lowsoc_prep_reads"
+            ]
+        ]
+    },
+    {
+        "id": "lowsoc_manual_trigger",
+        "type": "inject",
+        "z": "588a3b4b07c48998",
+        "name": "Manual Trigger",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 210,
+        "y": 440,
+        "wires": [
+            [
+                "lowsoc_prep_reads"
+            ]
+        ]
+    },
+    {
+        "id": "lowsoc_prep_reads",
+        "type": "function",
+        "z": "588a3b4b07c48998",
+        "name": "Prep Parallel Reads",
+        "func": "// Register 217: lowBatteryCapacityPercent\n// Register 688: socPercent\n\nconst reads = [\n    { name: 'lowBatteryCapacity', address: 217, quantity: 1 },\n    { name: 'socPercent', address: 688, quantity: 1 }\n];\n\nconst messages = reads.map(r => ({\n    payload: {\n        fc: 3,\n        unitid: 1,\n        address: r.address,\n        quantity: r.quantity\n    },\n    readName: r.name,\n    registerAddress: r.address\n}));\n\nreturn [messages];",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 440,
+        "y": 410,
+        "wires": [
+            [
+                "lowsoc_modbus_read"
+            ]
+        ]
+    },
+    {
+        "id": "lowsoc_modbus_read",
+        "type": "modbus-flex-getter",
+        "z": "588a3b4b07c48998",
+        "name": "Read LowSOC Registers",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 660,
+        "y": 410,
+        "wires": [
+            [
+                "lowsoc_collect_reads"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "lowsoc_collect_reads",
+        "type": "function",
+        "z": "588a3b4b07c48998",
+        "name": "Collect All Reads",
+        "func": "const flowKey = 'lowsoc_reads';\nlet collected = flow.get(flowKey) || {};\nconst expectedCount = 2;\n\nlet data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data) || data.length < 1) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Read failed: \" + msg.readName });\n    return null;\n}\n\nconst value = data[0] || 0;\n\nswitch(msg.readName) {\n    case 'lowBatteryCapacity':\n        collected.lowBatteryCapacityPercent = value;\n        break;\n    case 'socPercent':\n        collected.socPercent = value;\n        break;\n}\n\nflow.set(flowKey, collected);\n\nconst collectedCount = Object.keys(collected).length;\nnode.status({ fill: \"blue\", shape: \"dot\", text: `Collected ${collectedCount}/${expectedCount}` });\n\nif (collectedCount >= expectedCount) {\n    flow.set(flowKey, null);\n    msg.collectedData = collected;\n    msg.payload = collected;\n    return msg;\n}\n\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 890,
+        "y": 410,
+        "wires": [
+            [
+                "lowsoc_check_and_build"
+            ]
+        ]
+    },
+    {
+        "id": "lowsoc_check_and_build",
+        "type": "function",
+        "z": "588a3b4b07c48998",
+        "name": "Check & Build LowSOC Alarm",
+        "func": "const data = msg.collectedData;\n\nif (!data) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"No data\" });\n    return null;\n}\n\nconst lowBatteryCapacityPercent = data.lowBatteryCapacityPercent;\nconst socPercent = data.socPercent;\n\nif (lowBatteryCapacityPercent === undefined || socPercent === undefined) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Missing values\" });\n    return null;\n}\n\n// Get last sent SOC from flow context\nlet lastSentLowBatterySoc = flow.get(\"lastSentLowBatterySoc\");\n\n// Initialize if first run\nif (lastSentLowBatterySoc === null || lastSentLowBatterySoc === undefined) {\n    lastSentLowBatterySoc = lowBatteryCapacityPercent;\n    flow.set(\"lastSentLowBatterySoc\", lastSentLowBatterySoc);\n    node.status({ fill: \"blue\", shape: \"dot\", text: \"Init: \" + lastSentLowBatterySoc });\n}\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\nconst inverterSN = global.get(\"INVERTER_SN\") || env.get(\"INVERTER_SN\") || \"Unknown\";\nconst now = new Date().toISOString();\n\nlet shouldSend = false;\nlet triggeredAtStep = null;\n\n// Check if SOC is below threshold\nif (socPercent < lowBatteryCapacityPercent) {\n    // Calculate current step (round down to nearest 5)\n    let currentStep = Math.floor(socPercent / 5) * 5;\n\n    // Check if we should send (new step lower than last sent)\n    if (currentStep < lastSentLowBatterySoc) {\n        shouldSend = true;\n        triggeredAtStep = currentStep;\n        flow.set(\"lastSentLowBatterySoc\", currentStep);\n        node.status({ fill: \"yellow\", shape: \"dot\", text: \"ALARM: SOC=\" + socPercent + \" step=\" + currentStep });\n    } else {\n        node.status({ fill: \"grey\", shape: \"ring\", text: \"Skip: SOC=\" + socPercent + \" step=\" + currentStep + \" last=\" + lastSentLowBatterySoc });\n    }\n} else {\n    // SOC is above threshold, reset\n    if (lastSentLowBatterySoc !== lowBatteryCapacityPercent) {\n        flow.set(\"lastSentLowBatterySoc\", lowBatteryCapacityPercent);\n        node.status({ fill: \"green\", shape: \"dot\", text: \"Reset: SOC=\" + socPercent + \" >= \" + lowBatteryCapacityPercent });\n    } else {\n        node.status({ fill: \"green\", shape: \"ring\", text: \"OK: SOC=\" + socPercent });\n    }\n}\n\nmsg.shouldSend = shouldSend;\n\nif (shouldSend) {\n    const state = {\n        kind: \"InverterAlarmState\",\n        timestampUtc: now,\n        version: 1,\n        gatewayId: gatewayId,\n        inverterSerialNumber: inverterSN,\n\n        runStateRaw: 3,\n        commBoardFaultRaw: 0,\n        warningWord1Raw: 1024,\n        warningWord2Raw: 0,\n        faultWord1Raw: 0,\n        faultWord2Raw: 0,\n        faultWord3Raw: 0,\n        faultWord4Raw: 0,\n        workFlagTripData: 0,\n\n        activeAlarms: [{\n            code: 11,\n            vendorCode: 1024,\n            severity: \"WARNING\",\n            sourceDevice: \"INV\",\n            category: \"battery\",\n            messageKey: \"W11\",\n            messageParams: {\n                currentSocPercent: socPercent\n            },\n            firstOccurredUtc: now,\n            lastOccurredUtc: now,\n            occurrenceCount: 1\n        }]\n    };\n\n    msg.payload = state;\n    msg.state = state;\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1150,
+        "y": 410,
+        "wires": [
+            [
+                "lowsoc_check_should_send",
+                "9fdca714350ede2f"
+            ]
+        ]
+    },
+    {
+        "id": "lowsoc_check_should_send",
+        "type": "function",
+        "z": "588a3b4b07c48998",
+        "name": "Check if should send",
+        "func": "// Only send if shouldSend is true\nif (msg.shouldSend) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Sending W11 alarm\" });\n    return msg;\n}\n\nnode.status({ fill: \"green\", shape: \"dot\", text: \"No alarm - skipped\" });\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1440,
+        "y": 400,
+        "wires": [
+            [
+                "1a9e3d8ff4461bad",
+                "d87f7b693606b9ad"
+            ]
+        ]
+    },
+    {
+        "id": "9fdca714350ede2f",
+        "type": "debug",
+        "z": "588a3b4b07c48998",
+        "name": "InverterAlarmState Error",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1450,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "d87f7b693606b9ad",
+        "type": "debug",
+        "z": "588a3b4b07c48998",
+        "name": "InverterAlarmState Error",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1730,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31884",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

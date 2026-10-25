@@ -1,0 +1,658 @@
+[
+    {
+        "id": "sys_conn_struct_tab",
+        "type": "tab",
+        "label": "System Connection Structure",
+        "disabled": false,
+        "info": "Reads System Connection Structure from registers:\n- 0, 2: Device type, protocol\n- 3-7: Serial number (ASCII)\n- 10, 13-14: Firmware versions\n- 15-19: Safety, power, MPPT/phases\n- 51, 285-286: Grid settings\n- 204, 213, 325: Battery config\n- 235, 244, 291: Generator/export"
+    },
+    {
+        "id": "scs_poll_inject",
+        "type": "inject",
+        "z": "sys_conn_struct_tab",
+        "name": "Poll System Structure (30 min)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "1800",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 2,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 180,
+        "y": 200,
+        "wires": [
+            [
+                "scs_prepare_device_info",
+                "scs_prepare_firmware",
+                "scs_prepare_power_config",
+                "scs_prepare_grid",
+                "scs_prepare_battery",
+                "scs_prepare_generator"
+            ]
+        ]
+    },
+    {
+        "id": "scs_prepare_device_info",
+        "type": "function",
+        "z": "sys_conn_struct_tab",
+        "name": "Prepare read (DeviceInfo 0-7)",
+        "func": "// Device info and serial number\n// 0: Device type\n// 1: (skip)\n// 2: Communication protocol version\n// 3-7: SN byte 01-10 (ASCII, 2 bytes per register)\n\nmsg.baseAddr = 0;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 0,\n    quantity: 8\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 60,
+        "wires": [
+            [
+                "scs_read_device_info"
+            ]
+        ]
+    },
+    {
+        "id": "scs_prepare_firmware",
+        "type": "function",
+        "z": "sys_conn_struct_tab",
+        "name": "Prepare read (Firmware 10,13-14)",
+        "func": "// Firmware versions\n// 10: MCU board firmware\n// 11-12: (skip)\n// 13: Control board firmware\n// 14: Communication board firmware\n\nmsg.baseAddr = 10;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 10,\n    quantity: 5\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 510,
+        "y": 120,
+        "wires": [
+            [
+                "scs_read_firmware"
+            ]
+        ]
+    },
+    {
+        "id": "scs_prepare_power_config",
+        "type": "function",
+        "z": "sys_conn_struct_tab",
+        "name": "Prepare read (PowerConfig 15-19)",
+        "func": "// Power and config\n// 15: Safety type\n// 16: Rated power Low\n// 17: Rated power High\n// 18: MPPT number and phases\n// 19: Rated grid voltage\n\nmsg.baseAddr = 15;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 15,\n    quantity: 5\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 510,
+        "y": 180,
+        "wires": [
+            [
+                "scs_read_power_config"
+            ]
+        ]
+    },
+    {
+        "id": "scs_prepare_grid",
+        "type": "function",
+        "z": "sys_conn_struct_tab",
+        "name": "Prepare read (Grid 51,285-286)",
+        "func": "// Grid settings - read separately due to gaps\n// First read 51\nmsg.baseAddr = 51;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 51,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 240,
+        "wires": [
+            [
+                "scs_read_grid_51"
+            ]
+        ]
+    },
+    {
+        "id": "scs_prepare_battery",
+        "type": "function",
+        "z": "sys_conn_struct_tab",
+        "name": "Prepare read (Battery 204,213,325)",
+        "func": "// Battery config - read 204 first\nmsg.baseAddr = 204;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 204,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 510,
+        "y": 300,
+        "wires": [
+            [
+                "scs_read_battery_204"
+            ]
+        ]
+    },
+    {
+        "id": "scs_prepare_generator",
+        "type": "function",
+        "z": "sys_conn_struct_tab",
+        "name": "Prepare read (Generator 235,244,291)",
+        "func": "// Generator and export config\n// Read 235 and 244 together (close)\nmsg.baseAddr = 235;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 235,\n    quantity: 10  // 235-244\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 520,
+        "y": 360,
+        "wires": [
+            [
+                "scs_read_generator"
+            ]
+        ]
+    },
+    {
+        "id": "scs_read_device_info",
+        "type": "modbus-flex-getter",
+        "z": "sys_conn_struct_tab",
+        "name": "Read DeviceInfo (0-7)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 760,
+        "y": 60,
+        "wires": [
+            [
+                "scs_build_json"
+            ],
+            [
+                "scs_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "scs_read_firmware",
+        "type": "modbus-flex-getter",
+        "z": "sys_conn_struct_tab",
+        "name": "Read Firmware (10-14)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 760,
+        "y": 120,
+        "wires": [
+            [
+                "scs_build_json"
+            ],
+            [
+                "scs_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "scs_read_power_config",
+        "type": "modbus-flex-getter",
+        "z": "sys_conn_struct_tab",
+        "name": "Read PowerConfig (15-19)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 770,
+        "y": 180,
+        "wires": [
+            [
+                "scs_build_json"
+            ],
+            [
+                "scs_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "scs_read_grid_51",
+        "type": "modbus-flex-getter",
+        "z": "sys_conn_struct_tab",
+        "name": "Read Grid (51)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 740,
+        "y": 240,
+        "wires": [
+            [
+                "scs_prepare_grid_285",
+                "scs_build_json"
+            ],
+            [
+                "scs_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "scs_prepare_grid_285",
+        "type": "function",
+        "z": "sys_conn_struct_tab",
+        "name": "Prepare read (Grid 285-286)",
+        "func": "// Grid settings continued\n// 285: Grid Frequency\n// 286: Grid Type\n\nmsg.baseAddr = 285;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 285,\n    quantity: 2\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 980,
+        "y": 240,
+        "wires": [
+            [
+                "scs_read_grid_285"
+            ]
+        ]
+    },
+    {
+        "id": "scs_read_grid_285",
+        "type": "modbus-flex-getter",
+        "z": "sys_conn_struct_tab",
+        "name": "Read Grid (285-286)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1210,
+        "y": 240,
+        "wires": [
+            [
+                "scs_build_json"
+            ],
+            [
+                "scs_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "scs_read_battery_204",
+        "type": "modbus-flex-getter",
+        "z": "sys_conn_struct_tab",
+        "name": "Read Battery (204)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 760,
+        "y": 300,
+        "wires": [
+            [
+                "scs_prepare_battery_213",
+                "scs_build_json"
+            ],
+            [
+                "scs_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "scs_prepare_battery_213",
+        "type": "function",
+        "z": "sys_conn_struct_tab",
+        "name": "Prepare read (Battery 213)",
+        "func": "// Battery control mode\nmsg.baseAddr = 213;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 213,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 980,
+        "y": 300,
+        "wires": [
+            [
+                "scs_read_battery_213"
+            ]
+        ]
+    },
+    {
+        "id": "scs_read_battery_213",
+        "type": "modbus-flex-getter",
+        "z": "sys_conn_struct_tab",
+        "name": "Read Battery (213)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1210,
+        "y": 300,
+        "wires": [
+            [
+                "scs_prepare_battery_325",
+                "scs_build_json"
+            ],
+            [
+                "scs_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "scs_prepare_battery_325",
+        "type": "function",
+        "z": "sys_conn_struct_tab",
+        "name": "Prepare read (Battery 325)",
+        "func": "// Lithium battery type\nmsg.baseAddr = 325;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 325,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1440,
+        "y": 300,
+        "wires": [
+            [
+                "scs_read_battery_325"
+            ]
+        ]
+    },
+    {
+        "id": "scs_read_battery_325",
+        "type": "modbus-flex-getter",
+        "z": "sys_conn_struct_tab",
+        "name": "Read Battery (325)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1670,
+        "y": 300,
+        "wires": [
+            [
+                "scs_build_json"
+            ],
+            [
+                "scs_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "scs_read_generator",
+        "type": "modbus-flex-getter",
+        "z": "sys_conn_struct_tab",
+        "name": "Read Generator (235-244)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 780,
+        "y": 360,
+        "wires": [
+            [
+                "scs_prepare_gen_291",
+                "scs_build_json"
+            ],
+            [
+                "scs_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "scs_prepare_gen_291",
+        "type": "function",
+        "z": "sys_conn_struct_tab",
+        "name": "Prepare read (Gen 291)",
+        "func": "// Generator connected to grid input\nmsg.baseAddr = 291;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 291,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 970,
+        "y": 360,
+        "wires": [
+            [
+                "scs_read_gen_291"
+            ]
+        ]
+    },
+    {
+        "id": "scs_read_gen_291",
+        "type": "modbus-flex-getter",
+        "z": "sys_conn_struct_tab",
+        "name": "Read Gen (291)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 1180,
+        "y": 360,
+        "wires": [
+            [
+                "scs_build_json"
+            ],
+            [
+                "scs_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "scs_build_json",
+        "type": "function",
+        "z": "sys_conn_struct_tab",
+        "name": "Build SystemConnectionStructure JSON",
+        "func": "// Build SystemConnectionStructure from multiple Modbus reads.\n\nlet raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nlet baseAddr = msg.baseAddr;\nif (typeof baseAddr !== \"number\") {\n    baseAddr = (msg.modbusRequest && msg.modbusRequest.address);\n}\nif (typeof baseAddr !== \"number\") {\n    node.warn(\"SystemConnectionStructure: missing base address\");\n    return null;\n}\n\n// Helper: decode 16-bit register to 2 ASCII chars\nfunction regToAscii(val) {\n    const hi = (val >> 8) & 0xFF;\n    const lo = val & 0xFF;\n    let s = \"\";\n    if (hi >= 32 && hi < 127) s += String.fromCharCode(hi);\n    if (lo >= 32 && lo < 127) s += String.fromCharCode(lo);\n    return s;\n}\n\n// Helper: combine low+high word to 32-bit\nfunction u32(low, high) {\n    return ((high || 0) << 16) | (low || 0);\n}\n\n// ---- Store partials ----\n\n// Device Info 0-7\nif (baseAddr === 0) {\n    const deviceType = data[0] || 0;           // 0\n    const protocolVer = data[2] || 0;          // 2\n    \n    // Serial number from registers 3-7 (5 regs = 10 ASCII chars)\n    let sn = \"\";\n    for (let i = 3; i <= 7; i++) {\n        sn += regToAscii(data[i] || 0);\n    }\n    \n    flow.set(\"scs_part_device_info\", {\n        deviceType: deviceType,\n        deviceTypeHex: \"0x\" + deviceType.toString(16).padStart(4, '0'),\n        protocolVersion: protocolVer,\n        serialNumber: sn.trim()\n    });\n}\n\n// Firmware 10-14\nelse if (baseAddr === 10) {\n    flow.set(\"scs_part_firmware\", {\n        mcuBoardRaw: data[0] || 0,             // 10\n        controlMainRaw: data[3] || 0,          // 13\n        commMainRaw: data[4] || 0              // 14\n    });\n}\n\n// Power Config 15-19\nelse if (baseAddr === 15) {\n    const safetyType = data[0] || 0;           // 15\n    const ratedPowerLow = data[1] || 0;        // 16\n    const ratedPowerHigh = data[2] || 0;       // 17\n    const mpptPhases = data[3] || 0;           // 18\n    const gridVoltageLevel = data[4] || 0;     // 19\n    \n    // Rated power in 0.1W, convert to W\n    const ratedPowerW = Math.round(u32(ratedPowerLow, ratedPowerHigh) * 0.1);\n    \n    // Decode MPPT and phases from register 18\n    // Format varies by model - typically: high byte = MPPT count, low byte = phase info\n    const mpptCount = (mpptPhases >> 8) & 0xFF;\n    const phaseInfo = mpptPhases & 0xFF;\n    \n    flow.set(\"scs_part_power_config\", {\n        safetyTypeRaw: safetyType,\n        ratedPowerW: ratedPowerW,\n        mpptAndPhasesRaw: mpptPhases,\n        mpptCount: mpptCount || 4,  // Default to 4 if 0\n        gridVoltageLevel: gridVoltageLevel\n    });\n}\n\n// Grid 51\nelse if (baseAddr === 51) {\n    flow.set(\"scs_part_grid_51\", {\n        gridStandardRaw: data[0] || 0\n    });\n}\n\n// Grid 285-286\nelse if (baseAddr === 285) {\n    const gridFreq = data[0] || 0;             // 285: 0=50Hz, 1=60Hz\n    const gridType = data[1] || 0;             // 286\n    \n    flow.set(\"scs_part_grid_285\", {\n        gridFrequencyHz: gridFreq === 0 ? 50 : 60,\n        gridVoltageLevelCode: gridType\n    });\n}\n\n// Battery 204\nelse if (baseAddr === 204) {\n    flow.set(\"scs_part_battery_204\", {\n        ratedCapacityAh: data[0] || 0\n    });\n}\n\n// Battery 213\nelse if (baseAddr === 213) {\n    const mode = data[0];\n    let modeStr = \"capacity\";\n    if (mode === 0) modeStr = \"voltage\";\n    else if (mode === 2) modeStr = \"no_battery\";\n    \n    flow.set(\"scs_part_battery_213\", {\n        batteryControlMode: modeStr\n    });\n}\n\n// Battery 325\nelse if (baseAddr === 325) {\n    const bmsType = data[0] || 0;\n    const bmsTypes = {\n        0: \"PYLON_SOLAX_CAN\",\n        1: \"TIANBONDA_RS485\",\n        2: \"PYLON_RS485\",\n        3: \"WS_RS485\",\n        4: \"PYLONLV_CAN\",\n        5: \"UZENERGY_CAN\"\n    };\n    \n    flow.set(\"scs_part_battery_325\", {\n        lithiumBatteryTypeRaw: bmsType,\n        lithiumBatteryType: bmsTypes[bmsType] || \"UNKNOWN_\" + bmsType\n    });\n}\n\n// Generator 235-244\nelse if (baseAddr === 235) {\n    const inputMode = data[0] || 0;            // 235\n    const exportLimit = data[9] || 0;          // 244\n    \n    const inputModes = {\n        0: \"gen_input_only\",\n        1: \"smart_load\",\n        2: \"inverter_input\"\n    };\n    \n    flow.set(\"scs_part_generator\", {\n        inputMode: inputModes[inputMode] || \"unknown\",\n        inputModeRaw: inputMode,\n        exportLimitMode: exportLimit\n    });\n}\n\n// Generator 291\nelse if (baseAddr === 291) {\n    flow.set(\"scs_part_gen_291\", {\n        connectedToGridInput: (data[0] || 0) === 1\n    });\n}\nelse {\n    return null;\n}\n\n// ---- Try to assemble ----\n\nconst deviceInfoPart = flow.get(\"scs_part_device_info\");\nconst firmwarePart = flow.get(\"scs_part_firmware\");\nconst powerConfigPart = flow.get(\"scs_part_power_config\");\nconst grid51Part = flow.get(\"scs_part_grid_51\");\nconst grid285Part = flow.get(\"scs_part_grid_285\");\nconst battery204Part = flow.get(\"scs_part_battery_204\");\nconst battery213Part = flow.get(\"scs_part_battery_213\");\nconst battery325Part = flow.get(\"scs_part_battery_325\");\nconst generatorPart = flow.get(\"scs_part_generator\");\nconst gen291Part = flow.get(\"scs_part_gen_291\");\n\n// Need all parts\nif (!deviceInfoPart || !firmwarePart || !powerConfigPart || \n    !grid51Part || !grid285Part || \n    !battery204Part || !battery213Part || !battery325Part ||\n    !generatorPart || !gen291Part) {\n    return null;\n}\n\nconst deviceId = global.get(\"DEVICE_ID\") || env.get(\"DEVICE_ID\") || \"EC100-DEV-001\";\n\n// Determine grid type string\nconst gridTypeMap = {\n    0: \"single_phase\",\n    1: \"split_phase\",\n    2: \"three_phase\",\n    3: \"single_phase\"\n};\n\n// Determine export limit mode string\nconst exportLimitMap = {\n    0: \"sell_enabled\",\n    1: \"built_in_ct\",\n    2: \"external_meter\"\n};\n\nconst state = {\n    kind: \"SystemConnectionStructure\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    DeviceId: deviceId,\n    schemaVersion: 1,\n    \n    inverter: {\n        deviceType: deviceInfoPart.deviceTypeHex,\n        inverterModel: null,  // From config/datasheet\n        serialNumber: deviceInfoPart.serialNumber,\n        \n        firmware: {\n            protocolVersion: deviceInfoPart.protocolVersion.toString(),\n            mcuBoardRaw: firmwarePart.mcuBoardRaw,\n            controlMainRaw: firmwarePart.controlMainRaw,\n            commMainRaw: firmwarePart.commMainRaw\n        },\n        \n        ratedPowerW: powerConfigPart.ratedPowerW,\n        \n        acSide: {\n            mpptAndPhasesRaw: powerConfigPart.mpptAndPhasesRaw,\n            batteryInputCount: 1,  // Default, not in protocol\n            outputTopology: null,  // Not in protocol\n            gridType: gridTypeMap[grid285Part.gridVoltageLevelCode] || null,\n            regionVariant: null,   // Not in protocol\n            safetyTypeRaw: powerConfigPart.safetyTypeRaw,\n            gridPhaseCount: grid285Part.gridVoltageLevelCode === 2 ? 3 : 1,\n            gridStandardRaw: grid51Part.gridStandardRaw,\n            gridFrequencyHz: grid285Part.gridFrequencyHz,\n            gridVoltageLevelCode: powerConfigPart.gridVoltageLevel,\n            gridPhaseSequence: null,\n            itSystemNeutralUngrounded: false  // Default\n        }\n    },\n    \n    battery: {\n        batteryControlMode: battery213Part.batteryControlMode,\n        \n        batteryChannels: [\n            {\n                channelId: 1,\n                ratedCapacityAh: battery204Part.ratedCapacityAh,\n                nominalVoltageV: null,  // From datasheet\n                batterySn: null,\n                batteryPhysicalAddress: null,\n                batterySoftwareVersion: null,\n                lithiumBatteryType: battery325Part.lithiumBatteryType\n            }\n        ]\n    },\n    \n    generator: {\n        inputMode: generatorPart.inputMode,\n        connectedToGridInput: gen291Part.connectedToGridInput\n    },\n    \n    pv: {\n        mpptCount: powerConfigPart.mpptCount,\n        mppt: [\n            { pvChannelId: 1, supportsInput: true, stringMaxCurrentA: null, stringMaxVoltageV: null, recommendedVocAtStcV: null },\n            { pvChannelId: 2, supportsInput: powerConfigPart.mpptCount >= 2, stringMaxCurrentA: null, stringMaxVoltageV: null, recommendedVocAtStcV: null },\n            { pvChannelId: 3, supportsInput: powerConfigPart.mpptCount >= 3, stringMaxCurrentA: null, stringMaxVoltageV: null, recommendedVocAtStcV: null },\n            { pvChannelId: 4, supportsInput: powerConfigPart.mpptCount >= 4, stringMaxCurrentA: null, stringMaxVoltageV: null, recommendedVocAtStcV: null }\n        ]\n    },\n    \n    loadAndGrid: {\n        homeLoadConnectionPoint: null,  // From commissioning\n        exportLimitMode: exportLimitMap[generatorPart.exportLimitMode] || \"unknown\",\n        currentTransformerOnGridSide: generatorPart.exportLimitMode > 0,\n        supportsBackupLoad: true,\n        supportsZeroExport: true,\n        supportsExternalMeter: true\n    }\n};\n\n// Clear partials\nflow.set(\"scs_part_device_info\", null);\nflow.set(\"scs_part_firmware\", null);\nflow.set(\"scs_part_power_config\", null);\nflow.set(\"scs_part_grid_51\", null);\nflow.set(\"scs_part_grid_285\", null);\nflow.set(\"scs_part_battery_204\", null);\nflow.set(\"scs_part_battery_213\", null);\nflow.set(\"scs_part_battery_325\", null);\nflow.set(\"scs_part_generator\", null);\nflow.set(\"scs_part_gen_291\", null);\n\nflow.set(\"systemConnectionStructureSnapshot\", state);\n\nmsg.payload = state;\nmsg.state = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1400,
+        "y": 140,
+        "wires": [
+            [
+                "scs_debug_json",
+                "scs_mqtt_telemetry"
+            ]
+        ]
+    },
+    {
+        "id": "scs_debug_json",
+        "type": "debug",
+        "z": "sys_conn_struct_tab",
+        "name": "SystemConnectionStructure JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1700,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "scs_error_debug",
+        "type": "debug",
+        "z": "sys_conn_struct_tab",
+        "name": "SysConnStruct CRC/Error debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1090,
+        "y": 480,
+        "wires": []
+    },
+    {
+        "id": "scs_mqtt_telemetry",
+        "type": "mqtt out",
+        "z": "sys_conn_struct_tab",
+        "name": "Send to ThingsBoard",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1680,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

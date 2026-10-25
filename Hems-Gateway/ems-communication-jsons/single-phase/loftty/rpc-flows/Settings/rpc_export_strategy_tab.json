@@ -1,0 +1,95 @@
+[
+    {
+        "id": "rpc_export_strategy_tab",
+        "type": "tab",
+        "label": "RPC_ExportStrategy",
+        "disabled": false,
+        "info": "RPC Handler for Export Strategy\n\nMethods:\n- getExportStrategy\n- setExportStrategy"
+    },
+    {
+        "id": "rpc_es_mqtt_in",
+        "type": "mqtt in",
+        "z": "rpc_export_strategy_tab",
+        "name": "RPC Request",
+        "topic": "v1/devices/me/rpc/request/+",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "tb-broker",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 140,
+        "y": 100,
+        "wires": [
+            [
+                "rpc_es_filter"
+            ]
+        ]
+    },
+    {
+        "id": "rpc_es_filter",
+        "type": "function",
+        "z": "rpc_export_strategy_tab",
+        "name": "Filter: getExportStrategy / setExportStrategy",
+        "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nconst rpc = msg.payload || {};\nconst method = rpc.method;\n\nif (method !== 'getExportStrategy' && method !== 'setExportStrategy') {\n    return null;\n}\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\nmsg.rpcMethod = method;\nmsg.rpcParams = rpc.params || {};\n\n// Set operation type based on method\nmsg.operationType = (method === 'setExportStrategy') ? 'write' : 'read';\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 440,
+        "y": 100,
+        "wires": [
+            [
+                "rpc_es_link_out"
+            ]
+        ]
+    },
+    {
+        "id": "rpc_es_link_out",
+        "type": "link out",
+        "z": "rpc_export_strategy_tab",
+        "name": "To ExportStrategy Flow",
+        "mode": "link",
+        "links": [
+            "es_link_in_rpc"
+        ],
+        "x": 695,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

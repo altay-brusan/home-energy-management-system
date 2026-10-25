@@ -1,0 +1,563 @@
+[
+    {
+        "id": "0d057ad450497aeb",
+        "type": "tab",
+        "label": "LoadDeviceState",
+        "disabled": false,
+        "info": "Reads Load Device State from registers:\n- 626: Day load energy (0.1kWh)\n- 627-628: Total load energy (0.1kWh, U32)\n- 740-743 + 796-799: UPS Load phase powers (1W, U32)\n- 744-746: Load phase voltages (0.1V)\n- 750-753 + 756-759: Load phase powers (1W, S32)\n- 755: Load frequency (0.01Hz)\n\nTriggers:\n1. RPC: getLoadDeviceState"
+    },
+    {
+        "id": "c856a6836938cf2c",
+        "type": "link in",
+        "z": "0d057ad450497aeb",
+        "name": "RPC getLoadDeviceState",
+        "links": [
+            "rpc_lds_link_out"
+        ],
+        "x": 155,
+        "y": 180,
+        "wires": [
+            [
+                "11591ae936e9cdf5",
+                "71a01746c81d4b29",
+                "6de47b2be5ff0fb1",
+                "90526cb7a39e4009",
+                "d6c90c113a174a7c",
+                "8df5d71aeb95cf53",
+                "462143fbb2d3aeff"
+            ]
+        ]
+    },
+    {
+        "id": "d15c42de042b4a57",
+        "type": "inject",
+        "z": "0d057ad450497aeb",
+        "name": "Manual Trigger",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 260,
+        "wires": [
+            [
+                "11591ae936e9cdf5",
+                "71a01746c81d4b29",
+                "6de47b2be5ff0fb1",
+                "90526cb7a39e4009",
+                "d6c90c113a174a7c",
+                "8df5d71aeb95cf53",
+                "462143fbb2d3aeff"
+            ]
+        ]
+    },
+    {
+        "id": "11591ae936e9cdf5",
+        "type": "function",
+        "z": "0d057ad450497aeb",
+        "name": "Prepare read (Daily/Total 626-628)",
+        "func": "// Store RPC response topic if present\nif (msg.rpcResponseTopic) {\n    flow.set(\"lds_rpc_response_topic\", msg.rpcResponseTopic);\n}\n\n// Daily and Total load energy\n// 626: Day_Load_Power (0.1kWh)\n// 627: Total_Load_Energy Low (0.1kWh)\n// 628: Total_Load_Energy High (0.1kWh)\n\nmsg.baseAddr = 626;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 626,\n    quantity: 3\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 490,
+        "y": 80,
+        "wires": [
+            [
+                "e37f5b3d17c4677e"
+            ]
+        ]
+    },
+    {
+        "id": "71a01746c81d4b29",
+        "type": "function",
+        "z": "0d057ad450497aeb",
+        "name": "Prepare read (UPS Low 740-743)",
+        "func": "// UPS Load power - LOW words\n// 740: UPS load phase A LOW (1W, U32)\n// 741: UPS load phase B LOW (1W, U32)\n// 742: UPS load phase C LOW (1W, U32)\n// 743: UPS load total LOW (1W, U32)\n\nmsg.baseAddr = 740;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 740,\n    quantity: 4\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 490,
+        "y": 140,
+        "wires": [
+            [
+                "27c83d4b6395ae78"
+            ]
+        ]
+    },
+    {
+        "id": "6de47b2be5ff0fb1",
+        "type": "function",
+        "z": "0d057ad450497aeb",
+        "name": "Prepare read (UPS High 796-799)",
+        "func": "// UPS Load power - HIGH words\n// 796: UPS load phase A HIGH (1W, U32)\n// 797: UPS load phase B HIGH (1W, U32)\n// 798: UPS load phase C HIGH (1W, U32)\n// 799: UPS load total HIGH (1W, U32)\n\nmsg.baseAddr = 796;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 796,\n    quantity: 4\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 180,
+        "wires": [
+            [
+                "a42564be5fa9431a"
+            ]
+        ]
+    },
+    {
+        "id": "90526cb7a39e4009",
+        "type": "function",
+        "z": "0d057ad450497aeb",
+        "name": "Prepare read (Voltage 744-746)",
+        "func": "// Load phase voltages\n// 744: Load phase voltage A (0.1V)\n// 745: Load phase voltage B (0.1V)\n// 746: Load phase voltage C (0.1V)\n\nmsg.baseAddr = 744;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 744,\n    quantity: 3\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 490,
+        "y": 240,
+        "wires": [
+            [
+                "b7dad3f919edd06c"
+            ]
+        ]
+    },
+    {
+        "id": "d6c90c113a174a7c",
+        "type": "function",
+        "z": "0d057ad450497aeb",
+        "name": "Prepare read (Load Low 750-753)",
+        "func": "// Load power - LOW words\n// 750: Load phase A power LOW (1W, S32)\n// 751: Load phase B power LOW (1W, S32)\n// 752: Load phase C power LOW (1W, S32)\n// 753: Load total power LOW (1W, S32)\n\nmsg.baseAddr = 750;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 750,\n    quantity: 4\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 300,
+        "wires": [
+            [
+                "c4ac2f3706302a76"
+            ]
+        ]
+    },
+    {
+        "id": "8df5d71aeb95cf53",
+        "type": "function",
+        "z": "0d057ad450497aeb",
+        "name": "Prepare read (Load High 756-759)",
+        "func": "// Load power - HIGH words\n// 756: Load phase A power HIGH (1W, S32)\n// 757: Load phase B power HIGH (1W, S32)\n// 758: Load phase C power HIGH (1W, S32)\n// 759: Load total power HIGH (1W, S32)\n\nmsg.baseAddr = 756;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 756,\n    quantity: 4\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 340,
+        "wires": [
+            [
+                "e46ba9398371ba1e"
+            ]
+        ]
+    },
+    {
+        "id": "462143fbb2d3aeff",
+        "type": "function",
+        "z": "0d057ad450497aeb",
+        "name": "Prepare read (Freq 755)",
+        "func": "// Load frequency\n// 755: Load frequency (0.01Hz)\n\nmsg.baseAddr = 755;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 755,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 400,
+        "wires": [
+            [
+                "d6d570dab97db7e3"
+            ]
+        ]
+    },
+    {
+        "id": "e37f5b3d17c4677e",
+        "type": "modbus-flex-getter",
+        "z": "0d057ad450497aeb",
+        "name": "Read Daily/Total (626-628)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 760,
+        "y": 80,
+        "wires": [
+            [
+                "4573cda89218b06e"
+            ],
+            [
+                "cc4d5e79be281344"
+            ]
+        ]
+    },
+    {
+        "id": "27c83d4b6395ae78",
+        "type": "modbus-flex-getter",
+        "z": "0d057ad450497aeb",
+        "name": "Read UPS Low (740-743)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 760,
+        "y": 140,
+        "wires": [
+            [
+                "4573cda89218b06e"
+            ],
+            [
+                "cc4d5e79be281344"
+            ]
+        ]
+    },
+    {
+        "id": "a42564be5fa9431a",
+        "type": "modbus-flex-getter",
+        "z": "0d057ad450497aeb",
+        "name": "Read UPS High (796-799)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 770,
+        "y": 180,
+        "wires": [
+            [
+                "4573cda89218b06e"
+            ],
+            [
+                "cc4d5e79be281344"
+            ]
+        ]
+    },
+    {
+        "id": "b7dad3f919edd06c",
+        "type": "modbus-flex-getter",
+        "z": "0d057ad450497aeb",
+        "name": "Read Voltage (744-746)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 760,
+        "y": 240,
+        "wires": [
+            [
+                "4573cda89218b06e"
+            ],
+            [
+                "cc4d5e79be281344"
+            ]
+        ]
+    },
+    {
+        "id": "c4ac2f3706302a76",
+        "type": "modbus-flex-getter",
+        "z": "0d057ad450497aeb",
+        "name": "Read Load Low (750-753)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 770,
+        "y": 300,
+        "wires": [
+            [
+                "4573cda89218b06e"
+            ],
+            [
+                "cc4d5e79be281344"
+            ]
+        ]
+    },
+    {
+        "id": "e46ba9398371ba1e",
+        "type": "modbus-flex-getter",
+        "z": "0d057ad450497aeb",
+        "name": "Read Load High (756-759)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 770,
+        "y": 340,
+        "wires": [
+            [
+                "4573cda89218b06e"
+            ],
+            [
+                "cc4d5e79be281344"
+            ]
+        ]
+    },
+    {
+        "id": "d6d570dab97db7e3",
+        "type": "modbus-flex-getter",
+        "z": "0d057ad450497aeb",
+        "name": "Read Freq (755)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 720,
+        "y": 400,
+        "wires": [
+            [
+                "4573cda89218b06e"
+            ],
+            [
+                "cc4d5e79be281344"
+            ]
+        ]
+    },
+    {
+        "id": "4573cda89218b06e",
+        "type": "function",
+        "z": "0d057ad450497aeb",
+        "name": "Build LoadDeviceState JSON",
+        "func": "let raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nlet baseAddr = msg.baseAddr;\nif (typeof baseAddr !== \"number\") {\n    baseAddr = (msg.modbusRequest && msg.modbusRequest.address);\n}\nif (typeof baseAddr !== \"number\") {\n    return null;\n}\n\nfunction s32(low, high) {\n    const u = ((high & 0xFFFF) << 16) | (low & 0xFFFF);\n    return (u & 0x80000000) ? u - 0x100000000 : u;\n}\n\nfunction u32(low, high) {\n    return ((high & 0xFFFF) << 16) | (low & 0xFFFF);\n}\n\n// Daily/Total 626-628\nif (baseAddr === 626) {\n    const daily = data[0] || 0;\n    const totalLow = data[1] || 0;\n    const totalHigh = data[2] || 0;\n    \n    flow.set(\"lds_part_energy\", {\n        todayEnergyKWh: Math.round(daily * 0.1 * 100) / 100,\n        totalEnergyKWh: Math.round(u32(totalLow, totalHigh) * 0.1 * 100) / 100\n    });\n}\n\n// UPS Power Low 740-743\nelse if (baseAddr === 740) {\n    flow.set(\"lds_part_ups_low\", {\n        phaseA: data[0] || 0,\n        phaseB: data[1] || 0,\n        phaseC: data[2] || 0,\n        total: data[3] || 0\n    });\n}\n\n// UPS Power High 796-799\nelse if (baseAddr === 796) {\n    const low = flow.get(\"lds_part_ups_low\");\n    if (low) {\n        flow.set(\"lds_part_ups_power\", {\n            phaseAPowerW: u32(low.phaseA, data[0]),\n            phaseBPowerW: u32(low.phaseB, data[1]),\n            phaseCPowerW: u32(low.phaseC, data[2]),\n            totalPowerW: u32(low.total, data[3])\n        });\n    }\n}\n\n// Voltage 744-746\nelse if (baseAddr === 744) {\n    flow.set(\"lds_part_voltage\", {\n        phaseAVoltageV: Math.round(data[0] * 0.1 * 10) / 10,\n        phaseBVoltageV: Math.round(data[1] * 0.1 * 10) / 10,\n        phaseCVoltageV: Math.round(data[2] * 0.1 * 10) / 10\n    });\n}\n\n// Load Power Low 750-753\nelse if (baseAddr === 750) {\n    flow.set(\"lds_part_load_low\", {\n        phaseA: data[0] || 0,\n        phaseB: data[1] || 0,\n        phaseC: data[2] || 0,\n        total: data[3] || 0\n    });\n}\n\n// Load Power High 756-759\nelse if (baseAddr === 756) {\n    const low = flow.get(\"lds_part_load_low\");\n    if (low) {\n        flow.set(\"lds_part_load_power\", {\n            phaseAPowerW: s32(low.phaseA, data[0]),\n            phaseBPowerW: s32(low.phaseB, data[1]),\n            phaseCPowerW: s32(low.phaseC, data[2]),\n            totalActivePowerW: s32(low.total, data[3])\n        });\n    }\n}\n\n// Freq 755\nelse if (baseAddr === 755) {\n    flow.set(\"lds_part_freq\", {\n        frequencyHz: Math.round((data[0] || 0) * 0.01 * 100) / 100\n    });\n}\nelse {\n    return null;\n}\n\n// Assemble\nconst energyPart = flow.get(\"lds_part_energy\");\nconst upsPowerPart = flow.get(\"lds_part_ups_power\");\nconst voltagePart = flow.get(\"lds_part_voltage\");\nconst loadPowerPart = flow.get(\"lds_part_load_power\");\nconst freqPart = flow.get(\"lds_part_freq\");\n\nif (!energyPart || !upsPowerPart || !voltagePart || !loadPowerPart || !freqPart) {\n    return null;\n}\n\nconst deviceId = msg.deviceId || global.get(\"DEVICE_ID\") || env.get(\"DEVICE_ID\") || \"EC100\";\n\nconst state = {\n    kind: \"LoadDeviceState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    DeviceId: deviceId,\n    \n    scope: \"backup_load\",\n    \n    loadPower: {\n        totalActivePowerW: loadPowerPart.totalActivePowerW,\n        phaseAPowerW: loadPowerPart.phaseAPowerW,\n        phaseBPowerW: loadPowerPart.phaseBPowerW,\n        phaseCPowerW: loadPowerPart.phaseCPowerW\n    },\n    \n    loadVoltage: {\n        phaseAVoltageV: voltagePart.phaseAVoltageV,\n        phaseBVoltageV: voltagePart.phaseBVoltageV,\n        phaseCVoltageV: voltagePart.phaseCVoltageV\n    },\n    \n    frequencyHz: freqPart.frequencyHz,\n    \n    upsLoadPower: {\n        totalPowerW: upsPowerPart.totalPowerW,\n        phaseAPowerW: upsPowerPart.phaseAPowerW,\n        phaseBPowerW: upsPowerPart.phaseBPowerW,\n        phaseCPowerW: upsPowerPart.phaseCPowerW\n    },\n    \n    todayEnergyKWh: energyPart.todayEnergyKWh,\n    totalEnergyKWh: energyPart.totalEnergyKWh\n};\n\n// Clear partials\nflow.set(\"lds_part_energy\", null);\nflow.set(\"lds_part_ups_low\", null);\nflow.set(\"lds_part_ups_power\", null);\nflow.set(\"lds_part_voltage\", null);\nflow.set(\"lds_part_load_low\", null);\nflow.set(\"lds_part_load_power\", null);\nflow.set(\"lds_part_freq\", null);\n\nflow.set(\"loadDeviceStateSnapshot\", state);\n\nmsg.payload = state;\nmsg.state = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1160,
+        "y": 240,
+        "wires": [
+            [
+                "633e987e1ba7c08e",
+                "f6cb9ec22b78f09b"
+            ]
+        ]
+    },
+    {
+        "id": "f6cb9ec22b78f09b",
+        "type": "function",
+        "z": "0d057ad450497aeb",
+        "name": "Prepare RPC Response",
+        "func": "const rpcTopic = flow.get(\"lds_rpc_response_topic\");\nif (!rpcTopic) {\n    return null;\n}\n\nconst state = msg.state || msg.payload;\nmsg.payload = { success: true, data: state };\nmsg.topic = rpcTopic;\n\nflow.set(\"lds_rpc_response_topic\", null);\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1430,
+        "y": 240,
+        "wires": [
+            [
+                "4129b2ed4bc1ac9e"
+            ]
+        ]
+    },
+    {
+        "id": "4129b2ed4bc1ac9e",
+        "type": "mqtt out",
+        "z": "0d057ad450497aeb",
+        "name": "RPC Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1660,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "633e987e1ba7c08e",
+        "type": "debug",
+        "z": "0d057ad450497aeb",
+        "name": "LoadDeviceState JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1440,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "cc4d5e79be281344",
+        "type": "debug",
+        "z": "0d057ad450497aeb",
+        "name": "LoadDeviceState Error",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1150,
+        "y": 480,
+        "wires": []
+    },
+    {
+        "id": "5072402ef53d34b2",
+        "type": "comment",
+        "z": "0d057ad450497aeb",
+        "name": "THREE-PHASE: RPC only - Phase A/B/C voltages and powers (Load + UPS Load) with S32/U32",
+        "info": "",
+        "x": 420,
+        "y": 20,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

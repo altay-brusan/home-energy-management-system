@@ -1,0 +1,413 @@
+[
+    {
+        "id": "load_device_state_tab",
+        "type": "tab",
+        "label": "LoadDeviceState",
+        "disabled": false,
+        "info": "Reads Load Device State from registers:\n- 84: Day Load Power (0.1kWh)\n- 85-86: Total Load Energy (0.1kWh, 32-bit)\n- 157: Load voltage L1 (0.1V)\n- 178: Load total power (1W)\n- 192: Load frequency (0.01Hz)\n\nTriggers:\n1. RPC: getLoadDeviceState"
+    },
+    {
+        "id": "lds_link_in_rpc",
+        "type": "link in",
+        "z": "load_device_state_tab",
+        "name": "RPC getLoadDeviceState",
+        "links": [
+            "rpc_lds_link_out"
+        ],
+        "x": 155,
+        "y": 140,
+        "wires": [
+            [
+                "lds_prepare_daily_total",
+                "lds_prepare_voltage",
+                "lds_prepare_power",
+                "lds_prepare_freq"
+            ]
+        ]
+    },
+    {
+        "id": "lds_manual_inject",
+        "type": "inject",
+        "z": "load_device_state_tab",
+        "name": "Manual Trigger",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 220,
+        "wires": [
+            [
+                "lds_prepare_daily_total",
+                "lds_prepare_voltage",
+                "lds_prepare_power",
+                "lds_prepare_freq"
+            ]
+        ]
+    },
+    {
+        "id": "lds_prepare_daily_total",
+        "type": "function",
+        "z": "load_device_state_tab",
+        "name": "Prepare read (Daily/Total 84-86)",
+        "func": "// Daily and Total load energy\n// 84: Day_Load_Power (0.1kWh)\n// 85: Total_Load_Power Low (0.1kWh)\n// 86: Total_Load_Power High (0.1kWh)\n\nmsg.baseAddr = 84;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 84,\n    quantity: 3\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 480,
+        "y": 80,
+        "wires": [
+            [
+                "lds_read_daily_total"
+            ]
+        ]
+    },
+    {
+        "id": "lds_prepare_voltage",
+        "type": "function",
+        "z": "load_device_state_tab",
+        "name": "Prepare read (Voltage 157)",
+        "func": "// Load voltage L1\n// 157: Load voltage L1 (0.1V)\n\nmsg.baseAddr = 157;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 157,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 140,
+        "wires": [
+            [
+                "lds_read_voltage"
+            ]
+        ]
+    },
+    {
+        "id": "lds_prepare_power",
+        "type": "function",
+        "z": "load_device_state_tab",
+        "name": "Prepare read (Power 178)",
+        "func": "// Load total power\n// 178: load side Total power (1W, signed)\n\nmsg.baseAddr = 178;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 178,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 200,
+        "wires": [
+            [
+                "lds_read_power"
+            ]
+        ]
+    },
+    {
+        "id": "lds_prepare_freq",
+        "type": "function",
+        "z": "load_device_state_tab",
+        "name": "Prepare read (Freq 192)",
+        "func": "// Load frequency\n// 192: load frequency (0.01Hz)\n\nmsg.baseAddr = 192;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 192,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 450,
+        "y": 260,
+        "wires": [
+            [
+                "lds_read_freq"
+            ]
+        ]
+    },
+    {
+        "id": "lds_read_daily_total",
+        "type": "modbus-flex-getter",
+        "z": "load_device_state_tab",
+        "name": "Read Daily/Total (84-86)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 750,
+        "y": 80,
+        "wires": [
+            [
+                "lds_build_json"
+            ],
+            [
+                "lds_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "lds_read_voltage",
+        "type": "modbus-flex-getter",
+        "z": "load_device_state_tab",
+        "name": "Read Voltage (157)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 730,
+        "y": 140,
+        "wires": [
+            [
+                "lds_build_json"
+            ],
+            [
+                "lds_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "lds_read_power",
+        "type": "modbus-flex-getter",
+        "z": "load_device_state_tab",
+        "name": "Read Power (178)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 730,
+        "y": 200,
+        "wires": [
+            [
+                "lds_build_json"
+            ],
+            [
+                "lds_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "lds_read_freq",
+        "type": "modbus-flex-getter",
+        "z": "load_device_state_tab",
+        "name": "Read Freq (192)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 720,
+        "y": 260,
+        "wires": [
+            [
+                "lds_build_json"
+            ],
+            [
+                "lds_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "lds_build_json",
+        "type": "function",
+        "z": "load_device_state_tab",
+        "name": "Build LoadDeviceState JSON",
+        "func": "// Build LoadDeviceState from multiple Modbus reads.\n\nlet raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nlet baseAddr = msg.baseAddr;\nif (typeof baseAddr !== \"number\") {\n    baseAddr = (msg.modbusRequest && msg.modbusRequest.address);\n}\nif (typeof baseAddr !== \"number\") {\n    node.warn(\"LoadDeviceState: missing base address\");\n    return null;\n}\n\n// Helper: signed 16-bit\nfunction s16(v) {\n    if (!Number.isFinite(v)) return null;\n    return (v & 0x8000) ? v - 0x10000 : v;\n}\n\n// Helper: combine two 16-bit words to 32-bit unsigned\nfunction u32(low, high) {\n    return ((high & 0xFFFF) << 16) | (low & 0xFFFF);\n}\n\n// ---- Store partials ----\n\n// Daily/Total 84-86\nif (baseAddr === 84) {\n    const dailyRaw = data[0] || 0;      // 84: Day Load (0.1kWh)\n    const totalLow = data[1] || 0;      // 85: Total Low\n    const totalHigh = data[2] || 0;     // 86: Total High\n    \n    const dailyKWh = Math.round(dailyRaw * 0.1 * 10) / 10;\n    const totalKWh = Math.round(u32(totalLow, totalHigh) * 0.1 * 10) / 10;\n    \n    flow.set(\"lds_part_energy\", {\n        todayEnergyKWh: dailyKWh,\n        totalEnergyKWh: totalKWh\n    });\n}\n\n// Voltage 157\nelse if (baseAddr === 157) {\n    const voltageRaw = data[0] || 0;  // 0.1V\n    flow.set(\"lds_part_voltage\", {\n        voltageV: Math.round(voltageRaw * 0.1 * 10) / 10\n    });\n}\n\n// Power 178\nelse if (baseAddr === 178) {\n    const powerRaw = s16(data[0]);  // 1W, signed\n    flow.set(\"lds_part_power\", {\n        activePowerW: powerRaw\n    });\n}\n\n// Frequency 192\nelse if (baseAddr === 192) {\n    const freqRaw = data[0] || 0;  // 0.01Hz\n    flow.set(\"lds_part_freq\", {\n        frequencyHz: Math.round(freqRaw * 0.01 * 100) / 100\n    });\n}\nelse {\n    return null;\n}\n\n// ---- Try to assemble ----\n\nconst energyPart = flow.get(\"lds_part_energy\");\nconst voltagePart = flow.get(\"lds_part_voltage\");\nconst powerPart = flow.get(\"lds_part_power\");\nconst freqPart = flow.get(\"lds_part_freq\");\n\nif (!energyPart || !voltagePart || !powerPart || !freqPart) {\n    return null;\n}\n\nconst deviceId = msg.deviceId\n    || global.get(\"DEVICE_ID\")\n    || env.get(\"DEVICE_ID\")\n    || \"EC100-DEV-001\";\n\nconst state = {\n    kind: \"LoadDeviceState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    DeviceId: deviceId,\n    \n    scope: \"backup_load\",\n    \n    activePowerW: powerPart.activePowerW,\n    apparentPowerVA: null,  // Not available separately for load\n    \n    voltageV: voltagePart.voltageV,\n    frequencyHz: freqPart.frequencyHz,\n    \n    todayEnergyKWh: energyPart.todayEnergyKWh,\n    totalEnergyKWh: energyPart.totalEnergyKWh\n};\n\n// Clear partials\nflow.set(\"lds_part_energy\", null);\nflow.set(\"lds_part_voltage\", null);\nflow.set(\"lds_part_power\", null);\nflow.set(\"lds_part_freq\", null);\n\nflow.set(\"loadDeviceStateSnapshot\", state);\n\nmsg.payload = state;\nmsg.state = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 980,
+        "y": 160,
+        "wires": [
+            [
+                "lds_debug_json",
+                "lds_rpc_response"
+            ]
+        ]
+    },
+    {
+        "id": "lds_debug_json",
+        "type": "debug",
+        "z": "load_device_state_tab",
+        "name": "LoadDeviceState JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1260,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "lds_error_debug",
+        "type": "debug",
+        "z": "load_device_state_tab",
+        "name": "LoadDeviceState CRC/Error",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1000,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "lds_rpc_response",
+        "type": "function",
+        "z": "load_device_state_tab",
+        "name": "Prepare RPC Response",
+        "func": "// Only handle messages that came from RPC\nif (!msg.rpcResponseTopic) {\n    return null;\n}\n\nconst state = msg.state || msg.payload;\n\nmsg.payload = state;\nmsg.topic = msg.rpcResponseTopic;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1260,
+        "y": 220,
+        "wires": [
+            [
+                "lds_mqtt_rpc_response"
+            ]
+        ]
+    },
+    {
+        "id": "lds_mqtt_rpc_response",
+        "type": "mqtt out",
+        "z": "load_device_state_tab",
+        "name": "RPC Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1480,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "lds_comment_rpc",
+        "type": "comment",
+        "z": "load_device_state_tab",
+        "name": "RPC Trigger Only (getLoadDeviceState)",
+        "info": "",
+        "x": 220,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

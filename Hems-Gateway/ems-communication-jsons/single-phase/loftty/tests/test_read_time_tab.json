@@ -1,0 +1,232 @@
+[
+    {
+        "id": "test_read_time_tab",
+        "type": "tab",
+        "label": "TEST_ReadTime",
+        "disabled": false,
+        "info": "Test different addresses to find correct time registers"
+    },
+    {
+        "id": "test_read_21",
+        "type": "inject",
+        "z": "test_read_time_tab",
+        "name": "Read 21-26 (decimal)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"fc\":3,\"unitid\":1,\"address\":21,\"quantity\":6}",
+        "payloadType": "json",
+        "x": 180,
+        "y": 100,
+        "wires": [
+            [
+                "test_modbus_read"
+            ]
+        ]
+    },
+    {
+        "id": "test_read_20",
+        "type": "inject",
+        "z": "test_read_time_tab",
+        "name": "Read 20-25",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"fc\":3,\"unitid\":1,\"address\":20,\"quantity\":6}",
+        "payloadType": "json",
+        "x": 150,
+        "y": 160,
+        "wires": [
+            [
+                "test_modbus_read"
+            ]
+        ]
+    },
+    {
+        "id": "test_read_fc4_21",
+        "type": "inject",
+        "z": "test_read_time_tab",
+        "name": "Read FC4 (Input) 21-26",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"fc\":4,\"unitid\":1,\"address\":21,\"quantity\":6}",
+        "payloadType": "json",
+        "x": 180,
+        "y": 220,
+        "wires": [
+            [
+                "test_modbus_read"
+            ]
+        ]
+    },
+    {
+        "id": "test_read_0",
+        "type": "inject",
+        "z": "test_read_time_tab",
+        "name": "Read 0-10 (start)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"fc\":3,\"unitid\":1,\"address\":0,\"quantity\":10}",
+        "payloadType": "json",
+        "x": 170,
+        "y": 280,
+        "wires": [
+            [
+                "test_modbus_read"
+            ]
+        ]
+    },
+    {
+        "id": "test_read_10",
+        "type": "inject",
+        "z": "test_read_time_tab",
+        "name": "Read 10-20",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"fc\":3,\"unitid\":1,\"address\":10,\"quantity\":10}",
+        "payloadType": "json",
+        "x": 150,
+        "y": 340,
+        "wires": [
+            [
+                "test_modbus_read"
+            ]
+        ]
+    },
+    {
+        "id": "test_read_17",
+        "type": "inject",
+        "z": "test_read_time_tab",
+        "name": "Read 17-22 (octal 021=17)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"fc\":3,\"unitid\":1,\"address\":17,\"quantity\":6}",
+        "payloadType": "json",
+        "x": 190,
+        "y": 400,
+        "wires": [
+            [
+                "test_modbus_read"
+            ]
+        ]
+    },
+    {
+        "id": "test_modbus_read",
+        "type": "modbus-flex-getter",
+        "z": "test_read_time_tab",
+        "name": "Modbus Read",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 430,
+        "y": 240,
+        "wires": [
+            [
+                "test_debug"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "test_debug",
+        "type": "debug",
+        "z": "test_read_time_tab",
+        "name": "Read Result",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload",
+        "statusType": "auto",
+        "x": 610,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    }
+]

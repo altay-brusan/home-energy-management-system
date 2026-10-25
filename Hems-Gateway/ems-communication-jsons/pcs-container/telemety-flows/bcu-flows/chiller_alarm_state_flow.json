@@ -1,0 +1,196 @@
+[
+    {
+        "id": "chiller_alarm_state_tab",
+        "type": "tab",
+        "label": "Chiller Alarm State",
+        "disabled": false,
+        "info": "ChillerAlarmState - Chiller_3_Alarm + Chiller_4_Alarm\n\nCAN Messages:\n- 0x18068040x: Chiller_3_Alarm (6 alarms)\n- 0x18078040x: Chiller_4_Alarm (28 alarms)\n\nThrottle: 500ms"
+    },
+    {
+        "id": "can0_input_chiller_alarm",
+        "type": "socketcan-out",
+        "z": "chiller_alarm_state_tab",
+        "name": "CAN0 Input",
+        "config": "can0_chiller_alarm",
+        "x": 120,
+        "y": 180,
+        "wires": [
+            [
+                "parse_chiller_alarm"
+            ]
+        ]
+    },
+    {
+        "id": "parse_chiller_alarm",
+        "type": "function",
+        "z": "chiller_alarm_state_tab",
+        "name": "Parse Chiller Alarm",
+        "func": "const frame = msg.payload || msg;\nlet canId = frame.canid & 0x1FFFFFFF;\nconst data = frame.data || [];\n\nlet state = flow.get(\"chillerAlarmState\") || {\n    kind: \"ChillerAlarmState\",\n    version: 1,\n    // Chiller_3_Alarm (0x18068040x)\n    oICoolantPressSensorFault: null,\n    powerSupplyOV: null,\n    powerSupplyUV: null,\n    systemCoolantShortage: null,\n    pumpFaultSummary: null,\n    pumpFaultLockSummary: null,\n    // Chiller_4_Alarm (0x18078040x)\n    oCoolantPressSensorFault: null,\n    iCoolantPressureSensorFault: null,\n    lowPressureSensorFault: null,\n    oCoolantTempSensorFault: null,\n    systemLowPressureAlarm: null,\n    systemHighPressureAlarm: null,\n    dischargeTempTooHighAlarm: null,\n    canCommunicationFaultAlarm: null,\n    suctionTempSensorFault: null,\n    coolingSystemAbnormal: null,\n    lowSuctionSuperheatDegreeA: null,\n    compressorVfdOvAlarm: null,\n    compressorVfdUvAlarm: null,\n    compressorVfdOcAlarm: null,\n    compressorVfdOtAlarm: null,\n    compressorVfdComFaultA: null,\n    compressorVfdPhaseLossA: null,\n    otherCompVfdFaultAlarm: null,\n    pumpLowDiffPressAlarm: null,\n    dischargeTempTooHighLock: null,\n    systemHighPressLock: null,\n    systemLowPressLock: null,\n    compressorVfdOcLock: null,\n    compressorVfdOvLock: null,\n    compressorVfdUvLock: null,\n    compressorVfdOtLock: null,\n    compressorVfdPhsLossLock: null,\n    otherCompVfdFaultLocks: null\n};\n\n// Helper function\nfunction getBit(buf, bitIndex) {\n    const byteIndex = Math.floor(bitIndex / 8);\n    const bitOffset = bitIndex % 8;\n    if (byteIndex >= buf.length) return false;\n    return ((buf[byteIndex] >> bitOffset) & 0x01) === 1;\n}\n\nvar processed = false;\n\n// ==================== Chiller_3_Alarm (0x18068040x) ====================\nif ((canId & 0xFFFFFFF0) === 0x18068040) {\n    processed = true;\n    state.oICoolantPressSensorFault = getBit(data, 0);\n    state.powerSupplyOV = getBit(data, 1);\n    state.powerSupplyUV = getBit(data, 2);\n    state.systemCoolantShortage = getBit(data, 3);\n    state.pumpFaultSummary = getBit(data, 4);\n    state.pumpFaultLockSummary = getBit(data, 5);\n}\n\n// ==================== Chiller_4_Alarm (0x18078040x) ====================\nif ((canId & 0xFFFFFFF0) === 0x18078040) {\n    processed = true;\n    state.oCoolantPressSensorFault = getBit(data, 0);\n    state.iCoolantPressureSensorFault = getBit(data, 1);\n    state.lowPressureSensorFault = getBit(data, 2);\n    state.oCoolantTempSensorFault = getBit(data, 3);\n    state.systemLowPressureAlarm = getBit(data, 4);\n    state.systemHighPressureAlarm = getBit(data, 5);\n    state.dischargeTempTooHighAlarm = getBit(data, 6);\n    state.canCommunicationFaultAlarm = getBit(data, 7);\n    state.suctionTempSensorFault = getBit(data, 8);\n    state.coolingSystemAbnormal = getBit(data, 9);\n    state.lowSuctionSuperheatDegreeA = getBit(data, 10);\n    state.compressorVfdOvAlarm = getBit(data, 11);\n    state.compressorVfdUvAlarm = getBit(data, 12);\n    state.compressorVfdOcAlarm = getBit(data, 13);\n    state.compressorVfdOtAlarm = getBit(data, 14);\n    state.compressorVfdComFaultA = getBit(data, 15);\n    state.compressorVfdPhaseLossA = getBit(data, 16);\n    state.otherCompVfdFaultAlarm = getBit(data, 17);\n    state.pumpLowDiffPressAlarm = getBit(data, 18);\n    state.dischargeTempTooHighLock = getBit(data, 19);\n    state.systemHighPressLock = getBit(data, 20);\n    state.systemLowPressLock = getBit(data, 21);\n    state.compressorVfdOcLock = getBit(data, 22);\n    state.compressorVfdOvLock = getBit(data, 23);\n    state.compressorVfdUvLock = getBit(data, 24);\n    state.compressorVfdOtLock = getBit(data, 25);\n    state.compressorVfdPhsLossLock = getBit(data, 26);\n    state.otherCompVfdFaultLocks = getBit(data, 27);\n}\n\nif (!processed) {\n    return null;\n}\n\n// ==================== Derived Fields ====================\nconst allAlarmFlags = [\n    'oICoolantPressSensorFault', 'powerSupplyOV', 'powerSupplyUV',\n    'systemCoolantShortage', 'pumpFaultSummary', 'pumpFaultLockSummary',\n    'oCoolantPressSensorFault', 'iCoolantPressureSensorFault', 'lowPressureSensorFault',\n    'oCoolantTempSensorFault', 'systemLowPressureAlarm', 'systemHighPressureAlarm',\n    'dischargeTempTooHighAlarm', 'canCommunicationFaultAlarm', 'suctionTempSensorFault',\n    'coolingSystemAbnormal', 'lowSuctionSuperheatDegreeA', 'compressorVfdOvAlarm',\n    'compressorVfdUvAlarm', 'compressorVfdOcAlarm', 'compressorVfdOtAlarm',\n    'compressorVfdComFaultA', 'compressorVfdPhaseLossA', 'otherCompVfdFaultAlarm',\n    'pumpLowDiffPressAlarm', 'dischargeTempTooHighLock', 'systemHighPressLock',\n    'systemLowPressLock', 'compressorVfdOcLock', 'compressorVfdOvLock',\n    'compressorVfdUvLock', 'compressorVfdOtLock', 'compressorVfdPhsLossLock',\n    'otherCompVfdFaultLocks'\n];\n\nlet activeAlarms = [];\nallAlarmFlags.forEach(flag => {\n    if (state[flag] === true) activeAlarms.push(flag);\n});\n\nstate.hasAlarm = activeAlarms.length > 0;\nstate.activeAlarms = activeAlarms;\nstate.activeAlarmCount = activeAlarms.length;\n\nstate.timestampUtc = new Date().toISOString();\nflow.set(\"chillerAlarmState\", state);\nmsg.payload = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 330,
+        "y": 180,
+        "wires": [
+            [
+                "debug_chiller_alarm",
+                "throttle_chiller_alarm"
+            ]
+        ]
+    },
+    {
+        "id": "debug_chiller_alarm",
+        "type": "debug",
+        "z": "chiller_alarm_state_tab",
+        "name": "Chiller Alarm",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.activeAlarmCount",
+        "statusType": "msg",
+        "x": 570,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "throttle_chiller_alarm",
+        "type": "delay",
+        "z": "chiller_alarm_state_tab",
+        "name": "Throttle 500ms",
+        "pauseType": "rate",
+        "timeout": "500",
+        "timeoutUnits": "milliseconds",
+        "rate": "2",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 580,
+        "y": 180,
+        "wires": [
+            [
+                "tb_telemetry_chiller_alarm"
+            ]
+        ]
+    },
+    {
+        "id": "tb_telemetry_chiller_alarm",
+        "type": "mqtt out",
+        "z": "chiller_alarm_state_tab",
+        "name": "ThingsBoard Telemetry",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 800,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "inject_get_chiller_alarm",
+        "type": "inject",
+        "z": "chiller_alarm_state_tab",
+        "name": "Get Chiller Alarm",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 160,
+        "y": 300,
+        "wires": [
+            [
+                "get_chiller_alarm"
+            ]
+        ]
+    },
+    {
+        "id": "get_chiller_alarm",
+        "type": "function",
+        "z": "chiller_alarm_state_tab",
+        "name": "Get State from Context",
+        "func": "var state = flow.get(\"chillerAlarmState\");\nif (state) {\n    msg.payload = state;\n    return msg;\n}\nmsg.payload = { error: \"No data yet\" };\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 390,
+        "y": 300,
+        "wires": [
+            [
+                "debug_full_chiller_alarm"
+            ]
+        ]
+    },
+    {
+        "id": "debug_full_chiller_alarm",
+        "type": "debug",
+        "z": "chiller_alarm_state_tab",
+        "name": "Full State",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 590,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "can0_chiller_alarm",
+        "type": "socketcan-config",
+        "z": "chiller_alarm_state_tab",
+        "interface": "can0"
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

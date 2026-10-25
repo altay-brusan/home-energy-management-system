@@ -1,0 +1,1082 @@
+Branch indexing
+ > git rev-parse --resolve-git-dir /var/jenkins_home/caches/git-7a1b97090ce3e43de0dd44790bfb8ed4/.git # timeout=10
+Setting origin to https://github.com/OklidisDev/Hems-Backend.git
+ > git config remote.origin.url https://github.com/OklidisDev/Hems-Backend.git # timeout=10
+Fetching origin...
+Fetching upstream changes from origin
+ > git --version # timeout=10
+ > git --version # 'git version 2.47.3'
+ > git config --get remote.origin.url # timeout=10
+using GIT_ASKPASS to set credentials GitHub credentials for HEMS repositories
+ > git fetch --no-tags --force --progress -- origin +refs/heads/*:refs/remotes/origin/* # timeout=10
+Seen branch in repository origin/dev
+Seen branch in repository origin/main
+Seen branch in repository origin/stage
+Seen 3 remote branches
+Obtained Jenkinsfile from c6aab4b3d414c7bfadab6c16e2a9484b71690cec
+[Pipeline] Start of Pipeline
+[Pipeline] podTemplate
+[Pipeline] {
+[Pipeline] node
+Created Pod: kubernetes jenkins/hems-backend-dev-9-3424z-b8s7t-zzdgk
+[PodInfo] jenkins/hems-backend-dev-9-3424z-b8s7t-zzdgk
+	Container [docker] waiting [ContainerCreating] No message
+	Container [dotnet] waiting [ContainerCreating] No message
+	Container [jnlp] waiting [ContainerCreating] No message
+	Container [kubectl] waiting [ContainerCreating] No message
+	Container [postgres] waiting [ContainerCreating] No message
+	Pod [Pending][ContainersNotReady] containers with unready status: [dotnet docker kubectl postgres jnlp]
+Agent hems-backend-dev-9-3424z-b8s7t-zzdgk is provisioned from template HEMS-Backend_dev_9-3424z-b8s7t
+---
+apiVersion: "v1"
+kind: "Pod"
+metadata:
+  annotations:
+    kubernetes.jenkins.io/last-refresh: "1762845534745"
+    buildUrl: "http://jenkins.jenkins.svc.cluster.local:8080/job/HEMS-Backend/job/dev/9/"
+    runUrl: "job/HEMS-Backend/job/dev/9/"
+  labels:
+    jenkins: "agent"
+    jenkins/jenkins-jenkins-agent: "true"
+    jenkins/label-digest: "fd53c5f6e5d23da1bce4c0a315056d0dfb016aab"
+    jenkins/label: "HEMS-Backend_dev_9-3424z"
+    kubernetes.jenkins.io/controller: "http___jenkins_jenkins_svc_cluster_local_8080x"
+  name: "hems-backend-dev-9-3424z-b8s7t-zzdgk"
+  namespace: "jenkins"
+spec:
+  containers:
+  - command:
+    - "cat"
+    env:
+    - name: "ConnectionStrings__Hems_BackendDb"
+      value: "Server=localhost;Port=5432;User ID=postgres;Password=test;Database=HEMS_Test;Pooling=true;"
+    image: "mcr.microsoft.com/dotnet/sdk:9.0"
+    name: "dotnet"
+    tty: true
+    volumeMounts:
+    - mountPath: "/home/jenkins/agent"
+      name: "workspace-volume"
+      readOnly: false
+  - command:
+    - "cat"
+    image: "docker:27.0-cli"
+    name: "docker"
+    tty: true
+    volumeMounts:
+    - mountPath: "/var/run/docker.sock"
+      name: "docker-sock"
+    - mountPath: "/home/jenkins/agent"
+      name: "workspace-volume"
+      readOnly: false
+  - command:
+    - "cat"
+    image: "alpine/k8s:1.28.3"
+    name: "kubectl"
+    tty: true
+    volumeMounts:
+    - mountPath: "/home/jenkins/agent"
+      name: "workspace-volume"
+      readOnly: false
+  - env:
+    - name: "POSTGRES_USER"
+      value: "postgres"
+    - name: "POSTGRES_PASSWORD"
+      value: "test"
+    - name: "POSTGRES_DB"
+      value: "HEMS_Test"
+    image: "postgres:15"
+    name: "postgres"
+    ports:
+    - containerPort: 5432
+    volumeMounts:
+    - mountPath: "/home/jenkins/agent"
+      name: "workspace-volume"
+      readOnly: false
+  - env:
+    - name: "JENKINS_SECRET"
+      value: "********"
+    - name: "JENKINS_TUNNEL"
+      value: "jenkins-agent.jenkins.svc.cluster.local:50000"
+    - name: "JENKINS_AGENT_NAME"
+      value: "hems-backend-dev-9-3424z-b8s7t-zzdgk"
+    - name: "REMOTING_OPTS"
+      value: "-noReconnectAfter 1d"
+    - name: "JENKINS_NAME"
+      value: "hems-backend-dev-9-3424z-b8s7t-zzdgk"
+    - name: "JENKINS_AGENT_WORKDIR"
+      value: "/home/jenkins/agent"
+    - name: "JENKINS_URL"
+      value: "http://jenkins.jenkins.svc.cluster.local:8080/"
+    image: "jenkins/inbound-agent:3345.v03dee9b_f88fc-1"
+    name: "jnlp"
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+    volumeMounts:
+    - mountPath: "/home/jenkins/agent"
+      name: "workspace-volume"
+      readOnly: false
+  nodeSelector:
+    kubernetes.io/os: "linux"
+  restartPolicy: "Never"
+  serviceAccountName: "jenkins-agent"
+  volumes:
+  - hostPath:
+      path: "/var/run/docker.sock"
+    name: "docker-sock"
+  - emptyDir:
+      medium: ""
+    name: "workspace-volume"
+
+Running on hems-backend-dev-9-3424z-b8s7t-zzdgk in /home/jenkins/agent/workspace/HEMS-Backend_dev
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Declarative: Checkout SCM)
+[Pipeline] checkout
+Selected Git installation does not exist. Using Default
+The recommended git tool is: NONE
+using credential github-credentials
+Cloning the remote Git repository
+Cloning with configured refspecs honoured and without tags
+Cloning repository https://github.com/OklidisDev/Hems-Backend.git
+ > git init /home/jenkins/agent/workspace/HEMS-Backend_dev # timeout=10
+Fetching upstream changes from https://github.com/OklidisDev/Hems-Backend.git
+ > git --version # timeout=10
+ > git --version # 'git version 2.47.3'
+using GIT_ASKPASS to set credentials GitHub credentials for HEMS repositories
+ > git fetch --no-tags --force --progress -- https://github.com/OklidisDev/Hems-Backend.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+Avoid second fetch
+Checking out Revision c6aab4b3d414c7bfadab6c16e2a9484b71690cec (dev)
+ > git config remote.origin.url https://github.com/OklidisDev/Hems-Backend.git # timeout=10
+ > git config --add remote.origin.fetch +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f c6aab4b3d414c7bfadab6c16e2a9484b71690cec # timeout=10
+Commit message: "Comment out moved test projects in solution file"
+ > git rev-list --no-walk d344a9b5734308e3825deda21ce8bc5fa7f6cc51 # timeout=10
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] sh
++ git rev-parse --short HEAD
+[Pipeline] sh
++ git rev-parse --short HEAD
+[Pipeline] withEnv
+[Pipeline] {
+[Pipeline] stage
+[Pipeline] { (Checkout)
+[Pipeline] echo
+🔄 Checking out code from dev branch...
+[Pipeline] checkout
+Selected Git installation does not exist. Using Default
+The recommended git tool is: NONE
+using credential github-credentials
+Fetching changes from the remote Git repository
+Fetching without tags
+Checking out Revision c6aab4b3d414c7bfadab6c16e2a9484b71690cec (dev)
+ > git rev-parse --resolve-git-dir /home/jenkins/agent/workspace/HEMS-Backend_dev/.git # timeout=10
+ > git config remote.origin.url https://github.com/OklidisDev/Hems-Backend.git # timeout=10
+Fetching upstream changes from https://github.com/OklidisDev/Hems-Backend.git
+ > git --version # timeout=10
+ > git --version # 'git version 2.47.3'
+using GIT_ASKPASS to set credentials GitHub credentials for HEMS repositories
+ > git fetch --no-tags --force --progress -- https://github.com/OklidisDev/Hems-Backend.git +refs/heads/*:refs/remotes/origin/* # timeout=10
+ > git config core.sparsecheckout # timeout=10
+ > git checkout -f c6aab4b3d414c7bfadab6c16e2a9484b71690cec # timeout=10
+Commit message: "Comment out moved test projects in solution file"
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Build & Test with Coverage)
+[Pipeline] echo
+🔨 Building and testing with coverage...
+[Pipeline] container
+[Pipeline] {
+[Pipeline] sh
++ dotnet restore
+  Determining projects to restore...
+  Restored /home/jenkins/agent/workspace/HEMS-Backend_dev/src/Domain/Domain.csproj (in 7.63 sec).
+  Restored /home/jenkins/agent/workspace/HEMS-Backend_dev/SignalRTester/SignalRTester.csproj (in 9.96 sec).
+  Restored /home/jenkins/agent/workspace/HEMS-Backend_dev/src/Application/Application.csproj (in 14.24 sec).
+  Restored /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Domain.UnitTests/Domain.UnitTests.csproj (in 14.76 sec).
+  Restored /home/jenkins/agent/workspace/HEMS-Backend_dev/Hems.DeviceSimulator/Hems.DeviceSimulator.csproj (in 15.27 sec).
+  Restored /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Application.UnitTests/Application.UnitTests.csproj (in 15.27 sec).
+  Restored /home/jenkins/agent/workspace/HEMS-Backend_dev/src/Infrastructure/Infrastructure.csproj (in 17.17 sec).
+  Restored /home/jenkins/agent/workspace/HEMS-Backend_dev/src/Web/Web.csproj (in 17.18 sec).
++ dotnet build -c Release --no-restore
+  Domain -> /home/jenkins/agent/workspace/HEMS-Backend_dev/src/Domain/bin/Release/net9.0/Hems_Backend.Domain.dll
+  SignalRTester -> /home/jenkins/agent/workspace/HEMS-Backend_dev/SignalRTester/bin/Release/net9.0/SignalRTester.dll
+  Domain.UnitTests -> /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Domain.UnitTests/bin/Release/net9.0/Hems_Backend.Domain.UnitTests.dll
+  Application -> /home/jenkins/agent/workspace/HEMS-Backend_dev/src/Application/bin/Release/net9.0/Hems_Backend.Application.dll
+  Infrastructure -> /home/jenkins/agent/workspace/HEMS-Backend_dev/src/Infrastructure/bin/Release/net9.0/Hems_Backend.Infrastructure.dll
+  Application.UnitTests -> /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Application.UnitTests/bin/Release/net9.0/Hems_Backend.Application.UnitTests.dll
+  Hems.DeviceSimulator -> /home/jenkins/agent/workspace/HEMS-Backend_dev/Hems.DeviceSimulator/bin/Release/net9.0/Hems.DeviceSimulator.dll
+  Web -> /home/jenkins/agent/workspace/HEMS-Backend_dev/src/Web/bin/Release/net9.0/Hems_Backend.Web.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:31.99
++ dotnet test -c Release --no-build --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:CoverletOutput=./TestResults/coverage/
+Build started 11/11/2025 07:20:12.
+     1>Project "/home/jenkins/agent/workspace/HEMS-Backend_dev/Hems-Backend.sln" on node 1 (VSTest target(s)).
+     1>ValidateSolutionConfiguration:
+         Building solution configuration "Release|Any CPU".
+Test run for /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Domain.UnitTests/bin/Release/net9.0/Hems_Backend.Domain.UnitTests.dll (.NETCoreApp,Version=v9.0)
+Test run for /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Application.UnitTests/bin/Release/net9.0/Hems_Backend.Application.UnitTests.dll (.NETCoreApp,Version=v9.0)
+VSTest version 17.14.1 (x64)
+VSTest version 17.14.1 (x64)
+
+
+Starting test execution, please wait...
+Starting test execution, please wait...
+A total of 1 test files matched the specified pattern.
+A total of 1 test files matched the specified pattern.
+NUnit Adapter 4.6.0.0: Test execution started
+NUnit Adapter 4.6.0.0: Test execution started
+Running all tests in /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Application.UnitTests/bin/Release/net9.0/Hems_Backend.Application.UnitTests.dll
+Running all tests in /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Domain.UnitTests/bin/Release/net9.0/Hems_Backend.Domain.UnitTests.dll
+   NUnit3TestExecutor discovered 5 of 5 NUnit test cases using Current Discovery mode, Non-Explicit run
+   NUnit3TestExecutor discovered 41 of 41 NUnit test cases using Current Discovery mode, Non-Explicit run
+NUnit Adapter 4.6.0.0: Test execution complete
+  Passed ShouldPerformExplicitConversionGivenSupportedColourCode [28 ms]
+  Passed ShouldPerformImplicitConversionToColourCodeString [4 ms]
+  Passed ShouldReturnCorrectColourCode [< 1 ms]
+  Passed ShouldThrowUnsupportedColourExceptionGivenNotSupportedColourCode [10 ms]
+  Passed ToStringReturnsCode [< 1 ms]
+
+Test Run Successful.
+Total tests: 5
+     Passed: 5
+ Total time: 1.8721 Seconds
+  Passed ShouldCallGetUserNameAsyncOnceIfAuthenticated [225 ms]
+  Passed ShouldNotCallGetUserNameAsyncOnceIfUnauthenticated [6 ms]
+  Passed DefaultConstructorCreatesAnEmptyErrorDictionary [83 ms]
+  Passed MulitpleValidationFailureForMultiplePropertiesCreatesAMultipleElementErrorDictionaryEachWithMultipleValues [163 ms]
+  Passed SingleValidationFailureCreatesASingleElementErrorDictionary [< 1 ms]
+  Passed ShouldHaveValidConfiguration [31 ms]
+  Passed ShouldSupportMappingFromSourceToDestination(Hems_Backend.Domain.Entities.TodoList,Hems_Backend.Application.TodoLists.Queries.GetTodos.TodoListDto) [26 ms]
+  Passed ShouldSupportMappingFromSourceToDestination(Hems_Backend.Domain.Entities.TodoItem,Hems_Backend.Application.TodoLists.Queries.GetTodos.TodoItemDto) [6 ms]
+  Passed ShouldSupportMappingFromSourceToDestination(Hems_Backend.Domain.Entities.TodoList,Hems_Backend.Application.Common.Models.LookupDto) [1 ms]
+  Passed ShouldSupportMappingFromSourceToDestination(Hems_Backend.Domain.Entities.TodoItem,Hems_Backend.Application.Common.Models.LookupDto) [1 ms]
+  Passed ShouldSupportMappingFromSourceToDestination(Hems_Backend.Domain.Entities.TodoItem,Hems_Backend.Application.TodoItems.Queries.GetTodoItemsWithPagination.TodoItemBriefDto) [2 ms]
+  Passed Handle_ShouldCreateDeviceComponent_WhenValidCommand [120 ms]
+  Passed Handle_ShouldCreateDeviceComponentWithMinimalData_WhenOnlyRequiredFieldsProvided [5 ms]
+  Passed ShouldHaveErrorWhenDeviceIdIsEmpty [111 ms]
+  Passed ShouldHaveErrorWhenManufacturerExceedsMaxLength [38 ms]
+  Passed ShouldHaveErrorWhenModelNumberExceedsMaxLength [< 1 ms]
+  Passed ShouldHaveErrorWhenNameExceedsMaxLength [< 1 ms]
+  Passed ShouldHaveErrorWhenNameIsEmpty [< 1 ms]
+  Passed ShouldHaveErrorWhenSerialNumberExceedsMaxLength [< 1 ms]
+  Passed ShouldNotHaveErrorWhenCommandHasMinimalData [1 ms]
+  Passed ShouldNotHaveErrorWhenCommandIsValid [< 1 ms]
+  Passed Handle_ShouldCreateDeviceData_WhenValidCommand [50 ms]
+  Passed Handle_ShouldCreateDeviceData_WithBatteryInfo [9 ms]
+  Passed Handle_ShouldCreateDeviceData_WithInverterInfo [4 ms]
+  Passed Handle_ShouldReturnEntityId_AfterSaveChanges [3 ms]
+  Passed Handle_ShouldCreateDevice_WhenValidCommand [35 ms]
+  Failed Handle_ShouldReturnFailure_WhenDeviceIsDeleted [3 s]
+  Error Message:
+   Npgsql.NpgsqlException : Failed to connect to 127.0.0.1:5433
+  ----> System.Net.Sockets.SocketException : Connection refused
+TearDown : System.InvalidOperationException : An exception has been raised that is likely due to a transient failure.
+  ----> Npgsql.NpgsqlException : Failed to connect to 127.0.0.1:5433
+  ----> System.Net.Sockets.SocketException : Connection refused
+  Stack Trace:
+     at Npgsql.Internal.NpgsqlConnector.Connect(NpgsqlTimeout timeout)
+   at Npgsql.Internal.NpgsqlConnector.RawOpen(SslMode sslMode, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.Internal.NpgsqlConnector.<Open>g__OpenCore|214_1(NpgsqlConnector conn, SslMode sslMode, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.Internal.NpgsqlConnector.Open(NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.UnpooledDataSource.Get(NpgsqlConnection conn, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlConnection.<Open>g__OpenAsync|42_0(Boolean async, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlConnection.Open()
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenDbConnection(Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenInternal(Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.Open(Boolean errorsExpected)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlDatabaseCreator.Exists(Boolean async, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlDatabaseCreator.Exists(Boolean async, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlDatabaseCreator.Exists()
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabaseCreator.EnsureCreated()
+   at Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade.EnsureCreated()
+   at Hems_Backend.Application.UnitTests.Devices.DeviceLoginCommandTests.Setup() in /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Application.UnitTests/Devices/DeviceLoginCommandTests.cs:line 39
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.GetResult()
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownItem.RunSetUpOrTearDownMethod(TestExecutionContext context, IMethodInfo method)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownItem.RunSetUp(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownCommand.<>c__DisplayClass0_0.<.ctor>b__0(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+--SocketException
+   at Npgsql.Internal.NpgsqlConnector.Connect(NpgsqlTimeout timeout)
+--TearDown
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.Execute[TState,TResult](TState state, Func`3 operation, Func`3 verifySucceeded)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.Enumerator.MoveNext()
+   at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.RemoveRange(IEnumerable`1 entities)
+   at Hems_Backend.Application.UnitTests.Devices.DeviceLoginCommandTests.TearDown() in /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Application.UnitTests/Devices/DeviceLoginCommandTests.cs:line 96
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.GetResult()
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownItem.RunSetUpOrTearDownMethod(TestExecutionContext context, IMethodInfo method)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownItem.RunTearDown(TestExecutionContext context)
+--NpgsqlException
+   at Npgsql.Internal.NpgsqlConnector.Connect(NpgsqlTimeout timeout)
+   at Npgsql.Internal.NpgsqlConnector.RawOpen(SslMode sslMode, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.Internal.NpgsqlConnector.<Open>g__OpenCore|214_1(NpgsqlConnector conn, SslMode sslMode, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.Internal.NpgsqlConnector.Open(NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.PoolingDataSource.OpenNewConnector(NpgsqlConnection conn, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.PoolingDataSource.<Get>g__RentAsync|33_0(NpgsqlConnection conn, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlConnection.<Open>g__OpenAsync|42_0(Boolean async, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlConnection.Open()
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenDbConnection(Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenInternal(Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.Open(Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReader(RelationalCommandParameterObject parameterObject)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.Enumerator.InitializeReader(Enumerator enumerator)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.Enumerator.<>c.<MoveNext>b__21_0(DbContext _, Enumerator enumerator)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.Execute[TState,TResult](TState state, Func`3 operation, Func`3 verifySucceeded)
+--SocketException
+   at Npgsql.Internal.NpgsqlConnector.Connect(NpgsqlTimeout timeout)
+
+  Failed Handle_ShouldReturnFailure_WhenDeviceNotFound [58 ms]
+  Error Message:
+   Npgsql.NpgsqlException : Failed to connect to 127.0.0.1:5433
+  ----> System.Net.Sockets.SocketException : Connection refused
+TearDown : System.InvalidOperationException : An exception has been raised that is likely due to a transient failure.
+  ----> Npgsql.NpgsqlException : Failed to connect to 127.0.0.1:5433
+  ----> System.Net.Sockets.SocketException : Connection refused
+  Stack Trace:
+     at Npgsql.Internal.NpgsqlConnector.Connect(NpgsqlTimeout timeout)
+   at Npgsql.Internal.NpgsqlConnector.RawOpen(SslMode sslMode, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.Internal.NpgsqlConnector.<Open>g__OpenCore|214_1(NpgsqlConnector conn, SslMode sslMode, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.Internal.NpgsqlConnector.Open(NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.UnpooledDataSource.Get(NpgsqlConnection conn, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlConnection.<Open>g__OpenAsync|42_0(Boolean async, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlConnection.Open()
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenDbConnection(Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenInternal(Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.Open(Boolean errorsExpected)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlDatabaseCreator.Exists(Boolean async, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlDatabaseCreator.Exists(Boolean async, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlDatabaseCreator.Exists()
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabaseCreator.EnsureCreated()
+   at Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade.EnsureCreated()
+   at Hems_Backend.Application.UnitTests.Devices.DeviceLoginCommandTests.Setup() in /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Application.UnitTests/Devices/DeviceLoginCommandTests.cs:line 39
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.GetResult()
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownItem.RunSetUpOrTearDownMethod(TestExecutionContext context, IMethodInfo method)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownItem.RunSetUp(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownCommand.<>c__DisplayClass0_0.<.ctor>b__0(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+--SocketException
+   at Npgsql.Internal.NpgsqlConnector.Connect(NpgsqlTimeout timeout)
+--TearDown
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.Execute[TState,TResult](TState state, Func`3 operation, Func`3 verifySucceeded)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.Enumerator.MoveNext()
+   at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.RemoveRange(IEnumerable`1 entities)
+   at Hems_Backend.Application.UnitTests.Devices.DeviceLoginCommandTests.TearDown() in /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Application.UnitTests/Devices/DeviceLoginCommandTests.cs:line 96
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.GetResult()
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownItem.RunSetUpOrTearDownMethod(TestExecutionContext context, IMethodInfo method)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownItem.RunTearDown(TestExecutionContext context)
+--NpgsqlException
+   at Npgsql.Internal.NpgsqlConnector.Connect(NpgsqlTimeout timeout)
+   at Npgsql.Internal.NpgsqlConnector.RawOpen(SslMode sslMode, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.Internal.NpgsqlConnector.<Open>g__OpenCore|214_1(NpgsqlConnector conn, SslMode sslMode, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.Internal.NpgsqlConnector.Open(NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.PoolingDataSource.OpenNewConnector(NpgsqlConnection conn, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.PoolingDataSource.<Get>g__RentAsync|33_0(NpgsqlConnection conn, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlConnection.<Open>g__OpenAsync|42_0(Boolean async, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlConnection.Open()
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenDbConnection(Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenInternal(Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.Open(Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReader(RelationalCommandParameterObject parameterObject)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.Enumerator.InitializeReader(Enumerator enumerator)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.Enumerator.<>c.<MoveNext>b__21_0(DbContext _, Enumerator enumerator)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.Execute[TState,TResult](TState state, Func`3 operation, Func`3 verifySucceeded)
+--SocketException
+   at Npgsql.Internal.NpgsqlConnector.Connect(NpgsqlTimeout timeout)
+
+  Failed Handle_ShouldReturnSuccess_WhenValidSerialNumberAndQRCode [130 ms]
+  Error Message:
+   Npgsql.NpgsqlException : Failed to connect to 127.0.0.1:5433
+  ----> System.Net.Sockets.SocketException : Connection refused
+TearDown : System.InvalidOperationException : An exception has been raised that is likely due to a transient failure.
+  ----> Npgsql.NpgsqlException : Failed to connect to 127.0.0.1:5433
+  ----> System.Net.Sockets.SocketException : Connection refused
+  Stack Trace:
+     at Npgsql.Internal.NpgsqlConnector.Connect(NpgsqlTimeout timeout)
+   at Npgsql.Internal.NpgsqlConnector.RawOpen(SslMode sslMode, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.Internal.NpgsqlConnector.<Open>g__OpenCore|214_1(NpgsqlConnector conn, SslMode sslMode, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.Internal.NpgsqlConnector.Open(NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.UnpooledDataSource.Get(NpgsqlConnection conn, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlConnection.<Open>g__OpenAsync|42_0(Boolean async, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlConnection.Open()
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenDbConnection(Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenInternal(Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.Open(Boolean errorsExpected)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlDatabaseCreator.Exists(Boolean async, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlDatabaseCreator.Exists(Boolean async, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlDatabaseCreator.Exists()
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabaseCreator.EnsureCreated()
+   at Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade.EnsureCreated()
+   at Hems_Backend.Application.UnitTests.Devices.DeviceLoginCommandTests.Setup() in /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Application.UnitTests/Devices/DeviceLoginCommandTests.cs:line 39
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.GetResult()
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownItem.RunSetUpOrTearDownMethod(TestExecutionContext context, IMethodInfo method)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownItem.RunSetUp(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownCommand.<>c__DisplayClass0_0.<.ctor>b__0(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+--SocketException
+   at Npgsql.Internal.NpgsqlConnector.Connect(NpgsqlTimeout timeout)
+--TearDown
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.Execute[TState,TResult](TState state, Func`3 operation, Func`3 verifySucceeded)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.Enumerator.MoveNext()
+   at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.RemoveRange(IEnumerable`1 entities)
+   at Hems_Backend.Application.UnitTests.Devices.DeviceLoginCommandTests.TearDown() in /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Application.UnitTests/Devices/DeviceLoginCommandTests.cs:line 96
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.GetResult()
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownItem.RunSetUpOrTearDownMethod(TestExecutionContext context, IMethodInfo method)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownItem.RunTearDown(TestExecutionContext context)
+--NpgsqlException
+   at Npgsql.Internal.NpgsqlConnector.Connect(NpgsqlTimeout timeout)
+   at Npgsql.Internal.NpgsqlConnector.RawOpen(SslMode sslMode, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.Internal.NpgsqlConnector.<Open>g__OpenCore|214_1(NpgsqlConnector conn, SslMode sslMode, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.Internal.NpgsqlConnector.Open(NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.PoolingDataSource.OpenNewConnector(NpgsqlConnection conn, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.PoolingDataSource.<Get>g__RentAsync|33_0(NpgsqlConnection conn, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlConnection.<Open>g__OpenAsync|42_0(Boolean async, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlConnection.Open()
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenDbConnection(Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenInternal(Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.Open(Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReader(RelationalCommandParameterObject parameterObject)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.Enumerator.InitializeReader(Enumerator enumerator)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.Enumerator.<>c.<MoveNext>b__21_0(DbContext _, Enumerator enumerator)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.Execute[TState,TResult](TState state, Func`3 operation, Func`3 verifySucceeded)
+--SocketException
+   at Npgsql.Internal.NpgsqlConnector.Connect(NpgsqlTimeout timeout)
+
+  Failed Handle_ShouldReturnSuccess_WhenValidSerialNumberOnly [9 ms]
+  Error Message:
+   Npgsql.NpgsqlException : Failed to connect to 127.0.0.1:5433
+  ----> System.Net.Sockets.SocketException : Connection refused
+TearDown : System.InvalidOperationException : An exception has been raised that is likely due to a transient failure.
+  ----> Npgsql.NpgsqlException : Failed to connect to 127.0.0.1:5433
+  ----> System.Net.Sockets.SocketException : Connection refused
+  Stack Trace:
+     at Npgsql.Internal.NpgsqlConnector.Connect(NpgsqlTimeout timeout)
+   at Npgsql.Internal.NpgsqlConnector.RawOpen(SslMode sslMode, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.Internal.NpgsqlConnector.<Open>g__OpenCore|214_1(NpgsqlConnector conn, SslMode sslMode, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.Internal.NpgsqlConnector.Open(NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.UnpooledDataSource.Get(NpgsqlConnection conn, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlConnection.<Open>g__OpenAsync|42_0(Boolean async, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlConnection.Open()
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenDbConnection(Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenInternal(Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.Open(Boolean errorsExpected)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlDatabaseCreator.Exists(Boolean async, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlDatabaseCreator.Exists(Boolean async, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlDatabaseCreator.Exists()
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabaseCreator.EnsureCreated()
+   at Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade.EnsureCreated()
+   at Hems_Backend.Application.UnitTests.Devices.DeviceLoginCommandTests.Setup() in /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Application.UnitTests/Devices/DeviceLoginCommandTests.cs:line 39
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.GetResult()
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownItem.RunSetUpOrTearDownMethod(TestExecutionContext context, IMethodInfo method)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownItem.RunSetUp(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownCommand.<>c__DisplayClass0_0.<.ctor>b__0(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+--SocketException
+   at Npgsql.Internal.NpgsqlConnector.Connect(NpgsqlTimeout timeout)
+--TearDown
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.Execute[TState,TResult](TState state, Func`3 operation, Func`3 verifySucceeded)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.Enumerator.MoveNext()
+   at Microsoft.EntityFrameworkCore.Internal.InternalDbSet`1.RemoveRange(IEnumerable`1 entities)
+   at Hems_Backend.Application.UnitTests.Devices.DeviceLoginCommandTests.TearDown() in /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Application.UnitTests/Devices/DeviceLoginCommandTests.cs:line 96
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.GetResult()
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownItem.RunSetUpOrTearDownMethod(TestExecutionContext context, IMethodInfo method)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownItem.RunTearDown(TestExecutionContext context)
+--NpgsqlException
+   at Npgsql.Internal.NpgsqlConnector.Connect(NpgsqlTimeout timeout)
+   at Npgsql.Internal.NpgsqlConnector.RawOpen(SslMode sslMode, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.Internal.NpgsqlConnector.<Open>g__OpenCore|214_1(NpgsqlConnector conn, SslMode sslMode, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.Internal.NpgsqlConnector.Open(NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.PoolingDataSource.OpenNewConnector(NpgsqlConnection conn, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.PoolingDataSource.<Get>g__RentAsync|33_0(NpgsqlConnection conn, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlConnection.<Open>g__OpenAsync|42_0(Boolean async, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlConnection.Open()
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenDbConnection(Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenInternal(Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.Open(Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReader(RelationalCommandParameterObject parameterObject)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.Enumerator.InitializeReader(Enumerator enumerator)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.Enumerator.<>c.<MoveNext>b__21_0(DbContext _, Enumerator enumerator)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.Execute[TState,TResult](TState state, Func`3 operation, Func`3 verifySucceeded)
+--SocketException
+   at Npgsql.Internal.NpgsqlConnector.Connect(NpgsqlTimeout timeout)
+
+  Failed Handle_ShouldCreateSetup_WhenValidCommand [67 ms]
+  Error Message:
+   Npgsql.NpgsqlException : Failed to connect to 127.0.0.1:5433
+  ----> System.Net.Sockets.SocketException : Connection refused
+TearDown : System.InvalidOperationException : An exception has been raised that is likely due to a transient failure.
+  ----> Npgsql.NpgsqlException : Failed to connect to 127.0.0.1:5433
+  ----> System.Net.Sockets.SocketException : Connection refused
+  Stack Trace:
+     at Npgsql.Internal.NpgsqlConnector.Connect(NpgsqlTimeout timeout)
+   at Npgsql.Internal.NpgsqlConnector.RawOpen(SslMode sslMode, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.Internal.NpgsqlConnector.<Open>g__OpenCore|214_1(NpgsqlConnector conn, SslMode sslMode, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.Internal.NpgsqlConnector.Open(NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.UnpooledDataSource.Get(NpgsqlConnection conn, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlConnection.<Open>g__OpenAsync|42_0(Boolean async, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlConnection.Open()
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenDbConnection(Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenInternal(Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.Open(Boolean errorsExpected)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlDatabaseCreator.Exists(Boolean async, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlDatabaseCreator.Exists(Boolean async, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlDatabaseCreator.Exists()
+   at Microsoft.EntityFrameworkCore.Storage.RelationalDatabaseCreator.EnsureCreated()
+   at Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade.EnsureCreated()
+   at Hems_Backend.Application.UnitTests.Setups.CreateSetupCommandTests.Setup() in /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Application.UnitTests/Setups/CreateSetupCommandTests.cs:line 35
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.GetResult()
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownItem.RunSetUpOrTearDownMethod(TestExecutionContext context, IMethodInfo method)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownItem.RunSetUp(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownCommand.<>c__DisplayClass0_0.<.ctor>b__0(TestExecutionContext context)
+   at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
+   at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+--SocketException
+   at Npgsql.Internal.NpgsqlConnector.Connect(NpgsqlTimeout timeout)
+--TearDown
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.Execute[TState,TResult](TState state, Func`3 operation, Func`3 verifySucceeded)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.Enumerator.MoveNext()
+   at System.Collections.Generic.List`1..ctor(IEnumerable`1 collection)
+   at System.Linq.Enumerable.ToList[TSource](IEnumerable`1 source)
+   at Hems_Backend.Application.UnitTests.Setups.CreateSetupCommandTests.TearDown() in /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Application.UnitTests/Setups/CreateSetupCommandTests.cs:line 67
+   at NUnit.Framework.Internal.TaskAwaitAdapter.GenericAdapter`1.GetResult()
+   at NUnit.Framework.Internal.AsyncToSyncAdapter.Await(Func`1 invoke)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownItem.RunSetUpOrTearDownMethod(TestExecutionContext context, IMethodInfo method)
+   at NUnit.Framework.Internal.Commands.SetUpTearDownItem.RunTearDown(TestExecutionContext context)
+--NpgsqlException
+   at Npgsql.Internal.NpgsqlConnector.Connect(NpgsqlTimeout timeout)
+   at Npgsql.Internal.NpgsqlConnector.RawOpen(SslMode sslMode, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.Internal.NpgsqlConnector.<Open>g__OpenCore|214_1(NpgsqlConnector conn, SslMode sslMode, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.Internal.NpgsqlConnector.Open(NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.PoolingDataSource.OpenNewConnector(NpgsqlConnection conn, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.PoolingDataSource.<Get>g__RentAsync|33_0(NpgsqlConnection conn, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlConnection.<Open>g__OpenAsync|42_0(Boolean async, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlConnection.Open()
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenDbConnection(Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.OpenInternal(Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalConnection.Open(Boolean errorsExpected)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReader(RelationalCommandParameterObject parameterObject)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.Enumerator.InitializeReader(Enumerator enumerator)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SingleQueryingEnumerable`1.Enumerator.<>c.<MoveNext>b__21_0(DbContext _, Enumerator enumerator)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.Execute[TState,TResult](TState state, Func`3 operation, Func`3 verifySucceeded)
+--SocketException
+   at Npgsql.Internal.NpgsqlConnector.Connect(NpgsqlTimeout timeout)
+
+  Passed ShouldHaveErrorWhenAddressLineExceedsMaxLength [81 ms]
+  Passed ShouldHaveErrorWhenCityExceedsMaxLength [1 ms]
+  Passed ShouldHaveErrorWhenCountryExceedsMaxLength [< 1 ms]
+  Passed ShouldHaveErrorWhenLatitudeIsOutOfRange [4 ms]
+  Passed ShouldHaveErrorWhenLongitudeIsOutOfRange [1 ms]
+NUnit Adapter 4.6.0.0: Test execution complete
+  Passed ShouldHaveErrorWhenNameExceedsMaxLength [< 1 ms]
+  Passed ShouldHaveErrorWhenNameIsEmpty [< 1 ms]
+  Passed ShouldHaveErrorWhenTimezoneExceedsMaxLength [< 1 ms]
+  Passed ShouldHaveErrorWhenTimezoneIsEmpty [< 1 ms]
+  Passed ShouldNotHaveErrorWhenCommandIsValid [< 1 ms]
+
+Test Run Failed.
+Total tests: 41
+     Passed: 36
+     Failed: 5
+ Total time: 6.6008 Seconds
+     1>Project "/home/jenkins/agent/workspace/HEMS-Backend_dev/Hems-Backend.sln" (1) is building "/home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Application.UnitTests/Application.UnitTests.csproj" (4) on node 8 (VSTest target(s)).
+     4>_VSTestConsole:
+         MSB4181: The "VSTestTask" task returned false but did not log an error.
+     4>Done Building Project "/home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Application.UnitTests/Application.UnitTests.csproj" (VSTest target(s)) -- FAILED.
+     1>Done Building Project "/home/jenkins/agent/workspace/HEMS-Backend_dev/Hems-Backend.sln" (VSTest target(s)) -- FAILED.
+
+Build FAILED.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:08.95
+[Pipeline] }
+[Pipeline] // container
+Post stage
+[Pipeline] echo
+❌ Tests failed! Blocking deployment.
+[Pipeline] error
+Error when executing failure post condition:
+Also:   org.jenkinsci.plugins.workflow.actions.ErrorAction$ErrorId: 4a3ffa51-2e64-43a9-8c76-01b3ec75777e
+hudson.AbortException: Tests failed. Deployment is blocked.
+	at PluginClassLoader for workflow-basic-steps//org.jenkinsci.plugins.workflow.steps.ErrorStep$Execution.run(ErrorStep.java:64)
+	at PluginClassLoader for workflow-basic-steps//org.jenkinsci.plugins.workflow.steps.ErrorStep$Execution.run(ErrorStep.java:51)
+	at PluginClassLoader for workflow-step-api//org.jenkinsci.plugins.workflow.steps.SynchronousStepExecution.start(SynchronousStepExecution.java:38)
+	at PluginClassLoader for workflow-cps//org.jenkinsci.plugins.workflow.cps.DSL.invokeStep(DSL.java:333)
+	at PluginClassLoader for workflow-cps//org.jenkinsci.plugins.workflow.cps.DSL.invokeMethod(DSL.java:194)
+	at PluginClassLoader for workflow-cps//org.jenkinsci.plugins.workflow.cps.CpsScript.invokeMethod(CpsScript.java:124)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at org.codehaus.groovy.reflection.CachedMethod.invoke(CachedMethod.java:98)
+	at groovy.lang.MetaMethod.doMethodInvoke(MetaMethod.java:325)
+	at groovy.lang.MetaClassImpl.invokeMethod(MetaClassImpl.java:1225)
+	at groovy.lang.MetaClassImpl.invokeMethod(MetaClassImpl.java:1034)
+	at org.codehaus.groovy.runtime.callsite.PogoMetaClassSite.call(PogoMetaClassSite.java:41)
+	at org.codehaus.groovy.runtime.callsite.CallSiteArray.defaultCall(CallSiteArray.java:47)
+	at org.codehaus.groovy.runtime.callsite.AbstractCallSite.call(AbstractCallSite.java:116)
+	at PluginClassLoader for script-security//org.kohsuke.groovy.sandbox.impl.Checker$1.call(Checker.java:180)
+	at PluginClassLoader for script-security//org.kohsuke.groovy.sandbox.GroovyInterceptor.onMethodCall(GroovyInterceptor.java:23)
+	at PluginClassLoader for script-security//org.jenkinsci.plugins.scriptsecurity.sandbox.groovy.SandboxInterceptor.onMethodCall(SandboxInterceptor.java:163)
+	at PluginClassLoader for script-security//org.kohsuke.groovy.sandbox.impl.Checker$1.call(Checker.java:178)
+	at PluginClassLoader for script-security//org.kohsuke.groovy.sandbox.impl.Checker.checkedCall(Checker.java:182)
+	at PluginClassLoader for script-security//org.kohsuke.groovy.sandbox.impl.Checker.checkedCall(Checker.java:152)
+	at PluginClassLoader for workflow-cps//com.cloudbees.groovy.cps.sandbox.SandboxInvoker.methodCall(SandboxInvoker.java:17)
+	at PluginClassLoader for workflow-cps//org.jenkinsci.plugins.workflow.cps.LoggingInvoker.methodCall(LoggingInvoker.java:120)
+	at WorkflowScript.run(WorkflowScript:89)
+	at org.jenkinsci.plugins.pipeline.modeldefinition.ModelInterpreter.delegateAndExecute(ModelInterpreter.groovy:139)
+	at org.jenkinsci.plugins.pipeline.modeldefinition.ModelInterpreter.runPostConditions(ModelInterpreter.groovy:728)
+	at org.jenkinsci.plugins.pipeline.modeldefinition.ModelInterpreter.catchRequiredContextForNode(ModelInterpreter.groovy:390)
+	at org.jenkinsci.plugins.pipeline.modeldefinition.ModelInterpreter.runPostConditions(ModelInterpreter.groovy:727)
+	at com.cloudbees.groovy.cps.CpsDefaultGroovyMethods.each(CpsDefaultGroovyMethods:2125)
+	at com.cloudbees.groovy.cps.CpsDefaultGroovyMethods.each(CpsDefaultGroovyMethods:2110)
+	at com.cloudbees.groovy.cps.CpsDefaultGroovyMethods.each(CpsDefaultGroovyMethods:2151)
+	at org.jenkinsci.plugins.pipeline.modeldefinition.ModelInterpreter.runPostConditions(ModelInterpreter.groovy:717)
+	at org.jenkinsci.plugins.pipeline.modeldefinition.ModelInterpreter.executeSingleStage(ModelInterpreter.groovy:644)
+	at org.jenkinsci.plugins.pipeline.modeldefinition.ModelInterpreter.evaluateStage(ModelInterpreter.groovy:292)
+	at org.jenkinsci.plugins.pipeline.modeldefinition.ModelInterpreter.toolsBlock(ModelInterpreter.groovy:521)
+	at org.jenkinsci.plugins.pipeline.modeldefinition.ModelInterpreter.evaluateStage(ModelInterpreter.groovy:280)
+	at org.jenkinsci.plugins.pipeline.modeldefinition.ModelInterpreter.withEnvBlock(ModelInterpreter.groovy:432)
+	at org.jenkinsci.plugins.pipeline.modeldefinition.ModelInterpreter.evaluateStage(ModelInterpreter.groovy:279)
+	at org.jenkinsci.plugins.pipeline.modeldefinition.ModelInterpreter.withCredentialsBlock(ModelInterpreter.groovy:464)
+	at org.jenkinsci.plugins.pipeline.modeldefinition.ModelInterpreter.evaluateStage(ModelInterpreter.groovy:278)
+	at org.jenkinsci.plugins.pipeline.modeldefinition.ModelInterpreter.inDeclarativeAgent(ModelInterpreter.groovy:561)
+	at org.jenkinsci.plugins.pipeline.modeldefinition.ModelInterpreter.evaluateStage(ModelInterpreter.groovy:276)
+	at org.jenkinsci.plugins.pipeline.modeldefinition.ModelInterpreter.stageInput(ModelInterpreter.groovy:354)
+	at org.jenkinsci.plugins.pipeline.modeldefinition.ModelInterpreter.evaluateStage(ModelInterpreter.groovy:265)
+	at org.jenkinsci.plugins.pipeline.modeldefinition.ModelInterpreter.inWrappers(ModelInterpreter.groovy:592)
+	at org.jenkinsci.plugins.pipeline.modeldefinition.ModelInterpreter.evaluateStage(ModelInterpreter.groovy:263)
+	at org.jenkinsci.plugins.pipeline.modeldefinition.ModelInterpreter.withEnvBlock(ModelInterpreter.groovy:432)
+	at org.jenkinsci.plugins.pipeline.modeldefinition.ModelInterpreter.evaluateStage(ModelInterpreter.groovy:258)
+	at ___cps.transform___(Native Method)
+	at PluginClassLoader for workflow-cps//com.cloudbees.groovy.cps.impl.ContinuationGroup.methodCall(ContinuationGroup.java:107)
+	at PluginClassLoader for workflow-cps//com.cloudbees.groovy.cps.impl.FunctionCallBlock$ContinuationImpl.dispatchOrArg(FunctionCallBlock.java:118)
+	at PluginClassLoader for workflow-cps//com.cloudbees.groovy.cps.impl.FunctionCallBlock$ContinuationImpl.fixArg(FunctionCallBlock.java:87)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(Unknown Source)
+	at java.base/java.lang.reflect.Method.invoke(Unknown Source)
+	at PluginClassLoader for workflow-cps//com.cloudbees.groovy.cps.impl.ContinuationPtr$ContinuationImpl.receive(ContinuationPtr.java:71)
+	at PluginClassLoader for workflow-cps//com.cloudbees.groovy.cps.impl.ConstantBlock.eval(ConstantBlock.java:21)
+	at PluginClassLoader for workflow-cps//com.cloudbees.groovy.cps.Next.step(Next.java:84)
+	at PluginClassLoader for workflow-cps//com.cloudbees.groovy.cps.Continuable.run0(Continuable.java:142)
+	at PluginClassLoader for workflow-cps//org.jenkinsci.plugins.workflow.cps.SandboxContinuable.access$001(SandboxContinuable.java:17)
+	at PluginClassLoader for workflow-cps//org.jenkinsci.plugins.workflow.cps.SandboxContinuable.run0(SandboxContinuable.java:48)
+	at PluginClassLoader for workflow-cps//org.jenkinsci.plugins.workflow.cps.CpsThread.runNextChunk(CpsThread.java:188)
+	at PluginClassLoader for workflow-cps//org.jenkinsci.plugins.workflow.cps.CpsThreadGroup.run(CpsThreadGroup.java:464)
+	at PluginClassLoader for workflow-cps//org.jenkinsci.plugins.workflow.cps.CpsThreadGroup$2.call(CpsThreadGroup.java:372)
+	at PluginClassLoader for workflow-cps//org.jenkinsci.plugins.workflow.cps.CpsThreadGroup$2.call(CpsThreadGroup.java:302)
+	at PluginClassLoader for workflow-cps//org.jenkinsci.plugins.workflow.cps.CpsVmExecutorService.lambda$wrap$4(CpsVmExecutorService.java:143)
+	at java.base/java.util.concurrent.FutureTask.run(Unknown Source)
+	at hudson.remoting.SingleLaneExecutorService$1.run(SingleLaneExecutorService.java:139)
+	at jenkins.util.ContextResettingExecutorService$1.run(ContextResettingExecutorService.java:28)
+	at jenkins.security.ImpersonatingExecutorService$1.run(ImpersonatingExecutorService.java:68)
+	at jenkins.util.ErrorLoggingExecutorService.lambda$wrap$0(ErrorLoggingExecutorService.java:51)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Unknown Source)
+	at java.base/java.util.concurrent.FutureTask.run(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)
+	at PluginClassLoader for workflow-cps//org.jenkinsci.plugins.workflow.cps.CpsVmExecutorService$1.call(CpsVmExecutorService.java:53)
+	at PluginClassLoader for workflow-cps//org.jenkinsci.plugins.workflow.cps.CpsVmExecutorService$1.call(CpsVmExecutorService.java:50)
+	at org.codehaus.groovy.runtime.GroovyCategorySupport$ThreadCategoryInfo.use(GroovyCategorySupport.java:136)
+	at org.codehaus.groovy.runtime.GroovyCategorySupport.use(GroovyCategorySupport.java:275)
+	at PluginClassLoader for workflow-cps//org.jenkinsci.plugins.workflow.cps.CpsVmExecutorService.lambda$categoryThreadFactory$0(CpsVmExecutorService.java:50)
+	at java.base/java.lang.Thread.run(Unknown Source)
+
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (SonarQube Analysis)
+Stage "SonarQube Analysis" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Quality Gate)
+Stage "Quality Gate" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Build Docker Image - Development)
+Stage "Build Docker Image - Development" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Build Docker Image - Stage)
+Stage "Build Docker Image - Stage" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Push Docker Image - Development)
+Stage "Push Docker Image - Development" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Push Docker Image - Stage)
+Stage "Push Docker Image - Stage" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Deploy to K3s - Development)
+Stage "Deploy to K3s - Development" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Deploy to K3s - Stage)
+Stage "Deploy to K3s - Stage" skipped due to earlier failure(s)
+[Pipeline] getContext
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] stage
+[Pipeline] { (Declarative: Post Actions)
+[Pipeline] echo
+🧹 Cleaning up workspace...
+[Pipeline] deleteDir
+Error when executing always post condition:
+Also:   java.nio.file.FileSystemException: /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Application.UnitTests/bin/Release/net9.0/runtimes/win/lib/netstandard2.0/System.Security.Cryptography.ProtectedData.dll: Operation not permitted
+		at java.base/sun.nio.fs.UnixException.translateToIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixException.rethrowAsIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixException.rethrowAsIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixFileAttributeViews$Posix.setMode(Unknown Source)
+		at java.base/sun.nio.fs.UnixFileAttributeViews$Posix.setPermissions(Unknown Source)
+		at java.base/java.nio.file.Files.setPosixFilePermissions(Unknown Source)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.makeWritable(PathRemover.java:280)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.makeRemovable(PathRemover.java:253)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.removeOrMakeRemovableThenRemove(PathRemover.java:233)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveFile(PathRemover.java:199)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:210)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.forceRemoveRecursive(PathRemover.java:92)
+Also:   java.nio.file.FileSystemException: /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Application.UnitTests/bin/Release/net9.0/runtimes/win/lib/netstandard2.0: Operation not permitted
+		at java.base/sun.nio.fs.UnixException.translateToIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixException.rethrowAsIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixException.rethrowAsIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixFileAttributeViews$Posix.setMode(Unknown Source)
+		at java.base/sun.nio.fs.UnixFileAttributeViews$Posix.setPermissions(Unknown Source)
+		at java.base/java.nio.file.Files.setPosixFilePermissions(Unknown Source)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.makeWritable(PathRemover.java:280)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.makeRemovable(PathRemover.java:253)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.removeOrMakeRemovableThenRemove(PathRemover.java:233)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveFile(PathRemover.java:199)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:210)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.forceRemoveRecursive(PathRemover.java:92)
+Also:   java.nio.file.FileSystemException: /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Application.UnitTests/bin/Release/net9.0/runtimes/win/lib: Operation not permitted
+		at java.base/sun.nio.fs.UnixException.translateToIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixException.rethrowAsIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixException.rethrowAsIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixFileAttributeViews$Posix.setMode(Unknown Source)
+		at java.base/sun.nio.fs.UnixFileAttributeViews$Posix.setPermissions(Unknown Source)
+		at java.base/java.nio.file.Files.setPosixFilePermissions(Unknown Source)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.makeWritable(PathRemover.java:280)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.makeRemovable(PathRemover.java:253)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.removeOrMakeRemovableThenRemove(PathRemover.java:233)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveFile(PathRemover.java:199)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:210)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.forceRemoveRecursive(PathRemover.java:92)
+Also:   java.nio.file.FileSystemException: /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Application.UnitTests/bin/Release/net9.0/runtimes/win: Operation not permitted
+		at java.base/sun.nio.fs.UnixException.translateToIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixException.rethrowAsIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixException.rethrowAsIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixFileAttributeViews$Posix.setMode(Unknown Source)
+		at java.base/sun.nio.fs.UnixFileAttributeViews$Posix.setPermissions(Unknown Source)
+		at java.base/java.nio.file.Files.setPosixFilePermissions(Unknown Source)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.makeWritable(PathRemover.java:280)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.makeRemovable(PathRemover.java:253)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.removeOrMakeRemovableThenRemove(PathRemover.java:233)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveFile(PathRemover.java:199)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:210)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.forceRemoveRecursive(PathRemover.java:92)
+Also:   java.nio.file.FileSystemException: /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Application.UnitTests/bin/Release/net9.0/runtimes: Operation not permitted
+		at java.base/sun.nio.fs.UnixException.translateToIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixException.rethrowAsIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixException.rethrowAsIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixFileAttributeViews$Posix.setMode(Unknown Source)
+		at java.base/sun.nio.fs.UnixFileAttributeViews$Posix.setPermissions(Unknown Source)
+		at java.base/java.nio.file.Files.setPosixFilePermissions(Unknown Source)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.makeWritable(PathRemover.java:280)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.makeRemovable(PathRemover.java:253)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.removeOrMakeRemovableThenRemove(PathRemover.java:233)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveFile(PathRemover.java:199)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:210)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.forceRemoveRecursive(PathRemover.java:92)
+Also:   java.nio.file.FileSystemException: /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Application.UnitTests/bin/Release/net9.0/nunit.engine.dll: Operation not permitted
+		at java.base/sun.nio.fs.UnixException.translateToIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixException.rethrowAsIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixException.rethrowAsIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixFileAttributeViews$Posix.setMode(Unknown Source)
+		at java.base/sun.nio.fs.UnixFileAttributeViews$Posix.setPermissions(Unknown Source)
+		at java.base/java.nio.file.Files.setPosixFilePermissions(Unknown Source)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.makeWritable(PathRemover.java:280)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.makeRemovable(PathRemover.java:253)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.removeOrMakeRemovableThenRemove(PathRemover.java:233)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveFile(PathRemover.java:199)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:210)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.forceRemoveRecursive(PathRemover.java:92)
+Also:   java.nio.file.FileSystemException: /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Application.UnitTests/bin/Release/net9.0/Microsoft.TestPlatform.CrossPlatEngine.dll: Operation not permitted
+		at java.base/sun.nio.fs.UnixException.translateToIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixException.rethrowAsIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixException.rethrowAsIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixFileAttributeViews$Posix.setMode(Unknown Source)
+		at java.base/sun.nio.fs.UnixFileAttributeViews$Posix.setPermissions(Unknown Source)
+		at java.base/java.nio.file.Files.setPosixFilePermissions(Unknown Source)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.makeWritable(PathRemover.java:280)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.makeRemovable(PathRemover.java:253)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.removeOrMakeRemovableThenRemove(PathRemover.java:233)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveFile(PathRemover.java:199)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:210)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.forceRemoveRecursive(PathRemover.java:92)
+Also:   java.nio.file.FileSystemException: /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Application.UnitTests/bin/Release/net9.0/cs/Microsoft.TestPlatform.CrossPlatEngine.resources.dll: Operation not permitted
+		at java.base/sun.nio.fs.UnixException.translateToIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixException.rethrowAsIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixException.rethrowAsIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixFileAttributeViews$Posix.setMode(Unknown Source)
+		at java.base/sun.nio.fs.UnixFileAttributeViews$Posix.setPermissions(Unknown Source)
+		at java.base/java.nio.file.Files.setPosixFilePermissions(Unknown Source)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.makeWritable(PathRemover.java:280)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.makeRemovable(PathRemover.java:253)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.removeOrMakeRemovableThenRemove(PathRemover.java:233)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveFile(PathRemover.java:199)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:210)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.forceRemoveRecursive(PathRemover.java:92)
+Also:   java.nio.file.FileSystemException: /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Application.UnitTests/bin/Release/net9.0/cs/Microsoft.TestPlatform.CoreUtilities.resources.dll: Operation not permitted
+		at java.base/sun.nio.fs.UnixException.translateToIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixException.rethrowAsIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixException.rethrowAsIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixFileAttributeViews$Posix.setMode(Unknown Source)
+		at java.base/sun.nio.fs.UnixFileAttributeViews$Posix.setPermissions(Unknown Source)
+		at java.base/java.nio.file.Files.setPosixFilePermissions(Unknown Source)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.makeWritable(PathRemover.java:280)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.makeRemovable(PathRemover.java:253)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.removeOrMakeRemovableThenRemove(PathRemover.java:233)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveFile(PathRemover.java:199)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:210)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.forceRemoveRecursive(PathRemover.java:92)
+Also:   java.nio.file.FileSystemException: /home/jenkins/agent/workspace/HEMS-Backend_dev/tests/Application.UnitTests/bin/Release/net9.0/cs/Microsoft.TestPlatform.CommunicationUtilities.resources.dll: Operation not permitted
+		at java.base/sun.nio.fs.UnixException.translateToIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixException.rethrowAsIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixException.rethrowAsIOException(Unknown Source)
+		at java.base/sun.nio.fs.UnixFileAttributeViews$Posix.setMode(Unknown Source)
+		at java.base/sun.nio.fs.UnixFileAttributeViews$Posix.setPermissions(Unknown Source)
+		at java.base/java.nio.file.Files.setPosixFilePermissions(Unknown Source)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.makeWritable(PathRemover.java:280)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.makeRemovable(PathRemover.java:253)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.removeOrMakeRemovableThenRemove(PathRemover.java:233)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveFile(PathRemover.java:199)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:210)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveDirectoryContents(PathRemover.java:220)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.tryRemoveRecursive(PathRemover.java:209)
+		at Jenkins v2.528.1//jenkins.util.io.PathRemover.forceRemoveRecursive(PathRemover.java:92)
+Also:   hudson.remoting.Channel$CallSiteStackTrace: Remote call to JNLP4-connect connection from 10.42.0.10/10.42.0.10:60234
+		at hudson.remoting.Channel.attachCallSiteStackTrace(Channel.java:1916)
+		at hudson.remoting.UserRequest$ExceptionResponse.retrieve(UserRequest.java:384)
+		at hudson.remoting.Channel.call(Channel.java:1108)
+		at hudson.FilePath.act(FilePath.java:1204)
+		at hudson.FilePath.act(FilePath.java:1193)
+		at hudson.FilePath.deleteRecursive(FilePath.java:1446)
+		at PluginClassLoader for workflow-basic-steps//org.jenkinsci.plugins.workflow.steps.DeleteDirStep$Execution.run(DeleteDirStep.java:79)
+		at PluginClassLoader for workflow-basic-steps//org.jenkinsci.plugins.workflow.steps.DeleteDirStep$Execution.run(DeleteDirStep.java:71)
+		at PluginClassLoader for workflow-step-api//org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution.lambda$start$0(SynchronousNonBlockingStepExecution.java:49)
+		at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Unknown Source)
+		at java.base/java.util.concurrent.FutureTask.run(Unknown Source)
+		at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)
+		at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)
+		at java.base/java.lang.Thread.run(Unknown Source)
+Also:   org.jenkinsci.plugins.workflow.actions.ErrorAction$ErrorId: db280c21-903b-4586-887f-74581095d522
+jenkins.util.io.CompositeIOException: Unable to delete '/home/jenkins/agent/workspace/HEMS-Backend_dev'. Tried 3 times (of a maximum of 3) waiting 0.1 sec between attempts. (Discarded 853 additional exceptions)
+	at Jenkins v2.528.1//jenkins.util.io.PathRemover.forceRemoveRecursive(PathRemover.java:95)
+	at Jenkins v2.528.1//hudson.Util.deleteRecursive(Util.java:334)
+	at Jenkins v2.528.1//hudson.FilePath$DeleteRecursive.invoke(FilePath.java:1454)
+	at Jenkins v2.528.1//hudson.FilePath$DeleteRecursive.invoke(FilePath.java:1449)
+	at Jenkins v2.528.1//hudson.FilePath$FileCallableWrapper.call(FilePath.java:3590)
+	at hudson.remoting.UserRequest.perform(UserRequest.java:225)
+	at hudson.remoting.UserRequest.perform(UserRequest.java:50)
+	at hudson.remoting.Request$2.run(Request.java:391)
+	at hudson.remoting.InterceptingExecutorService.lambda$wrap$0(InterceptingExecutorService.java:81)
+	at java.base/java.util.concurrent.FutureTask.run(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(Unknown Source)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(Unknown Source)
+	at hudson.remoting.Engine$1.lambda$newThread$0(Engine.java:312)
+	at java.base/java.lang.Thread.run(Unknown Source)
+
+[Pipeline] echo
+❌ Pipeline failed!
+[Pipeline] }
+[Pipeline] // stage
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // withEnv
+[Pipeline] }
+[Pipeline] // node
+[Pipeline] }
+[Pipeline] // podTemplate
+[Pipeline] End of Pipeline
+ERROR: script returned exit code 1
+Finished: FAILURE

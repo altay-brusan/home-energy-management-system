@@ -1,0 +1,32 @@
+DailyEnergyFlowState
+{
+   "timestampUtc": string,
+   "version": number,
+   "DeviceId": string,
+
+  "loadEnergyKWh": number,                  // 84 (Day_Load_Power Wh) 0.1kWh
+
+  "grid": {
+    "importEnergyKWh": number,              // 76 (Day_GridBuy_Power Wh) 0.1kWh
+    "exportEnergyKWh": number               // 77 (Day_GridSell_Power Wh) 0.1kWh
+  },
+
+  "pv": {
+    "totalEnergyKWh": number,               // 108 (Day PV PowerWh) 0.1kWh
+    "mppt": [
+      { "id": 1, "energyKWh": number },     // not available in this protocol - use total
+      { "id": 2, "energyKWh": number },     // not available in this protocol - use total
+      { "id": 3, "energyKWh": number },     // not available in this protocol - use total
+      { "id": 4, "energyKWh": number }      // not available in this protocol - use total
+    ]
+  },
+
+  "battery": {
+    "chargeEnergyKWh": number,              // 70 (Day_Batt_Charge_PowerWh) 0.1kWh
+    "dischargeEnergyKWh": number            // 71 (Day_Batt_Discharge_PowerWh) 0.1kWh
+  },
+
+  "generator": {
+    "energyKWh": number                     // 62 (Today_Gen_PowerWh) 0.1kWh
+  }
+}

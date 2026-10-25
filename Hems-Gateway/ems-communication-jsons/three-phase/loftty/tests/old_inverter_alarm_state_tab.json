@@ -1,0 +1,263 @@
+[
+    {
+        "id": "alarm_state_tab_id",
+        "type": "tab",
+        "label": "InverterAlarmState",
+        "disabled": false,
+        "info": "THREE-PHASE Polls 1 min (only sends if alarm/warning present or state change) - Includes phase imbalance warnings"
+    },
+    {
+        "id": "inject_1min_poll",
+        "type": "inject",
+        "z": "alarm_state_tab_id",
+        "name": "Poll Alarms (1 min)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "60",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 80,
+        "wires": [
+            [
+                "prep_parallel_reads"
+            ]
+        ]
+    },
+    {
+        "id": "inject_manual_trigger",
+        "type": "inject",
+        "z": "alarm_state_tab_id",
+        "name": "Manual Trigger",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 140,
+        "wires": [
+            [
+                "prep_parallel_reads"
+            ]
+        ]
+    },
+    {
+        "id": "prep_parallel_reads",
+        "type": "function",
+        "z": "alarm_state_tab_id",
+        "name": "Prep Parallel Reads",
+        "func": "// Prepare all 9 register reads in parallel\nconst reads = [\n    { name: 'runState', address: 600, quantity: 1 },\n    { name: 'commBoard', address: 648, quantity: 1 },\n    { name: 'warning1', address: 653, quantity: 1 },\n    { name: 'warning2', address: 654, quantity: 1 },\n    { name: 'fault1', address: 655, quantity: 1 },\n    { name: 'fault2', address: 656, quantity: 1 },\n    { name: 'fault3', address: 657, quantity: 1 },\n    { name: 'fault4', address: 658, quantity: 1 },\n    { name: 'workFlag', address: 659, quantity: 1 }\n];\n\nconst messages = reads.map(r => ({\n    payload: {\n        fc: 3,\n        unitid: 1,\n        address: r.address,\n        quantity: r.quantity\n    },\n    readName: r.name,\n    registerAddress: r.address\n}));\n\nreturn [messages];",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 390,
+        "y": 110,
+        "wires": [
+            [
+                "modbus_read_alarm_registers"
+            ]
+        ]
+    },
+    {
+        "id": "modbus_read_alarm_registers",
+        "type": "modbus-flex-getter",
+        "z": "alarm_state_tab_id",
+        "name": "Read Alarm Registers",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 640,
+        "y": 110,
+        "wires": [
+            [
+                "collect_all_reads"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "collect_all_reads",
+        "type": "function",
+        "z": "alarm_state_tab_id",
+        "name": "Collect All Reads",
+        "func": "const flowKey = 'alarm_state_reads';\nlet collected = flow.get(flowKey) || {};\nconst expectedCount = 9;\n\nlet data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data) || data.length < 1) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Read failed: \" + msg.readName });\n    return null;\n}\n\nconst value = data[0] || 0;\n\n// Store by register address for clarity\nswitch(msg.readName) {\n    case 'runState':\n        collected.runStateRaw = value;\n        break;\n    case 'commBoard':\n        collected.commBoardFaultRaw = value;\n        break;\n    case 'warning1':\n        collected.warningWord1Raw = value;\n        break;\n    case 'warning2':\n        collected.warningWord2Raw = value;\n        break;\n    case 'fault1':\n        collected.faultWord1Raw = value;\n        break;\n    case 'fault2':\n        collected.faultWord2Raw = value;\n        break;\n    case 'fault3':\n        collected.faultWord3Raw = value;\n        break;\n    case 'fault4':\n        collected.faultWord4Raw = value;\n        break;\n    case 'workFlag':\n        collected.workFlagTripData = value;\n        break;\n}\n\nflow.set(flowKey, collected);\n\nconst collectedCount = Object.keys(collected).length;\nnode.status({ fill: \"blue\", shape: \"dot\", text: `Collected ${collectedCount}/${expectedCount}` });\n\nif (collectedCount >= expectedCount) {\n    flow.set(flowKey, null);\n    msg.collectedData = collected;\n    msg.payload = collected;\n    return msg;\n}\n\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 110,
+        "wires": [
+            [
+                "build_inverter_alarm_state_json"
+            ]
+        ]
+    },
+    {
+        "id": "build_inverter_alarm_state_json",
+        "type": "function",
+        "z": "alarm_state_tab_id",
+        "name": "Build InverterAlarmState JSON",
+        "func": "const data = msg.collectedData;\n\nif (!data) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"No data\" });\n    return null;\n}\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\nconst inverterSN = global.get(\"INVERTER_SN\") || env.get(\"INVERTER_SN\") || \"Unknown\";\nconst now = new Date().toISOString();\n\nconst activeAlarms = [];\n\n// Helper function to add alarm\nfunction addAlarm(code, vendorCode, severity, category) {\n    if (vendorCode > 0) {\n        activeAlarms.push({\n            code: code,\n            vendorCode: vendorCode,\n            severity: severity,\n            sourceDevice: \"inverter\",\n            category: category,\n            messageKey: `${category}_${code}`,\n            messageParams: null,\n            firstOccurredUtc: now,\n            lastOccurredUtc: now,\n            occurrenceCount: 1\n        });\n    }\n}\n\n// Check warnings (653-654)\naddAlarm(653, data.warningWord1Raw, \"WARNING\", \"warning\");\naddAlarm(654, data.warningWord2Raw, \"WARNING\", \"warning\");\n\n// Check faults (655-658)\naddAlarm(655, data.faultWord1Raw, \"ERROR\", \"fault\");\naddAlarm(656, data.faultWord2Raw, \"ERROR\", \"fault\");\naddAlarm(657, data.faultWord3Raw, \"ERROR\", \"fault\");\naddAlarm(658, data.faultWord4Raw, \"ERROR\", \"fault\");\n\n// Check comm board fault (648)\naddAlarm(648, data.commBoardFaultRaw, \"ALARM\", \"comm_fault\");\n\nconst state = {\n    kind: \"InverterAlarmState\",\n    timestampUtc: now,\n    version: 1,\n    gatewayId: gatewayId,\n    inverterSerialNumber: inverterSN,\n    \n    runStateRaw: data.runStateRaw,\n    commBoardFaultRaw: data.commBoardFaultRaw,\n    \n    warningWord1Raw: data.warningWord1Raw,\n    warningWord2Raw: data.warningWord2Raw,\n    \n    faultWord1Raw: data.faultWord1Raw,\n    faultWord2Raw: data.faultWord2Raw,\n    faultWord3Raw: data.faultWord3Raw,\n    faultWord4Raw: data.faultWord4Raw,\n    \n    workFlagTripData: data.workFlagTripData,\n    \n    activeAlarms: activeAlarms\n};\n\nmsg.payload = state;\nmsg.state = state;\nmsg.hasAlarms = activeAlarms.length > 0;\n\nnode.status({ \n    fill: activeAlarms.length > 0 ? \"red\" : \"green\", \n    shape: \"dot\", \n    text: `${activeAlarms.length} alarm(s)` \n});\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1180,
+        "y": 110,
+        "wires": [
+            [
+                "check_if_should_send",
+                "debug_alarm_state"
+            ]
+        ]
+    },
+    {
+        "id": "check_if_should_send",
+        "type": "function",
+        "z": "alarm_state_tab_id",
+        "name": "Check if should send",
+        "func": "// Only send to ThingsBoard if there are active alarms\nif (msg.hasAlarms) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Sending alarms\" });\n    return msg;\n}\n\nnode.status({ fill: \"green\", shape: \"dot\", text: \"No alarms - skipped\" });\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1460,
+        "y": 80,
+        "wires": [
+            [
+                "mqtt_send_to_thingsboard"
+            ]
+        ]
+    },
+    {
+        "id": "mqtt_send_to_thingsboard",
+        "type": "mqtt out",
+        "z": "alarm_state_tab_id",
+        "name": "Send to ThingsBoard",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1700,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "debug_alarm_state",
+        "type": "debug",
+        "z": "alarm_state_tab_id",
+        "name": "InverterAlarmState Error",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1470,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

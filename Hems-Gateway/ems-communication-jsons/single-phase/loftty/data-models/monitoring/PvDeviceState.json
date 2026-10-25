@@ -1,0 +1,56 @@
+PvDeviceState {
+   "timestampUtc": string,
+   "version": number,
+   "DeviceId": string,
+
+  "totalPvPowerW": number,         // PV total input power (sum of 186-189)
+  "todayPvEnergyKWh": number,      // PV today energy // 108 (Day PV PowerWh) 0.1kWh
+  "totalPvEnergyKWh": number | null,// PV lifetime energy // 96+97 (historyPV PowerWh) 0.1kWh
+
+  "mppt": [
+    {
+      "pvChannelId": number,       // 1
+      "isActive": bool,
+
+      "dcVoltageV": number,        // PV1 input voltage // 109 (Dc voltage 1) 0.1V
+      "dcCurrentA": number,        // PV1 input current // 110 (Dc current 1) 0.1A
+      "inputPowerW": number,       // PV1 input power // 186 (PV1 input power) 1W
+
+      "todayEnergyKWh": number,    // not available per MPPT - use total 108
+      "totalEnergyKWh": number | null // not available per MPPT - use total 96+97
+    },
+    {
+      "pvChannelId": number,       // 2
+      "isActive": bool,
+
+      "dcVoltageV": number,        // 111 (Dc voltage 2) 0.1V
+      "dcCurrentA": number,        // 112 (Dc current 2) 0.1A
+      "inputPowerW": number,       // 187 (PV2 input power) 1W
+
+      "todayEnergyKWh": number,    // not available per MPPT
+      "totalEnergyKWh": number | null
+    },
+    {
+      "pvChannelId": number,       // 3
+      "isActive": bool,
+
+      "dcVoltageV": number,        // 113 (Dc voltage 3) 0.1V
+      "dcCurrentA": number,        // 114 (Dc current 3) 0.1A
+      "inputPowerW": number,       // 188 (PV3 input power) 1W
+
+      "todayEnergyKWh": number,    // not available per MPPT
+      "totalEnergyKWh": number | null
+    },
+    {
+      "pvChannelId": number,       // 4
+      "isActive": bool,
+
+      "dcVoltageV": number,        // 115 (Dc voltage 4) 0.1V
+      "dcCurrentA": number,        // 116 (Dc current 4) 0.1A
+      "inputPowerW": number,       // 189 (PV4 input power) 1W
+
+      "todayEnergyKWh": number,    // not available per MPPT
+      "totalEnergyKWh": number | null
+    }
+  ]
+}

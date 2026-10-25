@@ -1,0 +1,33 @@
+GeneratorAndSmartLoadConfigState {
+  "timestampUtc": string,
+  "gatewayId": string,
+  "inverterSerialNumber": string,
+  "version": string,
+
+  // A. Global battery-charge sources
+  "generatorChargeEnabled": bool,        // 231: Generator charge enable (发电机充电使能)
+  "gridChargeEnabled": bool,             // 232: Grid charge enable (市电充电使能)
+
+  // B. Generator auto-start / auto-charge from SOC
+  "autoStartEnabled": bool,              // derived from generatorChargeEnabled && startSocPercent > 0
+  "maxRunTimeHours": number,             // 223: Maximum operating time of generator (0.1 hours)
+  "coolingTimeHours": number,            // 224: Generator cooling time (0.1 hours)
+  "startSocPercent": number,             // 226: Generator charging starting capacity point (1%)
+  "chargeCurrentA": number,              // 227: Generator charges the battery current (1A)
+
+  // C. Generator peak-shaving behaviour
+  "generatorPeakShaving": {
+    "enabled": bool,                     // 280 Bit4-7: 0=disable, 1=enable (Gen peak-shaving)
+    "limitPowerW": number                // 292: GEN peak shaving Power (1W)
+  },
+
+  // D. Smart-Load behaviour on GEN port
+  "smartLoad": {
+    "enabled": bool,                     // 235: generator input as load output enable (0=disable, 1=smart load, 2=inverter input)
+    "offSocPercent": number,             // 237: SmartLoad OFF batt (1%)
+    "onSocPercent": number,              // 239: SmartLoad ON batt (1%)
+    "pvPowerThresholdW": number,         // 241: minimum solar power required to start generator (1W)
+    "openDelayMinutes": number,          // 294: SmartLoad Open Delay (1 Minute)
+    "onGridAlwaysOn": bool               // 280 Bit12: On Grid always on
+  }
+}

@@ -1,0 +1,37 @@
+BatterySohState 
+{
+   "timestampUtc": string,
+   "version": number,
+   "DeviceId": string,
+
+  // SOH as seen by the inverter, per battery channel
+  "inverterBatChannelSoh": [
+    {
+      "channelId": 1,
+      "sohPercent": number  // from inverter register 185 (battery status) - SOH derived from BMS
+    },
+    {
+      "channelId": 2,
+      "sohPercent": number  // reserved for future use
+    }
+  ],
+
+  // !!!!burada dökümanda soh olarak bişey bulamadık buda 185 batarya status yazıyor ve 53 gelen bir değer var sorulacak !!!!Detailed SOH as read directly from BMS devices via your gateway
+  "bmsSohDetails": [
+    {
+      "channelId": 1,
+      "deviceId": string,
+      "sohPercent": number
+    },
+    {
+      "channelId": 1,
+      "deviceId": string,
+      "sohPercent": number
+    },
+    {
+      "channelId": 2,
+      "deviceId": string,
+      "sohPercent": number
+    }
+  ]
+}

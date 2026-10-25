@@ -1,0 +1,322 @@
+[
+    {
+        "id": "e3b2f88b1fb879d9",
+        "type": "tab",
+        "label": "BatterySocState",
+        "disabled": false,
+        "info": "Reads Battery SOC State from register:\n- 688: Battery capacity %\n\nTriggers:\n1. Periodic: Every 5 minutes (sends to ThingsBoard only if SOC changed)\n2. RPC: getBatterySocState (always returns current value)"
+    },
+    {
+        "id": "9e9fd09f8564b49d",
+        "type": "comment",
+        "z": "e3b2f88b1fb879d9",
+        "name": "Periodic polling (5 min) - sends only if SOC changed",
+        "info": "",
+        "x": 230,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "41e4165d4f7b4196",
+        "type": "comment",
+        "z": "e3b2f88b1fb879d9",
+        "name": "RPC Trigger (getBatterySocState) - always responds",
+        "info": "",
+        "x": 240,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "25d14aa4245cd14c",
+        "type": "inject",
+        "z": "e3b2f88b1fb879d9",
+        "name": "Poll BatterySocState (5 min)",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "isRpcRequest",
+                "v": "false",
+                "vt": "bool"
+            }
+        ],
+        "repeat": "300",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 190,
+        "y": 120,
+        "wires": [
+            [
+                "a1fbfd96807efd21"
+            ]
+        ]
+    },
+    {
+        "id": "8aca12be0f5de1ad",
+        "type": "link in",
+        "z": "e3b2f88b1fb879d9",
+        "name": "RPC getBatterySocState",
+        "links": [
+            "rpc_bss_link_out"
+        ],
+        "x": 155,
+        "y": 220,
+        "wires": [
+            [
+                "a1fbfd96807efd21"
+            ]
+        ]
+    },
+    {
+        "id": "a1fbfd96807efd21",
+        "type": "function",
+        "z": "e3b2f88b1fb879d9",
+        "name": "Prepare read (SOC 688)",
+        "func": "// Battery SOC\n// 688: Battery capacity %\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 688,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 470,
+        "y": 160,
+        "wires": [
+            [
+                "7776760a11d5bbc3"
+            ]
+        ]
+    },
+    {
+        "id": "7776760a11d5bbc3",
+        "type": "modbus-flex-getter",
+        "z": "e3b2f88b1fb879d9",
+        "name": "Read SOC (688)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "enableDeformedMessages": false,
+        "startDelayTime": "",
+        "x": 700,
+        "y": 160,
+        "wires": [
+            [
+                "4ec4a08a29b82c14"
+            ],
+            [
+                "8afa7126ed983c4f"
+            ]
+        ]
+    },
+    {
+        "id": "4ec4a08a29b82c14",
+        "type": "function",
+        "z": "e3b2f88b1fb879d9",
+        "name": "Build BatterySocState JSON",
+        "func": "// Build BatterySocState from Modbus read.\n\nlet raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nconst socPercent = data[0] || 0;  // 688: Battery capacity %\n\nconst deviceId = msg.deviceId\n    || global.get(\"DEVICE_ID\")\n    || env.get(\"DEVICE_ID\")\n    || \"EC100-DEV-001\";\n\nconst state = {\n    kind: \"BatterySocState\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    DeviceId: deviceId,\n    \n    inverterBatChannelSoc: [\n        {\n            channelId: 1,\n            socPercent: socPercent\n        },\n        {\n            channelId: 2,\n            socPercent: null  // Three-phase only has 1 channel\n        }\n    ],\n    \n    bmsSocDetails: null  // Not available in three-phase datasheet\n};\n\n// Store current SOC for change detection\nmsg.currentSocPercent = socPercent;\n\n// Get previous SOC value\nmsg.previousSocPercent = flow.get(\"lastSocPercent\");\n\n// Update stored value\nflow.set(\"lastSocPercent\", socPercent);\n\n// Store snapshot\nflow.set(\"batterySocStateSnapshot\", state);\n\nmsg.payload = state;\nmsg.state = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 940,
+        "y": 160,
+        "wires": [
+            [
+                "dbebd09239b263c6"
+            ]
+        ]
+    },
+    {
+        "id": "dbebd09239b263c6",
+        "type": "function",
+        "z": "e3b2f88b1fb879d9",
+        "name": "Check SOC Change",
+        "func": "// Check if SOC value has changed\n// RPC requests always get response\n// Periodic polls only send to ThingsBoard if value changed\n\nconst currentSoc = msg.currentSocPercent;\nconst previousSoc = msg.previousSocPercent;\nconst isRpc = msg.isRpcRequest === true;\n\n// Determine if SOC changed\n// First read (previousSoc undefined/null) counts as changed\nconst socChanged = (previousSoc === undefined || previousSoc === null || currentSoc !== previousSoc);\n\nmsg.socChanged = socChanged;\n\n// Debug status\nif (socChanged) {\n    node.status({ fill: \"green\", shape: \"dot\", text: `SOC: ${currentSoc}% (changed from ${previousSoc || 'N/A'}%)` });\n} else {\n    node.status({ fill: \"grey\", shape: \"ring\", text: `SOC: ${currentSoc}% (no change)` });\n}\n\n// Output routing:\n// Output 1: Debug (always)\n// Output 2: MQTT ThingsBoard (only if changed)\n// Output 3: RPC Response (only if RPC request)\n\nconst debugMsg = { ...msg };\nconst mqttMsg = socChanged ? { ...msg } : null;\nconst rpcMsg = isRpc ? { ...msg } : null;\n\nreturn [debugMsg, mqttMsg, rpcMsg];",
+        "outputs": 3,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1190,
+        "y": 160,
+        "wires": [
+            [
+                "2942b0d3c1c638c0"
+            ],
+            [
+                "ece304a74ef98eee"
+            ],
+            [
+                "629d23476b9d6f7c"
+            ]
+        ]
+    },
+    {
+        "id": "2942b0d3c1c638c0",
+        "type": "debug",
+        "z": "e3b2f88b1fb879d9",
+        "name": "BatterySocState JSON",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1440,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "ece304a74ef98eee",
+        "type": "mqtt out",
+        "z": "e3b2f88b1fb879d9",
+        "name": "Send to ThingsBoard (if changed)",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1480,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "629d23476b9d6f7c",
+        "type": "function",
+        "z": "e3b2f88b1fb879d9",
+        "name": "Prepare RPC Response",
+        "func": "// Only respond if this came from RPC\nif (!msg.rpcResponseTopic) {\n    return null;\n}\n\nconst state = msg.state || msg.payload;\n\nmsg.payload = state;\nmsg.topic = msg.rpcResponseTopic;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1450,
+        "y": 220,
+        "wires": [
+            [
+                "6a7ae28b1fc9a062"
+            ]
+        ]
+    },
+    {
+        "id": "6a7ae28b1fc9a062",
+        "type": "mqtt out",
+        "z": "e3b2f88b1fb879d9",
+        "name": "RPC Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1680,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "8afa7126ed983c4f",
+        "type": "debug",
+        "z": "e3b2f88b1fb879d9",
+        "name": "BatterySocState CRC/Error",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 960,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

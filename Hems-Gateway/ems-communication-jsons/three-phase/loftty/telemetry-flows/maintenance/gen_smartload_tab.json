@@ -1,0 +1,425 @@
+[
+    {
+        "id": "e3f9191e40666dea",
+        "type": "tab",
+        "label": "GeneratorSmartLoadOverride",
+        "disabled": false,
+        "info": "Generator Smart Load Override - Register 232\n\nValues:\n- 0 = do not force\n- 1 = force enable"
+    },
+    {
+        "id": "931c703c00392edf",
+        "type": "link in",
+        "z": "e3f9191e40666dea",
+        "name": "RPC Request",
+        "links": [
+            "rpc_gsl_link_out"
+        ],
+        "x": 125,
+        "y": 80,
+        "wires": [
+            [
+                "2ad6e46029d76803"
+            ]
+        ]
+    },
+    {
+        "id": "88293edf81857296",
+        "type": "comment",
+        "z": "e3f9191e40666dea",
+        "name": "══════ MANUAL TEST ══════",
+        "info": "",
+        "x": 170,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "64b6259dbc1ba2fd",
+        "type": "inject",
+        "z": "e3f9191e40666dea",
+        "name": "Manual Read",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operationType",
+                "v": "read",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 180,
+        "wires": [
+            [
+                "2ad6e46029d76803"
+            ]
+        ]
+    },
+    {
+        "id": "7bc7fd641ad64ee2",
+        "type": "inject",
+        "z": "e3f9191e40666dea",
+        "name": "Set: Force ON",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operationType",
+                "v": "write",
+                "vt": "str"
+            },
+            {
+                "p": "rpcParams",
+                "v": "{\"forceSmartLoadOn\":true}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 220,
+        "wires": [
+            [
+                "2ad6e46029d76803"
+            ]
+        ]
+    },
+    {
+        "id": "6273c5d7d0461846",
+        "type": "inject",
+        "z": "e3f9191e40666dea",
+        "name": "Set: Force OFF",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operationType",
+                "v": "write",
+                "vt": "str"
+            },
+            {
+                "p": "rpcParams",
+                "v": "{\"forceSmartLoadOn\":false}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 260,
+        "wires": [
+            [
+                "2ad6e46029d76803"
+            ]
+        ]
+    },
+    {
+        "id": "2ad6e46029d76803",
+        "type": "function",
+        "z": "e3f9191e40666dea",
+        "name": "Route: Read or Write?",
+        "func": "const opType = msg.operationType || 'read';\n\nif (opType === 'write') {\n    return [null, msg];\n} else {\n    return [msg, null];\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 440,
+        "y": 180,
+        "wires": [
+            [
+                "64651b35f685f2f1"
+            ],
+            [
+                "48d65c0023159749"
+            ]
+        ]
+    },
+    {
+        "id": "d720b34414c7736e",
+        "type": "comment",
+        "z": "e3f9191e40666dea",
+        "name": "══════ READ ══════",
+        "info": "",
+        "x": 640,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "64651b35f685f2f1",
+        "type": "function",
+        "z": "e3f9191e40666dea",
+        "name": "Prep Read Reg 232",
+        "func": "msg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 232,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 650,
+        "y": 80,
+        "wires": [
+            [
+                "3a739f9654a2fa5a"
+            ]
+        ]
+    },
+    {
+        "id": "3a739f9654a2fa5a",
+        "type": "modbus-flex-getter",
+        "z": "e3f9191e40666dea",
+        "name": "Read Reg 232",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 840,
+        "y": 80,
+        "wires": [
+            [
+                "a2d47ecd151f2bc6"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "a2d47ecd151f2bc6",
+        "type": "function",
+        "z": "e3f9191e40666dea",
+        "name": "Build Read Response",
+        "func": "let data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data) || data.length < 1) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Read failed\" });\n    return null;\n}\n\nconst forceSmartLoadOn = data[0] === 1;\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\n\nconst state = {\n    kind: \"GeneratorSmartLoadOverride\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    gatewayId: gatewayId,\n    forceSmartLoadOn: forceSmartLoadOn\n};\n\nmsg.payload = state;\nmsg.state = state;\n\nnode.status({ fill: \"green\", shape: \"dot\", text: forceSmartLoadOn ? \"Forced ON\" : \"Not Forced\" });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1040,
+        "y": 80,
+        "wires": [
+            [
+                "36ee10a749fd3307",
+                "52e8935e3aecb942"
+            ]
+        ]
+    },
+    {
+        "id": "784b69ed6aa0b528",
+        "type": "comment",
+        "z": "e3f9191e40666dea",
+        "name": "══════ WRITE ══════",
+        "info": "",
+        "x": 700,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "48d65c0023159749",
+        "type": "function",
+        "z": "e3f9191e40666dea",
+        "name": "Prep Write Reg 232",
+        "func": "const params = msg.rpcParams || {};\n\nlet code = null;\n\nif (params.forceSmartLoadOn !== undefined) {\n    code = params.forceSmartLoadOn ? 1 : 0;\n}\n\nif (code === null || code === undefined) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Invalid params\" });\n    node.error(\"Missing forceSmartLoadOn parameter\");\n    return null;\n}\n\nmsg.writeInfo = {\n    code: code,\n    enabled: code === 1\n};\n\nmsg.payload = {\n    fc: 16,\n    unitid: 1,\n    address: 232,\n    quantity: 1,\n    value: [code]\n};\n\nnode.status({ fill: \"yellow\", shape: \"dot\", text: \"Writing: \" + (code === 1 ? \"Force ON\" : \"Force OFF\") });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 650,
+        "y": 240,
+        "wires": [
+            [
+                "249bf12bb8c6779c"
+            ]
+        ]
+    },
+    {
+        "id": "249bf12bb8c6779c",
+        "type": "modbus-flex-write",
+        "z": "e3f9191e40666dea",
+        "name": "Write Reg 232",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "server": "e4e4f3e2a4f4e004",
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "x": 840,
+        "y": 240,
+        "wires": [
+            [
+                "918743ada28db7a4"
+            ],
+            [
+                "918743ada28db7a4"
+            ]
+        ]
+    },
+    {
+        "id": "918743ada28db7a4",
+        "type": "function",
+        "z": "e3f9191e40666dea",
+        "name": "Build Write Response",
+        "func": "// Filter out confirmation messages\nconst isConfirmation = msg.payload && \n                       msg.payload.address !== undefined && \n                       msg.payload.length !== undefined &&\n                       !msg.payload.error;\n\nif (isConfirmation) {\n    return null;\n}\n\nconst writeInfo = msg.writeInfo || { code: -1, enabled: false };\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\n\nconst state = {\n    kind: \"GeneratorSmartLoadOverride\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    gatewayId: gatewayId,\n    success: true,\n    message: \"Force smart load setting updated\",\n    forceSmartLoadOn: writeInfo.enabled\n};\n\nmsg.payload = state;\nmsg.state = state;\n\nnode.status({ fill: \"green\", shape: \"dot\", text: \"OK: \" + (writeInfo.enabled ? \"Forced ON\" : \"Not Forced\") });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1040,
+        "y": 240,
+        "wires": [
+            [
+                "36ee10a749fd3307",
+                "52e8935e3aecb942"
+            ]
+        ]
+    },
+    {
+        "id": "36ee10a749fd3307",
+        "type": "debug",
+        "z": "e3f9191e40666dea",
+        "name": "Gen SmartLoad",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1260,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "52e8935e3aecb942",
+        "type": "function",
+        "z": "e3f9191e40666dea",
+        "name": "RPC Response",
+        "func": "if (!msg.rpcResponseTopic) {\n    return null;\n}\n\nmsg.topic = msg.rpcResponseTopic;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1260,
+        "y": 180,
+        "wires": [
+            [
+                "729998dfe0160421"
+            ]
+        ]
+    },
+    {
+        "id": "729998dfe0160421",
+        "type": "mqtt out",
+        "z": "e3f9191e40666dea",
+        "name": "MQTT Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1460,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

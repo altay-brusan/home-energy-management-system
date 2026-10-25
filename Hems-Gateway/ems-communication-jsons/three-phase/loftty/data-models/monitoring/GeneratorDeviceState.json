@@ -1,0 +1,28 @@
+{
+   "timestampUtc": "string",
+   "version": 1,
+   "DeviceId": "string",
+
+  "genVoltage": {
+    "phaseAVoltageV": "number",              // 761 - Gen port phase voltage A (0.1V)
+    "phaseBVoltageV": "number",              // 762 - Gen port phase voltage B (0.1V)
+    "phaseCVoltageV": "number"               // 763 - Gen port phase voltage C (0.1V)
+  },
+
+  "genFrequencyHz": "number",                // 709 - Grid-side frequency (0.01Hz)
+
+  "genPower": {
+    "phaseAPowerW": "number",                // 764 (low) + 768 (high) - Gen port phase A power (1W, S32)
+    "phaseBPowerW": "number",                // 765 (low) + 769 (high) - Gen port phase B power (1W, S32)
+    "phaseCPowerW": "number",                // 766 (low) + 770 (high) - Gen port phase C power (1W, S32)
+    "totalPowerW": "number"                  // 767 (low) + 771 (high) - Gen port total power (1W, S32)
+  },
+
+  "smartLoadActivePowerW": "number",         // 767 (low) + 771 (high) - inputMode == "smart_load" ise aynı register
+
+  "todayGenEnergyKWh": "number",             // 636 - Generator daily energy (0.1kWh)
+  "dailyRunTimeHours": "number",             // 639 - Generator daily runtime (0.1h)
+
+  "totalGenEnergyKWh": "number",             // 637 (low) + 638 (high) - Generator total energy (0.1kWh)
+  "accumulatedRunTimeHours": "number"        // 612 (low) + 613 (high) - Generator historical runtime (0.1h)
+}

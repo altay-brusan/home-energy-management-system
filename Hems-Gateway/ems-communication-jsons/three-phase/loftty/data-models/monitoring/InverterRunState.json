@@ -1,0 +1,11 @@
+InverterRunState
+{
+  "kind": "InverterRunState",
+  "version": 1,
+  "runState": "string"           // 600 - Run state
+                                 //   "standby"   (0)
+                                 //   "selfcheck" (1)
+                                 //   "normal"    (2)
+                                 //   "alarm"     (3)
+                                 //   "fault"     (4)
+}

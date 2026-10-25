@@ -1,0 +1,378 @@
+[
+    {
+        "id": "bd4c6b65f2d52571",
+        "type": "tab",
+        "label": "DailyEnergyFlowState",
+        "disabled": false,
+        "info": "Reads Daily Energy Flow State from registers:\n- 614-615: Battery charge/discharge\n- 620-621: Grid buy/sell\n- 626: Load\n- 629: PV\n- 636: Generator\n\nTriggers:\n1. Daily at 23:59\n2. Manual\n3. RPC: getDailyEnergyFlowState"
+    },
+    {
+        "id": "06e2262f53081bc4",
+        "type": "link in",
+        "z": "bd4c6b65f2d52571",
+        "name": "RPC Request",
+        "links": [
+            "rpc_def_link_out"
+        ],
+        "x": 125,
+        "y": 60,
+        "wires": [
+            [
+                "fad6a3a2df49e188",
+                "80afa11bfdba6f94",
+                "7e6d2b95dc80e1d1"
+            ]
+        ]
+    },
+    {
+        "id": "5cf93492915ce048",
+        "type": "comment",
+        "z": "bd4c6b65f2d52571",
+        "name": "RPC Trigger (getDailyEnergyFlowState)",
+        "info": "",
+        "x": 220,
+        "y": 20,
+        "wires": []
+    },
+    {
+        "id": "325ba1635d0e53ba",
+        "type": "comment",
+        "z": "bd4c6b65f2d52571",
+        "name": "Cron: Daily at 23:59",
+        "info": "",
+        "x": 160,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "3d59ad8eb33e8149",
+        "type": "inject",
+        "z": "bd4c6b65f2d52571",
+        "name": "Daily at 23:59",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "59 23 * * *",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 140,
+        "wires": [
+            [
+                "fad6a3a2df49e188",
+                "80afa11bfdba6f94",
+                "7e6d2b95dc80e1d1"
+            ]
+        ]
+    },
+    {
+        "id": "967328c141c96312",
+        "type": "inject",
+        "z": "bd4c6b65f2d52571",
+        "name": "Manual Trigger",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 200,
+        "wires": [
+            [
+                "fad6a3a2df49e188",
+                "80afa11bfdba6f94",
+                "7e6d2b95dc80e1d1"
+            ]
+        ]
+    },
+    {
+        "id": "fad6a3a2df49e188",
+        "type": "function",
+        "z": "bd4c6b65f2d52571",
+        "name": "Prepare read (Battery 614-615)",
+        "func": "// Store RPC response topic if present\nif (msg.rpcResponseTopic) {\n    flow.set(\"def_rpc_response_topic\", msg.rpcResponseTopic);\n}\n\n// Battery daily energy\n// 614: Today charge (0.1kWh)\n// 615: Today discharge (0.1kWh)\n\nmsg.baseAddr = 614;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 614,\n    quantity: 2  // 614-615\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 450,
+        "y": 100,
+        "wires": [
+            [
+                "4ac1ed38a8196b60"
+            ]
+        ]
+    },
+    {
+        "id": "80afa11bfdba6f94",
+        "type": "function",
+        "z": "bd4c6b65f2d52571",
+        "name": "Prepare read (Grid 620-621)",
+        "func": "// Grid daily energy\n// 620: Day_GridBuy_Power (0.1kWh)\n// 621: Day_GridSell_Power (0.1kWh)\n\nmsg.baseAddr = 620;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 620,\n    quantity: 2  // 620-621\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 440,
+        "y": 160,
+        "wires": [
+            [
+                "78f6d647654a02e9"
+            ]
+        ]
+    },
+    {
+        "id": "7e6d2b95dc80e1d1",
+        "type": "function",
+        "z": "bd4c6b65f2d52571",
+        "name": "Prepare read (Load/PV/Gen 626-636)",
+        "func": "// Load, PV, Generator daily energy\n// 626: Day_Load_Power (0.1kWh)\n// 627-628: (skip)\n// 629: Day_PV_Power (0.1kWh)\n// 630-635: (skip)\n// 636: Generator daily (0.1kWh)\n\nmsg.baseAddr = 626;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 626,\n    quantity: 11  // 626-636\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 470,
+        "y": 220,
+        "wires": [
+            [
+                "48699ab1c633978b"
+            ]
+        ]
+    },
+    {
+        "id": "4ac1ed38a8196b60",
+        "type": "modbus-flex-getter",
+        "z": "bd4c6b65f2d52571",
+        "name": "Read Battery (614-615)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 870,
+        "y": 100,
+        "wires": [
+            [
+                "de87a9ccefb7bb66"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "78f6d647654a02e9",
+        "type": "modbus-flex-getter",
+        "z": "bd4c6b65f2d52571",
+        "name": "Read Grid (620-621)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 860,
+        "y": 160,
+        "wires": [
+            [
+                "de87a9ccefb7bb66"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "48699ab1c633978b",
+        "type": "modbus-flex-getter",
+        "z": "bd4c6b65f2d52571",
+        "name": "Read Load/PV/Gen (626-636)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 890,
+        "y": 220,
+        "wires": [
+            [
+                "de87a9ccefb7bb66"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "de87a9ccefb7bb66",
+        "type": "function",
+        "z": "bd4c6b65f2d52571",
+        "name": "Build DailyEnergyFlowState JSON",
+        "func": "const base = msg.baseAddr;\nconst data = msg.payload.data || msg.payload;\n\n// Store partial results in flow context\nif (base === 614) {\n    // Battery: 614-615\n    flow.set(\"def_battery\", {\n        chargeEnergyKWh: data[0] * 0.1,      // 614\n        dischargeEnergyKWh: data[1] * 0.1    // 615\n    });\n}\nelse if (base === 620) {\n    // Grid: 620-621\n    flow.set(\"def_grid\", {\n        importEnergyKWh: data[0] * 0.1,      // 620\n        exportEnergyKWh: data[1] * 0.1       // 621\n    });\n}\nelse if (base === 626) {\n    // Load/PV/Gen: 626, 629, 636\n    flow.set(\"def_load\", data[0] * 0.1);                    // 626\n    flow.set(\"def_pv\", data[3] * 0.1);                      // 629 (offset 3)\n    flow.set(\"def_generator\", data[10] * 0.1);              // 636 (offset 10)\n}\n\n// Check if all parts are ready\nconst battery = flow.get(\"def_battery\");\nconst grid = flow.get(\"def_grid\");\nconst load = flow.get(\"def_load\");\nconst pv = flow.get(\"def_pv\");\nconst generator = flow.get(\"def_generator\");\n\nif (!battery || !grid || load === undefined || pv === undefined || generator === undefined) {\n    return null;  // Wait for all parts\n}\n\n// All data collected, build final JSON\nconst result = {\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    DeviceId: \"EC100\",\n    \n    loadEnergyKWh: load,\n    \n    grid: {\n        importEnergyKWh: grid.importEnergyKWh,\n        exportEnergyKWh: grid.exportEnergyKWh\n    },\n    \n    pv: {\n        totalEnergyKWh: pv,\n        mppt: [\n            { id: 1, energyKWh: null },  // Not available in datasheet\n            { id: 2, energyKWh: null },\n            { id: 3, energyKWh: null },\n            { id: 4, energyKWh: null }\n        ]\n    },\n    \n    battery: {\n        chargeEnergyKWh: battery.chargeEnergyKWh,\n        dischargeEnergyKWh: battery.dischargeEnergyKWh\n    },\n    \n    generator: {\n        energyKWh: generator\n    }\n};\n\n// Clear flow context\nflow.set(\"def_battery\", null);\nflow.set(\"def_grid\", null);\nflow.set(\"def_load\", null);\nflow.set(\"def_pv\", null);\nflow.set(\"def_generator\", null);\n\n// Check if this is an RPC request\nconst rpcTopic = flow.get(\"def_rpc_response_topic\");\nif (rpcTopic) {\n    // Send RPC response\n    msg.payload = { success: true, data: result };\n    msg.topic = rpcTopic;\n    flow.set(\"def_rpc_response_topic\", null);\n    return [msg, null];\n} else {\n    // Send telemetry\n    msg.payload = result;\n    return [null, msg];\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1220,
+        "y": 200,
+        "wires": [
+            [
+                "bb903f34d564e63f"
+            ],
+            [
+                "a2af470c95ab9827",
+                "1ec4983eb8aaea80"
+            ]
+        ]
+    },
+    {
+        "id": "bb903f34d564e63f",
+        "type": "mqtt out",
+        "z": "bd4c6b65f2d52571",
+        "name": "RPC Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1450,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "a2af470c95ab9827",
+        "type": "mqtt out",
+        "z": "bd4c6b65f2d52571",
+        "name": "Send to ThingsBoard",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1470,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "1ec4983eb8aaea80",
+        "type": "debug",
+        "z": "bd4c6b65f2d52571",
+        "name": "DailyEnergyFlow Debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1680,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

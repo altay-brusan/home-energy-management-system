@@ -1,0 +1,458 @@
+[
+    {
+        "id": "48027ae0f30c7022",
+        "type": "tab",
+        "label": "SystemConnectionStructure",
+        "disabled": false,
+        "info": "System Connection Structure - Read & Write\n\nRead-Only Registers:\n- 100: deviceType\n- 103-107: Serial Number (5 regs)\n- 114-118: Firmware versions (5 regs)\n- 120-121: Rated power (32-bit)\n- 202: battery capacity\n\nR/W Registers:\n- 282: gridStandardRaw [0-4]\n- 283: gridFrequencyHz [0=50Hz, 1=60Hz]\n- 284: gridType [0-3]\n- 238: gridVoltageLevelCode [0-4]\n- 247: gridPhaseSequence [0-1]\n- 211: batteryControlMode [0-2]\n- 233: generator.inputMode [0-2]\n- 289: generator.connectedToGridInput [0-1]\n- 242: exportLimitMode [0-2]"
+    },
+    {
+        "id": "48a63907ca06c8c5",
+        "type": "link in",
+        "z": "48027ae0f30c7022",
+        "name": "RPC Request",
+        "links": [
+            "rpc_sysconn_link_out"
+        ],
+        "x": 125,
+        "y": 80,
+        "wires": [
+            [
+                "scs_route_001"
+            ]
+        ]
+    },
+    {
+        "id": "49aaa1e801c2dba7",
+        "type": "comment",
+        "z": "48027ae0f30c7022",
+        "name": "══════ MANUAL TEST ══════",
+        "info": "",
+        "x": 170,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "52a45edebc0f359a",
+        "type": "inject",
+        "z": "48027ae0f30c7022",
+        "name": "Manual Read",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operationType",
+                "v": "read",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 180,
+        "wires": [
+            [
+                "scs_route_001"
+            ]
+        ]
+    },
+    {
+        "id": "scs_inject_write_001",
+        "type": "inject",
+        "z": "48027ae0f30c7022",
+        "name": "Test Write (multiple)",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operationType",
+                "v": "write",
+                "vt": "str"
+            },
+            {
+                "p": "rpcParams",
+                "v": "{\"gridType\":2,\"gridPhaseSequence\":0,\"batteryControlMode\":\"capacity\",\"generator\":{\"inputMode\":0,\"connectedToGridInput\":false},\"exportLimitMode\":1}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 170,
+        "y": 240,
+        "wires": [
+            [
+                "scs_route_001"
+            ]
+        ]
+    },
+    {
+        "id": "scs_route_001",
+        "type": "function",
+        "z": "48027ae0f30c7022",
+        "name": "Route: Read or Write?",
+        "func": "const opType = msg.operationType || 'read';\n\nif (opType === 'write') {\n    return [null, msg];\n} else {\n    return [msg, null];\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 80,
+        "wires": [
+            [
+                "b90361c70e74e5e5"
+            ],
+            [
+                "scs_queue_writes_001"
+            ]
+        ]
+    },
+    {
+        "id": "8920682e713618eb",
+        "type": "comment",
+        "z": "48027ae0f30c7022",
+        "name": "══════ READ SECTION ══════",
+        "info": "",
+        "x": 680,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "b90361c70e74e5e5",
+        "type": "function",
+        "z": "48027ae0f30c7022",
+        "name": "Start Read",
+        "func": "// Save RPC response topic and write result\nflow.set(\"scs_rpc_response_topic\", msg.rpcResponseTopic);\nflow.set(\"scs_write_result\", msg.writeResult || null);\n\n// Clear previous collected data\nflow.set(\"scs_reads\", null);\n\n// Read all registers in parallel\nconst reads = [\n    { name: 'deviceType', address: 100, quantity: 1 },\n    { name: 'serialNumber', address: 103, quantity: 5 },\n    { name: 'firmware', address: 114, quantity: 5 },\n    { name: 'ratedPower', address: 120, quantity: 2 },\n    { name: 'gridStandard', address: 282, quantity: 1 },\n    { name: 'gridFrequency', address: 283, quantity: 1 },\n    { name: 'gridType', address: 284, quantity: 1 },\n    { name: 'voltageLevel', address: 238, quantity: 1 },\n    { name: 'phaseSequence', address: 247, quantity: 1 },\n    { name: 'batteryMode', address: 211, quantity: 1 },\n    { name: 'batteryCapacity', address: 202, quantity: 1 },\n    { name: 'genInputMode', address: 233, quantity: 1 },\n    { name: 'genConnectedGrid', address: 289, quantity: 1 },\n    { name: 'exportLimitMode', address: 242, quantity: 1 }\n];\n\nconst messages = reads.map(r => ({\n    payload: {\n        fc: 3,\n        unitid: 1,\n        address: r.address,\n        quantity: r.quantity\n    },\n    readName: r.name\n}));\n\nreturn [messages];",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 550,
+        "y": 80,
+        "wires": [
+            [
+                "2ed280a751699b90"
+            ]
+        ]
+    },
+    {
+        "id": "2ed280a751699b90",
+        "type": "modbus-flex-getter",
+        "z": "48027ae0f30c7022",
+        "name": "Read System Regs",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 730,
+        "y": 80,
+        "wires": [
+            [
+                "a1965b1d27436a7f"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "a1965b1d27436a7f",
+        "type": "function",
+        "z": "48027ae0f30c7022",
+        "name": "Collect All Reads",
+        "func": "const flowKey = 'scs_reads';\nlet collected = flow.get(flowKey) || {};\nlet expectedCount = 14;\n\nlet data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data) || data.length < 1) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"Read failed: \" + msg.readName });\n    return null;\n}\n\nconst readName = msg.readName;\n\n// Store the data based on type\nif (readName === 'serialNumber' || readName === 'firmware' || readName === 'ratedPower') {\n    collected[readName] = data;\n} else {\n    collected[readName] = data[0];\n}\n\nflow.set(flowKey, collected);\n\nconst collectedCount = Object.keys(collected).length;\nnode.status({ fill: \"blue\", shape: \"dot\", text: `Collected ${collectedCount}/${expectedCount}` });\n\nif (collectedCount >= expectedCount) {\n    flow.set(flowKey, null);\n    msg.collectedData = collected;\n    msg.payload = collected;\n    return msg;\n}\n\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 930,
+        "y": 80,
+        "wires": [
+            [
+                "75ee9a5caa3a14ff"
+            ]
+        ]
+    },
+    {
+        "id": "75ee9a5caa3a14ff",
+        "type": "function",
+        "z": "48027ae0f30c7022",
+        "name": "Build System Connection Structure",
+        "func": "const data = msg.collectedData;\n\nif (!data) {\n    node.status({ fill: \"red\", shape: \"dot\", text: \"No data\" });\n    return null;\n}\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\n\n// Parse Serial Number (5 registers = 10 ASCII)\nfunction parseSerialNumber(regs) {\n    let sn = \"\";\n    for (let i = 0; i < regs.length; i++) {\n        const highByte = (regs[i] >> 8) & 0xFF;\n        const lowByte = regs[i] & 0xFF;\n        sn += String.fromCharCode(highByte);\n        sn += String.fromCharCode(lowByte);\n    }\n    return sn.replace(/\\0/g, '').trim();\n}\n\nconst serialNumber = parseSerialNumber(data.serialNumber);\n\n// Parse device type and derive model\nconst deviceType = data.deviceType;\nlet inverterModel = \"Unknown\";\nif (deviceType === 0x03) inverterModel = \"Single-phase LV hybrid\";\nelse if (deviceType === 0x05) inverterModel = \"Three-phase LV hybrid\";\nelse if (deviceType === 0x06) inverterModel = \"Three-phase HV hybrid\";\n\nconst gridPhaseCount = (deviceType === 0x05 || deviceType === 0x06) ? 3 : 1;\n\n// Parse firmware versions\nconst fw = data.firmware;\nconst firmware = {\n    protocolVersion: null,\n    mcuBoardRaw: null,\n    controlHardwareRaw: fw[0],\n    controlMainRaw: fw[1],\n    commField1Raw: fw[2],\n    commField2Raw: fw[3],\n    commMainRaw: fw[4]\n};\n\n// Parse rated power (32-bit)\nconst ratedPowerRaw = (data.ratedPower[1] << 16) | data.ratedPower[0];\nconst ratedPowerW = ratedPowerRaw / 10;\n\n// Parse grid frequency\nconst gridFrequencyHz = data.gridFrequency === 0 ? 50 : 60;\n\n// Parse grid phase sequence\nconst gridPhaseSequence = data.phaseSequence === 0 ? \"ABC_0_120_240\" : \"ACB_0_240_120\";\n\n// Parse grid type (284)\nconst gridTypeMap = {\n    0x00: \"single_phase\",\n    0x01: \"two_phase\",\n    0x02: \"three_phase_208v\",\n    0x03: \"single_phase_120v\"\n};\nconst gridType = gridTypeMap[data.gridType] !== undefined ? gridTypeMap[data.gridType] : data.gridType;\n\n// Parse battery control mode\nconst batteryModeMap = { 0: \"voltage\", 1: \"capacity\", 2: \"no_battery\" };\nconst batteryControlMode = batteryModeMap[data.batteryMode] || \"no_battery\";\n\n// Parse generator input mode\nconst genInputModeMap = { 0: \"generator_input\", 1: \"smart_load\", 2: \"micro_inverter_input\" };\nconst genInputMode = genInputModeMap[data.genInputMode] || \"generator_input\";\n\n// Parse export limit mode\nconst exportLimitModeMap = { 0x00: \"sell_enabled\", 0x01: \"internal_meter\", 0x02: \"external_ct\" };\nconst exportLimitMode = exportLimitModeMap[data.exportLimitMode] || \"sell_enabled\";\n\n// Build the complete structure\nconst structure = {\n    kind: \"SystemConnectionStructure\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    DeviceId: gatewayId,\n    schemaVersion: 1,\n    \n    inverter: {\n        deviceType: deviceType,\n        inverterModel: inverterModel,\n        serialNumber: serialNumber,\n        firmware: firmware,\n        ratedPowerW: ratedPowerW,\n        \n        acSide: {\n            mpptAndPhasesRaw: null,\n            batteryInputCount: null,\n            outputTopology: null,\n            gridType: gridType,\n            regionVariant: null,\n            safetyTypeRaw: null,\n            gridPhaseCount: gridPhaseCount,\n            gridStandardRaw: data.gridStandard,\n            gridFrequencyHz: gridFrequencyHz,\n            gridVoltageLevelCode: data.voltageLevel,\n            gridPhaseSequence: gridPhaseSequence,\n            itSystemNeutralUngrounded: null\n        }\n    },\n    \n    battery: {\n        batteryControlMode: batteryControlMode,\n        batteryChannels: [{\n            channelId: 1,\n            ratedCapacityAh: data.batteryCapacity,\n            nominalVoltageV: null,\n            batterySn: null,\n            batteryPhysicalAddress: null,\n            batterySoftwareVersion: null,\n            lithiumBatteryType: null\n        }]\n    },\n    \n    generator: {\n        inputMode: genInputMode,\n        connectedToGridInput: data.genConnectedGrid === 1\n    },\n    \n    pv: {\n        mpptCount: null,\n        mppt: [\n            { pvChannelId: 1, supportsInput: true, stringMaxCurrentA: null, stringMaxVoltageV: null, recommendedVocAtStcV: null },\n            { pvChannelId: 2, supportsInput: true, stringMaxCurrentA: null, stringMaxVoltageV: null, recommendedVocAtStcV: null },\n            { pvChannelId: 3, supportsInput: true, stringMaxCurrentA: null, stringMaxVoltageV: null, recommendedVocAtStcV: null },\n            { pvChannelId: 4, supportsInput: true, stringMaxCurrentA: null, stringMaxVoltageV: null, recommendedVocAtStcV: null }\n        ]\n    },\n    \n    loadAndGrid: {\n        homeLoadConnectionPoint: null,\n        exportLimitMode: exportLimitMode,\n        currentTransformerOnGridSide: null,\n        supportsBackupLoad: null,\n        supportsZeroExport: null,\n        supportsExternalMeter: null\n    }\n};\n\n// Get write result and rpc topic\nconst writeResult = flow.get(\"scs_write_result\");\nconst rpcResponseTopic = flow.get(\"scs_rpc_response_topic\");\n\nflow.set(\"scs_write_result\", null);\nflow.set(\"scs_rpc_response_topic\", null);\n\nif (writeResult) {\n    msg.payload = {\n        success: writeResult.success,\n        message: writeResult.message,\n        writes: writeResult.writes,\n        state: structure\n    };\n} else {\n    msg.payload = structure;\n}\n\nmsg.state = structure;\nmsg.rpcResponseTopic = rpcResponseTopic;\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `${inverterModel} - SN: ${serialNumber}` });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1200,
+        "y": 80,
+        "wires": [
+            [
+                "130244c8ed81f5ea",
+                "41bf5d69c265bc38"
+            ]
+        ]
+    },
+    {
+        "id": "130244c8ed81f5ea",
+        "type": "debug",
+        "z": "48027ae0f30c7022",
+        "name": "System Connection",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1470,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "41bf5d69c265bc38",
+        "type": "function",
+        "z": "48027ae0f30c7022",
+        "name": "RPC Response",
+        "func": "if (!msg.rpcResponseTopic) {\n    return null;\n}\n\nmsg.topic = msg.rpcResponseTopic;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1470,
+        "y": 80,
+        "wires": [
+            [
+                "0e8eb32923594596"
+            ]
+        ]
+    },
+    {
+        "id": "0e8eb32923594596",
+        "type": "mqtt out",
+        "z": "48027ae0f30c7022",
+        "name": "MQTT Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1670,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "scs_comment_write_001",
+        "type": "comment",
+        "z": "48027ae0f30c7022",
+        "name": "══════ WRITE SECTION ══════",
+        "info": "Sequential write with 500ms delay between each.",
+        "x": 510,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "scs_queue_writes_001",
+        "type": "function",
+        "z": "48027ae0f30c7022",
+        "name": "Queue Writes",
+        "func": "// Parse RPC params and build write queue\nconst params = msg.rpcParams || {};\nconst writes = [];\n\n// ═══════════════════════════════════════════════════════════\n// AC SIDE SETTINGS\n// ═══════════════════════════════════════════════════════════\n\n// Register 284: gridType [0-3]\nif (params.gridType !== undefined) {\n    let numVal = params.gridType;\n    if (typeof numVal === 'string') {\n        const map = { 'single_phase': 0, 'two_phase': 1, 'three_phase_208v': 2, 'single_phase_120v': 3 };\n        numVal = map[numVal];\n    }\n    if (numVal >= 0 && numVal <= 3) {\n        writes.push({ register: 284, value: numVal, name: 'Grid Type' });\n    }\n}\n\n// Register 282: gridStandardRaw [0-4]\nif (params.gridStandardRaw !== undefined) {\n    const val = params.gridStandardRaw;\n    if (val >= 0 && val <= 4) {\n        writes.push({ register: 282, value: val, name: 'Grid Standard' });\n    }\n}\n\n// Register 283: gridFrequencyHz [0=50Hz, 1=60Hz]\nif (params.gridFrequencyHz !== undefined) {\n    let numVal = params.gridFrequencyHz;\n    // Accept 50/60 or 0/1\n    if (numVal === 50) numVal = 0;\n    else if (numVal === 60) numVal = 1;\n    if (numVal === 0 || numVal === 1) {\n        writes.push({ register: 283, value: numVal, name: 'Grid Frequency' });\n    }\n}\n\n// Register 238: gridVoltageLevelCode [0-4]\nif (params.gridVoltageLevelCode !== undefined) {\n    const val = params.gridVoltageLevelCode;\n    if (val >= 0 && val <= 4) {\n        writes.push({ register: 238, value: val, name: 'Voltage Level' });\n    }\n}\n\n// Register 247: gridPhaseSequence [0-1]\nif (params.gridPhaseSequence !== undefined) {\n    let numVal = params.gridPhaseSequence;\n    if (typeof numVal === 'string') {\n        const map = { 'ABC_0_120_240': 0, 'ACB_0_240_120': 1 };\n        numVal = map[numVal];\n    }\n    if (numVal === 0 || numVal === 1) {\n        writes.push({ register: 247, value: numVal, name: 'Phase Sequence' });\n    }\n}\n\n// ═══════════════════════════════════════════════════════════\n// BATTERY SETTINGS\n// ═══════════════════════════════════════════════════════════\n\n// Register 211: batteryControlMode [0-2]\nif (params.batteryControlMode !== undefined) {\n    let numVal = params.batteryControlMode;\n    if (typeof numVal === 'string') {\n        const map = { 'voltage': 0, 'capacity': 1, 'no_battery': 2 };\n        numVal = map[numVal];\n    }\n    if (numVal >= 0 && numVal <= 2) {\n        writes.push({ register: 211, value: numVal, name: 'Battery Control Mode' });\n    }\n}\n\n// ═══════════════════════════════════════════════════════════\n// GENERATOR SETTINGS\n// ═══════════════════════════════════════════════════════════\n\n// Register 233: generator.inputMode [0-2]\nconst gen = params.generator || {};\nif (gen.inputMode !== undefined) {\n    let numVal = gen.inputMode;\n    if (typeof numVal === 'string') {\n        const map = { 'generator_input': 0, 'smart_load': 1, 'micro_inverter_input': 2 };\n        numVal = map[numVal];\n    }\n    if (numVal >= 0 && numVal <= 2) {\n        writes.push({ register: 233, value: numVal, name: 'Generator Input Mode' });\n    }\n}\n\n// Register 289: generator.connectedToGridInput [0-1]\nif (gen.connectedToGridInput !== undefined) {\n    const val = gen.connectedToGridInput ? 1 : 0;\n    writes.push({ register: 289, value: val, name: 'Gen Connected to Grid' });\n}\n\n// ═══════════════════════════════════════════════════════════\n// LOAD & GRID SETTINGS\n// ═══════════════════════════════════════════════════════════\n\n// Register 242: exportLimitMode [0-2]\nif (params.exportLimitMode !== undefined) {\n    let numVal = params.exportLimitMode;\n    if (typeof numVal === 'string') {\n        const map = { 'sell_enabled': 0, 'internal_meter': 1, 'external_ct': 2 };\n        numVal = map[numVal];\n    }\n    if (numVal >= 0 && numVal <= 2) {\n        writes.push({ register: 242, value: numVal, name: 'Export Limit Mode' });\n    }\n}\n\n// ═══════════════════════════════════════════════════════════\n// EXECUTE\n// ═══════════════════════════════════════════════════════════\n\nif (writes.length === 0) {\n    msg.operationType = 'read';\n    return [null, msg];\n}\n\nglobal.set('scs_write_queue', writes);\nglobal.set('scs_write_index', 0);\nglobal.set('scs_write_results', []);\nglobal.set('scs_write_rpc_topic', msg.rpcResponseTopic);\n\nnode.status({ fill: 'blue', shape: 'dot', text: `${writes.length} writes queued` });\n\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 530,
+        "y": 220,
+        "wires": [
+            [
+                "scs_prep_write_001"
+            ],
+            [
+                "b90361c70e74e5e5"
+            ]
+        ]
+    },
+    {
+        "id": "scs_prep_write_001",
+        "type": "function",
+        "z": "48027ae0f30c7022",
+        "name": "Prepare Write",
+        "func": "const writes = global.get(\"scs_write_queue\") || [];\nconst index = global.get(\"scs_write_index\") || 0;\n\nif (index >= writes.length) {\n    return null;\n}\n\nconst current = writes[index];\n\nconst newMsg = {\n    payload: {\n        fc: 16,\n        unitid: 1,\n        address: current.register,\n        quantity: 1,\n        value: [current.value]\n    },\n    currentWrite: current,\n    writeIndex: index\n};\n\nnode.status({ fill: \"blue\", shape: \"dot\", text: `[${index+1}/${writes.length}] ${current.name}` });\n\nreturn newMsg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 720,
+        "y": 220,
+        "wires": [
+            [
+                "scs_modbus_write_001"
+            ]
+        ]
+    },
+    {
+        "id": "scs_modbus_write_001",
+        "type": "modbus-flex-write",
+        "z": "48027ae0f30c7022",
+        "name": "Write Register",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "server": "e4e4f3e2a4f4e004",
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "x": 900,
+        "y": 220,
+        "wires": [
+            [
+                "scs_write_ok_001"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "scs_write_ok_001",
+        "type": "function",
+        "z": "48027ae0f30c7022",
+        "name": "Write OK",
+        "func": "const writes = global.get(\"scs_write_queue\") || [];\nlet index = global.get(\"scs_write_index\") || 0;\nconst results = global.get(\"scs_write_results\") || [];\n\n// Record success\nconst current = writes[index];\nif (current) {\n    results.push({ \n        register: current.register, \n        name: current.name, \n        value: current.value, \n        success: true \n    });\n    global.set(\"scs_write_results\", results);\n}\n\n// Move to next\nindex++;\nglobal.set(\"scs_write_index\", index);\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `${current.name} OK` });\n\n// More writes?\nif (index < writes.length) {\n    return [{ doNext: true }, null];\n}\n\n// All done - go to read\nconst rpcTopic = global.get(\"scs_write_rpc_topic\");\n\nglobal.set(\"scs_write_queue\", null);\nglobal.set(\"scs_write_index\", null);\nglobal.set(\"scs_write_rpc_topic\", null);\n\nconst finalMsg = {\n    writeResult: {\n        success: true,\n        message: `Successfully wrote ${results.length} register(s)`,\n        writes: results\n    },\n    rpcResponseTopic: rpcTopic\n};\n\nglobal.set(\"scs_write_results\", null);\n\nnode.status({ fill: \"green\", shape: \"dot\", text: `All ${results.length} writes OK!` });\n\nreturn [null, finalMsg];",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1060,
+        "y": 220,
+        "wires": [
+            [
+                "scs_write_delay_001"
+            ],
+            [
+                "b90361c70e74e5e5"
+            ]
+        ]
+    },
+    {
+        "id": "scs_write_delay_001",
+        "type": "delay",
+        "z": "48027ae0f30c7022",
+        "name": "500ms",
+        "pauseType": "delay",
+        "timeout": "500",
+        "timeoutUnits": "milliseconds",
+        "rate": "1",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": false,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 1190,
+        "y": 220,
+        "wires": [
+            [
+                "scs_prep_write_001"
+            ]
+        ]
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

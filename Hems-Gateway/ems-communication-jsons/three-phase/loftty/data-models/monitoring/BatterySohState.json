@@ -1,0 +1,37 @@
+BatterySohState 
+{
+   "timestampUtc": string,
+   "version": number,
+   "DeviceId": string,
+
+  // SOH as seen by the inverter, per battery channel
+  "inverterBatChannelSoh": [
+    {
+      "channelId": 1,
+      "sohPercent": number  // from inverter register 224 (battery 1 SOH %)
+    },
+    {
+      "channelId": 2,
+      "sohPercent": number  // from inverter register 255 (battery 2 SOH %)
+    }
+  ],
+
+  // Detailed SOH as read directly from BMS devices via your gateway
+  "bmsSohDetails": [
+    {
+      "channelId": 1,        // which inverter battery input this device belongs to
+      "deviceId": string,    // e.g. "CH1-BMS1" or pack serial
+      "sohPercent": number
+    },
+    {
+      "channelId": 1,
+      "deviceId": string,
+      "sohPercent": number
+    },
+    {
+      "channelId": 2,
+      "deviceId": string,
+      "sohPercent": number
+    }
+  ]
+}

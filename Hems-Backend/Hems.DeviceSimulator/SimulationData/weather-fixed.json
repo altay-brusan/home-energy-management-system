@@ -1,0 +1,58 @@
+{
+  "description": "Fixed weather conditions for demo simulation",
+  "version": "1.0",
+  "location": {
+    "city": "Amsterdam",
+    "country": "Netherlands",
+    "latitude": 52.3676,
+    "longitude": 4.9041,
+    "timezone": "Europe/Amsterdam"
+  },
+  "current": {
+    "condition": "Partly Cloudy",
+    "conditionCode": 1003,
+    "temperatureC": 18.5,
+    "temperatureF": 65.3,
+    "humidity": 65,
+    "windSpeedKph": 12.5,
+    "windDirection": "SW",
+    "pressureMb": 1015,
+    "cloudCover": 30,
+    "uvIndex": 5,
+    "visibility": 10
+  },
+  "hourlyForecast": [
+    { "hour": 0, "tempC": 14, "cloudCover": 20, "chanceOfRain": 5 },
+    { "hour": 1, "tempC": 13, "cloudCover": 15, "chanceOfRain": 5 },
+    { "hour": 2, "tempC": 12, "cloudCover": 10, "chanceOfRain": 0 },
+    { "hour": 3, "tempC": 12, "cloudCover": 10, "chanceOfRain": 0 },
+    { "hour": 4, "tempC": 11, "cloudCover": 5, "chanceOfRain": 0 },
+    { "hour": 5, "tempC": 11, "cloudCover": 5, "chanceOfRain": 0 },
+    { "hour": 6, "tempC": 12, "cloudCover": 10, "chanceOfRain": 0 },
+    { "hour": 7, "tempC": 14, "cloudCover": 15, "chanceOfRain": 0 },
+    { "hour": 8, "tempC": 16, "cloudCover": 20, "chanceOfRain": 0 },
+    { "hour": 9, "tempC": 17, "cloudCover": 25, "chanceOfRain": 5 },
+    { "hour": 10, "tempC": 18, "cloudCover": 30, "chanceOfRain": 5 },
+    { "hour": 11, "tempC": 19, "cloudCover": 30, "chanceOfRain": 5 },
+    { "hour": 12, "tempC": 20, "cloudCover": 25, "chanceOfRain": 5 },
+    { "hour": 13, "tempC": 21, "cloudCover": 20, "chanceOfRain": 0 },
+    { "hour": 14, "tempC": 21, "cloudCover": 25, "chanceOfRain": 0 },
+    { "hour": 15, "tempC": 20, "cloudCover": 30, "chanceOfRain": 5 },
+    { "hour": 16, "tempC": 19, "cloudCover": 35, "chanceOfRain": 10 },
+    { "hour": 17, "tempC": 18, "cloudCover": 40, "chanceOfRain": 10 },
+    { "hour": 18, "tempC": 17, "cloudCover": 35, "chanceOfRain": 5 },
+    { "hour": 19, "tempC": 16, "cloudCover": 30, "chanceOfRain": 5 },
+    { "hour": 20, "tempC": 15, "cloudCover": 25, "chanceOfRain": 5 },
+    { "hour": 21, "tempC": 15, "cloudCover": 20, "chanceOfRain": 0 },
+    { "hour": 22, "tempC": 14, "cloudCover": 15, "chanceOfRain": 0 },
+    { "hour": 23, "tempC": 14, "cloudCover": 15, "chanceOfRain": 0 }
+  ],
+  "solarIrradiance": {
+    "description": "Approximate solar irradiance based on location and season",
+    "peakWPerM2": 850,
+    "dailyKWhPerM2": 4.2,
+    "sunriseHour": 6,
+    "sunsetHour": 20,
+    "solarNoon": 13
+  }
+}

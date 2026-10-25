@@ -1,0 +1,103 @@
+[
+    {
+        "id": "rpc_inverter_control_state_tab",
+        "type": "tab",
+        "label": "RPC_InverterControlState",
+        "disabled": false,
+        "info": "RPC Handler for InverterControlState\nMethods:\n- getInverterControlState (read)\n- setInverterControlState (write)"
+    },
+    {
+        "id": "rpc_ics_mqtt_in",
+        "type": "mqtt in",
+        "z": "rpc_inverter_control_state_tab",
+        "name": "RPC Request",
+        "topic": "v1/devices/me/rpc/request/+",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "tb-broker",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 140,
+        "y": 120,
+        "wires": [
+            [
+                "rpc_ics_handle"
+            ]
+        ]
+    },
+    {
+        "id": "rpc_ics_handle",
+        "type": "function",
+        "z": "rpc_inverter_control_state_tab",
+        "name": "Handle RPC",
+        "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\n\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\n// Handle both get and set methods\nif (msg.rpcMethod === 'getInverterControlState') {\n    msg.operationType = 'read';\n    return msg;\n} else if (msg.rpcMethod === 'setInverterControlState') {\n    msg.operationType = 'write';\n    return msg;\n}\n\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 330,
+        "y": 120,
+        "wires": [
+            [
+                "rpc_ics_link_out"
+            ]
+        ]
+    },
+    {
+        "id": "rpc_ics_link_out",
+        "type": "link out",
+        "z": "rpc_inverter_control_state_tab",
+        "name": "To InverterControlState",
+        "mode": "link",
+        "links": [
+            "ics_link_in_rpc"
+        ],
+        "x": 535,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "rpc_ics_comment",
+        "type": "comment",
+        "z": "rpc_inverter_control_state_tab",
+        "name": "getInverterControlState / setInverterControlState - Control inverter power, lock, etc.",
+        "info": "",
+        "x": 350,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {}
+    }
+]

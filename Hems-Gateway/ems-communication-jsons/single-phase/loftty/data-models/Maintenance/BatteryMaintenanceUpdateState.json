@@ -1,0 +1,17 @@
+BatteryMaintenanceConfigState {
+  "timestampUtc": string,
+  "gatewayId": string,
+  "inverterSerialNumber": string,
+  "version": string,
+   // We usually keep this fixed to "capacity" in your design, 
+   // // but if admins *really* want to switch modes, they can:
+  "batteryControlMode": "capacity" | "voltage" | null,  // 213: battery operates according to voltage or capacity (0=voltage, 1=capacity, 2=no battery)
+
+  "wakeUp": {
+    "channel1Enabled": bool | null,    // 214: Lithium battery wake up sign bit (0=enabled, 1=disable)
+    "channel2Enabled": bool | null     // reserved for future use
+  },
+
+  "batteryResistanceMilliOhm": number | null,    // 215: battery resistance value (mΩ)
+  "chargeEfficiencyPercent": number | null       // 216: Battery charging efficiency (0.1%)
+}

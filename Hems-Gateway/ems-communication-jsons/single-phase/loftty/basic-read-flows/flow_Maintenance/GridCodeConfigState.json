@@ -1,0 +1,315 @@
+[
+    {
+        "id": "grid_code_config_tab",
+        "type": "tab",
+        "label": "Grid Code Config",
+        "disabled": false,
+        "info": "Reads Grid Code Config from registers:\n- 39-41: Power factor and regulation\n- 282: Reconnection time\n- 284-290: Grid mode, frequency, voltage settings"
+    },
+    {
+        "id": "gcc_poll_inject",
+        "type": "inject",
+        "z": "grid_code_config_tab",
+        "name": "Poll Grid Code Config (5 min)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "300",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 180,
+        "y": 140,
+        "wires": [
+            [
+                "gcc_prepare_power_reg",
+                "gcc_prepare_reconnect",
+                "gcc_prepare_grid_settings"
+            ]
+        ]
+    },
+    {
+        "id": "gcc_prepare_power_reg",
+        "type": "function",
+        "z": "grid_code_config_tab",
+        "name": "Prepare read (PowerReg 39-41)",
+        "func": "// Power factor and regulation\n// 39: Power factor regulation (0-2000, offset +1000)\n// 40: Active power regulation (0.1%)\n// 41: Reactive power regulation (0.1%)\n\nmsg.baseAddr = 39;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 39,\n    quantity: 3\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 490,
+        "y": 80,
+        "wires": [
+            [
+                "gcc_read_power_reg"
+            ]
+        ]
+    },
+    {
+        "id": "gcc_prepare_reconnect",
+        "type": "function",
+        "z": "grid_code_config_tab",
+        "name": "Prepare read (Reconnect 282)",
+        "func": "// Reconnection time\n// 282: Restore connection time (10-300 seconds)\n\nmsg.baseAddr = 282;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 282,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 490,
+        "y": 140,
+        "wires": [
+            [
+                "gcc_read_reconnect"
+            ]
+        ]
+    },
+    {
+        "id": "gcc_prepare_grid_settings",
+        "type": "function",
+        "z": "grid_code_config_tab",
+        "name": "Prepare read (GridSettings 284-290)",
+        "func": "// Grid mode and voltage/frequency settings\n// 284: Grid Mode\n// 285: Grid Frequency (0=50Hz, 1=60Hz)\n// 286: Grid Type\n// 287: Grid Vol High (0.1V)\n// 288: Grid Vol Low (0.1V)\n// 289: Grid Hz High (0.01Hz)\n// 290: Grid Hz Low (0.01Hz)\n\nmsg.baseAddr = 284;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 284,\n    quantity: 7\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 200,
+        "wires": [
+            [
+                "gcc_read_grid_settings"
+            ]
+        ]
+    },
+    {
+        "id": "gcc_read_power_reg",
+        "type": "modbus-flex-getter",
+        "z": "grid_code_config_tab",
+        "name": "Read PowerReg (39-41)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 750,
+        "y": 80,
+        "wires": [
+            [
+                "gcc_build_json"
+            ],
+            [
+                "gcc_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "gcc_read_reconnect",
+        "type": "modbus-flex-getter",
+        "z": "grid_code_config_tab",
+        "name": "Read Reconnect (282)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 750,
+        "y": 140,
+        "wires": [
+            [
+                "gcc_build_json"
+            ],
+            [
+                "gcc_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "gcc_read_grid_settings",
+        "type": "modbus-flex-getter",
+        "z": "grid_code_config_tab",
+        "name": "Read GridSettings (284-290)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 770,
+        "y": 200,
+        "wires": [
+            [
+                "gcc_build_json"
+            ],
+            [
+                "gcc_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "gcc_build_json",
+        "type": "function",
+        "z": "grid_code_config_tab",
+        "name": "Build GridCodeConfigState JSON",
+        "func": "// Build GridCodeConfigState from multiple Modbus reads.\n\nlet raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nlet baseAddr = msg.baseAddr;\nif (typeof baseAddr !== \"number\") {\n    baseAddr = (msg.modbusRequest && msg.modbusRequest.address);\n}\nif (typeof baseAddr !== \"number\") {\n    node.warn(\"GridCodeConfigState: missing base address\");\n    return null;\n}\n\n// ---- Store partials ----\n\n// Power regulation 39-41\nif (baseAddr === 39) {\n    const pfRaw = data[0] || 0;           // 39: offset +1000\n    const activeReg = data[1] || 0;       // 40: 0.1%\n    const reactiveReg = data[2] || 0;     // 41: 0.1%\n    \n    flow.set(\"gcc_part_power_reg\", {\n        powerFactorTarget: Math.round((pfRaw - 1000) * 100) / 100,  // -1.00 to +1.00\n        activePowerRegulationPercentPerStep: Math.round(activeReg * 0.1 * 10) / 10,\n        reactivePowerRegulationPercentPerStep: Math.round(reactiveReg * 0.1 * 10) / 10\n    });\n}\n\n// Reconnection time 282\nelse if (baseAddr === 282) {\n    flow.set(\"gcc_part_reconnect\", {\n        reconnectionTimeSeconds: data[0] || 0\n    });\n}\n\n// Grid settings 284-290\nelse if (baseAddr === 284) {\n    const gridMode = data[0] || 0;        // 284\n    const gridFreq = data[1] || 0;        // 285: 0=50Hz, 1=60Hz\n    const gridType = data[2] || 0;        // 286\n    const volHigh = data[3] || 0;         // 287: 0.1V\n    const volLow = data[4] || 0;          // 288: 0.1V\n    const hzHigh = data[5] || 0;          // 289: 0.01Hz\n    const hzLow = data[6] || 0;           // 290: 0.01Hz\n    \n    flow.set(\"gcc_part_grid_settings\", {\n        gridModeRaw: gridMode,\n        gridFrequencyHz: gridFreq === 0 ? 50 : 60,\n        gridVoltageLevelCode: gridType,\n        voltageHighV: Math.round(volHigh * 0.1 * 10) / 10,\n        voltageLowV: Math.round(volLow * 0.1 * 10) / 10,\n        frequencyHighHz: Math.round(hzHigh * 0.01 * 100) / 100,\n        frequencyLowHz: Math.round(hzLow * 0.01 * 100) / 100\n    });\n}\nelse {\n    return null;\n}\n\n// ---- Try to assemble ----\n\nconst powerRegPart = flow.get(\"gcc_part_power_reg\");\nconst reconnectPart = flow.get(\"gcc_part_reconnect\");\nconst gridSettingsPart = flow.get(\"gcc_part_grid_settings\");\n\nif (!powerRegPart || !reconnectPart || !gridSettingsPart) {\n    return null;\n}\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\nconst inverterSN = global.get(\"INVERTER_SN\") || env.get(\"INVERTER_SN\") || \"Unknown\";\n\nconst state = {\n    kind: \"GridCodeConfigState\",\n    timestampUtc: new Date().toISOString(),\n    gatewayId: gatewayId,\n    inverterSerialNumber: inverterSN,\n    version: \"1\",\n    \n    gridModeRaw: gridSettingsPart.gridModeRaw,\n    gridFrequencyHz: gridSettingsPart.gridFrequencyHz,\n    gridVoltageLevelCode: gridSettingsPart.gridVoltageLevelCode,\n    \n    normalConnect: {\n        voltageLowV: gridSettingsPart.voltageLowV,\n        voltageHighV: gridSettingsPart.voltageHighV,\n        frequencyLowHz: gridSettingsPart.frequencyLowHz,\n        frequencyHighHz: gridSettingsPart.frequencyHighHz\n    },\n    \n    reconnectionTimeSeconds: reconnectPart.reconnectionTimeSeconds,\n    \n    powerFactorTarget: powerRegPart.powerFactorTarget,\n    activePowerRegulationPercentPerStep: powerRegPart.activePowerRegulationPercentPerStep,\n    reactivePowerRegulationPercentPerStep: powerRegPart.reactivePowerRegulationPercentPerStep\n};\n\n// Clear partials\nflow.set(\"gcc_part_power_reg\", null);\nflow.set(\"gcc_part_reconnect\", null);\nflow.set(\"gcc_part_grid_settings\", null);\n\nflow.set(\"gridCodeConfigSnapshot\", state);\n\nmsg.payload = state;\nmsg.state = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1010,
+        "y": 140,
+        "wires": [
+            [
+                "gcc_debug_json",
+                "gcc_mqtt_telemetry"
+            ]
+        ]
+    },
+    {
+        "id": "gcc_debug_json",
+        "type": "debug",
+        "z": "grid_code_config_tab",
+        "name": "GridCodeConfigState JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1290,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "gcc_error_debug",
+        "type": "debug",
+        "z": "grid_code_config_tab",
+        "name": "GridCode CRC/Error debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1000,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "gcc_mqtt_telemetry",
+        "type": "mqtt out",
+        "z": "grid_code_config_tab",
+        "name": "Send to ThingsBoard",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1280,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

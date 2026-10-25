@@ -1,0 +1,47 @@
+{
+  "kind": "PcsDcMeasState",
+  "version": 1,
+  "canMessages": {
+    "PCS_DC_MEAS": "0x66B96Dx",
+    "PCS_DC_MEAS_2": "0x66B96Ex"
+  },
+
+  "signals": {
+    
+    "// ========== PCS_DC_MEAS (0x66B96Dx) ==========": "",
+    
+    "pcs_acPwrFactor": "number",                 // Bit 0-15 (16 bit) - AC Power Factor
+                                                 //   Signed, Factor: 0.01, Offset: 0
+                                                 //   Min: -327.68, Max: 327.67
+
+    "pcs_totalBusV": "number",                   // Bit 16-31 (16 bit) - Total Bus Voltage
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: V
+                                                 //   Min: 0, Max: 6553.5
+
+    "pcs_posBusV": "number",                     // Bit 32-47 (16 bit) - Positive Bus Voltage
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: V
+                                                 //   Min: 0, Max: 6553.5
+
+    "pcs_negBusV": "number",                     // Bit 48-63 (16 bit) - Negative Bus Voltage
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: V
+                                                 //   Min: 0, Max: 6553.5
+
+    "// ========== PCS_DC_MEAS_2 (0x66B96Ex) ==========": "",
+    
+    "pcs_batV": "number",                        // Bit 0-15 (16 bit) - Battery Voltage
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: V
+                                                 //   Min: 0, Max: 6553.5
+
+    "pcs_batI": "number",                        // Bit 16-31 (16 bit) - Battery Current
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: A
+                                                 //   Min: -3276.8, Max: 3276.7
+
+    "pcs_dcPwrKw": "number",                     // Bit 32-47 (16 bit) - DC Power
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: kW
+                                                 //   Min: -3276.8, Max: 3276.7
+
+    "pcs_totalDcI": "number"                     // Bit 48-63 (16 bit) - Total DC Current
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: A
+                                                 //   Min: -3276.8, Max: 3276.7
+  }
+}

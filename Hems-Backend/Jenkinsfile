@@ -1,0 +1,390 @@
+pipeline {
+    agent {
+        kubernetes {
+            yaml """
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    jenkins: agent
+spec:
+  serviceAccountName: jenkins-agent
+  containers:
+  - name: dotnet
+    image: mcr.microsoft.com/dotnet/sdk:9.0
+    command: ['cat']
+    tty: true
+    env:
+    - name: ConnectionStrings__Hems_BackendDb
+      value: "Server=localhost;Port=5432;User ID=postgres;Password=test;Database=HEMS_Test;Pooling=true;"
+  - name: docker
+    image: docker:27.0-cli
+    command: ['cat']
+    tty: true
+    volumeMounts:
+    - name: docker-sock
+      mountPath: /var/run/docker.sock
+  - name: kubectl
+    image: alpine/k8s:1.28.3
+    command: ['cat']
+    tty: true
+  - name: postgres
+    image: postgres:15
+    env:
+    - name: POSTGRES_USER
+      value: "postgres"
+    - name: POSTGRES_PASSWORD
+      value: "test"
+    - name: POSTGRES_DB
+      value: "HEMS_Test"
+    ports:
+    - containerPort: 5432
+  volumes:
+  - name: docker-sock
+    hostPath:
+      path: /var/run/docker.sock
+            """
+        }
+    }
+
+    environment {
+        // Docker Registry Configuration
+        DOCKER_REGISTRY = 'registry.oklidis.com.tr:5000'
+        DOCKER_IMAGE_NAME = 'hems-backend'
+        SIMULATOR_IMAGE_NAME = 'hems-simulator'
+
+        // Build Info
+        GIT_COMMIT_SHORT = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
+        BUILD_TAG = "${env.BRANCH_NAME}-${env.BUILD_NUMBER}-${GIT_COMMIT_SHORT}"
+
+        // SonarQube Configuration
+        SONAR_PROJECT_KEY = "hems-backend"
+        SONAR_HOST_URL = "http://sonarqube-sonarqube.sonarqube.svc.cluster.local:9000"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo "🔄 Checking out code from ${env.BRANCH_NAME} branch..."
+                checkout scm
+            }
+        }
+
+        stage('Build & Test with Coverage') {
+            steps {
+                echo "🔨 Building and testing with coverage..."
+                container('dotnet') {
+                    sh """
+                        dotnet restore
+                        dotnet build -c Release --no-restore
+                        dotnet test -c Release --no-build --verbosity normal \
+                            /p:CollectCoverage=true \
+                            /p:CoverletOutputFormat=opencover \
+                            /p:CoverletOutput=./TestResults/coverage/
+                    """
+                }
+            }
+            post {
+                failure {
+                    echo "❌ Tests failed! Blocking deployment."
+                    error("Tests failed. Deployment is blocked.")
+                }
+                success {
+                    echo "✅ All tests passed!"
+                }
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                echo "📊 Running SonarQube analysis..."
+                container('dotnet') {
+                    withSonarQubeEnv('SonarQube') {
+                        sh """
+                            dotnet tool install --global dotnet-sonarscanner || true
+                            export PATH="\$PATH:\$HOME/.dotnet/tools"
+
+                            dotnet sonarscanner begin \
+                                /k:"${SONAR_PROJECT_KEY}" \
+                                /d:sonar.host.url="${SONAR_HOST_URL}" \
+                                /d:sonar.token="\${SONAR_AUTH_TOKEN}" \
+                                /d:sonar.cs.opencover.reportsPaths="**/TestResults/coverage/coverage.opencover.xml"
+
+                            dotnet build -c Release --no-restore
+
+                            dotnet sonarscanner end /d:sonar.token="\${SONAR_AUTH_TOKEN}"
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                echo "🚦 Waiting for SonarQube Quality Gate..."
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: false
+                }
+            }
+            post {
+                failure {
+                    echo "❌ Quality Gate failed! Code quality below threshold."
+                }
+                success {
+                    echo "✅ Quality Gate passed!"
+                }
+            }
+        }
+
+        stage('Build Docker Image - Development') {
+            when {
+                branch 'dev'
+            }
+            steps {
+                echo "🐳 Building Docker image for DEVELOPMENT environment..."
+                container('docker') {
+                    sh """
+                        docker build -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:dev-${BUILD_TAG} -f src/Web/Dockerfile .
+                        docker tag ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:dev-${BUILD_TAG} ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:dev-latest
+                    """
+                }
+            }
+        }
+
+        stage('Build Docker Image - Stage') {
+            when {
+                branch 'stage'
+            }
+            steps {
+                echo "🐳 Building Docker image for STAGE environment..."
+                container('docker') {
+                    sh """
+                        docker build -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:stage-${BUILD_TAG} -f src/Web/Dockerfile .
+                        docker tag ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:stage-${BUILD_TAG} ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:stage-latest
+                    """
+                }
+            }
+        }
+
+        stage('Push Docker Image - Development') {
+            when {
+                branch 'dev'
+            }
+            steps {
+                echo "📦 Pushing Docker image to registry (DEVELOPMENT)..."
+                container('docker') {
+                    sh """
+                        docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:dev-${BUILD_TAG}
+                        docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:dev-latest
+                    """
+                }
+            }
+        }
+
+        stage('Push Docker Image - Stage') {
+            when {
+                branch 'stage'
+            }
+            steps {
+                echo "📦 Pushing Docker image to registry (STAGE)..."
+                container('docker') {
+                    sh """
+                        docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:stage-${BUILD_TAG}
+                        docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:stage-latest
+                    """
+                }
+            }
+        }
+
+        stage('Build Simulator Docker Image - Development') {
+            when {
+                branch 'dev'
+            }
+            steps {
+                echo "🎮 Building Simulator Docker image for DEVELOPMENT environment..."
+                container('docker') {
+                    sh """
+                        docker build -t ${DOCKER_REGISTRY}/${SIMULATOR_IMAGE_NAME}:dev-${BUILD_TAG} -f Hems.DeviceSimulator/Dockerfile .
+                        docker tag ${DOCKER_REGISTRY}/${SIMULATOR_IMAGE_NAME}:dev-${BUILD_TAG} ${DOCKER_REGISTRY}/${SIMULATOR_IMAGE_NAME}:dev-latest
+                    """
+                }
+            }
+        }
+
+        stage('Build Simulator Docker Image - Stage') {
+            when {
+                branch 'stage'
+            }
+            steps {
+                echo "🎮 Building Simulator Docker image for STAGE environment..."
+                container('docker') {
+                    sh """
+                        docker build -t ${DOCKER_REGISTRY}/${SIMULATOR_IMAGE_NAME}:stage-${BUILD_TAG} -f Hems.DeviceSimulator/Dockerfile .
+                        docker tag ${DOCKER_REGISTRY}/${SIMULATOR_IMAGE_NAME}:stage-${BUILD_TAG} ${DOCKER_REGISTRY}/${SIMULATOR_IMAGE_NAME}:stage-latest
+                    """
+                }
+            }
+        }
+
+        stage('Push Simulator Docker Image - Development') {
+            when {
+                branch 'dev'
+            }
+            steps {
+                echo "📦 Pushing Simulator Docker image to registry (DEVELOPMENT)..."
+                container('docker') {
+                    sh """
+                        docker push ${DOCKER_REGISTRY}/${SIMULATOR_IMAGE_NAME}:dev-${BUILD_TAG}
+                        docker push ${DOCKER_REGISTRY}/${SIMULATOR_IMAGE_NAME}:dev-latest
+                    """
+                }
+            }
+        }
+
+        stage('Push Simulator Docker Image - Stage') {
+            when {
+                branch 'stage'
+            }
+            steps {
+                echo "📦 Pushing Simulator Docker image to registry (STAGE)..."
+                container('docker') {
+                    sh """
+                        docker push ${DOCKER_REGISTRY}/${SIMULATOR_IMAGE_NAME}:stage-${BUILD_TAG}
+                        docker push ${DOCKER_REGISTRY}/${SIMULATOR_IMAGE_NAME}:stage-latest
+                    """
+                }
+            }
+        }
+
+        stage('Deploy to K3s - Development') {
+            when {
+                branch 'dev'
+            }
+            steps {
+                echo "🚀 Deploying to K3s DEVELOPMENT namespace..."
+                container('kubectl') {
+                    sh """
+                        kubectl set image deployment/hems-backend-dev \
+                            hems-backend=${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:dev-${BUILD_TAG} \
+                            -n hems-dev
+
+                        kubectl rollout status deployment/hems-backend-dev \
+                            -n hems-dev \
+                            --timeout=5m
+                    """
+                }
+            }
+            post {
+                success {
+                    echo "✅ Successfully deployed to DEVELOPMENT environment!"
+                    echo "🌐 URL: http://hems-api-dev.oklidis.com.tr"
+                }
+                failure {
+                    echo "❌ Deployment to DEVELOPMENT failed!"
+                }
+            }
+        }
+
+        stage('Deploy Simulator to K3s - Development') {
+            when {
+                branch 'dev'
+            }
+            steps {
+                echo "🎮 Deploying Simulator to K3s DEVELOPMENT namespace..."
+                container('kubectl') {
+                    sh """
+                        kubectl set image deployment/hems-simulator-dev \
+                            hems-simulator=${DOCKER_REGISTRY}/${SIMULATOR_IMAGE_NAME}:dev-${BUILD_TAG} \
+                            -n hems-dev
+
+                        kubectl rollout status deployment/hems-simulator-dev \
+                            -n hems-dev \
+                            --timeout=5m
+                    """
+                }
+            }
+            post {
+                success {
+                    echo "✅ Successfully deployed Simulator to DEVELOPMENT environment!"
+                    echo "🎮 Simulator URL: http://simulator-dev.oklidis.com.tr"
+                }
+                failure {
+                    echo "❌ Simulator deployment to DEVELOPMENT failed!"
+                }
+            }
+        }
+
+        stage('Deploy to K3s - Stage') {
+            when {
+                branch 'stage'
+            }
+            steps {
+                echo "🚀 Deploying to K3s STAGE namespace..."
+                container('kubectl') {
+                    sh """
+                        kubectl set image deployment/hems-backend-stage \
+                            hems-backend=${DOCKER_REGISTRY}/${DOCKER_IMAGE_NAME}:stage-${BUILD_TAG} \
+                            -n hems-stage
+
+                        kubectl rollout status deployment/hems-backend-stage \
+                            -n hems-stage \
+                            --timeout=5m
+                    """
+                }
+            }
+            post {
+                success {
+                    echo "✅ Successfully deployed to STAGE environment!"
+                    echo "🌐 URL: http://hems-api-stage.oklidis.com.tr"
+                }
+                failure {
+                    echo "❌ Deployment to STAGE failed!"
+                }
+            }
+        }
+
+        stage('Deploy Simulator to K3s - Stage') {
+            when {
+                branch 'stage'
+            }
+            steps {
+                echo "🎮 Deploying Simulator to K3s STAGE namespace..."
+                container('kubectl') {
+                    sh """
+                        kubectl set image deployment/hems-simulator-stage \
+                            hems-simulator=${DOCKER_REGISTRY}/${SIMULATOR_IMAGE_NAME}:stage-${BUILD_TAG} \
+                            -n hems-stage
+
+                        kubectl rollout status deployment/hems-simulator-stage \
+                            -n hems-stage \
+                            --timeout=5m
+                    """
+                }
+            }
+            post {
+                success {
+                    echo "✅ Successfully deployed Simulator to STAGE environment!"
+                    echo "🎮 Simulator URL: http://simulator-stg.oklidis.com.tr"
+                }
+                failure {
+                    echo "❌ Simulator deployment to STAGE failed!"
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "🧹 Cleaning up workspace..."
+            catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+                deleteDir()
+            }
+        }
+        success {
+            echo "✅ Pipeline completed successfully!"
+        }
+        failure {
+            echo "❌ Pipeline failed!"
+        }
+    }
+}

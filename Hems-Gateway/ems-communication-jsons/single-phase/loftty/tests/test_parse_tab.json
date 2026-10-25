@@ -1,0 +1,194 @@
+[
+    {
+        "id": "test_parse_tab",
+        "type": "tab",
+        "label": "TEST_DeviceType_MPPT",
+        "disabled": false,
+        "info": "Test flow for Device Type and MPPT parsing"
+    },
+    {
+        "id": "test_parse_inject",
+        "type": "inject",
+        "z": "test_parse_tab",
+        "name": "Test Read",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 140,
+        "y": 100,
+        "wires": [
+            [
+                "test_parse_prep_reg0",
+                "test_parse_prep_reg18"
+            ]
+        ]
+    },
+    {
+        "id": "test_parse_prep_reg0",
+        "type": "function",
+        "z": "test_parse_tab",
+        "name": "Prep Reg 0 (Device Type)",
+        "func": "msg.readGroup = 'reg0';\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 0,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 80,
+        "wires": [
+            [
+                "test_parse_read_reg0"
+            ]
+        ]
+    },
+    {
+        "id": "test_parse_prep_reg18",
+        "type": "function",
+        "z": "test_parse_tab",
+        "name": "Prep Reg 18 (MPPT & Phase)",
+        "func": "msg.readGroup = 'reg18';\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 18,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 390,
+        "y": 140,
+        "wires": [
+            [
+                "test_parse_read_reg18"
+            ]
+        ]
+    },
+    {
+        "id": "test_parse_read_reg0",
+        "type": "modbus-flex-getter",
+        "z": "test_parse_tab",
+        "name": "Read Reg 0",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 610,
+        "y": 80,
+        "wires": [
+            [
+                "test_parse_analyze"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "test_parse_read_reg18",
+        "type": "modbus-flex-getter",
+        "z": "test_parse_tab",
+        "name": "Read Reg 18",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 610,
+        "y": 140,
+        "wires": [
+            [
+                "test_parse_analyze"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "test_parse_analyze",
+        "type": "function",
+        "z": "test_parse_tab",
+        "name": "Analyze Value",
+        "func": "let data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nconst val = data[0];\nconst group = msg.readGroup;\n\nlet result = {\n    register: group,\n    rawValue: val,\n    hex: '0x' + val.toString(16).toUpperCase().padStart(4, '0'),\n    binary: val.toString(2).padStart(16, '0')\n};\n\nif (group === 'reg0') {\n    // Device Type analysis\n    result.analysis = {\n        'if_0x0003': 'Unknown',\n        'if_0x0200': 'String Inverter',\n        'if_0x0300': 'Single-phase Storage Inverter',\n        'if_0x0400': 'Microinverter',\n        'if_0x0500': 'Three-phase Storage Inverter',\n        'detected': val === 3 ? 'Value is 3 (0x0003) - maybe same as 0x0300?' : 'Check mapping'\n    };\n} else if (group === 'reg18') {\n    // MPPT & Phase analysis\n    // Method 1: Nibble (4-bit) parsing\n    const mppt_nibble = (val >> 4) & 0x0F;\n    const phase_nibble = val & 0x0F;\n    \n    // Method 2: Byte (8-bit) parsing  \n    const mppt_byte = (val >> 8) & 0xFF;\n    const phase_byte = val & 0xFF;\n    \n    result.analysis = {\n        'method1_nibble': {\n            mpptCount: mppt_nibble,\n            phaseCount: phase_nibble,\n            note: '(val >> 4) & 0x0F / val & 0x0F'\n        },\n        'method2_byte': {\n            mpptCount: mppt_byte,\n            phaseCount: phase_byte,\n            note: '(val >> 8) & 0xFF / val & 0xFF'\n        },\n        'doc_example': '0x0503 = 5 MPPT, 3 phase (byte method)'\n    };\n}\n\nmsg.payload = result;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 830,
+        "y": 100,
+        "wires": [
+            [
+                "test_parse_debug"
+            ]
+        ]
+    },
+    {
+        "id": "test_parse_debug",
+        "type": "debug",
+        "z": "test_parse_tab",
+        "name": "Analysis Result",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1040,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    }
+]

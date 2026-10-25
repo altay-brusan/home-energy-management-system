@@ -1,0 +1,609 @@
+[
+    {
+        "id": "sys_workmode_config_tab",
+        "type": "tab",
+        "label": "System Work Mode Config",
+        "disabled": false,
+        "info": "Reads System Work Mode Config from multiple register groups:\n- 243-247: Work mode, sell settings\n- 248: Time of Use enable/days\n- 250-279: TOU slot configs\n- 280, 293: Grid peak shaving\n- 416: Force off-grid"
+    },
+    {
+        "id": "swm_poll_inject",
+        "type": "inject",
+        "z": "sys_workmode_config_tab",
+        "name": "Poll WorkMode Config (5 min)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "300",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 180,
+        "y": 200,
+        "wires": [
+            [
+                "swm_prepare_workmode",
+                "swm_prepare_tou_enable",
+                "swm_prepare_tou_times",
+                "swm_prepare_tou_power",
+                "swm_prepare_tou_voltage",
+                "swm_prepare_tou_soc",
+                "swm_prepare_tou_charge",
+                "swm_prepare_peak_shaving",
+                "swm_prepare_force_offgrid"
+            ]
+        ]
+    },
+    {
+        "id": "swm_prepare_workmode",
+        "type": "function",
+        "z": "sys_workmode_config_tab",
+        "name": "Prepare read (WorkMode 243-247)",
+        "func": "// Work mode settings\n// 243: Energy management model\n// 244: Limit control function\n// 245: Max grid export power\n// 246: (skip)\n// 247: Solar sell enable\n\nmsg.baseAddr = 243;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 243,\n    quantity: 5\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 40,
+        "wires": [
+            [
+                "swm_read_workmode"
+            ]
+        ]
+    },
+    {
+        "id": "swm_prepare_tou_enable",
+        "type": "function",
+        "z": "sys_workmode_config_tab",
+        "name": "Prepare read (TOU Enable 248)",
+        "func": "// Time of Use enable and days\n// 248: bit0=enable, bit1-7=days\n\nmsg.baseAddr = 248;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 248,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 490,
+        "y": 100,
+        "wires": [
+            [
+                "swm_read_tou_enable"
+            ]
+        ]
+    },
+    {
+        "id": "swm_prepare_tou_times",
+        "type": "function",
+        "z": "sys_workmode_config_tab",
+        "name": "Prepare read (TOU Times 250-255)",
+        "func": "// TOU time points (6 slots)\n// 250-255: Sell mode time point 1-6 (HHMM)\n\nmsg.baseAddr = 250;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 250,\n    quantity: 6\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 160,
+        "wires": [
+            [
+                "swm_read_tou_times"
+            ]
+        ]
+    },
+    {
+        "id": "swm_prepare_tou_power",
+        "type": "function",
+        "z": "sys_workmode_config_tab",
+        "name": "Prepare read (TOU Power 256-261)",
+        "func": "// TOU discharge power limits (6 slots)\n// 256-261: Sell mode time point 1-6 power (1W)\n\nmsg.baseAddr = 256;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 256,\n    quantity: 6\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 220,
+        "wires": [
+            [
+                "swm_read_tou_power"
+            ]
+        ]
+    },
+    {
+        "id": "swm_prepare_tou_voltage",
+        "type": "function",
+        "z": "sys_workmode_config_tab",
+        "name": "Prepare read (TOU Voltage 262-267)",
+        "func": "// TOU voltage thresholds (6 slots)\n// 262-267: Sell mode time point 1-6 voltage (0.01V)\n\nmsg.baseAddr = 262;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 262,\n    quantity: 6\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 510,
+        "y": 280,
+        "wires": [
+            [
+                "swm_read_tou_voltage"
+            ]
+        ]
+    },
+    {
+        "id": "swm_prepare_tou_soc",
+        "type": "function",
+        "z": "sys_workmode_config_tab",
+        "name": "Prepare read (TOU SOC 268-273)",
+        "func": "// TOU SOC thresholds (6 slots)\n// 268-273: Capacity 1-6 (1% SOC)\n\nmsg.baseAddr = 268;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 268,\n    quantity: 6\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 340,
+        "wires": [
+            [
+                "swm_read_tou_soc"
+            ]
+        ]
+    },
+    {
+        "id": "swm_prepare_tou_charge",
+        "type": "function",
+        "z": "sys_workmode_config_tab",
+        "name": "Prepare read (TOU Charge 274-279)",
+        "func": "// TOU charge enable flags (6 slots)\n// 274-279: Time point 1-6 charge enable\n//   bit0: grid charge\n//   bit1: generator charge\n\nmsg.baseAddr = 274;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 274,\n    quantity: 6\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 510,
+        "y": 400,
+        "wires": [
+            [
+                "swm_read_tou_charge"
+            ]
+        ]
+    },
+    {
+        "id": "swm_prepare_peak_shaving",
+        "type": "function",
+        "z": "sys_workmode_config_tab",
+        "name": "Prepare read (PeakShaving 280,293)",
+        "func": "// Grid peak shaving\n// 280: Advanced bits (bit8-11 = grid peak shaving)\n// We read 280 separately, 293 separately\n// This node reads 293\n\nmsg.baseAddr = 293;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 293,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 510,
+        "y": 460,
+        "wires": [
+            [
+                "swm_read_peak_shaving"
+            ]
+        ]
+    },
+    {
+        "id": "swm_prepare_force_offgrid",
+        "type": "function",
+        "z": "sys_workmode_config_tab",
+        "name": "Prepare read (ForceOffGrid 416)",
+        "func": "// Force off-grid operation\n// 416: 强制离网运行位\n\nmsg.baseAddr = 416;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 416,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 520,
+        "wires": [
+            [
+                "swm_read_force_offgrid"
+            ]
+        ]
+    },
+    {
+        "id": "swm_read_workmode",
+        "type": "modbus-flex-getter",
+        "z": "sys_workmode_config_tab",
+        "name": "Read WorkMode",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 760,
+        "y": 40,
+        "wires": [
+            [
+                "swm_build_json"
+            ],
+            [
+                "swm_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "swm_read_tou_enable",
+        "type": "modbus-flex-getter",
+        "z": "sys_workmode_config_tab",
+        "name": "Read TOU Enable",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 770,
+        "y": 100,
+        "wires": [
+            [
+                "swm_build_json"
+            ],
+            [
+                "swm_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "swm_read_tou_times",
+        "type": "modbus-flex-getter",
+        "z": "sys_workmode_config_tab",
+        "name": "Read TOU Times",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 770,
+        "y": 160,
+        "wires": [
+            [
+                "swm_build_json"
+            ],
+            [
+                "swm_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "swm_read_tou_power",
+        "type": "modbus-flex-getter",
+        "z": "sys_workmode_config_tab",
+        "name": "Read TOU Power",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 770,
+        "y": 220,
+        "wires": [
+            [
+                "swm_build_json"
+            ],
+            [
+                "swm_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "swm_read_tou_voltage",
+        "type": "modbus-flex-getter",
+        "z": "sys_workmode_config_tab",
+        "name": "Read TOU Voltage",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 770,
+        "y": 280,
+        "wires": [
+            [
+                "swm_build_json"
+            ],
+            [
+                "swm_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "swm_read_tou_soc",
+        "type": "modbus-flex-getter",
+        "z": "sys_workmode_config_tab",
+        "name": "Read TOU SOC",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 760,
+        "y": 340,
+        "wires": [
+            [
+                "swm_build_json"
+            ],
+            [
+                "swm_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "swm_read_tou_charge",
+        "type": "modbus-flex-getter",
+        "z": "sys_workmode_config_tab",
+        "name": "Read TOU Charge",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 770,
+        "y": 400,
+        "wires": [
+            [
+                "swm_build_json"
+            ],
+            [
+                "swm_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "swm_read_peak_shaving",
+        "type": "modbus-flex-getter",
+        "z": "sys_workmode_config_tab",
+        "name": "Read Peak Shaving",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 770,
+        "y": 460,
+        "wires": [
+            [
+                "swm_build_json"
+            ],
+            [
+                "swm_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "swm_read_force_offgrid",
+        "type": "modbus-flex-getter",
+        "z": "sys_workmode_config_tab",
+        "name": "Read Force OffGrid",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 770,
+        "y": 520,
+        "wires": [
+            [
+                "swm_build_json"
+            ],
+            [
+                "swm_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "swm_build_json",
+        "type": "function",
+        "z": "sys_workmode_config_tab",
+        "name": "Build SystemWorkModeConfigState JSON",
+        "func": "// Build SystemWorkModeConfigState from multiple Modbus reads.\n\nlet raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nlet baseAddr = msg.baseAddr;\nif (typeof baseAddr !== \"number\") {\n    baseAddr = (msg.modbusRequest && msg.modbusRequest.address);\n}\nif (typeof baseAddr !== \"number\") {\n    node.warn(\"SystemWorkModeConfigState: missing base address\");\n    return null;\n}\n\n// Helper: parse HHMM to time string\nfunction parseHHMM(val) {\n    if (!val || val === 0) return \"00:00\";\n    const hh = Math.floor(val / 100);\n    const mm = val % 100;\n    return String(hh).padStart(2, '0') + \":\" + String(mm).padStart(2, '0');\n}\n\n// ---- Store partials ----\n\n// WorkMode 243-247\nif (baseAddr === 243) {\n    const workModeCode = data[0] || 0;        // 243\n    const zeroExportLimit = data[1] || 0;     // 244\n    const maxSellPower = data[2] || 0;        // 245\n    // data[3] = 246 (skip)\n    const solarSell = data[4] || 0;           // 247\n    \n    flow.set(\"swm_part_workmode\", {\n        workModeCode: workModeCode,\n        zeroExportLimitPowerW: zeroExportLimit,\n        maxSellPowerW: maxSellPower,\n        solarSellEnabled: solarSell === 1\n    });\n}\n\n// TOU Enable 248\nelse if (baseAddr === 248) {\n    const bits = data[0] || 0;\n    flow.set(\"swm_part_tou_enable\", {\n        touEnabled: (bits & 0x01) === 1,\n        monday: ((bits >> 1) & 0x01) === 1,\n        tuesday: ((bits >> 2) & 0x01) === 1,\n        wednesday: ((bits >> 3) & 0x01) === 1,\n        thursday: ((bits >> 4) & 0x01) === 1,\n        friday: ((bits >> 5) & 0x01) === 1,\n        saturday: ((bits >> 6) & 0x01) === 1,\n        sunday: ((bits >> 7) & 0x01) === 1\n    });\n}\n\n// TOU Times 250-255\nelse if (baseAddr === 250) {\n    flow.set(\"swm_part_tou_times\", data.map(v => parseHHMM(v)));\n}\n\n// TOU Power 256-261\nelse if (baseAddr === 256) {\n    flow.set(\"swm_part_tou_power\", data.slice(0, 6));\n}\n\n// TOU Voltage 262-267\nelse if (baseAddr === 262) {\n    flow.set(\"swm_part_tou_voltage\", data.slice(0, 6).map(v => Math.round(v * 0.01 * 100) / 100));\n}\n\n// TOU SOC 268-273\nelse if (baseAddr === 268) {\n    flow.set(\"swm_part_tou_soc\", data.slice(0, 6));\n}\n\n// TOU Charge 274-279\nelse if (baseAddr === 274) {\n    flow.set(\"swm_part_tou_charge\", data.slice(0, 6).map(v => ({\n        allowGridCharge: (v & 0x01) === 1,\n        allowGeneratorCharge: ((v >> 1) & 0x01) === 1\n    })));\n}\n\n// Peak Shaving 293\nelse if (baseAddr === 293) {\n    flow.set(\"swm_part_peak_shaving\", {\n        gridPeakShavingPowerW: data[0] || 0\n    });\n}\n\n// Force OffGrid 416\nelse if (baseAddr === 416) {\n    flow.set(\"swm_part_force_offgrid\", {\n        forceOffGrid: (data[0] || 0) === 1\n    });\n}\nelse {\n    return null;\n}\n\n// ---- Try to assemble ----\n\nconst workmodePart = flow.get(\"swm_part_workmode\");\nconst touEnablePart = flow.get(\"swm_part_tou_enable\");\nconst touTimesPart = flow.get(\"swm_part_tou_times\");\nconst touPowerPart = flow.get(\"swm_part_tou_power\");\nconst touVoltagePart = flow.get(\"swm_part_tou_voltage\");\nconst touSocPart = flow.get(\"swm_part_tou_soc\");\nconst touChargePart = flow.get(\"swm_part_tou_charge\");\nconst peakShavingPart = flow.get(\"swm_part_peak_shaving\");\nconst forceOffgridPart = flow.get(\"swm_part_force_offgrid\");\n\n// Need advBits from GeneratorAndSmartLoadConfigState (register 280)\n// If not available, we can read it separately or use cached value\nconst gslSnapshot = flow.get(\"generatorSmartLoadConfigSnapshot\");\nconst advBitsRaw = gslSnapshot ? gslSnapshot._debug.advBitsRaw : 0;\nconst gridPeakShavingEnabled = ((advBitsRaw >> 8) & 0x0F) > 0;\n\nif (!workmodePart || !touEnablePart || !touTimesPart || !touPowerPart || \n    !touVoltagePart || !touSocPart || !touChargePart || !peakShavingPart || !forceOffgridPart) {\n    return null;\n}\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\nconst inverterSN = global.get(\"INVERTER_SN\") || env.get(\"INVERTER_SN\") || \"Unknown\";\n\n// Derive userModeProfile\nlet userModeProfile = \"custom\";\nif (touEnablePart.touEnabled) {\n    userModeProfile = \"time_of_use\";\n} else if (workmodePart.workModeCode === 0) {\n    userModeProfile = \"self_consumption\";\n} else if (workmodePart.workModeCode === 1) {\n    userModeProfile = \"backup\";\n}\n\n// Derive exportStrategy\nlet exportStrategy = \"selling_first\";\nif (workmodePart.zeroExportLimitPowerW > 0) {\n    exportStrategy = \"zero_export_to_ct\";\n} else if (!workmodePart.solarSellEnabled) {\n    exportStrategy = \"zero_export_to_load\";\n}\n\n// Build TOU slots\nconst slots = [];\nfor (let i = 0; i < 6; i++) {\n    const startTime = touTimesPart[i] || \"00:00\";\n    const endTime = touTimesPart[(i + 1) % 6] || \"00:00\";  // Next slot start = this slot end\n    \n    slots.push({\n        slotIndex: i + 1,\n        startTimeLocal: startTime,\n        endTimeLocal: endTime,\n        allowGridCharge: touChargePart[i] ? touChargePart[i].allowGridCharge : false,\n        allowGeneratorCharge: touChargePart[i] ? touChargePart[i].allowGeneratorCharge : false,\n        sellEnabledInThisSlot: true,  // Derived - assume enabled if configured\n        maxBatteryDischargePowerW: touPowerPart[i] || 0,\n        batteryThresholdSocPercent: touSocPart[i] || null,\n        batteryThresholdVoltageV: touVoltagePart[i] || null\n    });\n}\n\nconst state = {\n    kind: \"SystemWorkModeConfigState\",\n    timestampUtc: new Date().toISOString(),\n    gatewayId: gatewayId,\n    inverterSerialNumber: inverterSN,\n    version: 1,\n    \n    userModeProfile: userModeProfile,\n    \n    inverterMode: {\n        workModeCode: workmodePart.workModeCode,\n        exportStrategy: exportStrategy,\n        solarSellEnabled: workmodePart.solarSellEnabled,\n        maxSellPowerW: workmodePart.maxSellPowerW,\n        defaultMaxSellPowerW: null,\n        zeroExportLimitPowerW: workmodePart.zeroExportLimitPowerW,\n        forceOffGrid: forceOffgridPart.forceOffGrid\n    },\n    \n    energyPriority: {\n        pattern: workmodePart.workModeCode === 0 ? \"battery_first\" : \"load_first\"\n    },\n    \n    gridPeakShaving: {\n        enabled: gridPeakShavingEnabled,\n        limitPowerW: peakShavingPart.gridPeakShavingPowerW\n    },\n    \n    timeOfUse: {\n        enabled: touEnablePart.touEnabled,\n        daysActive: {\n            monday: touEnablePart.monday,\n            tuesday: touEnablePart.tuesday,\n            wednesday: touEnablePart.wednesday,\n            thursday: touEnablePart.thursday,\n            friday: touEnablePart.friday,\n            saturday: touEnablePart.saturday,\n            sunday: touEnablePart.sunday\n        },\n        slots: slots\n    }\n};\n\n// Clear partials\nflow.set(\"swm_part_workmode\", null);\nflow.set(\"swm_part_tou_enable\", null);\nflow.set(\"swm_part_tou_times\", null);\nflow.set(\"swm_part_tou_power\", null);\nflow.set(\"swm_part_tou_voltage\", null);\nflow.set(\"swm_part_tou_soc\", null);\nflow.set(\"swm_part_tou_charge\", null);\nflow.set(\"swm_part_peak_shaving\", null);\nflow.set(\"swm_part_force_offgrid\", null);\n\nflow.set(\"systemWorkModeConfigSnapshot\", state);\n\nmsg.payload = state;\nmsg.state = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1080,
+        "y": 280,
+        "wires": [
+            [
+                "swm_debug_json",
+                "swm_mqtt_telemetry"
+            ]
+        ]
+    },
+    {
+        "id": "swm_debug_json",
+        "type": "debug",
+        "z": "sys_workmode_config_tab",
+        "name": "SystemWorkModeConfigState JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1390,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "swm_error_debug",
+        "type": "debug",
+        "z": "sys_workmode_config_tab",
+        "name": "WorkMode CRC/Error debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1040,
+        "y": 600,
+        "wires": []
+    },
+    {
+        "id": "swm_mqtt_telemetry",
+        "type": "mqtt out",
+        "z": "sys_workmode_config_tab",
+        "name": "Send to ThingsBoard",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1380,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

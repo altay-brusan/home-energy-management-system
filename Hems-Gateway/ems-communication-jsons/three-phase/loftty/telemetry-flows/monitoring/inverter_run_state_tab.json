@@ -1,0 +1,377 @@
+[
+    {
+        "id": "e448b6cfa81faa54",
+        "type": "tab",
+        "label": "InverterRunState",
+        "disabled": false,
+        "info": "Reads Inverter Run State from register 600.\n\nRun State Values:\n- 0 = standby\n- 1 = selfcheck\n- 2 = normal\n- 3 = alarm\n- 4 = fault\n\nTriggers:\n1. RPC: getInverterRunState (always sends)\n2. Cron: Every 1 minute (sends only on state change)\n3. Manual inject"
+    },
+    {
+        "id": "887fae3319fa5e7d",
+        "type": "link in",
+        "z": "e448b6cfa81faa54",
+        "name": "RPC getInverterRunState",
+        "links": [
+            "rpc_irs_link_out"
+        ],
+        "x": 175,
+        "y": 60,
+        "wires": [
+            [
+                "8beec566bb59c2ef"
+            ]
+        ]
+    },
+    {
+        "id": "b34692237eba2858",
+        "type": "comment",
+        "z": "e448b6cfa81faa54",
+        "name": "RPC Trigger (getInverterRunState) - Always sends",
+        "info": "",
+        "x": 260,
+        "y": 20,
+        "wires": []
+    },
+    {
+        "id": "5e18389efc033873",
+        "type": "inject",
+        "z": "e448b6cfa81faa54",
+        "name": "Every 1 minute",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "isCron",
+                "v": "true",
+                "vt": "bool"
+            }
+        ],
+        "repeat": "60",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "5",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 140,
+        "wires": [
+            [
+                "8ad991acd84dae37"
+            ]
+        ]
+    },
+    {
+        "id": "67345c6c150a8b6a",
+        "type": "comment",
+        "z": "e448b6cfa81faa54",
+        "name": "Cron Trigger - Sends only on state change",
+        "info": "",
+        "x": 230,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "2875480fe5672c13",
+        "type": "inject",
+        "z": "e448b6cfa81faa54",
+        "name": "Manual Trigger",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 200,
+        "wires": [
+            [
+                "8beec566bb59c2ef"
+            ]
+        ]
+    },
+    {
+        "id": "8beec566bb59c2ef",
+        "type": "function",
+        "z": "e448b6cfa81faa54",
+        "name": "Prepare read (RPC)",
+        "func": "// Store RPC response topic if present\nif (msg.rpcResponseTopic) {\n    flow.set(\"irs_rpc_response_topic\", msg.rpcResponseTopic);\n}\n\n// Mark as RPC request (always send)\nmsg.isRpc = true;\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 600,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 410,
+        "y": 60,
+        "wires": [
+            [
+                "ebfbef5a5ace58b9"
+            ]
+        ]
+    },
+    {
+        "id": "8ad991acd84dae37",
+        "type": "function",
+        "z": "e448b6cfa81faa54",
+        "name": "Prepare read (Cron)",
+        "func": "// Mark as Cron request (send only on change)\nmsg.isRpc = false;\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 600,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 410,
+        "y": 140,
+        "wires": [
+            [
+                "ebfbef5a5ace58b9"
+            ]
+        ]
+    },
+    {
+        "id": "ebfbef5a5ace58b9",
+        "type": "modbus-flex-getter",
+        "z": "e448b6cfa81faa54",
+        "name": "Read RunState (600)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 640,
+        "y": 100,
+        "wires": [
+            [
+                "9aec6591e27ef9a3"
+            ],
+            [
+                "3e17b60de0b592b5"
+            ]
+        ]
+    },
+    {
+        "id": "9aec6591e27ef9a3",
+        "type": "function",
+        "z": "e448b6cfa81faa54",
+        "name": "Build InverterRunState JSON",
+        "func": "// Build InverterRunState JSON\n\nlet raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nconst runStateCode = data[0] || 0;\n\n// Map run state code to string\nfunction mapRunState(code) {\n    const states = {\n        0: \"standby\",\n        1: \"selfcheck\",\n        2: \"normal\",\n        3: \"alarm\",\n        4: \"fault\"\n    };\n    return states[code] || \"unknown\";\n}\n\nconst state = {\n    kind: \"InverterRunState\",\n    version: 1,\n    runState: mapRunState(runStateCode)\n};\n\nmsg.payload = state;\nmsg.runState = state.runState;\n\n// Route: RPC goes to output 1, Cron goes to output 2\nconst isRpc = msg.isRpc === true;\n\nif (isRpc) {\n    return [msg, null];\n} else {\n    return [null, msg];\n}",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 880,
+        "y": 100,
+        "wires": [
+            [
+                "51311720ca73e5ab",
+                "ed055b76e53cacfa"
+            ],
+            [
+                "f5e65ece65ed69e5"
+            ]
+        ]
+    },
+    {
+        "id": "51311720ca73e5ab",
+        "type": "function",
+        "z": "e448b6cfa81faa54",
+        "name": "RPC Response Handler",
+        "func": "// Handle RPC response - always send\nconst rpcTopic = flow.get(\"irs_rpc_response_topic\");\n\nif (rpcTopic) {\n    // RPC request - send response\n    msg.topic = rpcTopic;\n    msg.payload = { success: true, data: msg.payload };\n    flow.set(\"irs_rpc_response_topic\", null);\n    return [msg, null];\n} else {\n    // Manual trigger - send to ThingsBoard\n    return [null, msg];\n}",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1150,
+        "y": 60,
+        "wires": [
+            [
+                "100a250f25a44ac9"
+            ],
+            [
+                "c04ae0cc2c50ed8f"
+            ]
+        ]
+    },
+    {
+        "id": "f5e65ece65ed69e5",
+        "type": "function",
+        "z": "e448b6cfa81faa54",
+        "name": "Check if should send",
+        "func": "// Check if state changed - only send on change\nconst currentState = msg.runState;\nconst lastState = flow.get(\"irs_last_run_state\");\n\nif (lastState === undefined || lastState !== currentState) {\n    // State changed or first read - send\n    flow.set(\"irs_last_run_state\", currentState);\n    node.status({ fill: \"green\", shape: \"dot\", text: \"Sending: \" + currentState });\n    return msg;\n} else {\n    // No change - don't send\n    node.status({ fill: \"grey\", shape: \"ring\", text: \"No change: \" + currentState });\n    return null;\n}",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1140,
+        "y": 140,
+        "wires": [
+            [
+                "c04ae0cc2c50ed8f"
+            ]
+        ]
+    },
+    {
+        "id": "100a250f25a44ac9",
+        "type": "mqtt out",
+        "z": "e448b6cfa81faa54",
+        "name": "RPC Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1390,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "c04ae0cc2c50ed8f",
+        "type": "mqtt out",
+        "z": "e448b6cfa81faa54",
+        "name": "Send to ThingsBoard",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1460,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "ed055b76e53cacfa",
+        "type": "debug",
+        "z": "e448b6cfa81faa54",
+        "name": "InverterRunState Debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.runState",
+        "statusType": "auto",
+        "x": 1490,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "3e17b60de0b592b5",
+        "type": "debug",
+        "z": "e448b6cfa81faa54",
+        "name": "InverterRunState Error",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 890,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "8ad11528ada88211",
+        "type": "comment",
+        "z": "e448b6cfa81faa54",
+        "name": "THREE-PHASE: InverterRunState - RPC always sends, Cron sends on change only",
+        "info": "",
+        "x": 340,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31884",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

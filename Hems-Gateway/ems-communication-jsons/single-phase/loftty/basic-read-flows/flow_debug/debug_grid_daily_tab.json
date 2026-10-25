@@ -1,0 +1,209 @@
+[
+    {
+        "id": "debug_grid_daily_tab",
+        "type": "tab",
+        "label": "DEBUG Grid Daily Energy",
+        "disabled": false,
+        "info": "Debug flow for Grid Daily Energy registers:\n- 76: Day Grid Buy (0.1 kWh)\n- 77: Day Grid Sell (0.1 kWh)"
+    },
+    {
+        "id": "dgd_manual_inject",
+        "type": "inject",
+        "z": "debug_grid_daily_tab",
+        "name": "Manual Read",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 130,
+        "y": 80,
+        "wires": [
+            [
+                "dgd_prepare_read"
+            ]
+        ]
+    },
+    {
+        "id": "dgd_auto_inject",
+        "type": "inject",
+        "z": "debug_grid_daily_tab",
+        "name": "Auto Read (10 sec)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "10",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 140,
+        "y": 140,
+        "wires": [
+            [
+                "dgd_prepare_read"
+            ]
+        ]
+    },
+    {
+        "id": "dgd_prepare_read",
+        "type": "function",
+        "z": "debug_grid_daily_tab",
+        "name": "Prepare read (Grid Daily 76-77)",
+        "func": "// Grid Daily Energy\n// 76: Day_GridBuy_Power (0.1 kWh)\n// 77: Day_GridSell_Power (0.1 kWh)\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 76,\n    quantity: 2\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 390,
+        "y": 100,
+        "wires": [
+            [
+                "dgd_modbus_read"
+            ]
+        ]
+    },
+    {
+        "id": "dgd_modbus_read",
+        "type": "modbus-flex-getter",
+        "z": "debug_grid_daily_tab",
+        "name": "Read Grid Daily (76-77)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 640,
+        "y": 100,
+        "wires": [
+            [
+                "dgd_parse_response",
+                "dgd_raw_debug"
+            ],
+            [
+                "dgd_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "dgd_raw_debug",
+        "type": "debug",
+        "z": "debug_grid_daily_tab",
+        "name": "RAW Response",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload",
+        "statusType": "auto",
+        "x": 880,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "dgd_error_debug",
+        "type": "debug",
+        "z": "debug_grid_daily_tab",
+        "name": "CRC/Error",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 860,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "dgd_parse_response",
+        "type": "function",
+        "z": "debug_grid_daily_tab",
+        "name": "Parse & Format",
+        "func": "// Parse Grid Daily Energy registers\n\nlet raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data) || data.length < 2) {\n    node.warn(\"Invalid data received\");\n    return null;\n}\n\nconst reg76_raw = data[0] || 0;  // Day Grid Buy\nconst reg77_raw = data[1] || 0;  // Day Grid Sell\n\nconst result = {\n    timestampUtc: new Date().toISOString(),\n    \n    // Raw values\n    raw: {\n        reg76: reg76_raw,\n        reg77: reg77_raw,\n        reg76_hex: \"0x\" + reg76_raw.toString(16).padStart(4, '0'),\n        reg77_hex: \"0x\" + reg77_raw.toString(16).padStart(4, '0')\n    },\n    \n    // Converted values (0.1 kWh scale)\n    converted: {\n        dayGridBuyKWh: Math.round(reg76_raw * 0.1 * 10) / 10,\n        dayGridSellKWh: Math.round(reg77_raw * 0.1 * 10) / 10\n    },\n    \n    // Alternative interpretations\n    alternativeInterpretations: {\n        // Maybe Wh instead of 0.1 kWh?\n        asWh: {\n            dayGridBuyWh: reg76_raw,\n            dayGridSellWh: reg77_raw\n        },\n        // Maybe 1 kWh scale?\n        as1kWh: {\n            dayGridBuyKWh: reg76_raw,\n            dayGridSellKWh: reg77_raw\n        },\n        // Maybe 0.01 kWh scale?\n        as001kWh: {\n            dayGridBuyKWh: Math.round(reg76_raw * 0.01 * 100) / 100,\n            dayGridSellKWh: Math.round(reg77_raw * 0.01 * 100) / 100\n        }\n    }\n};\n\nmsg.payload = result;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 880,
+        "y": 100,
+        "wires": [
+            [
+                "dgd_parsed_debug"
+            ]
+        ]
+    },
+    {
+        "id": "dgd_parsed_debug",
+        "type": "debug",
+        "z": "debug_grid_daily_tab",
+        "name": "PARSED Result",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1080,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    }
+]

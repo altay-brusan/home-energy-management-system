@@ -1,0 +1,106 @@
+[
+    {
+        "id": "38491faff13bac50",
+        "type": "tab",
+        "label": "RPC_BatteryMaintenance",
+        "disabled": false,
+        "info": "RPC Handler for BatteryMaintenanceConfigState\nMethods:\n- getBatteryMaintenanceConfig (read)\n- setBatteryMaintenanceConfig (write + read)"
+    },
+    {
+        "id": "rpc_battmaint_mqtt_in",
+        "type": "mqtt in",
+        "z": "38491faff13bac50",
+        "name": "RPC Request",
+        "topic": "v1/devices/me/rpc/request/+",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "tb-broker",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 140,
+        "y": 160,
+        "wires": [
+            [
+                "rpc_battmaint_handle"
+            ]
+        ]
+    },
+    {
+        "id": "rpc_battmaint_handle",
+        "type": "function",
+        "z": "38491faff13bac50",
+        "name": "Handle RPC",
+        "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\n\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\nif (msg.rpcMethod === 'getBatteryMaintenanceConfig') {\n    msg.operationType = 'read';\n    return msg;\n}\nelse if (msg.rpcMethod === 'setBatteryMaintenanceConfig') {\n    msg.operationType = 'write';\n    return msg;\n}\nelse {\n    return null;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 330,
+        "y": 160,
+        "wires": [
+            [
+                "rpc_battmaint_link_out"
+            ]
+        ]
+    },
+    {
+        "id": "rpc_battmaint_link_out",
+        "type": "link out",
+        "z": "38491faff13bac50",
+        "name": "To Main Flow",
+        "mode": "link",
+        "links": [
+            "2e70273d9a85ee65",
+            "d37b770e860d21ec"
+        ],
+        "x": 495,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "rpc_battmaint_comment",
+        "type": "comment",
+        "z": "38491faff13bac50",
+        "name": "getBatteryMaintenanceConfig / setBatteryMaintenanceConfig",
+        "info": "Read/Write battery maintenance config:\n- batteryControlMode: voltage | capacity | null\n- wakeUp.channel1Enabled: bool\n- batteryResistanceMilliOhm: number\n- chargeEfficiencyPercent: number (0-100)",
+        "x": 290,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

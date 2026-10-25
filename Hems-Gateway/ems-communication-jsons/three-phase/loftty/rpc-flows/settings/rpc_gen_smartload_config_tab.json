@@ -1,0 +1,105 @@
+[
+    {
+        "id": "dba6b1c9bca5415b",
+        "type": "tab",
+        "label": "RPC_GenSmartLoadConfig",
+        "disabled": false,
+        "info": "RPC Handler for GeneratorAndSmartLoadConfigState\nMethods:\n- getGeneratorAndSmartLoadConfig (read)\n- setGeneratorAndSmartLoadConfig (write + auto read)"
+    },
+    {
+        "id": "rpc_gsl_mqtt_in",
+        "type": "mqtt in",
+        "z": "dba6b1c9bca5415b",
+        "name": "RPC Request",
+        "topic": "v1/devices/me/rpc/request/+",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "tb-broker",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 140,
+        "y": 160,
+        "wires": [
+            [
+                "rpc_gsl_handle"
+            ]
+        ]
+    },
+    {
+        "id": "rpc_gsl_handle",
+        "type": "function",
+        "z": "dba6b1c9bca5415b",
+        "name": "Handle RPC (get/set)",
+        "func": "const parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\n\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\nif (msg.rpcMethod === 'getGeneratorAndSmartLoadConfig') {\n    msg.isRpcRequest = true;\n    msg.operationType = 'read';\n    return msg;\n}\nelse if (msg.rpcMethod === 'setGeneratorAndSmartLoadConfig') {\n    msg.isRpcRequest = true;\n    msg.operationType = 'write';\n    return msg;\n}\nelse {\n    return null;\n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 350,
+        "y": 160,
+        "wires": [
+            [
+                "rpc_gsl_link_out"
+            ]
+        ]
+    },
+    {
+        "id": "rpc_gsl_link_out",
+        "type": "link out",
+        "z": "dba6b1c9bca5415b",
+        "name": "To Main Flow",
+        "mode": "link",
+        "links": [
+            "4ac78ee721c00163"
+        ],
+        "x": 535,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "rpc_gsl_comment",
+        "type": "comment",
+        "z": "dba6b1c9bca5415b",
+        "name": "getGeneratorAndSmartLoadConfig / setGeneratorAndSmartLoadConfig",
+        "info": "",
+        "x": 320,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

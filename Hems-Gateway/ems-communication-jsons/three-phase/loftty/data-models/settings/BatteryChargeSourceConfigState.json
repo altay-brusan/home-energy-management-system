@@ -1,0 +1,19 @@
+{
+  "timestampUtc": "string",
+  "gatewayId": "string",
+  "inverterSerialNumber": "string",
+
+  "generator": {
+    "enabled": "boolean",                    // 229 - Generator charge enable
+    "startSocPercent": "number",             // 224 - Start charging when SOC < this (1%)
+    "chargeCurrentA": "number",              // 225 - Generator → battery current (1A)
+    "maxRunTimeHours": "number",             // 221 - Max run time (0.1h)
+    "coolingTimeHours": "number"             // 222 - Cooling time (0.1h)
+  },
+
+  "grid": {
+    "enabled": "boolean",                    // 230 - Grid charge enable
+    "startSocPercent": "number",             // 227 - Grid charge start SOC (1%)
+    "chargeCurrentA": "number"               // 228 - Grid charge current (1A)
+  }
+}

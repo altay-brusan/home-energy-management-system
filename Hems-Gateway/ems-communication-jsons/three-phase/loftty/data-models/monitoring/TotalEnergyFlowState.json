@@ -1,0 +1,34 @@
+{
+  "timestampUtc": "string",
+  "version": 1,
+  "deviceId": "string",
+
+  "grid": {
+    "importTotalEnergyKWh": "number",        // 622 (low) + 623 (high) - Total grid buy (0.1kWh)
+    "exportTotalEnergyKWh": "number"         // 624 (low) + 625 (high) - Total grid sell (0.1kWh)
+  },
+
+  "pv": {
+    "totalEnergyKWh": "number",              // 634 (low) + 635 (high) - Total PV energy (0.1kWh) - YENİ DATASHEET'TE TANIMLI
+
+    "mppt": [
+      { "id": 1, "totalEnergyKWh": null },   // Bu datasheet'te MPPT bazında total energy yok
+      { "id": 2, "totalEnergyKWh": null },   // Bu datasheet'te MPPT bazında total energy yok
+      { "id": 3, "totalEnergyKWh": null },   // Bu datasheet'te MPPT bazında total energy yok
+      { "id": 4, "totalEnergyKWh": null }    // Bu datasheet'te MPPT bazında total energy yok
+    ]
+  },
+
+  "load": {
+    "totalEnergyKWh": "number"               // 627 (low) + 628 (high) - Total load energy (0.1kWh)
+  },
+
+  "battery": {
+    "totalChargeEnergyKWh": "number",        // 616 (low) + 617 (high) - Total battery charge (0.1kWh)
+    "totalDischargeEnergyKWh": "number"      // 618 (low) + 619 (high) - Total battery discharge (0.1kWh)
+  },
+
+  "generator": {
+    "totalEnergyKWh": "number"               // 637 (low) + 638 (high) - Total generator energy (0.1kWh)
+  }
+}

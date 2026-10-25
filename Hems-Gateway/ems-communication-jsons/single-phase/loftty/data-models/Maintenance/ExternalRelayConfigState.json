@@ -1,0 +1,19 @@
+ExternalRelayConfigState {
+  "timestampUtc": string,
+  "gatewayId": string,
+  "inverterSerialNumber": string,
+  "version": string,
+
+  "externalRelayFeatureEnabled": bool,      // 280 Bit13: external relay enable
+
+  "relayBitmapRaw": number,                 // 296: 外部继电器位 Bit0-8 correspond to 8 relay positions
+
+  "relays": [
+    {
+      "relayId": number,
+      "logicalRole": "generator_start" | "alarm" | "dry_contact" | "spare",
+      "normallyOpen": bool,
+      "description": string
+    }
+  ]
+}

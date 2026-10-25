@@ -1,0 +1,19 @@
+LoadDeviceState {
+  "timestampUtc": string,
+  "version": number,
+  "DeviceId": string,
+
+  "scope": string,                 // "backup_load" | "home_load" | "total_site"
+
+  "activePowerW": number,          // backup / UPS load total active power:
+                                   // 178 (load side Total power) 1W signed int
+
+  "apparentPowerVA": number | null,// UPS load total apparent power 
+                                   // 84 (Low) + 85 (High) output apparent power 0.1VA
+
+  "voltageV": number,              // load phase voltage L1 // 157 (Load voltage L1) 0.1V
+  "frequencyHz": number,           // load frequency // 192 (load frequency) 0.01Hz
+
+  "todayEnergyKWh": number | null, // Load today energy // 84 (Day_Load_Power Wh) 0.1kWh
+  "totalEnergyKWh": number | null  // Load total energy (lifetime) // 85 (Low) + 86 (High) 0.1kWh
+}

@@ -1,0 +1,33 @@
+TotalEnergyFlowState {
+  "timestampUtc": string,
+  "version": number,
+  "deviceId": string,
+
+  "grid": {
+    "importTotalEnergyKWh": number,      // 78 (Low_Word) + 80 (High_Word) Total_GridBuy_Power Wh 0.1kWh
+    "exportTotalEnergyKWh": number       // 81 (Low_Word) + 82 (High_Word) Total_GridSell_Power Wh 0.1kWh
+  },
+
+  "pv": {
+    "totalEnergyKWh": number,            // 96 (Low_Word) + 97 (High_Word) historyPV PowerWh 0.1kWh
+    "mppt": [
+      { "id": 1, "totalEnergyKWh": number },  // not available - use total
+      { "id": 2, "totalEnergyKWh": number },  // not available - use total
+      { "id": 3, "totalEnergyKWh": number },  // not available - use total
+      { "id": 4, "totalEnergyKWh": number }   // not available - use total
+    ]
+  },
+
+  "load": {
+    "totalEnergyKWh": number             // 85 (Low_Word) + 86 (High_Word) Total_Load_Power Wh 0.1kWh
+  },
+
+  "battery": {
+    "totalChargeEnergyKWh": number,      // 72 (Low_Word) + 73 (High_Word) tatol_Batt_charge_PowerWh 0.1kWh
+    "totalDischargeEnergyKWh": number    // 74 (Low_Word) + 75 (High_Word) tatol_Batt_Discharge_PowerWh 0.1kWh
+  },
+
+  "generator": {
+    "totalEnergyKWh": number             // 92 (Low_Word) + 95 (High_Word) Total_Gen_powerWh 0.1kWh
+  }
+}

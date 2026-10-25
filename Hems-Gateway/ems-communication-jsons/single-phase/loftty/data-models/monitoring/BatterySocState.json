@@ -1,0 +1,36 @@
+BatterySocState
+{ 
+   "timestampUtc": string,
+   "version": number,
+   "DeviceId": string,
+  // SoC as seen by the inverter via its battery channels (registers 184)
+  "inverterBatChannelSoc": [
+    { 
+      "channelId": 1, 
+      "socPercent": number  // from inverter register 184 (battery capacity %)
+    }, 
+    { 
+      "channelId": 2,
+      "socPercent": number  // from inverter register 184 (battery capacity %) - reserved for future use
+    }
+  ],,
+
+  // Detailed SoC as read directly from BMS devices over your gateway
+  "bmsSocDetails": [        
+    { 
+      "channelId": 1,              // which inverter battery input this string belongs to
+      "deviceId": string,          // BMS master/slave id or pack id (e.g. "CH1-BMS1")
+      "socPercent": number
+    }, 
+    { 
+      "channelId": 1,              // you can have multiple entries per channel
+      "deviceId": string,          // e.g. "CH1-BMS2"
+      "socPercent": number      
+    },
+    { 
+      "channelId": 2,             
+      "deviceId": string,
+      "socPercent": number      
+    }
+  ] 
+}

@@ -1,0 +1,19 @@
+GeneratorDeviceState {
+   "timestampUtc": string,
+   "version": number,
+   "DeviceId": string,
+
+  // --- Electrical (when used as generator input) ---
+  "genVoltageV": number | null,    // generator port voltage // 181 (Gen口的电压) 0.1V translated
+  "genFrequencyHz": number | null, // generator port frequency // 196 (发电机口的频率) 0.01Hz translated
+
+  "genActivePowerW": number | null,//   generator input power // 166 (Gen input power) 1W signed int
+
+  // --- Smart-load mode telemetry (if used as dump load etc.) ---
+  "smartLoadActivePowerW": number | null, // when inputMode == "smart_load", same as 166 interpreted as load
+
+  // --- Energy / runtime stats (if you decide to keep them) ---
+  "todayGenEnergyKWh": number | null,    // generator today energy // 62 (Today_Gen_PowerWh) 0.1kWh
+  "totalGenEnergyKWh": number | null,    // generator lifetime energy // 92 (Low) + 95 (High) (Total_Gen_powerWh) 0.1kWh
+  "accumulatedRunTimeHours": number | null // generator daily operating time // 83 (Generator daily operating time) 0.1hours
+}

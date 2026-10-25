@@ -1,0 +1,266 @@
+[
+    {
+        "id": "power_flow_state2_tab",
+        "type": "tab",
+        "label": "Power Flow State 2",
+        "disabled": false,
+        "info": "Reads Power Flow State from registers:\n- 166: Generator power\n- 169: Grid power\n- 178: Load power\n- 186-189: MPPT 1-4 power\n- 190: Battery power"
+    },
+    {
+        "id": "pfs2_poll_inject",
+        "type": "inject",
+        "z": "power_flow_state2_tab",
+        "name": "Poll Power Flow (30 sec)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "30",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 160,
+        "y": 120,
+        "wires": [
+            [
+                "pfs2_prepare_gen_grid",
+                "pfs2_prepare_load_pv_batt"
+            ]
+        ]
+    },
+    {
+        "id": "pfs2_prepare_gen_grid",
+        "type": "function",
+        "z": "power_flow_state2_tab",
+        "name": "Prepare read (Gen/Grid 166-169)",
+        "func": "// Generator and Grid power\n// 166: Gen input power (1W, signed)\n// 167-168: (skip)\n// 169: Grid total power (1W, signed)\n\nmsg.baseAddr = 166;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 166,\n    quantity: 4  // 166-169\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 80,
+        "wires": [
+            [
+                "pfs2_read_gen_grid"
+            ]
+        ]
+    },
+    {
+        "id": "pfs2_prepare_load_pv_batt",
+        "type": "function",
+        "z": "power_flow_state2_tab",
+        "name": "Prepare read (Load/PV/Batt 178-190)",
+        "func": "// Load, PV and Battery power\n// 178: Load total power (1W, signed)\n// 179-185: (skip)\n// 186: PV1 power (1W)\n// 187: PV2 power (1W)\n// 188: PV3 power (1W)\n// 189: PV4 power (1W)\n// 190: Battery power (1W, signed)\n\nmsg.baseAddr = 178;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 178,\n    quantity: 13  // 178-190\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 510,
+        "y": 160,
+        "wires": [
+            [
+                "pfs2_read_load_pv_batt"
+            ]
+        ]
+    },
+    {
+        "id": "pfs2_read_gen_grid",
+        "type": "modbus-flex-getter",
+        "z": "power_flow_state2_tab",
+        "name": "Read Gen/Grid (166-169)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 780,
+        "y": 80,
+        "wires": [
+            [
+                "pfs2_build_json"
+            ],
+            [
+                "pfs2_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "pfs2_read_load_pv_batt",
+        "type": "modbus-flex-getter",
+        "z": "power_flow_state2_tab",
+        "name": "Read Load/PV/Batt (178-190)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 790,
+        "y": 160,
+        "wires": [
+            [
+                "pfs2_build_json"
+            ],
+            [
+                "pfs2_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "pfs2_build_json",
+        "type": "function",
+        "z": "power_flow_state2_tab",
+        "name": "Build PowerFlowState2 JSON",
+        "func": "// Build PowerFlowState2 from multiple Modbus reads.\n\nlet raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nlet baseAddr = msg.baseAddr;\nif (typeof baseAddr !== \"number\") {\n    baseAddr = (msg.modbusRequest && msg.modbusRequest.address);\n}\nif (typeof baseAddr !== \"number\") {\n    node.warn(\"PowerFlowState2: missing base address\");\n    return null;\n}\n\n// Helper: convert unsigned 16-bit to signed\nfunction toSigned16(val) {\n    if (val > 32767) {\n        return val - 65536;\n    }\n    return val;\n}\n\n// ---- Store partials ----\n\n// Gen/Grid 166-169\nif (baseAddr === 166) {\n    const genPower = toSigned16(data[0] || 0);    // 166\n    const gridPower = toSigned16(data[3] || 0);   // 169\n    \n    flow.set(\"pfs2_part_gen_grid\", {\n        genPowerW: genPower,\n        gridPowerW: gridPower\n    });\n}\n\n// Load/PV/Batt 178-190\nelse if (baseAddr === 178) {\n    // data[0] = 178: Load power\n    // data[8] = 186: PV1 power\n    // data[9] = 187: PV2 power\n    // data[10] = 188: PV3 power\n    // data[11] = 189: PV4 power\n    // data[12] = 190: Battery power\n    \n    const loadPower = toSigned16(data[0] || 0);   // 178\n    const pv1Power = data[8] || 0;                // 186\n    const pv2Power = data[9] || 0;                // 187\n    const pv3Power = data[10] || 0;               // 188\n    const pv4Power = data[11] || 0;               // 189\n    const battPower = toSigned16(data[12] || 0);  // 190\n    \n    const pvTotal = pv1Power + pv2Power + pv3Power + pv4Power;\n    \n    flow.set(\"pfs2_part_load_pv_batt\", {\n        loadPowerW: loadPower,\n        pv1PowerW: pv1Power,\n        pv2PowerW: pv2Power,\n        pv3PowerW: pv3Power,\n        pv4PowerW: pv4Power,\n        pvTotalPowerW: pvTotal,\n        battPowerW: battPower\n    });\n}\nelse {\n    return null;\n}\n\n// ---- Try to assemble ----\n\nconst genGridPart = flow.get(\"pfs2_part_gen_grid\");\nconst loadPvBattPart = flow.get(\"pfs2_part_load_pv_batt\");\n\nif (!genGridPart || !loadPvBattPart) {\n    return null;\n}\n\nconst deviceId = msg.deviceId\n    || global.get(\"DEVICE_ID\")\n    || env.get(\"DEVICE_ID\")\n    || \"EC100-DEV-001\";\n\nconst state = {\n    kind: \"PowerFlowState2\",\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    DeviceId: deviceId,\n    \n    pv: {\n        totalPowerW: loadPvBattPart.pvTotalPowerW,\n        mppt: [\n            { id: 1, powerW: loadPvBattPart.pv1PowerW },\n            { id: 2, powerW: loadPvBattPart.pv2PowerW },\n            { id: 3, powerW: loadPvBattPart.pv3PowerW },\n            { id: 4, powerW: loadPvBattPart.pv4PowerW }\n        ]\n    },\n    \n    grid: {\n        totalPowerW: genGridPart.gridPowerW\n    },\n    \n    load: {\n        totalPowerW: loadPvBattPart.loadPowerW\n    },\n    \n    battery: {\n        powerW: loadPvBattPart.battPowerW\n    },\n    \n    generator: {\n        totalPowerW: genGridPart.genPowerW\n    }\n};\n\n// Clear partials\nflow.set(\"pfs2_part_gen_grid\", null);\nflow.set(\"pfs2_part_load_pv_batt\", null);\n\nflow.set(\"powerFlowState2Snapshot\", state);\n\nmsg.payload = state;\nmsg.state = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1030,
+        "y": 120,
+        "wires": [
+            [
+                "pfs2_debug_json",
+                "pfs2_mqtt_telemetry"
+            ]
+        ]
+    },
+    {
+        "id": "pfs2_debug_json",
+        "type": "debug",
+        "z": "power_flow_state2_tab",
+        "name": "PowerFlowState2 JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1280,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "pfs2_error_debug",
+        "type": "debug",
+        "z": "power_flow_state2_tab",
+        "name": "PowerFlow2 CRC/Error debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1020,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "pfs2_mqtt_telemetry",
+        "type": "mqtt out",
+        "z": "power_flow_state2_tab",
+        "name": "Send to ThingsBoard",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1260,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

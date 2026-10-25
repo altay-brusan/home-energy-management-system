@@ -1,0 +1,177 @@
+using Hems_Backend.Application.Common.Interfaces;
+using Hems_Backend.Application.Common.Security;
+using Hems_Backend.Domain.Constants;
+using Hems_Backend.Infrastructure.Data;
+using Hems_Backend.Infrastructure.Data.Interceptors;
+using Hems_Backend.Infrastructure.Identity;
+using Hems_Backend.Infrastructure.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+
+namespace Microsoft.Extensions.DependencyInjection;
+
+public static class DependencyInjection
+{
+    public static void AddInfrastructureServices(this IHostApplicationBuilder builder)
+    {
+        var connectionString = builder.Configuration.GetConnectionString("Hems_BackendDb");
+        Guard.Against.Null(connectionString, message: "Connection string 'Hems_BackendDb' not found.");
+
+        builder.Services.AddScoped<ISaveChangesInterceptor, AuditableEntityInterceptor>();
+        builder.Services.AddScoped<ISaveChangesInterceptor, DispatchDomainEventsInterceptor>();
+
+        builder.Services.AddDbContext<ApplicationDbContext>((sp, options) =>
+        {
+            options.AddInterceptors(sp.GetServices<ISaveChangesInterceptor>());
+            options.UseNpgsql(connectionString);
+        });
+
+
+        builder.Services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
+
+        builder.Services.AddScoped<ApplicationDbContextInitialiser>();
+
+        // Configure Data Protection to store keys in PostgreSQL database
+        // This is CRITICAL for multi-pod environments (Kubernetes) to share encryption keys
+        // Without this, each pod generates its own keys and cannot decrypt tokens from other pods
+        builder.Services.AddDataProtection()
+            .SetApplicationName("HEMS-Backend")
+            .PersistKeysToDbContext<ApplicationDbContext>();
+
+        builder.Services.AddAuthentication()
+            .AddBearerToken(IdentityConstants.BearerScheme);
+
+        builder.Services.AddAuthorizationBuilder();
+
+        builder.Services
+           .AddIdentityCore<ApplicationUser>()
+            .AddRoles<IdentityRole>()
+            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddApiEndpoints();
+
+        builder.Services.AddSingleton(TimeProvider.System);
+        builder.Services.AddTransient<IIdentityService, IdentityService>();
+        builder.Services.AddScoped<IUserService, UserService>();
+        
+        // Weather Service
+        builder.Services.AddHttpClient<IWeatherService, WeatherApiService>();
+        builder.Services.AddScoped<IWeatherService, WeatherApiService>();
+        
+        // Device Mapping Service with caching
+        builder.Services.AddMemoryCache();
+        builder.Services.AddScoped<IDeviceMappingService, DeviceMappingService>();
+        
+        // Telemetry Deduplication Service
+        builder.Services.AddScoped<ITelemetryDeduplicationService, TelemetryDeduplicationService>();
+
+        // Timezone Service with caching
+        builder.Services.AddScoped<ITimezoneService, TimezoneService>();
+
+        // ThingsBoard Authentication Service
+        builder.Services.AddHttpClient<IThingsBoardAuthService, ThingsBoardAuthService>();
+
+        // Device Heartbeat Services (event-driven, heartbeat-based monitoring)
+        builder.Services.AddSingleton<IDeviceHeartbeatCache, DeviceHeartbeatCache>();
+        builder.Services.AddHostedService<DeviceHeartbeatMonitorService>();
+
+        // Grid Status Tracking Services (monitors grid connection status per device)
+        builder.Services.AddSingleton<IGridStatusTrackingService, GridStatusTrackingService>();
+        builder.Services.AddHostedService<GridStatusMonitorService>();
+
+        // Device Activity Service (centralized telemetry-based activity tracking)
+        builder.Services.AddScoped<IDeviceActivityService, DeviceActivityService>();
+
+        // Alarm Notification Sender (sends SignalR notifications for device alarms)
+        builder.Services.AddScoped<IAlarmNotificationSender, AlarmNotificationSender>();
+
+        // Device Parameter Update Service (synchronous REST-based updates with SignalR progress)
+        builder.Services.AddScoped<IDeviceParameterUpdateService, DeviceParameterUpdateService>();
+
+        // Device Lock Service (prevents concurrent device settings updates)
+        builder.Services.AddSingleton<IDeviceLockService, DeviceLockService>();
+
+        // Operation State Service (tracks parameter update operations for SignalR reconnection)
+        builder.Services.AddSingleton<IOperationStateService, OperationStateService>();
+
+        // ThingsBoard Services
+        builder.Services.AddHttpClient<IThingsBoardConnectorService, ThingsBoardConnectorService>();
+
+        // Device RPC Executor Service
+        builder.Services.AddScoped<IDeviceRpcExecutorService, DeviceRpcExecutorService>();
+
+        // Energy Data Collection Service (pulls data from devices at 23:45 local time)
+        builder.Services.AddScoped<IEnergyDataCollectionService, EnergyDataCollectionService>();
+        builder.Services.AddHostedService<EnergyDataCollectionBackgroundService>();
+
+        // Device Authorization
+        builder.Services.AddScoped<IAuthorizationHandler, DeviceOnlyAuthorizationHandler>();
+
+        // Device Settings Initializer
+        builder.Services.AddScoped<IDeviceSettingsInitializerService, DeviceSettingsInitializerService>();
+        
+        // Email services
+        builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
+        builder.Services.AddTransient<IEmailSender, SmtpEmailSender>();
+        builder.Services.AddTransient<IEmailSender<ApplicationUser>, EmailSender>();
+        builder.Services.AddTransient<IInvitationEmailService, InvitationEmailService>();
+
+        // App Links settings for smart invitation redirect
+        builder.Services.Configure<AppLinksSettings>(builder.Configuration.GetSection("AppLinks"));
+        builder.Services.AddSingleton<IPlatformDetectionService, PlatformDetectionService>();
+
+        // ALM (AI Learning Module) Service
+        builder.Services.AddHttpClient<IAlmService, AlmService>();
+        builder.Services.AddHostedService<AlmHealthCheckService>();
+
+        // Demo Data Service (for app store assessment demo users)
+        builder.Services.AddScoped<IDemoDataService, DemoDataService>();
+
+        // Demo Simulation Data Service (provides simulated data for demo users)
+        builder.Services.AddSingleton<IDemoSimulationDataService, DemoSimulationDataService>();
+
+        // Shared Device PowerFlow Stream Manager (singleton for reference-counted shared streams)
+        builder.Services.Configure<SharedStreamOptions>(builder.Configuration.GetSection("SharedStream"));
+        builder.Services.AddSingleton<ISharedDevicePowerFlowStreamManager, SharedDevicePowerFlowStreamManager>();
+
+        // Component Details Cache Service (5-second TTL cache for sharing component details across users)
+        builder.Services.AddSingleton<IComponentDetailsCacheService, ComponentDetailsCacheService>();
+
+        builder.Services.AddAuthorization(options =>
+        {
+            // Device Only Policy - Sadece device token'ları
+            options.AddPolicy(Policies.DeviceOnly, policy => 
+                policy.Requirements.Add(new DeviceOnlyRequirement()));
+            
+            // Admin Only Policies
+            options.AddPolicy(Policies.CanPurge, policy => policy.RequireRole(Roles.Administrator));
+            options.AddPolicy(Policies.AdminOnly, policy => policy.RequireRole(Roles.Administrator));
+            options.AddPolicy(Policies.UserManagement, policy => policy.RequireRole(Roles.Administrator));
+            
+            // Device Management - Admin, MobilUser, TechnicalServiceUser, Installer
+            options.AddPolicy(Policies.DeviceManagement, policy =>
+                policy.RequireRole(Roles.Administrator, Roles.MobilUser, Roles.TechnicalServiceUser, Roles.Installer));
+            
+            // Device Read Only - Tüm roller
+            options.AddPolicy(Policies.DeviceReadOnly, policy => 
+                policy.RequireRole(Roles.Administrator, Roles.MobilUser, Roles.TechnicalServiceUser, Roles.DashboardUser));
+            
+            // Site Management - Admin, MobilUser, DashboardUser
+            options.AddPolicy(Policies.SiteManagement, policy => 
+                policy.RequireRole(Roles.Administrator, Roles.MobilUser, Roles.DashboardUser));
+            
+            // Setup Management - Admin, MobilUser
+            options.AddPolicy(Policies.SetupManagement, policy => 
+                policy.RequireRole(Roles.Administrator, Roles.MobilUser));
+            
+            // Dashboard Access - Admin, DashboardUser
+            options.AddPolicy(Policies.DashboardAccess, policy => 
+                policy.RequireRole(Roles.Administrator, Roles.DashboardUser));
+        });
+    }
+}

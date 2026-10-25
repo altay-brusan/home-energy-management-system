@@ -1,0 +1,448 @@
+[
+    {
+        "id": "35ad8b4b8859f8f7",
+        "type": "tab",
+        "label": "GridCodeConfigState",
+        "disabled": false,
+        "info": "Grid Code Configuration State\n\nRegisters:\n- 282: gridModeRaw (0-4)\n- 283: gridFrequencyHz (0=50Hz, 1=60Hz)\n- 238: outputVoltageLevelCode (0-4)\n- 515: gridPowerRiseRateSeconds (R/W)\n- 285-288: normalConnect (0.1V, 0.01Hz scale)\n- 516: reconnectAfterTrip.faultRecoveryRiseRateSeconds (R/W)\n- 450-453: reconnectAfterTrip (0.1V, 0.01Hz scale)\n- 280: reconnectionTimeSeconds [10-300]\n- 293: powerFactorTarget (0.1% scale)\n- 177: activePowerRegulationPercent (0.1%)\n- 178: reactivePowerRegulationPercent (0.1%)"
+    },
+    {
+        "id": "560fcee04e40f9da",
+        "type": "link in",
+        "z": "35ad8b4b8859f8f7",
+        "name": "RPC Request",
+        "links": [
+            "rpc_gridcode_link_out"
+        ],
+        "x": 125,
+        "y": 80,
+        "wires": [
+            [
+                "d3b205229850af43"
+            ]
+        ]
+    },
+    {
+        "id": "03c33a02cedb399a",
+        "type": "comment",
+        "z": "35ad8b4b8859f8f7",
+        "name": "══════ MANUAL TEST ══════",
+        "info": "",
+        "x": 170,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "b4ff91692faa0ce3",
+        "type": "inject",
+        "z": "35ad8b4b8859f8f7",
+        "name": "Manual Read",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operationType",
+                "v": "read",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 180,
+        "wires": [
+            [
+                "d3b205229850af43"
+            ]
+        ]
+    },
+    {
+        "id": "201c36b2baf97efc",
+        "type": "inject",
+        "z": "35ad8b4b8859f8f7",
+        "name": "Set: Example Config",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "operationType",
+                "v": "write",
+                "vt": "str"
+            },
+            {
+                "p": "rpcParams",
+                "v": "{\"gridModeRaw\":0,\"gridFrequencyHz\":50,\"outputVoltageLevelCode\":1,\"gridPowerRiseRateSeconds\":60,\"normalConnect\":{\"voltageHighV\":253,\"voltageLowV\":207,\"frequencyHighHz\":51,\"frequencyLowHz\":49},\"reconnectAfterTrip\":{\"faultRecoveryRiseRateSeconds\":60,\"voltageHighV\":265,\"voltageLowV\":185,\"frequencyHighHz\":51.5,\"frequencyLowHz\":48},\"reconnectionTimeSeconds\":60,\"powerFactorTarget\":100,\"activePowerRegulationPercent\":10,\"reactivePowerRegulationPercent\":10}",
+                "vt": "json"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 170,
+        "y": 220,
+        "wires": [
+            [
+                "d3b205229850af43"
+            ]
+        ]
+    },
+    {
+        "id": "d3b205229850af43",
+        "type": "function",
+        "z": "35ad8b4b8859f8f7",
+        "name": "Route: Read or Write?",
+        "func": "const opType = msg.operationType || 'read';\n\nif (opType === 'write') {\n    return [null, msg];\n} else {\n    return [msg, null];\n}",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 440,
+        "y": 180,
+        "wires": [
+            [
+                "fdcd7f2c3600cf23"
+            ],
+            [
+                "c78541f30766643c"
+            ]
+        ]
+    },
+    {
+        "id": "84c229a4a0387e99",
+        "type": "comment",
+        "z": "35ad8b4b8859f8f7",
+        "name": "══════ READ ══════",
+        "info": "",
+        "x": 640,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "fdcd7f2c3600cf23",
+        "type": "function",
+        "z": "35ad8b4b8859f8f7",
+        "name": "Prep Parallel Reads",
+        "func": "// Clear previous collected data first\nflow.set('gc_reads', null);\n\n// Save RPC response topic for later\nflow.set('gc_rpc_response_topic', msg.rpcResponseTopic);\nflow.set('gc_write_result', msg.writeResult || null);\n\n// Read all registers in parallel\nconst reads = [\n    { name: 'gridModeRaw', address: 282, quantity: 1 },\n    { name: 'gridFrequencyHz', address: 283, quantity: 1 },\n    { name: 'outputVoltageLevelCode', address: 238, quantity: 1 },\n    { name: 'gridPowerRiseRateSeconds', address: 515, quantity: 1 },\n    { name: 'normalConnect', address: 285, quantity: 4 },  // 285-288\n    { name: 'reconnectFaultRecovery', address: 516, quantity: 1 },\n    { name: 'reconnectVoltage', address: 450, quantity: 2 },  // 450-451\n    { name: 'reconnectFrequency', address: 452, quantity: 2 }, // 452-453\n    { name: 'reconnectionTimeSeconds', address: 280, quantity: 1 },\n    { name: 'powerFactorTarget', address: 293, quantity: 1 },\n    { name: 'activePowerReg', address: 177, quantity: 1 },\n    { name: 'reactivePowerReg', address: 178, quantity: 1 }\n];\n\nconst messages = reads.map(r => ({\n    payload: {\n        fc: 3,\n        unitid: 1,\n        address: r.address,\n        quantity: r.quantity\n    },\n    readName: r.name\n}));\n\nreturn [messages];",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 670,
+        "y": 80,
+        "wires": [
+            [
+                "eda8b758608f120e"
+            ]
+        ]
+    },
+    {
+        "id": "eda8b758608f120e",
+        "type": "modbus-flex-getter",
+        "z": "35ad8b4b8859f8f7",
+        "name": "Read Grid Code Regs",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 890,
+        "y": 80,
+        "wires": [
+            [
+                "e57f7ad79954a5e5"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "e57f7ad79954a5e5",
+        "type": "function",
+        "z": "35ad8b4b8859f8f7",
+        "name": "Collect All Reads",
+        "func": "const flowKey = 'gc_reads';\nlet collected = flow.get(flowKey) || {};\nconst expectedCount = 12;\n\nlet data = msg.payload;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (!Array.isArray(data) || data.length < 1) {\n    node.status({ fill: 'red', shape: 'dot', text: 'Read failed: ' + msg.readName });\n    return null;\n}\n\nconst readName = msg.readName;\n\nif (readName === 'normalConnect') {\n    collected[readName] = {\n        voltageHighV: data[0],\n        voltageLowV: data[1],\n        frequencyHighHz: data[2],\n        frequencyLowHz: data[3]\n    };\n} else if (readName === 'reconnectVoltage') {\n    collected[readName] = {\n        voltageHighV: data[0],\n        voltageLowV: data[1]\n    };\n} else if (readName === 'reconnectFrequency') {\n    collected[readName] = {\n        frequencyHighHz: data[0],\n        frequencyLowHz: data[1]\n    };\n} else {\n    collected[readName] = data[0];\n}\n\nflow.set(flowKey, collected);\n\nconst collectedCount = Object.keys(collected).length;\nnode.status({ fill: 'blue', shape: 'dot', text: `Collected ${collectedCount}/${expectedCount}` });\n\nif (collectedCount >= expectedCount) {\n    flow.set(flowKey, null);\n    msg.collectedData = collected;\n    msg.payload = collected;\n    return msg;\n}\n\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1110,
+        "y": 80,
+        "wires": [
+            [
+                "05a9efe1c299d9e2"
+            ]
+        ]
+    },
+    {
+        "id": "05a9efe1c299d9e2",
+        "type": "function",
+        "z": "35ad8b4b8859f8f7",
+        "name": "Build Read Response",
+        "func": "const data = msg.collectedData;\n\nif (!data) {\n    node.status({ fill: 'red', shape: 'dot', text: 'No data' });\n    return null;\n}\n\nconst gatewayId = global.get('GATEWAY_ID') || env.get('GATEWAY_ID') || 'EC100-GW-001';\n\n// Apply scaling factors\nconst normalConnect = data.normalConnect || {};\nconst reconnectVoltage = data.reconnectVoltage || {};\nconst reconnectFrequency = data.reconnectFrequency || {};\n\nconst state = {\n    kind: 'GridCodeConfigState',\n    timestampUtc: new Date().toISOString(),\n    version: 1,\n    gatewayId: gatewayId,\n    gridModeRaw: data.gridModeRaw,\n    gridFrequencyHz: data.gridFrequencyHz === 0 ? 50 : 60,\n    outputVoltageLevelCode: data.outputVoltageLevelCode,\n    gridPowerRiseRateSeconds: data.gridPowerRiseRateSeconds,\n    normalConnect: {\n        voltageHighV: normalConnect.voltageHighV / 10,\n        voltageLowV: normalConnect.voltageLowV / 10,\n        frequencyHighHz: normalConnect.frequencyHighHz / 100,\n        frequencyLowHz: normalConnect.frequencyLowHz / 100\n    },\n    reconnectAfterTrip: {\n        faultRecoveryRiseRateSeconds: data.reconnectFaultRecovery,\n        voltageHighV: reconnectVoltage.voltageHighV / 10,\n        voltageLowV: reconnectVoltage.voltageLowV / 10,\n        frequencyHighHz: reconnectFrequency.frequencyHighHz / 100,\n        frequencyLowHz: reconnectFrequency.frequencyLowHz / 100\n    },\n    reconnectionTimeSeconds: data.reconnectionTimeSeconds,\n    powerFactorTarget: data.powerFactorTarget / 10,\n    activePowerRegulationPercent: data.activePowerReg === 65535 ? null : data.activePowerReg,\n    reactivePowerRegulationPercent: data.reactivePowerReg === 65535 ? null : data.reactivePowerReg\n};\n\n// Get write result and rpc topic from flow context\nconst writeResult = flow.get('gc_write_result');\nconst rpcResponseTopic = flow.get('gc_rpc_response_topic');\n\n// Clear flow context\nflow.set('gc_write_result', null);\nflow.set('gc_rpc_response_topic', null);\n\n// Build response\nif (writeResult) {\n    msg.payload = {\n        success: writeResult.success,\n        message: writeResult.message,\n        writes: writeResult.writes,\n        state: state\n    };\n} else {\n    msg.payload = state;\n}\n\nmsg.state = state;\nmsg.rpcResponseTopic = rpcResponseTopic;\n\nnode.status({ fill: 'green', shape: 'dot', text: `Mode: ${state.gridModeRaw}, ${state.gridFrequencyHz}Hz` });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1330,
+        "y": 80,
+        "wires": [
+            [
+                "4ae217c303179c19",
+                "df9542c51facaaea"
+            ]
+        ]
+    },
+    {
+        "id": "ed2ce8e6e1671752",
+        "type": "comment",
+        "z": "35ad8b4b8859f8f7",
+        "name": "══════ WRITE ══════",
+        "info": "",
+        "x": 650,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "c78541f30766643c",
+        "type": "function",
+        "z": "35ad8b4b8859f8f7",
+        "name": "Prep Write Queue",
+        "func": "const params = msg.rpcParams || {};\nconst writes = [];\n\n// 282: gridModeRaw\nif (params.gridModeRaw !== undefined) {\n    writes.push({ name: 'gridModeRaw', address: 282, value: [params.gridModeRaw] });\n}\n\n// 283: gridFrequencyHz\nif (params.gridFrequencyHz !== undefined) {\n    const val = params.gridFrequencyHz === 50 ? 0 : 1;\n    writes.push({ name: 'gridFrequencyHz', address: 283, value: [val] });\n}\n\n// 238: outputVoltageLevelCode\nif (params.outputVoltageLevelCode !== undefined) {\n    writes.push({ name: 'outputVoltageLevelCode', address: 238, value: [params.outputVoltageLevelCode] });\n}\n\n// 515: gridPowerRiseRateSeconds\nif (params.gridPowerRiseRateSeconds !== undefined) {\n    writes.push({ name: 'gridPowerRiseRateSeconds', address: 515, value: [params.gridPowerRiseRateSeconds] });\n}\n\n// normalConnect - each register separately\nif (params.normalConnect) {\n    const nc = params.normalConnect;\n    if (nc.voltageHighV !== undefined) {\n        writes.push({ name: 'nc.voltageHighV', address: 285, value: [Math.round(nc.voltageHighV * 10)] });\n    }\n    if (nc.voltageLowV !== undefined) {\n        writes.push({ name: 'nc.voltageLowV', address: 286, value: [Math.round(nc.voltageLowV * 10)] });\n    }\n    if (nc.frequencyHighHz !== undefined) {\n        writes.push({ name: 'nc.frequencyHighHz', address: 287, value: [Math.round(nc.frequencyHighHz * 100)] });\n    }\n    if (nc.frequencyLowHz !== undefined) {\n        writes.push({ name: 'nc.frequencyLowHz', address: 288, value: [Math.round(nc.frequencyLowHz * 100)] });\n    }\n}\n\n// reconnectAfterTrip - each register separately\nif (params.reconnectAfterTrip) {\n    const rat = params.reconnectAfterTrip;\n    if (rat.faultRecoveryRiseRateSeconds !== undefined) {\n        writes.push({ name: 'rat.faultRecovery', address: 516, value: [rat.faultRecoveryRiseRateSeconds] });\n    }\n    if (rat.voltageHighV !== undefined) {\n        writes.push({ name: 'rat.voltageHighV', address: 450, value: [Math.round(rat.voltageHighV * 10)] });\n    }\n    if (rat.voltageLowV !== undefined) {\n        writes.push({ name: 'rat.voltageLowV', address: 451, value: [Math.round(rat.voltageLowV * 10)] });\n    }\n    if (rat.frequencyHighHz !== undefined) {\n        writes.push({ name: 'rat.frequencyHighHz', address: 452, value: [Math.round(rat.frequencyHighHz * 100)] });\n    }\n    if (rat.frequencyLowHz !== undefined) {\n        writes.push({ name: 'rat.frequencyLowHz', address: 453, value: [Math.round(rat.frequencyLowHz * 100)] });\n    }\n}\n\n// 280: reconnectionTimeSeconds\nif (params.reconnectionTimeSeconds !== undefined) {\n    writes.push({ name: 'reconnectionTimeSeconds', address: 280, value: [params.reconnectionTimeSeconds] });\n}\n\n// 293: powerFactorTarget\nif (params.powerFactorTarget !== undefined) {\n    const val = Math.round(params.powerFactorTarget * 10);\n    writes.push({ name: 'powerFactorTarget', address: 293, value: [val] });\n}\n\n// 177: activePowerRegulationPercent\nif (params.activePowerRegulationPercent !== undefined) {\n    writes.push({ name: 'activePowerReg', address: 177, value: [params.activePowerRegulationPercent] });\n}\n\n// 178: reactivePowerRegulationPercent\nif (params.reactivePowerRegulationPercent !== undefined) {\n    writes.push({ name: 'reactivePowerReg', address: 178, value: [params.reactivePowerRegulationPercent] });\n}\n\nif (writes.length === 0) {\n    node.status({ fill: 'red', shape: 'dot', text: 'No valid params' });\n    node.error('No valid parameters to write');\n    return null;\n}\n\n// Store write queue in global context\nglobal.set('gc_write_queue', writes);\nglobal.set('gc_write_index', 0);\nglobal.set('gc_write_results', []);\n\n// Store original message for later\nflow.set('gc_original_msg', msg);\n\nnode.status({ fill: 'yellow', shape: 'dot', text: `Queued ${writes.length} writes` });\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 670,
+        "y": 240,
+        "wires": [
+            [
+                "1db265ec7b58ec26"
+            ]
+        ]
+    },
+    {
+        "id": "1db265ec7b58ec26",
+        "type": "function",
+        "z": "35ad8b4b8859f8f7",
+        "name": "Execute Write Queue",
+        "func": "const queue = global.get('gc_write_queue') || [];\nlet index = global.get('gc_write_index') || 0;\nconst results = global.get('gc_write_results') || [];\n\nif (index >= queue.length) {\n    node.status({ fill: 'green', shape: 'dot', text: 'All writes complete' });\n    \n    // Get original message info\n    const originalMsg = flow.get('gc_original_msg');\n    const rpcTopic = originalMsg ? originalMsg.rpcResponseTopic : null;\n    \n    // Clear global context\n    global.set('gc_write_queue', null);\n    global.set('gc_write_index', null);\n    global.set('gc_write_results', null);\n    flow.set('gc_original_msg', null);\n    \n    // Build write result\n    const writeResult = {\n        success: true,\n        message: `Successfully wrote ${results.length} register(s)`,\n        writes: results\n    };\n    \n    // Trigger auto-read after all writes\n    const readMsg = {\n        operationType: 'read',\n        rpcResponseTopic: rpcTopic,\n        writeResult: writeResult\n    };\n    \n    setTimeout(() => {\n        node.send([null, readMsg]);\n    }, 500);\n    \n    return null;\n}\n\nconst write = queue[index];\n\nmsg.payload = {\n    fc: 16,\n    unitid: 1,\n    address: write.address,\n    quantity: write.value.length,\n    value: write.value\n};\n\nmsg.writeInfo = write;\nmsg.writeIndex = index;\n\nnode.status({ fill: 'yellow', shape: 'dot', text: `Writing ${write.name} (${index + 1}/${queue.length})` });\n\n// Increment index for next write\nglobal.set('gc_write_index', index + 1);\n\n// Record this write for results\nresults.push({ register: write.address, name: write.name, value: write.value, success: true });\nglobal.set('gc_write_results', results);\n\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 240,
+        "wires": [
+            [
+                "59e22b9b5d226a7e"
+            ],
+            [
+                "fdcd7f2c3600cf23"
+            ]
+        ]
+    },
+    {
+        "id": "59e22b9b5d226a7e",
+        "type": "modbus-flex-write",
+        "z": "35ad8b4b8859f8f7",
+        "name": "Write Grid Code Reg",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "server": "e4e4f3e2a4f4e004",
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "x": 1120,
+        "y": 240,
+        "wires": [
+            [
+                "7a753e7482709184"
+            ],
+            [
+                "gc_write_error_handler"
+            ]
+        ]
+    },
+    {
+        "id": "gc_write_error_handler",
+        "type": "function",
+        "z": "35ad8b4b8859f8f7",
+        "name": "Write Error Handler",
+        "func": "// Check if this is actually an error or just a success confirmation\n// Success confirmation has 'address' and 'length' properties\n// Real errors have 'error' property or different structure\nconst p = msg.payload;\n\nif (!p || Object.keys(p).length === 0) {\n    // Empty message - ignore\n    return null;\n}\n\n// If it has address and length, it's a success confirmation - ignore\nif (p.address !== undefined && p.length !== undefined && !p.error) {\n    return null;\n}\n\n// Real error - log it\nnode.warn('Write error: ' + JSON.stringify(p));\nnode.status({ fill: 'red', shape: 'dot', text: 'Write error' });\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1350,
+        "y": 300,
+        "wires": [[]]
+    },
+    {
+        "id": "7a753e7482709184",
+        "type": "function",
+        "z": "35ad8b4b8859f8f7",
+        "name": "Write OK + Delay",
+        "func": "// Success - continue to next write after delay\nconst writeInfo = msg.writeInfo || {};\nnode.status({ fill: 'green', shape: 'dot', text: writeInfo.name + ' OK' });\n\nsetTimeout(() => {\n    node.send(msg);\n}, 500);\n\nreturn null;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1330,
+        "y": 240,
+        "wires": [
+            [
+                "1db265ec7b58ec26"
+            ]
+        ]
+    },
+    {
+        "id": "4ae217c303179c19",
+        "type": "debug",
+        "z": "35ad8b4b8859f8f7",
+        "name": "Grid Code Config",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1550,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "df9542c51facaaea",
+        "type": "function",
+        "z": "35ad8b4b8859f8f7",
+        "name": "RPC Response",
+        "func": "if (!msg.rpcResponseTopic) {\n    return null;\n}\n\nmsg.topic = msg.rpcResponseTopic;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1550,
+        "y": 180,
+        "wires": [
+            [
+                "baf0b95ed72e9891"
+            ]
+        ]
+    },
+    {
+        "id": "baf0b95ed72e9891",
+        "type": "mqtt out",
+        "z": "35ad8b4b8859f8f7",
+        "name": "MQTT Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1750,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

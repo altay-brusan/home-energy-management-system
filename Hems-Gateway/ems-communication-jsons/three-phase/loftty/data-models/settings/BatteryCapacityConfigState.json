@@ -1,0 +1,10 @@
+BatteryCapacityConfigState
+{
+  "version": 1,
+
+  "batteryCapacityAh": "number",             // 202 - 电池容量 Batt Capacity [0-2000] 1Ah
+
+  "maxChargeCurrentA": "number",             // 208 - 电池最大充电电流 Max A Charge [0-185] 1A
+
+  "maxDischargeCurrentA": "number"           // 209 - 电池最大放电电流 Max A discharge [0-185] 1A
+}

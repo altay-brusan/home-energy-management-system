@@ -1,0 +1,541 @@
+[
+    {
+        "id": "08ea7342fb7b2ed2",
+        "type": "tab",
+        "label": "Power Flow State",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "bab96ee09bdbe5db",
+        "type": "inject",
+        "z": "08ea7342fb7b2ed2",
+        "name": "Poll Power Flow (5 min)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "300",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 270,
+        "y": 540,
+        "wires": [
+            [
+                "4159b20b24c86b59",
+                "955b033866fa4ac6",
+                "6f41978173fe3cb4",
+                "4a64ab39fdf2b13d",
+                "0484a54daa21354a"
+            ]
+        ]
+    },
+    {
+        "id": "0484a54daa21354a",
+        "type": "function",
+        "z": "08ea7342fb7b2ed2",
+        "name": "Prepare read (PV 186–189)",
+        "func": "// PV MPPT instantaneous power (single-phase)\n// 186: PV1 input power (W)\n// 187: PV2 input power (W)\n// 188: PV3 input power (W)\n// 189: PV4 input power (W)\n\nmsg.baseAddr = 186;\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 186,\n    quantity: 4      // 186..189\n};\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 680,
+        "y": 220,
+        "wires": [
+            [
+                "ac3675af3963c922"
+            ]
+        ]
+    },
+    {
+        "id": "4159b20b24c86b59",
+        "type": "function",
+        "z": "08ea7342fb7b2ed2",
+        "name": "Prepare read (Grid 169)",
+        "func": "// Grid total power (single-phase)\n// 169: Grid total power (W, signed)\n// doc: >0 = buy from grid, <0 = sell to grid\n\nmsg.baseAddr = 169;\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 169,\n    quantity: 1\n};\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 670,
+        "y": 280,
+        "wires": [
+            [
+                "a96549e5884acfe5"
+            ]
+        ]
+    },
+    {
+        "id": "955b033866fa4ac6",
+        "type": "function",
+        "z": "08ea7342fb7b2ed2",
+        "name": "Prepare read (Load 178)",
+        "func": "// Load side total power\n// 178: load side Total power (W, signed)\n\nmsg.baseAddr = 178;\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 178,\n    quantity: 1\n};\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 670,
+        "y": 340,
+        "wires": [
+            [
+                "b32fdcf2edd942b0"
+            ]
+        ]
+    },
+    {
+        "id": "6f41978173fe3cb4",
+        "type": "function",
+        "z": "08ea7342fb7b2ed2",
+        "name": "Prepare read (Battery 190)",
+        "func": "// Battery output power\n// 190: Battery output power (W, signed)\n// + = discharge, - = charge\n\nmsg.baseAddr = 190;\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 190,\n    quantity: 1\n};\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 680,
+        "y": 400,
+        "wires": [
+            [
+                "0d40e66695d12c9d"
+            ]
+        ]
+    },
+    {
+        "id": "4a64ab39fdf2b13d",
+        "type": "function",
+        "z": "08ea7342fb7b2ed2",
+        "name": "Prepare read (Gen 166)",
+        "func": "// Generator / Gen port power\n// 166: Gen input power (W, signed)\n\nmsg.baseAddr = 166;\n\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 166,\n    quantity: 1\n};\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 670,
+        "y": 460,
+        "wires": [
+            [
+                "a60eb3d9541b36df"
+            ]
+        ]
+    },
+    {
+        "id": "ac3675af3963c922",
+        "type": "modbus-flex-getter",
+        "z": "08ea7342fb7b2ed2",
+        "name": "Read PV PowerFlow regs (186-189)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "enableDeformedMessages": false,
+        "startDelayTime": "",
+        "x": 1010,
+        "y": 220,
+        "wires": [
+            [
+                "235c027edffcac91"
+            ],
+            [
+                "eba32f4290f678b3"
+            ]
+        ]
+    },
+    {
+        "id": "a96549e5884acfe5",
+        "type": "modbus-flex-getter",
+        "z": "08ea7342fb7b2ed2",
+        "name": "Read Grid PowerFlow regs (169)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "enableDeformedMessages": false,
+        "startDelayTime": "",
+        "x": 1020,
+        "y": 280,
+        "wires": [
+            [
+                "235c027edffcac91"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "b32fdcf2edd942b0",
+        "type": "modbus-flex-getter",
+        "z": "08ea7342fb7b2ed2",
+        "name": "Read Load PowerFlow regs (178)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "enableDeformedMessages": false,
+        "startDelayTime": "",
+        "x": 1020,
+        "y": 340,
+        "wires": [
+            [
+                "235c027edffcac91"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "0d40e66695d12c9d",
+        "type": "modbus-flex-getter",
+        "z": "08ea7342fb7b2ed2",
+        "name": "Read Battery PowerFlow regs (190)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "enableDeformedMessages": false,
+        "startDelayTime": "",
+        "x": 1020,
+        "y": 400,
+        "wires": [
+            [
+                "235c027edffcac91"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "a60eb3d9541b36df",
+        "type": "modbus-flex-getter",
+        "z": "08ea7342fb7b2ed2",
+        "name": "Read Gen PowerFlow regs (166)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "enableDeformedMessages": false,
+        "startDelayTime": "",
+        "x": 1020,
+        "y": 460,
+        "wires": [
+            [
+                "235c027edffcac91"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "235c027edffcac91",
+        "type": "function",
+        "z": "08ea7342fb7b2ed2",
+        "name": "Build PowerFlowState JSON",
+        "func": "// Build PowerFlowState from multiple small Modbus reads.\n//\n// Blocks (single-phase):\n// 166 : generator power (W, signed)\n// 169 : grid total power (W, signed; +import, -export)\n// 178 : load total power (W, signed)\n// 186-189 : PV1..PV4 input power (W)\n// 190 : battery output power (W, signed; +discharge, -charge)\n\nlet raw = msg.payload;\n\n// node-red-contrib-modbus often sends { data: [...], buffer: ... }\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n  data = data.data;\n}\n\n// Skip string errors like \"Error: CRC error\"\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n  return null;\n}\n\n// Determine which block we just read\nlet baseAddr = (msg.modbusRequest && msg.modbusRequest.address);\nif (typeof baseAddr !== \"number\") {\n  baseAddr = msg.baseAddr;\n}\nif (typeof baseAddr !== \"number\") {\n  node.warn(\"PowerFlowState: missing base address on msg\");\n  return null;\n}\n\n// helper: signed 16-bit\nfunction s16(v) {\n  if (!Number.isFinite(v)) return null;\n  return (v & 0x8000) ? v - 0x10000 : v;\n}\n\n// ---- Store partials in flow context ----\n\n// PV block 186–189\nif (baseAddr === 186) {\n  const pv1W = s16(data[0]) || 0;\n  const pv2W = s16(data[1]) || 0;\n  const pv3W = s16(data[2]) || 0;\n  const pv4W = s16(data[3]) || 0;\n\n  const part = {\n    pv: {\n      mppt: [\n        { id: 1, powerW: pv1W },\n        { id: 2, powerW: pv2W },\n        { id: 3, powerW: pv3W },\n        { id: 4, powerW: pv4W }\n      ],\n      totalPowerW: pv1W + pv2W + pv3W + pv4W\n    }\n  };\n\n  flow.set(\"power_part_pv\", part);\n}\n\n// Grid 169\nelse if (baseAddr === 169) {\n  const gridW = s16(data[0]);\n  flow.set(\"power_part_grid\", { grid: { totalPowerW: gridW } });\n}\n\n// Load 178\nelse if (baseAddr === 178) {\n  const loadW = s16(data[0]);\n  flow.set(\"power_part_load\", { load: { totalPowerW: loadW } });\n}\n\n// Battery 190\nelse if (baseAddr === 190) {\n  const battW = s16(data[0]);\n  flow.set(\"power_part_batt\", { battery: { powerW: battW } });\n}\n\n// Generator 166\nelse if (baseAddr === 166) {\n  const genW = s16(data[0]);\n  flow.set(\"power_part_gen\", { generator: { totalPowerW: genW } });\n}\nelse {\n  return null;\n}\n\n// ---- Try to assemble full state ----\n\nconst pvPart = flow.get(\"power_part_pv\");\nconst gridPart = flow.get(\"power_part_grid\");\nconst loadPart = flow.get(\"power_part_load\");\nconst battPart = flow.get(\"power_part_batt\");\nconst genPart = flow.get(\"power_part_gen\");\n\n// Require at least PV + grid + load + battery; generator is optional\nif (!pvPart || !gridPart || !loadPart || !battPart) {\n  return null;\n}\n\n// Resolve DeviceId\nconst deviceId = msg.deviceId\n  || global.get(\"DEVICE_ID\")\n  || env.get(\"DEVICE_ID\")\n  || \"EC100-DEV-001\";\n\nconst state = {\n  kind: \"PowerFlowState\",\n  timestampUtc: new Date().toISOString(),\n  version: 1,\n  DeviceId: deviceId,\n\n  pv: pvPart.pv,\n  grid: gridPart.grid,\n  load: loadPart.load,\n  battery: battPart.battery,\n  generator: genPart ? genPart.generator : { totalPowerW: 0 }\n};\n\n// Keep snapshot in flow as before\nflow.set(\"powerFlowSnapshot\", state);\n\n// Put result on msg\nmsg.payload = state;\nmsg.state = state;\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1420,
+        "y": 340,
+        "wires": [
+            [
+                "94cfd14ddf0c7f8c",
+                "23855bc351fa6224",
+                "824387f9dfc20a51"
+            ]
+        ]
+    },
+    {
+        "id": "94cfd14ddf0c7f8c",
+        "type": "debug",
+        "z": "08ea7342fb7b2ed2",
+        "name": "PowerFlowState JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1700,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "eba32f4290f678b3",
+        "type": "debug",
+        "z": "08ea7342fb7b2ed2",
+        "name": "PowerFlow CRC/Error",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload",
+        "statusType": "auto",
+        "x": 1360,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "23855bc351fa6224",
+        "type": "mqtt out",
+        "z": "08ea7342fb7b2ed2",
+        "name": "Telemetry Response",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "2c0f8f5d9a1c0005",
+        "x": 1700,
+        "y": 440,
+        "wires": []
+    },
+    {
+        "id": "0306bf6ad37d37d6",
+        "type": "link in",
+        "z": "08ea7342fb7b2ed2",
+        "name": "PowerFlowRequest",
+        "links": [
+            "1d606251b15aeac4"
+        ],
+        "x": 385,
+        "y": 220,
+        "wires": [
+            [
+                "0484a54daa21354a",
+                "4159b20b24c86b59",
+                "955b033866fa4ac6",
+                "6f41978173fe3cb4",
+                "4a64ab39fdf2b13d"
+            ]
+        ]
+    },
+    {
+        "id": "824387f9dfc20a51",
+        "type": "function",
+        "z": "08ea7342fb7b2ed2",
+        "name": "Prepare RPC Response",
+        "func": "// Only handle messages that came from RPC\nif (!msg.rpcResponseTopic) {\n    // Periodic polling: do nothing\n    return null;\n}\n\n// Use the built state as response\nconst state = msg.state || msg.payload;\n\nmsg.payload = state;\nmsg.topic = msg.rpcResponseTopic;\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1730,
+        "y": 340,
+        "wires": [
+            [
+                "a192b7ddd3d44b2e",
+                "18bf848a24b5f290"
+            ]
+        ]
+    },
+    {
+        "id": "18bf848a24b5f290",
+        "type": "mqtt out",
+        "z": "08ea7342fb7b2ed2",
+        "name": "RPC Response",
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 2000,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "a192b7ddd3d44b2e",
+        "type": "debug",
+        "z": "08ea7342fb7b2ed2",
+        "name": "PowerFlowState JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 2020,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "ee8570b08322707b",
+        "type": "comment",
+        "z": "08ea7342fb7b2ed2",
+        "name": "for debug",
+        "info": "",
+        "x": 200,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "2c0f8f5d9a1c0005",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Local",
+        "broker": "192.168.88.2",
+        "port": "8883",
+        "tls": "02b7185d7515cecb",
+        "clientid": "EC100 For Energy Transfer",
+        "autoConnect": true,
+        "usetls": true,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "02b7185d7515cecb",
+        "type": "tls-config",
+        "name": "test-with-fixed-ip",
+        "cert": "",
+        "key": "",
+        "ca": "",
+        "certname": "",
+        "keyname": "",
+        "caname": "server.crt",
+        "servername": "",
+        "verifyservercert": false,
+        "alpnprotocol": ""
+    }
+]

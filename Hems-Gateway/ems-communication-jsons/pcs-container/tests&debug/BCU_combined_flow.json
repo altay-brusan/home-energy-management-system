@@ -1,0 +1,760 @@
+[
+    {
+        "id": "bcu_combined_tab",
+        "type": "tab",
+        "label": "BCU Combined",
+        "disabled": false,
+        "info": "BCU Combined Flow - All BCU CAN parsers in one flow\n\nIncludes:\n- Chiller State (0x18008040x, 0x18018040x)\n- Chiller Alarm (0x18068040x, 0x18078040x)\n- Container Battery State (0x18FF1xF0)\n- Container Battery Fault (0x18FF16F0)\n- HVCU Control State (0x18FF201x)"
+    },
+    {
+        "id": "bcu_comment_can_parsing",
+        "type": "comment",
+        "z": "bcu_combined_tab",
+        "name": "========== CAN PARSING (runs continuously) ==========",
+        "info": "",
+        "x": 260,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "bcu_can0_input",
+        "type": "socketcan-out",
+        "z": "bcu_combined_tab",
+        "name": "CAN0 Input",
+        "config": "can0_bcu_combined",
+        "x": 120,
+        "y": 200,
+        "wires": [
+            [
+                "bcu_parse_chiller_state",
+                "bcu_parse_chiller_alarm",
+                "bcu_parse_container_battery",
+                "bcu_parse_container_fault",
+                "bcu_parse_hvcu_control"
+            ]
+        ]
+    },
+    {
+        "id": "bcu_parse_chiller_state",
+        "type": "function",
+        "z": "bcu_combined_tab",
+        "name": "Parse Chiller State",
+        "func": "const frame = msg.payload || msg;\nlet canId = frame.canid & 0x1FFFFFFF;\nconst data = frame.data || [];\n\nlet state = flow.get(\"chillerState\") || {\n    kind: \"ChillerState\",\n    version: 1,\n    tmsOperatingMode: null,\n    outletCoolantTempC: null,\n    inletCoolantTempC: null,\n    ambientTempC: null,\n    inletCoolantPressure: null,\n    outletCoolantPressure: null,\n    heartbeat: null,\n    tmsFaultCode: null,\n    tmsFaultLevel: null,\n    compressorStatus: null,\n    crankcaseHeaterStatus: null,\n    electricHeaterStatus: null,\n    pumpStatus: null,\n    fanRunStatus: null,\n    compressorSpeed: null,\n    pumpSpeed: null,\n    onOffStatus: null\n};\n\nfunction u8(buf, offset) {\n    return buf[offset] & 0xFF;\n}\n\nfunction s8(buf, offset) {\n    let val = buf[offset] & 0xFF;\n    return val > 127 ? val - 256 : val;\n}\n\nfunction getBit(buf, byteOffset, bitOffset) {\n    return ((buf[byteOffset] >> bitOffset) & 0x01) === 1;\n}\n\nfunction getBits(buf, byteOffset, bitOffset, length) {\n    return (buf[byteOffset] >> bitOffset) & ((1 << length) - 1);\n}\n\nvar processed = false;\n\nif ((canId & 0xFFFFFFF0) === 0x18008040) {\n    processed = true;\n    state.tmsOperatingMode = getBits(data, 0, 0, 3);\n    state.outletCoolantTempC = u8(data, 1) - 40;\n    state.inletCoolantTempC = u8(data, 2) - 40;\n    state.ambientTempC = u8(data, 3) - 40;\n    state.inletCoolantPressure = s8(data, 4) * 0.1;\n    state.outletCoolantPressure = s8(data, 5) * 0.1;\n    state.heartbeat = u8(data, 6);\n    state.tmsFaultCode = getBits(data, 7, 0, 6);\n    state.tmsFaultLevel = getBits(data, 7, 6, 2);\n}\n\nif ((canId & 0xFFFFFFF0) === 0x18018040) {\n    processed = true;\n    state.compressorStatus = getBit(data, 0, 0);\n    state.crankcaseHeaterStatus = getBit(data, 0, 1);\n    state.electricHeaterStatus = getBit(data, 0, 2);\n    state.pumpStatus = getBit(data, 0, 3);\n    state.fanRunStatus = getBit(data, 0, 4);\n    state.compressorSpeed = u8(data, 1) * 100;\n    state.pumpSpeed = u8(data, 2) * 100;\n    state.onOffStatus = u8(data, 3);\n}\n\nif (!processed) {\n    return null;\n}\n\nstate.timestampUtc = new Date().toISOString();\nflow.set(\"chillerState\", state);\nmsg.payload = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 330,
+        "y": 100,
+        "wires": [
+            [
+                "bcu_debug_chiller_state",
+                "bcu_throttle_chiller_state"
+            ]
+        ]
+    },
+    {
+        "id": "bcu_debug_chiller_state",
+        "type": "debug",
+        "z": "bcu_combined_tab",
+        "name": "Chiller State",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.inletCoolantTempC",
+        "statusType": "msg",
+        "x": 530,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "bcu_throttle_chiller_state",
+        "type": "delay",
+        "z": "bcu_combined_tab",
+        "name": "Throttle 5s",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "5",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 530,
+        "y": 100,
+        "wires": [
+            [
+                "bcu_mqtt_chiller_state"
+            ]
+        ]
+    },
+    {
+        "id": "bcu_mqtt_chiller_state",
+        "type": "mqtt out",
+        "z": "bcu_combined_tab",
+        "name": "MQTT Telemetry",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 720,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "bcu_parse_chiller_alarm",
+        "type": "function",
+        "z": "bcu_combined_tab",
+        "name": "Parse Chiller Alarm",
+        "func": "const frame = msg.payload || msg;\nlet canId = frame.canid & 0x1FFFFFFF;\nconst data = frame.data || [];\n\nlet state = flow.get(\"chillerAlarmState\") || {\n    kind: \"ChillerAlarmState\",\n    version: 1,\n    oICoolantPressSensorFault: null,\n    powerSupplyOV: null,\n    powerSupplyUV: null,\n    systemCoolantShortage: null,\n    pumpFaultSummary: null,\n    pumpFaultLockSummary: null,\n    oCoolantPressSensorFault: null,\n    iCoolantPressureSensorFault: null,\n    lowPressureSensorFault: null,\n    oCoolantTempSensorFault: null,\n    systemLowPressureAlarm: null,\n    systemHighPressureAlarm: null,\n    dischargeTempTooHighAlarm: null,\n    canCommunicationFaultAlarm: null,\n    suctionTempSensorFault: null,\n    coolingSystemAbnormal: null,\n    lowSuctionSuperheatDegreeA: null,\n    compressorVfdOvAlarm: null,\n    compressorVfdUvAlarm: null,\n    compressorVfdOcAlarm: null,\n    compressorVfdOtAlarm: null,\n    compressorVfdComFaultA: null,\n    compressorVfdPhaseLossA: null,\n    otherCompVfdFaultAlarm: null,\n    pumpLowDiffPressAlarm: null,\n    dischargeTempTooHighLock: null,\n    systemHighPressLock: null,\n    systemLowPressLock: null,\n    compressorVfdOcLock: null,\n    compressorVfdOvLock: null,\n    compressorVfdUvLock: null,\n    compressorVfdOtLock: null,\n    compressorVfdPhsLossLock: null,\n    otherCompVfdFaultLocks: null\n};\n\nfunction getBit(buf, bitIndex) {\n    const byteIndex = Math.floor(bitIndex / 8);\n    const bitOffset = bitIndex % 8;\n    if (byteIndex >= buf.length) return false;\n    return ((buf[byteIndex] >> bitOffset) & 0x01) === 1;\n}\n\nvar processed = false;\n\nif ((canId & 0xFFFFFFF0) === 0x18068040) {\n    processed = true;\n    state.oICoolantPressSensorFault = getBit(data, 0);\n    state.powerSupplyOV = getBit(data, 1);\n    state.powerSupplyUV = getBit(data, 2);\n    state.systemCoolantShortage = getBit(data, 3);\n    state.pumpFaultSummary = getBit(data, 4);\n    state.pumpFaultLockSummary = getBit(data, 5);\n}\n\nif ((canId & 0xFFFFFFF0) === 0x18078040) {\n    processed = true;\n    state.oCoolantPressSensorFault = getBit(data, 0);\n    state.iCoolantPressureSensorFault = getBit(data, 1);\n    state.lowPressureSensorFault = getBit(data, 2);\n    state.oCoolantTempSensorFault = getBit(data, 3);\n    state.systemLowPressureAlarm = getBit(data, 4);\n    state.systemHighPressureAlarm = getBit(data, 5);\n    state.dischargeTempTooHighAlarm = getBit(data, 6);\n    state.canCommunicationFaultAlarm = getBit(data, 7);\n    state.suctionTempSensorFault = getBit(data, 8);\n    state.coolingSystemAbnormal = getBit(data, 9);\n    state.lowSuctionSuperheatDegreeA = getBit(data, 10);\n    state.compressorVfdOvAlarm = getBit(data, 11);\n    state.compressorVfdUvAlarm = getBit(data, 12);\n    state.compressorVfdOcAlarm = getBit(data, 13);\n    state.compressorVfdOtAlarm = getBit(data, 14);\n    state.compressorVfdComFaultA = getBit(data, 15);\n    state.compressorVfdPhaseLossA = getBit(data, 16);\n    state.otherCompVfdFaultAlarm = getBit(data, 17);\n    state.pumpLowDiffPressAlarm = getBit(data, 18);\n    state.dischargeTempTooHighLock = getBit(data, 19);\n    state.systemHighPressLock = getBit(data, 20);\n    state.systemLowPressLock = getBit(data, 21);\n    state.compressorVfdOcLock = getBit(data, 22);\n    state.compressorVfdOvLock = getBit(data, 23);\n    state.compressorVfdUvLock = getBit(data, 24);\n    state.compressorVfdOtLock = getBit(data, 25);\n    state.compressorVfdPhsLossLock = getBit(data, 26);\n    state.otherCompVfdFaultLocks = getBit(data, 27);\n}\n\nif (!processed) {\n    return null;\n}\n\nconst allAlarmFlags = [\n    'oICoolantPressSensorFault', 'powerSupplyOV', 'powerSupplyUV',\n    'systemCoolantShortage', 'pumpFaultSummary', 'pumpFaultLockSummary',\n    'oCoolantPressSensorFault', 'iCoolantPressureSensorFault', 'lowPressureSensorFault',\n    'oCoolantTempSensorFault', 'systemLowPressureAlarm', 'systemHighPressureAlarm',\n    'dischargeTempTooHighAlarm', 'canCommunicationFaultAlarm', 'suctionTempSensorFault',\n    'coolingSystemAbnormal', 'lowSuctionSuperheatDegreeA', 'compressorVfdOvAlarm',\n    'compressorVfdUvAlarm', 'compressorVfdOcAlarm', 'compressorVfdOtAlarm',\n    'compressorVfdComFaultA', 'compressorVfdPhaseLossA', 'otherCompVfdFaultAlarm',\n    'pumpLowDiffPressAlarm', 'dischargeTempTooHighLock', 'systemHighPressLock',\n    'systemLowPressLock', 'compressorVfdOcLock', 'compressorVfdOvLock',\n    'compressorVfdUvLock', 'compressorVfdOtLock', 'compressorVfdPhsLossLock',\n    'otherCompVfdFaultLocks'\n];\n\nlet activeAlarms = [];\nallAlarmFlags.forEach(flag => {\n    if (state[flag] === true) activeAlarms.push(flag);\n});\n\nstate.hasAlarm = activeAlarms.length > 0;\nstate.activeAlarms = activeAlarms;\nstate.activeAlarmCount = activeAlarms.length;\n\nstate.timestampUtc = new Date().toISOString();\nflow.set(\"chillerAlarmState\", state);\nmsg.payload = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 330,
+        "y": 160,
+        "wires": [
+            [
+                "bcu_debug_chiller_alarm",
+                "bcu_throttle_chiller_alarm"
+            ]
+        ]
+    },
+    {
+        "id": "bcu_debug_chiller_alarm",
+        "type": "debug",
+        "z": "bcu_combined_tab",
+        "name": "Chiller Alarm",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.activeAlarmCount",
+        "statusType": "msg",
+        "x": 530,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "bcu_throttle_chiller_alarm",
+        "type": "delay",
+        "z": "bcu_combined_tab",
+        "name": "Throttle 500ms",
+        "pauseType": "rate",
+        "timeout": "500",
+        "timeoutUnits": "milliseconds",
+        "rate": "2",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 700,
+        "y": 160,
+        "wires": [
+            [
+                "bcu_mqtt_chiller_alarm"
+            ]
+        ]
+    },
+    {
+        "id": "bcu_mqtt_chiller_alarm",
+        "type": "mqtt out",
+        "z": "bcu_combined_tab",
+        "name": "MQTT Telemetry",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 880,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "bcu_parse_container_battery",
+        "type": "function",
+        "z": "bcu_combined_tab",
+        "name": "Parse Container Battery State",
+        "func": "const frame = msg.payload || msg;\nlet canId = frame.canid & 0x1FFFFFFF;\nconst data = frame.data || [];\n\nlet state = flow.get(\"containerBatteryState\") || {\n    kind: \"ContainerBatteryState\",\n    version: 1,\n    socPercent: null,\n    sohPercent: null,\n    cycleCount: null,\n    remainingEnergyKwh: null,\n    availableEnergyKwh: null,\n    totalVoltageV: null,\n    currentA: null,\n    selectedBmuLoc: null,\n    selectedCellLoc: null,\n    cellVoltageMv: null,\n    cellTempC: null,\n    maxCellVoltageCellLoc: null,\n    maxCellVoltageBmuLoc: null,\n    minCellVoltageCellLoc: null,\n    minCellVoltageBmuLoc: null,\n    avgCellVoltageMv: null,\n    maxCellVoltageMv: null,\n    minCellVoltageMv: null,\n    stateCode: null,\n    state: null,\n    contactStatusPos: null,\n    contactFbkPos: null,\n    contactFbkNeg: null,\n    chargeComplete: null,\n    dischargeComplete: null,\n    contactStatusNeg: null,\n    isolationStatus: null,\n    fuseFbk: null,\n    input1Status: null,\n    ambientTempC: null,\n    dmccA: null,\n    dmdcA: null,\n    maxCellTempCellLoc: null,\n    maxCellTempBmuLoc: null,\n    minCellTempCellLoc: null,\n    minCellTempBmuLoc: null,\n    maxCellTempC: null,\n    minCellTempC: null,\n    outVoltPosV: null,\n    outVoltNegV: null\n};\n\nfunction u8(buf, offset) {\n    return buf[offset] & 0xFF;\n}\n\nfunction u16(buf, offset) {\n    return (buf[offset] & 0xFF) | ((buf[offset + 1] & 0xFF) << 8);\n}\n\nfunction getNibbleLow(buf, offset) {\n    return buf[offset] & 0x0F;\n}\n\nfunction getNibbleHigh(buf, offset) {\n    return (buf[offset] >> 4) & 0x0F;\n}\n\nfunction getBit(buf, byteOffset, bitOffset) {\n    return (buf[byteOffset] >> bitOffset) & 0x01;\n}\n\nfunction getBits(buf, byteOffset, bitOffset, length) {\n    return (buf[byteOffset] >> bitOffset) & ((1 << length) - 1);\n}\n\nconst stateMap = {\n    0: \"N/A\",\n    101: \"Standby\",\n    102: \"Startup\",\n    103: \"Precharge\",\n    104: \"Discharge\",\n    105: \"Charge\",\n    106: \"Shutdown\",\n    107: \"Fault\",\n    108: \"Charge_Complete\",\n    109: \"Discharge_Complete\"\n};\n\nvar processed = false;\n\nif (canId === 0x18FF14F0) {\n    processed = true;\n    state.socPercent = u8(data, 0);\n    state.sohPercent = u8(data, 1);\n    state.cycleCount = u16(data, 2);\n    state.remainingEnergyKwh = u16(data, 4) * 0.01;\n    state.availableEnergyKwh = u16(data, 6) * 0.01;\n}\n\nif (canId === 0x18FF11F0) {\n    processed = true;\n    state.totalVoltageV = u16(data, 0) * 0.1;\n    state.currentA = (u16(data, 2) * 0.1) - 1000;\n    state.selectedBmuLoc = getNibbleLow(data, 4);\n    state.selectedCellLoc = getNibbleHigh(data, 4);\n    state.cellVoltageMv = u16(data, 5);\n    state.cellTempC = u8(data, 7) - 40;\n}\n\nif (canId === 0x18FF12F0) {\n    processed = true;\n    state.maxCellVoltageCellLoc = getNibbleLow(data, 0);\n    state.maxCellVoltageBmuLoc = getNibbleHigh(data, 0);\n    state.minCellVoltageCellLoc = getNibbleLow(data, 1);\n    state.minCellVoltageBmuLoc = getNibbleHigh(data, 1);\n    state.avgCellVoltageMv = u16(data, 2);\n    state.maxCellVoltageMv = u16(data, 4);\n    state.minCellVoltageMv = u16(data, 6);\n}\n\nif (canId === 0x18FF10F0) {\n    processed = true;\n    state.stateCode = u8(data, 0);\n    state.state = stateMap[state.stateCode] || \"Unknown\";\n    state.contactStatusPos = getBit(data, 1, 0);\n    state.contactFbkPos = getBit(data, 1, 1);\n    state.contactFbkNeg = getBit(data, 1, 2);\n    state.chargeComplete = getBit(data, 1, 3) === 1;\n    state.dischargeComplete = getBit(data, 1, 4) === 1;\n    state.contactStatusNeg = getBit(data, 1, 5);\n    state.isolationStatus = getBits(data, 1, 6, 2);\n    state.fuseFbk = getBits(data, 2, 0, 2);\n    state.input1Status = getBits(data, 2, 2, 2);\n    state.ambientTempC = u8(data, 3) - 40;\n    state.dmccA = u16(data, 4) * 0.1;\n    state.dmdcA = u16(data, 6) * 0.1;\n}\n\nif (canId === 0x18FF13F0) {\n    processed = true;\n    state.maxCellTempCellLoc = getNibbleLow(data, 0);\n    state.maxCellTempBmuLoc = getNibbleHigh(data, 0);\n    state.minCellTempCellLoc = getNibbleLow(data, 1);\n    state.minCellTempBmuLoc = getNibbleHigh(data, 1);\n    state.maxCellTempC = u8(data, 2) - 40;\n    state.minCellTempC = u8(data, 3) - 40;\n    state.outVoltPosV = u16(data, 4) * 0.1;\n    state.outVoltNegV = u16(data, 6) * 0.1;\n}\n\nif (!processed) {\n    return null;\n}\n\nstate.timestampUtc = new Date().toISOString();\nflow.set(\"containerBatteryState\", state);\nmsg.payload = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 220,
+        "wires": [
+            [
+                "bcu_debug_container_battery",
+                "bcu_throttle_container_battery"
+            ]
+        ]
+    },
+    {
+        "id": "bcu_debug_container_battery",
+        "type": "debug",
+        "z": "bcu_combined_tab",
+        "name": "Container Battery",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.socPercent",
+        "statusType": "msg",
+        "x": 550,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "bcu_throttle_container_battery",
+        "type": "delay",
+        "z": "bcu_combined_tab",
+        "name": "Throttle 5s",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "5",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 710,
+        "y": 220,
+        "wires": [
+            [
+                "bcu_mqtt_container_battery"
+            ]
+        ]
+    },
+    {
+        "id": "bcu_mqtt_container_battery",
+        "type": "mqtt out",
+        "z": "bcu_combined_tab",
+        "name": "MQTT Telemetry",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 880,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "bcu_parse_container_fault",
+        "type": "function",
+        "z": "bcu_combined_tab",
+        "name": "Parse Container Battery Fault",
+        "func": "const frame = msg.payload || msg;\nlet canId = frame.canid & 0x1FFFFFFF;\nconst data = frame.data || [];\n\nif (canId !== 0x18FF16F0) {\n    return null;\n}\n\nfunction getBit(buf, bitIndex) {\n    const byteIndex = Math.floor(bitIndex / 8);\n    const bitOffset = bitIndex % 8;\n    return ((buf[byteIndex] >> bitOffset) & 0x01) === 1;\n}\n\nlet state = {\n    kind: \"ContainerBatteryFaultState\",\n    version: 1,\n    timestampUtc: new Date().toISOString(),\n    faultPackWarning: getBit(data, 0),\n    faultPackDanger: getBit(data, 1),\n    faultCellOverVoltageWarning: getBit(data, 2),\n    faultCellOverVoltageDanger: getBit(data, 3),\n    faultCellUnderVoltageWarning: getBit(data, 4),\n    faultCellUnderVoltageDanger: getBit(data, 5),\n    faultCellOverTempWarning: getBit(data, 6),\n    faultCellOverTempDanger: getBit(data, 7),\n    faultCellUnderTempWarning: getBit(data, 8),\n    faultCellUnderTempDanger: getBit(data, 9),\n    warningPackOC: getBit(data, 10),\n    faultPackOC: getBit(data, 11),\n    faultPackCurrentSensor: getBit(data, 12),\n    faultPackDischargeContactor: getBit(data, 13),\n    faultPackChargeContactor: getBit(data, 14),\n    faultFuse: getBit(data, 15),\n    faultPackHVIL2: getBit(data, 16),\n    faultPackFuse: getBit(data, 17),\n    faultPackFireWarningSensor: getBit(data, 18),\n    faultPackHighHumidity: getBit(data, 19),\n    faultPackBMU: getBit(data, 20),\n    faultPackNegContactor: getBit(data, 21),\n    faultPackPrecharge: getBit(data, 22),\n    faultIsolation: getBit(data, 23),\n    faultPackEmergency: getBit(data, 24),\n    warningModuleTempBalance: getBit(data, 25),\n    faultModuleTempBalance: getBit(data, 26),\n    faultDeadCell: getBit(data, 32),\n    faultCANCommunication: getBit(data, 33),\n    faultPackIntCommunication: getBit(data, 34),\n    faultInternalMeasurement: getBit(data, 35),\n    faultVoltageRedundancy: getBit(data, 36),\n    faultOpenWire: getBit(data, 37),\n    faultBoardBMUNoResponse: getBit(data, 40),\n    faultBoardStackInitialize: getBit(data, 41),\n    faultBoardMeasurement: getBit(data, 42),\n    faultBoardStackConfiguration: getBit(data, 43),\n    faultBoardBalance: getBit(data, 44),\n    faultBoardOperationSystem: getBit(data, 45),\n    faultBoardGPI: getBit(data, 48),\n    faultBoardChip: getBit(data, 49),\n    faultBoardSys: getBit(data, 50),\n    faultBoardCommunication: getBit(data, 51),\n    faultBoardCompOverVoltage: getBit(data, 52),\n    faultBoardCompUnderVoltage: getBit(data, 53),\n    faultBoardAuxOverVoltage: getBit(data, 54),\n    faultBoardAuxUnderVoltage: getBit(data, 55),\n    faultBoardOverVoltage: getBit(data, 56),\n    faultBoardUnderVoltage: getBit(data, 57),\n    faultBoardStackError: getBit(data, 58),\n    faultBoardOpenWireDetect: getBit(data, 59)\n};\n\nconst warningFlags = [\n    'faultPackWarning', 'faultCellOverVoltageWarning', 'faultCellUnderVoltageWarning',\n    'faultCellOverTempWarning', 'faultCellUnderTempWarning', 'warningPackOC', 'warningModuleTempBalance'\n];\n\nconst faultFlags = [\n    'faultPackDanger', 'faultCellOverVoltageDanger', 'faultCellUnderVoltageDanger',\n    'faultCellOverTempDanger', 'faultCellUnderTempDanger', 'faultPackOC',\n    'faultPackCurrentSensor', 'faultPackDischargeContactor', 'faultPackChargeContactor',\n    'faultFuse', 'faultPackHVIL2', 'faultPackFuse', 'faultPackFireWarningSensor',\n    'faultPackHighHumidity', 'faultPackBMU', 'faultPackNegContactor', 'faultPackPrecharge',\n    'faultIsolation', 'faultPackEmergency', 'faultModuleTempBalance', 'faultDeadCell',\n    'faultCANCommunication', 'faultPackIntCommunication', 'faultInternalMeasurement',\n    'faultVoltageRedundancy', 'faultOpenWire', 'faultBoardBMUNoResponse',\n    'faultBoardStackInitialize', 'faultBoardMeasurement', 'faultBoardStackConfiguration',\n    'faultBoardBalance', 'faultBoardOperationSystem', 'faultBoardGPI', 'faultBoardChip',\n    'faultBoardSys', 'faultBoardCommunication', 'faultBoardCompOverVoltage',\n    'faultBoardCompUnderVoltage', 'faultBoardAuxOverVoltage', 'faultBoardAuxUnderVoltage',\n    'faultBoardOverVoltage', 'faultBoardUnderVoltage', 'faultBoardStackError', 'faultBoardOpenWireDetect'\n];\n\nstate.hasWarning = warningFlags.some(flag => state[flag] === true);\nstate.hasFault = faultFlags.some(flag => state[flag] === true);\n\nlet activeFaults = [];\nwarningFlags.forEach(flag => { if (state[flag] === true) activeFaults.push(flag); });\nfaultFlags.forEach(flag => { if (state[flag] === true) activeFaults.push(flag); });\nstate.activeFaults = activeFaults;\nstate.activeFaultCount = activeFaults.length;\n\nflow.set(\"containerBatteryFaultState\", state);\nmsg.payload = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 280,
+        "wires": [
+            [
+                "bcu_debug_container_fault",
+                "bcu_throttle_container_fault"
+            ]
+        ]
+    },
+    {
+        "id": "bcu_debug_container_fault",
+        "type": "debug",
+        "z": "bcu_combined_tab",
+        "name": "Container Fault",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.activeFaultCount",
+        "statusType": "msg",
+        "x": 540,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "bcu_throttle_container_fault",
+        "type": "delay",
+        "z": "bcu_combined_tab",
+        "name": "Throttle 500ms",
+        "pauseType": "rate",
+        "timeout": "500",
+        "timeoutUnits": "milliseconds",
+        "rate": "2",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 700,
+        "y": 280,
+        "wires": [
+            [
+                "bcu_mqtt_container_fault"
+            ]
+        ]
+    },
+    {
+        "id": "bcu_mqtt_container_fault",
+        "type": "mqtt out",
+        "z": "bcu_combined_tab",
+        "name": "MQTT Telemetry",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 880,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "bcu_parse_hvcu_control",
+        "type": "function",
+        "z": "bcu_combined_tab",
+        "name": "Parse HVCU Control State",
+        "func": "const frame = msg.payload || msg;\nlet canId = frame.canid & 0x1FFFFFFF;\nconst data = frame.data || [];\n\nif ((canId & 0xFFFFFFF0) !== 0x18FF2010) {\n    return null;\n}\n\nfunction u8(buf, offset) {\n    return buf[offset] & 0xFF;\n}\n\nfunction getBit(buf, byteOffset, bitOffset) {\n    return ((buf[byteOffset] >> bitOffset) & 0x01) === 1;\n}\n\nconst stateMap = {\n    0: \"N/A\",\n    101: \"Standby\",\n    102: \"Startup\",\n    103: \"Precharge\",\n    104: \"Discharge\",\n    105: \"Charge\",\n    106: \"Shutdown\"\n};\n\nlet state = {\n    kind: \"HVCUControlState\",\n    version: 1,\n    timestampUtc: new Date().toISOString(),\n    bcu01ControlStateCode: u8(data, 0),\n    bcu01ControlState: stateMap[u8(data, 0)] || \"Unknown\",\n    bcu02ControlStateCode: u8(data, 1),\n    bcu02ControlState: stateMap[u8(data, 1)] || \"Unknown\",\n    bcu03ControlStateCode: u8(data, 2),\n    bcu03ControlState: stateMap[u8(data, 2)] || \"Unknown\",\n    bcu04ControlStateCode: u8(data, 3),\n    bcu04ControlState: stateMap[u8(data, 3)] || \"Unknown\",\n    pack1IsolationControl: getBit(data, 4, 0)\n};\n\nflow.set(\"hvcuControlState\", state);\nmsg.payload = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 350,
+        "y": 340,
+        "wires": [
+            [
+                "bcu_debug_hvcu_control",
+                "bcu_throttle_hvcu_control"
+            ]
+        ]
+    },
+    {
+        "id": "bcu_debug_hvcu_control",
+        "type": "debug",
+        "z": "bcu_combined_tab",
+        "name": "HVCU Control",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.bcu01ControlState",
+        "statusType": "msg",
+        "x": 540,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "bcu_throttle_hvcu_control",
+        "type": "delay",
+        "z": "bcu_combined_tab",
+        "name": "Throttle 5s",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "5",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 710,
+        "y": 340,
+        "wires": [
+            [
+                "bcu_mqtt_hvcu_control"
+            ]
+        ]
+    },
+    {
+        "id": "bcu_mqtt_hvcu_control",
+        "type": "mqtt out",
+        "z": "bcu_combined_tab",
+        "name": "MQTT Telemetry",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 880,
+        "y": 340,
+        "wires": []
+    },
+    {
+        "id": "bcu_comment_manual_test",
+        "type": "comment",
+        "z": "bcu_combined_tab",
+        "name": "========== MANUAL TEST ==========",
+        "info": "",
+        "x": 200,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "bcu_inject_chiller_state",
+        "type": "inject",
+        "z": "bcu_combined_tab",
+        "name": "Test: Get Chiller State",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 170,
+        "y": 460,
+        "wires": [
+            [
+                "bcu_get_chiller_state"
+            ]
+        ]
+    },
+    {
+        "id": "bcu_get_chiller_state",
+        "type": "function",
+        "z": "bcu_combined_tab",
+        "name": "Get Chiller State",
+        "func": "var state = flow.get(\"chillerState\");\nif (state) {\n    msg.payload = state;\n    return msg;\n}\nmsg.payload = { error: \"No data yet\" };\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 390,
+        "y": 460,
+        "wires": [
+            [
+                "bcu_test_debug_chiller_state"
+            ]
+        ]
+    },
+    {
+        "id": "bcu_test_debug_chiller_state",
+        "type": "debug",
+        "z": "bcu_combined_tab",
+        "name": "Chiller State",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 590,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "bcu_inject_chiller_alarm",
+        "type": "inject",
+        "z": "bcu_combined_tab",
+        "name": "Test: Get Chiller Alarm",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 170,
+        "y": 500,
+        "wires": [
+            [
+                "bcu_get_chiller_alarm"
+            ]
+        ]
+    },
+    {
+        "id": "bcu_get_chiller_alarm",
+        "type": "function",
+        "z": "bcu_combined_tab",
+        "name": "Get Chiller Alarm",
+        "func": "var state = flow.get(\"chillerAlarmState\");\nif (state) {\n    msg.payload = state;\n    return msg;\n}\nmsg.payload = { error: \"No data yet\" };\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 390,
+        "y": 500,
+        "wires": [
+            [
+                "bcu_test_debug_chiller_alarm"
+            ]
+        ]
+    },
+    {
+        "id": "bcu_test_debug_chiller_alarm",
+        "type": "debug",
+        "z": "bcu_combined_tab",
+        "name": "Chiller Alarm",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 590,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "bcu_inject_container_battery",
+        "type": "inject",
+        "z": "bcu_combined_tab",
+        "name": "Test: Get Container Battery",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 190,
+        "y": 540,
+        "wires": [
+            [
+                "bcu_get_container_battery"
+            ]
+        ]
+    },
+    {
+        "id": "bcu_get_container_battery",
+        "type": "function",
+        "z": "bcu_combined_tab",
+        "name": "Get Container Battery",
+        "func": "var state = flow.get(\"containerBatteryState\");\nif (state) {\n    msg.payload = state;\n    return msg;\n}\nmsg.payload = { error: \"No data yet\" };\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 540,
+        "wires": [
+            [
+                "bcu_test_debug_container_battery"
+            ]
+        ]
+    },
+    {
+        "id": "bcu_test_debug_container_battery",
+        "type": "debug",
+        "z": "bcu_combined_tab",
+        "name": "Container Battery",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 610,
+        "y": 540,
+        "wires": []
+    },
+    {
+        "id": "bcu_inject_container_fault",
+        "type": "inject",
+        "z": "bcu_combined_tab",
+        "name": "Test: Get Container Fault",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 180,
+        "y": 580,
+        "wires": [
+            [
+                "bcu_get_container_fault"
+            ]
+        ]
+    },
+    {
+        "id": "bcu_get_container_fault",
+        "type": "function",
+        "z": "bcu_combined_tab",
+        "name": "Get Container Fault",
+        "func": "var state = flow.get(\"containerBatteryFaultState\");\nif (state) {\n    msg.payload = state;\n    return msg;\n}\nmsg.payload = { error: \"No data yet\" };\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 390,
+        "y": 580,
+        "wires": [
+            [
+                "bcu_test_debug_container_fault"
+            ]
+        ]
+    },
+    {
+        "id": "bcu_test_debug_container_fault",
+        "type": "debug",
+        "z": "bcu_combined_tab",
+        "name": "Container Fault",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 600,
+        "y": 580,
+        "wires": []
+    },
+    {
+        "id": "bcu_inject_hvcu_control",
+        "type": "inject",
+        "z": "bcu_combined_tab",
+        "name": "Test: Get HVCU Control",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 180,
+        "y": 620,
+        "wires": [
+            [
+                "bcu_get_hvcu_control"
+            ]
+        ]
+    },
+    {
+        "id": "bcu_get_hvcu_control",
+        "type": "function",
+        "z": "bcu_combined_tab",
+        "name": "Get HVCU Control",
+        "func": "var state = flow.get(\"hvcuControlState\");\nif (state) {\n    msg.payload = state;\n    return msg;\n}\nmsg.payload = { error: \"No data yet\" };\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 390,
+        "y": 620,
+        "wires": [
+            [
+                "bcu_test_debug_hvcu_control"
+            ]
+        ]
+    },
+    {
+        "id": "bcu_test_debug_hvcu_control",
+        "type": "debug",
+        "z": "bcu_combined_tab",
+        "name": "HVCU Control",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 600,
+        "y": 620,
+        "wires": []
+    },
+    {
+        "id": "can0_bcu_combined",
+        "type": "socketcan-config",
+        "z": "bcu_combined_tab",
+        "interface": "can0"
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

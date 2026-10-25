@@ -1,0 +1,121 @@
+//using Hems_Backend.Application.Common.Interfaces;
+//using Hems_Backend.Application.Common.Models;
+//using Hems_Backend.Application.Devices.Queries.CheckDeviceAccess;
+//using Hems_Backend.Domain.Entities;
+//using MediatR;
+//using Microsoft.EntityFrameworkCore;
+
+//namespace Hems_Backend.Application.Dashboard.Queries.GetChargeDischarge;
+
+//public class GetChargeDischargeQueryHandler : IRequestHandler<GetChargeDischargeQuery, ChargeDischargeResponseDto>
+//{
+//    private readonly IApplicationDbContext _context;
+//    private readonly ISender _sender;
+//    private readonly IDeviceMappingService _deviceMapping;
+
+//    public GetChargeDischargeQueryHandler(IApplicationDbContext context, ISender sender, IDeviceMappingService deviceMapping)
+//    {
+//        _context = context;
+//        _sender = sender;
+//        _deviceMapping = deviceMapping;
+//    }
+
+//    public async Task<ChargeDischargeResponseDto> Handle(GetChargeDischargeQuery request, CancellationToken cancellationToken)
+//    {
+//        // Device access kontrolü
+//        var hasAccess = await _sender.Send(new CheckDeviceAccessQuery { DeviceId = request.DeviceId }, cancellationToken);
+//        if (!hasAccess)
+//        {
+//            throw new UnauthorizedAccessException("Bu cihaza erişim yetkiniz bulunmamaktadır.");
+//        }
+
+//        // Map local DeviceId to ThingsBoardDeviceId
+//        var thingsBoardDeviceId = await _deviceMapping.GetThingsBoardDeviceIdAsync(request.DeviceId, cancellationToken);
+//        if (thingsBoardDeviceId == null)
+//        {
+//            throw new ArgumentException($"Device with ID {request.DeviceId} not found or has no ThingsBoard mapping.");
+//        }
+
+//        var utcNow = DateTime.UtcNow;
+//        var startOfDay = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 0, 0, 0, DateTimeKind.Utc);
+//        var endOfDay = startOfDay.AddDays(1);
+
+//        // Bugünün DailyCumulativeEnergyData verilerini çek
+//        var energyData = await _context.DeviceEnergyData
+//            .Where(x => x.ThingsBoardDeviceId == thingsBoardDeviceId.Value && 
+//                       x.DeviceLocalTime >= startOfDay &&
+//                       x.DeviceLocalTime < endOfDay &&
+//                       x.DataType == "DailyCumulativeEnergyData")
+//            .OrderBy(x => x.DeviceLocalTime)
+//            .ToListAsync(cancellationToken);
+
+//        if (!energyData.Any())
+//        {
+//            return new ChargeDischargeResponseDto
+//            {
+//                Range = "Day",
+//                Data = new List<Hems_Backend.Application.Common.Models.ChargeDischargeDataPoint>(),
+//                Statistics = new ChargeDischargeStatistics
+//                {
+//                    AverageCharge = 0,
+//                    PeakCharge = 0,
+//                    CurrentCharge = 0,
+//                    AverageDischarge = 0,
+//                    PeakDischarge = 0,
+//                    CurrentDischarge = 0,
+//                    Unit = "kW"
+//                }
+//            };
+//        }
+
+//        // Saatlik gruplama ve power hesaplama (son değerleri al)
+//        var dataPoints = energyData
+//            .GroupBy(x => x.DeviceLocalTime.Hour)
+//            .Select(g => new Hems_Backend.Application.Dashboard.Queries.GetChargeDischarge.ChargeDischargeDataPoint
+//            {
+//                DateTime = g.First().DeviceLocalTime,
+//                ChargePowerKw = Math.Round(g.OrderByDescending(x => x.DeviceLocalTime).First().BatteryChargeEnergyKWh ?? 0, 3),
+//                DischargePowerKw = Math.Round(g.OrderByDescending(x => x.DeviceLocalTime).First().BatteryDischargeEnergyKWh ?? 0, 3),
+//                Label = $"Hour-{g.Key:00}:00"
+//            })
+//            .OrderBy(x => x.DateTime)
+//            .ToList();
+
+//        // İstatistikleri hesapla
+//        var chargeValues = dataPoints.Select(x => x.ChargePowerKw).ToList();
+//        var dischargeValues = dataPoints.Select(x => x.DischargePowerKw).ToList();
+
+//        var averageChargePowerKw = chargeValues.Any() ? Math.Round(chargeValues.Average(), 3) : 0;
+//        var peakChargePowerKw = chargeValues.Any() ? Math.Round(chargeValues.Max(), 3) : 0;
+//        var currentChargePowerKw = chargeValues.Any() ? Math.Round(chargeValues.Last(), 3) : 0;
+
+//        var averageDischargePowerKw = dischargeValues.Any() ? Math.Round(dischargeValues.Average(), 3) : 0;
+//        var peakDischargePowerKw = dischargeValues.Any() ? Math.Round(dischargeValues.Max(), 3) : 0;
+//        var currentDischargePowerKw = dischargeValues.Any() ? Math.Round(dischargeValues.Last(), 3) : 0;
+
+//        // Yeni DTO formatına çevir
+//        var newDataPoints = dataPoints.Select(x => new Hems_Backend.Application.Common.Models.ChargeDischargeDataPoint
+//        {
+//            Timestamp = x.Label,
+//            ChargeValue = x.ChargePowerKw,
+//            DischargeValue = x.DischargePowerKw,
+//            Unit = "kW"
+//        }).ToList();
+
+//        return new ChargeDischargeResponseDto
+//        {
+//            Range = "Day",
+//            Data = newDataPoints,
+//            Statistics = new ChargeDischargeStatistics
+//            {
+//                AverageCharge = averageChargePowerKw,
+//                PeakCharge = peakChargePowerKw,
+//                CurrentCharge = currentChargePowerKw,
+//                AverageDischarge = averageDischargePowerKw,
+//                PeakDischarge = peakDischargePowerKw,
+//                CurrentDischarge = currentDischargePowerKw,
+//                Unit = "kW"
+//            }
+//        };
+//    }
+//}

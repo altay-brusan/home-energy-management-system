@@ -1,0 +1,41 @@
+{
+  "kind": "PcsStatusState",
+  "version": 1,
+  "canMessage": "0x66B969x",
+
+  "signals": {
+    "pcs_gridFreqHz": "number",                  // Bit 0-15 (16 bit) - Grid Frequency
+                                                 //   Signed, Factor: 0.01, Offset: 0, Unit: Hz
+                                                 //   Min: 0, Max: 100
+                                                 //   Value Table: VtSig_GRID_FREQ
+
+    "pcs_gridPhaseSeq": "number",                // Bit 16-23 (8 bit) - Grid Phase Sequence
+                                                 //   Unsigned, Factor: 1, Offset: 0
+                                                 //   Min: 0, Max: 3
+                                                 //   Value Table: VtSig_GRID_PHASE_SEQ
+
+    "pcs_deratCoeff": "number",                  // Bit 24-31 (8 bit) - Derating Coefficient
+                                                 //   Unsigned, Factor: 0.01, Offset: 0
+                                                 //   Min: 0, Max: 1.27
+
+    "pcs_deratMark": "number",                   // Bit 32-39 (8 bit) - Derating Mark
+                                                 //   Unsigned, Factor: 1, Offset: 0
+                                                 //   Min: 0, Max: 3
+                                                 //   Value Table: VtSig_PCS_DERAT_MARK
+
+    "pcs_workingCondition": "number",            // Bit 40-47 (8 bit) - Working Condition
+                                                 //   Unsigned, Factor: 1, Offset: 0
+                                                 //   Min: 0, Max: 7
+                                                 //   Value Table: VtSig_WORKING_CONDITION
+
+    "pcs_sourceMode": "number",                  // Bit 48-55 (8 bit) - Source Mode
+                                                 //   Unsigned, Factor: 1, Offset: 0
+                                                 //   Min: 0, Max: 3
+                                                 //   Value Table: VtSig_SOURCE_MODE
+
+    "pcs_gridMode": "number"                     // Bit 56-63 (8 bit) - Grid Mode
+                                                 //   Unsigned, Factor: 1, Offset: 0
+                                                 //   Min: 0, Max: 15
+                                                 //   Value Table: VtSig_GRID_MODE
+  }
+}

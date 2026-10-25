@@ -1,0 +1,469 @@
+[
+    {
+        "id": "597ab85eca717495",
+        "type": "tab",
+        "label": "RPC_FlowManager",
+        "disabled": false,
+        "info": "Remote Flow Management via ThingsBoard RPC\n\nMethods:\n- getFlows: Returns current flows (tabs only - optimized)\n- setFlows: Replace ALL flows (use with caution)\n- deleteFlows: Remove ALL flows\n- addFlow: Add a single flow tab\n- updateFlow: Update a single flow tab\n- removeFlow: Remove a single flow tab"
+    },
+    {
+        "id": "7d127172b63dcf79",
+        "type": "mqtt in",
+        "z": "597ab85eca717495",
+        "name": "RPC Request",
+        "topic": "v1/devices/me/rpc/request/+",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "tb-broker",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 140,
+        "y": 160,
+        "wires": [
+            [
+                "49813dbe4e4cc308"
+            ]
+        ]
+    },
+    {
+        "id": "49813dbe4e4cc308",
+        "type": "function",
+        "z": "597ab85eca717495",
+        "name": "Parse RPC Request",
+        "func": "// Extract request ID from topic\nconst parts = msg.topic.split('/');\nconst requestId = parts[parts.length - 1];\n\nmsg.rpcRequestId = requestId;\nmsg.rpcResponseTopic = 'v1/devices/me/rpc/response/' + requestId;\n\nconst rpc = msg.payload || {};\nmsg.rpcMethod = rpc.method;\nmsg.rpcParams = rpc.params || {};\n\n// Valid flow management methods\nconst validMethods = [\n    'getFlows', 'setFlows', 'deleteFlows',\n    'addFlow', 'updateFlow', 'removeFlow'\n];\n\nif (!validMethods.includes(msg.rpcMethod)) {\n    return null;\n}\n\nnode.status({fill: 'blue', shape: 'dot', text: msg.rpcMethod});\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 350,
+        "y": 160,
+        "wires": [
+            [
+                "07524e097294f202"
+            ]
+        ]
+    },
+    {
+        "id": "07524e097294f202",
+        "type": "switch",
+        "z": "597ab85eca717495",
+        "name": "Route by Method",
+        "property": "rpcMethod",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "getFlows",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "setFlows",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "deleteFlows",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "addFlow",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "updateFlow",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "removeFlow",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 6,
+        "x": 560,
+        "y": 160,
+        "wires": [
+            [
+                "41043a899c0a9fee"
+            ],
+            [
+                "d4dac9cb975ae4a7"
+            ],
+            [
+                "ef004f529a8041d9"
+            ],
+            [
+                "692cb2c3dea636b5"
+            ],
+            [
+                "7212e28ed7cc0f9b"
+            ],
+            [
+                "6a938876dd09b1e8"
+            ]
+        ]
+    },
+    {
+        "id": "41043a899c0a9fee",
+        "type": "http request",
+        "z": "597ab85eca717495",
+        "name": "GET /flows",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://localhost:1880/flows",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 770,
+        "y": 60,
+        "wires": [
+            [
+                "eeed1e65f84390af"
+            ]
+        ]
+    },
+    {
+        "id": "d4dac9cb975ae4a7",
+        "type": "function",
+        "z": "597ab85eca717495",
+        "name": "Prepare POST body",
+        "func": "// Get flows from RPC params\nconst flows = msg.rpcParams.flows || msg.rpcParams;\n\nif (!flows || !Array.isArray(flows)) {\n    msg.payload = {\n        success: false,\n        error: 'Invalid flows data. Expected array.'\n    };\n    msg.statusCode = 400;\n    return [null, msg];\n}\n\nmsg.payload = flows;\nmsg.headers = {\n    'Content-Type': 'application/json',\n    'Node-RED-Deployment-Type': msg.rpcParams.deploymentType || 'full'\n};\n\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 790,
+        "y": 100,
+        "wires": [
+            [
+                "d74d27f7b6a4e85a"
+            ],
+            [
+                "ec6eda4b0e715718"
+            ]
+        ]
+    },
+    {
+        "id": "d74d27f7b6a4e85a",
+        "type": "http request",
+        "z": "597ab85eca717495",
+        "name": "POST /flows",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://localhost:1880/flows",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 990,
+        "y": 100,
+        "wires": [
+            [
+                "eeed1e65f84390af"
+            ]
+        ]
+    },
+    {
+        "id": "ef004f529a8041d9",
+        "type": "function",
+        "z": "597ab85eca717495",
+        "name": "Prepare empty array",
+        "func": "// Delete all flows by posting empty array\nmsg.payload = [];\nmsg.headers = {\n    'Content-Type': 'application/json',\n    'Node-RED-Deployment-Type': 'full'\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 800,
+        "y": 140,
+        "wires": [
+            [
+                "792686951fd75b7a"
+            ]
+        ]
+    },
+    {
+        "id": "792686951fd75b7a",
+        "type": "http request",
+        "z": "597ab85eca717495",
+        "name": "POST /flows (delete)",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://localhost:1880/flows",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1010,
+        "y": 140,
+        "wires": [
+            [
+                "eeed1e65f84390af"
+            ]
+        ]
+    },
+    {
+        "id": "692cb2c3dea636b5",
+        "type": "function",
+        "z": "597ab85eca717495",
+        "name": "Prepare addFlow",
+        "func": "// Add a single flow (tab with its nodes)\n// params.flow = { id, label, nodes: [...] }\n\nconst flowData = msg.rpcParams.flow;\n\nif (!flowData) {\n    msg.payload = {\n        success: false,\n        error: 'Missing flow parameter. Expected: { flow: { id, label, nodes: [...] } }'\n    };\n    msg.statusCode = 400;\n    return [null, msg];\n}\n\n// Build the flow structure for POST /flow\n// Node-RED expects: { id, label, nodes: [...], configs: [...] }\nmsg.payload = {\n    id: flowData.id || undefined,\n    label: flowData.label || 'New Flow',\n    disabled: flowData.disabled || false,\n    info: flowData.info || '',\n    nodes: flowData.nodes || [],\n    configs: flowData.configs || []\n};\n\nmsg.headers = {\n    'Content-Type': 'application/json'\n};\n\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 790,
+        "y": 200,
+        "wires": [
+            [
+                "bfa00165778441d6"
+            ],
+            [
+                "ec6eda4b0e715718"
+            ]
+        ]
+    },
+    {
+        "id": "bfa00165778441d6",
+        "type": "http request",
+        "z": "597ab85eca717495",
+        "name": "POST /flow",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://localhost:1880/flow",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 990,
+        "y": 200,
+        "wires": [
+            [
+                "eeed1e65f84390af"
+            ]
+        ]
+    },
+    {
+        "id": "7212e28ed7cc0f9b",
+        "type": "function",
+        "z": "597ab85eca717495",
+        "name": "Prepare updateFlow",
+        "func": "// Update a single flow by ID\n// params.id = flow tab id\n// params.flow = { label, nodes: [...] }\n\nconst flowId = msg.rpcParams.id;\nconst flowData = msg.rpcParams.flow;\n\nif (!flowId) {\n    msg.payload = {\n        success: false,\n        error: 'Missing id parameter'\n    };\n    msg.statusCode = 400;\n    return [null, msg];\n}\n\nif (!flowData) {\n    msg.payload = {\n        success: false,\n        error: 'Missing flow parameter'\n    };\n    msg.statusCode = 400;\n    return [null, msg];\n}\n\nmsg.url = 'http://localhost:1880/flow/' + flowId;\nmsg.payload = {\n    id: flowId,\n    label: flowData.label,\n    disabled: flowData.disabled || false,\n    info: flowData.info || '',\n    nodes: flowData.nodes || [],\n    configs: flowData.configs || []\n};\n\nmsg.headers = {\n    'Content-Type': 'application/json'\n};\n\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 800,
+        "y": 260,
+        "wires": [
+            [
+                "5336881371e2208a"
+            ],
+            [
+                "ec6eda4b0e715718"
+            ]
+        ]
+    },
+    {
+        "id": "5336881371e2208a",
+        "type": "http request",
+        "z": "597ab85eca717495",
+        "name": "PUT /flow/:id",
+        "method": "PUT",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1000,
+        "y": 260,
+        "wires": [
+            [
+                "eeed1e65f84390af"
+            ]
+        ]
+    },
+    {
+        "id": "6a938876dd09b1e8",
+        "type": "function",
+        "z": "597ab85eca717495",
+        "name": "Prepare removeFlow",
+        "func": "// Remove a single flow by ID\n// params.id = flow tab id to delete\n\nconst flowId = msg.rpcParams.id;\n\nif (!flowId) {\n    msg.payload = {\n        success: false,\n        error: 'Missing id parameter. Expected: { id: \"flow_tab_id\" }'\n    };\n    msg.statusCode = 400;\n    return [null, msg];\n}\n\n// Protect critical flows from deletion\nconst protectedFlows = ['rpc_flow_manager_tab'];\nif (protectedFlows.includes(flowId)) {\n    msg.payload = {\n        success: false,\n        error: 'Cannot delete protected flow: ' + flowId\n    };\n    msg.statusCode = 403;\n    return [null, msg];\n}\n\nmsg.url = 'http://localhost:1880/flow/' + flowId;\nmsg.headers = {\n    'Content-Type': 'application/json'\n};\n\nreturn [msg, null];",
+        "outputs": 2,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 800,
+        "y": 320,
+        "wires": [
+            [
+                "10e2ae07f9bba7f3"
+            ],
+            [
+                "ec6eda4b0e715718"
+            ]
+        ]
+    },
+    {
+        "id": "10e2ae07f9bba7f3",
+        "type": "http request",
+        "z": "597ab85eca717495",
+        "name": "DELETE /flow/:id",
+        "method": "DELETE",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1010,
+        "y": 320,
+        "wires": [
+            [
+                "eeed1e65f84390af"
+            ]
+        ]
+    },
+    {
+        "id": "eeed1e65f84390af",
+        "type": "function",
+        "z": "597ab85eca717495",
+        "name": "Prepare RPC Response",
+        "func": "const method = msg.rpcMethod;\nconst statusCode = msg.statusCode || 200;\n\nlet response = {};\n\nswitch(method) {\n    case 'getFlows':\n        // OPTIMIZED: Return only tabs to reduce payload size\n        // Full flows were causing MQTT disconnection (66KB+)\n        const allFlows = msg.payload || [];\n        const tabsOnly = allFlows.filter(n => n.type === 'tab');\n        \n        response = {\n            success: true,\n            flowCount: allFlows.length,\n            tabCount: tabsOnly.length,\n            flows: tabsOnly\n        };\n        break;\n        \n    case 'setFlows':\n        response = {\n            success: statusCode >= 200 && statusCode < 300,\n            message: 'Flows deployed successfully'\n        };\n        break;\n        \n    case 'deleteFlows':\n        response = {\n            success: statusCode >= 200 && statusCode < 300,\n            message: 'All flows deleted'\n        };\n        break;\n        \n    case 'addFlow':\n        response = {\n            success: statusCode >= 200 && statusCode < 300,\n            message: 'Flow added successfully',\n            flowId: msg.payload ? msg.payload.id : null\n        };\n        break;\n        \n    case 'updateFlow':\n        response = {\n            success: statusCode >= 200 && statusCode < 300,\n            message: 'Flow updated successfully',\n            flowId: msg.rpcParams.id\n        };\n        break;\n        \n    case 'removeFlow':\n        response = {\n            success: statusCode >= 200 && statusCode < 300,\n            message: 'Flow removed successfully',\n            flowId: msg.rpcParams.id\n        };\n        break;\n        \n    default:\n        response = {\n            success: false,\n            error: 'Unknown method'\n        };\n}\n\nif (statusCode >= 400) {\n    response.success = false;\n    response.error = msg.payload || 'Operation failed';\n    response.statusCode = statusCode;\n}\n\nmsg.payload = response;\nmsg.topic = msg.rpcResponseTopic;\n\nnode.status({\n    fill: response.success ? 'green' : 'red',\n    shape: 'dot',\n    text: method + ': ' + (response.success ? 'OK' : 'FAIL')\n});\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1200,
+        "y": 60,
+        "wires": [
+            [
+                "ec6eda4b0e715718",
+                "426823a8d5ad3b40"
+            ]
+        ]
+    },
+    {
+        "id": "ec6eda4b0e715718",
+        "type": "mqtt out",
+        "z": "597ab85eca717495",
+        "name": "RPC Response",
+        "topic": "",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1420,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "426823a8d5ad3b40",
+        "type": "debug",
+        "z": "597ab85eca717495",
+        "name": "FlowManager Debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1430,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "2baa4b061bce55d6",
+        "type": "comment",
+        "z": "597ab85eca717495",
+        "name": "📡 Remote Flow Management v3 (Optimized)",
+        "info": "## Available Methods\n\n### Bulk Operations\n- **getFlows**: Get all flows (OPTIMIZED - returns tabs only)\n- **setFlows**: Replace ALL flows\n- **deleteFlows**: Delete ALL flows\n\n### Single Flow Operations (Recommended)\n- **addFlow**: Add one flow tab\n- **updateFlow**: Update one flow tab\n- **removeFlow**: Delete one flow tab\n\n## v3 Changes\n- getFlows now returns only tab nodes (not all nodes)\n- Reduces payload from 66KB+ to ~2KB\n- Prevents MQTT disconnection on large flow sets\n\n## Response Format\n\n### getFlows Response\n```json\n{\n  \"success\": true,\n  \"flowCount\": 120,    // Total nodes\n  \"tabCount\": 15,      // Only tabs\n  \"flows\": [...]       // Tab nodes only\n}\n```",
+        "x": 230,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

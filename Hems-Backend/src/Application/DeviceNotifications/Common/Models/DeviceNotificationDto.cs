@@ -1,0 +1,51 @@
+namespace Hems_Backend.Application.DeviceNotifications.Common.Models;
+
+public class DeviceNotificationTypeDto
+{
+    public Guid Id { get; init; }
+    public string Code { get; init; } = string.Empty; // Vendor code (e.g., W2, F1, F64)
+    public string Message { get; init; } = string.Empty; // Short message from vendor
+    public string Description { get; init; } = string.Empty; // Detailed troubleshooting steps
+    public string Category { get; init; } = string.Empty; // Device type (e.g., Inverter, Battery)
+    public string Severity { get; init; } = string.Empty; // Warning, Error
+    public string Version { get; init; } = string.Empty;
+    public string Manufacturer { get; init; } = string.Empty;
+    public bool IsActive { get; init; }
+}
+
+public class DeviceNotificationDto
+{
+    public Guid Id { get; init; }
+    public Guid DeviceId { get; init; }
+    public Guid SiteId { get; init; }
+    public Guid SetupDeviceId { get; init; }
+    public Guid DeviceNotificationTypeId { get; init; }
+    public DateTimeOffset Timestamp { get; init; }
+    public string AdditionalData { get; init; } = string.Empty;
+    public bool IsProcessed { get; init; }
+    public bool IsDeleted { get; init; }
+    public DateTimeOffset Created { get; init; }
+
+    // Navigation properties
+    public DeviceNotificationTypeDto DeviceNotificationType { get; init; } = null!;
+    public string DeviceManufacturer { get; init; } = string.Empty;
+    public string SiteName { get; init; } = string.Empty;
+
+    // Display properties for SignalR notifications
+    public string DeviceName { get; init; } = string.Empty;
+    public string DisplayMessage { get; init; } = string.Empty;
+    public string Severity { get; init; } = string.Empty;
+    public string SourceDevice { get; init; } = string.Empty;
+    public string RawRegisterCode { get; init; } = string.Empty;
+    public bool IsGeneric { get; init; }
+
+    /// <summary>
+    /// The notification type code (e.g., INV-FAT-F01, BMS-WAR-A01).
+    /// </summary>
+    public string Key { get; init; } = string.Empty;
+
+    /// <summary>
+    /// Detailed description including register values and diagnostic information.
+    /// </summary>
+    public string DetailedDescription { get; init; } = string.Empty;
+}

@@ -1,0 +1,21 @@
+BatteryMaintenanceConfigState
+{
+  "version": 1,
+
+  "batteryControlMode": "string",            // 211 - 电池工作根据电压还是容量
+                                             //   0 = "voltage" (根据电压)
+                                             //   1 = "capacity" (根据容量)
+                                             //   2 = "no_battery" (没有电池)
+
+  "wakeUp": {
+    "channel1Enabled": "boolean",            // 212 - 锂电池唤醒标志位
+                                             //   0 = enabled
+                                             //   1 = disabled
+    "channel2Enabled": null                  // Bu datasheet'te channel2 yok (tek flag)
+  },
+
+  "batteryResistanceMilliOhm": "number",     // 213 - 电池内阻值 [0,6000] mΩ
+
+  "chargeEfficiencyPercent": "number"        // 214 - 电池充电效率 [0-100] (0.1% step)
+                                             //   983 = 98.3%
+}

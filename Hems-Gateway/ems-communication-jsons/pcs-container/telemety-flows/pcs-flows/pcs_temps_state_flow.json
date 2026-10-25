@@ -1,0 +1,196 @@
+[
+    {
+        "id": "pcs_temps_state_tab",
+        "type": "tab",
+        "label": "PCS Temps State",
+        "disabled": false,
+        "info": "PcsTempsState - PCS Temperature Measurements\n\nCAN Message:\n- 0x66B96Fx: PCS_TEMPS\n\nThrottle: 5s"
+    },
+    {
+        "id": "can0_input_pcs_temps",
+        "type": "socketcan-out",
+        "z": "pcs_temps_state_tab",
+        "name": "CAN0 Input",
+        "config": "can0_pcs_temps",
+        "x": 120,
+        "y": 180,
+        "wires": [
+            [
+                "parse_pcs_temps"
+            ]
+        ]
+    },
+    {
+        "id": "parse_pcs_temps",
+        "type": "function",
+        "z": "pcs_temps_state_tab",
+        "name": "Parse PCS Temps State",
+        "func": "const frame = msg.payload || msg;\nlet canId = frame.canid & 0x1FFFFFFF;\nconst data = frame.data || [];\n\n// Only process PCS_TEMPS (0x66B96Fx)\nif ((canId & 0xFFFFFFF0) !== 0x66B96F0) {\n    return null;\n}\n\n// Helper function\nfunction s16(buf, offset) {\n    let val = (buf[offset] & 0xFF) | ((buf[offset + 1] & 0xFF) << 8);\n    return val > 32767 ? val - 65536 : val;\n}\n\nlet state = {\n    kind: \"PcsTempsState\",\n    version: 1,\n    timestampUtc: new Date().toISOString(),\n    \n    // Bit 0-15: IGBT Temperature\n    // 16 bit, Signed, Factor: 0.1, Offset: 0, Unit: °C\n    // Min: -100, Max: 200\n    pcs_igbtTempC: s16(data, 0) * 0.1,\n    \n    // Bit 16-31: Ambient Temperature\n    // 16 bit, Signed, Factor: 0.1, Offset: 0, Unit: °C\n    // Min: -100, Max: 200\n    pcs_ambientTempC: s16(data, 2) * 0.1,\n    \n    // Bit 32-47: Inductance Temperature\n    // 16 bit, Signed, Factor: 0.1, Offset: 0, Unit: °C\n    // Min: -100, Max: 3176.7\n    pcs_inductanceTempC: s16(data, 4) * 0.1\n};\n\nflow.set(\"pcsTempsState\", state);\nmsg.payload = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 350,
+        "y": 180,
+        "wires": [
+            [
+                "debug_pcs_temps",
+                "throttle_pcs_temps"
+            ]
+        ]
+    },
+    {
+        "id": "debug_pcs_temps",
+        "type": "debug",
+        "z": "pcs_temps_state_tab",
+        "name": "PCS Temps State",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.pcs_igbtTempC",
+        "statusType": "msg",
+        "x": 600,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "throttle_pcs_temps",
+        "type": "delay",
+        "z": "pcs_temps_state_tab",
+        "name": "Throttle 5s",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "5",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 590,
+        "y": 180,
+        "wires": [
+            [
+                "tb_telemetry_pcs_temps"
+            ]
+        ]
+    },
+    {
+        "id": "tb_telemetry_pcs_temps",
+        "type": "mqtt out",
+        "z": "pcs_temps_state_tab",
+        "name": "ThingsBoard Telemetry",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 800,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "inject_get_pcs_temps",
+        "type": "inject",
+        "z": "pcs_temps_state_tab",
+        "name": "Get PCS Temps State",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 170,
+        "y": 300,
+        "wires": [
+            [
+                "get_pcs_temps"
+            ]
+        ]
+    },
+    {
+        "id": "get_pcs_temps",
+        "type": "function",
+        "z": "pcs_temps_state_tab",
+        "name": "Get State from Context",
+        "func": "var state = flow.get(\"pcsTempsState\");\nif (state) {\n    msg.payload = state;\n    return msg;\n}\nmsg.payload = { error: \"No data yet\" };\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 390,
+        "y": 300,
+        "wires": [
+            [
+                "debug_full_pcs_temps"
+            ]
+        ]
+    },
+    {
+        "id": "debug_full_pcs_temps",
+        "type": "debug",
+        "z": "pcs_temps_state_tab",
+        "name": "Full State",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 590,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "can0_pcs_temps",
+        "type": "socketcan-config",
+        "z": "pcs_temps_state_tab",
+        "interface": "can0"
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

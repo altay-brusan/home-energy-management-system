@@ -1,0 +1,12 @@
+GridConnectionStatusState
+{
+  "version": 1,
+
+  "phaseAVoltageV": "number",                // 698 - 电网侧相电压A Grid phase voltage A (0.1V)
+
+  "phaseBVoltageV": "number",                // 699 - 电网侧相电压B Grid phase voltage B (0.1V)
+
+  "phaseCVoltageV": "number",                // 700 - 电网侧相电压C Grid phase voltage C (0.1V)
+
+  "gridConnected": "boolean"                 // Derived: herhangi bir faz voltajı > 150V ise true
+}

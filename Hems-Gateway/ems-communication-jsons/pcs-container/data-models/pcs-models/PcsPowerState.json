@@ -1,0 +1,66 @@
+{
+  "kind": "PcsPowerState",
+  "version": 1,
+  "canMessages": {
+    "PCS_PWR_ACT": "0x66B96Ax",
+    "PCS_PWR_APP": "0x66B96Cx",
+    "PCS_PWR_REA": "0x66B96Bx"
+  },
+
+  "signals": {
+    
+    "// ========== PCS_PWR_ACT (0x66B96Ax) - Active Power ==========": "",
+    
+    "pcs_aActPwrKw": "number",                   // Bit 0-15 (16 bit) - A Phase Active Power
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: kW
+                                                 //   Min: -3276.8, Max: 3276.7
+
+    "pcs_bActPwrKw": "number",                   // Bit 16-31 (16 bit) - B Phase Active Power
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: kW
+                                                 //   Min: -3276.8, Max: 3276.7
+
+    "pcs_cActPwrKw": "number",                   // Bit 32-47 (16 bit) - C Phase Active Power
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: kW
+                                                 //   Min: -3276.8, Max: 3276.7
+
+    "pcs_outActPwrKw": "number",                 // Bit 48-63 (16 bit) - Output Active Power (Total)
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: kW
+                                                 //   Min: -3276.8, Max: 3276.7
+
+    "// ========== PCS_PWR_APP (0x66B96Cx) - Apparent Power ==========": "",
+    
+    "pcs_aAppPwrKva": "number",                  // Bit 0-15 (16 bit) - A Phase Apparent Power
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: kVA
+                                                 //   Min: 0, Max: 6553.5
+
+    "pcs_bAppPwrKva": "number",                  // Bit 16-31 (16 bit) - B Phase Apparent Power
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: kVA
+                                                 //   Min: 0, Max: 6553.5
+
+    "pcs_cAppPwrKva": "number",                  // Bit 32-47 (16 bit) - C Phase Apparent Power
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: kVA
+                                                 //   Min: 0, Max: 6553.5
+
+    "pcs_outAppPwrKva": "number",                // Bit 48-63 (16 bit) - Output Apparent Power (Total)
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: kVA
+                                                 //   Min: 0, Max: 6553.5
+
+    "// ========== PCS_PWR_REA (0x66B96Bx) - Reactive Power ==========": "",
+    
+    "pcs_aReaPwrKvar": "number",                 // Bit 0-15 (16 bit) - A Phase Reactive Power
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: kvar
+                                                 //   Min: -3276.8, Max: 3276.7
+
+    "pcs_bReaPwrKvar": "number",                 // Bit 16-31 (16 bit) - B Phase Reactive Power
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: kvar
+                                                 //   Min: -3276.8, Max: 3276.7
+
+    "pcs_cReaPwrKvar": "number",                 // Bit 32-47 (16 bit) - C Phase Reactive Power
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: kvar
+                                                 //   Min: -3276.8, Max: 3276.7
+
+    "pcs_outReaPwrKvar": "number"                // Bit 48-63 (16 bit) - Output Reactive Power (Total)
+                                                 //   Signed, Factor: 0.1, Offset: 0, Unit: kvar
+                                                 //   Min: -3276.8, Max: 3276.7
+  }
+}

@@ -1,0 +1,125 @@
+HEMS SignalR CORS Sorunu - Nginx Konfigürasyonu
+==================================================
+
+SORUN:
+SignalR hub'ına bağlanırken "The server disconnected before the handshake could be started" hatası alınıyor.
+Bu sorun CORS (Cross-Origin Resource Sharing) ayarlarının eksik olmasından kaynaklanıyor.
+
+ÇÖZÜM:
+Nginx konfigürasyonunda CORS header'larını eklemek gerekiyor.
+
+YAPILACAKLAR:
+=============
+
+1. Nginx Konfigürasyon Dosyasını Düzenle
+----------------------------------------
+Konfigürasyon dosyası genellikle şu konumlarda bulunur:
+- /etc/nginx/sites-available/your-site
+- /etc/nginx/nginx.conf
+
+2. Aşağıdaki Konfigürasyonu Ekleyin
+------------------------------------
+server {
+    listen 80;
+    listen 443 ssl;
+    server_name hems-api.pentaunity.com;
+
+    # Global CORS Headers
+    add_header 'Access-Control-Allow-Origin' '*' always;
+    add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+    add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization' always;
+    add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range' always;
+
+    # OPTIONS request'i için özel handling
+    if ($request_method = 'OPTIONS') {
+        add_header 'Access-Control-Allow-Origin' '*';
+        add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS';
+        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization';
+        add_header 'Access-Control-Max-Age' 1728000;
+        add_header 'Content-Type' 'text/plain; charset=utf-8';
+        add_header 'Content-Length' 0;
+        return 204;
+    }
+
+    # SignalR Hub için özel proxy ayarları
+    location /deviceNotificationHub {
+        proxy_pass http://localhost:5000;  # .NET uygulamasının portu
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Diğer tüm istekler
+    location / {
+        proxy_pass http://localhost:5000;  # .NET uygulamasının portu
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+3. Konfigürasyonu Test Et
+-------------------------
+sudo nginx -t
+
+4. Nginx'i Yeniden Başlat
+-------------------------
+sudo systemctl reload nginx
+# veya
+sudo service nginx reload
+
+5. Konfigürasyonu Doğrula
+-------------------------
+Aşağıdaki komutla CORS header'larının doğru çalıştığını test edin:
+
+curl -H "Origin: https://example.com" \
+     -H "Access-Control-Request-Method: POST" \
+     -H "Access-Control-Request-Headers: X-Requested-With" \
+     -X OPTIONS \
+     https://hems-api.pentaunity.com/deviceNotificationHub
+
+Bu komut şu header'ları döndürmelidir:
+- Access-Control-Allow-Origin: *
+- Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
+- Access-Control-Allow-Headers: DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization
+
+ÖNEMLİ NOTLAR:
+==============
+
+1. Port Numarası: 
+   - "proxy_pass http://localhost:5000;" kısmındaki port numarasını 
+   - .NET uygulamasının çalıştığı port ile değiştirin
+
+2. SSL Sertifikası:
+   - Eğer SSL kullanıyorsanız, sertifika ayarlarını da ekleyin
+
+3. Güvenlik:
+   - Production ortamında 'Access-Control-Allow-Origin' '*' yerine
+   - sadece gerekli domain'leri belirtmek daha güvenlidir
+
+4. Log Kontrolü:
+   - Nginx error log'larını kontrol edin:
+   sudo tail -f /var/log/nginx/error.log
+
+SONUÇ:
+======
+Bu konfigürasyon uygulandıktan sonra SignalR hub'ına bağlantı sorunu çözülecektir.
+CORS header'ları Nginx seviyesinde eklendiği için uygulama kodunda değişiklik yapmaya gerek yoktur.
+
+İletişim:
+=========
+Sorun olursa veya ek bilgi gerekirse iletişime geçin.
+
+
+
+
+
+
+
+

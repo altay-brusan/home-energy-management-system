@@ -1,0 +1,413 @@
+[
+    {
+        "id": "inv_adv_func_config_tab",
+        "type": "tab",
+        "label": "Inverter Advanced Function Config",
+        "disabled": false,
+        "info": "Reads Inverter Advanced Function Config from registers:\n- 45: Self-check time\n- 280: Advanced function bits\n- 283: Arc fault mode\n- 326-327: External meter settings\n- 417: Parallel settings"
+    },
+    {
+        "id": "iafc_poll_inject",
+        "type": "inject",
+        "z": "inv_adv_func_config_tab",
+        "name": "Poll Advanced Function Config (5 min)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "300",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 200,
+        "y": 160,
+        "wires": [
+            [
+                "iafc_prepare_selfcheck",
+                "iafc_prepare_adv_bits",
+                "iafc_prepare_arc_fault",
+                "iafc_prepare_ext_meter",
+                "iafc_prepare_parallel"
+            ]
+        ]
+    },
+    {
+        "id": "iafc_prepare_selfcheck",
+        "type": "function",
+        "z": "inv_adv_func_config_tab",
+        "name": "Prepare read (SelfCheck 45)",
+        "func": "// Self-checking time\n// 45: Self-checking time (0-360 seconds)\n\nmsg.baseAddr = 45;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 45,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 490,
+        "y": 60,
+        "wires": [
+            [
+                "iafc_read_selfcheck"
+            ]
+        ]
+    },
+    {
+        "id": "iafc_prepare_adv_bits",
+        "type": "function",
+        "z": "inv_adv_func_config_tab",
+        "name": "Prepare read (AdvBits 280)",
+        "func": "// Advanced function bits\n// 280: Multiple bit fields\n//   Bit 4-7: Gen peak shaving\n//   Bit 8-11: Grid peak shaving\n//   Bit 12: On Grid always on\n//   Bit 13: External relay\n//   Bit 14: BMS error stop\n//   Bit 15: DRM enable\n\nmsg.baseAddr = 280;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 280,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 490,
+        "y": 120,
+        "wires": [
+            [
+                "iafc_read_adv_bits"
+            ]
+        ]
+    },
+    {
+        "id": "iafc_prepare_arc_fault",
+        "type": "function",
+        "z": "inv_adv_func_config_tab",
+        "name": "Prepare read (ArcFault 283)",
+        "func": "// Arc fault mode\n// 283: Solar Arc Fault Mode\n//   0 = close, 1 = open, 2 = clear request\n\nmsg.baseAddr = 283;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 283,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 490,
+        "y": 180,
+        "wires": [
+            [
+                "iafc_read_arc_fault"
+            ]
+        ]
+    },
+    {
+        "id": "iafc_prepare_ext_meter",
+        "type": "function",
+        "z": "inv_adv_func_config_tab",
+        "name": "Prepare read (ExtMeter 326-327)",
+        "func": "// External meter settings\n// 326: Phase bits (Bit1-3 = A/B/C phase)\n// 327: CT ratio (200-8000)\n\nmsg.baseAddr = 326;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 326,\n    quantity: 2\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 500,
+        "y": 240,
+        "wires": [
+            [
+                "iafc_read_ext_meter"
+            ]
+        ]
+    },
+    {
+        "id": "iafc_prepare_parallel",
+        "type": "function",
+        "z": "inv_adv_func_config_tab",
+        "name": "Prepare read (Parallel 417)",
+        "func": "// Parallel settings\n// 417: Bit0 = enable, Bit1 = role, Bit10-15 = Modbus SN\n\nmsg.baseAddr = 417;\nmsg.payload = {\n    fc: 3,\n    unitid: 1,\n    address: 417,\n    quantity: 1\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 490,
+        "y": 300,
+        "wires": [
+            [
+                "iafc_read_parallel"
+            ]
+        ]
+    },
+    {
+        "id": "iafc_read_selfcheck",
+        "type": "modbus-flex-getter",
+        "z": "inv_adv_func_config_tab",
+        "name": "Read SelfCheck (45)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 750,
+        "y": 60,
+        "wires": [
+            [
+                "iafc_build_json"
+            ],
+            [
+                "iafc_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "iafc_read_adv_bits",
+        "type": "modbus-flex-getter",
+        "z": "inv_adv_func_config_tab",
+        "name": "Read AdvBits (280)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 750,
+        "y": 120,
+        "wires": [
+            [
+                "iafc_build_json"
+            ],
+            [
+                "iafc_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "iafc_read_arc_fault",
+        "type": "modbus-flex-getter",
+        "z": "inv_adv_func_config_tab",
+        "name": "Read ArcFault (283)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 750,
+        "y": 180,
+        "wires": [
+            [
+                "iafc_build_json"
+            ],
+            [
+                "iafc_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "iafc_read_ext_meter",
+        "type": "modbus-flex-getter",
+        "z": "inv_adv_func_config_tab",
+        "name": "Read ExtMeter (326-327)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 760,
+        "y": 240,
+        "wires": [
+            [
+                "iafc_build_json"
+            ],
+            [
+                "iafc_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "iafc_read_parallel",
+        "type": "modbus-flex-getter",
+        "z": "inv_adv_func_config_tab",
+        "name": "Read Parallel (417)",
+        "showStatusActivities": true,
+        "showErrors": true,
+        "showWarnings": true,
+        "logIOActivities": false,
+        "server": "e4e4f3e2a4f4e004",
+        "useIOFile": false,
+        "ioFile": "",
+        "useIOForPayload": false,
+        "emptyMsgOnFail": true,
+        "keepMsgProperties": true,
+        "delayOnStart": false,
+        "startDelayTime": "",
+        "x": 750,
+        "y": 300,
+        "wires": [
+            [
+                "iafc_build_json"
+            ],
+            [
+                "iafc_error_debug"
+            ]
+        ]
+    },
+    {
+        "id": "iafc_build_json",
+        "type": "function",
+        "z": "inv_adv_func_config_tab",
+        "name": "Build InverterAdvancedFunctionConfigState JSON",
+        "func": "// Build InverterAdvancedFunctionConfigState from multiple Modbus reads.\n\nlet raw = msg.payload;\nlet data = raw;\nif (data && Array.isArray(data.data)) {\n    data = data.data;\n}\n\nif (typeof raw === \"string\" || !Array.isArray(data)) {\n    return null;\n}\n\nlet baseAddr = msg.baseAddr;\nif (typeof baseAddr !== \"number\") {\n    baseAddr = (msg.modbusRequest && msg.modbusRequest.address);\n}\nif (typeof baseAddr !== \"number\") {\n    node.warn(\"InverterAdvancedFunctionConfigState: missing base address\");\n    return null;\n}\n\n// ---- Store partials ----\n\n// Self-check 45\nif (baseAddr === 45) {\n    const selfCheckTime = data[0] || 0;\n    flow.set(\"iafc_part_selfcheck\", {\n        systemSelfCheckEnabled: selfCheckTime > 0,\n        selfCheckTimeSeconds: selfCheckTime\n    });\n}\n\n// Advanced bits 280\nelse if (baseAddr === 280) {\n    const bits = data[0] || 0;\n    \n    // Bit 4-7: Gen peak shaving (check if any bit set)\n    const genPeakShavingEnabled = ((bits >> 4) & 0x0F) > 0;\n    // Bit 8-11: Grid peak shaving\n    const gridPeakShavingEnabled = ((bits >> 8) & 0x0F) > 0;\n    // Bit 12: On Grid always on\n    const smartLoadOnGridAlwaysOn = ((bits >> 12) & 0x01) === 1;\n    // Bit 13: External relay\n    const externalRelayEnabled = ((bits >> 13) & 0x01) === 1;\n    // Bit 14: BMS error stop\n    const bmsErrorStopEnabled = ((bits >> 14) & 0x01) === 1;\n    // Bit 15: DRM enable\n    const drmEnabled = ((bits >> 15) & 0x01) === 1;\n    \n    flow.set(\"iafc_part_adv_bits\", {\n        advancedFunctionWordRaw: bits,\n        generatorPeakShavingEnabled: genPeakShavingEnabled,\n        gridPeakShavingEnabled: gridPeakShavingEnabled,\n        smartLoadOnGridAlwaysOn: smartLoadOnGridAlwaysOn,\n        externalRelayEnabled: externalRelayEnabled,\n        bmsErrorStopEnabled: bmsErrorStopEnabled,\n        drmEnabled: drmEnabled\n    });\n}\n\n// Arc fault 283\nelse if (baseAddr === 283) {\n    const arcVal = data[0] || 0;\n    flow.set(\"iafc_part_arc_fault\", {\n        arcFaultEnabled: arcVal === 1,\n        arcFaultClearRequested: arcVal === 2,\n        arcFaultRaw: arcVal\n    });\n}\n\n// External meter 326-327\nelse if (baseAddr === 326) {\n    const phaseBits = data[0] || 0;    // 326\n    const ctRatio = data[1] || 0;      // 327\n    \n    // Decode phase bits (Bit1-3 = A/B/C)\n    const phaseA = ((phaseBits >> 1) & 0x01) === 1;\n    const phaseB = ((phaseBits >> 2) & 0x01) === 1;\n    const phaseC = ((phaseBits >> 3) & 0x01) === 1;\n    \n    let phaseStr = \"\";\n    if (phaseA) phaseStr += \"A\";\n    if (phaseB) phaseStr += \"B\";\n    if (phaseC) phaseStr += \"C\";\n    if (!phaseStr) phaseStr = \"none\";\n    \n    flow.set(\"iafc_part_ext_meter\", {\n        ctRatio: ctRatio,\n        phase: phaseStr,\n        phaseBitsRaw: phaseBits\n    });\n}\n\n// Parallel 417\nelse if (baseAddr === 417) {\n    const parallelBits = data[0] || 0;\n    \n    // Bit 0: Enable\n    const parallelEnabled = (parallelBits & 0x01) === 1;\n    // Bit 1: Role (1=Master, 0=Slave)\n    const isMaster = ((parallelBits >> 1) & 0x01) === 1;\n    // Bit 10-15: Modbus SN (0-63)\n    const modbusAddress = (parallelBits >> 10) & 0x3F;\n    \n    let role = \"standalone\";\n    if (parallelEnabled) {\n        role = isMaster ? \"master\" : \"slave\";\n    }\n    \n    flow.set(\"iafc_part_parallel\", {\n        parallelEnabled: parallelEnabled,\n        role: role,\n        modbusAddress: modbusAddress,\n        parallelBitsRaw: parallelBits\n    });\n}\nelse {\n    return null;\n}\n\n// ---- Try to assemble ----\n\nconst selfcheckPart = flow.get(\"iafc_part_selfcheck\");\nconst advBitsPart = flow.get(\"iafc_part_adv_bits\");\nconst arcFaultPart = flow.get(\"iafc_part_arc_fault\");\nconst extMeterPart = flow.get(\"iafc_part_ext_meter\");\nconst parallelPart = flow.get(\"iafc_part_parallel\");\n\nif (!selfcheckPart || !advBitsPart || !arcFaultPart || !extMeterPart || !parallelPart) {\n    return null;\n}\n\nconst gatewayId = global.get(\"GATEWAY_ID\") || env.get(\"GATEWAY_ID\") || \"EC100-GW-001\";\nconst inverterSN = global.get(\"INVERTER_SN\") || env.get(\"INVERTER_SN\") || \"Unknown\";\n\nconst state = {\n    kind: \"InverterAdvancedFunctionConfigState\",\n    timestampUtc: new Date().toISOString(),\n    gatewayId: gatewayId,\n    inverterSerialNumber: inverterSN,\n    version: \"1\",\n    \n    advancedFunctionWordRaw: advBitsPart.advancedFunctionWordRaw,\n    \n    arcFault: {\n        enabled: arcFaultPart.arcFaultEnabled,\n        clearRequested: arcFaultPart.arcFaultClearRequested\n    },\n    \n    systemSelfCheckEnabled: selfcheckPart.systemSelfCheckEnabled,\n    \n    generatorPeakShavingEnabled: advBitsPart.generatorPeakShavingEnabled,\n    gridPeakShavingEnabled: advBitsPart.gridPeakShavingEnabled,\n    \n    smartLoadOnGridAlwaysOn: advBitsPart.smartLoadOnGridAlwaysOn,\n    externalRelayEnabled: advBitsPart.externalRelayEnabled,\n    islandModeSignalEnabled: advBitsPart.externalRelayEnabled,  // Derived from relay config\n    \n    externalMeter: {\n        ctRatio: extMeterPart.ctRatio,\n        phase: extMeterPart.phase\n    },\n    \n    bmsErrorStopEnabled: advBitsPart.bmsErrorStopEnabled,\n    drmEnabled: advBitsPart.drmEnabled,\n    \n    parallel: {\n        enabled: parallelPart.parallelEnabled,\n        role: parallelPart.role,\n        modbusAddress: parallelPart.modbusAddress\n    },\n    \n    _debug: {\n        selfCheckTimeSeconds: selfcheckPart.selfCheckTimeSeconds,\n        arcFaultRaw: arcFaultPart.arcFaultRaw,\n        phaseBitsRaw: extMeterPart.phaseBitsRaw,\n        parallelBitsRaw: parallelPart.parallelBitsRaw\n    }\n};\n\n// Clear partials\nflow.set(\"iafc_part_selfcheck\", null);\nflow.set(\"iafc_part_adv_bits\", null);\nflow.set(\"iafc_part_arc_fault\", null);\nflow.set(\"iafc_part_ext_meter\", null);\nflow.set(\"iafc_part_parallel\", null);\n\nflow.set(\"inverterAdvancedFunctionConfigSnapshot\", state);\n\nmsg.payload = state;\nmsg.state = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1070,
+        "y": 180,
+        "wires": [
+            [
+                "iafc_debug_json",
+                "iafc_mqtt_telemetry"
+            ]
+        ]
+    },
+    {
+        "id": "iafc_debug_json",
+        "type": "debug",
+        "z": "inv_adv_func_config_tab",
+        "name": "InverterAdvancedFunctionConfigState JSON",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1420,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "iafc_error_debug",
+        "type": "debug",
+        "z": "inv_adv_func_config_tab",
+        "name": "AdvFunc CRC/Error debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1000,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "iafc_mqtt_telemetry",
+        "type": "mqtt out",
+        "z": "inv_adv_func_config_tab",
+        "name": "Send to ThingsBoard",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 1380,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "e4e4f3e2a4f4e004",
+        "type": "modbus-client",
+        "name": "RS485-1 Inverter",
+        "clienttype": "serial",
+        "bufferCommands": true,
+        "stateLogEnabled": false,
+        "queueLogEnabled": false,
+        "failureLogEnabled": false,
+        "tcpHost": "127.0.0.1",
+        "tcpPort": "502",
+        "tcpType": "DEFAULT",
+        "serialPort": "/dev/ttyS4",
+        "serialType": "RTU",
+        "serialBaudrate": "9600",
+        "serialDatabits": "8",
+        "serialStopbits": "1",
+        "serialParity": "none",
+        "serialConnectionDelay": "100",
+        "serialAsciiResponseStartDelimiter": "",
+        "unit_id": 1,
+        "commandDelay": 50,
+        "clientTimeout": 1000,
+        "reconnectOnTimeout": true,
+        "reconnectTimeout": 2000,
+        "parallelUnitIdsAllowed": true,
+        "showErrors": false,
+        "showWarnings": true,
+        "showLogs": true
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

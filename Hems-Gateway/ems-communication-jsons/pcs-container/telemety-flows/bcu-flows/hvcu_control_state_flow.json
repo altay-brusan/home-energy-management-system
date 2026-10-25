@@ -1,0 +1,196 @@
+[
+    {
+        "id": "hvcu_control_state_tab",
+        "type": "tab",
+        "label": "HVCU Control State",
+        "disabled": false,
+        "info": "HVCUControlState - HVCU_Control_State\n\nCAN Message:\n- 0x18FF201Ex: HVCU_Control_State (4 BCU Control States)"
+    },
+    {
+        "id": "can0_input_hvcu_control",
+        "type": "socketcan-out",
+        "z": "hvcu_control_state_tab",
+        "name": "CAN0 Input",
+        "config": "can0_hvcu_control",
+        "x": 120,
+        "y": 180,
+        "wires": [
+            [
+                "parse_hvcu_control"
+            ]
+        ]
+    },
+    {
+        "id": "parse_hvcu_control",
+        "type": "function",
+        "z": "hvcu_control_state_tab",
+        "name": "Parse HVCU Control State",
+        "func": "const frame = msg.payload || msg;\nlet canId = frame.canid & 0x1FFFFFFF;\nconst data = frame.data || [];\n\n// HVCU_Control_State (0x18FF201Ex)\n// CAN ID pattern: 0x18FF2010 - 0x18FF201F\nif ((canId & 0xFFFFFFF0) !== 0x18FF2010) {\n    return null;\n}\n\n// Helper functions\nfunction u8(buf, offset) {\n    return buf[offset] & 0xFF;\n}\n\nfunction getBit(buf, byteOffset, bitOffset) {\n    return ((buf[byteOffset] >> bitOffset) & 0x01) === 1;\n}\n\n// State code to string mapping\nconst stateMap = {\n    0: \"N/A\",\n    101: \"Standby\",\n    102: \"Startup\",\n    103: \"Precharge\",\n    104: \"Discharge\",\n    105: \"Charge\",\n    106: \"Shutdown\"\n};\n\nlet state = {\n    kind: \"HVCUControlState\",\n    version: 1,\n    timestampUtc: new Date().toISOString(),\n    \n    // Bit 0-7: BCU 01 Control State\n    bcu01ControlStateCode: u8(data, 0),\n    bcu01ControlState: stateMap[u8(data, 0)] || \"Unknown\",\n    \n    // Bit 8-15: BCU 02 Control State\n    bcu02ControlStateCode: u8(data, 1),\n    bcu02ControlState: stateMap[u8(data, 1)] || \"Unknown\",\n    \n    // Bit 16-23: BCU 03 Control State\n    bcu03ControlStateCode: u8(data, 2),\n    bcu03ControlState: stateMap[u8(data, 2)] || \"Unknown\",\n    \n    // Bit 24-31: BCU 04 Control State\n    bcu04ControlStateCode: u8(data, 3),\n    bcu04ControlState: stateMap[u8(data, 3)] || \"Unknown\",\n    \n    // Bit 32: Pack1 Isolation Control\n    pack1IsolationControl: getBit(data, 4, 0)\n};\n\nflow.set(\"hvcuControlState\", state);\nmsg.payload = state;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 350,
+        "y": 180,
+        "wires": [
+            [
+                "debug_hvcu_control",
+                "throttle_hvcu_control"
+            ]
+        ]
+    },
+    {
+        "id": "debug_hvcu_control",
+        "type": "debug",
+        "z": "hvcu_control_state_tab",
+        "name": "HVCU Control",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.bcu01ControlState",
+        "statusType": "msg",
+        "x": 600,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "throttle_hvcu_control",
+        "type": "delay",
+        "z": "hvcu_control_state_tab",
+        "name": "Throttle 5s",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "1",
+        "nbRateUnits": "5",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "allowrate": false,
+        "outputs": 1,
+        "x": 590,
+        "y": 180,
+        "wires": [
+            [
+                "tb_telemetry_hvcu_control"
+            ]
+        ]
+    },
+    {
+        "id": "tb_telemetry_hvcu_control",
+        "type": "mqtt out",
+        "z": "hvcu_control_state_tab",
+        "name": "ThingsBoard Telemetry",
+        "topic": "v1/devices/me/telemetry",
+        "qos": "1",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "tb-broker",
+        "x": 800,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "inject_get_hvcu_control",
+        "type": "inject",
+        "z": "hvcu_control_state_tab",
+        "name": "Get HVCU Control",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 170,
+        "y": 300,
+        "wires": [
+            [
+                "get_hvcu_control"
+            ]
+        ]
+    },
+    {
+        "id": "get_hvcu_control",
+        "type": "function",
+        "z": "hvcu_control_state_tab",
+        "name": "Get State from Context",
+        "func": "var state = flow.get(\"hvcuControlState\");\nif (state) {\n    msg.payload = state;\n    return msg;\n}\nmsg.payload = { error: \"No data yet\" };\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 390,
+        "y": 300,
+        "wires": [
+            [
+                "debug_full_hvcu_control"
+            ]
+        ]
+    },
+    {
+        "id": "debug_full_hvcu_control",
+        "type": "debug",
+        "z": "hvcu_control_state_tab",
+        "name": "Full State",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 590,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "can0_hvcu_control",
+        "type": "socketcan-config",
+        "z": "hvcu_control_state_tab",
+        "interface": "can0"
+    },
+    {
+        "id": "tb-broker",
+        "type": "mqtt-broker",
+        "name": "ThingsBoard Development Env.",
+        "broker": "REDACTED_HOST",
+        "port": "31883",
+        "tls": "",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]
