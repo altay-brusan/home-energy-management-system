@@ -70,7 +70,7 @@ public override void Map(WebApplication app)
 POST /api/Users/login
 {
   "email": "admin@example.com",
-  "password": "Admin123!"
+  "password": "<your-password>"
 }
 
 # Response: JWT Token (role bilgisi dahil)
@@ -116,7 +116,7 @@ if (isAuthorized) {
 POST /api/Users/login
 {
   "email": "admin@example.com",
-  "password": "Admin123!"
+  "password": "<your-password>"
 }
 
 # 2. Role management endpoint'ini çağır

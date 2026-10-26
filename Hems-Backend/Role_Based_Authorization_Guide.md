@@ -180,7 +180,7 @@ public class UserDashboard : EndpointGroupBase
 POST /api/Users/login
 {
   "email": "admin@example.com",
-  "password": "Admin123!"
+  "password": "<your-password>"
 }
 
 # Role management endpoint'lerini test et

@@ -85,7 +85,7 @@ public override void Map(WebApplication app)
 POST /api/Users/login
 {
   "email": "admin@example.com",
-  "password": "Admin123!"
+  "password": "<your-password>"
 }
 
 # 2. Tüm device endpoint'lerini test et

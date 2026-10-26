@@ -95,3 +95,7 @@ issues-pre/Task1.png
 .claude/
 **/.claude/
 Hibrit_Loffty_Inverter_On_Tanimli_Modlar.xlsx
+
+# React Native compiled bundles (build output)
+*.android.bundle
+*.jsbundle

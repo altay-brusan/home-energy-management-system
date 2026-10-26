@@ -114,7 +114,7 @@ public class CreateSetupCommandHandler : IRequestHandler<CreateSetupCommand, Gui
 POST /api/Users/login
 {
   "email": "admin@example.com",
-  "password": "Admin123!"
+  "password": "<your-password>"
 }
 
 # Device oluştur

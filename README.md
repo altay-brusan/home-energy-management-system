@@ -219,3 +219,7 @@ More documentation is in each project. Some of these documents are in Turkish:
   `config.json` that is not committed.
 
 Never commit real credentials, tokens, host addresses or connection strings to this public repository.
+
+## License
+
+Released under the [MIT License](LICENSE).
